@@ -1,0 +1,321 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "status": "completed",
+  "questionnaire": "Questionnaire/01981e44-71b1-77bc-aca4-95eb8a8b0b7e",
+  "item": [
+    {
+      "linkId": "patient-demographics",
+      "item": [
+        {
+          "linkId": "first-name",
+          "answer": [
+            {
+              "valueString": "Curtis"
+            }
+          ]
+        },
+        {
+          "linkId": "last-name",
+          "answer": [
+            {
+              "valueString": "Strickland"
+            }
+          ]
+        },
+        {
+          "linkId": "dob",
+          "answer": [
+            {
+              "valueDateTime": "1997-11-21T19:45:00"
+            }
+          ]
+        },
+        {
+          "linkId": "street",
+          "answer": [
+            {
+              "valueString": "3504 Turner Gateway Station"
+            }
+          ]
+        },
+        {
+          "linkId": "city",
+          "answer": [
+            {
+              "valueString": "Hillborough"
+            }
+          ]
+        },
+        {
+          "linkId": "state",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "CO"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "zip",
+          "answer": [
+            {
+              "valueString": "80034"
+            }
+          ]
+        },
+        {
+          "linkId": "country",
+          "answer": [
+            {
+              "valueString": "US"
+            }
+          ]
+        },
+        {
+          "linkId": "phone",
+          "answer": [
+            {
+              "valueString": "502-248-7743"
+            }
+          ]
+        },
+        {
+          "linkId": "email",
+          "answer": [
+            {
+              "valueString": "cstrickland7064@example.com"
+            }
+          ]
+        },
+        {
+          "linkId": "identifier",
+          "answer": [
+            {
+              "valueString": "68766886e2f58689a0bfdc57"
+            }
+          ]
+        },
+        {
+          "linkId": "race",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "1002-5",
+                "display": "American Indian or Alaska Native"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "ethnicity",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "2186-5",
+                "display": "Not Hispanic or Latino"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "gender-identity",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "M"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "99203",
+                "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-02-23T08:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-02-23T08:30:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "90832",
+                "display": "Psychotherapy, 30 minutes with patient"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-10-12T08:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-10-12T08:30:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "90837",
+                "display": "Psychotherapy, 60 minutes with patient"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-11-11T08:30:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-11-11T09:30:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "interventions",
+      "item": [
+        {
+          "linkId": "procedure-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "428191000124101",
+                "display": "Documentation of current medications (procedure)"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "procedure-performed-datetime",
+          "answer": [
+            {
+              "valueDateTime": "2023-11-11T08:30:00"
+            }
+          ]
+        },
+        {
+          "linkId": "procedure-medical-reason",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "183932001",
+                "display": "Procedure contraindicated (situation)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "payers",
+      "item": [
+        {
+          "linkId": "payer-type",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "https://nahdo.org/sopt",
+                "code": "9",
+                "display": "MISCELLANEOUS/OTHER"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "payer-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2022-12-21T00:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

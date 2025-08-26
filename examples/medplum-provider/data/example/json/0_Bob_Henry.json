@@ -1,0 +1,202 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "status": "completed",
+  "questionnaire": "Questionnaire/01981e44-71b1-77bc-aca4-95eb8a8b0b7e",
+  "item": [
+    {
+      "linkId": "patient-demographics",
+      "item": [
+        {
+          "linkId": "first-name",
+          "answer": [
+            {
+              "valueString": "Bob"
+            }
+          ]
+        },
+        {
+          "linkId": "last-name",
+          "answer": [
+            {
+              "valueString": "Henry"
+            }
+          ]
+        },
+        {
+          "linkId": "dob",
+          "answer": [
+            {
+              "valueDateTime": "1975-05-27T15:25:00"
+            }
+          ]
+        },
+        {
+          "linkId": "street",
+          "answer": [
+            {
+              "valueString": "4257 Conroy Burgs Ford"
+            }
+          ]
+        },
+        {
+          "linkId": "city",
+          "answer": [
+            {
+              "valueString": "Jennaborough"
+            }
+          ]
+        },
+        {
+          "linkId": "state",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "ND"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "zip",
+          "answer": [
+            {
+              "valueString": "58619"
+            }
+          ]
+        },
+        {
+          "linkId": "country",
+          "answer": [
+            {
+              "valueString": "US"
+            }
+          ]
+        },
+        {
+          "linkId": "phone",
+          "answer": [
+            {
+              "valueString": "515-731-2669"
+            }
+          ]
+        },
+        {
+          "linkId": "email",
+          "answer": [
+            {
+              "valueString": "bhenry4326@example.com"
+            }
+          ]
+        },
+        {
+          "linkId": "identifier",
+          "answer": [
+            {
+              "valueString": "68766885e2f58689a0bfdb87"
+            }
+          ]
+        },
+        {
+          "linkId": "race",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "1002-5",
+                "display": "American Indian or Alaska Native"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "ethnicity",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "2186-5",
+                "display": "Not Hispanic or Latino"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "gender-identity",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "M"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "99213",
+                "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-03-21T08:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-03-21T08:30:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "payers",
+      "item": [
+        {
+          "linkId": "payer-type",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "https://nahdo.org/sopt",
+                "code": "2",
+                "display": "Medicaid"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "payer-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2022-12-25T00:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

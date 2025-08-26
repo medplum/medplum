@@ -1,0 +1,486 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns:n1="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Patient Test Record: Curtis Strickland</title>
+      <style type="text/css">
+        body {
+          color: #003366;
+          background-color: #FFFFFF;
+          font-family: Verdana, Tahoma, sans-serif;
+          font-size: 11px;
+        }
+        .criteria-heading {
+          font-weight: bold;
+        }
+        .div-table{
+          display: table;
+          width: 100%;
+        }
+        .div-table-body {
+          display: table-row-group;
+        }
+        .div-table-row {
+          display: table-row;
+        }
+        .div-head-row {
+          display: table-row;
+        }
+        .div-table-cell, .div-table-head {
+          border: 1px solid #999999;
+          display: table-cell;
+          padding: 3px 10px;
+        }
+        .div-table-head--no-border {
+          display: table-cell;
+        }
+        .div-table-heading {
+          background-color: #EEE;
+          display: table-header-group;
+          font-weight: bold;
+        }
+        .patient_narr_tr {
+          background-color: #ccccff;
+        }
+        .patient_narr_th {
+          background-color: #3399ff;
+        }
+        .td_label{
+          font-weight: bold;
+          color: white;
+        }
+        .narr_tr {
+          background-color: #ffffcc;
+        }
+        .narr_th-wide {
+          background-color: #ffd700;
+          width: 28%;
+        }
+        .narr_th-narrow {
+          background-color: #ffd700;
+          width: 16%;
+        }
+        .div-table-cell-label {
+          display: none;
+        }
+      </style>  </head>
+  <body>
+    <h1 class="h1center">Patient Test Record: Curtis Strickland</h1>
+    <div class="div-table">
+      <div class="div-table-body">
+        <div class="div-head-row patient_narr_tr panel panel-default patient-details">
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Patient</span></div>
+          <div class="div-table-head">Curtis Strickland</div>
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Sex</span></div>
+          <div class="div-table-head">M - Male</div>
+        </div>
+        <div class="div-head-row patient_narr_tr panel panel-default patient-details">
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Date of birth</span></div>
+          <div class="div-table-head">1997-11-21T19:45:00+00:00</div>
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Date of expiration</span></div>
+          <div class="div-table-head">None</div>
+        </div>
+        <div class="div-head-row patient_narr_tr panel panel-default patient-details">
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Race</span></div>
+          <div class="div-table-head">1002-5 - American Indian or Alaska Native</div>
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Ethnicity</span></div>
+          <div class="div-table-head">2186-5 - Not Hispanic or Latino</div>
+        </div>
+        <div class="div-head-row patient_narr_tr panel panel-default patient-details">
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Insurance Providers</span></div>
+          <div class="div-table-head">9 - MISCELLANEOUS/OTHER</div>
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Patient IDs</span></div>
+          <div class="div-table-head">68766886e2f58689a0bfdc57</div>
+        </div>
+        <div class="div-head-row patient_narr_tr panel panel-default patient-details">
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Address</span></div>
+          <div class="div-table-head"><address>3504 Turner Gateway Station<br>Hillborough, CO 80034<br> US </address></div>
+          <div class="div-table-head patient_narr_th panel-heading"><span class="td_label">Telecom</span></div>
+          <div class="div-table-head">(HP) 502-248-7743<br>(HP) cstrickland7064@example.com</div>
+        </div>
+      </div>
+    </div>
+    <script language="javascript">
+      var cur_view = "section";
+      function toggle(id) {
+        var e = document.getElementById(id);
+        if (cur_view=="section"){
+         document.getElementById("patient_information_by_section").style.display = 'none';
+         document.getElementById("table_by_encounter").style.display = 'block';
+         document.getElementById('toggle_button').innerHTML="View By Section";
+         cur_view = "encounter";
+        }else{
+         document.getElementById("patient_information_by_section").style.display = 'block';
+         document.getElementById("table_by_encounter").style.display = 'none';
+         document.getElementById('toggle_button').innerHTML="View By Encounter";
+         cur_view = "section";
+        }      
+      }
+      
+      function showConcepts(ev, id) {
+        var left = ev.clientX + document.documentElement.scrollLeft;
+        var top = ev.clientY + document.documentElement.scrollTop;
+    
+        var concepts = document.getElementById(id);
+        concepts.style.display = 'block';
+        concepts.style.left = left + 'px';
+        concepts.style.top = top + 'px';
+      }
+      function hideConcepts(ev, id) {
+        var concepts = document.getElementById(id);
+        concepts.style.display = 'none';
+      }
+      function showCodes(event, id) {
+        //var left = ev.clientX + document.documentElement.scrollLeft;
+        //var top = ev.clientY + document.documentElement.scrollTop;
+    
+        // Calculate pageX/Y if missing and clientX/Y available
+        if ( event.pageX == null && event.clientX != null ) {
+          var doc = document.documentElement, body = document.body;
+          event.pageX = event.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) - (doc && doc.clientLeft || body && body.clientLeft || 0);
+          event.pageY = event.clientY + (doc && doc.scrollTop  || body && body.scrollTop  || 0) - (doc   && doc.clientTop  || body && body.clientTop  || 0);
+        }
+        var left = event.pageX;
+        var top = event.pageY;
+        var codes = document.getElementById(id);
+        codes.style.display = 'block';
+        codes.style.left = left + 'px';
+        codes.style.top = top + 'px';
+      }
+      function hideCodes(ev, id) {
+        var codes = document.getElementById(id);
+        codes.style.display = 'none';
+      }
+    </script>    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::EncounterPerformed</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading">Encounter to Document Medications</span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">CPT:</span>  99203 - Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded.</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period Start:</span>  2023-02-23T08:00:00.000Z</div>
+	</div>
+		<div class="div-head-row">
+			<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period End:</span>  2023-02-23T08:30:00.000Z</div>
+		</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Length Of Stay:</span>  0 d</div>
+	</div>
+</div>
+</div>
+</div>
+            </div>
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading">Encounter to Document Medications</span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">CPT:</span>  90832 - Psychotherapy, 30 minutes with patient</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period Start:</span>  2023-10-12T08:00:00.000Z</div>
+	</div>
+		<div class="div-head-row">
+			<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period End:</span>  2023-10-12T08:30:00.000Z</div>
+		</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Length Of Stay:</span>  0 d</div>
+	</div>
+</div>
+</div>
+</div>
+            </div>
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading">Encounter to Document Medications</span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">CPT:</span>  90837 - Psychotherapy, 60 minutes with patient</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period Start:</span>  2023-11-11T08:30:00.000Z</div>
+	</div>
+		<div class="div-head-row">
+			<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period End:</span>  2023-11-11T09:30:00.000Z</div>
+		</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Length Of Stay:</span>  0 d</div>
+	</div>
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::InterventionPerformed</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading">Documentation of current medications (procedure)</span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">SNOMEDCT:</span>  428191000124101 - Documentation of current medications (procedure)</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Author Date/Time:</span>  2023-11-11T08:30:00.000+00:00</div>
+	</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Negation Reason:</span>  183932001 (SNOMEDCT) - Procedure contraindicated (situation)</div>
+	</div>
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::PatientCharacteristicPayer</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading"></span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">Source of Payment Typology:</span>  9 - MISCELLANEOUS/OTHER</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Relevant Period Start:</span>  2022-12-21T00:00:00.000Z</div>
+	</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::PatientCharacteristicBirthdate</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading"></span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">LOINC:</span>  21112-8 - Birth date</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+	<div class="div-head-row">
+		<div class="div-table-head--no-border"><span class="criteria-heading">Birth Date/Time:</span>  1997-11-21T19:45:00.000+00:00</div>
+	</div>
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::PatientCharacteristicSex</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading"></span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">AdministrativeGender:</span>  M - Male</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::PatientCharacteristicRace</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading"></span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">CDCREC:</span>  1002-5 - American Indian or Alaska Native</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default patient-details">
+      <div class="panel-heading"><h3 class='panel-title'>QDM::PatientCharacteristicEthnicity</h3></div>
+      <!--table class="narr_table" border="1" width="100%"-->
+      <div class="div-table">
+        <div class="div-table-heading">
+          <div class="div-table-row narr_tr">
+            <div class="div-table-head narr_th-wide">Description</div>
+            <div class="div-table-head narr_th-narrow">Codes</div>
+            <div class="div-table-head narr_th-wide">Time</div>
+            <div class="div-table-head narr_th-wide">Fields/Results</div>
+          </div>
+        </div>
+        <div class="div-table-body">
+            <div class="div-table-row narr_tr">
+              <div class="div-table-cell"><span class="description-heading"></span></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Codes: </div><div class="div-table">
+<div class="div-table-body">
+<div class="div-head-row">
+	<div class="div-table-head--no-border"><span class="criteria-heading">CDCREC:</span>  2186-5 - Not Hispanic or Latino</div>
+</div>
+</div>
+</div></div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Time Elements: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+              <div class="div-table-cell"><div class="div-table-cell-label">Other Fields: </div><div class="div-table">
+<div class="div-table-body">
+</div>
+</div>
+</div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

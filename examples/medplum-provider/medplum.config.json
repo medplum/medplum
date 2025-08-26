@@ -1,0 +1,28 @@
+{
+  "bots": [
+    {
+      "name": "c1-patient-intake-bot",
+      "id": "cb3703a5-cd1a-493c-937f-32feeea0dce5",
+      "source": "src/bots/c1-patient-intake-bot.ts",
+      "dist": "dist/bots/c1-patient-intake-bot.js"
+    },
+    {
+      "name": "c1-certification-bot",
+      "id": "ba079483-b217-4896-9bcf-dbfdc8266231",
+      "source": "src/bots/c1-certification-bot.ts",
+      "dist": "dist/bots/c1-certification-bot.js"
+    },
+    {
+      "name": "b11-dsi-colonoscopy-bot",
+      "id": "659d9944-cbfb-4f75-9787-ebc1abd67ffe",
+      "source": "src/bots/b11-dsi-colonoscopy-bot.ts",
+      "dist": "dist/bots/b11-dsi-colonoscopy-bot.js"
+    },
+    {
+      "name": "b11-dsi-mammography-bot",
+      "id": "16046c81-e96f-4e2a-a9ab-4fcc10e6bbd9",
+      "source": "src/bots/b11-dsi-mammography-bot.ts",
+      "dist": "dist/bots/b11-dsi-mammography-bot.js"
+    }
+  ]
+}

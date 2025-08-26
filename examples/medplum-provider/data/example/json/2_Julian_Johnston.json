@@ -1,0 +1,361 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "status": "completed",
+  "questionnaire": "Questionnaire/01981e44-71b1-77bc-aca4-95eb8a8b0b7e",
+  "item": [
+    {
+      "linkId": "patient-demographics",
+      "item": [
+        {
+          "linkId": "first-name",
+          "answer": [
+            {
+              "valueString": "Julian"
+            }
+          ]
+        },
+        {
+          "linkId": "last-name",
+          "answer": [
+            {
+              "valueString": "Johnston"
+            }
+          ]
+        },
+        {
+          "linkId": "dob",
+          "answer": [
+            {
+              "valueDateTime": "1983-10-09T15:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "street",
+          "answer": [
+            {
+              "valueString": "19215 Verlie Lock Island"
+            }
+          ]
+        },
+        {
+          "linkId": "city",
+          "answer": [
+            {
+              "valueString": "West Mary"
+            }
+          ]
+        },
+        {
+          "linkId": "state",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "AZ"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "zip",
+          "answer": [
+            {
+              "valueString": "85066"
+            }
+          ]
+        },
+        {
+          "linkId": "country",
+          "answer": [
+            {
+              "valueString": "US"
+            }
+          ]
+        },
+        {
+          "linkId": "phone",
+          "answer": [
+            {
+              "valueString": "901-305-4786"
+            }
+          ]
+        },
+        {
+          "linkId": "email",
+          "answer": [
+            {
+              "valueString": "jjohnston757@example.com"
+            }
+          ]
+        },
+        {
+          "linkId": "identifier",
+          "answer": [
+            {
+              "valueString": "68766886e2f58689a0bfdc39"
+            }
+          ]
+        },
+        {
+          "linkId": "race",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "2106-3",
+                "display": "White"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "ethnicity",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "urn:oid:2.16.840.1.113883.6.238",
+                "code": "2186-5",
+                "display": "Not Hispanic or Latino"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "gender-identity",
+          "answer": [
+            {
+              "valueCoding": {
+                "code": "M"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "99202",
+                "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 15 minutes must be met or exceeded."
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-04-01T15:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-04-01T16:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-diagnosis",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "10811161000119107",
+                "display": "Major depressive disorder in mother complicating pregnancy (disorder)"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-diagnosis-rank",
+          "answer": [
+            {
+              "valueInteger": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter to Document Medications"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "99213",
+                "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-06-04T08:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-06-04T09:00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "encounters",
+      "item": [
+        {
+          "linkId": "encounter-description",
+          "answer": [
+            {
+              "valueString": "Encounter Inpatient"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://www.ama-assn.org/go/cpt",
+                "code": "32485007",
+                "display": "Hospital admission (procedure)"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-09-02T08:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-period-end",
+          "answer": [
+            {
+              "valueDateTime": "2023-09-07T09:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "encounter-discharge-disposition",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "428371000124100",
+                "display": "Discharge to healthcare facility for hospice care (procedure)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "procedures",
+      "item": [
+        {
+          "linkId": "procedure-code",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "428191000124101",
+                "display": "Documentation of current medications (procedure)"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "procedure-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2023-04-01T16:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "procedure-performed-datetime",
+          "answer": [
+            {
+              "valueDateTime": "2023-04-01T16:00:00"
+            }
+          ]
+        },
+        {
+          "linkId": "procedure-medical-reason",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "http://snomed.info/sct",
+                "code": "183932001",
+                "display": "Procedure contraindicated (situation)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linkId": "payers",
+      "item": [
+        {
+          "linkId": "payer-type",
+          "answer": [
+            {
+              "valueCoding": {
+                "system": "https://nahdo.org/sopt",
+                "code": "2",
+                "display": "Medicaid"
+              }
+            }
+          ]
+        },
+        {
+          "linkId": "payer-period-start",
+          "answer": [
+            {
+              "valueDateTime": "2022-12-12T00:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,39 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  addProfileToResource,
-  createReference,
-  getReferenceString,
-  HTTP_HL7_ORG,
-  HTTP_TERMINOLOGY_HL7_ORG,
-  LOINC,
-  MedplumClient,
-  SNOMED,
-} from '@medplum/core';
+import { createReference, getReferenceString, HTTP_HL7_ORG, MedplumClient, SNOMED } from '@medplum/core';
 import {
   Address,
-  CodeableConcept,
   Coding,
-  Consent,
+  Condition,
   HumanName,
-  Observation,
-  Organization,
   Patient,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
-  Reference,
 } from '@medplum/fhirtypes';
 
 export const PROFILE_URLS: Record<string, string> = {
   AllergyIntolerance: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-allergyintolerance`,
   CareTeam: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-careteam`,
   Coverage: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-coverage`,
+  Encounter: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-encounter`,
   Immunization: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-immunization`,
   MedicationRequest: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`,
   Patient: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`,
+  Procedure: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-procedure`,
   ObservationSexualOrientation: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-observation-sexual-orientation`,
   ObservationSmokingStatus: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-smokingstatus`,
 };
@@ -42,200 +31,11 @@ export const extensionURLMapping: Record<string, string> = {
   race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
   ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
   veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
+  patientBirthTime: HTTP_HL7_ORG + '/fhir/StructureDefinition/patient-birthTime',
+  // Custom
+  encounterDescription: 'https://medplum.com/fhir/StructureDefinition/encounter-description',
+  procedureRank: 'https://medplum.com/fhir/StructureDefinition/procedure-rank',
 };
-
-export const observationCodeMapping: Record<string, CodeableConcept> = {
-  housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
-  educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
-  smokingStatus: { coding: [{ code: '72166-2', system: LOINC, display: 'Tobacco smoking status' }] },
-  sexualOrientation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
-  pregnancyStatus: { coding: [{ code: '82810-3', system: LOINC, display: 'Pregnancy status' }] },
-  estimatedDeliveryDate: { coding: [{ code: '11778-8', system: LOINC, display: 'Estimated date of delivery' }] },
-};
-
-export const observationCategoryMapping: Record<string, CodeableConcept> = {
-  socialHistory: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
-        code: 'social-history',
-        display: 'Social History',
-      },
-    ],
-  },
-  sdoh: {
-    coding: [
-      {
-        system: HTTP_HL7_ORG + '/fhir/us/core/CodeSystem/us-core-tags',
-        code: 'sdoh',
-        display: 'SDOH',
-      },
-    ],
-  },
-};
-
-export const consentScopeMapping: Record<string, CodeableConcept> = {
-  adr: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
-        code: 'adr',
-        display: 'Advanced Care Directive',
-      },
-    ],
-  },
-  patientPrivacy: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
-        code: 'patient-privacy',
-        display: 'Patient Privacy',
-      },
-    ],
-  },
-  treatment: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
-        code: 'treatment',
-        display: 'Treatment',
-      },
-    ],
-  },
-};
-
-export const consentCategoryMapping: Record<string, CodeableConcept> = {
-  acd: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentcategorycodes',
-        code: 'acd',
-        display: 'Advanced Care Directive',
-      },
-    ],
-  },
-  nopp: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
-        code: 'nopp',
-        display: 'Notice of Privacy Practices',
-      },
-    ],
-  },
-  pay: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
-        code: 'pay',
-        display: 'Payment',
-      },
-    ],
-  },
-  med: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
-        code: 'med',
-        display: 'Medical',
-      },
-    ],
-  },
-};
-
-export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
-  hipaaNpp: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
-        code: 'hipaa-npp',
-        display: 'HIPAA Notice of Privacy Practices',
-      },
-    ],
-  },
-  hipaaSelfPay: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
-        code: 'hipaa-self-pay',
-        display: 'HIPAA Self-Pay Restriction',
-      },
-    ],
-  },
-  cric: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
-        code: 'cric',
-        display: 'Common Rule Informed Consent',
-      },
-    ],
-  },
-  adr: {
-    coding: [
-      {
-        system: 'http://medplum.com',
-        code: 'BasicADR',
-        display: 'Advanced Care Directive',
-      },
-    ],
-  },
-};
-
-type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';
-
-/**
- * This function takes data about an Observation and creates or updates an existing
- * resource with the same patient and code.
- *
- * @param medplum - A Medplum client
- * @param patient - A Patient resource that will be stored as the subject
- * @param code - A code for the observation
- * @param category - A category for the observation
- * @param answerType - The value[x] field where the answer should be stored
- * @param value - The value to be stored in the observation
- * @param profileUrl - An optional profile URL to be added to the resource
- */
-export async function upsertObservation(
-  medplum: MedplumClient,
-  patient: Patient,
-  code: CodeableConcept,
-  category: CodeableConcept,
-  answerType: ObservationQuestionnaireItemType,
-  value: QuestionnaireResponseItemAnswer | undefined,
-  profileUrl?: string
-): Promise<void> {
-  if (!value || !code) {
-    return;
-  }
-
-  let observation: Observation = {
-    resourceType: 'Observation',
-    status: 'final',
-    subject: createReference(patient),
-    code: code,
-    category: [category],
-    effectiveDateTime: new Date().toISOString(),
-  };
-
-  if (profileUrl) {
-    observation = addProfileToResource(observation, profileUrl);
-  }
-
-  if (answerType === 'valueCodeableConcept') {
-    observation.valueCodeableConcept = {
-      coding: [value],
-    };
-  } else if (answerType === 'valueDateTime') {
-    observation.valueDateTime = value.valueDateTime;
-  }
-
-  const coding = code.coding?.[0] as Coding;
-  await medplum.upsertResource(observation, {
-    code: `${coding.system}|${coding.code}`,
-    subject: getReferenceString(patient),
-  });
-}
 
 type ExtensionQuestionnaireItemType = 'valueCoding' | 'valueBoolean';
 
@@ -292,292 +92,6 @@ export function addExtension(
 }
 
 /**
- * Add a language to patient's communication attribute or set an existing one as preferred
- *
- * @param patient - The patient
- * @param valueCoding - A Coding with the language data
- * @param preferred - Whether this language should be set as preferred
- */
-export function addLanguage(patient: Patient, valueCoding: Coding | undefined, preferred: boolean = false): void {
-  if (!valueCoding) {
-    return;
-  }
-
-  const patientCommunications = patient.communication ?? [];
-
-  // Checks if the patient already has the language in their list of communications
-  let language = patientCommunications.find(
-    (communication) => communication.language.coding?.[0].code === valueCoding?.code
-  );
-
-  // Add the language in case it's not set yet
-  if (!language) {
-    language = {
-      language: {
-        coding: [valueCoding],
-      },
-    };
-    patientCommunications.push(language);
-  }
-
-  if (preferred) {
-    language.preferred = preferred;
-  }
-
-  patient.communication = patientCommunications;
-}
-
-/**
- * Adds an AllergyIntolerance resource
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the allergy
- * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
- */
-export async function addAllergy(
-  medplum: MedplumClient,
-  patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const code = answers['allergy-substance']?.valueCoding;
-
-  if (!code) {
-    return;
-  }
-
-  const reaction = answers['allergy-reaction']?.valueString;
-  const onsetDateTime = answers['allergy-onset']?.valueDateTime;
-
-  await medplum.upsertResource(
-    {
-      resourceType: 'AllergyIntolerance',
-      meta: {
-        profile: [PROFILE_URLS.AllergyIntolerance],
-      },
-      clinicalStatus: {
-        text: 'Active',
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-clinical',
-            code: 'active',
-            display: 'Active',
-          },
-        ],
-      },
-      verificationStatus: {
-        text: 'Unconfirmed',
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-verification',
-            code: 'unconfirmed',
-            display: 'Unconfirmed',
-          },
-        ],
-      },
-      patient: createReference(patient),
-      code: { coding: [code] },
-      reaction: reaction ? [{ manifestation: [{ text: reaction }] }] : undefined,
-      onsetDateTime: onsetDateTime,
-    },
-    {
-      patient: getReferenceString(patient),
-      code: `${code.system}|${code.code}`,
-    }
-  );
-}
-
-/**
- * Adds a MedicationRequest resource
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the medication
- * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
- *                 medication (see getGroupRepeatedAnswers)
- */
-export async function addMedication(
-  medplum: MedplumClient,
-  patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const code = answers['medication-code']?.valueCoding;
-
-  if (!code) {
-    return;
-  }
-
-  const note = answers['medication-note']?.valueString;
-
-  await medplum.upsertResource(
-    {
-      resourceType: 'MedicationRequest',
-      meta: {
-        profile: [PROFILE_URLS.MedicationRequest],
-      },
-      subject: createReference(patient),
-      status: 'active',
-      intent: 'order',
-      requester: createReference(patient),
-      medicationCodeableConcept: { coding: [code] },
-      note: note ? [{ text: note }] : undefined,
-    },
-    {
-      subject: getReferenceString(patient),
-      code: `${code.system}|${code.code}`,
-    }
-  );
-}
-
-/**
- * Adds a Condition resource
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the condition
- * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
- *                 condition (see getGroupRepeatedAnswers)
- */
-export async function addCondition(
-  medplum: MedplumClient,
-  patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const code = answers['medical-history-problem']?.valueCoding;
-
-  if (!code) {
-    return;
-  }
-
-  const clinicalStatus = answers['medical-history-clinical-status']?.valueCoding;
-  const onsetDateTime = answers['medical-history-onset']?.valueDateTime;
-
-  await medplum.upsertResource(
-    {
-      resourceType: 'Condition',
-      subject: createReference(patient),
-      code: { coding: [code] },
-      clinicalStatus: clinicalStatus ? { coding: [clinicalStatus] } : undefined,
-      onsetDateTime: onsetDateTime,
-    },
-    {
-      subject: getReferenceString(patient),
-      code: `${code?.system}|${code?.code}`,
-    }
-  );
-}
-
-/**
- * Adds a FamilyMemberHistory resource
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the family member history
- * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
- *                 family member history (see getGroupRepeatedAnswers)
- */
-export async function addFamilyMemberHistory(
-  medplum: MedplumClient,
-  patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const condition = answers['family-member-history-problem']?.valueCoding;
-  const relationship = answers['family-member-history-relationship']?.valueCoding;
-
-  if (!condition || !relationship) {
-    return;
-  }
-
-  const deceased = answers['family-member-history-deceased']?.valueBoolean;
-
-  await medplum.upsertResource(
-    {
-      resourceType: 'FamilyMemberHistory',
-      patient: createReference(patient),
-      status: 'completed',
-      relationship: { coding: [relationship] },
-      condition: [{ code: { coding: [condition] } }],
-      deceasedBoolean: deceased,
-    },
-    {
-      patient: getReferenceString(patient),
-      code: `${condition.system}|${condition.code}`,
-      relationship: `${relationship.system}|${relationship.code}`,
-    }
-  );
-}
-
-/**
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the immunization
- * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
- *                  immunization (see getGroupRepeatedAnswers)
- */
-export async function addImmunization(
-  medplum: MedplumClient,
-  patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): Promise<void> {
-  const code = answers['immunization-vaccine']?.valueCoding;
-  const occurrenceDateTime = answers['immunization-date']?.valueDateTime;
-
-  if (!code || !occurrenceDateTime) {
-    return;
-  }
-
-  await medplum.upsertResource(
-    {
-      resourceType: 'Immunization',
-      meta: {
-        profile: [PROFILE_URLS.Immunization],
-      },
-      status: 'completed',
-      vaccineCode: { coding: [code] },
-      patient: createReference(patient),
-      occurrenceDateTime: occurrenceDateTime,
-    },
-    {
-      status: 'completed',
-      'vaccine-code': `${code.system}|${code.code}`,
-      patient: getReferenceString(patient),
-      date: occurrenceDateTime,
-    }
-  );
-}
-
-/**
- * Adds a CareTeam resource associating the patient with a pharmacy
- *
- * @param medplum - The Medplum client
- * @param patient - The patient beneficiary of the care team
- * @param pharmacy - The pharmacy to be added to the care team
- */
-export async function addPharmacy(
-  medplum: MedplumClient,
-  patient: Patient,
-  pharmacy: Reference<Organization>
-): Promise<void> {
-  await medplum.upsertResource(
-    {
-      resourceType: 'CareTeam',
-      meta: {
-        profile: [PROFILE_URLS.CareTeam],
-      },
-      status: 'proposed',
-      name: 'Patient Preferred Pharmacy',
-      subject: createReference(patient),
-      participant: [
-        {
-          member: pharmacy,
-          role: [{ coding: [{ system: SNOMED, code: '76166008', display: 'Practical aid (pharmacy) (occupation)' }] }],
-        },
-      ],
-    },
-    {
-      name: 'Patient Preferred Pharmacy',
-      subject: getReferenceString(patient),
-    }
-  );
-}
-
-/**
  * Adds a Coverage resource
  *
  * @param medplum - The Medplum client
@@ -590,67 +104,155 @@ export async function addCoverage(
   patient: Patient,
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
-  const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
-  const subscriberId = answers['subscriber-id'].valueString;
-  const relationshipToSubscriber = answers['relationship-to-subscriber'].valueCoding as Coding;
+  const payerType = answers['payer-type']?.valueCoding;
+  const start = answers['payer-period-start']?.valueDateTime;
 
-  // Create RelatedPerson resource depending on the relationship to the subscriber
-  const relatedPersonAnswers = answers['related-person'] as Record<string, QuestionnaireResponseItemAnswer>;
-  if (
-    relationshipToSubscriber.code &&
-    !['other', 'self', 'injured'].includes(relationshipToSubscriber.code) &&
-    relatedPersonAnswers
-  ) {
-    const name = getHumanName(relatedPersonAnswers, 'related-person-');
-    const relatedPersonRelationship = getRelatedPersonRelationshipFromCoverage(relationshipToSubscriber);
-
-    await medplum.createResource({
-      resourceType: 'RelatedPerson',
-      patient: createReference(patient),
-      relationship: relatedPersonRelationship ? [{ coding: [relatedPersonRelationship] }] : undefined,
-      name: name ? [name] : undefined,
-      birthDate: relatedPersonAnswers['related-person-dob']?.valueDate,
-      gender:
-        (relatedPersonAnswers['related-person-gender-identity']?.valueCoding?.code as Patient['gender']) ?? undefined,
-    });
+  if (!payerType || !start) {
+    return;
   }
 
   await medplum.upsertResource(
     {
       resourceType: 'Coverage',
-      meta: {
-        profile: [PROFILE_URLS.Coverage],
-      },
+      meta: { profile: [PROFILE_URLS.Coverage] },
       status: 'active',
       beneficiary: createReference(patient),
-      subscriberId: subscriberId,
-      relationship: { coding: [relationshipToSubscriber] },
-      payor: [payor],
+      payor: [createReference(patient)],
+      type: { coding: [payerType] },
+      period: { start },
     },
     {
       beneficiary: getReferenceString(patient),
-      payor: getReferenceString(payor),
+      type: payerType.code,
     }
   );
 }
 
-export async function addConsent(
+/**
+ * Adds an Encounter resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the encounter
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ *                  encounter (see getGroupRepeatedAnswers)
+ */
+export async function addEncounter(
   medplum: MedplumClient,
   patient: Patient,
-  consentGiven: boolean,
-  scope: CodeableConcept,
-  category: CodeableConcept,
-  policyRule: CodeableConcept | undefined,
-  date: Consent['dateTime'] | undefined
+  answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
+  const description = answers['encounter-description']?.valueString;
+  const type = answers['encounter-code']?.valueCoding;
+  const start = answers['encounter-period-start']?.valueDateTime;
+  const end = answers['encounter-period-end']?.valueDateTime;
+
+  if (!description || !type || !start || !end) {
+    return;
+  }
+
+  const duration = new Date(end).getTime() - new Date(start).getTime();
+  const lengthInDays = Math.round(duration / (1000 * 60 * 60 * 24));
+  const classCode = answers['encounter-class']?.valueCoding ?? {
+    system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
+    code: 'UNK',
+    display: 'unknown',
+  };
+  const dischargeDisposition = answers['encounter-discharge-disposition']?.valueCoding;
+
+  const diagnosis = answers['encounter-diagnosis']?.valueCoding;
+  const diagnosisRank = answers['encounter-diagnosis-rank']?.valueInteger ?? 1;
+  let condition: Condition | undefined;
+  if (diagnosis) {
+    condition = await medplum.createResource({
+      resourceType: 'Condition',
+      code: { coding: [diagnosis] },
+      subject: createReference(patient),
+    });
+  }
+
   await medplum.createResource({
-    resourceType: 'Consent',
-    patient: createReference(patient),
-    status: consentGiven ? 'active' : 'rejected',
-    scope: scope,
-    category: [category],
-    policyRule: policyRule,
-    dateTime: date,
+    resourceType: 'Encounter',
+    meta: { profile: [PROFILE_URLS.Encounter] },
+    status: 'finished',
+    class: classCode,
+    subject: createReference(patient),
+    type: [{ coding: [type] }],
+    period: { start, end },
+    length: { value: lengthInDays, unit: 'd' },
+    extension: [
+      {
+        url: extensionURLMapping.encounterDescription,
+        valueString: description,
+      },
+    ],
+    ...(condition && {
+      diagnosis: [{ condition: createReference(condition), rank: diagnosisRank ?? 1 }],
+    }),
+    ...(dischargeDisposition && {
+      hospitalization: {
+        dischargeDisposition: { coding: [dischargeDisposition] },
+      },
+    }),
+  });
+}
+
+/**
+ * Adds a Procedure resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the procedure
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                  procedure (see getGroupRepeatedAnswers)
+ * @param isIntervention - Whether the procedure is an intervention
+ */
+export async function addProcedure(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  isIntervention: boolean = false
+): Promise<void> {
+  const category = isIntervention
+    ? {
+        system: SNOMED,
+        code: '409063005',
+        display: 'Counselling',
+      }
+    : {
+        system: SNOMED,
+        code: '103693007',
+        display: 'Diagnostic procedure',
+      };
+  const code = answers['procedure-code']?.valueCoding;
+  const performedDateTime = answers['procedure-performed-datetime']?.valueDateTime;
+  const periodStart = answers['procedure-period-start']?.valueDateTime;
+  const medicalReason = answers['procedure-medical-reason']?.valueCoding;
+  const rank = answers['procedure-rank']?.valueInteger;
+  if (!code) {
+    return;
+  }
+
+  await medplum.createResource({
+    resourceType: 'Procedure',
+    meta: { profile: [PROFILE_URLS.Procedure] },
+    status: 'completed',
+    subject: createReference(patient),
+    category: { coding: [category] },
+    code: { coding: [code] },
+    performedDateTime: performedDateTime,
+    ...(periodStart && {
+      performedPeriod: { start: periodStart, end: periodStart },
+    }),
+    ...(medicalReason && {
+      statusReason: { coding: [medicalReason] },
+    }),
+    ...(rank && {
+      extension: [
+        {
+          url: extensionURLMapping.procedureRank,
+          valueInteger: rank,
+        },
+      ],
+    }),
   });
 }
 
@@ -702,7 +304,7 @@ export function getGroupRepeatedAnswers(
   // Find the questionnaire item based on groupLinkId
   const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
 
-  if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
+  if (questionnaireItem?.type !== 'group' || !questionnaireItem?.item) {
     return [];
   }
 
@@ -764,10 +366,10 @@ export function getHumanName(
   const patientName: HumanName = {};
 
   const givenName = [];
-  if (answers[`${prefix}first-name`]?.valueString) {
+  if (answers?.[`${prefix}first-name`]?.valueString) {
     givenName.push(answers[`${prefix}first-name`].valueString as string);
   }
-  if (answers[`${prefix}middle-name`]?.valueString) {
+  if (answers?.[`${prefix}middle-name`]?.valueString) {
     givenName.push(answers[`${prefix}middle-name`].valueString as string);
   }
 
@@ -775,7 +377,7 @@ export function getHumanName(
     patientName.given = givenName;
   }
 
-  if (answers[`${prefix}last-name`]?.valueString) {
+  if (answers?.[`${prefix}last-name`]?.valueString) {
     patientName.family = answers[`${prefix}last-name`].valueString;
   }
 
@@ -801,27 +403,10 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
     patientAddress.postalCode = answers['zip'].valueString;
   }
 
+  if (answers['country']?.valueString) {
+    patientAddress.country = answers['country'].valueString;
+  }
+
   // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
-}
-
-function getRelatedPersonRelationshipFromCoverage(coverageRelationship: Coding): Coding | undefined {
-  // Basic relationship mapping between Coverage and RelatedPerson
-  // Coverage.relationship: http://hl7.org/fhir/ValueSet/subscriber-relationship
-  // RelatedPerson.relationship: http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype
-  switch (coverageRelationship.code) {
-    case 'child':
-      return {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-        code: 'PRN',
-        display: 'parent',
-      };
-    case 'parent':
-      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' };
-    case 'spouse':
-    case 'common':
-      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' };
-    default:
-      return undefined;
-  }
 }

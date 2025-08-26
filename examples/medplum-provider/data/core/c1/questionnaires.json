@@ -1,0 +1,392 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:02a65ca2-ee42-4a82-a121-13b0ac58fa0f",
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=c1-patient-intake"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "title": "C1 Certification Patient Intake Questionnaire",
+        "name": "c1-patient-intake",
+        "identifier": [
+          {
+            "system": "https://medplum.com/questionnaires",
+            "value": "c1-patient-intake"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "patient-demographics",
+            "text": "Demographics",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "first-name",
+                "text": "First Name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "linkId": "last-name",
+                "text": "Last Name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "linkId": "dob",
+                "text": "Date of Birth",
+                "type": "dateTime"
+              },
+              {
+                "linkId": "street",
+                "text": "Street",
+                "type": "string"
+              },
+              {
+                "linkId": "city",
+                "text": "City",
+                "type": "string"
+              },
+              {
+                "linkId": "state",
+                "text": "State",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
+              },
+              {
+                "linkId": "zip",
+                "text": "Zip",
+                "type": "string"
+              },
+              {
+                "linkId": "country",
+                "text": "Country",
+                "type": "string"
+              },
+              {
+                "linkId": "phone",
+                "text": "Phone",
+                "type": "string"
+              },
+              {
+                "linkId": "email",
+                "text": "Email",
+                "type": "string"
+              },
+              {
+                "linkId": "identifier",
+                "text": "Identifier",
+                "type": "string",
+                "required": true
+              },
+              {
+                "linkId": "race",
+                "text": "Race",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.836"
+              },
+              {
+                "linkId": "ethnicity",
+                "text": "Ethnicity",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.837"
+              },
+              {
+                "linkId": "gender-identity",
+                "text": "Gender Identity",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1",
+                "required": true
+              }
+            ]
+          },
+          {
+            "linkId": "encounters",
+            "text": "Encounter Performed",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "encounter-description",
+                "text": "Description",
+                "type": "string",
+                "required": true
+              },
+              {
+                "linkId": "encounter-code",
+                "text": "Code",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1834",
+                "required": true
+              },
+              {
+                "linkId": "encounter-period-start",
+                "text": "Relevant Period Start",
+                "type": "dateTime",
+                "required": true
+              },
+              {
+                "linkId": "encounter-period-end",
+                "text": "Relevant Period End",
+                "type": "dateTime",
+                "required": true
+              },
+              {
+                "linkId": "encounter-class",
+                "text": "Class",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-ActCode"
+              },
+              {
+                "linkId": "encounter-diagnosis",
+                "text": "Diagnosis",
+                "type": "choice",
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/questionnaire-item-control",
+                          "code": "drop-down",
+                          "display": "Drop down"
+                        }
+                      ],
+                      "text": "Drop down"
+                    }
+                  }
+                ],
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "system": "http://snomed.info/sct",
+                      "code": "10811161000119107",
+                      "display": "Major depressive disorder in mother complicating pregnancy (disorder)"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "system": "http://snomed.info/sct",
+                      "code": "75544000",
+                      "display": "Opioid dependence (disorder)"
+                    }
+                  }
+                ]
+              },
+              {
+                "linkId": "encounter-diagnosis-rank",
+                "text": "Diagnosis Rank",
+                "type": "integer"
+              },
+              {
+                "linkId": "encounter-discharge-disposition",
+                "text": "Discharge Disposition",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1116.365"
+              }
+            ]
+          },
+          {
+            "linkId": "interventions",
+            "text": "Intervention Performed",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "procedure-code",
+                "text": "Code",
+                "type": "choice",
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/questionnaire-item-control",
+                          "code": "drop-down",
+                          "display": "Drop down"
+                        }
+                      ],
+                      "text": "Drop down"
+                    }
+                  }
+                ],
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "system": "http://snomed.info/sct",
+                      "code": "428191000124101",
+                      "display": "Documentation of current medications (procedure)"
+                    },
+                    "initialSelected": true
+                  }
+                ]
+              },
+              {
+                "linkId": "procedure-period-start",
+                "text": "Relevant Date/Time",
+                "type": "dateTime"
+              },
+              {
+                "linkId": "procedure-performed-datetime",
+                "text": "Author Date/Time",
+                "type": "dateTime"
+              },
+              {
+                "linkId": "procedure-medical-reason",
+                "text": "Medical Reason",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1007"
+              }
+            ]
+          },
+          {
+            "linkId": "procedures",
+            "text": "Procedure Performed",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "procedure-code",
+                "text": "Code",
+                "type": "choice",
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/questionnaire-item-control",
+                          "code": "drop-down",
+                          "display": "Drop down"
+                        }
+                      ],
+                      "text": "Drop down"
+                    }
+                  }
+                ],
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "system": "http://snomed.info/sct",
+                      "code": "428191000124101",
+                      "display": "Documentation of current medications (procedure)"
+                    },
+                    "initialSelected": true
+                  }
+                ]
+              },
+              {
+                "linkId": "procedure-period-start",
+                "text": "Relevant Date/Time",
+                "type": "dateTime"
+              },
+              {
+                "linkId": "procedure-performed-datetime",
+                "text": "Author Date/Time",
+                "type": "dateTime"
+              },
+              {
+                "linkId": "procedure-medical-reason",
+                "text": "Medical Reason",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1007"
+              },
+              {
+                "linkId": "procedure-rank",
+                "text": "Rank",
+                "type": "integer"
+              }
+            ]
+          },
+          {
+            "linkId": "payers",
+            "text": "Payer",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "payer-type",
+                "text": "Source of Payment Typology",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.3591"
+              },
+              {
+                "linkId": "payer-period-start",
+                "text": "Relevant Period Start",
+                "type": "dateTime"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3fc0b0bd-cdd0-40b7-8e5b-36c80a8daa2f",
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=c1-certification"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "name": "c1-certification",
+        "title": "C1 Certification",
+        "description": "Used to generate QRDA Cat I XML files for ONC C1 certification (315.c.1) - Record and Export capability.",
+        "subjectType": [
+          "Patient"
+        ],
+        "identifier": [
+          {
+            "system": "https://medplum.com/questionnaires",
+            "value": "c1-certification"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "measure",
+            "text": "Measure",
+            "type": "choice",
+            "required": true,
+            "answerOption": [
+              {
+                "valueCoding": {
+                  "code": "cms68v14",
+                  "display": "CMS68v14 - Documentation of Current Medications in the Medical Record"
+                },
+                "initialSelected": true
+              }
+            ]
+          },
+          {
+            "linkId": "measure-period-start",
+            "text": "Measure Period Start",
+            "type": "dateTime",
+            "required": true,
+            "initial": [
+              {
+                "valueDateTime": "2023-01-01T00:00:00"
+              }
+            ]
+          },
+          {
+            "linkId": "measure-period-end",
+            "text": "Measure Period End",
+            "type": "dateTime",
+            "required": true,
+            "initial": [
+              {
+                "valueDateTime": "2023-12-31T23:59:59"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

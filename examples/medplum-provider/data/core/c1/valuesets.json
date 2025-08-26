@@ -1,0 +1,2010 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:f9cac05b-6ae0-46e4-b503-2d8730874c0a",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.836"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-05-05"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2012-10-25"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.836",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.114222.4.11.836"
+          }
+        ],
+        "version": "20121025",
+        "name": "Race",
+        "title": "Race",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2012-10-25T12:28:31-04:00",
+        "publisher": "CDC NCHS",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: ),(Data Element Scope: ),(Inclusion Criteria: ),(Exclusion Criteria: )",
+        "compose": {
+          "include": [
+            {
+              "system": "urn:oid:2.16.840.1.113883.6.238",
+              "concept": [
+                {
+                  "code": "1002-5",
+                  "display": "American Indian or Alaska Native"
+                },
+                {
+                  "code": "2028-9",
+                  "display": "Asian"
+                },
+                {
+                  "code": "2054-5",
+                  "display": "Black or African American"
+                },
+                {
+                  "code": "2076-8",
+                  "display": "Native Hawaiian or Other Pacific Islander"
+                },
+                {
+                  "code": "2106-3",
+                  "display": "White"
+                },
+                {
+                  "code": "2131-1",
+                  "display": "Other Race"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:01981eac-71cf-74a8-8ed3-7af8c8fdfe7e",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.837"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-keyWord",
+            "valueString": "C-CDA,CCDAr1_1,CCDAr21"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-05-05"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2012-10-25"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.837",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.114222.4.11.837"
+          }
+        ],
+        "version": "20121025",
+        "name": "Ethnicity",
+        "title": "Ethnicity",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2012-10-25T12:28:31-04:00",
+        "publisher": "CDC NCHS",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: ),(Data Element Scope: ),(Inclusion Criteria: ),(Exclusion Criteria: )",
+        "compose": {
+          "include": [
+            {
+              "system": "urn:oid:2.16.840.1.113883.6.238",
+              "concept": [
+                {
+                  "code": "2135-2",
+                  "display": "Hispanic or Latino"
+                },
+                {
+                  "code": "2186-5",
+                  "display": "Not Hispanic or Latino"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5afbf027-5dfb-4e0a-9b80-b327b68a7442",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "HL7 US Realm Program Management Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2024-06-06"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2015-03-31"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113762.1.4.1"
+          }
+        ],
+        "version": "20150331",
+        "name": "ONCAdministrativeSex",
+        "title": "ONC Administrative Sex",
+        "status": "active",
+        "experimental": false,
+        "date": "2015-03-31T01:00:01-04:00",
+        "publisher": "HL7 US Realm Program Management Steward",
+        "description": "changed from HL7 v2.5 code system to HL7 V3 code system to align with HL7 V3 artifact requirements. Non-gender identity concepts, such as Unknown are also removed because V3 artifacts are to use the Null Attribute for those concepts.",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: Gender identity restricted to only Male and Female used in administrative situations requiring a restriction to these two categories.),(Data Element Scope: Gender),(Inclusion Criteria: Male and Female only.),(Exclusion Criteria: Any gender identity that is not male or female.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender",
+              "concept": [
+                {
+                  "code": "F",
+                  "display": "Female"
+                },
+                {
+                  "code": "M",
+                  "display": "Male"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:fa1a607c-2205-4a13-a3e1-149504dd7ddc",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1007"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-04"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2017-05-04"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1007",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.526.3.1007"
+          }
+        ],
+        "version": "20170504",
+        "name": "MedicalReason",
+        "title": "Medical Reason",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2022-03-07T11:14:02-05:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for medical reasons for not receiving a therapy or service.),(Data Element Scope: This value set may use a model element related to Negation Rationale.),(Inclusion Criteria: Includes concepts that describe a medical reason for not receiving a therapy or service.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.2.313"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5c1f7f69-0005-4166-ab2c-6797dbca12e7",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.2.313"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-04"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2022-02-26"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.2.313",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.526.2.313"
+          }
+        ],
+        "version": "20220226",
+        "name": "MedicalReason",
+        "title": "Medical Reason",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2022-02-26T01:02:25-05:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for medical reasons for not receiving a therapy or service.),(Data Element Scope: This value set may use a model element related to Negation Rationale.),(Inclusion Criteria: Includes concepts that describe a medical reason for not receiving a therapy or service.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "183932001",
+                  "display": "Procedure contraindicated (situation)"
+                },
+                {
+                  "code": "183964008",
+                  "display": "Treatment not indicated (situation)"
+                },
+                {
+                  "code": "183966005",
+                  "display": "Drug treatment not indicated (situation)"
+                },
+                {
+                  "code": "266721009",
+                  "display": "Absent response to treatment (situation)"
+                },
+                {
+                  "code": "269191009",
+                  "display": "Late effect of medical and surgical care complication (disorder)"
+                },
+                {
+                  "code": "31438003",
+                  "display": "Drug resistance (disorder)"
+                },
+                {
+                  "code": "35688006",
+                  "display": "Complication of medical care (disorder)"
+                },
+                {
+                  "code": "407563006",
+                  "display": "Treatment not tolerated (situation)"
+                },
+                {
+                  "code": "410534003",
+                  "display": "Not indicated (qualifier value)"
+                },
+                {
+                  "code": "410536001",
+                  "display": "Contraindicated (qualifier value)"
+                },
+                {
+                  "code": "416098002",
+                  "display": "Allergy to drug (finding)"
+                },
+                {
+                  "code": "428119001",
+                  "display": "Procedure not indicated (situation)"
+                },
+                {
+                  "code": "59037007",
+                  "display": "Intolerance to drug (finding)"
+                },
+                {
+                  "code": "62014003",
+                  "display": "Adverse reaction caused by drug (disorder)"
+                },
+                {
+                  "code": "79899007",
+                  "display": "Drug interaction (finding)"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c699276a-8c8e-452d-b638-58f69adf413b",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1834"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-01-31"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2021-02-20"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1834",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.600.1.1834"
+          }
+        ],
+        "version": "20210220",
+        "name": "EncounterToDocumentMedications",
+        "title": "Encounter to Document Medications",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2024-09-18T08:20:34-04:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for encounters that include documentation of current medications.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that identify an encounter that includes documentation of medications reviewed, updated or transcribed as the current medication list.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1115"
+              ]
+            },
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1917"
+              ]
+            },
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1608"
+              ]
+            },
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1609"
+              ]
+            },
+            {
+              "valueSet": [
+                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1125"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b4de8466-9e17-4d27-90f4-ce36fe45a6c5",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1115"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "NCQA PHEMUR Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-04"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2017-05-04"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1115",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.464.1003.101.11.1115"
+          }
+        ],
+        "version": "20170504",
+        "name": "PreventiveCareServicesInitialOfficeVisit18AndUp",
+        "title": "Preventive Care Services Initial Office Visit, 18 and Up",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2017-05-04T01:00:13-04:00",
+        "publisher": "NCQA PHEMUR",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for encounters for  preventive care.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an  encounter for comprehensive preventive medicine reevaluation and management of a new patient 18 years or over.),(Exclusion Criteria: Excludes visits for established patients.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "concept": [
+                {
+                  "code": "99385",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 18-39 years"
+                },
+                {
+                  "code": "99386",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 40-64 years"
+                },
+                {
+                  "code": "99387",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 65 years and older"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:89f1ba59-20cc-4e2d-a092-e172d794a7e7",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1917"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-01-31"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2021-02-20"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1917",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.600.1.1917"
+          }
+        ],
+        "version": "20210220",
+        "name": "EncounterToDocumentMedications",
+        "title": "Encounter to Document Medications",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2021-02-20T01:00:45-05:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for encounters where a medication list would be transcribed or updated as a current medication list.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an encounter with multiple specialty physicians, primary care physicians, as well as therapist and nutritionists.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "10197000",
+                  "display": "Psychiatric interview and evaluation (procedure)"
+                },
+                {
+                  "code": "108220007",
+                  "display": "Evaluation AND/OR management - new patient (procedure)"
+                },
+                {
+                  "code": "108221006",
+                  "display": "Evaluation AND/OR management - established patient (procedure)"
+                },
+                {
+                  "code": "108224003",
+                  "display": "Preventive patient evaluation (procedure)"
+                },
+                {
+                  "code": "108311000",
+                  "display": "Psychiatric procedure, interview AND/OR consultation (procedure)"
+                },
+                {
+                  "code": "13607009",
+                  "display": "Manual examination of breast (procedure)"
+                },
+                {
+                  "code": "14736009",
+                  "display": "History and physical examination with evaluation and management of patient (procedure)"
+                },
+                {
+                  "code": "163497009",
+                  "display": "Obstetric examination (procedure)"
+                },
+                {
+                  "code": "165171009",
+                  "display": "Initial psychiatric evaluation (procedure)"
+                },
+                {
+                  "code": "169762003",
+                  "display": "Postnatal visit (regime/therapy)"
+                },
+                {
+                  "code": "18091003",
+                  "display": "Electronystagmography with vertical electrodes (procedure)"
+                },
+                {
+                  "code": "18114009",
+                  "display": "Prenatal examination and care of mother (procedure)"
+                },
+                {
+                  "code": "183382003",
+                  "display": "Psychotherapy - behavioral (regime/therapy)"
+                },
+                {
+                  "code": "183383008",
+                  "display": "Psychotherapy - cognitive (regime/therapy)"
+                },
+                {
+                  "code": "18512000",
+                  "display": "Individual psychotherapy (regime/therapy)"
+                },
+                {
+                  "code": "185349003",
+                  "display": "Encounter for check up (procedure)"
+                },
+                {
+                  "code": "185463005",
+                  "display": "Visit out of hours (procedure)"
+                },
+                {
+                  "code": "185465003",
+                  "display": "Weekend visit (procedure)"
+                },
+                {
+                  "code": "209099002",
+                  "display": "History and physical examination with management of domiciliary or rest home patient (procedure)"
+                },
+                {
+                  "code": "210098006",
+                  "display": "Domiciliary or rest home patient evaluation and management (procedure)"
+                },
+                {
+                  "code": "225967005",
+                  "display": "Self-care patient education (procedure)"
+                },
+                {
+                  "code": "252592009",
+                  "display": "Speech audiometry (procedure)"
+                },
+                {
+                  "code": "252624005",
+                  "display": "Evoked oto-acoustic emission measurement (procedure)"
+                },
+                {
+                  "code": "270427003",
+                  "display": "Patient-initiated encounter (procedure)"
+                },
+                {
+                  "code": "270430005",
+                  "display": "Provider-initiated encounter (procedure)"
+                },
+                {
+                  "code": "274803000",
+                  "display": "Examination of tympanic membrane (procedure)"
+                },
+                {
+                  "code": "277404009",
+                  "display": "High frequency tympanometry (procedure)"
+                },
+                {
+                  "code": "284015009",
+                  "display": "Auditory evoked potentials monitoring (regime/therapy)"
+                },
+                {
+                  "code": "308335008",
+                  "display": "Patient encounter procedure (procedure)"
+                },
+                {
+                  "code": "34651001",
+                  "display": "Optokinetic nystagmus test, bidirectional, with recording (procedure)"
+                },
+                {
+                  "code": "35025007",
+                  "display": "Manual pelvic examination (procedure)"
+                },
+                {
+                  "code": "36228007",
+                  "display": "Ophthalmic examination and evaluation (procedure)"
+                },
+                {
+                  "code": "370803007",
+                  "display": "Evaluation of psychosocial impact on plan of care (procedure)"
+                },
+                {
+                  "code": "386372009",
+                  "display": "Nutrition management (regime/therapy)"
+                },
+                {
+                  "code": "390906007",
+                  "display": "Follow-up encounter (procedure)"
+                },
+                {
+                  "code": "406547006",
+                  "display": "Urgent follow-up (procedure)"
+                },
+                {
+                  "code": "408983003",
+                  "display": "Renal care management (procedure)"
+                },
+                {
+                  "code": "410155007",
+                  "display": "Occupational therapy assessment (procedure)"
+                },
+                {
+                  "code": "410157004",
+                  "display": "Occupational therapy management (procedure)"
+                },
+                {
+                  "code": "410158009",
+                  "display": "Physical therapy assessment (procedure)"
+                },
+                {
+                  "code": "410160006",
+                  "display": "Physical therapy management (procedure)"
+                },
+                {
+                  "code": "410170008",
+                  "display": "Nutrition care assessment (procedure)"
+                },
+                {
+                  "code": "439708006",
+                  "display": "Home visit (procedure)"
+                },
+                {
+                  "code": "439952009",
+                  "display": "Evaluation of auditory rehabilitation (procedure)"
+                },
+                {
+                  "code": "440524004",
+                  "display": "Oscillating tracking test with recording (procedure)"
+                },
+                {
+                  "code": "46662001",
+                  "display": "Examination of breast (procedure)"
+                },
+                {
+                  "code": "48423005",
+                  "display": "Acoustic reflex testing (procedure)"
+                },
+                {
+                  "code": "50357006",
+                  "display": "Evaluation and management of patient at home (procedure)"
+                },
+                {
+                  "code": "53555003",
+                  "display": "Basic comprehensive audiometry testing (procedure)"
+                },
+                {
+                  "code": "54290001",
+                  "display": "Positional nystagmus test with recording (procedure)"
+                },
+                {
+                  "code": "63547008",
+                  "display": "Caloric vestibular test with recording (procedure)"
+                },
+                {
+                  "code": "66902005",
+                  "display": "Ophthalmic examination and evaluation, follow-up (procedure)"
+                },
+                {
+                  "code": "698610002",
+                  "display": "Education about self management of diabetes (procedure)"
+                },
+                {
+                  "code": "78318003",
+                  "display": "History and physical examination, annual for health maintenance (procedure)"
+                },
+                {
+                  "code": "83607001",
+                  "display": "Gynecologic examination (procedure)"
+                },
+                {
+                  "code": "8411005",
+                  "display": "Interactive individual medical psychotherapy (regime/therapy)"
+                },
+                {
+                  "code": "86013001",
+                  "display": "Periodic reevaluation and management of healthy individual (procedure)"
+                },
+                {
+                  "code": "870422002",
+                  "display": "Assessment of self management of diabetes mellitus (procedure)"
+                },
+                {
+                  "code": "90526000",
+                  "display": "Initial evaluation and management of healthy individual (procedure)"
+                },
+                {
+                  "code": "91573000",
+                  "display": "Tympanometry testing (procedure)"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c9ba13f3-cbb9-4fae-ba90-b16e4b1e09d2",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1608"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-01-31"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2025-01-23"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1608",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.600.1.1608"
+          }
+        ],
+        "version": "20250123",
+        "name": "EncounterToDocumentMedications",
+        "title": "Encounter to Document Medications",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2025-01-23T01:08:32-05:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for annual visit with an initial preventive visit, including medical nutrition therapy reassessment and cervical/vaginal screening.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an encounter for diabetes self-management training services.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "concept": [
+                {
+                  "code": "G0101",
+                  "display": "Cervical or vaginal cancer screening; pelvic and clinical breast examination"
+                },
+                {
+                  "code": "G0108",
+                  "display": "Diabetes outpatient self-management training services, individual, per 30 minutes"
+                },
+                {
+                  "code": "G0270",
+                  "display": "Medical nutrition therapy; reassessment and subsequent intervention(s) following second referral in same year for change in diagnosis, medical condition or treatment regimen (including additional hours needed for renal disease), individual, face to face with the patient, each 15 minutes"
+                },
+                {
+                  "code": "G0402",
+                  "display": "Initial preventive physical examination; face-to-face visit, services limited to new beneficiary during the first 12 months of medicare enrollment"
+                },
+                {
+                  "code": "G0438",
+                  "display": "Annual wellness visit; includes a personalized prevention plan of service (pps), initial visit"
+                },
+                {
+                  "code": "G0439",
+                  "display": "Annual wellness visit, includes a personalized prevention plan of service (pps), subsequent visit"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4a0891f2-13d3-4778-a7b8-9a90445ae96a",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1609"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "American Institutes for Research Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-05"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2025-02-05"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1609",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.600.1.1609"
+          }
+        ],
+        "version": "20250205",
+        "name": "EncounterToDocumentMedications",
+        "title": "Encounter to Document Medications",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2025-02-05T01:09:18-05:00",
+        "publisher": "American Institutes for Research Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for encounters where a medication list would be transcribed or updated as a current medication list.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an encounter with multiple specialty physicians, primary care physicians, as well as therapist and nutritionists.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "concept": [
+                {
+                  "code": "59400",
+                  "display": "Routine obstetric care including antepartum care, vaginal delivery (with or without episiotomy, and/or forceps) and postpartum care"
+                },
+                {
+                  "code": "59510",
+                  "display": "Routine obstetric care including antepartum care, cesarean delivery, and postpartum care"
+                },
+                {
+                  "code": "59610",
+                  "display": "Routine obstetric care including antepartum care, vaginal delivery (with or without episiotomy, and/or forceps) and postpartum care, after previous cesarean delivery"
+                },
+                {
+                  "code": "59618",
+                  "display": "Routine obstetric care including antepartum care, cesarean delivery, and postpartum care, following attempted vaginal delivery after previous cesarean delivery"
+                },
+                {
+                  "code": "90791",
+                  "display": "Psychiatric diagnostic evaluation"
+                },
+                {
+                  "code": "90792",
+                  "display": "Psychiatric diagnostic evaluation with medical services"
+                },
+                {
+                  "code": "90832",
+                  "display": "Psychotherapy, 30 minutes with patient"
+                },
+                {
+                  "code": "90834",
+                  "display": "Psychotherapy, 45 minutes with patient"
+                },
+                {
+                  "code": "90837",
+                  "display": "Psychotherapy, 60 minutes with patient"
+                },
+                {
+                  "code": "90839",
+                  "display": "Psychotherapy for crisis; first 60 minutes"
+                },
+                {
+                  "code": "92002",
+                  "display": "Ophthalmological services: medical examination and evaluation with initiation of diagnostic and treatment program; intermediate, new patient"
+                },
+                {
+                  "code": "92004",
+                  "display": "Ophthalmological services: medical examination and evaluation with initiation of diagnostic and treatment program; comprehensive, new patient, 1 or more visits"
+                },
+                {
+                  "code": "92012",
+                  "display": "Ophthalmological services: medical examination and evaluation, with initiation or continuation of diagnostic and treatment program; intermediate, established patient"
+                },
+                {
+                  "code": "92014",
+                  "display": "Ophthalmological services: medical examination and evaluation, with initiation or continuation of diagnostic and treatment program; comprehensive, established patient, 1 or more visits"
+                },
+                {
+                  "code": "92507",
+                  "display": "Treatment of speech, language, voice, communication, and/or auditory processing disorder; individual"
+                },
+                {
+                  "code": "92508",
+                  "display": "Treatment of speech, language, voice, communication, and/or auditory processing disorder; group, 2 or more individuals"
+                },
+                {
+                  "code": "92526",
+                  "display": "Treatment of swallowing dysfunction and/or oral function for feeding"
+                },
+                {
+                  "code": "92537",
+                  "display": "Caloric vestibular test with recording, bilateral; bithermal (ie, one warm and one cool irrigation in each ear for a total of four irrigations)"
+                },
+                {
+                  "code": "92538",
+                  "display": "Caloric vestibular test with recording, bilateral; monothermal (ie, one irrigation in each ear for a total of two irrigations)"
+                },
+                {
+                  "code": "92540",
+                  "display": "Basic vestibular evaluation, includes spontaneous nystagmus test with eccentric gaze fixation nystagmus, with recording, positional nystagmus test, minimum of 4 positions, with recording, optokinetic nystagmus test, bidirectional foveal and peripheral stimulation, with recording, and oscillating tracking test, with recording"
+                },
+                {
+                  "code": "92541",
+                  "display": "Spontaneous nystagmus test, including gaze and fixation nystagmus, with recording"
+                },
+                {
+                  "code": "92542",
+                  "display": "Positional nystagmus test, minimum of 4 positions, with recording"
+                },
+                {
+                  "code": "92544",
+                  "display": "Optokinetic nystagmus test, bidirectional, foveal or peripheral stimulation, with recording"
+                },
+                {
+                  "code": "92545",
+                  "display": "Oscillating tracking test, with recording"
+                },
+                {
+                  "code": "92547",
+                  "display": "Use of vertical electrodes (List separately in addition to code for primary procedure)"
+                },
+                {
+                  "code": "92548",
+                  "display": "Computerized dynamic posturography sensory organization test (CDP-SOT), 6 conditions (ie, eyes open, eyes closed, visual sway, platform sway, eyes closed platform sway, platform and visual sway), including interpretation and report"
+                },
+                {
+                  "code": "92549",
+                  "display": "Computerized dynamic posturography sensory organization test (CDP-SOT), 6 conditions (ie, eyes open, eyes closed, visual sway, platform sway, eyes closed platform sway, platform and visual sway), including interpretation and report; with motor control test (MCT) and adaptation test (ADT)"
+                },
+                {
+                  "code": "92550",
+                  "display": "Tympanometry and reflex threshold measurements"
+                },
+                {
+                  "code": "92557",
+                  "display": "Comprehensive audiometry threshold evaluation and speech recognition (92553 and 92556 combined)"
+                },
+                {
+                  "code": "92567",
+                  "display": "Tympanometry (impedance testing)"
+                },
+                {
+                  "code": "92568",
+                  "display": "Acoustic reflex testing, threshold"
+                },
+                {
+                  "code": "92570",
+                  "display": "Acoustic immittance testing, includes tympanometry (impedance testing), acoustic reflex threshold testing, and acoustic reflex decay testing"
+                },
+                {
+                  "code": "92588",
+                  "display": "Distortion product evoked otoacoustic emissions; comprehensive diagnostic evaluation (quantitative analysis of outer hair cell function by cochlear mapping, minimum of 12 frequencies), with interpretation and report"
+                },
+                {
+                  "code": "92626",
+                  "display": "Evaluation of auditory function for surgically implanted device(s) candidacy or postoperative status of a surgically implanted device(s); first hour"
+                },
+                {
+                  "code": "92650",
+                  "display": "Auditory evoked potentials; screening of auditory potential with broadband stimuli, automated analysis"
+                },
+                {
+                  "code": "92651",
+                  "display": "Auditory evoked potentials; for hearing status determination, broadband stimuli, with interpretation and report"
+                },
+                {
+                  "code": "92652",
+                  "display": "Auditory evoked potentials; for threshold estimation at multiple frequencies, with interpretation and report"
+                },
+                {
+                  "code": "92653",
+                  "display": "Auditory evoked potentials; neurodiagnostic, with interpretation and report"
+                },
+                {
+                  "code": "96116",
+                  "display": "Neurobehavioral status exam (clinical assessment of thinking, reasoning and judgment, [eg, acquired knowledge, attention, language, memory, planning and problem solving, and visual spatial abilities]), by physician or other qualified health care professional, both face-to-face time with the patient and time interpreting test results and preparing the report; first hour"
+                },
+                {
+                  "code": "96156",
+                  "display": "Health behavior assessment, or re-assessment (ie, health-focused clinical interview, behavioral observations, clinical decision making)"
+                },
+                {
+                  "code": "96158",
+                  "display": "Health behavior intervention, individual, face-to-face; initial 30 minutes"
+                },
+                {
+                  "code": "97129",
+                  "display": "Therapeutic interventions that focus on cognitive function (eg, attention, memory, reasoning, executive function, problem solving, and/or pragmatic functioning) and compensatory strategies to manage the performance of an activity (eg, managing time or schedules, initiating, organizing, and sequencing tasks), direct (one-on-one) patient contact; initial 15 minutes"
+                },
+                {
+                  "code": "97161",
+                  "display": "Physical therapy evaluation: low complexity, requiring these components: A history with no personal factors and/or comorbidities that impact the plan of care; An examination of body system(s) using standardized tests and measures addressing 1-2 elements from any of the following: body structures and functions, activity limitations, and/or participation restrictions; A clinical presentation with stable and/or uncomplicated characteristics; and Clinical decision making of low complexity using standardized patient assessment instrument and/or measurable assessment of functional outcome. Typically, 20 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97162",
+                  "display": "Physical therapy evaluation: moderate complexity, requiring these components: A history of present problem with 1-2 personal factors and/or comorbidities that impact the plan of care; An examination of body systems using standardized tests and measures in addressing a total of 3 or more elements from any of the following: body structures and functions, activity limitations, and/or participation restrictions; An evolving clinical presentation with changing characteristics; and Clinical decision making of moderate complexity using standardized patient assessment instrument and/or measurable assessment of functional outcome. Typically, 30 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97163",
+                  "display": "Physical therapy evaluation: high complexity, requiring these components: A history of present problem with 3 or more personal factors and/or comorbidities that impact the plan of care; An examination of body systems using standardized tests and measures addressing a total of 4 or more elements from any of the following: body structures and functions, activity limitations, and/or participation restrictions; A clinical presentation with unstable and unpredictable characteristics; and Clinical decision making of high complexity using standardized patient assessment instrument and/or measurable assessment of functional outcome. Typically, 45 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97164",
+                  "display": "Re-evaluation of physical therapy established plan of care, requiring these components: An examination including a review of history and use of standardized tests and measures is required; and Revised plan of care using a standardized patient assessment instrument and/or measurable assessment of functional outcome Typically, 20 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97165",
+                  "display": "Occupational therapy evaluation, low complexity, requiring these components: An occupational profile and medical and therapy history, which includes a brief history including review of medical and/or therapy records relating to the presenting problem; An assessment(s) that identifies 1-3 performance deficits (ie, relating to physical, cognitive, or psychosocial skills) that result in activity limitations and/or participation restrictions; and Clinical decision making of low complexity, which includes an analysis of the occupational profile, analysis of data from problem-focused assessment(s), and consideration of a limited number of treatment options. Patient presents with no comorbidities that affect occupational performance. Modification of tasks or assistance (eg, physical or verbal) with assessment(s) is not necessary to enable completion of evaluation component. Typically, 30 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97166",
+                  "display": "Occupational therapy evaluation, moderate complexity, requiring these components: An occupational profile and medical and therapy history, which includes an expanded review of medical and/or therapy records and additional review of physical, cognitive, or psychosocial history related to current functional performance; An assessment(s) that identifies 3-5 performance deficits (ie, relating to physical, cognitive, or psychosocial skills) that result in activity limitations and/or participation restrictions; and Clinical decision making of moderate analytic complexity, which includes an analysis of the occupational profile, analysis of data from detailed assessment(s), and consideration of several treatment options. Patient may present with comorbidities that affect occupational performance. Minimal to moderate modification of tasks or assistance (eg, physical or verbal) with assessment(s) is necessary to enable patient to complete evaluation component. Typically, 45 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97167",
+                  "display": "Occupational therapy evaluation, high complexity, requiring these components: An occupational profile and medical and therapy history, which includes review of medical and/or therapy records and extensive additional review of physical, cognitive, or psychosocial history related to current functional performance; An assessment(s) that identifies 5 or more performance deficits (ie, relating to physical, cognitive, or psychosocial skills) that result in activity limitations and/or participation restrictions; and Clinical decision making of high analytic complexity, which includes an analysis of the patient profile, analysis of data from comprehensive assessment(s), and consideration of multiple treatment options. Patient presents with comorbidities that affect occupational performance. Significant modification of tasks or assistance (eg, physical or verbal) with assessment(s) is necessary to enable patient to complete evaluation component. Typically, 60 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97168",
+                  "display": "Re-evaluation of occupational therapy established plan of care, requiring these components: An assessment of changes in patient functional or medical status with revised plan of care; An update to the initial occupational profile to reflect changes in condition or environment that affect future interventions and/or goals; and A revised plan of care. A formal reevaluation is performed when there is a documented change in functional status or a significant change to the plan of care is required. Typically, 30 minutes are spent face-to-face with the patient and/or family."
+                },
+                {
+                  "code": "97802",
+                  "display": "Medical nutrition therapy; initial assessment and intervention, individual, face-to-face with the patient, each 15 minutes"
+                },
+                {
+                  "code": "97803",
+                  "display": "Medical nutrition therapy; re-assessment and intervention, individual, face-to-face with the patient, each 15 minutes"
+                },
+                {
+                  "code": "97804",
+                  "display": "Medical nutrition therapy; group (2 or more individual(s)), each 30 minutes"
+                },
+                {
+                  "code": "98000",
+                  "display": "Synchronous audio-video visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 15 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98001",
+                  "display": "Synchronous audio-video visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and low medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98002",
+                  "display": "Synchronous audio-video visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and moderate medical decision making. When using total time on the date of the encounter for code selection, 45 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98003",
+                  "display": "Synchronous audio-video visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and high medical decision making. When using total time on the date of the encounter for code selection, 60 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98004",
+                  "display": "Synchronous audio-video visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 10 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98005",
+                  "display": "Synchronous audio-video visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and low medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98006",
+                  "display": "Synchronous audio-video visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and moderate medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98007",
+                  "display": "Synchronous audio-video visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and high medical decision making. When using total time on the date of the encounter for code selection, 40 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98008",
+                  "display": "Synchronous audio-only visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination, straightforward medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 15 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98009",
+                  "display": "Synchronous audio-only visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination, low medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98010",
+                  "display": "Synchronous audio-only visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination, moderate medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 45 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98011",
+                  "display": "Synchronous audio-only visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination, high medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 60 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98012",
+                  "display": "Synchronous audio-only visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination, straightforward medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 10 minutes must be exceeded."
+                },
+                {
+                  "code": "98013",
+                  "display": "Synchronous audio-only visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination, low medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98014",
+                  "display": "Synchronous audio-only visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination, moderate medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98015",
+                  "display": "Synchronous audio-only visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination, high medical decision making, and more than 10 minutes of medical discussion. When using total time on the date of the encounter for code selection, 40 minutes must be met or exceeded."
+                },
+                {
+                  "code": "98016",
+                  "display": "Brief communication technology-based service (eg, virtual check-in) by a physician or other qualified health care professional who can report evaluation and management services, provided to an established patient, not originating from a related evaluation and management service provided within the previous 7 days nor leading to an evaluation and management service or procedure within the next 24 hours or soonest available appointment, 5-10 minutes of medical discussion"
+                },
+                {
+                  "code": "98960",
+                  "display": "Education and training for patient self-management by a nonphysician qualified health care professional using a standardized curriculum, face-to-face with the patient (could include caregiver/family) each 30 minutes; individual patient"
+                },
+                {
+                  "code": "98961",
+                  "display": "Education and training for patient self-management by a nonphysician qualified health care professional using a standardized curriculum, face-to-face with the patient (could include caregiver/family) each 30 minutes; 2-4 patients"
+                },
+                {
+                  "code": "98962",
+                  "display": "Education and training for patient self-management by a nonphysician qualified health care professional using a standardized curriculum, face-to-face with the patient (could include caregiver/family) each 30 minutes; 5-8 patients"
+                },
+                {
+                  "code": "99202",
+                  "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 15 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99203",
+                  "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99204",
+                  "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 45 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99205",
+                  "display": "Office or other outpatient visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 60 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99211",
+                  "display": "Office or other outpatient visit for the evaluation and management of an established patient that may not require the presence of a physician or other qualified health care professional"
+                },
+                {
+                  "code": "99212",
+                  "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 10 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99213",
+                  "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99214",
+                  "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99215",
+                  "display": "Office or other outpatient visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 40 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99221",
+                  "display": "Initial hospital inpatient or observation care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and straightforward or low level medical decision making. When using total time on the date of the encounter for code selection, 40 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99222",
+                  "display": "Initial hospital inpatient or observation care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 55 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99223",
+                  "display": "Initial hospital inpatient or observation care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 75 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99236",
+                  "display": "Hospital inpatient or observation care, for the evaluation and management of a patient including admission and discharge on the same date, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 85 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99281",
+                  "display": "Emergency department visit for the evaluation and management of a patient that may not require the presence of a physician or other qualified health care professional"
+                },
+                {
+                  "code": "99282",
+                  "display": "Emergency department visit for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and straightforward medical decision making"
+                },
+                {
+                  "code": "99283",
+                  "display": "Emergency department visit for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and low level of medical decision making"
+                },
+                {
+                  "code": "99284",
+                  "display": "Emergency department visit for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making"
+                },
+                {
+                  "code": "99285",
+                  "display": "Emergency department visit for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and high level of medical decision making"
+                },
+                {
+                  "code": "99304",
+                  "display": "Initial nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and straightforward or low level of medical decision making. When using total time on the date of the encounter for code selection, 25 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99305",
+                  "display": "Initial nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 35 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99306",
+                  "display": "Initial nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 50 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99307",
+                  "display": "Subsequent nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 10 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99308",
+                  "display": "Subsequent nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99309",
+                  "display": "Subsequent nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99310",
+                  "display": "Subsequent nursing facility care, per day, for the evaluation and management of a patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 45 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99315",
+                  "display": "Nursing facility discharge management; 30 minutes or less total time on the date of the encounter"
+                },
+                {
+                  "code": "99316",
+                  "display": "Nursing facility discharge management; more than 30 minutes total time on the date of the encounter"
+                },
+                {
+                  "code": "99341",
+                  "display": "Home or residence visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 15 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99342",
+                  "display": "Home or residence visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99344",
+                  "display": "Home or residence visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 60 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99345",
+                  "display": "Home or residence visit for the evaluation and management of a new patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 75 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99347",
+                  "display": "Home or residence visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and straightforward medical decision making. When using total time on the date of the encounter for code selection, 20 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99348",
+                  "display": "Home or residence visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and low level of medical decision making. When using total time on the date of the encounter for code selection, 30 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99349",
+                  "display": "Home or residence visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and moderate level of medical decision making. When using total time on the date of the encounter for code selection, 40 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99350",
+                  "display": "Home or residence visit for the evaluation and management of an established patient, which requires a medically appropriate history and/or examination and high level of medical decision making. When using total time on the date of the encounter for code selection, 60 minutes must be met or exceeded."
+                },
+                {
+                  "code": "99385",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 18-39 years"
+                },
+                {
+                  "code": "99386",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 40-64 years"
+                },
+                {
+                  "code": "99387",
+                  "display": "Initial comprehensive preventive medicine evaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, new patient; 65 years and older"
+                },
+                {
+                  "code": "99395",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 18-39 years"
+                },
+                {
+                  "code": "99396",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 40-64 years"
+                },
+                {
+                  "code": "99397",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 65 years and older"
+                },
+                {
+                  "code": "99424",
+                  "display": "Principal care management services, for a single high-risk disease, with the following required elements: one complex chronic condition expected to last at least 3 months, and that places the patient at significant risk of hospitalization, acute exacerbation/decompensation, functional decline, or death, the condition requires development, monitoring, or revision of disease-specific care plan, the condition requires frequent adjustments in the medication regimen and/or the management of the condition is unusually complex due to comorbidities, ongoing communication and care coordination between relevant practitioners furnishing care; first 30 minutes provided personally by a physician or other qualified health care professional, per calendar month."
+                },
+                {
+                  "code": "99491",
+                  "display": "Chronic care management services with the following required elements: multiple (two or more) chronic conditions expected to last at least 12 months, or until the death of the patient, chronic conditions that place the patient at significant risk of death, acute exacerbation/decompensation, or functional decline, comprehensive care plan established, implemented, revised, or monitored; first 30 minutes provided personally by a physician or other qualified health care professional, per calendar month."
+                },
+                {
+                  "code": "99495",
+                  "display": "Transitional care management services with the following required elements: Communication (direct contact, telephone, electronic) with the patient and/or caregiver within 2 business days of discharge At least moderate level of medical decision making during the service period Face-to-face visit, within 14 calendar days of discharge"
+                },
+                {
+                  "code": "99496",
+                  "display": "Transitional care management services with the following required elements: Communication (direct contact, telephone, electronic) with the patient and/or caregiver within 2 business days of discharge High level of medical decision making during the service period Face-to-face visit, within 7 calendar days of discharge"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1211b3e7-3ffd-4ade-83d1-fe7c6ec95595",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1125"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "NCQA PHEMUR Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-04"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2017-05-04"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1125",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.464.1003.101.11.1125"
+          }
+        ],
+        "version": "20170504",
+        "name": "PreventiveCareServicesEstablishedOfficeVisit18AndUp",
+        "title": "Preventive Care Services Established Office Visit, 18 and Up",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2017-05-04T01:00:13-04:00",
+        "publisher": "NCQA PHEMUR",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for encounters for preventive care.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an encounter for comprehensive preventive medicine reevaluation and management of an established patient 18 years of age or over.),(Exclusion Criteria: Excludes initial visits for new patients.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "concept": [
+                {
+                  "code": "99395",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 18-39 years"
+                },
+                {
+                  "code": "99396",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 40-64 years"
+                },
+                {
+                  "code": "99397",
+                  "display": "Periodic comprehensive preventive medicine reevaluation and management of an individual including an age and gender appropriate history, examination, counseling/anticipatory guidance/risk factor reduction interventions, and the ordering of laboratory/diagnostic procedures, established patient; 65 years and older"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2982da4c-96d5-47a8-8056-8b29eca5e4c8",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.3591"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "HL7 US Realm Program Management Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-04-19"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2025-04-19"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.3591",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.114222.4.11.3591"
+          }
+        ],
+        "version": "20250419",
+        "name": "PayerType",
+        "title": "Payer Type",
+        "status": "active",
+        "experimental": false,
+        "date": "2025-04-19T06:02:35-04:00",
+        "publisher": "HL7 US Realm Program Management Steward",
+        "description": "2025 April version was changed to reduce the amount of granular vs higher level categories of insurance (payer) types. Note that the code system from where these codes are drawn is now owned by the CDC and not owned by NAHDO. CDC Contact: sopt@cdc.gov",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: Categories of types of health care payer entities as defined by the US Public Health Data Consortium SOP code system),(Data Element Scope: Concepts intended to represent categories of insurance (payer) types.),(Inclusion Criteria: Codes representing high level categories of insurance (payer) types),(Exclusion Criteria: Codes representing, subdivisions of insurance categories and or specific private insurance companies)",
+        "compose": {
+          "include": [
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2"
+            }
+          ],
+          "exclude": [
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "111"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "1112"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3111"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3112"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3114"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3115"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3116"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3119"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3121"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3122"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "descendent-of",
+                  "value": "321"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3222"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3223"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "3229"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "descendent-of",
+                  "value": "371"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "descendent-of",
+                  "value": "381"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "is-a",
+                  "value": "6"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:62d9781e-089d-4d8d-a9a2-fa5c87f44e2a",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1116.365"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "CancerLinQ Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-05-15"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2025-05-15"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1116.365",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113762.1.4.1116.365"
+          }
+        ],
+        "version": "20250515",
+        "name": "HospiceCareReferralOrAdmission",
+        "title": "Hospice Care Referral or Admission",
+        "status": "active",
+        "date": "2025-05-15T01:03:40-04:00",
+        "publisher": "CancerLinQ Steward",
+        "description": "This value set is used in: CMS 506.",
+        "experimental": false,
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for an encounter of hospice care.),(Data Element Scope: This value set may use a model element related to Intervention or Encounter.),(Inclusion Criteria: Includes concepts that represent an intervention of or encounter for hospice care.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "183919006",
+                  "display": "Urgent admission to hospice (procedure)"
+                },
+                {
+                  "code": "183920000",
+                  "display": "Routine admission to hospice (procedure)"
+                },
+                {
+                  "code": "183921001",
+                  "display": "Admission to hospice for respite (procedure)"
+                },
+                {
+                  "code": "1891000124102",
+                  "display": "Transition from acute care to hospice (finding)"
+                },
+                {
+                  "code": "1921000124108",
+                  "display": "Transition from home-health care to hospice (finding)"
+                },
+                {
+                  "code": "1951000124104",
+                  "display": "Transition from long-term care to hospice (finding)"
+                },
+                {
+                  "code": "305336008",
+                  "display": "Admission to hospice (procedure)"
+                },
+                {
+                  "code": "306205009",
+                  "display": "Referral to hospice (procedure)"
+                },
+                {
+                  "code": "385765002",
+                  "display": "Hospice care management (procedure)"
+                },
+                {
+                  "code": "428361000124107",
+                  "display": "Discharge to home for hospice care (procedure)"
+                },
+                {
+                  "code": "428371000124100",
+                  "display": "Discharge to healthcare facility for hospice care (procedure)"
+                },
+                {
+                  "code": "444933003",
+                  "display": "Home hospice service (qualifier value)"
+                },
+                {
+                  "code": "448451000124101",
+                  "display": "Transition from self-care to hospice (finding)"
+                },
+                {
+                  "code": "452531000124108",
+                  "display": "Transition of care from emergency department to hospice (finding)"
+                },
+                {
+                  "code": "719414000",
+                  "display": "Referral to hospice at home service (procedure)"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
