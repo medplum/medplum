@@ -211,7 +211,7 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+    <Flex gap={3} align="center">
       <div
         style={
           {
