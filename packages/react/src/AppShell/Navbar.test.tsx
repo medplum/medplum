@@ -512,7 +512,6 @@ describe('Navbar', () => {
     expect(screen.queryByPlaceholderText('Resource Type')).not.toBeInTheDocument();
   });
 
-
   test('Navbar without pathname and searchParams', async () => {
     medplum.getUserConfiguration = jest.fn(() => {
       return {
@@ -627,5 +626,4 @@ describe('Navbar', () => {
     const patientClass = patientLink.parentElement?.className;
     expect(serviceRequestClass).toEqual(patientClass);
   });
-
 });
