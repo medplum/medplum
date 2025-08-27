@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack } from '@mantine/core';
+import { Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack, Text } from '@mantine/core';
 import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { Task } from '@medplum/fhirtypes';
+import { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import cx from 'clsx';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
+import { TaskFilterMenu } from '../../components/tasks/TaskFilterMenu';
+import { TaskFilterType, TaskFilterValue } from '../../components/tasks/TaskFilterMenu.utils';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './TasksPage.module.css';
+import { IconClipboardList } from '@tabler/icons-react';
 
 export function TasksPage(): JSX.Element {
   const { taskId } = useParams();
@@ -23,6 +26,10 @@ export function TasksPage(): JSX.Element {
   const [notFound, setNotFound] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
+  const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
+  const [status, setStatus] = useState<Task['status'] | undefined>(undefined);
+  const [performerType, setPerformerType] = useState<CodeableConcept | undefined>(undefined);
+
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const searchParams = new URLSearchParams();
@@ -30,15 +37,26 @@ export function TasksPage(): JSX.Element {
       if (profileRef && showMyTasks) {
         searchParams.append('owner', getReferenceString(profileRef));
       }
-      const tasks = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-      setTasks(tasks);
+      if (status) {
+        searchParams.append('status', status);
+      }
+
+      let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
+      const performerTypes = results.flatMap((task) => task.performerType || []);
+
+      if (performerType) {
+        results = results.filter((task) => task.performerType?.[0]?.coding?.[0]?.code === performerType.coding?.[0]?.code);
+      }
+      
+      setPerformerTypes(performerTypes);
+      setTasks(results);
     };
 
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, showMyTasks]);
+  }, [medplum, profileRef, showMyTasks, status, performerType]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -69,6 +87,30 @@ export function TasksPage(): JSX.Element {
     setSelectedTask(undefined);
   };
 
+  const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
+    switch (filterType) {
+      case TaskFilterType.STATUS:
+        if(status !== value) {
+          setStatus(value as Task['status']);
+        } else {
+          setStatus(undefined);
+        }
+        break;
+      case TaskFilterType.PERFORMER_TYPE: {
+        const performerTypeCode = performerType?.coding?.[0]?.code;
+        const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
+        if (performerTypeCode !== valueCode) {
+          setPerformerType(value as CodeableConcept);
+        } else {
+          setPerformerType(undefined);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  };
+  
   return (
     <div className={classes.container}>
       <Flex h="100%" w="100%">
@@ -92,14 +134,17 @@ export function TasksPage(): JSX.Element {
               >
                 All Tasks
               </Button>
+
+              <TaskFilterMenu status={status} performerType={performerType} performerTypes={performerTypes} onFilterChange={handleFilterChange} />
+          
             </Flex>
           </Paper>
           <Divider />
           <Paper h="calc(100% - 60px)" id="task-list">
             <ScrollArea h="100%" id="task-list-scrollarea">
-              {loading ? (
-                <TaskListSkeleton />
-              ) : (
+            {loading && <TaskListSkeleton />}
+              {!loading && tasks.length === 0 && <EmptyTasksState />}
+              {!loading && tasks.length > 0 && (
                 tasks.map((task, index) => (
                   <React.Fragment key={task.id}>
                     <TaskListItem task={task} selectedTask={selectedTask} />
@@ -116,6 +161,19 @@ export function TasksPage(): JSX.Element {
         />
       </Flex>
     </div>
+  );
+}
+
+function EmptyTasksState(): JSX.Element {
+  return (
+    <Flex direction="column" h="100%" justify="center" align="center">
+      <Stack align="center" gap="md" pt="xl">
+        <IconClipboardList size={64} color="var(--mantine-color-gray-4)" />
+        <Text size="lg" c="dimmed" fw={500}>
+          No tasks found
+        </Text>
+      </Stack>
+    </Flex>
   );
 }
 
