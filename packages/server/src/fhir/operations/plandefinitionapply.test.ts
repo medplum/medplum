@@ -518,7 +518,7 @@ describe('PlanDefinition apply', () => {
                     {
                       system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
                       code: 'ATND',
-                      display: 'Attender',
+                      display: 'attender',
                     },
                   ],
                 },
