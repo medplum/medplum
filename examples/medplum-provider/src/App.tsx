@@ -54,11 +54,11 @@ import { TaskDetails } from './pages/tasks/TaskDetails';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 import { showErrorNotification } from './utils/notifications';
-import { BulkCertificationPage } from './pages/BulkCertificationPage';
-import { C1CertificationPage } from './pages/C1CertificationPage';
-import { DSIPage } from './pages/dsi/DSIPage';
-import { FormPage } from './pages/FormPage';
-import { DSIFeedbackPage } from './pages/dsi/DSIFeedbackPage';
+import { BulkCertificationPage } from './pages/c1/BulkCertificationPage';
+import { C1CertificationPage } from './pages/c1/C1CertificationPage';
+import { FormPage } from './pages/c1/FormPage';
+import { DSIPage } from './pages/b11/DSIPage';
+import { DSIFeedbackPage } from './pages/b11/DSIFeedbackPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
