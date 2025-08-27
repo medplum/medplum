@@ -42,7 +42,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     }
   });
 
-  it('skips when encounter subject is not a patient', async () => {
+  test('skips when encounter subject is not a patient', async () => {
     const encounter: Encounter = await medplum.createResource({
       ...baseEncounter,
       subject: { reference: 'Organization/123' },
@@ -54,7 +54,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(0);
   });
 
-  it('skips when encounter has no practitioner participant', async () => {
+  test('skips when encounter has no practitioner participant', async () => {
     const encounter: Encounter = await medplum.createResource({
       ...baseEncounter,
       participant: [],
@@ -66,7 +66,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(0);
   });
 
-  it('skips when patient has no birth date', async () => {
+  test('skips when patient has no birth date', async () => {
     const patientWithoutBirthDate = await medplum.createResource({
       ...patient1,
       birthDate: undefined,
@@ -83,7 +83,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(0);
   });
 
-  it('skips when patient is younger than 45 years', async () => {
+  test('skips when patient is younger than 45 years', async () => {
     const youngPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 23, 0, 1).toISOString().split('T')[0],
@@ -100,7 +100,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(0);
   });
 
-  it('successfully creates a task when patient is 45 years or older', async () => {
+  test('successfully creates a task when patient is 45 years or older', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0], // 48 years old
@@ -117,7 +117,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(1);
   });
 
-  it('skips when patient has prior colonoscopy in last 5 years', async () => {
+  test('skips when patient has prior colonoscopy in last 5 years', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0],
@@ -151,7 +151,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(0);
   });
 
-  it('successfully creates a task when patient has colonoscopy older than 5 years', async () => {
+  test('successfully creates a task when patient has colonoscopy older than 5 years', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0],
@@ -185,7 +185,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(1);
   });
 
-  it('skips when a task already exists for the same patient and encounter', async () => {
+  test('skips when a task already exists for the same patient and encounter', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0],
@@ -205,7 +205,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(tasks).toHaveLength(1);
   });
 
-  it('creates a task with correct properties for eligible patient', async () => {
+  test('creates a task with correct properties for eligible patient', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0],
@@ -251,7 +251,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     );
   });
 
-  it('creates feedback questionnaire and links it to the task', async () => {
+  test('creates feedback questionnaire and links it to the task', async () => {
     const oldPatient = await medplum.createResource({
       ...patient1,
       birthDate: new Date(today.getFullYear() - 48, 0, 1).toISOString().split('T')[0],
@@ -281,7 +281,7 @@ describe('B11 DSI Colonoscopy Bot', () => {
     expect(questionnaires).toHaveLength(1);
   });
 
-  it('handles patient exactly at minimum age threshold', async () => {
+  test('handles patient exactly at minimum age threshold', async () => {
     // Create a patient who is exactly 45 years old today
     const exactAgePatient = await medplum.createResource({
       ...patient1,

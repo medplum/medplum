@@ -29,7 +29,7 @@ describe('C1 Patient Intake Bot', () => {
   });
 
   describe('QuestionnaireResponse', () => {
-    it('creates a QuestionnaireResponse resource', async () => {
+    test('creates a QuestionnaireResponse resource', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const questionnaireResponse = await medplum.searchResources('QuestionnaireResponse', {
@@ -40,7 +40,7 @@ describe('C1 Patient Intake Bot', () => {
   });
 
   describe('Patient', () => {
-    it('creates a Patient resource', async () => {
+    test('creates a Patient resource', async () => {
       let patient = await medplum.searchOne('Patient', { identifier: patientIdentifier });
       expect(patient).toBeUndefined();
 
@@ -50,7 +50,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(patient).toBeDefined();
     });
 
-    it('creates a Patient resource with full demographics', async () => {
+    test('creates a Patient resource with full demographics', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       expect(patient).toBeDefined();
@@ -116,13 +116,13 @@ describe('C1 Patient Intake Bot', () => {
       // Telecom
       expect(patient.telecom).toStrictEqual([
         { system: 'phone', value: '502-248-7743', use: 'home' },
-        { system: 'email', value: 'cstrickland7064@example.com' },
+        { system: 'email', value: 'cstrickland7064@example.com', use: 'home' },
       ]);
     });
   });
 
   describe('Encounter', () => {
-    it('creates multiple Encounter resources', async () => {
+    test('creates multiple Encounter resources', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const encounters = await medplum.searchResources('Encounter', {
@@ -131,7 +131,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(encounters).toHaveLength(4);
     });
 
-    it('creates a simple Encounter', async () => {
+    test('creates a simple Encounter', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const encounters = await medplum.searchResources('Encounter', {
@@ -174,7 +174,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(encounter.hospitalization).toBeUndefined();
     });
 
-    it('creates an Encounter with class code', async () => {
+    test('creates an Encounter with class code', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const encounters = await medplum.searchResources('Encounter', {
@@ -217,7 +217,7 @@ describe('C1 Patient Intake Bot', () => {
     });
   });
 
-  it('creates an Encounter with diagnosis', async () => {
+  test('creates an Encounter with diagnosis', async () => {
     const patient = await handler(medplum, { bot, input, contentType, secrets });
 
     const encounters = await medplum.searchResources('Encounter', {
@@ -277,7 +277,7 @@ describe('C1 Patient Intake Bot', () => {
     ]);
   });
 
-  it('creates an Encounter with discharge disposition', async () => {
+  test('creates an Encounter with discharge disposition', async () => {
     const patient = await handler(medplum, { bot, input, contentType, secrets });
 
     const encounters = await medplum.searchResources('Encounter', {
@@ -327,7 +327,7 @@ describe('C1 Patient Intake Bot', () => {
     const interventionCategoryFilter = `${SNOMED}|409063005`;
     const procedureCategoryFilter = `${SNOMED}|103693007`;
 
-    it('creates multiple Procedure resources', async () => {
+    test('creates multiple Procedure resources', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const interventions = await medplum.searchResources('Procedure', {
@@ -343,7 +343,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(procedures).toHaveLength(1);
     });
 
-    it('creates a Procedure for intervention with author date/time and negation reason', async () => {
+    test('creates a Procedure for intervention with author date/time and negation reason', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const interventions = await medplum.searchResources('Procedure', {
@@ -373,7 +373,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(intervention.performedPeriod).toBeUndefined();
     });
 
-    it('creates a Procedure for intervention with relevant and author date/time', async () => {
+    test('creates a Procedure for intervention with relevant and author date/time', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const interventions = await medplum.searchResources('Procedure', {
@@ -402,7 +402,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(intervention.statusReason).toBeUndefined();
     });
 
-    it('creates a Procedure with full set of fields', async () => {
+    test('creates a Procedure with full set of fields', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const procedures = await medplum.searchResources('Procedure', {
@@ -443,7 +443,7 @@ describe('C1 Patient Intake Bot', () => {
   });
 
   describe('Coverage', () => {
-    it('creates multiple Coverage resources', async () => {
+    test('creates multiple Coverage resources', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const coverages = await medplum.searchResources('Coverage', {
@@ -452,7 +452,7 @@ describe('C1 Patient Intake Bot', () => {
       expect(coverages).toHaveLength(1);
     });
 
-    it('creates a Coverage resource with required fields', async () => {
+    test('creates a Coverage resource with required fields', async () => {
       const patient = await handler(medplum, { bot, input, contentType, secrets });
 
       const coverages = await medplum.searchResources('Coverage', {

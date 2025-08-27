@@ -39,17 +39,17 @@ describe('QRDA Generator', () => {
       };
     });
 
-    it('fetches patient data', async () => {
+    test('fetches patient data', async () => {
       const patientData = await fetchPatientData(medplum, patientId, periodStart, periodEnd);
       expect(Object.keys(patientData)).toEqual(['patient', 'encounters', 'interventions', 'procedures', 'coverages']);
     });
 
-    it('fetches patient data for a single patient', async () => {
+    test('fetches patient data for a single patient', async () => {
       const { patient } = await fetchPatientData(medplum, patientId, periodStart, periodEnd);
       expect(patient.id).toEqual(patientId);
     });
 
-    it('fetches patient data and sorts them by date', async () => {
+    test('fetches patient data and sorts them by date', async () => {
       const encounterLast = await medplum.createResource({
         ...baseEncounter,
         period: { start: '2023-10-15T08:00:00', end: '2023-10-15T09:00:00' },
@@ -101,7 +101,7 @@ describe('QRDA Generator', () => {
       expect(procedures[1].id).toEqual(procedureLast.id);
     });
 
-    it('fetches encounters for a single patient during a period', async () => {
+    test('fetches encounters for a single patient during a period', async () => {
       const anotherPatientEncounter = await medplum.createResource({
         ...baseEncounter,
         subject: createReference(anotherPatient),
@@ -205,7 +205,7 @@ describe('QRDA Generator', () => {
       });
     });
 
-    it('fetches coverages for a single patient', async () => {
+    test('fetches coverages for a single patient', async () => {
       const baseCoverage: Coverage = {
         resourceType: 'Coverage',
         status: 'active',
@@ -259,7 +259,7 @@ describe('QRDA Generator', () => {
     const periodStart = '2023-01-01T00:00:00';
     const periodEnd = '2023-12-31T23:59:59';
 
-    it('does not create QRDA if patient has no data to export', async () => {
+    test('does not create QRDA if patient has no data to export', async () => {
       const xml = await generateQRDACategoryI(medplum, {
         patientId,
         measurePeriodStart: periodStart,
@@ -268,7 +268,7 @@ describe('QRDA Generator', () => {
       expect(xml).toBeNull();
     });
 
-    it('does not create QRDA if patient has no data to export within the period', async () => {
+    test('does not create QRDA if patient has no data to export within the period', async () => {
       await medplum.createResource({
         resourceType: 'Encounter',
         status: 'finished',
@@ -299,7 +299,7 @@ describe('QRDA Generator', () => {
       expect(xml).toBeNull();
     });
 
-    it('creates QRDA if patient has data to export within the period', async () => {
+    test('creates QRDA if patient has data to export within the period', async () => {
       const encounter = await medplum.createResource({
         resourceType: 'Encounter',
         status: 'finished',

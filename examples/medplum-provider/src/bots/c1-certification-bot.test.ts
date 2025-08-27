@@ -43,7 +43,7 @@ describe('C1 Certification Bot', () => {
       ],
     };
   });
-  it('throws an error if the measure is not supported', async () => {
+  test('throws an error if the measure is not supported', async () => {
     const modifiedInput = {
       ...input,
       item: input.item?.map((item) =>
@@ -55,7 +55,7 @@ describe('C1 Certification Bot', () => {
     );
   });
 
-  it('throws an error if period start is missing', async () => {
+  test('throws an error if period start is missing', async () => {
     const modifiedInput = {
       ...input,
       item: input.item?.filter((item) => item.linkId !== 'measure-period-start'),
@@ -65,7 +65,7 @@ describe('C1 Certification Bot', () => {
     );
   });
 
-  it('throws an error if period end is missing', async () => {
+  test('throws an error if period end is missing', async () => {
     const modifiedInput = {
       ...input,
       item: input.item?.filter((item) => item.linkId !== 'measure-period-end'),
@@ -75,7 +75,7 @@ describe('C1 Certification Bot', () => {
     );
   });
 
-  it('throws an error if patient ids are missing', async () => {
+  test('throws an error if patient ids are missing', async () => {
     const modifiedInput = {
       ...input,
       item: input.item?.filter((item) => item.linkId !== 'patient-ids'),
@@ -85,7 +85,7 @@ describe('C1 Certification Bot', () => {
     );
   });
 
-  it('creates a Media resource for patients with data to export', async () => {
+  test('creates a Media resource for patients with data to export', async () => {
     let patient1Media = await medplum.searchResources('Media', {
       subject: getReferenceString(patient1),
     });
@@ -114,7 +114,7 @@ describe('C1 Certification Bot', () => {
     expect(patient2Media).toHaveLength(0);
   });
 
-  it('returns a Media resource for the zip file', async () => {
+  test('returns a Media resource for the zip file', async () => {
     const result = await handler(medplum, { bot, input, contentType, secrets });
 
     expect(result).toMatchObject({
