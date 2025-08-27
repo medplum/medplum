@@ -58,6 +58,7 @@ import { BulkCertificationPage } from './pages/BulkCertificationPage';
 import { C1CertificationPage } from './pages/C1CertificationPage';
 import { DSIPage } from './pages/dsi/DSIPage';
 import { FormPage } from './pages/FormPage';
+import { DSIFeedbackPage } from './pages/dsi/DSIFeedbackPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -209,6 +210,7 @@ export function App(): JSX.Element | null {
               <Route path="/forms/:id" element={<FormPage />} />
               <Route path="/c1/:id" element={<C1CertificationPage />} />
               <Route path="/dsi" element={<DSIPage />} />
+              <Route path="/dsi/feedback" element={<DSIFeedbackPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

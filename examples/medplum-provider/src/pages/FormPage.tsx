@@ -124,6 +124,7 @@ export function FormPage(): JSX.Element {
       </Paper>
       <Document>
         <QuestionnaireForm
+          key={questionnaire.id}
           questionnaire={questionnaire}
           subject={subject && createReference(subject)}
           onSubmit={handleSubmit}
