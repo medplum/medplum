@@ -38,6 +38,7 @@ import { expandOperator } from './operations/expand';
 import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { extractHandler } from './operations/extract';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
@@ -299,6 +300,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
+  // QuestionnaireResponse $extract operation
+  router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
+  router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
