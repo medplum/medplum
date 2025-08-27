@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { deepClone, Logger, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -16,10 +16,18 @@ export class FhirRateLimiter {
   private delta: number;
   private logThreshold: number;
   private readonly enabled: boolean;
+  private readonly async: boolean;
 
   private readonly logger: Logger;
 
-  constructor(redis: Redis, authState: AuthState, userLimit: number, projectLimit: number, logger: Logger) {
+  constructor(
+    redis: Redis,
+    authState: AuthState,
+    userLimit: number,
+    projectLimit: number,
+    logger: Logger,
+    async?: boolean
+  ) {
     this.limiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:membership:',
       storeClient: redis,
@@ -41,6 +49,7 @@ export class FhirRateLimiter {
     this.logger = logger;
     this.logThreshold = Math.floor(userLimit * 0.1); // Log requests that consume at least 10% of the user's total limit
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean !== false;
+    this.async = async ?? false;
   }
 
   private setState(result: RateLimiterRes, ...others: RateLimiterRes[]): void {
@@ -107,9 +116,19 @@ export class FhirRateLimiter {
         enabled: this.enabled,
       });
       if (this.enabled) {
-        const outcome = deepClone(tooManyRequests);
-        outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
-        throw new OperationOutcomeError(outcome);
+        if (this.async) {
+          // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
+          const waitMs = result.msBeforeNext * (1 + Math.random() * 0.25);
+          console.log('===== SLEEPING FOR', waitMs);
+          await sleep(waitMs);
+          console.log('===== CONSUMING', points);
+          await this.consume(points);
+        } else {
+          // Block synchronous request
+          const outcome = deepClone(tooManyRequests);
+          outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
+          throw new OperationOutcomeError(outcome);
+        }
       }
     }
   }

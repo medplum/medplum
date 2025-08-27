@@ -37,13 +37,25 @@ export class RequestContext implements IRequestContext {
   }
 }
 
+export type AuthenticatedContextOptions = {
+  logger?: Logger;
+  async?: boolean;
+};
+
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
   readonly repo: Repository;
+  readonly isAsync: boolean;
   readonly fhirRateLimiter?: FhirRateLimiter;
   readonly resourceCap?: ResourceCap;
 
-  constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
+  constructor(
+    requestId: string,
+    traceId: string,
+    authState: Readonly<AuthState>,
+    repo: Repository,
+    options?: AuthenticatedContextOptions
+  ) {
     let loggerMetadata: Record<string, any> | undefined;
     const projectId = repo.currentProject()?.id;
     if (projectId) {
@@ -54,13 +66,14 @@ export class AuthenticatedRequestContext extends RequestContext {
       }
       loggerMetadata = { projectId, profile };
     }
-    super(requestId, traceId, logger, loggerMetadata);
+    super(requestId, traceId, options?.logger, loggerMetadata);
 
-    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger);
+    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger, options?.async);
     this.resourceCap = getResourceCap(authState, this.logger);
 
     this.authState = authState;
     this.repo = repo;
+    this.isAsync = options?.async ?? false;
   }
 
   get project(): WithId<Project> {
@@ -79,6 +92,10 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.membership.profile;
   }
 
+  get authentication(): Readonly<AuthState> {
+    return this.authState;
+  }
+
   [Symbol.dispose](): void {
     this.repo[Symbol.dispose]();
   }
@@ -89,7 +106,7 @@ export class AuthenticatedRequestContext extends RequestContext {
       ctx?.traceId ?? '',
       { userConfig: {} } as unknown as AuthState,
       getSystemRepo(),
-      systemLogger
+      { logger: systemLogger }
     );
   }
 }
@@ -116,20 +133,23 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { requestId, traceId } = requestIds(req);
-
-    let ctx: RequestContext;
-    const authState = await authenticateTokenImpl(req);
-    if (authState) {
-      const repo = await getRepoForLogin(authState, isExtendedMode(req));
-      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
-    } else {
-      ctx = new RequestContext(requestId, traceId);
-    }
-
+    const ctx = await createContextForRequest(req);
     requestContextStore.run(ctx, () => next());
   } catch (err) {
     next(err);
+  }
+}
+
+export async function createContextForRequest(req: Request): Promise<RequestContext> {
+  const { requestId, traceId } = requestIds(req);
+  const authState = await authenticateTokenImpl(req);
+  if (authState) {
+    const repo = await getRepoForLogin(authState, isExtendedMode(req));
+    return new AuthenticatedRequestContext(requestId, traceId, authState, repo, {
+      async: req.get('prefer') === 'respond-async',
+    });
+  } else {
+    return new RequestContext(requestId, traceId);
   }
 }
 
@@ -217,7 +237,7 @@ function write(msg: string): void {
   process.stdout.write(msg + '\n');
 }
 
-function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
+function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boolean): FhirRateLimiter | undefined {
   const defaultUserLimit = authState.project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
   const userSpecificLimit = authState.userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
   const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
@@ -226,7 +246,7 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimi
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
-    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
+    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
     : undefined;
 }
 

@@ -106,7 +106,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(getSystemRepo(), project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig });
+  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
   const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',

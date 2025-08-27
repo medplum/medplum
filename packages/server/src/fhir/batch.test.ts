@@ -1246,4 +1246,100 @@ describe('Batch and Transaction processing', () => {
     expect(results.type).toStrictEqual('batch-response');
     expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
   });
+
+  test('Async batch sleeps over rate limit', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [
+          { name: 'userFhirQuota', valueInteger: 100 },
+          { name: 'enableFhirQuota', valueBoolean: true },
+        ],
+      },
+    });
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(batch);
+    expect(res.status).toBe(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({ bundle: batch })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    jest.useFakeTimers();
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+
+    // await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await jest.advanceTimersByTimeAsync(60_000);
+    // await jest.advanceTimersByTimeAsync(60_000);
+
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
+    });
+
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    expect(res2.body).toMatchObject<Partial<Bundle>>({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+    });
+
+    // await waitForAsyncJob(res.header['content-location'], app, accessToken);
+
+    // const results = res.body as Bundle;
+    // expect(results.entry).toHaveLength(4);
+    // expect(results.type).toStrictEqual('batch-response');
+    // expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
+    jest.useRealTimers();
+  });
 });
