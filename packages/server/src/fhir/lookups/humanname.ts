@@ -18,13 +18,22 @@ import { LookupTable, LookupTableRow } from './lookuptable';
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 const resourceTypeSet = new Set(resourceTypes);
 type HumanNameResourceType = (typeof resourceTypes)[number];
-type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
+export type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
 export interface HumanNameTableRow extends LookupTableRow {
   name: string | undefined;
   given: string | undefined;
   family: string | undefined;
 }
+
+export const HumanNameSearchParameterIds = new Set<string>([
+  'individual-given',
+  'individual-family',
+  'Patient-name',
+  'Person-name',
+  'Practitioner-name',
+  'RelatedPerson-name',
+]);
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -202,4 +211,35 @@ function getTokens(input: string): Set<string> {
   // Split on whitespace
   // Remove empty strings
   return new Set<string>(input.toLowerCase().split(/\s+/).filter(Boolean));
+}
+
+export function getHumanNameSortValue(
+  names: (HumanName | undefined | null)[] | undefined,
+  searchParam: SearchParameter
+): string | undefined {
+  if (!Array.isArray(names)) {
+    return undefined;
+  }
+
+  let result: string | undefined;
+  for (const name of names) {
+    if (!name) {
+      continue;
+    }
+
+    // TODO: Add any logic for preferences of different name.use values, etc.
+    let candidate: string | undefined;
+    if (searchParam.code === 'given') {
+      candidate = formatGivenName(name);
+    } else if (searchParam.code === 'family') {
+      candidate = formatFamilyName(name);
+    } else {
+      candidate = getNameString(name);
+    }
+
+    if (candidate) {
+      result = result && result.localeCompare(candidate) <= 0 ? result : candidate;
+    }
+  }
+  return result;
 }

@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -1650,6 +1651,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
+      if (impl.sortColumnName) {
+        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+      }
       return;
     }
 
