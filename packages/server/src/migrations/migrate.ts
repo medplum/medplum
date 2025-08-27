@@ -17,12 +17,7 @@ import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import {
-  ColumnSearchParameterImplementation,
-  getSearchParameterImplementation,
-  SearchParameterImplementation,
-  TokenColumnSearchParameterImplementation,
-} from '../fhir/searchparameter';
+import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
@@ -485,10 +480,6 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     }
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
-    if (impl.searchStrategy === 'lookup-table') {
-      continue;
-    }
-
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
@@ -520,9 +511,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
-): ColumnDefinition[] {
+function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
       if (impl.type !== SearchParameterType.TEXT) {
@@ -538,6 +527,12 @@ function getSearchParameterColumns(
     }
     case 'column':
       return [getColumnDefinition(impl.columnName, impl)];
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ name: impl.sortColumnName, type: 'TEXT' }];
+      }
+      return [];
+    }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
@@ -545,7 +540,7 @@ function getSearchParameterColumns(
 
 function getSearchParameterIndexes(
   searchParam: SearchParameter,
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+  impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -570,6 +565,12 @@ function getSearchParameterIndexes(
         indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
       }
       return indexes;
+    }
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ columns: [impl.sortColumnName], indexType: 'btree' }];
+      }
+      return [];
     }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
