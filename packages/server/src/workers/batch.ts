@@ -10,7 +10,7 @@ import {
   WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
-import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
+import { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
@@ -19,6 +19,7 @@ import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { AuthState } from '../oauth/middleware';
 import { queueRegistry, WorkerInitializer } from './utils';
 
 /*
@@ -29,9 +30,7 @@ import { queueRegistry, WorkerInitializer } from './utils';
 export interface BatchJobData {
   readonly asyncJob: WithId<AsyncJob>;
   readonly bundle: Bundle;
-  readonly login: Login;
-  readonly project: WithId<Project>;
-  readonly membership: WithId<ProjectMembership>;
+  readonly authState: Readonly<AuthState>;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -83,17 +82,9 @@ async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
   return queue.add(jobName, job);
 }
 
-export async function queueBatchProcessing(batch: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
-  const { requestId, traceId, login, project, membership } = getAuthenticatedContext();
-  return addBatchJobData({
-    bundle: batch,
-    asyncJob,
-    login,
-    project,
-    membership,
-    requestId,
-    traceId,
-  });
+export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
+  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  return addBatchJobData({ bundle, asyncJob, authState, requestId, traceId });
 }
 
 /**
@@ -101,7 +92,8 @@ export async function queueBatchProcessing(batch: Bundle, asyncJob: WithId<Async
  * @param job - The batch job details.
  */
 export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
-  const { bundle, login, project, membership } = job.data;
+  const bundle = job.data.bundle;
+  const { login, project, membership } = job.data.authState;
   const logger = getLogger();
 
   // Prepare the original submitting user's repo
