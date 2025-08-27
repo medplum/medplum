@@ -73,10 +73,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   patient.telecom = [];
   if (answers['phone']?.valueString) {
-    patient.telecom.push({ system: 'phone', value: answers['phone'].valueString });
+    patient.telecom.push({ system: 'phone', value: answers['phone'].valueString, use: 'home' });
   }
   if (answers['email']?.valueString) {
-    patient.telecom.push({ system: 'email', value: answers['email'].valueString });
+    patient.telecom.push({ system: 'email', value: answers['email'].valueString, use: 'home' });
   }
 
   addExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race'], 'ombCategory');
