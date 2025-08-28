@@ -45,9 +45,11 @@ export function TasksPage(): JSX.Element {
       const performerTypes = results.flatMap((task) => task.performerType || []);
 
       if (performerType) {
-        results = results.filter((task) => task.performerType?.[0]?.coding?.[0]?.code === performerType.coding?.[0]?.code);
+        results = results.filter(
+          (task) => task.performerType?.[0]?.coding?.[0]?.code === performerType.coding?.[0]?.code
+        );
       }
-      
+
       setPerformerTypes(performerTypes);
       setTasks(results);
     };
@@ -90,7 +92,7 @@ export function TasksPage(): JSX.Element {
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
       case TaskFilterType.STATUS:
-        if(status !== value) {
+        if (status !== value) {
           setStatus(value as Task['status']);
         } else {
           setStatus(undefined);
@@ -110,7 +112,7 @@ export function TasksPage(): JSX.Element {
         break;
     }
   };
-  
+
   return (
     <div className={classes.container}>
       <Flex h="100%" w="100%">
@@ -135,23 +137,27 @@ export function TasksPage(): JSX.Element {
                 All Tasks
               </Button>
 
-              <TaskFilterMenu status={status} performerType={performerType} performerTypes={performerTypes} onFilterChange={handleFilterChange} />
-          
+              <TaskFilterMenu
+                status={status}
+                performerType={performerType}
+                performerTypes={performerTypes}
+                onFilterChange={handleFilterChange}
+              />
             </Flex>
           </Paper>
           <Divider />
           <Paper h="calc(100% - 60px)" id="task-list">
             <ScrollArea h="100%" id="task-list-scrollarea">
-            {loading && <TaskListSkeleton />}
+              {loading && <TaskListSkeleton />}
               {!loading && tasks.length === 0 && <EmptyTasksState />}
-              {!loading && tasks.length > 0 && (
+              {!loading &&
+                tasks.length > 0 &&
                 tasks.map((task, index) => (
                   <React.Fragment key={task.id}>
                     <TaskListItem task={task} selectedTask={selectedTask} />
                     {index < tasks.length - 1 && <Divider />}
                   </React.Fragment>
-                ))
-              )}
+                ))}
             </ScrollArea>
           </Paper>
         </Flex>

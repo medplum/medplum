@@ -78,18 +78,18 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             onChange={handleDueDateChange}
           />
 
-<Stack gap={0}>
-              <Text size="sm" fw={500}>
-                Assignee
-              </Text>
-          <ReferenceInput
-            name="owner"
-            targetTypes={['Practitioner', 'Organization']}
-            defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-            onChange={async (value: Reference<Practitioner | Organization> | undefined) => {
-              await handleOwnerChange(value ? { reference: value.reference } : undefined);
-            }}
-          />
+          <Stack gap={0}>
+            <Text size="sm" fw={500}>
+              Assignee
+            </Text>
+            <ReferenceInput
+              name="owner"
+              targetTypes={['Practitioner', 'Organization']}
+              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+              onChange={async (value: Reference<Practitioner | Organization> | undefined) => {
+                await handleOwnerChange(value ? { reference: value.reference } : undefined);
+              }}
+            />
           </Stack>
 
           <CodeInput
