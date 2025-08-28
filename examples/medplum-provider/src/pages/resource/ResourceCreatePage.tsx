@@ -43,18 +43,34 @@ function getDefaultValue(resourceType: ResourceType, patient: Patient | undefine
   return dv;
 }
 
+function getResourceTypeFromPath(pathname: string): ResourceType | undefined {
+  const pathParts = pathname.split('/');
+  if (pathParts.length >= 3 && pathParts[2] === 'new') {
+    return pathParts[1] as ResourceType;
+  }
+
+  return undefined;
+}
+
 export function ResourceCreatePage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const patient = usePatient({ ignoreMissingPatientId: true, setOutcome });
   const navigate = useNavigate();
-  const { patientId, resourceType } = useParams() as { patientId: string | undefined; resourceType: ResourceType };
+  const params = useParams() as { patientId?: string; resourceType?: ResourceType };
+  const resourceType = params.resourceType || getResourceTypeFromPath(location.pathname);
+  const patientId = params.patientId;
   const [loadingPatient, setLoadingPatient] = useState(Boolean(patientId));
-  const [defaultValue, setDefaultValue] = useState<Partial<Resource>>(() => getDefaultValue(resourceType, patient));
+  const [defaultValue, setDefaultValue] = useState<Partial<Resource>>(() => {
+    if (!resourceType) {
+      return {};
+    }
+    return getDefaultValue(resourceType, patient);
+  });
   const profileUrl = resourceType && RESOURCE_PROFILE_URLS[resourceType];
 
   useEffect(() => {
-    if (patient) {
+    if (patient && resourceType) {
       setDefaultValue(getDefaultValue(resourceType, patient));
     }
     setLoadingPatient(false);

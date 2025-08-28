@@ -50,8 +50,8 @@ await medplum.searchResources('Patient', {
   _summary: true,
 });
 
-/* 
-Example response: 
+/*
+Example response:
 {
   resourceType: 'Patient',
   identifier: [
@@ -95,7 +95,7 @@ Example response:
 // start-block summaryCli
 medplum get 'Patient?_id=homer-simpson&_summary=true'
 
-Example response: 
+Example response:
 {
   resourceType: 'Patient',
   identifier: [
@@ -139,7 +139,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_summary=true' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 
-Example response: 
+Example response:
 {
   resourceType: 'Patient',
   identifier: [
@@ -184,8 +184,8 @@ Example response:
 await medplum.searchResources('Observation', {
   _elements: 'status,code,subject,performer',
 });
-/* 
-Example Response: 
+/*
+Example Response:
 [
   {
     resourceType: 'Observation',
@@ -237,7 +237,7 @@ Example Response:
 // start-block elementsCli
 medplum get 'Observation?_elements=status,code,subject,performer'
 
-Example Response: 
+Example Response:
 [
   {
     resourceType: 'Observation',
@@ -287,9 +287,9 @@ Example Response:
 // start-block elementsCurl
 curl 'https://api.medplum.com/fhir/R4/Observations?_elements=status,code,subject,performer' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 
-Example Response: 
+Example Response:
 [
   {
     resourceType: 'Observation',
@@ -351,7 +351,7 @@ medplum get 'Observation?_tag=https://example.org/tags|critical'
 // start-block tagCurl
 curl 'https://api.medplum.com/fhir/R4/Observation?_tag=https://example.org/tags|critical' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 // end-block tagCurl
 */
 
@@ -369,7 +369,7 @@ medplum get 'Patient?_total=estimate'
 // start-block totalCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_total=estimate' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 // end-block totalCurl
 */
 
@@ -387,7 +387,7 @@ medplum get 'Observation?_profile=https://example.org/StructureDefinition/pediat
 // start-block profileCurl
 curl 'https://api.medplum.com/fhir/R4/Observation?_profile=https://example.org/StructureDefinition/pediatric-growth-chart' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 // end-block profileCurl
 */
 
@@ -405,7 +405,7 @@ medplum get 'Communication?_compartment=Patient/homer-simpson'
 // start-block compartmentCurl
 curl 'https://api.medplum.com/fhir/R4/Communication?_compartment=Patient/homer-simpson' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 // end-block compartmentCurl
 */
 
@@ -423,6 +423,24 @@ medplum get 'Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confiden
 // start-block securityCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N' \
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \ 
+  -H 'content-type: application/fhir+json' \
 // end-block securityCurl
+*/
+
+// start-block sourceTs
+await medplum.searchResources('Patient', {
+  _source: 'https://foomedical.com',
+});
+// end-block sourceTs
+
+/*
+// start-block sourceCli
+medplum get 'Patient?_source=https://foomedical.com'
+// end-block sourceCli
+
+// start-block sourceCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_source=https://foomedical.com' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block sourceCurl
 */

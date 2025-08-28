@@ -63,15 +63,6 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   let encounterRef: Reference<Encounter> | undefined = undefined;
   if (params.encounter) {
     const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter });
-
-    if (!encounter.basedOn?.some((ref: Reference) => ref.reference === getReferenceString(planDefinition))) {
-      encounter.basedOn = [
-        ...(encounter.basedOn || []),
-        { reference: getReferenceString(planDefinition), display: planDefinition.title },
-      ];
-      await ctx.repo.updateResource(encounter);
-    }
-
     encounterRef = createReference(encounter);
   }
 
@@ -271,7 +262,7 @@ async function createActivityDefinitionTask(
     }
 
     default:
-      return createTask(repo, planDefinition, requester, subject, action, encounter);
+      return createTask(repo, planDefinition, requester, subject, action, encounter, owner, performerType);
   }
 }
 
