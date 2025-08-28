@@ -69,6 +69,16 @@
                 "type": "string"
               },
               {
+                "linkId": "phone-sms",
+                "text": "Phone (SMS)",
+                "type": "string"
+              },
+              {
+                "linkId": "email",
+                "text": "Email",
+                "type": "string"
+              },
+              {
                 "linkId": "ssn",
                 "text": "Social Security Number",
                 "type": "string",
@@ -527,6 +537,63 @@
                 "linkId": "acknowledgement-for-advance-directives-date",
                 "text": "Date",
                 "type": "date"
+              }
+            ]
+          },
+          {
+            "linkId": "patient-contact-preference",
+            "text": "Contact Preferences",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "patient-contact-preference-email",
+                "text": "Ok to send email appointment reminders",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-call-or-text",
+                "text": "Ok to call/text",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-voice-text-appointment-reminders",
+                "text": "Ok to send voice/text messages",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-preferred-method-for-phone-reminders",
+                "text": "Preferred method for phone reminders",
+                "type": "choice",
+                "repeats": false,
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "system": "http://hl7.org/fhir/contact-point-system",
+                      "code": "sms",
+                      "display": "Text message"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "system": "http://hl7.org/fhir/contact-point-system",
+                      "code": "phone",
+                      "display": "Phone call"
+                    }
+                  }
+                ],
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/questionnaire-item-control",
+                          "code": "radio-button"
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           }
