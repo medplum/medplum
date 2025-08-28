@@ -262,7 +262,7 @@ async function createActivityDefinitionTask(
     }
 
     default:
-      return createTask(repo, planDefinition, requester, subject, action, encounter);
+      return createTask(repo, planDefinition, requester, subject, action, encounter, owner, performerType);
   }
 }
 
