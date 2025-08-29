@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -269,9 +270,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
    * 8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
    * 9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
+   * 10. 08/27/25 - Added HumanName sort columns for `Patient`, `Person`, `Practitioner`, `RelatedPerson` (https://github.com/medplum/medplum/pull/TODO)
    *
    */
-  static readonly VERSION: number = 9;
+  static readonly VERSION: number = 10;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -1649,6 +1651,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
+      if (impl.sortColumnName) {
+        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+      }
       return;
     }
 
