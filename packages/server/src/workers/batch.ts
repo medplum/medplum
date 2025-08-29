@@ -13,7 +13,7 @@ import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
-import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
+import { getAuthenticatedContext, runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -50,7 +50,10 @@ export const initBatchWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<BatchJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execBatchJob(job)),
+    (job) => {
+      const { authState, requestId, traceId } = job.data;
+      return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
+    },
     {
       ...defaultOptions,
       ...config.bullmq,

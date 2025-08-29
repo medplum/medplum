@@ -37,6 +37,5 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
-  "shutdownTimeoutMilliseconds": 30000,
-  "defaultFhirQuota": 1000
+  "shutdownTimeoutMilliseconds": 30000
 }

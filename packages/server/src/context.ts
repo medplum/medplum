@@ -145,9 +145,7 @@ export async function createContextForRequest(req: Request): Promise<RequestCont
   const authState = await authenticateTokenImpl(req);
   if (authState) {
     const repo = await getRepoForLogin(authState, isExtendedMode(req));
-    return new AuthenticatedRequestContext(requestId, traceId, authState, repo, {
-      async: req.get('prefer') === 'respond-async',
-    });
+    return new AuthenticatedRequestContext(requestId, traceId, authState, repo);
   } else {
     return new RequestContext(requestId, traceId);
   }
@@ -166,6 +164,22 @@ export function tryRunInRequestContext<T>(requestId: string | undefined, traceId
   } else {
     return fn();
   }
+}
+
+export async function runInAsyncContext<T>(
+  authState: Readonly<AuthState>,
+  requestId: string | undefined,
+  traceId: string | undefined,
+  fn: () => T
+): Promise<T> {
+  const repo = await getRepoForLogin(authState, true);
+  requestId ??= randomUUID();
+  traceId ??= randomUUID();
+
+  return requestContextStore.run(
+    new AuthenticatedRequestContext(requestId, traceId, authState, repo, { async: true }),
+    fn
+  );
 }
 
 export function getTraceId(req: Request): string | undefined {

@@ -76,12 +76,14 @@ export class FhirRateLimiter {
    */
   async consume(points: number): Promise<void> {
     // If user is already over the limit, just block
-    if (this.current && this.current.remainingPoints <= 0 && this.enabled) {
-      const outcome = deepClone(tooManyRequests);
-      outcome.issue[0].diagnostics = JSON.stringify({ ...this.current, limit: this.limiter.points });
-      throw new OperationOutcomeError(outcome);
+    if (this.current && this.current.remainingPoints <= 0) {
+      await this.block(points, this.current);
+      return;
     }
+    await this.consumeImpl(points);
+  }
 
+  private async consumeImpl(points: number): Promise<void> {
     this.delta += points;
     try {
       const result = await this.limiter.consume(this.userKey, points);
@@ -115,20 +117,22 @@ export class FhirRateLimiter {
         msToReset: result.msBeforeNext,
         enabled: this.enabled,
       });
-      if (this.enabled) {
-        if (this.async) {
-          // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
-          const waitMs = result.msBeforeNext * (1 + Math.random() * 0.25);
-          console.log('===== SLEEPING FOR', waitMs);
-          await sleep(waitMs);
-          console.log('===== CONSUMING', points);
-          await this.consume(points);
-        } else {
-          // Block synchronous request
-          const outcome = deepClone(tooManyRequests);
-          outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
-          throw new OperationOutcomeError(outcome);
-        }
+      await this.block(points, result);
+    }
+  }
+
+  async block(points: number, result: RateLimiterRes): Promise<void> {
+    if (this.enabled) {
+      if (this.async) {
+        // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
+        const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
+        await sleep(waitMs);
+        await this.consumeImpl(points);
+      } else {
+        // Block synchronous request
+        const outcome = deepClone(tooManyRequests);
+        outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
+        throw new OperationOutcomeError(outcome);
       }
     }
   }

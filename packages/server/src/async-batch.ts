@@ -15,8 +15,8 @@ export function asyncBatchHandler(
   config: MedplumServerConfig
 ): (req: Request, res: Response, next: NextFunction) => Promise<any> {
   return async function (req: Request, res: Response, next: NextFunction): Promise<any> {
-    const { repo, isAsync } = getAuthenticatedContext();
-    if (!isAsync) {
+    const { repo, project } = getAuthenticatedContext();
+    if (req.get('prefer') !== 'respond-async') {
       next();
       return;
     }
@@ -26,6 +26,12 @@ export function asyncBatchHandler(
       throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));
     }
     const bundle = req.body as Bundle;
+
+    if (bundle.type === 'transaction' && project.features?.includes('transaction-bundles')) {
+      throw new OperationOutcomeError(
+        badRequest('Transaction batches cannot be executed asynchronously', 'Bundle.type')
+      );
+    }
 
     const exec = new AsyncJobExecutor(repo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
