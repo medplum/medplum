@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Operator, WithId } from '@medplum/core';
-import { HumanName, Patient } from '@medplum/fhirtypes';
+import { HumanName, Patient, Practitioner, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
@@ -283,6 +283,34 @@ describe('HumanName Lookup Table', () => {
       expect(descending.entry?.length).toStrictEqual(3);
       expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
     }));
+
+  test.failing('FAILING Sort by name multi-type', () =>
+    withTestContext(async () => {
+      const name = randomUUID();
+      const identifier = randomUUID();
+
+      const prac1 = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Ashley'], family: name }],
+      });
+
+      const prac2 = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Bobby'], family: name }],
+      });
+      const ascendingMultiType = await systemRepo.search({
+        resourceType: 'MultipleTypes' as ResourceType,
+        types: ['Patient', 'Practitioner'],
+        sortRules: [{ code: 'name' }],
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+      });
+
+      expect(ascendingMultiType.entry?.length).toStrictEqual(5);
+      expect(ascendingMultiType.entry?.map((e) => e.resource?.id)).toStrictEqual([prac1.id, prac2.id]);
+    })
+  );
 
   test('Purges related resource type', async () => {
     const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
