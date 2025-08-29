@@ -1318,7 +1318,7 @@ describe('FHIR Repo', () => {
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = getSystemRepo();
-    const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+    const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     const finalPostCommit = jest.fn();
 
     const error = new Error('Post-commit hook failed');

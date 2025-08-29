@@ -1156,6 +1156,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           deleted: true,
           projectId: resource.meta?.project,
           content,
+          __version: -1,
         };
 
         if (resourceType !== 'Binary') {
