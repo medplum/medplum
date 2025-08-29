@@ -170,7 +170,7 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      const expr = buildReferenceEqualsCondition(builder.tableName, impl, referenceValues[0]);
+      const expr = buildReferenceEqualsCondition(builder.effectiveTableName, impl, referenceValues[0]);
       referenceConditions.push(expr);
       builder.whereExpr(expr);
 
@@ -188,7 +188,7 @@ export async function searchByReferenceImpl<T extends Resource>(
     }
     // Update each column with the current reference value literal
     for (const column of referenceColumns) {
-      column.columnName = `'${refValue}'`;
+      column.actualColumnName = `'${refValue}'`;
     }
     unionAllBuilder.add(searchQuery);
   }
@@ -1587,11 +1587,11 @@ function buildChainedSearchUsingReferenceTable(
   let innerQuery: SelectQuery;
   if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCanonicalJoinCondition(selectQuery.tableName, link, currentTable)
+      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
   } else {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      lookupTableJoinCondition(selectQuery.tableName, link, currentTable)
+      lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
