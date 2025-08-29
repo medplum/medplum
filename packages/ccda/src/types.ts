@@ -18,6 +18,18 @@ export interface Ccda {
   component?: CcdaOuterComponent;
 }
 
+export interface Qrda {
+  realmCode: CcdaRealmCode;
+  typeId: CcdaId;
+  templateId: CcdaTemplateId[];
+  id: CcdaId;
+  code: CcdaCode;
+  title: string;
+  effectiveTime: CcdaEffectiveTime;
+  confidentialityCode?: CcdaCode;
+  languageCode: CcdaCode;
+}
+
 export interface CcdaRealmCode {
   '@_code': string;
 }
