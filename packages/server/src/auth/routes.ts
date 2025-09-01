@@ -10,6 +10,7 @@ import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
 import { googleHandler, googleValidator } from './google';
+import { appleHandler, appleValidator } from './apple';
 import { loginHandler, loginValidator } from './login';
 import { meHandler } from './me';
 import { methodHandler, methodValidator } from './method';
@@ -42,6 +43,7 @@ authRouter.post('/resetpassword', resetPasswordValidator, validateRecaptcha(), a
 authRouter.post('/setpassword', setPasswordValidator, asyncWrap(setPasswordHandler));
 authRouter.post('/verifyemail', verifyEmailValidator, asyncWrap(verifyEmailHandler));
 authRouter.post('/google', googleValidator, asyncWrap(googleHandler));
+authRouter.post('/apple', appleValidator, asyncWrap(appleHandler));
 authRouter.post('/exchange', exchangeValidator, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateRequest, revokeValidator, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidator, asyncWrap(statusHandler));
