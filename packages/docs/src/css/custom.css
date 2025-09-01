@@ -4,6 +4,9 @@
  * work well for content-centric websites.
  */
 
+/* Import Open Color for standard color definitions. */
+@import 'open-color/open-color.css';
+
 /* You can override the default Infima variables here. */
 :root {
   --ifm-font-size-base: 16px;

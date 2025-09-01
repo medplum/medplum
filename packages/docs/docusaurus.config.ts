@@ -54,7 +54,7 @@ const config: Config = {
           blogSidebarTitle: 'Recent posts',
         },
         theme: {
-          customCss: ['../../node_modules/open-color/open-color.css', './src/css/custom.css'],
+          customCss: './src/css/custom.css',
         },
         gtag: {
           trackingID: 'G-SHW0ZNT27G',
