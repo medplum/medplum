@@ -13,7 +13,7 @@ export default function SolutionsPage(): JSX.Element {
       <Container>
         <Jumbotron>
           <div className={styles.heroContent}>
-            <h1>The Modern Healthcare Platform</h1>
+            <h1>A Foundation for Growth</h1>
             <p className={styles.heroText}>
               Medplum provides a flexible, secure, and compliant foundation for building sophisticated healthcare
               applications. Whether you're creating a custom EHR, a patient portal, or a complex data integration hub,
@@ -36,7 +36,7 @@ export default function SolutionsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-custom-apps-and-portals-square.svg"
+              src="/img/hero/hero-custom-apps-and-portals-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -55,7 +55,7 @@ export default function SolutionsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-patient-allergies.svg"
+              src="/img/hero/hero-patient-allergies.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -74,7 +74,7 @@ export default function SolutionsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-specialty-clinic-square.svg"
+              src="/img/hero/hero-specialty-clinic-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -94,7 +94,7 @@ export default function SolutionsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-empi-square.svg"
+              src="/img/hero/hero-empi-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -114,7 +114,7 @@ export default function SolutionsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-compliance-and-security-square.svg"
+              src="/img/hero/hero-compliance-and-security-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"

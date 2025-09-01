@@ -12,7 +12,7 @@ export default function ProductsPage(): JSX.Element {
       <Container>
         <Jumbotron>
           <div className={styles.heroContent}>
-            <h1>The Medplum Platform: Built for Healthcare</h1>
+            <h1>Integrated Tools and Services</h1>
             <p className={styles.heroText}>
               Medplum is a platform of integrated, modular products designed to accelerate the development of secure and
               compliant healthcare applications. We provide the tools you need to manage patient data, streamline
@@ -48,7 +48,7 @@ export default function ProductsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-interop-and-data-plataform-square.svg"
+              src="/img/hero/hero-interop-and-data-plataform-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -89,7 +89,7 @@ export default function ProductsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-patient-allergies.svg"
+              src="/img/hero/hero-patient-allergies.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -123,7 +123,7 @@ export default function ProductsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-compliance-and-security-square.svg"
+              src="/img/hero/hero-compliance-and-security-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
@@ -162,7 +162,7 @@ export default function ProductsPage(): JSX.Element {
             </ul>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/hero/hero-homepage.svg" alt="Robot working in a medical office" width="450" height="450" />
+            <img src="/img/hero/hero-homepage.webp" alt="Robot working in a medical office" width="450" height="450" />
           </div>
         </Jumbotron>
         <Jumbotron>
@@ -195,7 +195,7 @@ export default function ProductsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-charts-and-graphs.svg"
+              src="/img/hero/hero-charts-and-graphs.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
