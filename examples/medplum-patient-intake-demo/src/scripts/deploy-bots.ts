@@ -16,7 +16,8 @@ const Bots: BotDescription[] = [
   {
     src: 'src/bots/core/intake-form.ts',
     dist: 'dist/bots/core/intake-form.js',
-    criteria: 'QuestionnaireResponse?questionnaire=$patient-intake',
+    criteria:
+      'QuestionnaireResponse?questionnaire=https://medplum.com/Questionnaire/patient-intake-questionnaire-example',
   },
 ];
 

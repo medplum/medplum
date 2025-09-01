@@ -202,15 +202,11 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
   },
 };
 
-export const consentProvisionPurposeMapping: Record<string, CodeableConcept> = {
+export const consentProvisionPurposeMapping: Record<string, Coding> = {
   patadmin: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
-        code: 'PATADMIN',
-        display: 'Patient Administration',
-      },
-    ],
+    system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+    code: 'PATADMIN',
+    display: 'Patient Administration',
   },
 };
 
