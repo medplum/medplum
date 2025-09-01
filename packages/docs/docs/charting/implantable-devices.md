@@ -10,12 +10,6 @@ Implantable device list can be input via multiple methods, for example via **app
 
 The [USCDI](/docs/fhir-datastore/understanding-uscdi-dataclasses) V2 data standard outlines specific technical requirements, you can see the [profile on HL7.org](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-implantable-device.html).
 
-:::caution
-
-Medplum ONC (a)(14) certification is under development. Contact us at info@medplum.com for more details.
-
-:::
-
 ## Device Specific Identifiers
 
 The recording of implantable devices needs to support several use cases. Here's a few examples:
@@ -50,7 +44,7 @@ The FHIR Resource that represents the implanted device is a FHIR Device resource
 
 ## Querying the FDA API
 
-Medplum supports querying the [FDA Device Lookup API](https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api) to pull in identifiers, name, manufacturer details and safety information from the FDA API.  Entering the correct device specific identifier can trigger a request to the API to fill in specific data to the ONC (a)(14) standard.
+Medplum supports querying the [FDA Device Lookup API](https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api) to pull in identifiers, name, manufacturer details and safety information from the FDA API. Entering the correct device specific identifier can trigger a request to the API to fill in specific data to the ONC (a)(14) standard.
 
 ## Related Reading
 

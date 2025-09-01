@@ -54,6 +54,7 @@
     "@svgr/webpack": "8.1.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
+    "open-color": "1.9.1",
     "prism-react-renderer": "2.4.1",
     "raw-loader": "4.0.2",
     "react": "19.1.1",
