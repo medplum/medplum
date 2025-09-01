@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { type ReactNode } from 'react';
 import LogoSvg from '../../logo.svg';
 import styles from './styles.module.css';

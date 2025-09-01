@@ -48,7 +48,7 @@ export default function ProductsPage(): JSX.Element {
           </div>
           <div className={styles.heroImage}>
             <img
-              src="/img/hero/hero-interop-and-data-plataform-square.webp"
+              src="/img/hero/hero-interop-and-data-platform-square.webp"
               alt="Robot working in a medical office"
               width="450"
               height="450"
