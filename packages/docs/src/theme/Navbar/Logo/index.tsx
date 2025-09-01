@@ -5,10 +5,11 @@ import LogoSvg from '../../logo.svg';
 import styles from './styles.module.css';
 
 export default function NavbarLogo(): ReactNode {
+  const height = 26;
   return (
     <div className={styles.logoContainer}>
       <a className="navbar__brand" href="/">
-        <LogoSvg height="30" width="138" className={styles.logoImage} />
+        <LogoSvg width={Math.round((height / 230) * 1060)} height={height} className={styles.logoImage} />
       </a>
     </div>
   );
