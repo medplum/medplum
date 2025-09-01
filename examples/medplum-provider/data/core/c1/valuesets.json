@@ -298,9 +298,7 @@
         "compose": {
           "include": [
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.2.313"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.2.313"]
             }
           ]
         }
@@ -494,29 +492,19 @@
         "compose": {
           "include": [
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1115"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1115"]
             },
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1917"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1917"]
             },
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1608"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1608"]
             },
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1609"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1609"]
             },
             {
-              "valueSet": [
-                "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1125"
-              ]
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.101.11.1125"]
             }
           ]
         }

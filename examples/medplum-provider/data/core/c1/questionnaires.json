@@ -338,9 +338,7 @@
         "name": "c1-certification",
         "title": "C1 Certification",
         "description": "Used to generate QRDA Cat I XML files for ONC C1 certification (315.c.1) - Record and Export capability.",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "identifier": [
           {
             "system": "https://medplum.com/questionnaires",
