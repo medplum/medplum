@@ -8,7 +8,7 @@ import { JSX } from 'react';
 
 export type TestMetadataCardInputProps = {
   test: TestCoding;
-   
+
   metadata: TestMetadata | undefined;
   error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
 };
