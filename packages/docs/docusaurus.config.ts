@@ -69,7 +69,7 @@ const config: Config = {
       attributes: {
         rel: 'apple-touch-icon',
         sizes: '180x180',
-        href: '/img/logo-192x192.png',
+        href: '/img/medplum-apple-touch-icon.png',
       },
     },
     {
@@ -207,7 +207,7 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
     },
-    image: 'img/medplum.png',
+    image: 'img/medplum-og-cover-image.png',
     algolia: {
       // The application ID provided by Algolia
       appId: '6A1DXS603N',
