@@ -12,7 +12,7 @@ on:
           - ohdsi/d2e-medplum
           - data2evidence/d2e-medplum
       GIT_BRANCH_NAME:
-        default: develop
+        default: main
         description: Enter BranchName / ReleaseTagName
         required: true
         type: string
@@ -38,6 +38,7 @@ on:
   push:
     branches:
       - main
+      - csafreen/publish_src
 
 env:
   GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
