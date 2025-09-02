@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
@@ -26,7 +28,12 @@ export default function EnterprisePage(): JSX.Element {
             </Link>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
+            <img
+              src="/img/hero/hero-custom-apps-and-portals-square.webp"
+              alt="Medplum Enterprise"
+              width="450"
+              height="450"
+            />
           </div>
         </Jumbotron>
         <Section>
