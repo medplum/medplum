@@ -1,5 +1,5 @@
 {
-  "name": "@data2evidence/d2e-medplum-core",
+  "name": "@medplum/core",
   "version": "4.3.6",
   "description": "Medplum TS/JS Library",
   "keywords": [

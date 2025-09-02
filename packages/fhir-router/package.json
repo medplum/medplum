@@ -1,5 +1,5 @@
 {
-  "name": "@data2evidence/d2e-medplum-fhir-router",
+  "name": "@medplum/fhir-router",
   "version": "4.3.6",
   "description": "Medplum FHIR Router",
   "keywords": [

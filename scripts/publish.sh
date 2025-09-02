@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
 PACKAGES=(
-  "ccda"
-  "core"
-  "definitions"
-  "fhir-router"
-  "fhirtypes"
   "server"
 )
 
