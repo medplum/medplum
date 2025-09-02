@@ -10,7 +10,7 @@
     "build": "turbo run build --filter=!@medplum/docs --filter=!./examples/*",
     "build:all": "turbo run build",
     "build:docs": "turbo run build --filter=@medplum/docs",
-    "build:fast": "turbo run build --filter=@medplum/app --filter=@data2evidence/d2e-medplum-server",
+    "build:fast": "turbo run build --filter=@medplum/app --filter=@data2evidence/d2e-medplum",
     "clean": "turbo run clean",
     "lint": "turbo run lint --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",

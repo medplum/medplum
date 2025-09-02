@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 PACKAGES=(
-  "server"
+  "@data2evidence/d2e-medplum"
 )
 
 for package in ${PACKAGES[@]}; do
