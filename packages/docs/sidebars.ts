@@ -10,7 +10,6 @@ const sidebars: SidebarsConfig = {
       className: 'sidebar-title',
     },
     'home',
-    'fhir-basics',
     {
       type: 'category',
       label: 'Tutorials',
@@ -25,9 +24,10 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'html',
-      value: '<strong>Model in FHIR</strong>',
+      value: '<strong>Model</strong>',
       className: 'sidebar-title',
     },
+    'fhir-basics',
     {
       type: 'category',
       label: 'Charting',
