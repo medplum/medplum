@@ -1,5 +1,5 @@
 {
-  "name": "@medplum/server",
+  "name": "@data2evidence/d2e-medplum-server",
   "version": "4.3.6",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",

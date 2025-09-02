@@ -1,5 +1,5 @@
 {
-  "name": "@medplum/definitions",
+  "name": "@data2evidence/d2e-medplum-definitions",
   "version": "4.3.6",
   "description": "Medplum Data Definitions",
   "keywords": [
