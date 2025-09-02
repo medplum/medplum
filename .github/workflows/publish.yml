@@ -106,12 +106,6 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Publish to NPM
-        run: |
-          if [[ $SHOULD_PUBLISH == true ]]; then
-            npm publish
-          else 
-            npm publish --dry-run
-          fi
+        run: ./scripts/publish.sh
         env:
-          SHOULD_PUBLISH: ${{ github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
