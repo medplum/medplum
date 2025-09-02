@@ -37,6 +37,8 @@
   flex: 1;
   width: 100%;
   justify-content: flex-end;
+  align-content: center;
+  flex-wrap: wrap;
 }
 
 @media screen and (max-width: 996px) {
