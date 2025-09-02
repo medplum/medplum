@@ -2,12 +2,46 @@ name: Publish
 
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
+  workflow_dispatch:
+    inputs:
+      GIT_REPO_FULL_NAME:
+        description: Select RepoName
+        required: false
+        type: choice
+        options:
+          - ohdsi/d2e-medplum
+          - data2evidence/d2e-medplum
+      GIT_BRANCH_NAME:
+        default: develop
+        description: Enter BranchName / ReleaseTagName
+        required: true
+        type: string
+      tag:
+        description: Enter tag for release
+        required: true
+        type: string
+      release:
+        description: Enter name for github release
+        required: true
+        type: string
+      prerelease:
+        type: boolean
+        default: true
+        required: true
+      overwrite:
+        type: boolean
+        default: true
+        required: true
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+  merge_group:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
-permissions:
-  contents: read
+env:
+  GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
+  GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }} # workflow_dispatch || pull_request || push
 
 jobs:
   build_and_check:
@@ -29,7 +63,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
+        with:
+          ref: ${{ env.GIT_BRANCH_NAME }}
+          repository: ${{ env.GIT_REPO_FULL_NAME }}
+      - name: Update version
+        run: |
+          if [[ $GITHUB_EVENT_NAME == 'workflow_dispatch' ]]; then
+            RELEASE_VERSION=${{ github.event.inputs.tag }}
+            jq --arg v $RELEASE_VERSION '.version=$v' package.json > tmppkg; mv tmppkg package.json
+          else
+            jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
+          fi
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -48,12 +92,6 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Slack start message
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {"text": "Starting publish: ${{ github.ref_name }}"}
-
       - name: Install dependencies
         run: npm ci
 
@@ -68,270 +106,12 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Publish to NPM
-        run: ./scripts/publish.sh
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Sync example repos
-        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build and push server Docker image
-        run: ./scripts/build-docker-server.sh --release
-        env:
-          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
-
-      - name: Build and push app Docker image
-        run: ./scripts/build-docker-app.sh --release
-        env:
-          APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Deploy bot layer
-        run: ./scripts/deploy-bot-layer.sh
-
-  build_agent_win64:
-    runs-on: windows-latest
-    timeout-minutes: 45
-    env:
-      NODE_VERSION: '20'
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Install NSIS
-        run: choco install nsis
-
-      - name: Install Wget
-        run: choco install wget
-
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-
-      # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        shell: pwsh
-        run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-            ${{ runner.os }}-build-agent
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Set repo hash for agent build
-        shell: bash
-        # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
-          set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Build
-        run: npm run build -- --filter=@medplum/agent
-
-      - name: Find signtool
-        uses: actions/github-script@v6
-        id: find-signtool
-        with:
-          result-encoding: string
-          script: |
-            const fs = require('node:fs/promises');
-
-            /**
-            * Searches the installed Windows SDKs for the most recent signtool.exe version
-            * Taken from https://github.com/dlemstra/code-sign-action
-            * @returns Path to most recent signtool.exe (x86 version)
-            */
-            async function getSigntoolLocation() {
-                const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
-                const folders = await fs.readdir(windowsKitsFolder);
-                let fileName = '';
-                let maxVersion = 0;
-                for (const folder of folders) {
-                    if (!folder.endsWith('.0')) {
-                        continue;
-                    }
-                    const folderVersion = parseInt(folder.replace(/\./g,''));
-                    if (folderVersion > maxVersion) {
-                        const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
-                        try {
-                            const stat = await fs.stat(signtoolFilename);
-                            if (stat.isFile()) {
-                                fileName = signtoolFilename;
-                                maxVersion = folderVersion;
-                            }
-                        } catch {
-                            console.warn('Skipping %s due to error.', signtoolFilename);
-                        }
-                    }
-                }
-                if(fileName == '') {
-                    throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
-                }
-
-                console.log(fileName);
-                return fileName;
-            }
-
-            const path = await getSigntoolLocation();
-            return path.replace(' ', '\ ');
-
-      - name: Build Agent installer
-        shell: bash
-        run: ./scripts/build-agent-installer-win64.sh
+          if [[ $SHOULD_PUBLISH == true ]]; then
+            npm publish
+          else 
+            npm publish --dry-run
+          fi
         env:
-          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
-          SM_HOST: ${{ secrets.SM_HOST }}
-          SM_API_KEY: ${{ secrets.SM_API_KEY }}
-          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
-          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
-
-      - name: Upload Agent installer
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const packageJson = require('./packages/agent/package.json');
-            const fs = require('fs');
-            const tag = context.ref.replace("refs/tags/", "");
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-installer-" + packageJson.version + ".exe",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
-            });
-
-  build_agent_linux:
-    strategy:
-      matrix:
-        arch:
-          - image: ubuntu-latest
-            suffix: x64
-          - image: ubuntu-24.04-arm
-            suffix: arm64
-    runs-on: ${{ matrix.arch.image }}
-    timeout-minutes: 45
-    env:
-      NODE_VERSION: '20'
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-            ${{ runner.os }}-build-agent
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Set repo hash for agent build
-        shell: bash
-        # This forces git shorthash to match between @medplum/agent and @medplum/core
-        run: |
-          set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Build
-        run: npm run build -- --filter=@medplum/agent
-
-      - name: Build Agent
-        shell: bash
-        run: ./scripts/build-agent-installer-linux.sh
-
-      - name: Upload Agent
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const packageJson = require('./packages/agent/package.json');
-            const fs = require('fs');
-            const tag = context.ref.replace("refs/tags/", "");
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
-            });
+          SHOULD_PUBLISH: ${{ github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
