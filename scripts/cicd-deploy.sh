@@ -150,7 +150,7 @@ fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
-  npm run build -- --force --filter=@medplum/server
+  npm run build -- --force --filter=@data2evidence/d2e-medplum-server
   source ./scripts/build-docker-server.sh
   source ./scripts/deploy-server.sh
 fi

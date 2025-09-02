@@ -96,7 +96,7 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build -- --filter=@medplum/server
+        run: npm run build -- --filter=@data2evidence/d2e-medplum
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
