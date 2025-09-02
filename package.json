@@ -1,5 +1,5 @@
 {
-  "name": "root",
+  "name": "@data2evidence/d2e-medplum",
   "version": "4.3.6",
   "private": true,
   "workspaces": [

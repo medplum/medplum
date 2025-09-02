@@ -19,7 +19,6 @@ set -x
 # Build server tarball
 tar \
   --no-xattrs \
-  --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
   package.json \
