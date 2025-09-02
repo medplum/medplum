@@ -281,7 +281,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
-  if (login.refreshSecret === undefined) {
+  if (login.refreshSecret === undefined || claims.refresh_secret) {
     // This token does not have a refresh available
     sendTokenError(res, 'invalid_request', 'Invalid token');
     return;
