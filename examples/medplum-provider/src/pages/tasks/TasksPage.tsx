@@ -35,14 +35,14 @@ export function TasksPage(): JSX.Element {
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
     status: undefined,
-    performerType: undefined
+    performerType: undefined,
   });
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const searchParams = new URLSearchParams();
       searchParams.append('_sort', '-_lastUpdated');
-      
+
       if (profileRef && filters.showMyTasks) {
         searchParams.append('owner', getReferenceString(profileRef));
       }
@@ -101,17 +101,17 @@ export function TasksPage(): JSX.Element {
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
       case TaskFilterType.STATUS:
-        setFilters(prev => ({
+        setFilters((prev) => ({
           ...prev,
-          status: prev.status !== value ? (value as Task['status']) : undefined
+          status: prev.status !== value ? (value as Task['status']) : undefined,
         }));
         break;
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
-        setFilters(prev => ({
+        setFilters((prev) => ({
           ...prev,
-          performerType: performerTypeCode !== valueCode ? (value as CodeableConcept) : undefined
+          performerType: performerTypeCode !== valueCode ? (value as CodeableConcept) : undefined,
         }));
         break;
       }
@@ -125,7 +125,7 @@ export function TasksPage(): JSX.Element {
     setFilters({
       showMyTasks: flag,
       status: undefined,
-      performerType: undefined
+      performerType: undefined,
     });
   };
 
