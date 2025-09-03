@@ -75,11 +75,12 @@ jobs:
           else
             jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
           fi
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - name: Use Node.js - Project
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: "https://npm.pkg.github.com"
+          node-version: "20"
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/"
+          scope: "@data2evidence"
 
       - name: Cache node modules
         uses: actions/cache@v4
@@ -109,4 +110,4 @@ jobs:
       - name: Publish to NPM
         run: ./scripts/publish.sh
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
