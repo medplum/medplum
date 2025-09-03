@@ -647,6 +647,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    console.log('===== WRITING', resource.resourceType);
     await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
@@ -771,11 +772,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
+    console.log('===== READY TO WRITE', result);
+
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
       const project = await this.getProjectById(projectId);
       await addBackgroundJobs(result, existing, { project, interaction });
+      console.log('===== POST-COMMIT');
     });
 
     const output = deepClone(result);
@@ -911,10 +915,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
       if (!profile) {
-        // logger.warn('Unknown profile referenced', {
-        //   resource: `${resource.resourceType}/${resource.id}`,
-        //   url,
-        // });
+        logger.warn('Unknown profile referenced', {
+          resource: `${resource.resourceType}/${resource.id}`,
+          url,
+        });
         continue;
       }
       const validateStart = process.hrtime.bigint();
@@ -1312,7 +1316,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
+      console.log('===== SEARCH', searchRequest);
       const result = await searchImpl(this, searchRequest, options);
+      console.log('===== DONE!', result);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;

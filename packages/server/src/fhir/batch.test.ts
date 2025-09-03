@@ -14,6 +14,7 @@ import {
   Practitioner,
   RelatedPerson,
   Task,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -21,6 +22,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { runInAsyncContext } from '../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 
@@ -1251,11 +1253,12 @@ describe('Batch and Transaction processing', () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();
 
-    const { accessToken } = await createTestProject({
+    const { accessToken, login, membership, project } = await createTestProject({
       withAccessToken: true,
+      withClient: true,
       project: {
         systemSetting: [
-          { name: 'userFhirQuota', valueInteger: 100 },
+          { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
         ],
       },
@@ -1303,21 +1306,23 @@ describe('Batch and Transaction processing', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     queue.add.mockClear();
 
-    jest.useFakeTimers();
-    await expect(execBatchJob(job)).resolves.toBe(undefined);
+    jest.useFakeTimers({ advanceTimers: true });
 
+    const jobResult = runInAsyncContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      () => execBatchJob(job)
+    );
+
+    // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
+
+    await expect(jobResult).resolves.toBe(undefined);
     const jobUrl = outcome.issue[0].diagnostics as string;
-
-    // await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    await jest.advanceTimersByTimeAsync(60_000);
-    // await jest.advanceTimersByTimeAsync(60_000);
-
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+
+    jest.useRealTimers();
+
     expect(asyncJob.output).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
@@ -1329,17 +1334,13 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<Partial<Bundle>>({
-      resourceType: 'Bundle',
-      type: 'batch-response',
-    });
+    expect(res2.body).toMatchObject<Partial<Bundle>>({ resourceType: 'Bundle', type: 'batch-response' });
 
-    // await waitForAsyncJob(res.header['content-location'], app, accessToken);
+    await waitForAsyncJob(res.header['content-location'], app, accessToken);
 
-    // const results = res.body as Bundle;
-    // expect(results.entry).toHaveLength(4);
-    // expect(results.type).toStrictEqual('batch-response');
-    // expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
-    jest.useRealTimers();
+    const results = res.body as Bundle;
+    expect(results.entry).toHaveLength(4);
+    expect(results.type).toStrictEqual('batch-response');
+    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
   });
 });

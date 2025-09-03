@@ -84,6 +84,7 @@ export class FhirRateLimiter {
   }
 
   private async consumeImpl(points: number): Promise<void> {
+    console.trace('===== CONSUMING', points);
     this.delta += points;
     try {
       const result = await this.limiter.consume(this.userKey, points);
@@ -96,8 +97,10 @@ export class FhirRateLimiter {
         this.logThreshold = Number.POSITIVE_INFINITY; // Disable additional logs for this request
       }
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
+      console.log('===== RL RESULT:', result, projectResult);
       this.setState(result, projectResult);
     } catch (err: unknown) {
+      console.log('===== RL ERR:', err);
       if (err instanceof Error) {
         this.logger.error('Error updating FHIR quota', err);
 
@@ -122,11 +125,14 @@ export class FhirRateLimiter {
   }
 
   async block(points: number, result: RateLimiterRes): Promise<void> {
+    console.log('===== BLOCK!', result);
     if (this.enabled) {
       if (this.async) {
         // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
         const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
+        console.log('===== SLEEPING FOR', waitMs, 'ms');
         await sleep(waitMs);
+        console.log('===== AGAIN!');
         await this.consumeImpl(points);
       } else {
         // Block synchronous request
