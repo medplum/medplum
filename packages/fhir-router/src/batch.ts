@@ -432,9 +432,7 @@ class BatchProcessor {
     }
 
     const request = this.parseBatchRequest(entry, route);
-    console.log('===== PROCESSING', entry.request);
     const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
-    console.log(outcome);
 
     if (!isOk(outcome) && this.isTransaction()) {
       throw new OperationOutcomeError(outcome);

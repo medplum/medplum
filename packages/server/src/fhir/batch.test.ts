@@ -19,6 +19,7 @@ import {
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -34,6 +35,10 @@ describe('Batch and Transaction processing', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -1306,7 +1311,26 @@ describe('Batch and Transaction processing', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     queue.add.mockClear();
 
-    jest.useFakeTimers({ advanceTimers: true });
+    let count = 0;
+    const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
+      count = (count + 1) % 3;
+      if (!key.toString().includes(membership.id)) {
+        // allowed
+        return {
+          remainingPoints: 100,
+          msBeforeNext: 100,
+          consumedPoints: 100,
+          isFirstInDuration: false,
+        } as RateLimiterRes;
+      }
+
+      return {
+        remainingPoints: 200 - count * 100, // Allow every third call
+        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        consumedPoints: 100,
+        isFirstInDuration: false,
+      } as RateLimiterRes;
+    });
 
     const jobResult = runInAsyncContext(
       { login, membership, project, userConfig: {} as unknown as UserConfiguration },
@@ -1318,10 +1342,12 @@ describe('Batch and Transaction processing', () => {
     // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
 
     await expect(jobResult).resolves.toBe(undefined);
+    expect(consumeMock).toHaveBeenCalledTimes(10);
+
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
 
-    jest.useRealTimers();
+    await waitForAsyncJob(res.header['content-location'], app, accessToken);
 
     expect(asyncJob.output).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -1336,9 +1362,7 @@ describe('Batch and Transaction processing', () => {
     expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<Partial<Bundle>>({ resourceType: 'Bundle', type: 'batch-response' });
 
-    await waitForAsyncJob(res.header['content-location'], app, accessToken);
-
-    const results = res.body as Bundle;
+    const results = res2.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
     expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
