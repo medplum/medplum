@@ -44,11 +44,13 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       searchParams.append('part-of:missing', 'true');
       const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
 
+      const partOfReferences = searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ');
+
       const allCommunications = await medplum.graphql(`
         query {
           CommunicationList(
             _sort: "-sent"
-            _filter: "part-of eq ${searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ')}"
+            _filter: "part-of eq ${partOfReferences}"
           ) {
             id
             partOf {

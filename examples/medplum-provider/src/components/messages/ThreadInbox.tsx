@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
-import { JSX, useState, useEffect } from 'react';
+import { JSX, useState, useEffect, useMemo } from 'react';
 import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { getReferenceString } from '@medplum/core';
 import { ChatList } from './ChatList';
@@ -43,7 +43,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
 
-  const queryWithStatus = `${query}&status=${status}`;
+  const queryWithStatus = useMemo(() => `${query}&status=${status}`, [query, status]);
 
   const { loading, error, threadMessages, selectedThread, handleThreadtatusChange, addThreadMessage } = useThreadInbox({
     query: queryWithStatus,
