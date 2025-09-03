@@ -14,5 +14,8 @@ Medplum supports SFTP server integrations for HL7 messages. See our example [rec
 
 ## C-CDA 
 
+Medplum's C-CDA (Consolidated Clinical Document Architecture) provides support for C-CDA to FHIR, FHIR to C-CDA, C-CDA to XML, and XML to C-CDA. For more information, see [our documentation](/docs/integration/c-cda). 
+
 ## FHIRcast
 
+Medplum is fully certified as FHIRcast Hub, allow coordination of complex radiology workflows where multiple applications must synchronize in real-time. For more information, see [our blog post](/blog/ihe-ira-radiology-reporting). 
