@@ -1,4 +1,4 @@
-name: Publish
+name: Publish-Server
 
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
