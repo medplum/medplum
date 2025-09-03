@@ -33,20 +33,19 @@ interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
   showPatientSummary: boolean | undefined;
-  handleNewTopic: (message: Communication) => void;
+  handleNewThread: (message: Communication) => void;
   onSelectedItem: (topic: Communication) => string;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
-  const { query, threadId, showPatientSummary = false, handleNewTopic, onSelectedItem } = props;
+  const { query, threadId, showPatientSummary = false, handleNewThread, onSelectedItem } = props;
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
 
-  // Build query with status filter
   const queryWithStatus = `${query}&status=${status}`;
 
-  const { loading, error, threadMessages, selectedThread, handleTopicStatusChange } = useThreadInbox({
+  const { loading, error, threadMessages, selectedThread, handleThreadtatusChange, addThreadMessage } = useThreadInbox({
     query: queryWithStatus,
     threadId,
   });
@@ -63,10 +62,15 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
     try {
-      await handleTopicStatusChange(newStatus);
+      await handleThreadtatusChange(newStatus);
     } catch (error) {
       showErrorNotification(error);
     }
+  };
+
+  const handleNewTopicCompletion = (message: Communication): void => {
+    addThreadMessage(message);
+    handleNewThread(message);
   };
 
   return (
@@ -202,7 +206,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopic} />
+      <NewTopicDialog opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} />
     </>
   );
 }

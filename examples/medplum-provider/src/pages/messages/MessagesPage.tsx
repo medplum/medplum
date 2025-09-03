@@ -13,7 +13,7 @@ export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
   const navigate = useNavigate();
 
-  const handleNewTopic = (message: Communication): void => {
+  const handleNewThread = (message: Communication): void => {
     navigate(`/Message/${message.id}`)?.catch(console.error);
   };
 
@@ -27,7 +27,7 @@ export function MessagesPage(): JSX.Element {
         threadId={messageId}
         query="_sort=-_lastUpdated"
         showPatientSummary={true}
-        handleNewTopic={handleNewTopic}
+        handleNewThread={handleNewThread}
         onSelectedItem={onSelectedItem}
       />
     </div>
