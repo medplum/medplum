@@ -10,8 +10,6 @@ We offer a developer-first alternative to Mirth, Corepoint, site-to-site VPN tun
 
 Medplum supports SFTP server integrations for HL7 messages. See our example [receiving ORU bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/lab-integration/receive-oru-message.ts) and [sending ORM bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/lab-integration/send-orm-message.ts). 
 
-## SMART on FHIR
-
 ## C-CDA 
 
 Medplum's C-CDA (Consolidated Clinical Document Architecture) provides support for C-CDA to FHIR, FHIR to C-CDA, C-CDA to XML, and XML to C-CDA. For more information, see [our documentation](/docs/integration/c-cda). 
