@@ -14,7 +14,6 @@ export function CommunicationTab(): JSX.Element {
   };
 
   const handleNewTopic = (message: Communication): void => {
-    // setThreadMessages([[message, undefined], ...threadMessages]);
     navigate(`Patient/${patientId}/Message/${message.id}`)?.catch(console.error);
   };
 

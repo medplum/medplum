@@ -14,7 +14,6 @@ export function MessagesPage(): JSX.Element {
    const navigate = useNavigate();
 
   const handleNewTopic = (message: Communication): void => {
-    // setThreadMessages([[message, undefined], ...threadMessages]);
     navigate(`/Message/${message.id}`)?.catch(console.error);
   };
 
