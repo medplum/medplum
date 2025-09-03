@@ -14,6 +14,12 @@ import { showErrorNotification } from '../../utils/notifications';
 import classes from './TasksPage.module.css';
 import { IconClipboardList } from '@tabler/icons-react';
 
+interface FilterState {
+  showMyTasks: boolean;
+  status: Task['status'] | undefined;
+  performerType: CodeableConcept | undefined;
+}
+
 export function TasksPage(): JSX.Element {
   const { taskId } = useParams();
   const medplum = useMedplum();
@@ -21,32 +27,35 @@ export function TasksPage(): JSX.Element {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const [showMyTasks, setShowMyTasks] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [notFound, setNotFound] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [status, setStatus] = useState<Task['status'] | undefined>(undefined);
-  const [performerType, setPerformerType] = useState<CodeableConcept | undefined>(undefined);
+  const [filters, setFilters] = useState<FilterState>({
+    showMyTasks: true,
+    status: undefined,
+    performerType: undefined
+  });
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const searchParams = new URLSearchParams();
       searchParams.append('_sort', '-_lastUpdated');
-      if (profileRef && showMyTasks) {
+      
+      if (profileRef && filters.showMyTasks) {
         searchParams.append('owner', getReferenceString(profileRef));
       }
-      if (status) {
-        searchParams.append('status', status);
+      if (filters.status) {
+        searchParams.append('status', filters.status);
       }
 
       let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
       const performerTypes = results.flatMap((task) => task.performerType || []);
 
-      if (performerType) {
+      if (filters.performerType) {
         results = results.filter(
-          (task) => task.performerType?.[0]?.coding?.[0]?.code === performerType.coding?.[0]?.code
+          (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
         );
       }
 
@@ -58,7 +67,7 @@ export function TasksPage(): JSX.Element {
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, showMyTasks, status, performerType]);
+  }, [medplum, profileRef, filters]); // Single dependency for all filter state
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -92,25 +101,32 @@ export function TasksPage(): JSX.Element {
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
       case TaskFilterType.STATUS:
-        if (status !== value) {
-          setStatus(value as Task['status']);
-        } else {
-          setStatus(undefined);
-        }
+        setFilters(prev => ({
+          ...prev,
+          status: prev.status !== value ? (value as Task['status']) : undefined
+        }));
         break;
       case TaskFilterType.PERFORMER_TYPE: {
-        const performerTypeCode = performerType?.coding?.[0]?.code;
+        const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
-        if (performerTypeCode !== valueCode) {
-          setPerformerType(value as CodeableConcept);
-        } else {
-          setPerformerType(undefined);
-        }
+        setFilters(prev => ({
+          ...prev,
+          performerType: performerTypeCode !== valueCode ? (value as CodeableConcept) : undefined
+        }));
         break;
       }
       default:
         break;
     }
+  };
+
+  const handleShowMyTasksChange = (flag: boolean): void => {
+    // Single state update that resets all filters atomically
+    setFilters({
+      showMyTasks: flag,
+      status: undefined,
+      performerType: undefined
+    });
   };
 
   return (
@@ -120,26 +136,26 @@ export function TasksPage(): JSX.Element {
           <Paper>
             <Flex p="md" gap="xs" align="center" h={72}>
               <Button
-                className={cx(classes.button, { [classes.selected]: showMyTasks })}
+                className={cx(classes.button, { [classes.selected]: filters.showMyTasks })}
                 h={32}
                 radius="xl"
-                onClick={() => setShowMyTasks(true)}
+                onClick={() => handleShowMyTasksChange(true)}
               >
                 My Tasks
               </Button>
 
               <Button
-                className={cx(classes.button, { [classes.selected]: !showMyTasks })}
+                className={cx(classes.button, { [classes.selected]: !filters.showMyTasks })}
                 h={32}
                 radius="xl"
-                onClick={() => setShowMyTasks(false)}
+                onClick={() => handleShowMyTasksChange(false)}
               >
                 All Tasks
               </Button>
 
               <TaskFilterMenu
-                status={status}
-                performerType={performerType}
+                status={filters.status}
+                performerType={filters.performerType}
                 performerTypes={performerTypes}
                 onFilterChange={handleFilterChange}
               />
