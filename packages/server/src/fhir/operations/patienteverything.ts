@@ -126,6 +126,7 @@ export async function searchPatientCompartment(
     filters,
     count: search?.count ?? defaultMaxResults,
     offset: search?.offset,
+    sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure that pagination works correctly
   });
 }
 
