@@ -10,7 +10,7 @@ This operation sets the target resource's `meta.accounts` references and optiona
 
 :::warning
 
-This operation will only update the first 1,000 resources in the target's compartment.
+It is recommended that you run this operation with `Prefer: respond-async` header to avoid any timeouts while waiting for resources in patient compartment to update.
 
 :::
 
