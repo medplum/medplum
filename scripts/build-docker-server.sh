@@ -19,25 +19,21 @@ set -x
 # Build server tarball
 tar \
   --no-xattrs \
+  --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
   package.json \
   package-lock.json \
   packages/ccda/package.json \
   packages/ccda/dist \
-  packages/ccda/src \
   packages/core/package.json \
   packages/core/dist \
-  packages/core/src \
   packages/definitions/package.json \
   packages/definitions/dist \
-  packages/definitions/src \
   packages/fhir-router/package.json \
   packages/fhir-router/dist \
-  packages/fhir-router/src \
   packages/server/package.json \
   packages/server/dist \
-  packages/server/src \
   packages/server/static
 
 # # Supply chain attestations
