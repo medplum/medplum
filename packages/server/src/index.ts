@@ -54,9 +54,9 @@ export async function main(configName: string): Promise<void> {
   });
 }
 
-if (require.main === module) {
-  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
-    console.log(err);
+main('file:medplum.config.json').catch((reason) => {
+  console.error(reason);
+  if (typeof process !== 'undefined' && process.exit) {
     process.exit(1);
-  });
-}
+  }
+});

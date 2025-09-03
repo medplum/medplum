@@ -12,7 +12,7 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
@@ -34,8 +34,16 @@ import {
   SchemaDefinition,
   TableDefinition,
 } from './types';
-
-const SCHEMA_DIR = resolve(__dirname, 'schema');
+import { fileURLToPath } from 'node:url';
+let baseDir: string = "";
+if (typeof __dirname !== 'undefined') {
+  baseDir = __dirname;
+  //@ts-ignore
+} else if (typeof import.meta !== 'undefined') {
+  //@ts-ignore
+  baseDir = dirname(fileURLToPath(import.meta.url));
+}
+const SCHEMA_DIR = resolve(baseDir, 'schema');
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -1370,9 +1378,9 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   return result;
 }
 
-if (require.main === module) {
-  main().catch((reason) => {
-    console.error(reason);
+main().catch((reason) => {
+  console.error(reason);
+  if (typeof process !== 'undefined' && process.exit) {
     process.exit(1);
-  });
-}
+  }
+});

@@ -7,9 +7,11 @@ import {
   HTTP_HL7_ORG,
 } from '@medplum/core';
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
-import path from 'path';
+import path, { dirname } from 'path';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
+import { fileURLToPath } from 'url';
+
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -93,7 +95,14 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
   );
 
   const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
-
+  let baseDir: string = "";
+  if (typeof __dirname !== 'undefined') {
+    baseDir = __dirname;
+    //@ts-ignore
+  } else if (typeof import.meta !== 'undefined') {
+    //@ts-ignore
+    baseDir = dirname(fileURLToPath(import.meta.url));
+  }
   const docDefinition: TDocumentDefinitions = {
     defaultStyle: {
       font: 'Helvetica',
@@ -103,7 +112,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: path.relative(process.cwd(), path.resolve(__dirname, '../../../../static/cms1500.png')),
+        image: path.relative(process.cwd(), path.resolve(baseDir, '../../../../static/cms1500.png')),
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
