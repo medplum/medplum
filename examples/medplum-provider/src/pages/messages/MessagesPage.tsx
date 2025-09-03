@@ -6,12 +6,12 @@ import { useNavigate, useParams } from 'react-router';
 import { ThreadInbox } from '../../components/messages/ThreadInbox';
 import classes from './MessagesPage.module.css';
 /**
- * Fetches 
+ * Fetches
  * @returns A React component that displays all Threads/Topics.
  */
 export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
-   const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleNewTopic = (message: Communication): void => {
     navigate(`/Message/${message.id}`)?.catch(console.error);
@@ -23,13 +23,13 @@ export function MessagesPage(): JSX.Element {
 
   return (
     <div className={classes.container}>
-      <ThreadInbox 
-        threadId={messageId} 
-        query='_sort=-_lastUpdated'
+      <ThreadInbox
+        threadId={messageId}
+        query="_sort=-_lastUpdated"
         showPatientSummary={true}
-        handleNewTopic={handleNewTopic} 
+        handleNewTopic={handleNewTopic}
         onSelectedItem={onSelectedItem}
-       />
-       </div>
+      />
+    </div>
   );
 }

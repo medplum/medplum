@@ -30,10 +30,7 @@ It also provides a function to update the status of the selected thread.
 @returns The thread messages and selected thread.
 @returns A function to update the status of the selected thread.
 */
-export function useThreadInbox({
-  query,
-  threadId
-}: UseThreadInboxOptions): UseThreadInboxReturn {
+export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseThreadInboxReturn {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [threadMessages, setThreadMessages] = useState<[Communication, Communication | undefined][]>([]);
@@ -45,7 +42,7 @@ export function useThreadInbox({
       const searchParams = new URLSearchParams(query);
       searchParams.append('part-of:missing', 'true');
       const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
-  
+
       const allCommunications = await medplum.graphql(`
         query {
           CommunicationList(
@@ -66,7 +63,7 @@ export function useThreadInbox({
           }
         }
       `);
-  
+
       const map = new Map<string, Communication>();
       allCommunications.data.CommunicationList.forEach((communication: Communication) => {
         const partOfRef = communication.partOf?.[0]?.reference;
@@ -76,7 +73,7 @@ export function useThreadInbox({
           }
         }
       });
-  
+
       const threads: [Communication, Communication][] = searchResult
         .map((communication: Communication) => {
           const lastCommunication = map.get(createReference(communication).reference);
@@ -86,18 +83,18 @@ export function useThreadInbox({
           return undefined;
         })
         .filter((t): t is [Communication, Communication] => t !== undefined);
-      
+
       setThreadMessages(threads);
     };
 
     setLoading(true);
     fetchAllCommunications()
-    .catch((error) => {
-      setError(error as Error);
-    })
-    .finally(() => {
-      setLoading(false);
-    });
+      .catch((error) => {
+        setError(error as Error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [medplum, query]);
 
   useEffect(() => {

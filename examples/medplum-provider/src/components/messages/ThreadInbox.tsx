@@ -38,29 +38,17 @@ interface ThreadInboxProps {
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
-  const {
-    query,
-    threadId,
-    showPatientSummary = false,
-    handleNewTopic,
-    onSelectedItem,
-  } = props;
+  const { query, threadId, showPatientSummary = false, handleNewTopic, onSelectedItem } = props;
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
-  
+
   // Build query with status filter
   const queryWithStatus = `${query}&status=${status}`;
-  
-  const {
-    loading,
-    error,
-    threadMessages,
-    selectedThread,
-    handleTopicStatusChange,
-  } = useThreadInbox({
+
+  const { loading, error, threadMessages, selectedThread, handleTopicStatusChange } = useThreadInbox({
     query: queryWithStatus,
-    threadId
+    threadId,
   });
 
   useEffect(() => {
@@ -177,7 +165,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         {selectedThread.status !== 'completed' && (
                           <>
                             <Menu.Dropdown>
-                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>Completed</Menu.Item>
+                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
+                                Completed
+                              </Menu.Item>
                             </Menu.Dropdown>
                           </>
                         )}
