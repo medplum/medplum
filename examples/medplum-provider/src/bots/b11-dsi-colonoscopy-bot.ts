@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { BotEvent, MedplumClient, SNOMED } from '@medplum/core';
 import { Encounter } from '@medplum/fhirtypes';
-import { DSIScreeningConfig, processDSIScreening } from '@/utils/dsi';
+import { DSIScreeningConfig, processDSIScreening } from '../utils/dsi';
 
 const COLONOSCOPY_DSI_CONFIG: DSIScreeningConfig = {
   minAgeYears: 45,

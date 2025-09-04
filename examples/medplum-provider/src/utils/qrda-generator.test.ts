@@ -3,8 +3,8 @@
 import { createReference, SNOMED } from '@medplum/core';
 import { Coverage, Encounter, Patient, Procedure } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { fetchPatientData, generateQRDACategoryI } from '@/utils/qrda-generator';
-import { patientCurtisStrickland, patientJulianJohnston } from '@/bots/test-data/patient-records';
+import { fetchPatientData, generateQRDACategoryI } from './qrda-generator';
+import { patientCurtisStrickland, patientJulianJohnston } from '../bots/test-data/patient-records';
 
 describe('QRDA Generator', () => {
   let medplum: MockClient, patient: Patient, patientId: string, anotherPatient: Patient;

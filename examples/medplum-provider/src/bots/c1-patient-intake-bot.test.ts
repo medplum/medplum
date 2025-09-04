@@ -3,7 +3,7 @@
 import { ContentType, createReference, getReferenceString, SNOMED } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { extensionURLMapping } from '@/utils/intake-utils';
+import { extensionURLMapping } from '../utils/intake-utils';
 import {
   patientIdentifier,
   patientIntakeQuestionnaire,

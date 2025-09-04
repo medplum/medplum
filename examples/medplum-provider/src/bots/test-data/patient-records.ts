@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { extensionURLMapping } from '@/utils/intake-utils';
+import { extensionURLMapping } from '../../utils/intake-utils';
 import questionnairesBundle from '../../../data/core/c1/questionnaires.json';
 
 export const patientIntakeQuestionnaire = questionnairesBundle.entry.find(

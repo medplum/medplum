@@ -4,7 +4,7 @@ import { ContentType, createReference, getReferenceString } from '@medplum/core'
 import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './c1-certification-bot';
-import { patientCurtisStrickland, patientJulianJohnston } from '@/bots/test-data/patient-records';
+import { patientCurtisStrickland, patientJulianJohnston } from './test-data/patient-records';
 
 describe('C1 Certification Bot', () => {
   let medplum: MockClient, input: QuestionnaireResponse, patient1: Patient, patient2: Patient;
