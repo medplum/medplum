@@ -85,6 +85,49 @@ export async function analyzeTable(
 }
 
 /**
+ * Adds a constraint to a table without blocking concurrent updates.
+ * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
+ *
+ * @param client - The database client or pool.
+ * @param actions - The list of action results to push operations performed.
+ * @param tableName - The name of the table to add the constraint to.
+ * @param constraintName - The name of the constraint to add.
+ * @param constraintExpression - The expression for the constraint.
+ */
+export async function nonBlockingAddConstraint(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  tableName: string,
+  constraintName: string,
+  constraintExpression: string
+): Promise<void> {
+  /*
+  Scanning a large table to verify a new foreign key or check constraint can take a long time, and other updates to
+  the table are locked out until the ALTER TABLE ADD CONSTRAINT command is committed. The main purpose of the
+  NOT VALID constraint option is to reduce the impact of adding a constraint on concurrent updates. With NOT VALID,
+  the ADD CONSTRAINT command does not scan the table and can be committed immediately. After that, a VALIDATE CONSTRAINT
+  command can be issued to verify that existing rows satisfy the constraint. The validation step does not need to lock
+  out concurrent updates, since it knows that other transactions will be enforcing the constraint for rows that they
+  insert or update; only pre-existing rows need to be checked. Hence, validation acquires only a SHARE UPDATE EXCLUSIVE
+  lock on the table being altered. (If the constraint is a foreign key then a ROW SHARE lock is also required on the
+  table referenced by the constraint.) In addition to improving concurrency, it can be useful to use NOT VALID and
+  VALIDATE CONSTRAINT in cases where the table is known to contain pre-existing violations. Once the constraint is in
+  place, no new violations can be inserted, and the existing problems can be corrected at leisure until
+  VALIDATE CONSTRAINT finally succeeds.
+  */
+
+  // add constraint with NOT VALID to avoid a blocking full table scan
+  await addCheckConstraint(client, actions, tableName, constraintName, constraintExpression, true);
+
+  // validate constraint; does not block updates to the table
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} VALIDATE CONSTRAINT ${escapeIdentifier(constraintName)}`
+  );
+}
+
+/**
  * Non-blocking alter column NOT NULL utilizing a temporary table constraint. Throws if any rows contain NULL values.
  * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
  *
@@ -113,29 +156,12 @@ export async function nonBlockingAlterColumnNotNull(
 
   const constraintName = `${tableName}_${columnName}_not_null`;
 
-  /*
-  Scanning a large table to verify a new foreign key or check constraint can take a long time, and other updates to
-  the table are locked out until the ALTER TABLE ADD CONSTRAINT command is committed. The main purpose of the
-  NOT VALID constraint option is to reduce the impact of adding a constraint on concurrent updates. With NOT VALID,
-  the ADD CONSTRAINT command does not scan the table and can be committed immediately. After that, a VALIDATE CONSTRAINT
-  command can be issued to verify that existing rows satisfy the constraint. The validation step does not need to lock
-  out concurrent updates, since it knows that other transactions will be enforcing the constraint for rows that they
-  insert or update; only pre-existing rows need to be checked. Hence, validation acquires only a SHARE UPDATE EXCLUSIVE
-  lock on the table being altered. (If the constraint is a foreign key then a ROW SHARE lock is also required on the
-  table referenced by the constraint.) In addition to improving concurrency, it can be useful to use NOT VALID and
-  VALIDATE CONSTRAINT in cases where the table is known to contain pre-existing violations. Once the constraint is in
-  place, no new violations can be inserted, and the existing problems can be corrected at leisure until
-  VALIDATE CONSTRAINT finally succeeds.
-  */
-
-  // add constraint with NOT VALID to avoid a blocking full table scan
-  await addConstraint(client, actions, tableName, constraintName, `${escapeIdentifier(columnName)} IS NOT NULL`, true);
-
-  // validate constraint; does not block updates to the table
-  await query(
+  await nonBlockingAddConstraint(
     client,
     actions,
-    `ALTER TABLE ${escapeIdentifier(tableName)} VALIDATE CONSTRAINT ${escapeIdentifier(constraintName)}`
+    tableName,
+    constraintName,
+    `${escapeIdentifier(columnName)} IS NOT NULL`
   );
 
   // set column to NOT NULL; uses the constraint instead of a full table scan
@@ -153,17 +179,22 @@ export async function nonBlockingAlterColumnNotNull(
   );
 }
 
-export async function addConstraint(
+export function getCheckConstraintQuery(
+  tableName: string,
+  constraintName: string,
+  constraintExpression: string,
+  notValid: boolean
+): string {
+  return `ALTER TABLE ${escapeIdentifier(tableName)} ADD CONSTRAINT ${escapeIdentifier(constraintName)} CHECK (${constraintExpression})${notValid ? ' NOT VALID' : ''}`;
+}
+
+export async function addCheckConstraint(
   client: Client | Pool | PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
   constraintExpression: string,
-  notValid?: boolean
+  notValid: boolean
 ): Promise<void> {
-  await query(
-    client,
-    actions,
-    `ALTER TABLE ${escapeIdentifier(tableName)} ADD CONSTRAINT ${escapeIdentifier(constraintName)} CHECK (${constraintExpression})${notValid ? ' NOT VALID' : ''}`
-  );
+  await query(client, actions, getCheckConstraintQuery(tableName, constraintName, constraintExpression, notValid));
 }
