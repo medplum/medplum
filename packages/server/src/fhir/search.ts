@@ -48,6 +48,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
@@ -68,7 +69,6 @@ import {
   SelectQuery,
   Operator as SQL,
   SqlFunction,
-  SYSTEM_PROJECT_ID,
   Union,
   UnionAllBuilder,
 } from './sql';
@@ -1100,7 +1100,7 @@ function trySpecialSearchParameter(
       );
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-        // After post-deploy migration that enforces `projectId` to be non-null, the `null` handling is no longer needed.
+        // TODO{v4.4.0} After post-deploy migration that enforces `projectId` to be non-null, the `null` handling is no longer needed.
         if (
           (filter.operator === Operator.MISSING && filter.value === 'true') ||
           (filter.operator === Operator.PRESENT && filter.value !== 'true')
@@ -1108,13 +1108,13 @@ function trySpecialSearchParameter(
           // missing
           return new Disjunction([
             new Condition(new Column(table, 'projectId'), '=', null),
-            new Condition(new Column(table, 'projectId'), '=', SYSTEM_PROJECT_ID),
+            new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId),
           ]);
         } else {
           // present
           return new Conjunction([
             new Condition(new Column(table, 'projectId'), '!=', null),
-            new Condition(new Column(table, 'projectId'), '!=', SYSTEM_PROJECT_ID),
+            new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId),
           ]);
         }
       }

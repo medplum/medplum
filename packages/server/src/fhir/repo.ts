@@ -80,7 +80,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
-import { syntheticR4Project } from '../constants';
+import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
@@ -126,7 +126,6 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
-  SYSTEM_PROJECT_ID,
   TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
@@ -1155,7 +1154,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           id,
           lastUpdated,
           deleted: true,
-          projectId: resource.meta?.project ?? SYSTEM_PROJECT_ID,
+          projectId: resource.meta?.project ?? systemResourceProjectId,
           content,
           __version: -1,
         };
@@ -1500,7 +1499,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      projectId: meta.project ?? SYSTEM_PROJECT_ID,
+      projectId: meta.project ?? systemResourceProjectId,
       content,
       __version: Repository.VERSION,
     };
