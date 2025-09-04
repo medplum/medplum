@@ -778,6 +778,163 @@ describe('Admin Invite', () => {
     expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
 
+  test('Invite user with forceNewMembership in different cases', async () => {
+    const { project, accessToken, profile } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob two time as a patient
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const resBob1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(resBob1.status).toBe(200);
+    expect(resBob1.body.resourceType).toBe('ProjectMembership');
+
+    const resBob2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob 2',
+        lastName: 'Jones 2',
+        email: bobEmail,
+        forceNewMembership: true,
+      });
+    expect(resBob2.status).toBe(200);
+    expect(resBob2.body.resourceType).toBe('ProjectMembership');
+    expect(resBob2.body.id).not.toStrictEqual(resBob1.body.id);
+
+    // Invite Jack as a server scoped practitioner two times 
+    const jackEmail = `jack${randomUUID()}@example.com`;
+    const resJack1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jack',
+        lastName: 'Jones',
+        email: jackEmail,
+      });
+    expect(resJack1.status).toBe(200);
+    expect(resJack1.body.resourceType).toBe('ProjectMembership');
+
+    const resJack2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Jack 2',
+        lastName: 'Jones 2',
+        email: jackEmail,
+        forceNewMembership: true,
+      });
+    expect(resJack2.status).toBe(200);
+    expect(resJack2.body.resourceType).toBe('ProjectMembership');
+    expect(resJack2.body.id).not.toStrictEqual(resJack1.body.id);
+
+    // Invite Jill as a project scoped practitioner two times
+    const jillEmail = `jill${randomUUID()}@example.com`;
+    const resJill1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jill',
+        lastName: 'Jones',
+        email: jillEmail,
+        scope: 'project',
+      });
+    expect(resJill1.status).toBe(200);
+    expect(resJill1.body.resourceType).toBe('ProjectMembership');
+
+    const resJill2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jill 2',
+        lastName: 'Jones 2',
+        email: jillEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resJill2.status).toBe(200);
+    expect(resJill2.body.resourceType).toBe('ProjectMembership');
+    expect(resJill2.body.id).not.toStrictEqual(resJill1.body.id);
+
+    // Invite Cam as a patient and then as a project scoped practitioner
+    const camEmail = `cam${randomUUID()}@example.com`;
+    const resCam1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Cam',
+        lastName: 'Jones',
+        email: camEmail,
+      });
+    expect(resCam1.status).toBe(200);
+    expect(resCam1.body.resourceType).toBe('ProjectMembership');
+
+    const resCam2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Cam 2',
+        lastName: 'Jones 2',
+        email: camEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resCam2.status).toBe(200);
+    expect(resCam2.body.resourceType).toBe('ProjectMembership');
+    expect(resCam2.body.id).not.toStrictEqual(resCam1.body.id);
+
+    // Invite Tom as a scoped practitioner and then as a patient
+    const tomEmail = `tom${randomUUID()}@example.com`;
+    const resTom1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Tom',
+        lastName: 'Jones',
+        email: tomEmail,
+      });
+    expect(resTom1.status).toBe(200);
+    expect(resTom1.body.resourceType).toBe('ProjectMembership');
+
+    const resTom2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Tom 2',
+        lastName: 'Jones 2',
+        email: tomEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resTom2.status).toBe(200);
+    expect(resTom2.body.resourceType).toBe('ProjectMembership');
+    expect(resTom2.body.id).not.toStrictEqual(resTom1.body.id);
+
+  });
+
   test('Invite project scoped user', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
