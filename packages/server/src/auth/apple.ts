@@ -85,7 +85,7 @@ export async function appleHandler(req: Request, res: Response): Promise<void> {
   try {
     const result = await jwtVerify(idToken, APPLE_JWKS, verifyOptions);
     claims = result.payload as AppleCredentialClaims;
-  } catch (err) {
+  } catch (_err) {
     throw new OperationOutcomeError(badRequest('Invalid Apple ID token'));
   }
 
