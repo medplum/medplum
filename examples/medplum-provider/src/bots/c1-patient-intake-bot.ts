@@ -12,7 +12,7 @@ import {
   getHumanName,
   getPatientAddress,
   PROFILE_URLS,
-} from '@/utils/intake-utils';
+} from '../utils/intake-utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Patient> {
   const { input: response } = event;
