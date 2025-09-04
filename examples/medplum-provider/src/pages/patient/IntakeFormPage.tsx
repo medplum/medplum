@@ -6,8 +6,8 @@ import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, Loading, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { C1_PATIENT_INTAKE_BOT_IDENTIFIER, MEDPLUM_BOTS, PATIENT_INTAKE_QUESTIONNAIRE_IDENTIFIER } from '@/constants';
-import { showErrorNotification } from '@/utils/notifications';
+import { C1_PATIENT_INTAKE_BOT_IDENTIFIER, MEDPLUM_BOTS, PATIENT_INTAKE_QUESTIONNAIRE_IDENTIFIER } from '../../constants';
+import { showErrorNotification } from '../../utils/notifications';
 
 export function IntakeFormPage(): JSX.Element {
   const navigate = useNavigate();

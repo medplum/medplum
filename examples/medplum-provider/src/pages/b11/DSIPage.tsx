@@ -4,7 +4,7 @@ import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Card, Code, Group, Loader, Stack, Switch, Text, Title } from '@mantine/core';
 import { Document, useMedplum } from '@medplum/react';
 import { Subscription } from '@medplum/fhirtypes';
-import { showErrorNotification } from '@/utils/notifications';
+import { showErrorNotification } from '../../utils/notifications';
 
 export function DSIPage(): JSX.Element {
   const medplum = useMedplum();

@@ -4,7 +4,7 @@ import { Button, Stack, Text, Title } from '@mantine/core';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, useSearchResources } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router';
-import { C1_CERTIFICATION_QUESTIONNAIRE_IDENTIFIER } from '@/constants';
+import { C1_CERTIFICATION_QUESTIONNAIRE_IDENTIFIER } from '../../constants';
 
 export function BulkCertificationPage(): React.JSX.Element {
   const navigate = useNavigate();

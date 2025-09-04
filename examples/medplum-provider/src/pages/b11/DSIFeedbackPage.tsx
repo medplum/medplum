@@ -6,7 +6,7 @@ import { Document, exportJsonFile, SearchControl, useMedplum, useSearchResources
 import { JSX, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Bundle, ResourceType } from '@medplum/fhirtypes';
-import { showErrorNotification } from '@/utils/notifications';
+import { showErrorNotification } from '../../utils/notifications';
 
 export function DSIFeedbackPage(): JSX.Element {
   const navigate = useNavigate();

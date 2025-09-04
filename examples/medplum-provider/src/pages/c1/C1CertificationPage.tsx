@@ -8,7 +8,7 @@ import { Media, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes'
 import { Document, Loading, QuestionnaireForm, useMedplum, useResource } from '@medplum/react';
 import { JSX, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
-import { C1_CERTIFICATION_BOT_IDENTIFIER, MEDPLUM_BOTS } from '@/constants';
+import { C1_CERTIFICATION_BOT_IDENTIFIER, MEDPLUM_BOTS } from '../../constants';
 
 const NOTIFICATION_ID = 'c1-certification';
 const NOTIFICATION_TITLE = 'C1 Certification';
