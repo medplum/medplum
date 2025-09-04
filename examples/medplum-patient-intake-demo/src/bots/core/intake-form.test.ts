@@ -597,9 +597,9 @@ describe('Intake form', async () => {
 
       expect(consents[6].scope).toStrictEqual(consentScopeMapping.patientPrivacy);
       expect(consents[6].category[0]).toStrictEqual(consentCategoryMapping.cd);
-      expect(consents[6].status).toStrictEqual('active');
+      expect(consents[6].status).toStrictEqual('rejected');
       expect(consents[6].provision).toBeDefined();
-      expect(consents[6].provision?.type).toStrictEqual('permit');
+      expect(consents[6].provision?.type).toStrictEqual('deny');
       expect(consents[6].provision?.action?.[0]).toStrictEqual(consentProvisionActionMapping.use);
       expect(consents[6].provision?.purpose?.[0]).toStrictEqual(consentProvisionPurposeMapping.patadmin);
       expect(consents[6].provision?.code).toStrictEqual([

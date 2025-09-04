@@ -1051,15 +1051,6 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          linkId: 'patient-contact-preference-voice-text-appointment-reminders',
-          text: 'Ok to send voice/text messages',
-          answer: [
-            {
-              valueBoolean: true,
-            },
-          ],
-        },
-        {
           linkId: 'patient-contact-preference-preferred-method-for-phone-reminders',
           text: 'Preferred method for phone reminders',
           answer: [
