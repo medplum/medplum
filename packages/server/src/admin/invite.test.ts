@@ -817,7 +817,7 @@ describe('Admin Invite', () => {
     expect(resBob2.body.resourceType).toBe('ProjectMembership');
     expect(resBob2.body.id).not.toStrictEqual(resBob1.body.id);
 
-    // Invite Jack as a server scoped practitioner two times 
+    // Invite Jack as a server scoped practitioner two times
     const jackEmail = `jack${randomUUID()}@example.com`;
     const resJack1 = await request(app)
       .post('/admin/projects/' + project.id + '/invite')
@@ -932,7 +932,6 @@ describe('Admin Invite', () => {
     expect(resTom2.status).toBe(200);
     expect(resTom2.body.resourceType).toBe('ProjectMembership');
     expect(resTom2.body.id).not.toStrictEqual(resTom1.body.id);
-
   });
 
   test('Invite project scoped user', async () => {
