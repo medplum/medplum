@@ -133,21 +133,18 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const ctx = await createContextForRequest(req);
+    let ctx: RequestContext;
+    const { requestId, traceId } = requestIds(req);
+    const authState = await authenticateTokenImpl(req);
+    if (authState) {
+      const repo = await getRepoForLogin(authState, isExtendedMode(req));
+      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+    } else {
+      ctx = new RequestContext(requestId, traceId);
+    }
     requestContextStore.run(ctx, () => next());
   } catch (err) {
     next(err);
-  }
-}
-
-export async function createContextForRequest(req: Request): Promise<RequestContext> {
-  const { requestId, traceId } = requestIds(req);
-  const authState = await authenticateTokenImpl(req);
-  if (authState) {
-    const repo = await getRepoForLogin(authState, isExtendedMode(req));
-    return new AuthenticatedRequestContext(requestId, traceId, authState, repo);
-  } else {
-    return new RequestContext(requestId, traceId);
   }
 }
 
