@@ -86,6 +86,7 @@ export async function createEncounter(
     parameter: [
       { name: 'subject', valueString: getReferenceString(patient) },
       { name: 'encounter', valueString: getReferenceString(encounter) },
+      { name: 'practitioner', valueString: getReferenceString(medplum.getProfile() as Practitioner) },
     ],
   });
 

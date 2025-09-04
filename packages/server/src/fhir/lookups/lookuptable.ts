@@ -197,7 +197,11 @@ export abstract class LookupTable {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
+    const joinOnExpression = new Condition(
+      new Column(selectQuery.effectiveTableName, 'id'),
+      '=',
+      new Column(joinName, 'resourceId')
+    );
     selectQuery.join(
       'LEFT JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),

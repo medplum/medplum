@@ -1158,6 +1158,74 @@ describe('Batch and Transaction processing', () => {
     });
   });
 
+  test('Nested transaction in batch', async () => {
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'POST', url: '/' },
+          resource: {
+            resourceType: 'Bundle',
+            type: 'transaction',
+            entry: [
+              {
+                fullUrl: 'urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b',
+                request: { method: 'POST', url: 'Organization' },
+                resource: {
+                  resourceType: 'Organization',
+                  name: { failing: 'this aint valid' } as unknown as string,
+                },
+              },
+              {
+                fullUrl: 'urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b',
+                request: { method: 'POST', url: 'Organization' },
+                resource: {
+                  resourceType: 'Organization',
+                  name: 'This is valid but the other isnt so this wont be created (except it does)',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+
+    const response = res.body as Bundle;
+    expect(response).toStrictEqual({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        {
+          response: {
+            outcome: {
+              resourceType: 'OperationOutcome',
+              issue: [
+                {
+                  severity: 'error',
+                  code: 'structure',
+                  details: {
+                    text: 'Invalid additional property "failing"',
+                  },
+                  expression: ['Organization.name.failing'],
+                },
+              ],
+            },
+            status: '400',
+          },
+        },
+      ],
+    });
+  });
+
   test('_include regression test', async () => {
     const transaction: Bundle = {
       resourceType: 'Bundle',
