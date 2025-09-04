@@ -44,13 +44,13 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { r4ProjectId } from '../constants';
+import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery, SYSTEM_PROJECT_ID } from './sql';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -1230,7 +1230,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
-      expect(await getProjectIdColumn(user3.id)).toStrictEqual(SYSTEM_PROJECT_ID);
+      expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
     }));
 
   test('Handles caching of profile from linked project', async () =>
