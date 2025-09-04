@@ -163,6 +163,18 @@ describe('Generator', () => {
           name: '__sharedTokensText',
           type: 'TEXT[]',
         },
+        {
+          name: '__familySort',
+          type: 'TEXT',
+        },
+        {
+          name: '__givenSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__nameSort',
+          type: 'TEXT',
+        },
         ...tokenCodes.flatMap((code) => {
           // both dedicated and shared tokens have a sort column
           const expectedCols = [
