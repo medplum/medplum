@@ -136,8 +136,8 @@ export function App(): JSX.Element | null {
                   <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />
-                <Route path="communication" element={<CommunicationTab />} />
-                <Route path="communication/:id" element={<CommunicationTab />} />
+                <Route path="Message" element={<CommunicationTab />} />
+                <Route path="Message/:messageId" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />

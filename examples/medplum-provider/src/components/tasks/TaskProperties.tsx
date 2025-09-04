@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -37,7 +37,7 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
     await handleTaskUpdate({ ...task, priority: value as Task['priority'] } as Task);
   };
 
-  const handlePractitionerChange = async (value: Reference<Practitioner> | undefined): Promise<void> => {
+  const handleOwnerChange = async (value: Reference<Practitioner | Organization> | undefined): Promise<void> => {
     await handleTaskUpdate({ ...task, owner: value } as Task);
   };
 
@@ -78,17 +78,19 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             onChange={handleDueDateChange}
           />
 
-          <ResourceInput
-            label="Assignee"
-            resourceType="Practitioner"
-            name="practitioner"
-            defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-            onChange={async (practitioner: Practitioner | undefined) => {
-              await handlePractitionerChange(
-                practitioner ? { reference: getReferenceString(practitioner) } : undefined
-              );
-            }}
-          />
+          <Stack gap={0}>
+            <Text size="sm" fw={500}>
+              Assignee
+            </Text>
+            <ReferenceInput
+              name="owner"
+              targetTypes={['Practitioner', 'Organization']}
+              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+              onChange={async (value: Reference<Practitioner | Organization> | undefined) => {
+                await handleOwnerChange(value ? { reference: value.reference } : undefined);
+              }}
+            />
+          </Stack>
 
           <CodeInput
             name="priority"
