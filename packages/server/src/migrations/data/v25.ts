@@ -25,6 +25,8 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+  await fns.nonBlockingAddConstraint(client, results, 'Project', 'reserved_project_id_check', `id <> '65897e4f-7add-55f3-9b17-035b5a4e6d52'`);
+
   const resourceTypes = getResourceTypes();
   for (const resourceType of resourceTypes) {
     await fns.query(client, results, `UPDATE "${resourceType}" SET "projectId" = $1 WHERE "projectId" IS NULL`, [systemResourceProjectId]);
