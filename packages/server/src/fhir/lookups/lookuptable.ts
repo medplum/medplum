@@ -194,7 +194,7 @@ export abstract class LookupTable {
    * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    // TODO{v4.4.0} Add this if statement since the sort columns will have been populated
+    // PENDING{v4.4.0} Add this if statement since the sort columns will have been populated
     // if (impl.sortColumnName) {
     //   selectQuery.orderBy(impl.sortColumnName, sortRule.descending);
     //   return;
