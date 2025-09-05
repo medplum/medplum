@@ -24,8 +24,10 @@ import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import { resolve } from 'node:path';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
@@ -33,7 +35,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { PinoWrapperLogger, mainPinoLogger } from './logger';
+import { LoggerType, PinoWrapperLogger, createLogger, parseLoggerConfigFromAgent, setLoggerConfig } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -77,11 +79,44 @@ export class App {
   private config: Agent | undefined;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
+    const errorMsgs: [string, Error][] = [];
+    let rawAgentConfig: string | undefined;
+    let configParseWarnings: string[] | undefined;
+
+    if (existsSync(resolve(__dirname, 'agent-config.json'))) {
+      try {
+        rawAgentConfig = readFileSync(resolve(__dirname, 'agent-config.json'), { encoding: 'utf-8' });
+      } catch (err) {
+        errorMsgs.push(['Error while reading agent-config.json', err as Error]);
+      }
+    }
+
+    if (rawAgentConfig) {
+      const agentConfig = JSON.parse(rawAgentConfig);
+      const [config, warnings] = parseLoggerConfigFromAgent(agentConfig);
+      configParseWarnings = warnings;
+      setLoggerConfig(config);
+    }
+
     App.instance = this;
     this.medplum = medplum;
     this.agentId = agentId;
     this.logLevel = logLevel;
-    this.log = new PinoWrapperLogger(mainPinoLogger, { level: logLevel });
+    this.log = createLogger(LoggerType.MAIN);
+
+    // We log anything that occurred during the invocation of this constructor at the end once the logger has been created
+    if (errorMsgs.length) {
+      for (const [msg, err] of errorMsgs) {
+        this.log.error(msg, err);
+        console.log(msg);
+      }
+    }
+
+    if (configParseWarnings?.length) {
+      for (const warning of configParseWarnings) {
+        this.log.warn(warning);
+      }
+    }
   }
 
   async start(): Promise<void> {
@@ -322,8 +357,23 @@ export class App {
 
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
+    // Cache agent config locally
+    writeFile(resolve(__dirname, 'agent-config.json'), JSON.stringify(agent, null, 2)).catch((err) => {
+      this.log.error(err);
+    });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
+
+    // Hydrate global logger config
+    try {
+      const [config, warnings] = parseLoggerConfigFromAgent(agent);
+      for (const warning of warnings) {
+        this.log.warn(warning);
+      }
+      setLoggerConfig(config);
+    } catch (err: unknown) {
+      this.log.error('Error while rehydrating logger config', err as Error);
+    }
 
     // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {

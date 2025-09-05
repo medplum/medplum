@@ -3,7 +3,6 @@
 import {
   deepClone,
   ILogger,
-  ILoggerConfig,
   isObject,
   LoggerOptions,
   LogLevel,
@@ -14,7 +13,7 @@ import {
   validationError,
 } from '@medplum/core';
 import { Agent, AgentSetting } from '@medplum/fhirtypes';
-import path from 'path';
+import { resolve } from 'path';
 import pino from 'pino';
 
 export const DEFAULT_LOGGER_CONFIG = {
@@ -31,6 +30,24 @@ export const DEFAULT_FULL_LOGGER_CONFIG = {
 } as const satisfies FullAgentLoggerConfig;
 
 let loggerConfig: FullAgentLoggerConfig = deepClone(DEFAULT_FULL_LOGGER_CONFIG);
+
+const loggers = new Set<[PinoWrapperLogger, LoggerType]>();
+
+export function getLoggers(): Set<[PinoWrapperLogger, LoggerType]> {
+  return loggers;
+}
+
+export const LoggerType = {
+  MAIN: 'main',
+  CHANNEL: 'channel',
+} as const;
+export type LoggerType = (typeof LoggerType)[keyof typeof LoggerType];
+
+export function createLogger(loggerType: LoggerType, options?: PinoWrapperLoggerOptions): PinoWrapperLogger {
+  const logger = new PinoWrapperLogger(getLoggerConfig()[loggerType], options);
+  loggers.add([logger, loggerType]);
+  return logger;
+}
 
 export const LOGGER_CONFIG_KEYS = [
   'logDir',
@@ -62,13 +79,12 @@ export interface PartialFullAgentLoggerConfig {
   channel?: Partial<AgentLoggerConfig>;
 }
 
-export interface PicoWrapperLoggerOptions extends LoggerOptions {
-  level?: LogLevel;
+export interface PinoWrapperLoggerOptions extends LoggerOptions {
   metadata?: Record<string, any>;
 }
 
-export interface PicoWrapperLoggerConfig extends ILoggerConfig {
-  options?: PicoWrapperLoggerOptions;
+export interface PinoWrapperLoggerInitOptions extends PinoWrapperLoggerOptions {
+  parentLogger?: PinoWrapperLogger;
 }
 
 export function setLoggerConfig(fullConfig: FullAgentLoggerConfig): void {
@@ -190,28 +206,57 @@ export function getPinoLevelFromMedplumLevel(level: LogLevel): pino.Level | 'sil
   }
 }
 
-export const mainPinoLogger = pino({
-  level: 'debug',
-  transport: {
+export function createPinoFromLoggerConfig(config: AgentLoggerConfig): pino.Logger {
+  const level = getPinoLevelFromMedplumLevel(config.logLevel);
+  const transport = pino.transport({
+    level,
     targets: [
-      { target: 'pino-pretty', level: 'info' },
-      { target: 'pino/file', options: { destination: path.resolve(__dirname, 'logs.log') }, level: 'trace' },
+      { target: 'pino-pretty', level },
+      {
+        target: 'pino-roll',
+        options: {
+          file: resolve(config.logDir, 'medplum-agent'),
+          extension: '.log',
+          frequency: config.logRotateFreq,
+          size: config.maxFileSizeMb,
+          limit: {
+            count: config.filesToKeep,
+          },
+        },
+        level,
+      },
     ],
-  },
-});
+  });
+  // Log any errors that happen
+  transport.on('error', (err: unknown) => {
+    console.error('Error in pino transport', err);
+  });
+  return pino(transport);
+}
 
 export class PinoWrapperLogger implements ILogger {
-  readonly metadata?: Record<string, any>;
+  private parentLogger?: PinoWrapperLogger;
+  private config: AgentLoggerConfig;
+  private metadata?: Record<string, any>;
   private prefix?: string;
-  private pinoLogger: pino.Logger;
+  private pino: pino.Logger;
   level: LogLevel;
 
-  constructor(pino: pino.Logger, options?: PicoWrapperLoggerOptions) {
-    this.pinoLogger = pino;
-    this.prefix = options?.prefix;
+  constructor(config: AgentLoggerConfig, options?: PinoWrapperLoggerInitOptions) {
+    this.parentLogger = options?.parentLogger;
+    this.pino = this.parentLogger ? this.parentLogger.getPino() : createPinoFromLoggerConfig(config);
+    this.config = config;
+    this.level = config.logLevel;
     this.metadata = options?.metadata;
-    this.level = options?.level ?? LogLevel.INFO;
-    pino.level = getPinoLevelFromMedplumLevel(this.level);
+    this.prefix = options?.prefix;
+  }
+
+  reloadConfig(config: AgentLoggerConfig, options?: PinoWrapperLoggerOptions): void {
+    this.pino = this.parentLogger ? this.parentLogger.getPino() : createPinoFromLoggerConfig(config);
+    this.config = config;
+    this.level = config.logLevel;
+    this.metadata = options?.metadata;
+    this.prefix = options?.prefix;
   }
 
   debug(msg: string, data?: Record<string, any> | Error): void {
@@ -241,25 +286,29 @@ export class PinoWrapperLogger implements ILogger {
     const msgToLog = this.prefix ? `${this.prefix}${msg}` : msg;
     switch (level) {
       case LogLevel.DEBUG:
-        this.pinoLogger.debug(dataToLog, msgToLog);
+        this.pino.debug(dataToLog, msgToLog);
         return;
       case LogLevel.INFO:
-        this.pinoLogger.info(dataToLog, msgToLog);
+        this.pino.info(dataToLog, msgToLog);
         return;
       case LogLevel.WARN:
-        this.pinoLogger.warn(dataToLog, msgToLog);
+        this.pino.warn(dataToLog, msgToLog);
         return;
       case LogLevel.ERROR:
-        this.pinoLogger.error(dataToLog, msgToLog);
+        this.pino.error(dataToLog, msgToLog);
     }
   }
 
-  clone(override?: Partial<PicoWrapperLoggerConfig>): PinoWrapperLogger {
-    return new PinoWrapperLogger(this.pinoLogger, {
-      level: override?.options?.level ?? this.level,
-      prefix: override?.options?.prefix ?? this.prefix,
+  clone(override?: PinoWrapperLoggerOptions): PinoWrapperLogger {
+    return new PinoWrapperLogger(this.config, {
+      parentLogger: this.parentLogger,
+      prefix: override?.prefix ?? this.prefix,
       metadata: override?.metadata ?? this.metadata,
     });
+  }
+
+  getPino(): pino.Logger {
+    return this.pino;
   }
 }
 
