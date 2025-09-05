@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
 // Source: https://confluence.hl7.org/spaces/SD/pages/51227465/C-CDA+OIDs
 
 export const OID_REASON_FOR_REFERRAL = '1.3.6.1.4.1.19376.1.5.3.1.3.1';
@@ -24,6 +25,7 @@ export const OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM = '2.16.840.1.113883.5.1';
 export const OID_ACT_CODE_CODE_SYSTEM = '2.16.840.1.113883.5.4';
 export const OID_ACT_CLASS_CODE_SYSTEM = '2.16.840.1.113883.5.6';
 export const OID_CONFIDENTIALITY_VALUE_SET = '2.16.840.1.113883.5.25';
+export const OID_ROLE_CODE_CODE_SYSTEM = '2.16.840.1.113883.5.111';
 export const OID_LOINC_CODE_SYSTEM = '2.16.840.1.113883.6.1';
 export const OID_CPT_CODE_SYSTEM = '2.16.840.1.113883.6.12';
 export const OID_MDC_CODE_SYSTEM = '2.16.840.1.113883.6.24';

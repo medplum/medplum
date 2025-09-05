@@ -81,6 +81,7 @@ import {
   OID_PRODUCT_INSTANCE,
   OID_REACTION_OBSERVATION,
   OID_REASON_FOR_REFERRAL,
+  OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION,
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
@@ -268,6 +269,7 @@ class FhirToCcdaConverter {
       author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
       custodian: this.mapCustodian(this.composition.custodian),
       informationRecipient: this.mapRecipient(referral),
+      participant: this.createParticipants(),
       documentationOf: this.mapDocumentationOf(this.composition.event),
       component:
         sections.length > 0
@@ -952,6 +954,32 @@ class FhirToCcdaConverter {
         },
       },
     };
+  }
+
+  private createParticipants(): CcdaParticipant[] | undefined {
+    const relatedPersons = this.bundle.entry
+      ?.filter((e) => e.resource?.resourceType === 'RelatedPerson')
+      .map((e) => e.resource as RelatedPerson);
+
+    if (!relatedPersons || relatedPersons.length === 0) {
+      return undefined;
+    }
+
+    return relatedPersons.map((person) => ({
+      '@_typeCode': 'IND',
+      templateId: [
+        { '@_root': OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION, extension: '2023-05-01' },
+      ],
+      associatedEntity: {
+        '@_classCode': 'PRS',
+        code: mapCodeableConceptToCcdaCode(person.relationship?.[0]),
+        addr: this.mapFhirAddressArrayToCcdaAddressArray(person.address),
+        telecom: this.mapTelecom(person.telecom),
+        associatedPerson: {
+          name: this.mapNames(person.name),
+        },
+      },
+    }));
   }
 
   private mapDocumentationOf(events: CompositionEvent[] | undefined): CcdaDocumentationOf | undefined {

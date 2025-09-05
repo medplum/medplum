@@ -30,6 +30,7 @@ import {
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
+  ProfileResource,
   resolveId,
   WithId,
 } from '@medplum/core';
@@ -114,6 +115,7 @@ const resourceTypes: ResourceType[] = [
   'MedicationRequest',
   'Observation',
   'Procedure',
+  'RelatedPerson',
   'ServiceRequest',
 ];
 
@@ -175,6 +177,7 @@ export class PatientSummaryBuilder {
   private readonly patient: Patient;
   private readonly everything: WithId<Resource>[];
   private readonly params: PatientSummaryParameters;
+  private readonly participants: ProfileResource[] = [];
   private readonly allergies: AllergyIntolerance[] = [];
   private readonly medications: MedicationRequest[] = [];
   private readonly problemList: Condition[] = [];
@@ -274,6 +277,12 @@ export class PatientSummaryBuilder {
    */
   private chooseSectionForResource(resource: Resource): void {
     switch (resource.resourceType) {
+      // Participants
+      case 'Practitioner':
+      case 'RelatedPerson':
+        this.participants.push(resource);
+        break;
+
       // Simple resource types - add to section directly
       case 'AllergyIntolerance':
         this.allergies.push(resource);

@@ -11,6 +11,7 @@ export interface Ccda {
   effectiveTime?: CcdaEffectiveTime[];
   custodian?: CcdaCustodian;
   informationRecipient?: CcdaInformationRecipient;
+  participant?: CcdaParticipant[];
   documentationOf?: CcdaDocumentationOf;
   title?: string;
   code?: CcdaCode;
@@ -182,6 +183,7 @@ export interface CcdaAssignedAuthor {
   id?: CcdaId[];
   code?: CcdaCode;
   assignedPerson?: CcdaAssignedPerson;
+  associatedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
@@ -229,6 +231,7 @@ export interface CcdaParticipant {
   '@_classCode'?: string;
   '@_typeCode'?: string;
   participantRole?: CcdaParticipantRole;
+  associatedEntity?: CcdaAssignedAuthor;
 }
 
 export interface CcdaParticipantRole {

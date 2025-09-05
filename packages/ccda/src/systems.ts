@@ -42,6 +42,7 @@ import {
   OID_RESULT_OBSERVATION_V2,
   OID_RESULT_ORGANIZER,
   OID_RESULT_ORGANIZER_V2,
+  OID_ROLE_CODE_CODE_SYSTEM,
   OID_RXNORM_CODE_SYSTEM,
   OID_SECTION_TIME_RANGE,
   OID_SEX_OBSERVATION,
@@ -190,6 +191,7 @@ export const PARTICIPATION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem
 export const DIAGNOSIS_ROLE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/diagnosis-role`;
 export const CONFIDENTIALITY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-Confidentiality`;
 export const OBSERVATION_CATEGORY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
+export const ROLE_CODE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-RoleCode`;
 
 /*
  * FHIR Value Sets
@@ -339,6 +341,11 @@ export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
     fhirValue: ADMINISTRATIVE_GENDER_CODE_SYSTEM,
     displayName: 'Administrative Sex',
   },
+  {
+    ccdaValue: OID_ROLE_CODE_CODE_SYSTEM,
+    fhirValue: ROLE_CODE_CODE_SYSTEM,
+    displayName: 'Role Code',
+  },
 
   // Alternate FHIR System:
   {
@@ -358,6 +365,43 @@ export function mapCcdaSystemToFhir(ccda: string | undefined): string | undefine
     return undefined;
   }
   return SYSTEM_MAPPER.mapCcdaToFhir(ccda) ?? `urn:oid:${ccda}`;
+}
+
+/**
+ * Maps a C-CDA code to a FHIR CodeableConcept.
+ * @param ccdaCode - The C-CDA code to map.
+ * @returns The FHIR CodeableConcept.
+ */
+export function mapCcdaCodeToCodeableConcept(ccdaCode: CcdaCode | undefined): CodeableConcept | undefined {
+  if (!ccdaCode) {
+    return undefined;
+  }
+
+  const result: CodeableConcept = {
+    coding: [
+      {
+        system: mapCcdaSystemToFhir(ccdaCode['@_codeSystem']),
+        code: ccdaCode['@_code'],
+        display: ccdaCode['@_displayName'],
+      },
+    ],
+    text: ccdaCode['@_displayName'],
+  };
+
+  if (ccdaCode.translation) {
+    for (const translation of ccdaCode.translation) {
+      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+      if (translationSystem) {
+        result.coding?.push({
+          system: translationSystem,
+          code: translation['@_code'],
+          display: translation['@_displayName'],
+        });
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -381,7 +425,7 @@ export function mapFhirSystemToCcda(system: string | undefined): string | undefi
  * @returns The C-CDA code.
  */
 export function mapCodeableConceptToCcdaCode(codeableConcept: CodeableConcept | undefined): CcdaCode | undefined {
-  if (!codeableConcept?.coding) {
+  if (!codeableConcept?.coding?.[0]) {
     return undefined;
   }
 
