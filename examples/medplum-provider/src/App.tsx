@@ -70,6 +70,10 @@ export function App(): JSX.Element | null {
   >();
 
   useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
     medplum
       .searchResources('Questionnaire', [
         ['identifier', 'b11-evidence-based-dsi-source-attributes,b11-predictive-dsi-source-attributes'],
@@ -79,7 +83,7 @@ export function App(): JSX.Element | null {
       .catch((err) => {
         showErrorNotification(err);
       });
-  }, [medplum]);
+  }, [medplum, profile]);
 
   if (medplum.isLoading()) {
     return null;
