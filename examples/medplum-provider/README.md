@@ -1,3 +1,8 @@
+> [!WARNING]
+> This is a modified version of the Medplum Provider example app, tailored for C1 and B11 certification.
+> For setup instructions, please refer to [this documentation](./docs/README.md).
+> This work is strictly for certification and should not be merged into the main branch.
+
 <h1 align="center">Medplum Provider</h1>
 <p align="center">A starter application for building a health record system on Medplum.</p>
 <p align="center">

@@ -58,6 +58,7 @@ export function SearchPage(): JSX.Element {
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
+        onBulk={(ids: string[]) => navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)}
       />
     </Paper>
   );
