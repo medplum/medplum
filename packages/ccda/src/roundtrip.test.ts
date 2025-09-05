@@ -13,6 +13,7 @@ const testDataFolder = resolve(__dirname, '../testdata');
 const testData = [
   'MinimalPassingValidator',
   'Patient',
+  'Participants',
   'AllergyToEgg',
   'MedicationAtBedtime',
   'ProblemPneumonia',

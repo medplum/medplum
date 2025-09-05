@@ -968,10 +968,11 @@ class FhirToCcdaConverter {
     return relatedPersons.map((person) => ({
       '@_typeCode': 'IND',
       templateId: [
-        { '@_root': OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION, extension: '2023-05-01' },
+        { '@_root': OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION, '@_extension': '2023-05-01' },
       ],
       associatedEntity: {
         '@_classCode': 'PRS',
+        id: this.mapIdentifiers(person.id, person.identifier),
         code: mapCodeableConceptToCcdaCode(person.relationship?.[0]),
         addr: this.mapFhirAddressArrayToCcdaAddressArray(person.address),
         telecom: this.mapTelecom(person.telecom),
