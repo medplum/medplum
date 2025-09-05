@@ -23,7 +23,10 @@ import { getLogger, globalLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
-export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+export function findProjectMembership(
+  project: string,
+  profile: Reference
+): Promise<WithId<ProjectMembership> | undefined> {
   const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
