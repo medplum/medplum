@@ -8,7 +8,7 @@ import {
   Hl7Message,
   MEDPLUM_VERSION,
   getReferenceString,
-  normalizeErrorString
+  normalizeErrorString,
 } from '@medplum/core';
 import { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';

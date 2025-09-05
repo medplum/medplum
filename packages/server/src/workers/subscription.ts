@@ -20,9 +20,21 @@ import {
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   serverError,
-  stringify
+  stringify,
 } from '@medplum/core';
-import { Bot, ClientApplication, Patient, Practitioner, Project, ProjectMembership, Reference, RelatedPerson, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
+import {
+  Bot,
+  ClientApplication,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
@@ -653,7 +665,9 @@ async function execBot(
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
-  const requester = resource.meta?.author as Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
+  const requester = resource.meta?.author as Reference<
+    Bot | ClientApplication | Patient | Practitioner | RelatedPerson
+  >;
   let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
     runAs = await findProjectMembership(project, requester);
