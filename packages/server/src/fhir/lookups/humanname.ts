@@ -237,18 +237,18 @@ export function getHumanNameSortValue(
       candidate = getNameString(name);
     }
 
-    if (candidate) {
-      const candidatePrecedence = name.use ? (UsePrecedence[name.use] ?? MissingUsePrecedence) : MissingUsePrecedence;
-      result = result && result.localeCompare(candidate) <= 0 ? result : candidate;
+    if (!candidate) {
+      continue;
+    }
 
-      if (
-        !result ||
-        candidatePrecedence < resultPrecedence ||
-        (candidatePrecedence === resultPrecedence && candidate.localeCompare(result) < 0)
-      ) {
-        result = candidate;
-        resultPrecedence = candidatePrecedence;
-      }
+    const candidatePrecedence = UsePrecedence[name.use ?? ''] ?? MissingUsePrecedence;
+    if (
+      !result ||
+      candidatePrecedence < resultPrecedence ||
+      (candidatePrecedence === resultPrecedence && candidate.localeCompare(result) < 0)
+    ) {
+      result = candidate;
+      resultPrecedence = candidatePrecedence;
     }
   }
   return result;
@@ -258,7 +258,7 @@ const MissingUsePrecedence = 3;
 const UsePrecedence = {
   usual: 1,
   official: 2,
-  // MissingUsePrecedence slots here
+  '': MissingUsePrecedence,
   temp: 4,
   nickname: 5,
   anonymous: 6,
