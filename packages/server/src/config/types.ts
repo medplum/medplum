@@ -106,6 +106,9 @@ export interface MedplumServerConfig {
   /** Optional config for Fission.io bots */
   fission?: MedplumFissionConfig;
 
+  /** Optional list of optimized identifiers */
+  optimizedIdentifiers?: MedplumOptimizedIdentifier[];
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
@@ -183,4 +186,10 @@ export interface MedplumFissionConfig {
   readonly environmentName: string;
   readonly routerHost: string;
   readonly routerPort: number;
+}
+
+export interface MedplumOptimizedIdentifier {
+  readonly resourceType: string;
+  readonly system: string;
+  readonly status: 'backfill' | 'active';
 }

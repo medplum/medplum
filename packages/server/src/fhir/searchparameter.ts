@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
+import { capitalize, Filter, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { getConfig } from '../config/loader';
+import { getOptimizedIdentifierColumnName } from '../database';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
 import { HumanNameTable } from './lookups/humanname';
@@ -20,6 +22,7 @@ export const SearchStrategies = {
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.COLUMN;
   readonly columnName: string;
+  readonly stripSystem?: true;
 }
 
 export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
@@ -54,7 +57,8 @@ export const globalSearchParameterRegistry: IndexedSearchParameters = { types: {
 
 export function getSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter
+  searchParam: SearchParameter,
+  filter?: Filter
 ): SearchParameterImplementation {
   let result: SearchParameterImplementation | undefined =
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
@@ -62,6 +66,28 @@ export function getSearchParameterImplementation(
     result = buildSearchParameterImplementation(resourceType, searchParam);
     setSearchParameterImplementation(resourceType, searchParam.code, result);
   }
+
+  if (filter?.code === 'identifier') {
+    const config = getConfig();
+    if (config.optimizedIdentifiers) {
+      for (const identifier of config.optimizedIdentifiers) {
+        if (
+          identifier.status === 'active' &&
+          identifier.resourceType === resourceType &&
+          filter.value.startsWith(identifier.system + '|')
+        ) {
+          // Override to use optimized identifier column
+          const optimizedImpl = result as Writeable<ColumnSearchParameterImplementation>;
+          optimizedImpl.searchStrategy = 'column';
+          optimizedImpl.array = false;
+          optimizedImpl.stripSystem = true;
+          optimizedImpl.columnName = getOptimizedIdentifierColumnName(identifier.resourceType, identifier.system);
+          return optimizedImpl;
+        }
+      }
+    }
+  }
+
   return result;
 }
 

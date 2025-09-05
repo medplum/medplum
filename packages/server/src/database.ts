@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
+import { createHash } from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
+import { getConfig } from './config/loader';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -182,6 +184,21 @@ async function migrate(client: PoolClient): Promise<void> {
 
   await runAllPendingPreDeployMigrations(client, preDeployVersion);
 
+  const config = getConfig();
+  if (config.optimizedIdentifiers) {
+    for (const identifier of config.optimizedIdentifiers) {
+      const tableName = identifier.resourceType;
+      const columnName = getOptimizedIdentifierColumnName(identifier.resourceType, identifier.system);
+      const indexName = `${tableName}_${columnName}_idx`;
+
+      // Create column if not exists, no default value
+      await client.query(`ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${columnName}" TEXT`);
+
+      // Create index if not exists
+      await client.query(`CREATE INDEX CONCURRENTLY IF NOT EXISTS "${indexName}" ON "${tableName}"("${columnName}")`);
+    }
+  }
+
   const postDeployVersion = await getPostDeployVersion(client);
   const pendingPostDeployMigration = await getPendingPostDeployMigration(client);
   if (postDeployVersion !== MigrationVersion.FIRST_BOOT && pendingPostDeployMigration !== MigrationVersion.NONE) {
@@ -225,4 +242,16 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }
+}
+
+/**
+ * Returns the name of the optimized identifier column for the given resource type and system.
+ * @param resourceType - The FHIR resource type (e.g., "Patient", "Observation").
+ * @param system - The identifier system (e.g., "http://hospital.smarthealthit.org").
+ * @returns The name of the optimized identifier column (e.g., "identifier_a1b2c3d4e5f6g7h8").
+ */
+export function getOptimizedIdentifierColumnName(resourceType: string, system: string): string {
+  const hashLength = 16;
+  const hash = createHash('sha256').update(`${resourceType}|${system}`).digest('hex').substring(0, hashLength);
+  return `identifier_${hash}`;
 }
