@@ -1100,7 +1100,7 @@ function trySpecialSearchParameter(
       );
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-        // TODO{v4.4.0} After post-deploy migration that enforces `projectId` to be non-null, the `null` handling is no longer needed.
+        // PENDING{v4.4.0} Once `projectId` is NOT NULL, remove `null` handling
         if (
           (filter.operator === Operator.MISSING && filter.value === 'true') ||
           (filter.operator === Operator.PRESENT && filter.value !== 'true')
