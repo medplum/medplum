@@ -8,7 +8,7 @@ import {
   Hl7Message,
   MEDPLUM_VERSION,
   getReferenceString,
-  normalizeErrorString,
+  normalizeErrorString
 } from '@medplum/core';
 import { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
@@ -205,6 +205,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       agent,
       bot,
       runAs: authState.membership,
+      requester: authState.membership.profile,
       contentType: command.contentType,
       input,
       remoteAddress,

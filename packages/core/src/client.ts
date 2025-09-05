@@ -10,6 +10,7 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
+  ClientApplication,
   Communication,
   Device,
   DocumentReference,
@@ -19,11 +20,13 @@ import {
   Media,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   ProjectSetting,
   Reference,
+  RelatedPerson,
   Resource,
   ResourceType,
   SearchParameter,
@@ -501,6 +504,7 @@ export interface BotEvent<T = unknown> {
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
 }
