@@ -4,7 +4,7 @@ import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
-import { HumanNameTable } from './lookups/humanname';
+import { HumanNameSearchParameterIds, HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { getTokenIndexType, TokenIndexTypes } from './tokens';
@@ -25,6 +25,7 @@ export interface ColumnSearchParameterImplementation extends SearchParameterDeta
 export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.LOOKUP_TABLE;
   readonly lookupTable: LookupTable;
+  readonly sortColumnName: string | undefined;
 }
 
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
@@ -126,6 +127,10 @@ function buildSearchParameterImplementation(
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
     writeable.searchStrategy = 'lookup-table';
     writeable.lookupTable = lookupTable;
+
+    if (HumanNameSearchParameterIds.has(searchParam.id as string)) {
+      writeable.sortColumnName = '__' + convertCodeToColumnName(code) + 'Sort';
+    }
     return impl;
   }
 

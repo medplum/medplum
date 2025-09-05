@@ -120,15 +120,13 @@ export function hashTokenColumnValue(value: string): string {
 /**
  * Adds "order by" clause to the select query builder.
  * @param selectQuery - The select query builder.
- * @param resourceType - The resource type.
+ * @param impl - The search parameter implementation.
  * @param sortRule - The sort rule details.
- * @param param - The search parameter.
  */
 export function addTokenColumnsOrderBy(
   selectQuery: SelectQuery,
-  resourceType: ResourceType,
-  sortRule: SortRule,
-  param: SearchParameter
+  impl: TokenColumnSearchParameterImplementation,
+  sortRule: SortRule
 ): void {
   /*
     [R4 spec behavior](https://www.hl7.org/fhir/r4/search.html#_sort):
@@ -152,11 +150,6 @@ export function addTokenColumnsOrderBy(
     To avoid the surprising behavior, we could store both the alphabetically first and last
     values for each search parameter.
   */
-  const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy !== 'token-column') {
-    throw new Error('Invalid search strategy: ' + impl.searchStrategy);
-  }
-
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
 
