@@ -222,12 +222,12 @@ export function getHumanNameSortValue(
   }
 
   let result: string | undefined;
+  let resultPrecedence: number = Infinity;
   for (const name of names) {
     if (!name) {
       continue;
     }
 
-    // TODO: Add any logic for preferences of different name.use values, etc.
     let candidate: string | undefined;
     if (searchParam.code === 'given') {
       candidate = formatGivenName(name);
@@ -238,8 +238,30 @@ export function getHumanNameSortValue(
     }
 
     if (candidate) {
+      const candidatePrecedence = name.use ? (UsePrecedence[name.use] ?? MissingUsePrecedence) : MissingUsePrecedence;
       result = result && result.localeCompare(candidate) <= 0 ? result : candidate;
+
+      if (
+        !result ||
+        candidatePrecedence < resultPrecedence ||
+        (candidatePrecedence === resultPrecedence && candidate.localeCompare(result) < 0)
+      ) {
+        result = candidate;
+        resultPrecedence = candidatePrecedence;
+      }
     }
   }
   return result;
 }
+
+const MissingUsePrecedence = 3;
+const UsePrecedence = {
+  usual: 1,
+  official: 2,
+  // MissingUsePrecedence slots here
+  temp: 4,
+  nickname: 5,
+  anonymous: 6,
+  old: 7,
+  maiden: 8,
+};
