@@ -4,8 +4,8 @@ import { badRequest, OperationOutcomeError } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
-import { makeValidationMiddleware } from '../util/validator';
 import { tryLogin } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { sendLoginResult } from './utils';
 
 /*
