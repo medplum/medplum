@@ -35,6 +35,7 @@ import {
   PractitionerRole,
   Procedure,
   Reference,
+  RelatedPerson,
   Resource,
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
@@ -78,6 +79,7 @@ import {
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
+  mapCcdaCodeToCodeableConcept,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
@@ -107,6 +109,7 @@ import {
   CcdaObservation,
   CcdaOrganizer,
   CcdaOrganizerComponent,
+  CcdaParticipant,
   CcdaPatientRole,
   CcdaPerformer,
   CcdaProcedure,
@@ -168,6 +171,7 @@ class CcdaToFhirConverter {
     const patientRole = this.ccda.recordTarget?.[0]?.patientRole;
     if (patientRole) {
       this.patient = this.createPatient(patientRole);
+      this.createRelatedPersons();
     }
   }
 
@@ -204,6 +208,45 @@ class CcdaToFhirConverter {
       address: this.mapAddresses(patientRole.addr),
       telecom: this.mapTelecom(patientRole.telecom),
       extension: extensions.length > 0 ? extensions : undefined,
+    };
+  }
+
+  private createRelatedPersons(): void {
+    const participants = this.ccda.participant;
+    if (!participants) {
+      return;
+    }
+
+    for (const participant of participants) {
+      const relatedPerson = this.mapParticipantToRelatedPerson(participant);
+      if (relatedPerson) {
+        this.resources.push(relatedPerson);
+      }
+    }
+  }
+
+  private mapParticipantToRelatedPerson(participant: CcdaParticipant): RelatedPerson | undefined {
+    const patient = this.patient;
+    if (!patient) {
+      return undefined;
+    }
+
+    const associatedEntity = participant.associatedEntity;
+    if (!associatedEntity) {
+      return undefined;
+    }
+
+    const relationship = mapCcdaCodeToCodeableConcept(associatedEntity.code);
+
+    return {
+      resourceType: 'RelatedPerson',
+      id: this.mapId(associatedEntity.id),
+      patient: createReference(patient),
+      relationship: relationship ? [relationship] : undefined,
+      identifier: this.mapIdentifiers(associatedEntity.id),
+      name: this.mapCcdaNameArrayFhirHumanNameArray(associatedEntity.associatedPerson?.name),
+      address: this.mapAddresses(associatedEntity.addr),
+      telecom: this.mapTelecom(associatedEntity.telecom),
     };
   }
 
