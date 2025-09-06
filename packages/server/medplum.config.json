@@ -37,5 +37,12 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
+  "optimizedIdentifiers": [
+    {
+      "resourceType": "Encounter",
+      "system": "https://example.com",
+      "status": "active"
+    }
+  ],
   "shutdownTimeoutMilliseconds": 30000
 }
