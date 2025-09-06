@@ -94,6 +94,7 @@ import {
   sleep,
   sortStringArray,
 } from './utils';
+import { ILogger, Logger } from './logger';
 
 export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
@@ -346,6 +347,11 @@ export interface MedplumClientOptions {
    * This can be used to set custom headers such as Cookies or Authorization headers.
    */
   defaultHeaders?: Record<string, string>;
+
+  /**
+   * Default is a Logger that logs to the console.
+   */
+  logger?: ILogger;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
@@ -883,7 +889,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private initPromise: Promise<void>;
   private initComplete = true;
   private keyValueClient?: MedplumKeyValueClient;
-
+  private logger: ILogger;
   constructor(options?: MedplumClientOptions) {
     super();
 
@@ -895,6 +901,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
+    this.logger = options?.logger ?? new Logger(console.log);
     this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
@@ -932,7 +939,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     if (this.storage.getInitPromise === undefined) {
       if (!options?.accessToken) {
-        this.attemptResumeActiveLogin().catch(console.error);
+        this.attemptResumeActiveLogin().catch(this.logger.error);
       }
       this.initPromise = Promise.resolve();
       this.dispatchEvent({ type: 'storageInitialized' });
@@ -942,13 +949,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.initPromise
         .then(() => {
           if (!options?.accessToken) {
-            this.attemptResumeActiveLogin().catch(console.error);
+            this.attemptResumeActiveLogin().catch(this.logger.error);
           }
           this.initComplete = true;
           this.dispatchEvent({ type: 'storageInitialized' });
         })
         .catch((err: Error) => {
-          console.error(err);
+          this.logger.error('Failed to initialize client', err);
           this.initComplete = true;
           this.dispatchEvent({ type: 'storageInitFailed', payload: { error: err } });
         });
@@ -1925,7 +1932,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           });
 
           if (!sd) {
-            console.warn(`No StructureDefinition found for ${profileUrl}!`);
+            this.logger.warn(`No StructureDefinition found for ${profileUrl}!`);
             return;
           }
 
@@ -3405,7 +3412,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       try {
         body = await response.json();
       } catch (err) {
-        console.error('Error parsing response', response.status, err);
+        this.logger.error(`Error parsing response ${response.status}`, err instanceof Error ? err : undefined);
         throw err;
       }
     } else {
@@ -3467,19 +3474,19 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   private logRequest(url: string, options: MedplumRequestOptions): void {
-    console.log(`> ${options.method} ${url}`);
+    this.logger.info(`> ${options.method} ${url}`);
     if (options.headers) {
       const headers = options.headers as Record<string, string>;
       for (const key of sortStringArray(Object.keys(headers))) {
-        console.log(`> ${key}: ${headers[key]}`);
+        this.logger.info(`> ${key}: ${headers[key]}`);
       }
     }
   }
 
   private logResponse(response: Response): void {
-    console.log(`< ${response.status} ${response.statusText}`);
+    this.logger.info(`< ${response.status} ${response.statusText}`);
     if (response.headers) {
-      response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
+      response.headers.forEach((value, key) => this.logger.info(`< ${key}: ${value}`));
     }
   }
 

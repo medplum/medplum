@@ -5,7 +5,7 @@ import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
-import { Logger } from '../logger';
+import { ILogger, Logger } from '../logger';
 import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
@@ -99,8 +99,7 @@ type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: Crite
 export interface SubManagerOptions {
   ReconnectingWebSocket?: IReconnectingWebSocketCtor;
   pingIntervalMs?: number;
-  debug?: boolean;
-  debugLogger?: (...args: any[]) => void;
+  logger?: ILogger;
 }
 
 export class SubscriptionManager {
@@ -114,6 +113,7 @@ export class SubscriptionManager {
   private readonly pingIntervalMs: number;
   private waitingForPong = false;
   private currentProfile: ProfileResource | undefined;
+  private readonly logger: ILogger;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -126,8 +126,8 @@ export class SubscriptionManager {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
     const ws = options?.ReconnectingWebSocket
-      ? new options.ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger })
-      : new ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger });
+      ? new options.ReconnectingWebSocket(url, undefined, { logger: options?.logger })
+      : new ReconnectingWebSocket(url, undefined, { logger: options?.logger });
 
     this.medplum = medplum;
     this.ws = ws;
@@ -137,6 +137,7 @@ export class SubscriptionManager {
     this.wsClosed = false;
     this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
     this.currentProfile = medplum.getProfile();
+    this.logger = options?.logger ?? new Logger(console.log);
 
     this.setupListeners();
   }
@@ -171,7 +172,7 @@ export class SubscriptionManager {
           this.masterSubEmitter?.dispatchEvent(connectEvent);
           const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(subscriptionId);
           if (!criteriaEntry) {
-            console.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
+            this.logger.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
             return;
           }
           criteriaEntry.connecting = false;
@@ -182,13 +183,13 @@ export class SubscriptionManager {
         this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
         const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(resolveId(status.subscription) as string);
         if (!criteriaEntry) {
-          console.warn('Received notification for criteria the SubscriptionManager is not listening for');
+          this.logger.warn('Received notification for criteria the SubscriptionManager is not listening for');
           return;
         }
         // Emit event for criteria
         criteriaEntry.emitter.dispatchEvent({ type: 'message', payload: bundle });
       } catch (err: unknown) {
-        console.error(err);
+        this.logger.error('Error processing WebSocket message', err);
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
         for (const emitter of this.getAllCriteriaEmitters()) {
@@ -237,7 +238,7 @@ export class SubscriptionManager {
       // We do this after dispatching the events so listeners can check if this is the initial open or not
       // We are reconnecting
       // So we refresh all current subscriptions
-      this.refreshAllSubscriptions().catch(console.error);
+      this.refreshAllSubscriptions().catch(this.logger.error);
 
       if (!this.pingTimer) {
         this.pingTimer = setInterval(() => {
@@ -281,7 +282,7 @@ export class SubscriptionManager {
       // Emit disconnect on criteria emitter
       criteriaEntry.emitter.dispatchEvent({ ...disconnectEvent });
     } else {
-      console.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
+      this.logger.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
     }
   }
 
@@ -409,7 +410,7 @@ export class SubscriptionManager {
       // Send binding message
       this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
     } catch (err: unknown) {
-      console.error(normalizeErrorString(err));
+      this.logger.error(normalizeErrorString(err));
       this.emitError(criteriaEntry, err as Error);
       this.removeCriteriaEntry(criteriaEntry);
     }
@@ -442,7 +443,7 @@ export class SubscriptionManager {
     const newCriteriaEntry = new CriteriaEntry(criteria, subscriptionProps);
     this.addCriteriaEntry(newCriteriaEntry);
 
-    this.subscribeToCriteria(newCriteriaEntry).catch(console.error);
+    this.subscribeToCriteria(newCriteriaEntry).catch(this.logger.error);
 
     return newCriteriaEntry.emitter;
   }
@@ -450,7 +451,7 @@ export class SubscriptionManager {
   removeCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
     const criteriaEntry = this.maybeGetCriteriaEntry(criteria, subscriptionProps);
     if (!criteriaEntry) {
-      console.warn('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.');
+      this.logger.warn('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.');
       return;
     }
 

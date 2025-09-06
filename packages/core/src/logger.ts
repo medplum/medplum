@@ -8,6 +8,15 @@
  * and that logging to console.log was actually perfectly adequate.
  */
 
+export interface ILogger {
+  clone(override?: LoggerConfigOverride): ILogger;
+  error(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void;
+  warn(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void;
+  info(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void;
+  debug(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void;
+  log(level: LogLevel, msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void;
+}
+
 /**
  * Logging level, with greater values representing more detailed logs emitted.
  *
@@ -37,7 +46,7 @@ export interface LoggerConfig {
 
 export type LoggerConfigOverride = Partial<LoggerConfig>;
 
-export class Logger {
+export class Logger implements ILogger {
   readonly write: (msg: string) => void;
   readonly metadata: Record<string, any>;
   readonly options?: LoggerOptions;
@@ -79,23 +88,23 @@ export class Logger {
     return { write, metadata, level, options };
   }
 
-  error(msg: string, data?: Record<string, any> | Error): void {
+  error(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void {
     this.log(LogLevel.ERROR, msg, data);
   }
 
-  warn(msg: string, data?: Record<string, any> | Error): void {
+  warn(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void {
     this.log(LogLevel.WARN, msg, data);
   }
 
-  info(msg: string, data?: Record<string, any> | Error): void {
+  info(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void {
     this.log(LogLevel.INFO, msg, data);
   }
 
-  debug(msg: string, data?: Record<string, any> | Error): void {
+  debug(msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void {
     this.log(LogLevel.DEBUG, msg, data);
   }
 
-  log(level: LogLevel, msg: string, data?: Record<string, any> | Error): void {
+  log(level: LogLevel, msg: string, data?: Record<string, any> | unknown[] | unknown | Error): void {
     if (level > this.level) {
       return;
     }
@@ -110,7 +119,7 @@ export class Logger {
         level: LogLevelNames[level],
         timestamp: new Date().toISOString(),
         msg: this.prefix ? `${this.prefix}${msg}` : msg,
-        ...data,
+        ...(data && typeof data === 'object' ? data : { data }),
         ...this.metadata,
       })
     );
