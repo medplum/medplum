@@ -466,7 +466,9 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
+  readonly enrollQrCode?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -521,6 +523,7 @@ export interface InviteRequest {
   membership?: Partial<ProjectMembership>;
   upsert?: boolean;
   forceNewMembership?: boolean;
+  mfaRequired?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */

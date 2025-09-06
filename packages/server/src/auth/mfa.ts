@@ -53,6 +53,35 @@ mfaRouter.get(
 );
 
 mfaRouter.post(
+  '/login-enroll',
+  [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
+  asyncWrap(async (req: Request, res: Response) => {
+    const systemRepo = getSystemRepo();
+    const login = await systemRepo.readResource<Login>('Login', req.body.login);
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+    if (user.mfaEnrolled) {
+      sendOutcome(res, badRequest('Already enrolled'));
+      return;
+    }
+
+    if (!user.mfaSecret) {
+      sendOutcome(res, badRequest('Secret not found'));
+      return;
+    }
+
+    const result = await verifyMfaToken(login, req.body.token);
+
+    await systemRepo.updateResource({
+      ...user,
+      mfaEnrolled: true,
+    });
+
+    await sendLoginResult(res, result);
+  })
+);
+
+mfaRouter.post(
   '/enroll',
   authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],

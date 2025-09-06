@@ -306,11 +306,11 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
-  if (!user.mfaEnrolled) {
+  const secret = user.mfaSecret;
+  if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
