@@ -151,6 +151,22 @@ A comprehensive [pediatric EHR](/blog/develo-case-study) system built with Medpl
   <iframe src="https://www.youtube.com/embed/Jk5jSEiBYbQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </div>
 
+### Awell Clinical Ops Automation
+
+Clinical operations automation platform built with Medplum, streamlining healthcare workflows and improving operational efficiency.
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/tjOZt4RzVic?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
+### Vibrant AI Enabled EHR
+
+AI-powered EHR system built with Medplum, featuring intelligent automation and enhanced clinical decision support.
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/aZudzbHNmIE?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
 --- 
 
 ## PlumCon 2025 Photos
