@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, Hl7Message, ILogger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
@@ -12,7 +12,7 @@ export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
-  readonly log: Logger;
+  readonly log: ILogger;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -21,7 +21,7 @@ export class AgentHl7Channel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[HL7:${definition.name}] ` } });
+    this.log = app.log.clone({ prefix: `[HL7:${definition.name}] ` });
   }
 
   start(): void {

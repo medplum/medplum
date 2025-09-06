@@ -3,8 +3,8 @@
 import {
   AgentTransmitResponse,
   ContentType,
-  Logger,
   createReference,
+  ILogger,
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
@@ -23,7 +23,7 @@ export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: Logger;
+  readonly log: ILogger;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -153,7 +153,7 @@ export class AgentDicomChannel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
+    this.log = app.log.clone({ prefix: `[DICOM:${definition.name}] ` });
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
