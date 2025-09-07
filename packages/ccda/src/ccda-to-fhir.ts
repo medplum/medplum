@@ -1210,6 +1210,24 @@ class CcdaToFhirConverter {
 
     result.extension = this.mapTextReference(observation.text);
 
+    // Look for child observations
+    const relationships = observation.entryRelationship;
+    if (relationships) {
+      for (const relationship of relationships) {
+        const childObservation = relationship.observation;
+        if (childObservation) {
+          for (const child of childObservation) {
+            const childResource = this.processVitalsObservation(child);
+            this.resources.push(childResource);
+            if (!result.hasMember) {
+              result.hasMember = [];
+            }
+            result.hasMember.push(createReference(childResource));
+          }
+        }
+      }
+    }
+
     return result;
   }
 

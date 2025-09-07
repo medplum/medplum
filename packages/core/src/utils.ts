@@ -826,6 +826,29 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
 }
 
 /**
+ * Finds the code for a specific system in a list of CodeableConcepts.
+ * @param categories - The list of CodeableConcepts to search.
+ * @param system - The system to match.
+ * @returns The code for the matching system, or undefined if not found.
+ */
+export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
+  if (!categories) {
+    return undefined;
+  }
+  for (const category of categories) {
+    if (!category.coding) {
+      continue;
+    }
+    for (const coding of category.coding) {
+      if (coding.system === system) {
+        return coding.code;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * Returns true if the input value is an object with a string text property.
  * This is a heuristic check based on the presence of the "text" property.
  * @param value - The candidate value.

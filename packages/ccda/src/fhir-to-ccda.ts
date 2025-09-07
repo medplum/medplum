@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, generateId, getExtension } from '@medplum/core';
+import {
+  capitalize,
+  generateId,
+  getExtension,
+  getTypedPropertyValueWithoutSchema,
+  isPopulated,
+  toTypedValue,
+} from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -52,6 +59,8 @@ import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ALLERGY_OBSERVATION,
   OID_ALLERGY_PROBLEM_ACT,
+  OID_ASSESSMENT_SCALE_OBSERVATION,
+  OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
   OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
   OID_BIRTH_SEX,
@@ -1450,7 +1459,8 @@ class FhirToCcdaConverter {
   }
 
   private createObservationEntry(observation: Observation): CcdaEntry {
-    if (observation.hasMember) {
+    const obsValue = getTypedPropertyValueWithoutSchema(toTypedValue(observation), 'value');
+    if (observation.hasMember && !isPopulated(obsValue)) {
       // Organizer
       return {
         organizer: [this.createVitalSignsOrganizer(observation)],
@@ -1598,6 +1608,22 @@ class FhirToCcdaConverter {
   }
 
   private createVitalSignObservation(observation: Observation): CcdaObservation {
+    const entryRelationship: CcdaEntryRelationship[] = [];
+
+    if (observation.hasMember) {
+      for (const member of observation.hasMember) {
+        const child = this.findResourceByReference(member);
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        entryRelationship.push({
+          '@_typeCode': 'COMP',
+          observation: [this.createVitalSignObservation(child as Observation)],
+        });
+      }
+    }
+
     const result: CcdaObservation = {
       '@_classCode': 'OBS',
       '@_moodCode': 'EVN',
@@ -1610,6 +1636,7 @@ class FhirToCcdaConverter {
       referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
       text: this.createTextFromExtensions(observation.extension),
       author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
+      entryRelationship,
     };
 
     return result;
@@ -1673,6 +1700,13 @@ class FhirToCcdaConverter {
       return [{ '@_root': OID_RESULT_OBSERVATION }, { '@_root': OID_RESULT_OBSERVATION, '@_extension': '2015-08-01' }];
     }
 
+    if (category === 'survey') {
+      if (observation.hasMember) {
+        return [{ '@_root': OID_ASSESSMENT_SCALE_OBSERVATION, '@_extension': '2022-06-01' }];
+      }
+      return [{ '@_root': OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION }];
+    }
+
     // Otherwise, fall back to the default template ID.
     return [
       { '@_root': OID_VITAL_SIGNS_OBSERVATION },
@@ -1693,8 +1727,12 @@ class FhirToCcdaConverter {
       return mapCodeableConceptToCcdaValue(observation.valueCodeableConcept);
     }
 
-    if (observation.valueString) {
+    if (observation.valueString !== undefined) {
       return { '@_xsi:type': 'ST', '#text': observation.valueString };
+    }
+
+    if (observation.valueInteger !== undefined) {
+      return { '@_xsi:type': 'INT', '@_value': observation.valueInteger.toString() };
     }
 
     return undefined;

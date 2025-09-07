@@ -293,7 +293,12 @@ export interface CcdaQuantity {
   '@_unit'?: string;
 }
 
-export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference;
+export interface CcdaInteger {
+  '@_xsi:type': 'INT';
+  '@_value': string;
+}
+
+export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference | CcdaInteger;
 
 export interface CcdaPeriod {
   '@_xsi:type'?: 'PIVL_TS';
@@ -388,7 +393,7 @@ export interface CcdaOrganization {
 }
 
 export interface CcdaOrganizer {
-  '@_classCode': 'CLUSTER';
+  '@_classCode': 'CLUSTER' | 'OBS';
   '@_moodCode': 'EVN';
   templateId: CcdaTemplateId[];
   id: CcdaId[];
