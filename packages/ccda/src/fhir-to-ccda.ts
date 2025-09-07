@@ -117,6 +117,7 @@ import {
   LOINC_CONDITION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_HISTORY_OF_SOCIAL_FUNCTION,
   LOINC_HISTORY_OF_TOBACCO_USE,
   LOINC_MEDICATION_INSTRUCTIONS,
   LOINC_NOTES_SECTION,
@@ -1498,17 +1499,10 @@ class FhirToCcdaConverter {
   private createGoalEntry(section: CompositionSection, resource: Goal): CcdaEntry | undefined {
     const sectionCode = section.code?.coding?.[0]?.code;
 
-    let templateId: CcdaTemplateId[];
-    if (sectionCode === LOINC_PLAN_OF_TREATMENT_SECTION) {
-      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
-    } else if (sectionCode === LOINC_GOALS_SECTION) {
-      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
-    } else {
-      return undefined;
-    }
-
     let code: CcdaCode | undefined;
-    if (sectionCode === LOINC_GOALS_SECTION) {
+    if (resource.category?.[0]) {
+      code = mapCodeableConceptToCcdaCode(resource.category[0]);
+    } else if (sectionCode === LOINC_GOALS_SECTION) {
       code = {
         '@_code': LOINC_OVERALL_GOAL,
         '@_codeSystem': OID_LOINC_CODE_SYSTEM,
@@ -1521,6 +1515,27 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
+    let templateId: CcdaTemplateId[];
+    if (sectionCode === LOINC_PLAN_OF_TREATMENT_SECTION) {
+      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
+    } else if (code?.['@_code'] === LOINC_HISTORY_OF_SOCIAL_FUNCTION) {
+      templateId = [
+        { '@_root': OID_GOAL_OBSERVATION },
+        { '@_root': OID_GOAL_OBSERVATION, '@_extension': '2022-06-01' },
+      ];
+    } else if (sectionCode === LOINC_GOALS_SECTION) {
+      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
+    } else {
+      return undefined;
+    }
+
+    let value: CcdaValue | undefined;
+    if (resource.description.coding?.[0]?.code) {
+      value = mapCodeableConceptToCcdaValue(resource.description);
+    } else if (resource.description.text) {
+      value = { '@_xsi:type': 'ST', '#text': resource.description.text };
+    }
+
     return {
       observation: [
         {
@@ -1531,7 +1546,7 @@ class FhirToCcdaConverter {
           code,
           statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
-          value: resource.description?.text ? { '@_xsi:type': 'ST', '#text': resource.description.text } : undefined,
+          value,
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
             '@_typeCode': 'RSON',

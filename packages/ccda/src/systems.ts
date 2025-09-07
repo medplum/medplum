@@ -273,6 +273,7 @@ export const LOINC_TOBACCO_SMOKING_STATUS = '72166-2';
 export const LOINC_HISTORY_OF_TOBACCO_USE = '11367-0';
 export const LOINC_ADMINISTRATIVE_SEX = '46098-0';
 export const LOINC_BIRTH_SEX = '76689-9';
+export const LOINC_HISTORY_OF_SOCIAL_FUNCTION = '8689-2';
 
 export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
   {

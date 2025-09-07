@@ -20,6 +20,7 @@ import {
   EncounterDiagnosis,
   Extension,
   Goal,
+  GoalTarget,
   HumanName,
   Identifier,
   Immunization,
@@ -1122,26 +1123,46 @@ class CcdaToFhirConverter {
   }
 
   private processGoalObservation(observation: CcdaObservation): Goal {
+    const category: CodeableConcept[] = [];
+    if (observation.code) {
+      category.push(this.mapCode(observation.code) as CodeableConcept);
+    }
+
+    const target: GoalTarget[] = [];
+
+    let description: CodeableConcept | undefined = undefined;
+    const ccdaValue = observation.value;
+    if (ccdaValue) {
+      const type = ccdaValue['@_xsi:type'];
+      if (type === 'CD') {
+        description = mapCcdaCodeToCodeableConcept(ccdaValue);
+      } else if (type === 'ST') {
+        description = { text: ccdaValue['#text'] ?? '' };
+      }
+    }
+
+    if (observation.entryRelationship) {
+      for (const entryRelationship of observation.entryRelationship) {
+        target.push({
+          measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+          detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+          dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
+        });
+      }
+    }
+
     const result: Goal = {
       resourceType: 'Goal',
       id: this.mapId(observation.id),
+      extension: this.mapTextReference(observation.text),
       identifier: this.mapIdentifiers(observation.id),
       lifecycleStatus: this.mapGoalLifecycleStatus(observation),
-      description: this.mapCode(observation.code) as CodeableConcept,
+      category,
+      description: description ?? { text: 'Unknown goal' },
       subject: createReference(this.patient as Patient),
       startDate: mapCcdaToFhirDate(observation.effectiveTime?.[0]?.['@_value']),
-      // note: this.mapNote(observation.text),
+      target,
     };
-
-    result.target = observation.entryRelationship?.map((entryRelationship) => {
-      return {
-        measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-        dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
-      };
-    });
-
-    result.extension = this.mapTextReference(observation.text);
 
     return result;
   }
@@ -1197,6 +1218,10 @@ class CcdaToFhirConverter {
 
         case 'ST': // String
           result.valueString = observation.value['#text'] ?? '';
+          break;
+
+        case 'INT': // Integer
+          result.valueInteger = observation.value['@_value'] ? parseInt(observation.value['@_value'], 10) : undefined;
           break;
 
         default:
