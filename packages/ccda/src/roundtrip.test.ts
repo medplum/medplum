@@ -28,7 +28,6 @@ const testData = [
   'ProcedureSectionObservationEntry',
   'ProcedureSectionProcedureEntry',
   // 'EncounterHospitalDischarge',
-  // 'AliceNewman_USCDIv3_21Jan_2025',
 ];
 
 describe('convertCcdaToFhir', () => {
