@@ -17,7 +17,7 @@ Yes, the Medplum Agent is designed with strong security measures appropriate for
 
 ## Is the Medplum Agent secure even if it is open-source? 
 
-Yes! All code contributed to Medplum, regardless if it is authored by a Medplum maintainer, customer, or open-source community member, is automatically scanned for security vulnerabilities and manually reviewed by Medplum maintainers before it is added to an official release. 
+Yes! All code contributed to Medplum, regardless if it is authored by a Medplum Maintainer (a.k.a. employee), customer, or open-source community member, is automatically scanned for security vulnerabilities and manually reviewed by [Medplum Maintainers](https://www.medplum.com/about) before it is added to an official release. 
 
 ## I use Mirth right now. Is the Medplum Agent a good alternative? 
 
