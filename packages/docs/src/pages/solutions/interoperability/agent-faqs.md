@@ -25,4 +25,4 @@ Yes, read our [blog post](/blog/medplum-for-mirth-users)!
 
 ## Who uses the Medplum Agent? 
 
-The Medplum Agent was developed in partnership with our friends at [Rad AI](https://www.radai.com/), who use our Agent across their products. 
+The Medplum Agent was developed in partnership with our friends at [Rad AI](https://www.radai.com/). Rad AI deploys the Medplum Agent at all of their Reporting and Continuity customers, and their customers account for [nearly 50%](https://www.radai.com/news/rad-ai-expands-executive-team-to-accelerate-growth-and-solidify-position-as-the-leader-in-ai-driven-radiology-solutions) of all U.S. medical imaging. 
