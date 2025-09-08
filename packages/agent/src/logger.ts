@@ -200,14 +200,15 @@ export function getPinoLevelFromMedplumLevel(level: LogLevel): pino.Level | 'sil
 
 export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType: LoggerType): pino.Logger {
   const level = getPinoLevelFromMedplumLevel(config.logLevel);
+  // When testing, just use the default config - it pipes raw JSON to stdout
+  if (process.env.NODE_ENV === 'test') {
+    return pino();
+  }
+
   const transport = pino.transport({
     level,
     targets: [
-      // Only use pretty when we are not in a test, and when the stdout is a tty
-      // Otherwise, pipe raw JSON to stdout
-      ...(process.stdout.isTTY && process.env.NODE_ENV !== 'test'
-        ? [{ target: 'pino-pretty', level }]
-        : [{ target: 'pino/file', level, options: { destination: 1 } }]),
+      { target: 'pino-pretty', level },
       {
         target: 'pino-roll',
         options: {
@@ -226,11 +227,13 @@ export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType
       },
     ],
   });
+
   // Log any errors that happen
   // This is important for debugging broken logger configurations that are not outputting logs
   transport.on('error', (err: unknown) => {
     console.error('Error in pino transport', err);
   });
+
   return pino(transport);
 }
 
