@@ -1512,12 +1512,12 @@ function addOrderByClause(
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'token-column') {
-    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+    addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === 'lookup-table') {
     impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
-    builder.orderBy(impl.columnName, !!sortRule.descending);
+    builder.orderBy(impl.columnName, sortRule.descending);
   }
 }
 

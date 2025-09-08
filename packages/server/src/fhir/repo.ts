@@ -107,6 +107,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -260,18 +261,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *
    * Version history:
    *
-   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
-   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
-   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
-   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
-   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
-   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
-   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
-   * 8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
-   * 9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
+   *  1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   *  2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   *  3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   *  4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   *  5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
+   *  6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   *  7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
+   *  8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
+   *  9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
+   * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
    *
    */
-  static readonly VERSION: number = 9;
+  static readonly VERSION: number = 10;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -1650,6 +1652,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
+      if (impl.sortColumnName) {
+        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+      }
       return;
     }
 
