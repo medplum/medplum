@@ -4,6 +4,10 @@
 
 The Medplum Agent is an open-source, lightweight service that acts as a bridge between Medplum's cloud-based FHIR server and on-premise healthcare systems or devices. This enables integrations with legacy systems that cannot directly connect to cloud services. 
 
+## Why use the Medplum Agent? 
+
+HL7, DICOM, and other legacy feeds often sit within closed-system networks, and we built the Medplum Agent specifically to alleviate the need to maintain site-to-site VPN tunnels. For more information on our infrastructure, see [our docs](/docs/agent). 
+
 ## Is the Medplum Agent secure? 
 
 Yes, the Medplum Agent is designed with strong security measures appropriate for healthcare environments:
@@ -13,12 +17,12 @@ Yes, the Medplum Agent is designed with strong security measures appropriate for
 
 ## Is the Medplum Agent secure even if it is open-source? 
 
-Yes! All code, regardless if it is authored by a Medplum maintainer, customer, or open-source community member, is automatically scanned for security vulnerabilities and manually reviewed by Medplum maintainers before it is added to an official release. 
+Yes! All code contributed to Medplum, regardless if it is authored by a Medplum maintainer, customer, or open-source community member, is automatically scanned for security vulnerabilities and manually reviewed by Medplum maintainers before it is added to an official release. 
 
 ## I use Mirth right now. Is the Medplum Agent a good alternative? 
 
 Yes, read our [blog post](/blog/medplum-for-mirth-users)! 
 
-## Who uses the Medplum Agent? Will we be the first ones? 
+## Who uses the Medplum Agent? 
 
-No! The Medplum Agent was developed in partnership with our friends at **insert info about customer with their approval**, and used in **insert info**. See their case study for more information. 
+The Medplum Agent was developed in partnership with our friends at [Rad AI](https://www.radai.com/), who use our Agent across their products. 
