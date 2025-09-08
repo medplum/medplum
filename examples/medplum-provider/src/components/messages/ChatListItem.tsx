@@ -12,10 +12,11 @@ interface ChatListItemProps {
   topic: Communication;
   lastCommunication: Communication | undefined;
   isSelected: boolean;
+  onSelectedItem: (topic: Communication) => string;
 }
 
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
-  const { topic, lastCommunication, isSelected } = props;
+  const { topic, lastCommunication, isSelected, onSelectedItem } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
@@ -24,7 +25,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const topicName = topic.topic?.text ?? content;
 
   return (
-    <MedplumLink to={`/Message/${topic.id}`} c="dark">
+    <MedplumLink to={onSelectedItem(topic)} c="dark">
       <Group
         p="xs"
         key={topic.id}

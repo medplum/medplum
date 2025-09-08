@@ -86,6 +86,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    requester: ctx.membership.profile,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
     headers: req.headers,

@@ -1,10 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Group, Skeleton, Stack } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
+import { createReference, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { OperationOutcomeAlert, QuestionnaireForm, QuestionnaireResponseDisplay, useMedplum } from '@medplum/react';
+import {
+  OperationOutcomeAlert,
+  QuestionnaireForm,
+  QuestionnaireResponseDisplay,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -13,10 +20,24 @@ interface TaskQuestionnaireFormProps {
 
 export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionnaireFormProps): JSX.Element => {
   const medplum = useMedplum();
+  const author = useMedplumProfile();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>(undefined);
+
+  useEffect(() => {
+    const updateQuestionnaireResponse = async (): Promise<void> => {
+      if (questionnaireResponse && task.status === 'completed' && questionnaireResponse?.status !== 'completed') {
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          status: 'completed',
+        };
+        await medplum.updateResource(updatedResponse);
+      }
+    };
+    updateQuestionnaireResponse().catch(showErrorNotification);
+  }, [task, questionnaireResponse, medplum]);
 
   const onChange = (response: QuestionnaireResponse): void => {
     const baseResponse = questionnaireResponse || response;
@@ -24,6 +45,8 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       ...baseResponse,
       item: response.item,
       status: 'in-progress',
+      authored: new Date().toISOString(),
+      source: author && createReference(author),
     };
 
     onChangeResponse?.(updatedResponse);

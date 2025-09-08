@@ -1,7 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getDataType, InternalTypeSchema } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
 import {
   buildCreateTables,
   columnDefinitionsEqual,
@@ -20,10 +18,7 @@ describe('Generator', () => {
 
     test('Patient', () => {
       const result: SchemaDefinition = { tables: [], functions: [] };
-      const dataTypes: [ResourceType, InternalTypeSchema][] = [['Patient', getDataType('Patient')]];
-      for (const [resourceType, typeSchema] of dataTypes) {
-        buildCreateTables(result, resourceType, typeSchema);
-      }
+      buildCreateTables(result, 'Patient');
       expect(result.tables.map((t) => t.name)).toStrictEqual(['Patient', 'Patient_History', 'Patient_References']);
 
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
@@ -82,10 +77,12 @@ describe('Generator', () => {
         {
           name: 'projectId',
           type: 'UUID',
+          notNull: true,
         },
         {
           name: '__version',
           type: 'INTEGER',
+          notNull: true,
         },
         {
           name: '_source',

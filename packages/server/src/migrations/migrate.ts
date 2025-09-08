@@ -3,12 +3,10 @@
 import {
   deepEquals,
   FileBuilder,
-  getAllDataTypes,
+  getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  InternalTypeSchema,
   isPopulated,
-  isResourceTypeSchema,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -16,6 +14,7 @@ import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
+import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
@@ -27,6 +26,7 @@ import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
+  CheckConstraintDefinition,
   ColumnDefinition,
   IndexDefinition,
   IndexType,
@@ -143,6 +143,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
       matchedStartTables.add(startTable);
       actions.push(...generateColumnsActions(ctx, startTable, targetTable));
       actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+      actions.push(...generateConstraintsActions(ctx, startTable, targetTable));
     }
   }
 
@@ -153,10 +154,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   }
 
   if (options.analyzeResourceTables) {
-    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
-      if (!isResourceTypeSchema(fhirType)) {
-        continue;
-      }
+    for (const resourceType of getResourceTypes()) {
       actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
     }
   }
@@ -199,6 +197,7 @@ async function getTableDefinition(db: Client | Pool | PoolClient, name: string):
     name,
     columns: await getColumns(db, name),
     indexes: await getIndexes(db, name),
+    constraints: await getCheckConstraints(db, name),
   };
 }
 
@@ -374,11 +373,41 @@ export function parseIndexName(indexdef: string): string | undefined {
   return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
 }
 
+async function getCheckConstraints(
+  db: Client | Pool | PoolClient,
+  tableName: string
+): Promise<CheckConstraintDefinition[]> {
+  const rs = await db.query<{
+    table_name: string;
+    conname: string;
+    contype: string;
+    condef: string;
+  }>(`SELECT conrelid::regclass AS table_name, conname, contype, pg_get_constraintdef(oid, TRUE) as condef
+FROM pg_catalog.pg_constraint
+WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::regclass) AND contype = 'c'`);
+
+  const cds: CheckConstraintDefinition[] = [];
+  for (const row of rs.rows) {
+    if (row.contype === 'c') {
+      const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
+      if (!expressionMatch) {
+        throw new Error('Could not parse check constraint expression from ' + row.condef);
+      }
+      cds.push({
+        name: row.conname,
+        type: 'check',
+        expression: expressionMatch[1],
+      });
+    }
+  }
+  return cds;
+}
+
 function buildTargetDefinition(): SchemaDefinition {
   const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
-  for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
-    buildCreateTables(result, resourceType, typeSchema);
+  for (const resourceType of getResourceTypes()) {
+    buildCreateTables(result, resourceType);
   }
 
   buildAddressTable(result);
@@ -393,15 +422,7 @@ function buildTargetDefinition(): SchemaDefinition {
   return result;
 }
 
-export function buildCreateTables(
-  result: SchemaDefinition,
-  maybeResourceType: string,
-  fhirType: InternalTypeSchema
-): void {
-  if (!isResourceTypeSchema(fhirType)) {
-    // Don't create a table if fhirType is a subtype or not a resource type
-    return;
-  }
+export function buildCreateTables(result: SchemaDefinition, maybeResourceType: string): void {
   const resourceType = maybeResourceType as ResourceType;
 
   const tableDefinition: TableDefinition = {
@@ -411,8 +432,8 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'projectId', type: 'UUID' },
-      { name: '__version', type: 'INTEGER' },
+      { name: 'projectId', type: 'UUID', notNull: true },
+      { name: '__version', type: 'INTEGER', notNull: true },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
     ],
@@ -430,6 +451,15 @@ export function buildCreateTables(
   if (resourceType !== 'Binary') {
     tableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
     tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
+  }
+
+  if (resourceType === 'Project') {
+    tableDefinition.constraints = tableDefinition.constraints ?? [];
+    tableDefinition.constraints.push({
+      name: 'reserved_project_id_check',
+      type: 'check',
+      expression: `id <> '${systemResourceProjectId}'::uuid`,
+    });
   }
 
   buildSearchColumns(tableDefinition, resourceType);
@@ -924,8 +954,12 @@ export async function executeMigrationActions(
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        await fns.query(client, results, query);
+        if (action.notNull) {
+          await fns.nonBlockingAlterColumnNotNull(client, results, action.tableName, action.columnName);
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          await fns.query(client, results, query);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -939,6 +973,16 @@ export async function executeMigrationActions(
       }
       case 'DROP_INDEX': {
         await fns.query(client, results, getDropIndexQuery(action.indexName));
+        break;
+      }
+      case 'ADD_CONSTRAINT': {
+        await fns.nonBlockingAddConstraint(
+          client,
+          results,
+          action.tableName,
+          action.constraintName,
+          action.constraintExpression
+        );
         break;
       }
     }
@@ -997,8 +1041,14 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        if (action.notNull) {
+          b.appendNoWrap(
+            `await fns.nonBlockingAlterColumnNotNull(client, results, \`${action.tableName}\`, \`${action.columnName}\`);`
+          );
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -1015,6 +1065,12 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'ADD_CONSTRAINT': {
+        b.appendNoWrap(
+          `await fns.nonBlockingAddConstraint(client, results, '${action.tableName}', '${action.constraintName}', \`${action.constraintExpression}\`);`
+        );
         break;
       }
       default: {
@@ -1116,19 +1172,24 @@ function generateAlterColumnActions(
 
 function getCreateTableQueries(tableDef: TableDefinition): string[] {
   const queries: string[] = [];
-  const createTableParts = [`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`];
-  for (let i = 0; i < tableDef.columns.length; i++) {
-    const column = tableDef.columns[i];
-    createTableParts.push(`  "${column.name}" ${column.type}` + (i !== tableDef.columns.length - 1 ? ',' : ''));
+  const createTableLines = [];
+  for (const column of tableDef.columns) {
+    createTableLines.push(`  "${column.name}" ${column.type}`);
   }
-  createTableParts.push(')');
-  queries.push(createTableParts.join('\n'));
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
-    queries.push(
-      `ALTER TABLE IF EXISTS "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
-    );
+    createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`);
   }
+
+  for (const constraint of tableDef.constraints ?? []) {
+    if (constraint.type === 'check') {
+      createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
+    } else {
+      throw new Error(`Unsupported constraint type: ${constraint.type}`);
+    }
+  }
+
+  queries.push([`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`, createTableLines.join(',\n'), ')'].join('\n'));
 
   for (const indexDef of tableDef.indexes) {
     const indexName = getIndexName(tableDef.name, indexDef);
@@ -1217,6 +1278,51 @@ function generateIndexesActions(
         }
         actions.push({ type: 'DROP_INDEX', indexName });
       }
+    }
+  }
+  return actions;
+}
+
+function generateConstraintsActions(
+  ctx: GenerateActionsContext,
+  startTable: TableDefinition,
+  targetTable: TableDefinition
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
+
+  const matchedConstraints = new Set<CheckConstraintDefinition>();
+  const seenConstraintNames = new Set<string>();
+
+  for (const targetConstraint of targetTable.constraints ?? []) {
+    if (seenConstraintNames.has(targetConstraint.name)) {
+      throw new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint });
+    }
+    seenConstraintNames.add(targetConstraint.name);
+
+    const startConstraint = startTable.constraints?.find((c) => constraintDefinitionsEqual(c, targetConstraint));
+    if (!startConstraint) {
+      ctx.postDeployAction(
+        () => {
+          actions.push({
+            type: 'ADD_CONSTRAINT',
+            tableName: targetTable.name,
+            constraintName: targetConstraint.name,
+            constraintExpression: targetConstraint.expression,
+          });
+        },
+        `ADD CONSTRAINT ${escapeIdentifier(targetConstraint.name)} ON ${escapeIdentifier(targetTable.name)} ...`
+      );
+    } else {
+      matchedConstraints.add(startConstraint);
+    }
+  }
+
+  for (const startConstraint of startTable.constraints ?? []) {
+    if (!matchedConstraints.has(startConstraint)) {
+      console.log(
+        `[${startTable.name}] Existing constraint should not exist:`,
+        startConstraint.expression || JSON.stringify(startConstraint)
+      );
     }
   }
   return actions;
@@ -1334,6 +1440,10 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
+  return deepEquals(a, b);
+}
+
+export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
   return deepEquals(a, b);
 }
 

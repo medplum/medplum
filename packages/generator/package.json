@@ -34,7 +34,7 @@
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
     "fast-xml-parser": "5.2.5",
-    "fhirpath": "4.5.1",
+    "fhirpath": "4.6.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.16.3",

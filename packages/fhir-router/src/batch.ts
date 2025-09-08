@@ -477,6 +477,7 @@ class BatchProcessor {
       query: route?.query ?? Object.create(null),
       body,
       headers,
+      config: this.req.config,
     };
   }
 

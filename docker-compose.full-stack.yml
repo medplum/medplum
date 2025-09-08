@@ -14,6 +14,8 @@ services:
       - "statement_timeout=60000"
       - "-c"
       - "default_transaction_isolation=REPEATABLE READ"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements,auto_explain"
     ports:
       - "5432:5432"
     healthcheck:

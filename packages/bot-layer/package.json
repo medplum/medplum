@@ -33,7 +33,7 @@
     "pdfmake": "0.2.20",
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.0.1",
-    "twilio": "5.8.0"
+    "twilio": "5.9.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13"

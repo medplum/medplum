@@ -45,7 +45,7 @@ describe('Workers', () => {
         },
       };
 
-      const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+      const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
       const subSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
