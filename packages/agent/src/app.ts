@@ -24,10 +24,8 @@ import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
-import { resolve } from 'node:path';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
@@ -87,45 +85,12 @@ export class App {
   private config: Agent | undefined;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
-    const errorMsgs: [string, Error][] = [];
-    let rawAgentConfig: string | undefined;
-    let configParseWarnings: string[] | undefined;
-
-    if (existsSync(resolve(__dirname, 'agent-config.json'))) {
-      try {
-        rawAgentConfig = readFileSync(resolve(__dirname, 'agent-config.json'), { encoding: 'utf-8' });
-      } catch (err) {
-        errorMsgs.push(['Error while reading agent-config.json', err as Error]);
-      }
-    }
-
-    if (rawAgentConfig) {
-      const agentConfig = JSON.parse(rawAgentConfig);
-      const [config, warnings] = parseLoggerConfigFromAgent(agentConfig);
-      configParseWarnings = warnings;
-      setLoggerConfig(config);
-    }
-
     App.instance = this;
     this.medplum = medplum;
     this.agentId = agentId;
     this.logLevel = logLevel;
     this.log = createLogger(LoggerType.MAIN);
     this.channelLog = createLogger(LoggerType.CHANNEL);
-
-    // We log anything that occurred during the invocation of this constructor at the end once the logger has been created
-    if (errorMsgs.length) {
-      for (const [msg, err] of errorMsgs) {
-        this.log.error(msg, err);
-        console.log(msg);
-      }
-    }
-
-    if (configParseWarnings?.length) {
-      for (const warning of configParseWarnings) {
-        this.log.warn(warning);
-      }
-    }
   }
 
   async start(): Promise<void> {
@@ -366,12 +331,6 @@ export class App {
 
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
-    // Cache agent config locally
-    // This enables us to resume the logger at next startup before reloading agent with the same config, so that we don't log some logs to another place before
-    // We get the remote config
-    writeFile(resolve(__dirname, 'agent-config.json'), JSON.stringify(agent, null, 2)).catch((err) => {
-      this.log.error(err);
-    });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
