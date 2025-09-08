@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  AgentTransmitResponse,
-  ContentType,
-  createReference,
-  ILogger,
-  normalizeErrorString,
-  sleep,
-} from '@medplum/core';
+import { AgentTransmitResponse, ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
 import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
@@ -18,12 +11,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
 import { BaseChannel } from './channel';
+import { PinoWrapperLogger } from './logger';
 
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: ILogger;
+  readonly log: PinoWrapperLogger;
+  readonly channelLog: PinoWrapperLogger;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -139,7 +134,8 @@ export class AgentDicomChannel extends BaseChannel {
           });
           response.setStatus(dimse.constants.Status.Success);
         } catch (err) {
-          DcmjsDimseScp.channel.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+          DcmjsDimseScp.channel.log.error(`DICOM error - check channel logs`);
+          DcmjsDimseScp.channel.channelLog.error(`DICOM error: ${normalizeErrorString(err)}`);
           response.setStatus(dimse.constants.Status.ProcessingFailure);
         }
 
@@ -154,6 +150,7 @@ export class AgentDicomChannel extends BaseChannel {
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
     this.log = app.log.clone({ prefix: `[DICOM:${definition.name}] ` });
+    this.channelLog = app.channelLog.clone({ prefix: `[DICOM:${definition.name}] ` });
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {

@@ -35,7 +35,14 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { LoggerType, PinoWrapperLogger, createLogger, parseLoggerConfigFromAgent, setLoggerConfig } from './logger';
+import {
+  LoggerType,
+  PinoWrapperLogger,
+  createLogger,
+  getLoggerConfig,
+  parseLoggerConfigFromAgent,
+  setLoggerConfig,
+} from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -62,6 +69,7 @@ export class App {
   readonly agentId: string;
   readonly logLevel: LogLevel;
   readonly log: PinoWrapperLogger;
+  readonly channelLog: PinoWrapperLogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -103,6 +111,7 @@ export class App {
     this.agentId = agentId;
     this.logLevel = logLevel;
     this.log = createLogger(LoggerType.MAIN);
+    this.channelLog = createLogger(LoggerType.CHANNEL);
 
     // We log anything that occurred during the invocation of this constructor at the end once the logger has been created
     if (errorMsgs.length) {
@@ -358,6 +367,8 @@ export class App {
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     // Cache agent config locally
+    // This enables us to resume the logger at next startup before reloading agent with the same config, so that we don't log some logs to another place before
+    // We get the remote config
     writeFile(resolve(__dirname, 'agent-config.json'), JSON.stringify(agent, null, 2)).catch((err) => {
       this.log.error(err);
     });
@@ -374,6 +385,11 @@ export class App {
     } catch (err: unknown) {
       this.log.error('Error while rehydrating logger config', err as Error);
     }
+
+    // Reload each logger on the app
+    // Channel-scoped logger clones will be reloaded by their respective channel
+    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN]);
+    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL]);
 
     // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {

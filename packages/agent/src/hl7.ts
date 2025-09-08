@@ -1,18 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ContentType, Hl7Message, ILogger, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
+import { getLoggerConfig, LoggerType, PinoWrapperLogger } from './logger';
 import { getCurrentStats, updateStat } from './stats';
 
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
-  readonly log: ILogger;
+  readonly log: PinoWrapperLogger;
+  readonly channelLog: PinoWrapperLogger;
+  private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -21,7 +24,9 @@ export class AgentHl7Channel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ prefix: `[HL7:${definition.name}] ` });
+    this.prefix = `[HL7:${definition.name}] `;
+    this.log = app.log.clone({ prefix: this.prefix });
+    this.channelLog = app.channelLog.clone({ prefix: this.prefix });
   }
 
   start(): void {
@@ -61,8 +66,14 @@ export class AgentHl7Channel extends BaseChannel {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
+    this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    this.log.info('Reloading logger config...');
+    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN], { prefix: this.prefix });
+    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL], { prefix: this.prefix });
+    this.log.info('Logger config reloaded');
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
@@ -141,7 +152,7 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
-      this.channel.log.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
+      this.channel.channelLog.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
@@ -152,12 +163,14 @@ export class AgentHl7ChannelConnection {
         callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
       });
     } catch (err) {
-      this.channel.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+      this.channel.log.error(`HL7 error occurred - check channel logs`);
+      this.channel.channelLog.error(`HL7 error: ${normalizeErrorString(err)}`);
     }
   }
 
   private async handleError(event: Hl7ErrorEvent): Promise<void> {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
+    this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
   close(): Promise<void> {
