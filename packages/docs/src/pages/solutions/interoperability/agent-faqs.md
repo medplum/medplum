@@ -23,6 +23,3 @@ Yes! All code contributed to Medplum, regardless if it is authored by a Medplum 
 
 Yes, read our [blog post](/blog/medplum-for-mirth-users)! 
 
-## Who uses the Medplum Agent? 
-
-The Medplum Agent was developed in partnership with our friends at [Rad AI](https://www.radai.com/). Rad AI deploys the Medplum Agent at all of their Reporting and Continuity customers for their HL7 integration needs, and their customers account for [nearly 50%](https://www.radai.com/news/rad-ai-expands-executive-team-to-accelerate-growth-and-solidify-position-as-the-leader-in-ai-driven-radiology-solutions) of all U.S. medical imaging. 
