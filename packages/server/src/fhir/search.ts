@@ -48,6 +48,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
@@ -1097,16 +1098,41 @@ function trySpecialSearchParameter(
         filter.operator,
         filter.value
       );
-    case '_compartment':
     case '_project': {
-      if (filter.code === '_project') {
-        if (filter.operator === Operator.MISSING) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
-        } else if (filter.operator === Operator.PRESENT) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+        // PENDING{v4.4.0} Once `projectId` is NOT NULL, remove `null` handling
+        if (
+          (filter.operator === Operator.MISSING && filter.value === 'true') ||
+          (filter.operator === Operator.PRESENT && filter.value !== 'true')
+        ) {
+          // missing
+          return new Disjunction([
+            new Condition(new Column(table, 'projectId'), '=', null),
+            new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId),
+          ]);
+        } else {
+          // present
+          return new Conjunction([
+            new Condition(new Column(table, 'projectId'), '!=', null),
+            new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId),
+          ]);
         }
       }
 
+      return buildIdSearchFilter(
+        table,
+        {
+          columnName: 'projectId',
+          type: SearchParameterType.UUID,
+          array: false,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('projectId'),
+        },
+        filter.operator,
+        splitSearchOnComma(filter.value)
+      );
+    }
+    case '_compartment': {
       return buildIdSearchFilter(
         table,
         {
