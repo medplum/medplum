@@ -85,5 +85,11 @@
   },
   "v25": {
     "serverVersion": "4.3.12"
+  },
+  "v26": {
+    "serverVersion": "4.3.12"
+  },
+  "v27": {
+    "serverVersion": "4.3.12"
   }
 }

@@ -405,6 +405,7 @@ function getBaseSelectQueryForResourceType(
   if (opts?.maxResourceVersion !== undefined) {
     const col = new Column(resourceType, '__version');
     builder.whereExpr(
+      // PENDING{v4.4.0} - remove null check
       new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
     );
   }

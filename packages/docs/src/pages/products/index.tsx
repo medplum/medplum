@@ -162,7 +162,7 @@ export default function ProductsPage(): JSX.Element {
             </ul>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/hero/hero-homepage.webp" alt="Robot working in a medical office" width="450" height="450" />
+            <img src="/img/hero/hero-homepage.webp" alt="Robot working in a medical office" width="394" height="450" />
           </div>
         </Jumbotron>
         <Jumbotron>

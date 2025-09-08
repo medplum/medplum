@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { globalLogger } from '../logger';
 import { MigrationActionResult } from './types';
 
-export async function query(
+export async function query<R extends QueryResultRow = any>(
   client: Client | Pool | PoolClient,
   results: MigrationActionResult[],
-  queryStr: string
-): Promise<void> {
+  queryStr: string,
+  params?: any[]
+): Promise<QueryResult<R>> {
   const start = Date.now();
-  await client.query(queryStr);
+  const result = await client.query<R>(queryStr, params);
   results.push({ name: queryStr, durationMs: Date.now() - start });
+  return result;
 }
 
 /**
@@ -80,4 +82,88 @@ export async function analyzeTable(
   const durationMs = Date.now() - start;
   globalLogger.debug('Analyzed table', { tableName, durationMs });
   actions.push({ name: analyzeQuery, durationMs });
+}
+
+/**
+ * Non-blocking alter column NOT NULL utilizing a temporary table constraint. Throws if any rows contain NULL values.
+ * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
+ *
+ * @param client - The database client or pool.
+ * @param actions - The list of action results to push operations performed.
+ * @param tableName - The name of the table to analyze.
+ * @param columnName - The name of the column to analyze.
+ */
+export async function nonBlockingAlterColumnNotNull(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  tableName: string,
+  columnName: string
+): Promise<void> {
+  const nullCountResult = await query<{ count: number }>(
+    client,
+    actions,
+    `SELECT COUNT(*) FROM ${escapeIdentifier(tableName)} WHERE ${escapeIdentifier(columnName)} IS NULL`
+  );
+  const nullCount = nullCountResult.rows[0].count;
+  if (nullCount > 0) {
+    throw new Error(
+      `Cannot alter "${tableName}"."${columnName}" to NOT NULL because there are ${nullCount} rows with NULL values`
+    );
+  }
+
+  const constraintName = `${tableName}_${columnName}_not_null`;
+
+  /*
+  Scanning a large table to verify a new foreign key or check constraint can take a long time, and other updates to
+  the table are locked out until the ALTER TABLE ADD CONSTRAINT command is committed. The main purpose of the
+  NOT VALID constraint option is to reduce the impact of adding a constraint on concurrent updates. With NOT VALID,
+  the ADD CONSTRAINT command does not scan the table and can be committed immediately. After that, a VALIDATE CONSTRAINT
+  command can be issued to verify that existing rows satisfy the constraint. The validation step does not need to lock
+  out concurrent updates, since it knows that other transactions will be enforcing the constraint for rows that they
+  insert or update; only pre-existing rows need to be checked. Hence, validation acquires only a SHARE UPDATE EXCLUSIVE
+  lock on the table being altered. (If the constraint is a foreign key then a ROW SHARE lock is also required on the
+  table referenced by the constraint.) In addition to improving concurrency, it can be useful to use NOT VALID and
+  VALIDATE CONSTRAINT in cases where the table is known to contain pre-existing violations. Once the constraint is in
+  place, no new violations can be inserted, and the existing problems can be corrected at leisure until
+  VALIDATE CONSTRAINT finally succeeds.
+  */
+
+  // add constraint with NOT VALID to avoid a blocking full table scan
+  await addConstraint(client, actions, tableName, constraintName, `${escapeIdentifier(columnName)} IS NOT NULL`, true);
+
+  // validate constraint; does not block updates to the table
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} VALIDATE CONSTRAINT ${escapeIdentifier(constraintName)}`
+  );
+
+  // set column to NOT NULL; uses the constraint instead of a full table scan
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} ALTER COLUMN ${escapeIdentifier(columnName)} SET NOT NULL`
+  );
+
+  // drop redundant constraint
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} DROP CONSTRAINT ${escapeIdentifier(constraintName)}`
+  );
+}
+
+export async function addConstraint(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  tableName: string,
+  constraintName: string,
+  constraintExpression: string,
+  notValid?: boolean
+): Promise<void> {
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} ADD CONSTRAINT ${escapeIdentifier(constraintName)} CHECK (${constraintExpression})${notValid ? ' NOT VALID' : ''}`
+  );
 }

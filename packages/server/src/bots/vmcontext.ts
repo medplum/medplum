@@ -61,6 +61,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       bot: createReference(bot),
       baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
       accessToken: request.accessToken,
+      requester: request.requester,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets: request.secrets,

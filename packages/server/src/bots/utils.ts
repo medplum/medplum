@@ -49,7 +49,7 @@ import { BotExecutionRequest, BotExecutionResult } from './types';
 export async function getBotProjectMembership(
   ctx: AuthenticatedRequestContext,
   bot: WithId<Bot>
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   if (bot.runAsUser) {
     // If the bot is configured to run as the user, then use the current user's membership
     return ctx.membership;

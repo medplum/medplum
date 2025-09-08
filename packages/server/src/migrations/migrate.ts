@@ -3,12 +3,10 @@
 import {
   deepEquals,
   FileBuilder,
-  getAllDataTypes,
+  getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  InternalTypeSchema,
   isPopulated,
-  isResourceTypeSchema,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -148,10 +146,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   }
 
   if (options.analyzeResourceTables) {
-    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
-      if (!isResourceTypeSchema(fhirType)) {
-        continue;
-      }
+    for (const resourceType of getResourceTypes()) {
       actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
     }
   }
@@ -372,8 +367,8 @@ export function parseIndexName(indexdef: string): string | undefined {
 function buildTargetDefinition(): SchemaDefinition {
   const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
-  for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
-    buildCreateTables(result, resourceType, typeSchema);
+  for (const resourceType of getResourceTypes()) {
+    buildCreateTables(result, resourceType);
   }
 
   buildAddressTable(result);
@@ -388,15 +383,7 @@ function buildTargetDefinition(): SchemaDefinition {
   return result;
 }
 
-export function buildCreateTables(
-  result: SchemaDefinition,
-  maybeResourceType: string,
-  fhirType: InternalTypeSchema
-): void {
-  if (!isResourceTypeSchema(fhirType)) {
-    // Don't create a table if fhirType is a subtype or not a resource type
-    return;
-  }
+export function buildCreateTables(result: SchemaDefinition, maybeResourceType: string): void {
   const resourceType = maybeResourceType as ResourceType;
 
   const tableDefinition: TableDefinition = {
@@ -407,7 +394,7 @@ export function buildCreateTables(
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
       { name: 'projectId', type: 'UUID' },
-      { name: '__version', type: 'INTEGER' },
+      { name: '__version', type: 'INTEGER', notNull: true },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
     ],
@@ -925,8 +912,12 @@ export async function executeMigrationActions(
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        await fns.query(client, results, query);
+        if (action.notNull) {
+          await fns.nonBlockingAlterColumnNotNull(client, results, action.tableName, action.columnName);
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          await fns.query(client, results, query);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -998,8 +989,14 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        if (action.notNull) {
+          b.appendNoWrap(
+            `await fns.nonBlockingAlterColumnNotNull(client, results, \`${action.tableName}\`, \`${action.columnName}\`);`
+          );
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {

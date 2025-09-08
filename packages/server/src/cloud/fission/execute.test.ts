@@ -62,7 +62,7 @@ describe('Execute Fission bots', () => {
     await expect(
       executeFissionBot({
         bot,
-        runAs: {} as ProjectMembership,
+        runAs: {} as WithId<ProjectMembership>,
         accessToken,
         input: 'test input',
         contentType: 'text/plain',
@@ -100,7 +100,7 @@ describe('Execute Fission bots', () => {
     await expect(
       executeFissionBot({
         bot,
-        runAs: {} as ProjectMembership,
+        runAs: {} as WithId<ProjectMembership>,
         accessToken,
         input: 'test input',
         contentType: 'text/plain',
