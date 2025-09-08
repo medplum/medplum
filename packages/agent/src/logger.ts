@@ -203,7 +203,11 @@ export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType
   const transport = pino.transport({
     level,
     targets: [
-      { target: 'pino-pretty', level },
+      // Only use pretty when we are not in a test, and when the stdout is a tty
+      // Otherwise, pipe raw JSON to stdout
+      ...(process.stdout.isTTY && process.env.NODE_ENV !== 'test'
+        ? [{ target: 'pino-pretty', level }]
+        : [{ target: 'pino/file', level, options: { destination: 1 } }]),
       {
         target: 'pino-roll',
         options: {
