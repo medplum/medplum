@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
 import { BaseChannel } from './channel';
-import { PinoWrapperLogger } from './logger';
+import { getLoggerConfig, LoggerType, PinoWrapperLogger } from './logger';
 
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
@@ -19,6 +19,7 @@ export class AgentDicomChannel extends BaseChannel {
   readonly tempDir: string;
   readonly log: PinoWrapperLogger;
   readonly channelLog: PinoWrapperLogger;
+  private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -149,16 +150,23 @@ export class AgentDicomChannel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ prefix: `[DICOM:${definition.name}] ` });
-    this.channelLog = app.channelLog.clone({ prefix: `[DICOM:${definition.name}] ` });
+    this.prefix = `[DICOM:${definition.name}] `;
+    this.log = app.log.clone({ prefix: this.prefix });
+    this.channelLog = app.channelLog.clone({ prefix: this.prefix });
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
+    this.prefix = `[DICOM:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    this.log.info('Reloading logger config...');
+    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN], { prefix: this.prefix });
+    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL], { prefix: this.prefix });
+    this.log.info('Logger config reloaded');
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
