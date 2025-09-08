@@ -78,7 +78,7 @@ describe('Main', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
     jest
       .spyOn(fs, 'readFileSync')
-      .mockReturnValue(
+      .mockReturnValueOnce(
         [
           'baseUrl=http://example.com',
           'clientId=clientId',

@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentMessage,
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  ContentType,
-  generateId,
-  LogLevel,
-  sleep,
+    AgentMessage,
+    AgentTransmitRequest,
+    AgentTransmitResponse,
+    allOk,
+    ContentType,
+    generateId,
+    LogLevel,
+    sleep,
 } from '@medplum/core';
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -19,15 +19,17 @@ import { App } from './app';
 const medplum = new MockClient();
 
 describe('Agent Net Utils', () => {
-  let originalLog: typeof console.log;
+  let stdoutWriteSpy: jest.SpyInstance;
+  let stderrWriteSpy: jest.SpyInstance;
 
   beforeAll(() => {
-    originalLog = console.log;
-    console.log = jest.fn();
+    stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
   });
 
   afterAll(() => {
-    console.log = originalLog;
+    stdoutWriteSpy.mockRestore();
+    stderrWriteSpy.mockRestore();
   });
 
   describe('Ping -- Within One App Instance', () => {
@@ -243,7 +245,7 @@ describe('Agent Net Utils', () => {
         body: expect.stringMatching(/ping statistics/i),
       });
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/message body present but unused/i));
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringMatching(/message body present but unused/i));
     });
 
     test('Invalid ping body -- non-numeric first arg', async () => {
