@@ -2,25 +2,14 @@
 
 This example demonstrates how to create a comprehensive CI/CD (Continuous Integration/Continuous Deployment) system using Medplum bots, showcasing code reuse patterns, automated deployment workflows, and external system integration.
 
-## 🎯 Key Features
+## 📋 CI/CD Pipeline Scripts
 
-### 1. CI/CD Pipeline
-- **Automated Build Process**: TypeScript compilation, linting, and bundling
-- **Automated Deployment**: One-command bot deployment and subscription management
-- **Environment Management**: Support for dev, staging, and production environments
-- **Version Control Integration**: Automated deployment from code changes
+- `npm run build` - Complete build pipeline (TypeScript compilation + bundling + linting)
+- `npm run clean` - Clean build artifacts
+- `npm run lint` - Run ESLint quality checks
+- `npm run setup:bots` - Complete CI/CD pipeline (build + deploy + subscriptions)
+- `npm run deploy:bots` - Deploy bots only (skip subscription creation)
 
-### 2. External System Integration
-- **Bidirectional Sync**: Synchronizes patient data between Medplum and external systems
-- **Identifier Management**: Automatically adds and manages cross-system identifiers
-- **Conditional Operations**: Uses FHIR conditional operations for efficient updates
-- **Error Handling**: Comprehensive error handling with standardized OperationOutcome responses
-
-### 3. Code Reuse & Modularity
-- **Shared HTTP Helpers**: Common HTTP functionality for external API communication
-- **Standardized Error Handling**: Consistent error processing across all bots
-- **Modular Design**: Bots import and use shared functions to reduce duplication
-- **Reusable Components**: Easy to extend and add new sync integrations
 
 ## 📁 Project Structure
 
@@ -113,50 +102,11 @@ medplum-ci-cd-bots/
    - Deploys bots to Medplum
    - Creates and configures subscriptions
 
-## 📋 CI/CD Pipeline Scripts
-
-- `npm run build` - Complete build pipeline (TypeScript compilation + bundling + linting)
-- `npm run clean` - Clean build artifacts
-- `npm run lint` - Run ESLint quality checks
-- `npm run setup:bots` - Complete CI/CD pipeline (build + deploy + subscriptions)
-- `npm run deploy:bots` - Deploy bots only (skip subscription creation)
-
-## 🔧 Code Reuse Examples
-
-### Shared HTTP Functions
-```typescript
-// In any bot
-import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
-
-// Make conditional FHIR request
-const response = await makeConditionalFhirRequest(
-  serverUrl,
-  'Patient',
-  'identifier=https://medplum.com/patient-id|123',
-  HTTP_VERBS.PUT,
-  patientData
-);
-
-// Log external request
-logExternalRequest('HAPI sync PUT', patientId, true);
-```
-
-### Error Handling
-```typescript
-// Standardized error handling with OperationOutcome
-try {
-  await makeConditionalFhirRequest(/* ... */);
-} catch (error) {
-  // Errors are automatically converted to OperationOutcome format
-  logExternalRequest('HAPI sync PUT', patientId, false, error.message);
-  throw error; // Re-throw as OperationOutcomeError
-}
-```
 
 ## 📊 CI/CD Subscription Management
 
 The automated setup script creates and manages subscriptions for all bots:
-
+    
 ```typescript
 // Example subscription creation for HAPI sync bot
 const subscription = await medplum.createResource({

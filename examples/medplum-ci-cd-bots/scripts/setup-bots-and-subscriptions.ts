@@ -91,15 +91,12 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           description: `CI/CD Bot: ${bot.name}`,
           code: botSource,
           runtimeVersion: 'awslambda',
-          meta: {
-            tag: [
+          identifier: [
               {
-                system: 'https://medplum.com/tags',
-                code: 'ci-cd-bot',
-                display: 'CI/CD Bot',
+                system: 'https://medplum.com/bots',
+                value: 'ci-cd-bot',
               },
-            ],
-          },
+            ]
         });
       } else {
         // Create new bot
@@ -110,15 +107,12 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           description: `CI/CD Bot: ${bot.name}`,
           code: botSource,
           runtimeVersion: 'awslambda',
-          meta: {
-            tag: [
+          identifier: [
               {
-                system: 'https://medplum.com/tags',
-                code: 'ci-cd-bot',
-                display: 'CI/CD Bot',
+                system: 'https://medplum.com/bots',
+                value: 'ci-cd-bot',
               },
-            ],
-          },
+            ]
         });
 
         // Update the config with the new bot ID
@@ -175,16 +169,7 @@ async function createSubscription(
         type: 'rest-hook',
         endpoint: `Bot/${botId}`,
         payload: 'application/fhir+json',
-      },
-      meta: {
-        tag: [
-          {
-            system: 'https://medplum.com/tags',
-            code: 'ci-cd-bot',
-            display: 'CI/CD Bot',
-          },
-        ],
-      },
+      }
     });
 
     console.log(`✅ Created subscription for ${botName}`);
