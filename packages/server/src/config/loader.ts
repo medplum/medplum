@@ -152,6 +152,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
   } else if (typeof import.meta !== 'undefined') {
     //@ts-ignore
     baseDir = dirname(fileURLToPath(import.meta.url));
+    baseDir = baseDir.replace(/\/var\/tmp\/sb-compile-trex/, process.env.TREX_FUNCTION_PATH ?? "").replace(/\/\.\//g, '/');
   }
   return JSON.parse(
     readFileSync(
