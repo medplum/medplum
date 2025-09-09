@@ -6,7 +6,7 @@ const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
 async function buildBots() {
   for (const bot of config.bots) {
     console.log(`Building ${bot.name}...`);
-    
+
     try {
       await build({
         entryPoints: [bot.source],
@@ -19,8 +19,8 @@ async function buildBots() {
         sourcemap: true,
         minify: false,
         define: {
-          'process.env.NODE_ENV': '"production"'
-        }
+          'process.env.NODE_ENV': '"production"',
+        },
       });
       console.log(`✅ Built ${bot.name}`);
     } catch (error) {
@@ -30,4 +30,4 @@ async function buildBots() {
   }
 }
 
-buildBots().catch(console.error); 
+buildBots().catch(console.error);

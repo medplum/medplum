@@ -29,8 +29,6 @@ function saveConfig(): void {
   writeFileSync('./medplum.config.json', JSON.stringify(config, null, 2));
 }
 
-
-
 interface SubscriptionConfig {
   botName: string;
   resourceType: string;
@@ -228,7 +226,7 @@ async function createAllSubscriptions(
 
   for (const subscription of subscriptions) {
     // Find the corresponding deployed bot
-    const deployedBot = deployedBots.find(bot => bot.botName === subscription.botName);
+    const deployedBot = deployedBots.find((bot) => bot.botName === subscription.botName);
 
     if (!deployedBot || deployedBot.status === 'failed') {
       results.push({
@@ -321,17 +319,17 @@ async function main(): Promise<void> {
 
       // Bot deployment summary
       console.log('🤖 Bot Deployment:');
-      const successfulBots = deployedBots.filter(r => r.status === 'success');
-      const failedBots = deployedBots.filter(r => r.status === 'failed');
+      const successfulBots = deployedBots.filter((r) => r.status === 'success');
+      const failedBots = deployedBots.filter((r) => r.status === 'failed');
 
       console.log(`✅ Successful: ${successfulBots.length}`);
-      successfulBots.forEach(result => {
+      successfulBots.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.botId}`);
       });
 
       if (failedBots.length > 0) {
         console.log(`❌ Failed: ${failedBots.length}`);
-        failedBots.forEach(result => {
+        failedBots.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
@@ -346,34 +344,34 @@ async function main(): Promise<void> {
 
       // Bot deployment summary
       console.log('\n🤖 Bot Deployment:');
-      const successfulBots = deployedBots.filter(r => r.status === 'success');
-      const failedBots = deployedBots.filter(r => r.status === 'failed');
+      const successfulBots = deployedBots.filter((r) => r.status === 'success');
+      const failedBots = deployedBots.filter((r) => r.status === 'failed');
 
       console.log(`✅ Successful: ${successfulBots.length}`);
-      successfulBots.forEach(result => {
+      successfulBots.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.botId}`);
       });
 
       if (failedBots.length > 0) {
         console.log(`❌ Failed: ${failedBots.length}`);
-        failedBots.forEach(result => {
+        failedBots.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
 
       // Subscription summary
       console.log('\n🔗 Subscriptions:');
-      const successfulSubs = subscriptionResults.filter(r => r.status === 'success');
-      const failedSubs = subscriptionResults.filter(r => r.status === 'failed');
+      const successfulSubs = subscriptionResults.filter((r) => r.status === 'success');
+      const failedSubs = subscriptionResults.filter((r) => r.status === 'failed');
 
       console.log(`✅ Successful: ${successfulSubs.length}`);
-      successfulSubs.forEach(result => {
+      successfulSubs.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.subscriptionId}`);
       });
 
       if (failedSubs.length > 0) {
         console.log(`❌ Failed: ${failedSubs.length}`);
-        failedSubs.forEach(result => {
+        failedSubs.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
