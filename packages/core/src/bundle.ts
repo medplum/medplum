@@ -272,7 +272,6 @@ export function findResourceInBundle<K extends ResourceType>(
   resourceType: K,
   id: string
 ): ExtractResource<K> {
-  return bundle.entry?.find(
-      ({ resource }) => resource?.resourceType === resourceType && resource?.id === id
-  )?.resource as ExtractResource<K>
+  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+    ?.resource as ExtractResource<K>;
 }

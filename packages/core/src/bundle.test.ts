@@ -412,8 +412,8 @@ describe('Bundle tests', () => {
       const input: Patient = {
         resourceType: 'Patient',
         id: '123',
-        name: [{ given: ['John'], family: 'Doe' }]
-      }
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
       const bundle: Bundle = {
         resourceType: 'Bundle',
         type: 'transaction',
