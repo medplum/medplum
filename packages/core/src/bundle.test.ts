@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
+import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -403,6 +403,25 @@ describe('Bundle tests', () => {
             },
           },
         ],
+      });
+    });
+  });
+
+  describe('findResourceById', () => {
+    test('Simple resource', () => {
+      const input: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }]
+      }
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: input }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
       });
     });
   });
