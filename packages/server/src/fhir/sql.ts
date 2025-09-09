@@ -634,7 +634,7 @@ export abstract class BaseQuery {
   }
 }
 
-interface CTE {
+export interface CTE {
   name: string;
   expr: Expression;
   recursive?: boolean;
@@ -886,6 +886,84 @@ export class ArraySubquery implements Expression {
     sql.appendExpression(this.filter);
     sql.append(' LIMIT 1');
     sql.append(')');
+  }
+}
+
+export class UpdateQuery extends BaseQuery {
+  private _from?: CTE;
+  private readonly setColumns: [Column, any][];
+  readonly returning?: Column[];
+
+  constructor(tableName: string, returning?: (Column | string)[]) {
+    super(tableName);
+    this.setColumns = [];
+    this.returning = returning?.map((c) => getColumn(c, this.actualTableName));
+  }
+
+  set(column: Column | string, value: any): this {
+    // Including the table name is invalid; from the spec:
+    // Do not include the table's name in the specification of a target column — for example,
+    // UPDATE table_name SET table_name.col = 1 is invalid.
+    if (column instanceof Column) {
+      this.setColumns.push([new Column(undefined, column.actualColumnName), value]);
+    } else {
+      this.setColumns.push([new Column(undefined, column), value]);
+    }
+    return this;
+  }
+
+  from(fromQuery: CTE): this {
+    this._from = fromQuery;
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (this._from) {
+      sql.append('WITH ');
+      if (this._from.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this._from.name);
+      sql.append(' AS (');
+      sql.appendExpression(this._from.expr);
+      sql.append(') ');
+    }
+    sql.append('UPDATE ');
+    sql.appendIdentifier(this.actualTableName);
+    sql.append(' SET ');
+
+    let firstSet = true;
+    for (const [column, expr] of this.setColumns) {
+      if (!firstSet) {
+        sql.append(', ');
+      }
+      sql.appendColumn(column);
+      sql.append(' = ');
+      sql.appendParameters(expr, false);
+      firstSet = false;
+    }
+
+    if (this._from) {
+      sql.append(' FROM ');
+      sql.appendIdentifier(this._from.name);
+    }
+
+    if (this.predicate.expressions.length > 0) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.predicate);
+    }
+
+    if (this.returning && this.returning.length > 0) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returning) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 
