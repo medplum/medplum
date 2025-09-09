@@ -277,10 +277,10 @@ describe('SqlBuilder', () => {
   describe('UpdateQuery', () => {
     test('Simple Update', () => {
       const sql = new SqlBuilder();
-      const update = new UpdateQuery('MyTable');
+      const update = new UpdateQuery('MyTable', ['id', 'name']);
       update.set('id', 123);
       update.buildSql(sql);
-      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1');
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1 RETURNING "MyTable"."id", "MyTable"."name"');
       expect(sql.getValues()).toStrictEqual([123]);
     });
 

@@ -891,8 +891,8 @@ export class ArraySubquery implements Expression {
 
 export class UpdateQuery extends BaseQuery {
   private _from?: CTE;
-  readonly setColumns: [Column, any][];
-  readonly returning?: Column[];
+  private readonly setColumns: [Column, any][];
+  private readonly returning?: Column[];
 
   constructor(tableName: string, returning?: (Column | string)[]) {
     super(tableName);
@@ -933,7 +933,7 @@ export class UpdateQuery extends BaseQuery {
     sql.append(' SET ');
 
     let firstSet = true;
-    for (const [column, expr] of this.setColumns ?? []) {
+    for (const [column, expr] of this.setColumns) {
       if (!firstSet) {
         sql.append(', ');
       }
