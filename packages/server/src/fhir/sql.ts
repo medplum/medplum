@@ -634,7 +634,7 @@ export abstract class BaseQuery {
   }
 }
 
-interface CTE {
+export interface CTE {
   name: string;
   expr: Expression;
   recursive?: boolean;
@@ -886,6 +886,69 @@ export class ArraySubquery implements Expression {
     sql.appendExpression(this.filter);
     sql.append(' LIMIT 1');
     sql.append(')');
+  }
+}
+
+export class UpdateQuery extends BaseQuery {
+  with?: CTE;
+  setColumns: [Column, any][];
+  returning?: Column[];
+
+  constructor(tableName: string, setColumns: [Column, any][], returning?: Column[], withQuery?: CTE) {
+    super(tableName);
+    this.with = withQuery;
+    this.setColumns = setColumns;
+    this.returning = returning;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    // TODO extract CTE handling to own buildSql?
+    if (this.with) {
+      sql.append('WITH ');
+      if (this.with.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this.with.name);
+      sql.append(' AS (');
+      sql.appendExpression(this.with.expr);
+      sql.append(') ');
+    }
+    sql.append('UPDATE ');
+    sql.appendIdentifier(this.actualTableName);
+    sql.append(' SET ');
+
+    let firstSet = true;
+    for (const [column, expr] of this.setColumns ?? []) {
+      if (!firstSet) {
+        sql.append(', ');
+      }
+      sql.appendColumn(column);
+      sql.append(' = ');
+      sql.appendParameters(expr, false);
+      firstSet = false;
+    }
+
+    if (this.with) {
+      sql.append(' FROM ');
+      sql.appendIdentifier(this.with.name);
+    }
+
+    if (this.predicate.expressions.length > 0) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.predicate);
+    }
+
+    if (this.returning && this.returning.length > 0) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returning) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 

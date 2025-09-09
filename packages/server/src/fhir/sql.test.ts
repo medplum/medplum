@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Client } from 'pg';
 import {
+  CTE,
   Column,
   Condition,
   Negation,
@@ -9,6 +10,7 @@ import {
   SelectQuery,
   SqlBuilder,
   UnionAllBuilder,
+  UpdateQuery,
   ValuesQuery,
   periodToRangeString,
 } from './sql';
@@ -269,6 +271,44 @@ describe('SqlBuilder', () => {
       expect(unionAllBuilder.sql.toString()).toBe(
         '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable") UNION ALL (SELECT "MyThirdTable"."id", "MyThirdTable"."my_third_table_col" FROM "MyThirdTable")'
       );
+    });
+  });
+
+  describe('UpdateQuery', () => {
+    test('Simple Update', () => {
+      const sql = new SqlBuilder();
+      new UpdateQuery('MyTable', [
+        [new Column(undefined, 'id'), 123],
+        [new Column(undefined, 'name'), 'new-name'],
+      ]).buildSql(sql);
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1, "name" = $2');
+      expect(sql.getValues()).toStrictEqual([123, 'new-name']);
+    });
+
+    test('with CTE and RETURNING', () => {
+      const cteQuery = new SelectQuery('MyTable').column('id').column('name').where('projectId', '=', null).limit(10);
+      const cte: CTE = {
+        name: 'MyCTE',
+        expr: cteQuery,
+      };
+
+      const sql = new SqlBuilder();
+      const updateQuery = new UpdateQuery(
+        'MyTable',
+        [
+          [new Column(undefined, 'id'), 123],
+          [new Column(undefined, 'name'), 'new-name'],
+        ],
+        [new Column(undefined, 'id')],
+        cte
+      );
+
+      updateQuery.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
+      updateQuery.buildSql(sql);
+      expect(sql.toString()).toBe(
+        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "id" = $1, "name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "id"'
+      );
+      expect(sql.getValues()).toStrictEqual([123, 'new-name']);
     });
   });
 });

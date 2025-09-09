@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { SqlBuilder, UpdateQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { MigrationActionResult } from './types';
 
@@ -197,4 +198,29 @@ export async function addCheckConstraint(
   notValid: boolean
 ): Promise<void> {
   await query(client, actions, getCheckConstraintQuery(tableName, constraintName, constraintExpression, notValid));
+}
+
+export async function batchedUpdateFrom(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  updateQuery: UpdateQuery,
+  maxIterations?: number
+): Promise<void> {
+  const start = Date.now();
+  let rowCount: number | null = Infinity;
+  const sql = new SqlBuilder();
+  updateQuery.buildSql(sql);
+  const updateQueryStr = sql.toString();
+  let iterations = 0;
+  while (rowCount !== null && rowCount > 0) {
+    if (maxIterations !== undefined && iterations >= maxIterations) {
+      throw new Error(`Exceeded max iterations of ${maxIterations}`);
+    }
+    const result = await query(client, actions, updateQueryStr);
+    rowCount = result.rowCount;
+    iterations++;
+  }
+
+  // TODO include iterations somehow
+  actions.push({ name: updateQueryStr, durationMs: Date.now() - start });
 }
