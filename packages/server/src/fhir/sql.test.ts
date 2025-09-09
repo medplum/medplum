@@ -277,11 +277,11 @@ describe('SqlBuilder', () => {
   describe('UpdateQuery', () => {
     test('Simple Update', () => {
       const sql = new SqlBuilder();
-      new UpdateQuery('MyTable', [
-        [new Column(undefined, 'id'), 123],
-        [new Column(undefined, 'name'), 'new-name'],
-      ]).buildSql(sql);
-      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1, "name" = $2');
+      const update = new UpdateQuery('MyTable');
+      update.set('id', 123);
+      update.set('name', 'new-name');
+      update.buildSql(sql);
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "MyTable"."id" = $1, "MyTable"."name" = $2');
       expect(sql.getValues()).toStrictEqual([123, 'new-name']);
     });
 
@@ -293,20 +293,14 @@ describe('SqlBuilder', () => {
       };
 
       const sql = new SqlBuilder();
-      const updateQuery = new UpdateQuery(
-        'MyTable',
-        [
-          [new Column(undefined, 'id'), 123],
-          [new Column(undefined, 'name'), 'new-name'],
-        ],
-        [new Column(undefined, 'id')],
-        cte
-      );
-
-      updateQuery.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
-      updateQuery.buildSql(sql);
+      const update = new UpdateQuery('MyTable', ['id']);
+      update.from(cte);
+      update.set('id', 123);
+      update.set('name', 'new-name');
+      update.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
+      update.buildSql(sql);
       expect(sql.toString()).toBe(
-        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "id" = $1, "name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "id"'
+        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "MyTable"."id" = $1, "MyTable"."name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "MyTable"."id"'
       );
       expect(sql.getValues()).toStrictEqual([123, 'new-name']);
     });

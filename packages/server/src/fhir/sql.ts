@@ -890,27 +890,43 @@ export class ArraySubquery implements Expression {
 }
 
 export class UpdateQuery extends BaseQuery {
-  with?: CTE;
-  setColumns: [Column, any][];
-  returning?: Column[];
+  private _from?: CTE;
+  private setColumns: [Column, any][];
+  readonly returning?: Column[];
 
-  constructor(tableName: string, setColumns: [Column, any][], returning?: Column[], withQuery?: CTE) {
+  constructor(tableName: string, returning?: (Column | string)[]) {
     super(tableName);
-    this.with = withQuery;
-    this.setColumns = setColumns;
-    this.returning = returning;
+    this.setColumns = [];
+    this.returning = returning?.map((c) => getColumn(c, this.actualTableName));
+  }
+
+  set(column: Column | string, value: any): this {
+    // Including the table name is invalid; from the spec:
+    // Do not include the table's name in the specification of a target column — for example,
+    // UPDATE table_name SET table_name.col = 1 is invalid.
+    if (column instanceof Column) {
+      this.setColumns.push([new Column(undefined, column.actualColumnName), value]);
+    } else {
+      this.setColumns.push([new Column(undefined, column), value]);
+    }
+    return this;
+  }
+
+  from(fromQuery: CTE): this {
+    this._from = fromQuery;
+    return this;
   }
 
   buildSql(sql: SqlBuilder): void {
     // TODO extract CTE handling to own buildSql?
-    if (this.with) {
+    if (this._from) {
       sql.append('WITH ');
-      if (this.with.recursive) {
+      if (this._from.recursive) {
         sql.append('RECURSIVE ');
       }
-      sql.appendIdentifier(this.with.name);
+      sql.appendIdentifier(this._from.name);
       sql.append(' AS (');
-      sql.appendExpression(this.with.expr);
+      sql.appendExpression(this._from.expr);
       sql.append(') ');
     }
     sql.append('UPDATE ');
@@ -928,9 +944,9 @@ export class UpdateQuery extends BaseQuery {
       firstSet = false;
     }
 
-    if (this.with) {
+    if (this._from) {
       sql.append(' FROM ');
-      sql.appendIdentifier(this.with.name);
+      sql.appendIdentifier(this._from.name);
     }
 
     if (this.predicate.expressions.length > 0) {

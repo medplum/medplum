@@ -200,27 +200,38 @@ export async function addCheckConstraint(
   await query(client, actions, getCheckConstraintQuery(tableName, constraintName, constraintExpression, notValid));
 }
 
-export async function batchedUpdateFrom(
+/**
+ * Updates rows in batches to avoid locking the table.
+ * @param client - The database client or pool.
+ * @param actions - The list of action results to push operations performed.
+ * @param updateQuery - The update query to execute. The query must include a RETURNING clause and return no rows when there are no rows to update.
+ * @param maxIterations - The maximum number of iterations to perform, Infinity is valid.
+ */
+export async function batchedUpdate(
   client: Client | Pool | PoolClient,
   actions: MigrationActionResult[],
   updateQuery: UpdateQuery,
-  maxIterations?: number
+  maxIterations: number
 ): Promise<void> {
   const start = Date.now();
   let rowCount: number | null = Infinity;
   const sql = new SqlBuilder();
   updateQuery.buildSql(sql);
   const updateQueryStr = sql.toString();
+  const updateQueryValues = sql.getValues();
+  if (!updateQuery.returning) {
+    throw new Error('Update query for batchedUpdate must include a RETURNING clause');
+  }
+
   let iterations = 0;
   while (rowCount !== null && rowCount > 0) {
-    if (maxIterations !== undefined && iterations >= maxIterations) {
+    if (iterations >= maxIterations) {
       throw new Error(`Exceeded max iterations of ${maxIterations}`);
     }
-    const result = await query(client, actions, updateQueryStr);
+    const result = await client.query(updateQueryStr, updateQueryValues);
     rowCount = result.rowCount;
     iterations++;
   }
 
-  // TODO include iterations somehow
-  actions.push({ name: updateQueryStr, durationMs: Date.now() - start });
+  actions.push({ name: updateQueryStr, durationMs: Date.now() - start, iterations });
 }
