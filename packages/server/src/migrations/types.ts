@@ -45,6 +45,9 @@ export interface CheckConstraintDefinition {
   type: 'check';
   name: string;
   expression: string;
+
+  // excluded from equality checks
+  valid?: boolean;
 }
 
 export type MigrationAction =

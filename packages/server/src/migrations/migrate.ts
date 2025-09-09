@@ -368,20 +368,21 @@ export function parseIndexName(indexdef: string): string | undefined {
   return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
 }
 
-async function getCheckConstraints(
+export async function getCheckConstraints(
   db: Client | Pool | PoolClient,
   tableName: string
-): Promise<CheckConstraintDefinition[]> {
+): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
   const rs = await db.query<{
     table_name: string;
     conname: string;
     contype: string;
+    convalidated: boolean;
     condef: string;
-  }>(`SELECT conrelid::regclass AS table_name, conname, contype, pg_get_constraintdef(oid, TRUE) as condef
+  }>(`SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
 FROM pg_catalog.pg_constraint
 WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::regclass) AND contype = 'c'`);
 
-  const cds: CheckConstraintDefinition[] = [];
+  const cds: (CheckConstraintDefinition & { valid: boolean })[] = [];
   for (const row of rs.rows) {
     if (row.contype === 'c') {
       const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
@@ -392,6 +393,7 @@ WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::re
         name: row.conname,
         type: 'check',
         expression: expressionMatch[1],
+        valid: row.convalidated,
       });
     }
   }
@@ -977,7 +979,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'ADD_CONSTRAINT': {
-        await fns.nonBlockingAddConstraint(
+        await fns.nonBlockingAddCheckConstraint(
           client,
           results,
           action.tableName,
@@ -1445,7 +1447,7 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
-  return deepEquals(a, b);
+  return deepEquals({ ...a, valid: undefined }, { ...b, valid: undefined });
 }
 
 const TableNameAbbreviations: Record<string, string | undefined> = {

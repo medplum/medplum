@@ -3,7 +3,8 @@
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { SqlBuilder, UpdateQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { MigrationActionResult } from './types';
+import { getCheckConstraints } from './migrate';
+import { CheckConstraintDefinition, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
   client: Client | Pool | PoolClient,
@@ -95,7 +96,7 @@ export async function analyzeTable(
  * @param constraintName - The name of the constraint to add.
  * @param constraintExpression - The expression for the constraint.
  */
-export async function nonBlockingAddConstraint(
+export async function nonBlockingAddCheckConstraint(
   client: Client | Pool | PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
@@ -117,8 +118,15 @@ export async function nonBlockingAddConstraint(
   VALIDATE CONSTRAINT finally succeeds.
   */
 
-  // add constraint with NOT VALID to avoid a blocking full table scan
-  await addCheckConstraint(client, actions, tableName, constraintName, constraintExpression, true);
+  const existing = await getExistingConstraint(client, tableName, constraintName);
+
+  if (!existing) {
+    // add constraint with NOT VALID to avoid a blocking full table scan
+    await addCheckConstraint(client, actions, tableName, constraintName, constraintExpression, true);
+  } else if (existing.valid) {
+    // constraint is already valid, so nothing to do
+    return;
+  }
 
   // validate constraint; does not block updates to the table
   await query(
@@ -126,6 +134,15 @@ export async function nonBlockingAddConstraint(
     actions,
     `ALTER TABLE ${escapeIdentifier(tableName)} VALIDATE CONSTRAINT ${escapeIdentifier(constraintName)}`
   );
+}
+
+async function getExistingConstraint(
+  client: Client | Pool | PoolClient,
+  tableName: string,
+  constraintName: string
+): Promise<CheckConstraintDefinition | undefined> {
+  const constraints = await getCheckConstraints(client, tableName);
+  return constraints.find((c) => c.name === constraintName);
 }
 
 /**
@@ -157,7 +174,7 @@ export async function nonBlockingAlterColumnNotNull(
 
   const constraintName = `${tableName}_${columnName}_not_null`;
 
-  await nonBlockingAddConstraint(
+  await nonBlockingAddCheckConstraint(
     client,
     actions,
     tableName,
