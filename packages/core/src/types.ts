@@ -217,6 +217,11 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         type: 'token',
         expression: resourceType + '.meta.tag',
       } as SearchParameter,
+      _filter: {
+        base: [resourceType],
+        code: '_filter',
+        type: 'special',
+      } as SearchParameter,
     };
   }
 
