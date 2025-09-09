@@ -5,7 +5,14 @@ import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
-import { analyzeTable, batchedUpdate, idempotentCreateIndex, nonBlockingAlterColumnNotNull } from './migrate-functions';
+import {
+  addCheckConstraint,
+  analyzeTable,
+  batchedUpdate,
+  idempotentCreateIndex,
+  nonBlockingAddCheckConstraint,
+  nonBlockingAlterColumnNotNull,
+} from './migrate-functions';
 import { MigrationActionResult } from './types';
 
 interface IndexInfo {
@@ -60,11 +67,6 @@ describe('migrate-functions', () => {
     // Create a test table
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER, name TEXT)`);
-  });
-
-  afterEach(async () => {
-    // Clean up test table and indexes
-    await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
   });
 
   describe('idempotentCreateIndex', () => {
@@ -175,6 +177,51 @@ describe('migrate-functions', () => {
       await expect(client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (4, NULL)`)).rejects.toThrow(
         /violates not-null constraint/
       );
+    });
+  });
+
+  describe('nonBlockingAddConstraint', () => {
+    test('is idempotent', async () => {
+      const results: MigrationActionResult[] = [];
+
+      await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
+
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      const expectedResults = [
+        {
+          name: `ALTER TABLE ${escapedTableName} ADD CONSTRAINT "reserved_id_check" CHECK (id <> 5) NOT VALID`,
+          durationMs: expect.any(Number),
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+        },
+      ];
+      expect(results).toStrictEqual(expectedResults);
+
+      //idempotent
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      expect(results).toStrictEqual(expectedResults);
+    });
+
+    test('drops existing invalid constraint', async () => {
+      // test setup; create an invalid constraint
+      await addCheckConstraint(client, [], tableName, 'reserved_id_check', `id <> 5`, true);
+
+      await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
+
+      const results: MigrationActionResult[] = [];
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      const expectedResults = [
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+        },
+      ];
+      expect(results).toStrictEqual(expectedResults);
     });
   });
 
