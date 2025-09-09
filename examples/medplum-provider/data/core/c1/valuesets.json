@@ -1682,6 +1682,28 @@
                 {
                   "property": "concept",
                   "op": "=",
+                  "value": "1"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "11"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
                   "value": "111"
                 }
               ]
@@ -1693,7 +1715,183 @@
                 {
                   "property": "concept",
                   "op": "=",
+                  "value": "1111"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
                   "value": "1112"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "112"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "113"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "119"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "12"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "121"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "122"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "123"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "129"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "13"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "14"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "141"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "142"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "19"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "191"
+                }
+              ]
+            },
+            {
+              "system": "https://nahdo.org/sopt",
+              "version": "9.2",
+              "filter": [
+                {
+                  "property": "concept",
+                  "op": "=",
+                  "value": "2"
                 }
               ]
             },
