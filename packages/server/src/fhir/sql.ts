@@ -891,7 +891,7 @@ export class ArraySubquery implements Expression {
 
 export class UpdateQuery extends BaseQuery {
   private _from?: CTE;
-  private setColumns: [Column, any][];
+  readonly setColumns: [Column, any][];
   readonly returning?: Column[];
 
   constructor(tableName: string, returning?: (Column | string)[]) {
@@ -918,7 +918,6 @@ export class UpdateQuery extends BaseQuery {
   }
 
   buildSql(sql: SqlBuilder): void {
-    // TODO extract CTE handling to own buildSql?
     if (this._from) {
       sql.append('WITH ');
       if (this._from.recursive) {
