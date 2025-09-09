@@ -475,7 +475,11 @@ describe('ResourcePropertyDisplay', () => {
       expect(secretElement).toBeInTheDocument();
 
       // The secret field should be rendered with the SecretFieldDisplay component
-      expect(secretElement.parentElement).toHaveStyle({ display: 'flex' });
+      // Check if the parent element has the Mantine Flex component classes and flex-related styles
+      const parentElement = secretElement.parentElement;
+      expect(parentElement).toHaveClass('mantine-Flex-root');
+      expect(parentElement).toHaveStyle({ 'align-items': 'center' });
+      expect(parentElement?.style.gap).toBeTruthy();
     });
 
     test('Shows copy and show/hide buttons for secret field', async () => {
