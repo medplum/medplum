@@ -279,10 +279,9 @@ describe('SqlBuilder', () => {
       const sql = new SqlBuilder();
       const update = new UpdateQuery('MyTable');
       update.set('id', 123);
-      update.set('name', 'new-name');
       update.buildSql(sql);
-      expect(sql.toString()).toBe('UPDATE "MyTable" SET "MyTable"."id" = $1, "MyTable"."name" = $2');
-      expect(sql.getValues()).toStrictEqual([123, 'new-name']);
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1');
+      expect(sql.getValues()).toStrictEqual([123]);
     });
 
     test('with CTE and RETURNING', () => {
@@ -300,7 +299,7 @@ describe('SqlBuilder', () => {
       update.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
       update.buildSql(sql);
       expect(sql.toString()).toBe(
-        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "MyTable"."id" = $1, "MyTable"."name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "MyTable"."id"'
+        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "id" = $1, "name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "MyTable"."id"'
       );
       expect(sql.getValues()).toStrictEqual([123, 'new-name']);
     });
