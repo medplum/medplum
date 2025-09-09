@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
-import cx from 'clsx';
 import {
   InternalSchemaElement,
   PropertyType,
@@ -12,8 +11,8 @@ import {
 } from '@medplum/core';
 import { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
+import cx from 'clsx';
 import { JSX, useState } from 'react';
-import classes from './ResourcePropertyDisplay.module.css';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -31,6 +30,7 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
+import classes from './ResourcePropertyDisplay.module.css';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
@@ -214,10 +214,7 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
 
   return (
     <Flex gap={3} align="center">
-      <div
-        className={cx({ [classes.secure]: !isVisible })}
-        style={{ whiteSpace: 'pre-wrap' }}
-      >
+      <div className={cx({ [classes.secure]: !isVisible })} style={{ whiteSpace: 'pre-wrap' }}>
         {props.value}
       </div>
       {!isEmpty(props.value) && (
