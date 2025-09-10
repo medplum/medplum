@@ -152,6 +152,8 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
   } else if (typeof import.meta !== 'undefined') {
     //@ts-ignore
     baseDir = dirname(fileURLToPath(import.meta.url));
+    console.log(baseDir);
+    baseDir = "/usr/src/data/plugins/node_modules/@data2evidence/d2e-medplum-server/src/config";
   }
   return JSON.parse(
     readFileSync(
