@@ -29,6 +29,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "main": "",
   "types": "dist/index.d.ts",
   "files": [
@@ -40,6 +41,6 @@
     "test": ""
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

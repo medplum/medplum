@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
+import { isMain, MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import dotenv from 'dotenv';
 import { agent } from './agent';
@@ -12,7 +12,7 @@ import { hl7 } from './hl7';
 import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
-import { MedplumCommand, addSubcommand } from './utils';
+import { addSubcommand, MedplumCommand } from './utils';
 
 export async function main(argv: string[]): Promise<void> {
   const index = new MedplumCommand('medplum')
@@ -141,7 +141,7 @@ export async function run(): Promise<void> {
   await main(process.argv);
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   run().catch((err) => {
     console.error('Unhandled error:', normalizeErrorString(err));
     process.exit(1);

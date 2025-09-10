@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "es2020",
+    "module": "esnext",
     "types": ["jest"],
     "lib": ["esnext", "dom"],
     "outDir": "dist/types",

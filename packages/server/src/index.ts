@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isMain } from '@medplum/core';
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
@@ -56,7 +57,7 @@ export async function main(configName: string): Promise<void> {
   });
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
     console.log(err);
     process.exit(1);

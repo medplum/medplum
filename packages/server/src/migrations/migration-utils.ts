@@ -3,8 +3,6 @@
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -16,6 +14,7 @@ import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
+import dataVersionManifest from './data/data-version-manifest.json' with { type: 'json' };
 import type { PostDeployMigration } from './data/types';
 import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
@@ -87,9 +86,7 @@ export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
   requiredBefore: string | undefined;
 } {
-  const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
-  ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+  const manifest = dataVersionManifest as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
   return manifest['v' + migrationNumber];
 }
 

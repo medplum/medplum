@@ -83,12 +83,12 @@ export function BotEditor(): JSX.Element | null {
         const sourceCode = await medplum.createAttachment({
           data: code,
           filename: 'index.ts',
-          contentType: 'text/typescript',
+          contentType: ContentType.TYPESCRIPT,
         });
         const executableCode = await medplum.createAttachment({
           data: codeOutput,
-          filename: 'index.js',
-          contentType: 'text/typescript',
+          filename: 'index.mjs',
+          contentType: ContentType.JAVASCRIPT,
         });
         const operations: PatchOperation[] = [
           {
@@ -163,7 +163,7 @@ export function BotEditor(): JSX.Element | null {
           <CodeEditor
             iframeRef={codeFrameRef}
             language="typescript"
-            module="commonjs"
+            module="esnext"
             testId="code-frame"
             defaultValue={defaultCode}
             minHeight="528px"
