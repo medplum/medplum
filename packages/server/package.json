@@ -1,8 +1,9 @@
 {
   "name": "@data2evidence/d2e-medplum-server",
-  "version": "4.3.5",
+  "version": "0.0.99",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
+  "main": "index.js",
   "bugs": {
     "url": "https://github.com/medplum/medplum/issues"
   },
@@ -22,7 +23,8 @@
     "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
-    "test:seed": "jest seed.test.ts --testTimeout=400000"
+    "test:seed": "jest seed.test.ts --testTimeout=400000",
+    "build-trex": "tbuild node_modules/@data2evidence/trex"
   },
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "0.7.3",
@@ -120,9 +122,53 @@
     "set-cookie-parser": "2.7.1",
     "supertest": "7.1.4",
     "superwstest": "2.1.1",
-    "ts-node-dev": "2.0.0"
+    "ts-node-dev": "2.0.0",
+    "@data2evidence/trex": "latest",
+    "deno": "latest"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "trex": {
+    "functions": {
+      "init": [
+        {
+          "function": "/src",
+          "imports": "./deno.json",
+          "env": "d2e-medplum-server"
+        }
+      ],
+      "api": [
+        {
+          "source": "/fhir-server",
+          "function": "/src",
+          "env": "d2e-medplum-server",
+          "imports": "./deno.json"
+        }
+      ],
+      "roles": {
+        "ALP_SYSTEM_ADMIN": [
+          "fhir.server.create"
+        ],
+        "IDP_ALP_DATA_CLIENT_ID": [
+          "fhir.server.create"
+        ]
+      },
+      "scopes": [
+        {
+          "path": "^/fhir-server/(*)",
+          "scopes": [
+            "fhir.server.create"
+          ],
+          "httpMethods": [
+            "POST",
+            "GET",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        }
+      ]
+    }
   }
 }
