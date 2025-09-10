@@ -227,7 +227,7 @@ export async function addProcedure(
   const periodStart = answers['procedure-period-start']?.valueDateTime;
   const medicalReason = answers['procedure-medical-reason']?.valueCoding;
   const rank = answers['procedure-rank']?.valueInteger;
-  if (!code) {
+  if (!code || !performedDateTime) {
     return;
   }
 
