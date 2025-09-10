@@ -10,6 +10,7 @@ import {
 } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -181,14 +182,19 @@ export async function runCustomMigration(
   job: Job<CustomPostDeployMigrationJobData> | undefined,
   jobData: CustomPostDeployMigrationJobData,
   callback: (
+    client: PoolClient,
+    results: MigrationActionResult[],
     job: Job<CustomPostDeployMigrationJobData> | undefined,
     jobData: CustomPostDeployMigrationJobData
-  ) => Promise<MigrationActionResult[]>
+  ) => Promise<void>
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
-    const results = await callback(job, jobData);
+    const results: MigrationActionResult[] = [];
+    await withLongRunningDatabaseClient(async (client) => {
+      await callback(client, results, job, jobData);
+    });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {

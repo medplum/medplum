@@ -15,7 +15,7 @@ import {
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
-import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import { MigrationAction } from '../migrations/types';
 import { getRegisteredServers, ServerRegistryInfo } from '../server-registry';
 import { withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
@@ -224,12 +224,9 @@ describe('Post-Deploy Migration Worker', () => {
       type: 'custom',
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
-        return runCustomMigration(repo, job, jobData, async () => {
-          const results: MigrationActionResult[] = [
-            { name: 'first', durationMs: 111 },
-            { name: 'second', durationMs: 222 },
-          ];
-          return results;
+        return runCustomMigration(repo, job, jobData, async (_client, results) => {
+          results.push({ name: 'first', durationMs: 111 });
+          results.push({ name: 'second', durationMs: 222 });
         });
       }),
     };
@@ -292,12 +289,9 @@ describe('Post-Deploy Migration Worker', () => {
         type: 'custom',
         prepareJobData: jest.fn(),
         run: jest.fn().mockImplementation(async (repo, job, jobData) => {
-          return runCustomMigration(repo, job, jobData, async () => {
-            const results: MigrationActionResult[] = [
-              { name: 'first', durationMs: 111 },
-              { name: 'second', durationMs: 222 },
-            ];
-            return results;
+          return runCustomMigration(repo, job, jobData, async (_client, results) => {
+            results.push({ name: 'first', durationMs: 111 });
+            results.push({ name: 'second', durationMs: 222 });
           });
         }),
       };
@@ -363,12 +357,9 @@ describe('Post-Deploy Migration Worker', () => {
       type: 'custom',
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
-        return runCustomMigration(repo, job, jobData, async () => {
-          const results: MigrationActionResult[] = [
-            { name: 'first', durationMs: 111 },
-            { name: 'second', durationMs: 222 },
-          ];
-          return results;
+        return runCustomMigration(repo, job, jobData, async (_client, results) => {
+          results.push({ name: 'first', durationMs: 111 });
+          results.push({ name: 'second', durationMs: 222 });
         });
       }),
     };
@@ -414,12 +405,9 @@ describe('Post-Deploy Migration Worker', () => {
       type: 'custom',
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
-        return runCustomMigration(repo, job, jobData, async () => {
-          const results: MigrationActionResult[] = [
-            { name: 'first', durationMs: 111 },
-            { name: 'second', durationMs: 222 },
-          ];
-          return results;
+        return runCustomMigration(repo, job, jobData, async (_client, results) => {
+          results.push({ name: 'first', durationMs: 111 });
+          results.push({ name: 'second', durationMs: 222 });
         });
       }),
     };

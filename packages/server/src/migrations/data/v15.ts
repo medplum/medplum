@@ -3,26 +3,17 @@
 import { PoolClient } from 'pg';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { withLongRunningDatabaseClient } from '../migration-utils';
 import { MigrationActionResult } from '../types';
 import { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
   prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-  run: async (repo, job, jobData) => {
-    return runCustomMigration(repo, job, jobData, async () => {
-      return withLongRunningDatabaseClient(async (client) => {
-        const results: MigrationActionResult[] = [];
-        await run(client, results);
-        return results;
-      });
-    });
-  },
+  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
 // prettier-ignore
-async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.query(client, results, `DROP TABLE IF EXISTS "ValueSetElement"`);
   await fns.query(client, results, `DROP TABLE IF EXISTS "Account_Token"`);
   await fns.query(client, results, `DROP TABLE IF EXISTS "AdverseEvent_Token"`);

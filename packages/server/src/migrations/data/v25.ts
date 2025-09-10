@@ -6,26 +6,17 @@ import { systemResourceProjectId } from '../../constants';
 import { Column, SelectQuery, UpdateQuery } from '../../fhir/sql';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { withLongRunningDatabaseClient } from '../migration-utils';
 import { MigrationActionResult } from '../types';
 import { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
   prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-  run: async (repo, job, jobData) => {
-    return runCustomMigration(repo, job, jobData, async () => {
-      return withLongRunningDatabaseClient(async (client) => {
-        const results: MigrationActionResult[] = [];
-        await run(client, results);
-        return results;
-      });
-    });
-  },
+  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
 // prettier-ignore
-async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.nonBlockingAddCheckConstraint(client, results, 'Project', 'reserved_project_id_check', `id <> '65897e4f-7add-55f3-9b17-035b5a4e6d52'`);
 
   const resourceTypes = getResourceTypes();
