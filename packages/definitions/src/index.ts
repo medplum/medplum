@@ -1,10 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { basename, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function readJson(filename: string): any {
-  return JSON.parse(readFileSync(resolve(__dirname, filename), 'utf8'));
+  return JSON.parse(readFileSync(resolve(getDataDir(), filename), 'utf8'));
+}
+
+let dataDir: string | undefined = undefined;
+export function getDataDir(): string {
+  if (!dataDir) {
+    // When running from src, the data directory is "../dist"
+    // When running from dist/cjs or dist/esm, the data directory is ".."
+    const currDir = getDirName();
+    const relativePath = basename(currDir) === 'src' ? '../dist' : '..';
+    dataDir = resolve(currDir, relativePath);
+  }
+  return dataDir;
+}
+
+/**
+ * Returns the directory name of the current module.
+ * Works with both CommonJS and ES modules.
+ * @returns The directory name of the current module.
+ */
+function getDirName(): string {
+  return typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
 }
 
 /**

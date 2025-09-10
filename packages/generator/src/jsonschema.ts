@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
-import { capitalize, getAllDataTypes, indexStructureDefinitionBundle } from '@medplum/core';
+import { capitalize, getAllDataTypes, indexStructureDefinitionBundle, isMain } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
@@ -197,6 +197,6 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   return undefined;
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   main();
 }

@@ -50,6 +50,7 @@ import {
   isComplexTypeCode,
   isEmpty,
   isLowerCase,
+  isMain,
   isPopulated,
   isProfileResource,
   isUUID,
@@ -1659,4 +1660,11 @@ describe('escapeHtml', () => {
   test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
 
   test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
+});
+
+describe('isMain', () => {
+  test('undefined', () => expect(isMain(undefined as unknown as ImportMeta)).toBe(false));
+  test('null', () => expect(isMain(null as unknown as ImportMeta)).toBe(false));
+  test('true', () => expect(isMain({ main: true } as unknown as ImportMeta)).toBe(true));
+  test('false', () => expect(isMain({ main: false } as unknown as ImportMeta)).toBe(false));
 });

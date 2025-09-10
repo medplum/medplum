@@ -36,7 +36,7 @@ Requirements:
   - That means that the Medplum API server cannot simply use "localhost"
   - Instead, we will use `host.docker.internal`
 - The Medplum API server cookies require HTTPS
-  - That means we cannot simply use webpack-dev-server and ts-node-dev
+  - That means we cannot simply use `vite` and `tsx`
   - Instead, we will use [Caddy](https://caddyserver.com/) for an easy localhost HTTPS proxy
 
 The Medplum OpenID configuration requires HTTPS. We recommend using .
