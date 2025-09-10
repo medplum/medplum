@@ -11,7 +11,6 @@ import {
 } from '@medplum/core';
 import { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
-import cx from 'clsx';
 import { JSX, useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
@@ -219,7 +218,9 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
       {isVisible ? (
         <div style={{ whiteSpace: 'pre-wrap' }}>{secretValue}</div>
       ) : (
-        <div style={{ whiteSpace: 'pre-wrap' }} aria-hidden="true">{hasValue ? MASK : ''}</div>
+        <div style={{ whiteSpace: 'pre-wrap' }} aria-hidden="true">
+          {hasValue ? MASK : ''}
+        </div>
       )}
       {hasValue && (
         <>
