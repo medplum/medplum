@@ -4,6 +4,7 @@ import { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { normalizeInfraConfig } from './config';
 import { MedplumStack } from './stack';
 

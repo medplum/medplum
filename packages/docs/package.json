@@ -13,7 +13,6 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "type": "module",
   "scripts": {
     "build": "npm run copy-core-docs && docusaurus build",
     "clean": "docusaurus clear",

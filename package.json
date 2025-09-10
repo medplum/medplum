@@ -2,7 +2,6 @@
   "name": "root",
   "version": "4.3.12",
   "private": true,
-  "type": "module",
   "workspaces": [
     "packages/*",
     "examples/*"

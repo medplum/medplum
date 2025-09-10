@@ -13,6 +13,7 @@ import {
 import csv from 'csv-parser';
 import { createReadStream, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const valueSets = new Map<string, CodeSystem | ValueSet>();
 

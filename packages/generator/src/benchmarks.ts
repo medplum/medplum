@@ -4,6 +4,7 @@ import { indexStructureDefinitionBundle, validateResource } from '@medplum/core'
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { Bench, BenchEvent } from 'tinybench';
+import { fileURLToPath } from 'url';
 
 const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
 const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;

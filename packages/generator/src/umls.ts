@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import { createInterface } from 'node:readline';
+import { fileURLToPath } from 'node:url';
 
 /**
  * This utilitity generates data for ValueSet and ConceptMap resources from the UMLS Metathesaurus.

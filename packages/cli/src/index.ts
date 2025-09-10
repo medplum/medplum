@@ -3,6 +3,7 @@
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
 import { agent } from './agent';
 import { login, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';

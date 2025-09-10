@@ -12,6 +12,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -33,10 +34,6 @@ export function main(): void {
   );
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main();
-}
-
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
   return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && schema.kind !== 'logical' && !schema.parentType;
 }
@@ -53,4 +50,8 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
       addOutputType(outputTypes, innerType.name, innerType);
     }
   }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
 }

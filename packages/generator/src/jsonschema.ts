@@ -12,6 +12,7 @@ import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhi
 import { writeFileSync } from 'fs';
 import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { getValueSetValues } from './valuesets';
 
 // Generate fhir.schema.json
