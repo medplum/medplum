@@ -69,12 +69,7 @@ jobs:
           repository: ${{ env.GIT_REPO_FULL_NAME }}
       - name: Update version
         run: |
-          if [[ $GITHUB_EVENT_NAME == 'workflow_dispatch' ]]; then
-            RELEASE_VERSION=${{ github.event.inputs.tag }}
-            jq --arg v $RELEASE_VERSION '.version=$v' package.json > tmppkg; mv tmppkg package.json
-          else
             jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
-          fi
       - name: Use Node.js - Project
         uses: actions/setup-node@v4
         with:
