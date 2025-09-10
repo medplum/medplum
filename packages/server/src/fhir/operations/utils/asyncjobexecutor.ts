@@ -123,7 +123,7 @@ export class AsyncJobExecutor {
     }
   }
 
-  async failJob(repo: Repository, err?: Error): Promise<AsyncJob> {
+  async failJob(repo: Repository, err?: Error, output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -139,18 +139,22 @@ export class AsyncJobExecutor {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
+      output: output ?? this.resource.output,
     };
     if (err) {
-      failedJob.output = {
+      failedJob.output ??= {
         resourceType: 'Parameters',
-        parameter:
-          err instanceof OperationOutcomeError
-            ? [{ name: 'outcome', resource: err.outcome }]
-            : [
-                { name: 'error', valueString: err.message },
-                { name: 'stack', valueString: err.stack },
-              ],
       };
+      failedJob.output.parameter ??= [];
+
+      if (err instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      } else {
+        failedJob.output.parameter.push(
+          { name: 'error', valueString: err.message },
+          { name: 'stack', valueString: err.stack }
+        );
+      }
     }
     return repo.updateResource<AsyncJob>(failedJob);
   }

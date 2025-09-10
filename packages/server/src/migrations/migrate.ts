@@ -912,9 +912,9 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 
 export async function executeMigrationActions(
   client: Client | Pool | PoolClient,
+  results: MigrationActionResult[],
   actions: MigrationAction[]
-): Promise<MigrationActionResult[]> {
-  const results: MigrationActionResult[] = [];
+): Promise<void> {
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
@@ -990,7 +990,6 @@ export async function executeMigrationActions(
       }
     }
   }
-  return results;
 }
 
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
