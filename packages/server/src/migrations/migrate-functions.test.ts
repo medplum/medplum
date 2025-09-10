@@ -246,7 +246,7 @@ describe('migrate-functions', () => {
       expect(results).toStrictEqual(expectedResults);
     });
 
-    test('drops existing invalid constraint', async () => {
+    test('validates existing invalid constraint', async () => {
       // test setup; create an invalid constraint
       await addCheckConstraint(client, [], tableName, 'Table_Name_reserved_id_check', `id <> 5`, true);
 
