@@ -154,7 +154,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   await initAppServices(config);
   server = http.createServer(app);
-  //initWebSockets(server);
+  initWebSockets(server);
 
   app.set('etag', false);
   app.set('trust proxy', 1);
