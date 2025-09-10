@@ -139,7 +139,7 @@ export class AsyncJobExecutor {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
-      output,
+      output: output ?? this.resource.output,
     };
     if (err) {
       failedJob.output ??= {
