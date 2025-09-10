@@ -5,7 +5,7 @@
     "outDir": "dist",
     "lib": ["esnext", "dom"],
     "module": "esnext",
-    "target": "ES2017"
+    "target": "esnext"
   },
   "include": ["src/**/*.ts"]
 }

@@ -2,6 +2,7 @@
   "name": "@medplum/fhirtypes",
   "version": "4.4.1",
   "description": "Medplum FHIR Type Definitions",
+  "type": "module",
   "keywords": [
     "medplum",
     "fhir",
@@ -40,6 +41,6 @@
     "test": ""
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

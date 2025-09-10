@@ -6,7 +6,7 @@ import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import os from 'node:os';
-import ws from 'ws';
+import { RawData, WebSocket } from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import { CacheEntry } from '../fhir/repo';
@@ -45,8 +45,8 @@ export type WebSocketSubToken = JWTPayload & MedplumBaseClaims & AdditionalWsBin
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 
-const wsToSubLookup = new Map<ws.WebSocket, Map<string, WebSocketSubMetadata>>();
-const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
+const wsToSubLookup = new Map<WebSocket, Map<string, WebSocketSubMetadata>>();
+const subToWsLookup = new Map<string, Set<WebSocket>>();
 
 let redisSubscriber: Redis | undefined;
 let heartbeatHandler: (() => void) | undefined;
@@ -111,7 +111,7 @@ function ensureHeartbeatHandler(): void {
   }
 }
 
-function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, rawToken: string): void {
+function subscribeWsToSubscription(ws: WebSocket, subscriptionId: string, rawToken: string): void {
   let wsSet = subToWsLookup.get(subscriptionId);
   let subEntryMap = wsToSubLookup.get(ws);
   if (!wsSet) {
@@ -126,7 +126,7 @@ function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, raw
   subEntryMap.set(subscriptionId, { rawToken });
 }
 
-function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+function unsubscribeWsFromSubscription(ws: WebSocket, subscriptionId: string): void {
   // Check for WebSocket in map for this subscription ID
   const wsSet = subToWsLookup.get(subscriptionId);
   if (wsSet) {
@@ -148,7 +148,7 @@ function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string)
   }
 }
 
-function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
+function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
   const subEntries = wsToSubLookup.get(ws);
   if (!subEntries) {
     globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
@@ -159,7 +159,7 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
       globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
       continue;
     }
-    const wsSet = subToWsLookup.get(subscriptionId) as Set<ws.WebSocket>;
+    const wsSet = subToWsLookup.get(subscriptionId) as Set<WebSocket>;
     wsSet.delete(ws);
     if (wsSet.size === 0) {
       subToWsLookup.delete(subscriptionId);
@@ -176,7 +176,7 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
 // Each project entry becomes a map of subscriptions to their current ref count (how many subscribers each has)
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
-export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
+export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
   const redis = getRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
@@ -259,7 +259,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set([verifiedToken.subscription_id]));
   };
 
-  socket.on('message', async (data: ws.RawData) => {
+  socket.on('message', async (data: RawData) => {
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;

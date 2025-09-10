@@ -1,10 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 export function readJson(filename: string): any {
-  return JSON.parse(readFileSync(resolve(__dirname, filename), 'utf8'));
+  // TODO: Figure out how to reconcile "src" vs "dist"
+  // When running from src, the data directory is "../fhir"
+  // When running from dist/cjs or dist/esm, the data directory is "../../fhir"
+  return JSON.parse(readFileSync(resolve(getDirName(), '..', filename), 'utf8'));
+}
+
+/**
+ * Returns the directory name of the current module.
+ * Works with both CommonJS and ES modules.
+ * @returns The directory name of the current module.
+ */
+function getDirName(): string {
+  if (typeof __dirname !== 'undefined') {
+    // CommonJS
+    return __dirname;
+  }
+  // ES module
+  const __filename = fileURLToPath(import.meta.url);
+  return dirname(__filename);
 }
 
 /**

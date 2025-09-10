@@ -7,6 +7,7 @@ import {
   indexStructureDefinitionBundle,
   InternalTypeSchema,
   isLowerCase,
+  isMain,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
@@ -33,10 +34,6 @@ export function main(): void {
   );
 }
 
-if (require.main === module) {
-  main();
-}
-
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
   return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && schema.kind !== 'logical' && !schema.parentType;
 }
@@ -53,4 +50,8 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
       addOutputType(outputTypes, innerType.name, innerType);
     }
   }
+}
+
+if (isMain(import.meta)) {
+  main();
 }

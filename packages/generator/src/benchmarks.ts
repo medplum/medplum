@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { indexStructureDefinitionBundle, validateResource } from '@medplum/core';
+import { indexStructureDefinitionBundle, isMain, validateResource } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { Bench, BenchEvent } from 'tinybench';
@@ -32,7 +32,7 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
   }
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   runBenchmarks(
     { title: 'Patient resource validation', fn: validatePatient },
     { title: 'StructureDefinition Bundle validation', fn: validateBundle },
