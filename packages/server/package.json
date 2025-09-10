@@ -132,7 +132,7 @@
       "init": [
         {
           "function": "src",
-          "imports": "./deno.json",
+          "imports": "deno.json",
           "env": "d2e-medplum-server"
         }
       ],
@@ -141,7 +141,7 @@
           "source": "/fhir-server",
           "function": "src",
           "env": "d2e-medplum-server",
-          "imports": "./deno.json"
+          "imports": "deno.json"
         }
       ],
       "roles": {
