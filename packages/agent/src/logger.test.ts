@@ -6,6 +6,12 @@ import { Agent } from '@medplum/fhirtypes';
 import { FullAgentLoggerConfig, parseLoggerConfigFromAgent } from './logger';
 
 describe('Agent Logger', () => {
+  // describe('getLoggerConfig', () => {
+  //   test('should throw if called before initialized', () => {
+  //     getLoggerConfig();
+  //   });
+  // });
+
   describe('parseLoggerConfigFromAgent', () => {
     test.each([
       [
@@ -24,14 +30,12 @@ describe('Agent Logger', () => {
         {
           main: {
             logDir: 'TEST_DIR',
-            logRotateFreq: 'daily',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.INFO,
           },
           channel: {
             logDir: __dirname,
-            logRotateFreq: 'daily',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.INFO,
@@ -54,14 +58,12 @@ describe('Agent Logger', () => {
         {
           main: {
             logDir: __dirname,
-            logRotateFreq: 'daily',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.INFO,
           },
           channel: {
             logDir: 'TEST_DIR',
-            logRotateFreq: 'daily',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.INFO,
@@ -83,10 +85,6 @@ describe('Agent Logger', () => {
               name: 'logger.main.logFileName',
               valueString: 'TEST_FILE',
             },
-            {
-              name: 'logger.channel.logRotateFreq',
-              valueString: 'hourly',
-            },
             // Invalid property, should emit warning
             {
               name: 'logger.channel.logPriority',
@@ -102,14 +100,12 @@ describe('Agent Logger', () => {
         {
           main: {
             logDir: 'TEST_DIR',
-            logRotateFreq: 'daily',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.INFO,
           },
           channel: {
             logDir: __dirname,
-            logRotateFreq: 'hourly',
             maxFileSizeMb: 10,
             filesToKeep: 10,
             logLevel: LogLevel.DEBUG,
@@ -126,21 +122,6 @@ describe('Agent Logger', () => {
     );
 
     test('should throw when given an invalid logger config setting', () => {
-      expect(() =>
-        parseLoggerConfigFromAgent({
-          resourceType: 'Agent',
-          name: 'Test Agent',
-          status: 'active',
-          setting: [
-            {
-              name: 'logger.channel.logRotateFreq',
-              // Invalid value, only hourly or daily are valid
-              valueString: 'weekly',
-            },
-          ],
-        })
-      ).toThrow();
-
       expect(() =>
         parseLoggerConfigFromAgent({
           resourceType: 'Agent',

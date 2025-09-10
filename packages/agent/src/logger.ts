@@ -25,7 +25,6 @@ export type LoggerType = (typeof LoggerType)[keyof typeof LoggerType];
 
 export const DEFAULT_LOGGER_CONFIG = {
   logDir: __dirname,
-  logRotateFreq: 'daily',
   maxFileSizeMb: 10,
   filesToKeep: 10,
   logLevel: LogLevel.INFO,
@@ -52,19 +51,14 @@ export function createLogger(loggerType: LoggerType, options?: WinstonWrapperLog
 
 export const LOGGER_CONFIG_KEYS = [
   'logDir',
-  'logRotateFreq',
   'maxFileSizeMb',
   'filesToKeep',
   'logLevel',
 ] as const satisfies (keyof typeof DEFAULT_LOGGER_CONFIG)[];
 export type LoggerConfigKey = (typeof LOGGER_CONFIG_KEYS)[number];
 
-export const VALID_ROTATE_FREQ = ['daily', 'hourly'] as const;
-
-export type LogRotateFrequency = (typeof VALID_ROTATE_FREQ)[number];
 export interface AgentLoggerConfig {
   logDir: string;
-  logRotateFreq: LogRotateFrequency;
   maxFileSizeMb: number;
   filesToKeep: number;
   logLevel: LogLevel;
@@ -103,11 +97,6 @@ export function getLoggerConfig(): FullAgentLoggerConfig {
 export function validateLoggerConfig(config: AgentLoggerConfig, configPathRoot: string = 'config'): void {
   if (!(typeof config.logDir === 'string' && config.logDir.length > 0)) {
     throw new OperationOutcomeError(validationError(`${configPathRoot}.logDir must be a valid filepath string`));
-  }
-  if (!(typeof config.logRotateFreq === 'string' && VALID_ROTATE_FREQ.includes(config.logRotateFreq))) {
-    throw new OperationOutcomeError(
-      validationError(`${configPathRoot}.logRotateFreq must be one of: ${VALID_ROTATE_FREQ.join(', ')}`)
-    );
   }
   if (
     !(typeof config.maxFileSizeMb === 'number' && config.maxFileSizeMb > 0 && Number.isInteger(config.maxFileSizeMb))

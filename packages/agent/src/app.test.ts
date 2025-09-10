@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentError,
-  AgentMessage,
-  AgentReloadConfigRequest,
-  AgentTransmitRequest,
-  AgentUpgradeRequest,
-  AgentUpgradeResponse,
-  ContentType,
-  Hl7Message,
-  LogLevel,
-  MEDPLUM_VERSION,
-  ReconnectingWebSocket,
-  allOk,
-  createReference,
-  getReferenceString,
-  sleep,
+    AgentError,
+    AgentMessage,
+    AgentReloadConfigRequest,
+    AgentTransmitRequest,
+    AgentUpgradeRequest,
+    AgentUpgradeResponse,
+    ContentType,
+    Hl7Message,
+    LogLevel,
+    MEDPLUM_VERSION,
+    ReconnectingWebSocket,
+    allOk,
+    createReference,
+    getReferenceString,
+    sleep,
 } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
@@ -62,8 +62,7 @@ describe('App', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
-    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    console.log = jest.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -71,8 +70,8 @@ describe('App', () => {
   });
 
   test('Runs successfully', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
@@ -136,14 +135,13 @@ describe('App', () => {
       mockServer.stop(resolve);
     });
 
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
+    console.log = originalConsoleLog;
   });
 
   test('Keeps trying to connect on startup', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const state = {
       maxReconnectAttempts: 2,
       shouldConnect: false,
@@ -199,8 +197,7 @@ describe('App', () => {
     // Restore the original ReconnectingWebSocket
     mockDispatchEvent.mockRestore();
     reconnectSpy.mockRestore();
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Reconnect after connection closed', async () => {
@@ -374,8 +371,8 @@ describe('App', () => {
   });
 
   test('Unknown endpoint protocol', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -428,9 +425,8 @@ describe('App', () => {
       mockServer.stop(resolve);
     });
 
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
+    console.log = originalConsoleLog;
   });
 
   test('Reload config', async () => {
@@ -825,8 +821,8 @@ describe('App', () => {
   });
 
   test('Enable stats logging', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     // Create agent with an HL7 channel
     const state = {
@@ -920,7 +916,7 @@ describe('App', () => {
     let logged = false;
     while (!logged) {
       try {
-        expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Agent stats'));
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Agent stats'));
         logged = true;
         clearTimeout(timeout);
       } catch (err) {
@@ -935,8 +931,7 @@ describe('App', () => {
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
     });
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test("Setting Agent.status to 'off'", async () => {
@@ -946,8 +941,8 @@ describe('App', () => {
       gotAgentError: false,
     };
 
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1134,7 +1129,7 @@ describe('App', () => {
     await sleep(500);
 
     // Check that we logged an error
-    expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Agent.status is currently set to off'));
+    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Agent.status is currently set to off'));
 
     // Should be empty
     expect(hl7Messages.length).toBe(0);
@@ -1241,8 +1236,7 @@ describe('App', () => {
       mockServer.stop(resolve);
     });
 
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test("Setting a channel.endpoint.status to 'off'", async () => {
@@ -1252,8 +1246,8 @@ describe('App', () => {
       gotAgentError: false,
     };
 
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1490,8 +1484,7 @@ describe('App', () => {
       mockServer.stop(resolve);
     });
 
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Agent transmit response without callback still gets processed', async () => {
@@ -1693,8 +1686,8 @@ describe('App', () => {
     });
 
     test('Upgrade -- No version specified', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       let child!: MockChildProcess;
 
@@ -1815,7 +1808,7 @@ describe('App', () => {
         }),
         { encoding: 'utf8', flag: 'w+' }
       );
-      expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -1825,13 +1818,12 @@ describe('App', () => {
       for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, spawnSpy]) {
         spy.mockRestore();
       }
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Version specified', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       let child!: MockChildProcess;
 
@@ -1953,7 +1945,7 @@ describe('App', () => {
         }),
         { encoding: 'utf8', flag: 'w+' }
       );
-      expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       expect(state.agentError).toBeUndefined();
 
@@ -1965,13 +1957,12 @@ describe('App', () => {
       for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
         spy.mockRestore();
       }
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Invalid version', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2060,13 +2051,12 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2148,7 +2138,7 @@ describe('App', () => {
       clearTimeout(timeout);
 
       expect(state.gotAgentUpgradeResponse).toStrictEqual(true);
-      expect(stdoutWriteSpy).toHaveBeenCalledWith(
+      expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining(
           `Attempted to upgrade to version ${targetVersion}, but agent is already on that version`
         )
@@ -2161,13 +2151,12 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version (force upgrade)', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2295,7 +2284,7 @@ describe('App', () => {
         }),
         { encoding: 'utf8', flag: 'w+' }
       );
-      expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       expect(state.agentError).toBeUndefined();
 
@@ -2307,13 +2296,12 @@ describe('App', () => {
       for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
         spy.mockRestore();
       }
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Pre-4.2.4', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2405,13 +2393,12 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Pre-4.2.4, force = true', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       let child!: MockChildProcess;
 
@@ -2536,7 +2523,7 @@ describe('App', () => {
         }),
         { encoding: 'utf8', flag: 'w+' }
       );
-      expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       expect(state.agentError).toBeUndefined();
 
@@ -2548,13 +2535,12 @@ describe('App', () => {
       for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
         spy.mockRestore();
       }
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Error while starting upgrader', async () => {
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2647,14 +2633,13 @@ describe('App', () => {
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
       const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
 
       const state = {
@@ -2744,14 +2729,13 @@ describe('App', () => {
 
       unlinkSyncSpy.mockRestore();
       createPidFileSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is correct (Success)', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2837,14 +2821,13 @@ describe('App', () => {
       });
 
       unlinkSyncSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, failed to create agent PID', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
-      const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
       const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation(() => {
         throw new Error('Unable to create PID');
       });
@@ -2956,8 +2939,7 @@ describe('App', () => {
       unlinkSyncSpy.mockRestore();
       infoSpy.mockRestore();
       createPidFileSpy.mockRestore();
-      stdoutWriteSpy.mockRestore();
-      stderrWriteSpy.mockRestore();
+      console.log = originalConsoleLog;
     });
   });
 
@@ -2972,8 +2954,8 @@ describe('App', () => {
     let child!: MockChildProcess;
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
     const fetchSpy = mockFetchForUpgrader();
@@ -3071,8 +3053,7 @@ describe('App', () => {
     for (const spy of [unlinkSyncSpy, createPidFileSpy, platformSpy, fetchSpy, writeFileSyncSpy, isAppRunningSpy]) {
       spy.mockReset();
     }
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Upgrading -- Upgrade in progress (force), should start upgrade', async () => {
@@ -3086,8 +3067,8 @@ describe('App', () => {
     let child!: MockChildProcess;
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation();
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -3205,7 +3186,7 @@ describe('App', () => {
       }),
       { encoding: 'utf8', flag: 'w+' }
     );
-    expect(stdoutWriteSpy).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
     expect(state.agentError).toBeUndefined();
     expect(spawnSpy).toHaveBeenCalled();
 
@@ -3217,8 +3198,7 @@ describe('App', () => {
     for (const spy of [unlinkSyncSpy, createPidFileSpy, platformSpy, fetchSpy, writeFileSyncSpy, isAppRunningSpy]) {
       spy.mockReset();
     }
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 });
 

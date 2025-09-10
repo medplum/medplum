@@ -3,11 +3,11 @@
 import { AgentTransmitResponse } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { App } from './app';
-import { PinoWrapperLogger } from './logger';
+import { WinstonWrapperLogger } from './logger';
 
 export interface Channel {
-  readonly log: PinoWrapperLogger;
-  readonly channelLog: PinoWrapperLogger;
+  readonly log: WinstonWrapperLogger;
+  readonly channelLog: WinstonWrapperLogger;
   start(): void;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
@@ -27,8 +27,8 @@ export abstract class BaseChannel implements Channel {
     this.endpoint = endpoint;
   }
 
-  abstract readonly log: PinoWrapperLogger;
-  abstract readonly channelLog: PinoWrapperLogger;
+  abstract readonly log: WinstonWrapperLogger;
+  abstract readonly channelLog: WinstonWrapperLogger;
   abstract start(): void;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;

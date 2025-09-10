@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentReloadConfigRequest,
-  AgentReloadConfigResponse,
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  ContentType,
-  createReference,
-  Hl7Message,
-  LogLevel,
-  sleep,
+    AgentReloadConfigRequest,
+    AgentReloadConfigResponse,
+    AgentTransmitRequest,
+    AgentTransmitResponse,
+    allOk,
+    ContentType,
+    createReference,
+    Hl7Message,
+    LogLevel,
+    sleep,
 } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
@@ -25,8 +25,7 @@ let endpoint: Endpoint;
 
 describe('HL7', () => {
   beforeAll(async () => {
-    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    console.log = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -117,8 +116,8 @@ describe('HL7', () => {
   });
 
   test('Send and receive -- error', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -184,20 +183,19 @@ describe('HL7', () => {
     );
 
     await sleep(150);
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(
+    expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining('Error during handling transmit request: Something bad happened')
     );
 
     await client.close();
     await app.stop();
     mockServer.stop();
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Send and receive -- no callback in response', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -264,13 +262,12 @@ describe('HL7', () => {
     );
 
     await sleep(150);
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
 
     await client.close();
     await app.stop();
     mockServer.stop();
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Send and receive -- enhanced mode', async () => {
@@ -451,8 +448,8 @@ describe('HL7', () => {
   });
 
   test('Invalid messagesPerMin logs warning', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
@@ -494,14 +491,13 @@ describe('HL7', () => {
     // Wait for logging to occur just in case
     await sleep(200);
 
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(
+    expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining("Invalid messagesPerMin: 'twenty'; must be a valid integer.")
     );
 
     await app.stop();
     mockServer.stop();
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('Push', async () => {
@@ -854,8 +850,8 @@ describe('HL7', () => {
   });
 
   test('keepAlive: Remote closes connection', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -966,17 +962,16 @@ describe('HL7', () => {
     await app.stop();
     mockServer.stop();
 
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(
+    expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining("Persistent connection to remote 'mllp://localhost:57001' closed")
     );
 
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 
   test('keepAlive: Error occurs', async () => {
-    const stdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    const stderrWriteSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -1130,13 +1125,12 @@ describe('HL7', () => {
     await app.stop();
     mockServer.stop();
 
-    expect(stdoutWriteSpy).toHaveBeenCalledWith(
+    expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining(
         `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
       )
     );
 
-    stdoutWriteSpy.mockRestore();
-    stderrWriteSpy.mockRestore();
+    console.log = originalConsoleLog;
   });
 });

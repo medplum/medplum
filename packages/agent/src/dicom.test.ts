@@ -14,8 +14,7 @@ let endpoint: Endpoint;
 
 describe('DICOM', () => {
   beforeAll(async () => {
-    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    console.log = jest.fn();
     dimse.log.disableAll(false);
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {

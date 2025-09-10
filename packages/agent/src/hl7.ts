@@ -6,15 +6,15 @@ import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medpl
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
-import { getLoggerConfig, LoggerType, PinoWrapperLogger } from './logger';
+import { getLoggerConfig, LoggerType, WinstonWrapperLogger } from './logger';
 import { getCurrentStats, updateStat } from './stats';
 
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
-  readonly log: PinoWrapperLogger;
-  readonly channelLog: PinoWrapperLogger;
+  readonly log: WinstonWrapperLogger;
+  readonly channelLog: WinstonWrapperLogger;
   private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {

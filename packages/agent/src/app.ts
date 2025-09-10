@@ -35,7 +35,7 @@ import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import {
   LoggerType,
-  PinoWrapperLogger,
+  WinstonWrapperLogger,
   createLogger,
   getLoggerConfig,
   parseLoggerConfigFromAgent,
@@ -66,8 +66,8 @@ export class App {
   readonly medplum: MedplumClient;
   readonly agentId: string;
   readonly logLevel: LogLevel;
-  readonly log: PinoWrapperLogger;
-  readonly channelLog: PinoWrapperLogger;
+  readonly log: WinstonWrapperLogger;
+  readonly channelLog: WinstonWrapperLogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];

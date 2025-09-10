@@ -11,14 +11,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
 import { BaseChannel } from './channel';
-import { getLoggerConfig, LoggerType, PinoWrapperLogger } from './logger';
+import { getLoggerConfig, LoggerType, WinstonWrapperLogger } from './logger';
 
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: PinoWrapperLogger;
-  readonly channelLog: PinoWrapperLogger;
+  readonly log: WinstonWrapperLogger;
+  readonly channelLog: WinstonWrapperLogger;
   private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
