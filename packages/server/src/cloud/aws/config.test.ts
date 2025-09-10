@@ -26,6 +26,7 @@ describe('Config', () => {
         { Name: 'database.ssl.ca', Value: 'DatabaseSslCa' },
         { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
         { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
+        { Name: 'SMTPSecrets', Value: 'SMTPSecretsArn' },
         { Name: 'port', Value: '8080' },
         { Name: 'botCustomFunctionsEnabled', Value: 'true' },
         { Name: 'logAuditEvents', Value: 'true' },
@@ -76,6 +77,9 @@ describe('Config', () => {
     });
     expect(mockSecretsManagerClient).toReceiveCommandWith(GetSecretValueCommand, {
       SecretId: 'RedisSecretsArn',
+    });
+    expect(mockSecretsManagerClient).toReceiveCommandWith(GetSecretValueCommand, {
+      SecretId: 'SMTPSecretsArn',
     });
   });
 });

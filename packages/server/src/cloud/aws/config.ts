@@ -47,6 +47,8 @@ export async function loadAwsConfig(path: string): Promise<MedplumServerConfig> 
       config['readonlyDatabase'] = await loadAwsSecrets(region, value);
     } else if (key === 'RedisSecrets') {
       config['redis'] = await loadAwsSecrets(region, value);
+    } else if (key === 'SMTPSecrets') {
+      config['smtp'] = await loadAwsSecrets(region, value);
     }
   }
 
