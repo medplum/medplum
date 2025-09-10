@@ -275,6 +275,6 @@ async function main(): Promise<void> {
   writeFileSync(resolve(__dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(console.error);
 }

@@ -32,7 +32,7 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
   }
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runBenchmarks(
     { title: 'Patient resource validation', fn: validatePatient },
     { title: 'StructureDefinition Bundle validation', fn: validateBundle },

@@ -28,10 +28,8 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "bin": {
-    "medplum": "./dist/cjs/index.cjs"
-  },
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -45,6 +43,9 @@
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "types": "dist/cjs/index.d.ts",
+  "bin": {
+    "medplum": "./dist/cjs/index.cjs"
+  },
   "files": [
     "dist/cjs",
     "dist/esm"

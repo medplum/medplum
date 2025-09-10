@@ -141,7 +141,7 @@ export async function run(): Promise<void> {
   await main(process.argv);
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   run().catch((err) => {
     console.error('Unhandled error:', normalizeErrorString(err));
     process.exit(1);

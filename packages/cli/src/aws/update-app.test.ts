@@ -28,7 +28,7 @@ import fastGlob from 'fast-glob';
 import fetch from 'node-fetch';
 import fs from 'node:fs';
 import { Readable, Writable } from 'node:stream';
-import tar from 'tar';
+import * as tar from 'tar';
 import { main } from '../index';
 
 jest.mock('fast-glob', () => ({

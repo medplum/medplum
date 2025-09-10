@@ -3,6 +3,7 @@
   "version": "4.3.12",
   "private": true,
   "description": "Medplum FSH Profiles Example",
+  "type": "module",
   "scripts": {
     "build": "npm run clean && npm run build:profiles",
     "build:profiles": "sushi build src/profiles -o dist -s",

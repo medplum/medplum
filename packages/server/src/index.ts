@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
+import { fileURLToPath } from 'node:url';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
 import { globalLogger } from './logger';
@@ -56,7 +57,7 @@ export async function main(configName: string): Promise<void> {
   });
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch((err) => {
     console.log(err);
     process.exit(1);

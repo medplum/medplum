@@ -31,6 +31,6 @@ export async function main(context?: Record<string, string>): Promise<void> {
   app.synth();
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(console.error);
 }
