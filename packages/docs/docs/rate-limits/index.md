@@ -24,9 +24,6 @@ In addition to limits on the number of requests that can be made to the Medplum 
 
 :::warning
 
-FHIR interaction quotas are currently in draft, and are not yet finalized. Specific details about how
-the limits are calculated and enforced are subject to change.
-
 The quota is calculated as the sum of each user's interactions in a given minute, where each interaction is weighted by its impact on the data store. Here are the weights used to calculate the quota:
 
 | FHIR Operation | Points Cost | Description |
