@@ -1756,11 +1756,15 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
       currentResourceType = link.targetType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, code);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+      if (code === '_filter') {
+        filter = { code: '_filter', operator: Operator.EQUALS, value: searchFilter.value };
+      } else {
+        const searchParam = getSearchParameter(currentResourceType, code);
+        if (!searchParam) {
+          throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+        }
+        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
       }
-      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);
