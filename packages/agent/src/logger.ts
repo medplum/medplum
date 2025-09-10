@@ -46,8 +46,8 @@ export type ValidWinstonLogLevel = keyof typeof LEVELS_TO_UPPERCASE;
 
 let loggerConfig: FullAgentLoggerConfig = deepClone(DEFAULT_FULL_LOGGER_CONFIG);
 
-export function createLogger(loggerType: LoggerType, options?: PinoWrapperLoggerOptions): PinoWrapperLogger {
-  return new PinoWrapperLogger(getLoggerConfig()[loggerType], loggerType, options);
+export function createLogger(loggerType: LoggerType, options?: WinstonWrapperLoggerOptions): WinstonWrapperLogger {
+  return new WinstonWrapperLogger(getLoggerConfig()[loggerType], loggerType, options);
 }
 
 export const LOGGER_CONFIG_KEYS = [
@@ -80,12 +80,12 @@ export interface PartialFullAgentLoggerConfig {
   channel?: Partial<AgentLoggerConfig>;
 }
 
-export interface PinoWrapperLoggerOptions extends LoggerOptions {
+export interface WinstonWrapperLoggerOptions extends LoggerOptions {
   metadata?: Record<string, any>;
 }
 
-export interface PinoWrapperLoggerInitOptions extends PinoWrapperLoggerOptions {
-  parentLogger?: PinoWrapperLogger;
+export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOptions {
+  parentLogger?: WinstonWrapperLogger;
 }
 
 export function setLoggerConfig(fullConfig: FullAgentLoggerConfig): void {
@@ -190,7 +190,7 @@ export function parseLoggerConfigFromAgent(agentConfig: Agent): [FullAgentLogger
   return [config, warnings];
 }
 
-export function getPinoLevelFromMedplumLevel(level: LogLevel): string {
+export function getWinstonLevelFromMedplumLevel(level: LogLevel): string {
   switch (level) {
     // Return error for NONE since we are going to turn silent on anyways
     case LogLevel.NONE:
@@ -207,8 +207,8 @@ export function getPinoLevelFromMedplumLevel(level: LogLevel): string {
   }
 }
 
-export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType: LoggerType): winston.Logger {
-  const level = getPinoLevelFromMedplumLevel(config.logLevel);
+export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerType: LoggerType): winston.Logger {
+  const level = getWinstonLevelFromMedplumLevel(config.logLevel);
 
   // When testing, just use the default config - it pipes raw JSON to stdout
   const logger = winston.createLogger({
@@ -239,7 +239,7 @@ export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType
     // Log any errors that happen
     // This is important for debugging broken logger configurations that are not outputting logs
     dailyRotateTransport.on('error', (err: unknown) => {
-      console.error('Error in pino transport', err);
+      console.error('Error in winston transport', err);
     });
 
     logger.add(dailyRotateTransport);
@@ -248,29 +248,31 @@ export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType
   return logger;
 }
 
-export class PinoWrapperLogger implements ILogger {
+export class WinstonWrapperLogger implements ILogger {
   readonly loggerType: LoggerType;
-  private parentLogger?: PinoWrapperLogger;
+  private parentLogger?: WinstonWrapperLogger;
   private config: AgentLoggerConfig;
   private metadata?: Record<string, any>;
   private prefix?: string;
-  private pino: winston.Logger;
+  private winston: winston.Logger;
   level: LogLevel;
 
-  constructor(config: AgentLoggerConfig, loggerType: LoggerType, options?: PinoWrapperLoggerInitOptions) {
+  constructor(config: AgentLoggerConfig, loggerType: LoggerType, options?: WinstonWrapperLoggerInitOptions) {
     this.loggerType = loggerType;
     this.parentLogger = options?.parentLogger;
-    this.pino = this.parentLogger ? this.parentLogger.getWinston() : createPinoFromLoggerConfig(config, loggerType);
+    this.winston = this.parentLogger
+      ? this.parentLogger.getWinston()
+      : createWinstonFromLoggerConfig(config, loggerType);
     this.config = config;
     this.level = config.logLevel;
     this.metadata = options?.metadata;
     this.prefix = options?.prefix;
   }
 
-  reloadConfig(config: AgentLoggerConfig, options?: PinoWrapperLoggerOptions): void {
-    this.pino = this.parentLogger
+  reloadConfig(config: AgentLoggerConfig, options?: WinstonWrapperLoggerOptions): void {
+    this.winston = this.parentLogger
       ? this.parentLogger.getWinston()
-      : createPinoFromLoggerConfig(config, this.loggerType);
+      : createWinstonFromLoggerConfig(config, this.loggerType);
     this.config = config;
     this.level = config.logLevel;
     this.metadata = options?.metadata;
@@ -304,21 +306,21 @@ export class PinoWrapperLogger implements ILogger {
     const msgToLog = this.prefix ? `${this.prefix}${msg}` : msg;
     switch (level) {
       case LogLevel.DEBUG:
-        this.pino.debug(msgToLog, dataToLog);
+        this.winston.debug(msgToLog, dataToLog);
         return;
       case LogLevel.INFO:
-        this.pino.info(msgToLog, dataToLog);
+        this.winston.info(msgToLog, dataToLog);
         return;
       case LogLevel.WARN:
-        this.pino.warn(msgToLog, dataToLog);
+        this.winston.warn(msgToLog, dataToLog);
         return;
       case LogLevel.ERROR:
-        this.pino.error(msgToLog, dataToLog);
+        this.winston.error(msgToLog, dataToLog);
     }
   }
 
-  clone(override?: PinoWrapperLoggerOptions): PinoWrapperLogger {
-    return new PinoWrapperLogger(this.config, this.loggerType, {
+  clone(override?: WinstonWrapperLoggerOptions): WinstonWrapperLogger {
+    return new WinstonWrapperLogger(this.config, this.loggerType, {
       parentLogger: this.parentLogger,
       prefix: override?.prefix ?? this.prefix,
       metadata: override?.metadata ?? this.metadata,
@@ -326,7 +328,7 @@ export class PinoWrapperLogger implements ILogger {
   }
 
   getWinston(): winston.Logger {
-    return this.pino;
+    return this.winston;
   }
 }
 
