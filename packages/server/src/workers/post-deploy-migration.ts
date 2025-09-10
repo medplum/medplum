@@ -158,9 +158,10 @@ async function runDynamicMigration(
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
+  const results: MigrationActionResult[] = [];
   try {
-    const results = await withLongRunningDatabaseClient(async (client) => {
-      return executeMigrationActions(client, job.data.migrationActions);
+    await withLongRunningDatabaseClient(async (client) => {
+      await executeMigrationActions(client, results, job.data.migrationActions);
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
@@ -190,8 +191,8 @@ export async function runCustomMigration(
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
+  const results: MigrationActionResult[] = [];
   try {
-    const results: MigrationActionResult[] = [];
     await withLongRunningDatabaseClient(async (client) => {
       await callback(client, results, job, jobData);
     });
@@ -205,7 +206,8 @@ export async function runCustomMigration(
       type: jobData.type,
       dataVersion: asyncJob.dataVersion,
     });
-    await exec.failJob(repo, err);
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
+    await exec.failJob(repo, err, output);
   }
   return 'finished';
 }

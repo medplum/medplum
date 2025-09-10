@@ -173,12 +173,11 @@ describe('Post-Deploy Migration Worker', () => {
       throw new Error('Should not be called');
     });
 
-    const executeMigrationActionsSpy = jest.spyOn(migrateModule, 'executeMigrationActions').mockResolvedValue([
-      {
-        name: 'some-action',
-        durationMs: 10,
-      },
-    ]);
+    const executeMigrationActionsSpy = jest
+      .spyOn(migrateModule, 'executeMigrationActions')
+      .mockImplementation(async (_client, results) => {
+        results.push({ name: 'some-action', durationMs: 10 });
+      });
 
     const systemRepo = getSystemRepo();
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
@@ -212,7 +211,7 @@ describe('Post-Deploy Migration Worker', () => {
 
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
     expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(1);
-    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), migrationActions);
+    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), expect.any(Array), migrationActions);
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
@@ -528,14 +527,31 @@ describe('Post-Deploy Migration Worker', () => {
       requestId: '123',
       traceId: '456',
     };
-    const mockCallback = jest.fn().mockImplementation(() => {
+
+    const result = await runCustomMigration(systemRepo, undefined, jobData, async (_client, results) => {
+      results.push({ name: 'first action', durationMs: 100 });
       throw new Error('Some random error');
     });
-
-    const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
     expect(result).toBe('finished');
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
     expect(updatedJob.status).toBe('error');
+    expect(updatedJob.output).toStrictEqual({
+      resourceType: 'Parameters',
+      parameter: [
+        {
+          name: 'first action',
+          part: [{ name: 'durationMs', valueInteger: 100 }],
+        },
+        {
+          name: 'error',
+          valueString: 'Some random error',
+        },
+        {
+          name: 'stack',
+          valueString: expect.stringContaining('Error: Some random error'),
+        },
+      ],
+    });
   });
 });
