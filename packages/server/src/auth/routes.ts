@@ -5,6 +5,7 @@ import { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
+import { appleHandler, appleValidator } from './apple';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
 import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
@@ -42,6 +43,7 @@ authRouter.post('/resetpassword', resetPasswordValidator, validateRecaptcha(), a
 authRouter.post('/setpassword', setPasswordValidator, asyncWrap(setPasswordHandler));
 authRouter.post('/verifyemail', verifyEmailValidator, asyncWrap(verifyEmailHandler));
 authRouter.post('/google', googleValidator, asyncWrap(googleHandler));
+authRouter.post('/apple', appleValidator, asyncWrap(appleHandler));
 authRouter.post('/exchange', exchangeValidator, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateRequest, revokeValidator, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidator, asyncWrap(statusHandler));
