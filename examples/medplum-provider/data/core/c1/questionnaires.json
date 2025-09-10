@@ -222,8 +222,7 @@
                       "system": "http://snomed.info/sct",
                       "code": "428191000124101",
                       "display": "Documentation of current medications (procedure)"
-                    },
-                    "initialSelected": true
+                    }
                   }
                 ]
               },
@@ -276,8 +275,7 @@
                       "system": "http://snomed.info/sct",
                       "code": "428191000124101",
                       "display": "Documentation of current medications (procedure)"
-                    },
-                    "initialSelected": true
+                    }
                   }
                 ]
               },
