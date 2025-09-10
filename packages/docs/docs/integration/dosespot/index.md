@@ -6,8 +6,10 @@ This collaboration enables healthcare professionals to seamlessly place medicati
 
 - Clinician identity proofing
 - Drug-drug interactions
+- Drug-allergy interactions
 - Patient coverage benefits checks
 - Electronic Prescriptions for Controlled Substances (EPCS)
+- [Clinic favorite medications](/docs/integration/dosespot/clinic-favorite-medications) for streamlined prescribing to reduce the number of clicks required for clinicians to prescribe common medications
 
 ## DoseSpot FAQ
 
