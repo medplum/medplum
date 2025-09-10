@@ -91,7 +91,7 @@ The `X-Security-Context` header is the FHIR standard method for setting Binary s
 
 ### 2. MedplumClient.createMedia (Recommended for SDK Users)
 
-**Best Practice**: Use `MedplumClient.createMedia()` when possible, as it automatically handles security context:
+**Best Practice**: Use `MedplumClient.createMedia()` when possible, as it automatically handles security context: 
 
 ```typescript
 // Recommended - createMedia automatically sets securityContext
