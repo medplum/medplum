@@ -69,7 +69,8 @@ jobs:
           repository: ${{ env.GIT_REPO_FULL_NAME }}
       - name: Update version
         run: |
-            jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
+          cd ./packages/server
+          jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
       - name: Use Node.js - Project
         uses: actions/setup-node@v4
         with:
