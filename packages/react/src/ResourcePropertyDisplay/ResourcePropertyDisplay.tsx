@@ -30,7 +30,6 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
-import classes from './ResourcePropertyDisplay.module.css';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
@@ -211,13 +210,18 @@ interface SecretFieldDisplayProps {
 
 function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
   const [isVisible, setIsVisible] = useState(false);
+  const secretValue = props.value ?? '';
+  const hasValue = !isEmpty(secretValue);
+  const MASK = '•'.repeat(8);
 
   return (
     <Flex gap={3} align="center">
-      <div className={cx({ [classes.secure]: !isVisible })} style={{ whiteSpace: 'pre-wrap' }}>
-        {props.value}
-      </div>
-      {!isEmpty(props.value) && (
+      {isVisible ? (
+        <div style={{ whiteSpace: 'pre-wrap' }}>{secretValue}</div>
+      ) : (
+        <div style={{ whiteSpace: 'pre-wrap' }} aria-hidden="true">{hasValue ? MASK : ''}</div>
+      )}
+      {hasValue && (
         <>
           <CopyButton value={props.value} timeout={2000}>
             {({ copied, copy }) => (

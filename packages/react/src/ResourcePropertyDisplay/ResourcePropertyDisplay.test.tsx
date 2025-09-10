@@ -470,13 +470,16 @@ describe('ResourcePropertyDisplay', () => {
         />
       );
 
-      // The secret value should be present
-      const secretElement = screen.getByText('my-secret-value');
-      expect(secretElement).toBeInTheDocument();
+      // The secret value should be masked by default
+      expect(screen.queryByText('my-secret-value')).not.toBeInTheDocument();
+
+      // The masked bullets should be visible
+      const maskedElement = screen.getByText('••••••••');
+      expect(maskedElement).toBeInTheDocument();
 
       // The secret field should be rendered with the SecretFieldDisplay component
       // Check if the parent element has the Mantine Flex component classes and flex-related styles
-      const parentElement = secretElement.parentElement;
+      const parentElement = maskedElement.parentElement;
       expect(parentElement).toHaveClass('mantine-Flex-root');
       expect(parentElement).toHaveStyle({ 'align-items': 'center' });
       expect(parentElement?.style.gap).toBeTruthy();
