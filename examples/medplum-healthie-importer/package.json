@@ -4,10 +4,11 @@
   "description": "Medplum Healthie Importer",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
     "build": "npm run clean && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
-    "deploy": "ts-node scripts/deploy-importer.ts",
+    "deploy": "tsx scripts/deploy-importer.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --write .",
@@ -28,7 +29,7 @@
     "@medplum/eslint-config": "4.5.2",
     "@medplum/fhirtypes": "4.5.2",
     "@medplum/mock": "4.5.2",
-    "@types/node": "20.19.23",
+    "@types/node": "22.18.10",
     "@types/node-fetch": "2.6.13",
     "@types/ssh2-sftp-client": "9.0.5",
     "@vitest/coverage-v8": "4.0.3",
@@ -38,7 +39,7 @@
     "esbuild": "0.25.11",
     "fast-glob": "3.3.3",
     "node-fetch": "2.7.0",
-    "ts-node": "10.9.2",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vitest": "4.0.3"
   }

@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Setup git
         run: |
