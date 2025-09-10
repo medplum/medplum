@@ -131,7 +131,7 @@
     "functions": {
       "init": [
         {
-          "function": "/src",
+          "function": "src",
           "imports": "./deno.json",
           "env": "d2e-medplum-server"
         }
@@ -139,7 +139,7 @@
       "api": [
         {
           "source": "/fhir-server",
-          "function": "/src",
+          "function": "src",
           "env": "d2e-medplum-server",
           "imports": "./deno.json"
         }
