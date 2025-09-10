@@ -8,6 +8,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import {
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
@@ -56,6 +57,10 @@ describe('Post-Deploy Migration Worker', () => {
         fullVersion: getServerVersion() + '-test',
       },
     ];
+
+    // suppress error log output during testing
+    jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+
     (getRegisteredServers as jest.Mock).mockImplementation(() => mockRegisteredServers);
   });
 
@@ -473,7 +478,9 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/migrate',
     });
 
-    const mockCallback = jest.fn().mockResolvedValue([{ name: 'testAction', durationMs: 100 }]);
+    const mockCallback = jest.fn().mockImplementation(async (_client, results) => {
+      results.push({ name: 'testAction', durationMs: 100 });
+    });
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
@@ -484,7 +491,13 @@ describe('Post-Deploy Migration Worker', () => {
     const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
 
     expect(result).toBe('finished');
-    expect(mockCallback).toHaveBeenCalledWith(undefined, jobData);
+
+    expect(mockCallback).toHaveBeenCalledWith(
+      expect.objectContaining({ query: expect.any(Function), release: expect.any(Function) }),
+      expect.any(Array),
+      undefined,
+      jobData
+    );
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
     expect(updatedJob.status).toBe('completed');
