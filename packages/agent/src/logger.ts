@@ -13,8 +13,9 @@ import {
   validationError,
 } from '@medplum/core';
 import { Agent, AgentSetting } from '@medplum/fhirtypes';
-import { join, normalize } from 'path';
-import pino from 'pino';
+import { normalize } from 'path';
+import winston from 'winston';
+import 'winston-daily-rotate-file';
 
 export const LoggerType = {
   MAIN: 'main',
@@ -34,6 +35,14 @@ export const DEFAULT_FULL_LOGGER_CONFIG = {
   main: DEFAULT_LOGGER_CONFIG,
   channel: DEFAULT_LOGGER_CONFIG,
 } as const satisfies FullAgentLoggerConfig;
+
+const LEVELS_TO_UPPERCASE = {
+  debug: 'DEBUG',
+  info: 'INFO',
+  warn: 'WARN',
+  error: 'ERROR',
+} as const;
+export type ValidWinstonLogLevel = keyof typeof LEVELS_TO_UPPERCASE;
 
 let loggerConfig: FullAgentLoggerConfig = deepClone(DEFAULT_FULL_LOGGER_CONFIG);
 
@@ -181,10 +190,10 @@ export function parseLoggerConfigFromAgent(agentConfig: Agent): [FullAgentLogger
   return [config, warnings];
 }
 
-export function getPinoLevelFromMedplumLevel(level: LogLevel): pino.Level | 'silent' {
+export function getPinoLevelFromMedplumLevel(level: LogLevel): string {
   switch (level) {
+    // Return error for NONE since we are going to turn silent on anyways
     case LogLevel.NONE:
-      return 'silent';
     case LogLevel.ERROR:
       return 'error';
     case LogLevel.WARN:
@@ -198,43 +207,45 @@ export function getPinoLevelFromMedplumLevel(level: LogLevel): pino.Level | 'sil
   }
 }
 
-export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType: LoggerType): pino.Logger {
+export function createPinoFromLoggerConfig(config: AgentLoggerConfig, loggerType: LoggerType): winston.Logger {
   const level = getPinoLevelFromMedplumLevel(config.logLevel);
+
   // When testing, just use the default config - it pipes raw JSON to stdout
-  if (process.env.NODE_ENV === 'test') {
-    return pino();
+  const logger = winston.createLogger({
+    level,
+    silent: config.logLevel === LogLevel.NONE,
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      // Custom transform to match previous Medplum logger output
+      {
+        transform: (info) => {
+          const { message, level, ...otherProps } = info;
+          return { ...otherProps, level: LEVELS_TO_UPPERCASE[level as ValidWinstonLogLevel], msg: message } as any;
+        },
+      },
+      winston.format.json()
+    ),
+    transports: [new winston.transports.Console()],
+  });
+
+  if (process.env.NODE_ENV !== 'test') {
+    const dailyRotateTransport = new winston.transports.DailyRotateFile({
+      filename: `${loggerType === LoggerType.MAIN ? 'medplum-agent-main' : 'medplum-agent-channels'}-%DATE%.log`,
+      dirname: normalize(config.logDir),
+      maxSize: `${config.maxFileSizeMb}m`,
+      maxFiles: config.filesToKeep,
+    });
+
+    // Log any errors that happen
+    // This is important for debugging broken logger configurations that are not outputting logs
+    dailyRotateTransport.on('error', (err: unknown) => {
+      console.error('Error in pino transport', err);
+    });
+
+    logger.add(dailyRotateTransport);
   }
 
-  const transport = pino.transport({
-    level,
-    targets: [
-      { target: 'pino-pretty', level },
-      {
-        target: 'pino-roll',
-        options: {
-          file: normalize(
-            join(config.logDir, loggerType === LoggerType.MAIN ? 'medplum-agent-main' : 'medplum-agent-channels')
-          ),
-          extension: '.log',
-          frequency: config.logRotateFreq,
-          size: config.maxFileSizeMb,
-          limit: {
-            count: config.filesToKeep,
-          },
-          mkdir: true,
-        },
-        level,
-      },
-    ],
-  });
-
-  // Log any errors that happen
-  // This is important for debugging broken logger configurations that are not outputting logs
-  transport.on('error', (err: unknown) => {
-    console.error('Error in pino transport', err);
-  });
-
-  return pino(transport);
+  return logger;
 }
 
 export class PinoWrapperLogger implements ILogger {
@@ -243,13 +254,13 @@ export class PinoWrapperLogger implements ILogger {
   private config: AgentLoggerConfig;
   private metadata?: Record<string, any>;
   private prefix?: string;
-  private pino: pino.Logger;
+  private pino: winston.Logger;
   level: LogLevel;
 
   constructor(config: AgentLoggerConfig, loggerType: LoggerType, options?: PinoWrapperLoggerInitOptions) {
     this.loggerType = loggerType;
     this.parentLogger = options?.parentLogger;
-    this.pino = this.parentLogger ? this.parentLogger.getPino() : createPinoFromLoggerConfig(config, loggerType);
+    this.pino = this.parentLogger ? this.parentLogger.getWinston() : createPinoFromLoggerConfig(config, loggerType);
     this.config = config;
     this.level = config.logLevel;
     this.metadata = options?.metadata;
@@ -257,7 +268,9 @@ export class PinoWrapperLogger implements ILogger {
   }
 
   reloadConfig(config: AgentLoggerConfig, options?: PinoWrapperLoggerOptions): void {
-    this.pino = this.parentLogger ? this.parentLogger.getPino() : createPinoFromLoggerConfig(config, this.loggerType);
+    this.pino = this.parentLogger
+      ? this.parentLogger.getWinston()
+      : createPinoFromLoggerConfig(config, this.loggerType);
     this.config = config;
     this.level = config.logLevel;
     this.metadata = options?.metadata;
@@ -291,16 +304,16 @@ export class PinoWrapperLogger implements ILogger {
     const msgToLog = this.prefix ? `${this.prefix}${msg}` : msg;
     switch (level) {
       case LogLevel.DEBUG:
-        this.pino.debug(dataToLog, msgToLog);
+        this.pino.debug(msgToLog, dataToLog);
         return;
       case LogLevel.INFO:
-        this.pino.info(dataToLog, msgToLog);
+        this.pino.info(msgToLog, dataToLog);
         return;
       case LogLevel.WARN:
-        this.pino.warn(dataToLog, msgToLog);
+        this.pino.warn(msgToLog, dataToLog);
         return;
       case LogLevel.ERROR:
-        this.pino.error(dataToLog, msgToLog);
+        this.pino.error(msgToLog, dataToLog);
     }
   }
 
@@ -312,7 +325,7 @@ export class PinoWrapperLogger implements ILogger {
     });
   }
 
-  getPino(): pino.Logger {
+  getWinston(): winston.Logger {
     return this.pino;
   }
 }
