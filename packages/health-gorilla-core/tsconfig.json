@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "lib": ["esnext"],
-    "module": "ESNext",
+    "module": "esnext",
     "outDir": "dist/types",
     "noEmit": false,
     "emitDeclarationOnly": true,

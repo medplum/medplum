@@ -85,8 +85,13 @@ export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
   requiredBefore: string | undefined;
 } {
+  // const __filename = fileURLToPath(import.meta.url);
+  // const __dirname = dirname(__filename);
+  // const manifest = JSON.parse(
+  //   readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
+  // ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
   const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
+    readFileSync(resolve('./src/migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
   ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
   return manifest['v' + migrationNumber];
 }
