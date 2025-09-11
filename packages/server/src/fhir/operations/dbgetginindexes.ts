@@ -143,19 +143,6 @@ async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]):
   builder.append(' AND t.relname IN ');
   builder.appendParameters(tableNames, true);
 
-  /*
-"pending_head": "2",
-      "pending_tail": "2",
-      "tail_free_size": 8048,
-      "n_pending_pages": "1",
-      "n_pending_tuples": "4",
-      "n_total_pages": "2",
-      "n_entry_pages": "1",
-      "n_data_pages": "0",
-      "n_entries": "0",
-      "version": 2
-  */
-
   const results = await client.query<{
     schemaName: string;
     tableName: string;
