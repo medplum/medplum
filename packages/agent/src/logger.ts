@@ -7,10 +7,9 @@ import {
   LoggerOptions,
   LogLevel,
   LogLevelNames,
-  OperationOutcomeError,
+  normalizeErrorString,
   parseLogLevel,
   splitN,
-  validationError,
 } from '@medplum/core';
 import { normalize } from 'path';
 import winston from 'winston';
@@ -79,36 +78,63 @@ export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOpt
   parentLogger?: WinstonWrapperLogger;
 }
 
-export function validateLoggerConfig(config: AgentLoggerConfig, configPathRoot: string = 'config'): void {
-  if (!(typeof config.logDir === 'string' && config.logDir.length > 0)) {
-    throw new OperationOutcomeError(validationError(`${configPathRoot}.logDir must be a valid filepath string`));
+export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPathRoot: string = 'config'): string[] {
+  const warnings = [];
+
+  if (typeof config.logDir !== 'undefined' && !(typeof config.logDir === 'string' && config.logDir.length > 0)) {
+    warnings.push(`${configPathRoot}.logDir must be a valid filepath string`);
+    // Cleanup invalid logger config prop
+    config.logDir = undefined;
   }
   if (
+    typeof config.maxFileSizeMb !== 'undefined' &&
     !(typeof config.maxFileSizeMb === 'number' && config.maxFileSizeMb > 0 && Number.isInteger(config.maxFileSizeMb))
   ) {
-    throw new OperationOutcomeError(validationError(`${configPathRoot}.maxFileSizeMb must be a valid integer`));
+    warnings.push(`${configPathRoot}.maxFileSizeMb must be a valid integer`);
+    // Cleanup invalid logger config prop
+    config.maxFileSizeMb = undefined;
   }
-  if (!(typeof config.filesToKeep === 'number' && config.filesToKeep > 0 && Number.isInteger(config.filesToKeep))) {
-    throw new OperationOutcomeError(validationError(`${configPathRoot}.filesToKeep must be a valid integer`));
+  if (
+    typeof config.filesToKeep !== 'undefined' &&
+    !(typeof config.filesToKeep === 'number' && config.filesToKeep > 0 && Number.isInteger(config.filesToKeep))
+  ) {
+    warnings.push(`${configPathRoot}.filesToKeep must be a valid integer`);
+    // Cleanup invalid logger config prop
+    config.filesToKeep = undefined;
   }
-  if (!(typeof config.logLevel === 'number' && LogLevelNames[config.logLevel] !== undefined)) {
-    throw new OperationOutcomeError(
-      validationError(`${configPathRoot}.logLevel must be a valid log level between LogLevel.NONE and LogLevel.DEBUG`)
-    );
+  if (
+    typeof config.logLevel !== 'undefined' &&
+    !(typeof config.logLevel === 'number' && LogLevelNames[config.logLevel] !== undefined)
+  ) {
+    warnings.push(`${configPathRoot}.logLevel must be a valid log level between LogLevel.NONE and LogLevel.DEBUG`);
+    // Cleanup invalid logger config prop
+    config.logLevel = undefined;
   }
+
+  return warnings;
 }
 
-export function validateFullAgentLoggerConfig(candidate: unknown): asserts candidate is FullAgentLoggerConfig {
+export function cleanupFullLoggerConfig(candidate: unknown): string[] {
+  const warnings = [];
   const fullConfig = candidate as FullAgentLoggerConfig;
+
   for (const configType of ['main', 'channel'] as const) {
     if (!isObject(fullConfig[configType])) {
-      throw new OperationOutcomeError(validationError(`config.${configType} is not a valid object`));
+      warnings.push(`config.${configType} is not a valid object`);
+      // Cleanup invalid logger config
+      fullConfig[configType] = {} as AgentLoggerConfig;
+      continue;
     }
-    validateLoggerConfig(fullConfig[configType], `config.${configType}`);
+
+    warnings.push(...cleanupLoggerConfig(fullConfig[configType], `config.${configType}`));
   }
+
+  return warnings;
 }
 
-export function mergeLoggerConfigWithDefaults(config: PartialFullAgentLoggerConfig): void {
+export function mergeLoggerConfigWithDefaults(
+  config: PartialFullAgentLoggerConfig
+): asserts config is FullAgentLoggerConfig {
   config.main ??= DEFAULT_LOGGER_CONFIG;
   config.channel ??= DEFAULT_LOGGER_CONFIG;
   for (const configType of ['main', 'channel'] as const) {
@@ -137,25 +163,34 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConf
     const [_, configType, settingName] = splitN(propName, '.', 3) as ['logger', 'main' | 'channel', LoggerConfigKey];
 
     if (!LOGGER_CONFIG_KEYS.includes(settingName)) {
-      warnings.push(`logger.${configType}.${settingName} is not a valid setting name`);
+      warnings.push(`${propName} is not a valid setting name`);
     }
 
     // If the setting is 'logLevel', we should convert to the LogLevel enum
-    const configValue = settingName === 'logLevel' ? parseLogLevel(propVal.toString()) : propVal;
+    let configValue: string | number;
+    if (settingName === 'logLevel') {
+      try {
+        configValue = parseLogLevel(propVal.toString());
+      } catch (err) {
+        // Invalid log level
+        warnings.push(`Error while parsing ${propName}: ${normalizeErrorString(err)}`);
+        configValue = LogLevel.INFO;
+      }
+    } else {
+      configValue = propVal;
+    }
 
     if (configType === 'main') {
       config.main[settingName] = configValue as any;
     } else if (configType === 'channel') {
       config.channel[settingName] = configValue as any;
     } else {
-      throw new OperationOutcomeError(
-        validationError(`${configType} is not a valid config type, must be main or channel.`)
-      );
+      warnings.push(`${configType} is not a valid config type, must be main or channel`);
     }
   }
 
+  warnings.push(...cleanupFullLoggerConfig(config));
   mergeLoggerConfigWithDefaults(config);
-  validateFullAgentLoggerConfig(config);
 
   return [config, warnings];
 }
