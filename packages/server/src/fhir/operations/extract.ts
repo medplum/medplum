@@ -6,8 +6,10 @@ import {
   badRequest,
   CrawlerVisitor,
   crawlTypedValue,
+  evalFhirPathTyped,
   getExtension,
   InternalTypeSchema,
+  OperationOutcomeError,
   Operator,
   toTypedValue,
   TypedValue,
@@ -15,13 +17,15 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  Bundle,
+  BundleEntry,
   Extension,
   OperationDefinition,
   Questionnaire,
   QuestionnaireResponse,
-  QuestionnaireResponseItem,
   Resource,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -110,6 +114,11 @@ type ExtractParameters = {
   questionnaire?: Questionnaire;
 };
 
+const extractExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract';
+const allocIdExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId';
+const contextExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext';
+const valueExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue';
+
 export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ExtractParameters>(operation, req);
   const { repo } = getAuthenticatedContext();
@@ -151,51 +160,128 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
     templates['#' + resource.id] = resource;
   }
 
-  const extractExt = getExtension(
-    response,
-    'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract'
-  );
+  const bundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [],
+  };
 
-  if (extractExt) {
-    const templateRef = getExtension(extractExt, 'template')?.valueReference?.reference;
-    const template: Resource | undefined = templates[templateRef ?? ''];
-    if (!template) {
-      return [badRequest(`Missing template resource ${templateRef}`, 'Questionnaire.contained')];
-    }
+  const extractor = new TemplateExtractor(toTypedValue(response), templates);
+  crawlTypedValue(toTypedValue(questionnaire), extractor, { skipMissingProperties: true });
 
-    const resource = extractItem(response, extractExt, template);
-  }
-
-  const output = buildOutputParameters(operation, {});
+  const output = buildOutputParameters(operation, bundle);
   return [allOk, output];
-}
-
-function extractItem(
-  item: QuestionnaireResponse | QuestionnaireResponseItem,
-  ext: Extension,
-  template: Resource
-): Resource {
-  const visitor = new TemplateExtractor(item);
-  crawlTypedValue(toTypedValue(template), visitor);
-  // TODO
 }
 
 class TemplateExtractor implements CrawlerVisitor {
   private context: TypedValue[];
   private variables: Record<string, TypedValue>;
+  private templates: Record<string, Resource>;
 
-  constructor(item: QuestionnaireResponse | QuestionnaireResponseItem) {
-    this.context = [toTypedValue(item)];
-    this.variables = Object.create(null);
+  constructor(item: TypedValue, templates: Record<string, Resource>, variables?: Record<string, TypedValue>) {
+    this.context = [item];
+    this.variables = variables ?? Object.create(null);
+    this.templates = templates;
   }
 
-  onEnterObject?: ((path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void) | undefined;
-  onExitObject?: ((path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void) | undefined;
-  visitProperty: (
+  // onEnterObject?: ((path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void) | undefined;
+  // onExitObject?: ((path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void) | undefined;
+  visitProperty(
     parent: TypedValueWithPath,
-    key: string,
+    _key: string,
     path: string,
     propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
-    schema: InternalTypeSchema
-  ) => void;
+    _schema: InternalTypeSchema
+  ): void {
+    // Scan for extensions throughout the resource that could contain SDC annotations
+    if (Array.isArray(propertyValues[0]) && path.endsWith('.extension') && !path.endsWith('.extension.extension')) {
+      // Log extensions found in the resource
+      console.log(path, JSON.stringify(propertyValues[0], null, 2), parent);
+
+      // TODO: Ensure these are always processed in order: first context, then value
+      for (const element of propertyValues[0]) {
+        const extension = element.value as Extension;
+        switch (extension.url) {
+          case contextExtension:
+            this.processContext(extension, parent);
+            break;
+          case allocIdExtension:
+            this.variables[extension.valueString as string] = { type: 'string', value: randomUUID() };
+            break;
+          case valueExtension:
+            this.processValue(extension.valueString as string, parent);
+            break;
+          case extractExtension:
+            this.extractIntoTemplate(extension, parent);
+            break;
+        }
+      }
+    }
+  }
+
+  private processContext(extension: Extension, parent: TypedValueWithPath): void {
+    let results: TypedValue[];
+    if (extension.valueString) {
+      results = evalFhirPathTyped(extension.valueString, this.context, this.variables);
+    } else if (extension.valueExpression) {
+      if (extension.valueExpression.language !== 'text/fhirpath' || !extension.valueExpression.expression) {
+        throw new OperationOutcomeError(
+          badRequest('Questionnaire extraction context requires FHIRPath expression', parent.path + '.extension')
+        );
+      }
+      results = evalFhirPathTyped(extension.valueExpression.expression, this.context, this.variables);
+    } else {
+      throw new OperationOutcomeError(badRequest('Invalid extraction context extension', parent.path + '.extension'));
+    }
+
+    this.makeModification(results, parent);
+  }
+
+  private extractIntoTemplate(extension: Extension, parent: TypedValueWithPath): void {
+    // "Recurse" and scan the referenced template resource to populate it
+    const templateRef = getExtension(extension, 'template')?.valueReference?.reference;
+    const template: Resource | undefined = this.templates[templateRef ?? ''];
+    if (!template) {
+      throw new OperationOutcomeError(
+        badRequest(`Missing template resource ${templateRef}`, 'Questionnaire.contained')
+      );
+    }
+
+    // TODO: Need to copy variables/context to stack before recursively scanning
+    const visitor = new TemplateExtractor(parent, this.templates, this.variables);
+    crawlTypedValue(toTypedValue(template), visitor, { skipMissingProperties: true });
+
+    // TODO: Construct resource from template and add to Bundle
+    // bundle.entry?.push(createBundleEntry(resource, extension));
+  }
+
+  private processValue(expr: string, parent: TypedValueWithPath): void {
+    // Evaluate expression in context and use value to generate patch ops
+    const results = evalFhirPathTyped(expr, this.context, this.variables);
+    this.makeModification(results, parent);
+  }
+
+  private makeModification(results: TypedValue[], parent: TypedValueWithPath): void {
+    // Compute JSON patch ops to modify template resource
+    if (!results.length) {
+      // Remove element from template
+    } else {
+      for (const element of results) {
+        // Insert templated element(s) with context value
+      }
+    }
+  }
+}
+
+function createBundleEntry(resource: Resource, extension: Extension): BundleEntry {
+  const resourceId = getExtension(extension, 'resourceId')?.valueString;
+  return {
+    fullUrl: getExtension(extension, 'fullUrl')?.valueString ?? `urn:uuid:${randomUUID()}`,
+    resource,
+    request: {
+      method: resourceId ? 'PUT' : 'POST',
+      url: resourceId ? `${resource.resourceType}/${resourceId}` : resource.resourceType,
+      // TODO: Include conditional header fields
+    },
+  };
 }
