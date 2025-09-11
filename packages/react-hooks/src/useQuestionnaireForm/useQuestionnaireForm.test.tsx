@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook } from '@testing-library/react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
@@ -178,6 +178,7 @@ describe('useQuestionnaireForm', () => {
           type: 'group',
           linkId: 'test-group',
           text: 'Test Group',
+          repeats: true,
           item: [
             {
               type: 'string',
@@ -203,6 +204,78 @@ describe('useQuestionnaireForm', () => {
     const updatedState = result.current as QuestionnaireFormLoadedState;
     expect(updatedState.items).toHaveLength(1);
     expect(updatedState.questionnaireResponse.item).toHaveLength(2);
+  });
+
+  test('Repeatable groups should maintain separate answers for each group instance', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      id: 'test',
+      status: 'active',
+      item: [
+        {
+          linkId: 'group1',
+          text: 'Group 1',
+          type: 'group',
+          repeats: true,
+          item: [
+            {
+              linkId: 'question1',
+              text: 'Question 1',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }), { wrapper });
+    expect(result.current).toMatchObject({ loading: false });
+
+    const formState = result.current as QuestionnaireFormLoadedState;
+    expect(formState.items).toHaveLength(1);
+    expect(formState.questionnaireResponse.item).toHaveLength(1);
+
+    // Add a second group
+    await act(async () => {
+      formState.onAddGroup([], questionnaire.item?.[0] as QuestionnaireItem);
+    });
+
+    const updatedState = result.current as QuestionnaireFormLoadedState;
+    expect(updatedState.questionnaireResponse.item).toHaveLength(2);
+
+    // Get the two group instances
+    const responseItems = updatedState.questionnaireResponse.item;
+    expect(responseItems).toBeDefined();
+    expect(responseItems).toHaveLength(2);
+
+    const group1 = responseItems?.[0] as QuestionnaireResponseItem;
+    const group2 = responseItems?.[1] as QuestionnaireResponseItem;
+
+    // Answer question in first group
+    await act(async () => {
+      const questionItem = questionnaire.item?.[0]?.item?.[0] as QuestionnaireItem;
+      updatedState.onChangeAnswer([group1], questionItem, [{ valueString: 'Answer 1' }]);
+    });
+
+    // Answer question in second group
+    await act(async () => {
+      const questionItem = questionnaire.item?.[0]?.item?.[0] as QuestionnaireItem;
+      updatedState.onChangeAnswer([group2], questionItem, [{ valueString: 'Answer 2' }]);
+    });
+
+    const finalState = result.current as QuestionnaireFormLoadedState;
+
+    // Verify that each group has its own answer
+    const finalResponseItems = finalState.questionnaireResponse.item;
+    expect(finalResponseItems).toBeDefined();
+    expect(finalResponseItems).toHaveLength(2);
+
+    const finalGroup1Answer = finalResponseItems?.[0]?.item?.[0]?.answer;
+    const finalGroup2Answer = finalResponseItems?.[1]?.item?.[0]?.answer;
+    expect(finalGroup1Answer).toHaveLength(1);
+    expect(finalGroup2Answer).toHaveLength(1);
+    expect(finalGroup1Answer?.[0]?.valueString).toBe('Answer 1');
+    expect(finalGroup2Answer?.[0]?.valueString).toBe('Answer 2');
   });
 
   test('Repeatable answer', async () => {

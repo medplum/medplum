@@ -12,6 +12,7 @@ export interface TableDefinition {
   columns: ColumnDefinition[];
   compositePrimaryKey?: string[];
   indexes: IndexDefinition[];
+  constraints?: CheckConstraintDefinition[];
 }
 
 export interface ColumnDefinition {
@@ -40,6 +41,15 @@ export interface IndexDefinition {
   indexdef?: string;
 }
 
+export interface CheckConstraintDefinition {
+  type: 'check';
+  name: string;
+  expression: string;
+
+  // excluded from equality checks
+  valid?: boolean;
+}
+
 export type MigrationAction =
   | { type: 'CREATE_FUNCTION'; name: string; createQuery: string }
   | { type: 'CREATE_TABLE'; definition: TableDefinition }
@@ -52,6 +62,11 @@ export type MigrationAction =
   | { type: 'ALTER_COLUMN_TYPE'; tableName: string; columnName: string; columnType: string }
   | { type: 'CREATE_INDEX'; indexName: string; createIndexSql: string }
   | { type: 'DROP_INDEX'; indexName: string }
+  | { type: 'ADD_CONSTRAINT'; tableName: string; constraintName: string; constraintExpression: string }
   | { type: 'ANALYZE_TABLE'; tableName: string };
 
-export type MigrationActionResult = { name: string; durationMs: number };
+export interface MigrationActionResult {
+  name: string;
+  durationMs: number;
+  [key: string]: string | number | undefined;
+}

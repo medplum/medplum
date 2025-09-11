@@ -205,6 +205,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       agent,
       bot,
       runAs: authState.membership,
+      requester: authState.membership.profile,
       contentType: command.contentType,
       input,
       remoteAddress,

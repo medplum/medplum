@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { escapeIdentifier } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
+import { ColumnDefinition } from './types';
 
 /**
  * When writing SQL statements to a file, adds an escaped backslash, i.e. \\, before single quotes in the expression.
@@ -154,4 +155,39 @@ export function escapeUnicode(str: string): string {
 
 export function normalizeColumnType(colType: string): string {
   return colType.toLocaleUpperCase().replace('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ').trim();
+}
+
+export async function getColumns(
+  db: Client | Pool | PoolClient,
+  tableName: string
+): Promise<(ColumnDefinition & { primaryKey: boolean; notNull: boolean })[]> {
+  // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
+  const rs = await db.query(`
+    SELECT
+      attname,
+      attnotnull,
+      format_type(atttypid, atttypmod) AS data_type,
+      COALESCE((SELECT indisprimary from pg_index where indrelid = attrelid AND attnum = any(indkey) and indisprimary = true), FALSE) AS primary_key,
+      pg_get_expr(d.adbin, d.adrelid) AS default_value
+    FROM
+      pg_attribute
+      JOIN pg_class ON pg_class.oid = attrelid
+      JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
+      LEFT JOIN pg_catalog.pg_attrdef d ON (pg_attribute.attrelid, pg_attribute.attnum) = (d.adrelid, d.adnum)
+    WHERE
+      pg_namespace.nspname = 'public'
+      AND pg_class.relname = '${tableName}'
+      AND attnum > 0
+      AND NOT attisdropped
+    ORDER BY
+      attnum
+  `);
+
+  return rs.rows.map((row) => ({
+    name: row.attname,
+    type: normalizeColumnType(row.data_type.toUpperCase()),
+    primaryKey: Boolean(row.primary_key),
+    notNull: row.attnotnull,
+    defaultValue: row.default_value,
+  }));
 }
