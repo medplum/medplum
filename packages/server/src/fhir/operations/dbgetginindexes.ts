@@ -90,7 +90,6 @@ export async function dbGinIndexesHandler(req: FhirRequest): Promise<FhirRespons
   let index: GinIndexInfo[] | undefined;
   if (tableNames.length > 0) {
     index = await getGinIndexInfo(client, tableNames);
-    console.log(JSON.stringify(index[0], null, 2));
   }
   const output: { defaultGinPendingListLimit: number; index?: GinIndexInfo[] } = {
     defaultGinPendingListLimit,
