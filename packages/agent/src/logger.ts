@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ILogger,
+  ILoggerConfig,
   isObject,
   LoggerOptions,
   LogLevel,
@@ -278,10 +279,10 @@ export class WinstonWrapperLogger implements ILogger {
     }
   }
 
-  clone(override?: WinstonWrapperLoggerOptions): WinstonWrapperLogger {
+  clone(override?: Partial<ILoggerConfig>): WinstonWrapperLogger {
     return new WinstonWrapperLogger(this.config, this.loggerType, {
       parentLogger: this.parentLogger,
-      prefix: override?.prefix ?? this.prefix,
+      prefix: override?.options?.prefix ?? this.prefix,
       metadata: override?.metadata ?? this.metadata,
     });
   }

@@ -24,8 +24,8 @@ export class AgentHl7Channel extends BaseChannel {
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
     this.prefix = `[HL7:${definition.name}] `;
-    this.log = app.log.clone({ prefix: this.prefix });
-    this.channelLog = app.channelLog.clone({ prefix: this.prefix });
+    this.log = app.log.clone({ options: { prefix: this.prefix } });
+    this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
   }
 
   start(): void {

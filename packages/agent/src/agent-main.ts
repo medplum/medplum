@@ -65,7 +65,7 @@ export async function agentMain(argv: string[]): Promise<App> {
   // Parse logger config before handing it to the app
   const [fullConfig, warnings] = parseLoggerConfigFromArgs(args);
 
-  // Create main logger first
+  // Create loggers based on parsed config
   const mainLogger = new WinstonWrapperLogger(fullConfig[LoggerType.MAIN], LoggerType.MAIN);
   const channelLogger = new WinstonWrapperLogger(fullConfig[LoggerType.CHANNEL], LoggerType.CHANNEL);
 
