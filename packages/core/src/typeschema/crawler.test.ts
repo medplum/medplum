@@ -652,7 +652,7 @@ describe('ResourceCrawler', () => {
           ],
         },
       ],
-    };
+    } as unknown as Questionnaire;
 
     crawlTypedValue(
       toTypedValue(questionnaire.contained?.[0]),
