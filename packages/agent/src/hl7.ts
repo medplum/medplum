@@ -1,20 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, Hl7Message, ILogger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
-import { getLoggerConfig, LoggerType, WinstonWrapperLogger } from './logger';
 import { getCurrentStats, updateStat } from './stats';
 
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
-  readonly log: WinstonWrapperLogger;
-  readonly channelLog: WinstonWrapperLogger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -69,11 +68,6 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    this.log.info('Reloading logger config...');
-    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN], { prefix: this.prefix });
-    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL], { prefix: this.prefix });
-    this.log.info('Logger config reloaded');
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();

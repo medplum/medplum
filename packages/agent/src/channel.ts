@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse } from '@medplum/core';
+import { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { App } from './app';
-import { WinstonWrapperLogger } from './logger';
 
 export interface Channel {
-  readonly log: WinstonWrapperLogger;
-  readonly channelLog: WinstonWrapperLogger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   start(): void;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
@@ -27,8 +26,8 @@ export abstract class BaseChannel implements Channel {
     this.endpoint = endpoint;
   }
 
-  abstract readonly log: WinstonWrapperLogger;
-  abstract readonly channelLog: WinstonWrapperLogger;
+  abstract readonly log: ILogger;
+  abstract readonly channelLog: ILogger;
   abstract start(): void;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;

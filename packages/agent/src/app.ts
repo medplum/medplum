@@ -10,7 +10,9 @@ import {
   AgentUpgradeResponse,
   ContentType,
   Hl7Message,
+  ILogger,
   LogLevel,
+  Logger,
   MEDPLUM_VERSION,
   MedplumClient,
   ReconnectingWebSocket,
@@ -33,14 +35,6 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import {
-  LoggerType,
-  WinstonWrapperLogger,
-  createLogger,
-  getLoggerConfig,
-  parseLoggerConfigFromAgent,
-  setLoggerConfig,
-} from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -61,13 +55,17 @@ async function execAsync(
   });
 }
 
+export interface AppOptions {
+  mainLogger?: ILogger;
+  channelLogger?: ILogger;
+}
+
 export class App {
   static instance: App;
   readonly medplum: MedplumClient;
   readonly agentId: string;
-  readonly logLevel: LogLevel;
-  readonly log: WinstonWrapperLogger;
-  readonly channelLog: WinstonWrapperLogger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -84,13 +82,12 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
 
-  constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
+  constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
     this.medplum = medplum;
     this.agentId = agentId;
-    this.logLevel = logLevel;
-    this.log = createLogger(LoggerType.MAIN);
-    this.channelLog = createLogger(LoggerType.CHANNEL);
+    this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 
   async start(): Promise<void> {
@@ -333,22 +330,6 @@ export class App {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
-
-    // Hydrate global logger config
-    try {
-      const [config, warnings] = parseLoggerConfigFromAgent(agent);
-      for (const warning of warnings) {
-        this.log.warn(warning);
-      }
-      setLoggerConfig(config);
-    } catch (err: unknown) {
-      this.log.error('Error while rehydrating logger config', err as Error);
-    }
-
-    // Reload each logger on the app
-    // Channel-scoped logger clones will be reloaded by their respective channel
-    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN]);
-    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL]);
 
     // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {

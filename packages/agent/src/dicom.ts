@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
+import {
+  AgentTransmitResponse,
+  ContentType,
+  createReference,
+  ILogger,
+  normalizeErrorString,
+  sleep,
+} from '@medplum/core';
 import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
@@ -11,14 +18,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
 import { BaseChannel } from './channel';
-import { getLoggerConfig, LoggerType, WinstonWrapperLogger } from './logger';
 
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: WinstonWrapperLogger;
-  readonly channelLog: WinstonWrapperLogger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -162,11 +168,6 @@ export class AgentDicomChannel extends BaseChannel {
     this.prefix = `[DICOM:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    this.log.info('Reloading logger config...');
-    this.log.reloadConfig(getLoggerConfig()[LoggerType.MAIN], { prefix: this.prefix });
-    this.channelLog.reloadConfig(getLoggerConfig()[LoggerType.CHANNEL], { prefix: this.prefix });
-    this.log.info('Logger config reloaded');
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();

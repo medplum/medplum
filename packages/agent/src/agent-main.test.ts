@@ -88,7 +88,7 @@ describe('Main', () => {
         ].join('\n')
       );
     const app = await agentMain(['node', 'index.js']);
-    expect(app.logLevel).toStrictEqual(LogLevel.DEBUG);
+    expect(app.log.level).toStrictEqual(LogLevel.DEBUG);
     await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });

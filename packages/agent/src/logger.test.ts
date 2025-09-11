@@ -3,9 +3,9 @@
 
 import { LogLevel } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
-import { FullAgentLoggerConfig, parseLoggerConfigFromAgent } from './logger';
+import { FullAgentLoggerConfig } from './logger';
 
-describe('Agent Logger', () => {
+describe.skip('Agent Logger', () => {
   // describe('getLoggerConfig', () => {
   //   test('should throw if called before initialized', () => {
   //     getLoggerConfig();

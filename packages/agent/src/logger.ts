@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  deepClone,
   ILogger,
   isObject,
   LoggerOptions,
@@ -12,10 +11,10 @@ import {
   splitN,
   validationError,
 } from '@medplum/core';
-import { Agent, AgentSetting } from '@medplum/fhirtypes';
 import { normalize } from 'path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
+import { AgentArgs } from './types';
 
 export const LoggerType = {
   MAIN: 'main',
@@ -30,6 +29,9 @@ export const DEFAULT_LOGGER_CONFIG = {
   logLevel: LogLevel.INFO,
 } as const satisfies AgentLoggerConfig;
 
+export const LOGGER_CONFIG_INTEGER_KEYS = ['maxFileSizeMb', 'filesToKeep'] as const;
+export type LoggerConfigIntegerKey = (typeof LOGGER_CONFIG_INTEGER_KEYS)[number];
+
 export const DEFAULT_FULL_LOGGER_CONFIG = {
   main: DEFAULT_LOGGER_CONFIG,
   channel: DEFAULT_LOGGER_CONFIG,
@@ -42,12 +44,6 @@ const LEVELS_TO_UPPERCASE = {
   error: 'ERROR',
 } as const;
 export type ValidWinstonLogLevel = keyof typeof LEVELS_TO_UPPERCASE;
-
-let loggerConfig: FullAgentLoggerConfig = deepClone(DEFAULT_FULL_LOGGER_CONFIG);
-
-export function createLogger(loggerType: LoggerType, options?: WinstonWrapperLoggerOptions): WinstonWrapperLogger {
-  return new WinstonWrapperLogger(getLoggerConfig()[loggerType], loggerType, options);
-}
 
 export const LOGGER_CONFIG_KEYS = [
   'logDir',
@@ -80,18 +76,6 @@ export interface WinstonWrapperLoggerOptions extends LoggerOptions {
 
 export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOptions {
   parentLogger?: WinstonWrapperLogger;
-}
-
-export function setLoggerConfig(fullConfig: FullAgentLoggerConfig): void {
-  validateFullAgentLoggerConfig(fullConfig);
-  loggerConfig = fullConfig;
-}
-
-export function getLoggerConfig(): FullAgentLoggerConfig {
-  if (!loggerConfig) {
-    throw new Error('Tried to get logger config before initialized');
-  }
-  return loggerConfig;
 }
 
 export function validateLoggerConfig(config: AgentLoggerConfig, configPathRoot: string = 'config'): void {
@@ -136,31 +120,27 @@ export function mergeLoggerConfigWithDefaults(config: PartialFullAgentLoggerConf
   }
 }
 
-export function parseLoggerConfigFromAgent(agentConfig: Agent): [FullAgentLoggerConfig, string[]] {
+export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConfig, string[]] {
   const config: { main: Partial<AgentLoggerConfig>; channel: Partial<AgentLoggerConfig> } = {
     main: {},
     channel: {},
   } as const;
   const warnings = [] as string[];
 
-  for (const setting of agentConfig.setting ?? []) {
-    if (!setting.name.startsWith('logger.')) {
+  for (const [propName, propVal] of Object.entries(args)) {
+    // Skip args not pertaining to the logger, or that do not have defined values
+    if (!propName.startsWith('logger.') || propVal === undefined) {
       continue;
     }
     // 'logger', [prefix], [name]
-    const [_, configType, settingName] = splitN(setting.name, '.', 3) as [
-      'logger',
-      'main' | 'channel',
-      LoggerConfigKey,
-    ];
+    const [_, configType, settingName] = splitN(propName, '.', 3) as ['logger', 'main' | 'channel', LoggerConfigKey];
 
     if (!LOGGER_CONFIG_KEYS.includes(settingName)) {
       warnings.push(`logger.${configType}.${settingName} is not a valid setting name`);
     }
 
-    const settingValue = extractValueFromSetting(setting);
     // If the setting is 'logLevel', we should convert to the LogLevel enum
-    const configValue = settingName === 'logLevel' ? parseLogLevel(settingValue.toString()) : settingValue;
+    const configValue = settingName === 'logLevel' ? parseLogLevel(propVal.toString()) : propVal;
 
     if (configType === 'main') {
       config.main[settingName] = configValue as any;
@@ -258,16 +238,6 @@ export class WinstonWrapperLogger implements ILogger {
     this.prefix = options?.prefix;
   }
 
-  reloadConfig(config: AgentLoggerConfig, options?: WinstonWrapperLoggerOptions): void {
-    this.winston = this.parentLogger
-      ? this.parentLogger.getWinston()
-      : createWinstonFromLoggerConfig(config, this.loggerType);
-    this.config = config;
-    this.level = config.logLevel;
-    this.metadata = options?.metadata;
-    this.prefix = options?.prefix;
-  }
-
   debug(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.DEBUG, msg, data);
   }
@@ -319,18 +289,4 @@ export class WinstonWrapperLogger implements ILogger {
   getWinston(): winston.Logger {
     return this.winston;
   }
-}
-
-function extractValueFromSetting<T extends string | boolean | number>(setting: AgentSetting): T {
-  let value: string | boolean | number | undefined;
-  for (const key of Object.keys(setting) as (keyof AgentSetting)[]) {
-    if (!key.startsWith('value')) {
-      continue;
-    }
-    if (value !== undefined) {
-      throw new Error('Agent setting contains multiple value types');
-    }
-    value = setting[key] as T;
-  }
-  return value as T;
 }
