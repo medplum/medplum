@@ -9,6 +9,7 @@ import {
   encodeBase64,
   getReferenceString,
   isOk,
+  normalizeErrorString,
   notFound,
   OperationOutcomeError,
   Operator,
@@ -43,7 +44,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
@@ -165,35 +166,71 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Read history', () =>
-    withTestContext(async () => {
-      const version1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: {
-          lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
-        },
-      });
-      expect(version1).toBeDefined();
-      expect(version1.id).toBeDefined();
+  describe('Read history', () => {
+    const versions: Record<string, WithId<Patient>> = {};
 
-      const version2 = await systemRepo.updateResource<Patient>({
-        resourceType: 'Patient',
-        id: version1.id,
-        active: true,
-        meta: {
-          lastUpdated: new Date().toISOString(),
-        },
-      });
-      expect(version2).toBeDefined();
-      expect(version2.id).toStrictEqual(version1.id);
-      expect(version2.meta?.versionId).not.toStrictEqual(version1.meta?.versionId);
+    beforeAll(async () =>
+      withTestContext(async () => {
+        systemRepo ??= getSystemRepo();
 
-      const history = await systemRepo.readHistory('Patient', version1.id);
-      expect(history).toBeDefined();
-      expect(history.entry?.length).toBe(2);
-      expect(history.entry?.[0]?.resource?.id).toBe(version2.id);
-      expect(history.entry?.[1]?.resource?.id).toBe(version1.id);
-    }));
+        versions.v1 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
+          },
+        });
+        expect(versions.v1.id).toBeDefined();
+
+        versions.v2 = await systemRepo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: versions.v1.id,
+          active: true,
+          meta: {
+            lastUpdated: new Date().toISOString(),
+          },
+        });
+
+        expect(versions.v2.id).toStrictEqual(versions.v1.id);
+        expect(versions.v2.meta?.versionId).not.toStrictEqual(versions.v1.meta?.versionId);
+      })
+    );
+
+    test.each([
+      ['no options', {}, ['v2', 'v1']],
+      ['limit', { limit: 1 }, ['v2']],
+      ['offset', { offset: 1 }, ['v1']],
+      ['limit and offset', { limit: 1, offset: 1 }, ['v1']],
+      ['negative offset', { offset: -1 }, ['v2', 'v1']],
+      ['large offset', { offset: 10000 }, []],
+      ['negative limit', { limit: -1 }, ['v2', 'v1']],
+      ['large limit', { limit: 100000 }, ['v2', 'v1']],
+    ])('options: %s', async (_, options, expected) => {
+      const history = await systemRepo.readHistory('Patient', versions.v1.id, options);
+      if (expected.length === 0) {
+        expect(history).toBeDefined();
+        expect(history.entry?.length).toBe(0);
+      } else {
+        expect(history).toBeDefined();
+        expect(history.entry?.length).toBe(expected.length);
+        for (let i = 0; i < expected.length; i++) {
+          expect(history.entry?.[i]?.resource?.id).toBe(versions[expected[i]].id);
+        }
+      }
+    });
+
+    test('with config.maxSearchOffset', async () => {
+      const prevMax = getConfig().maxSearchOffset;
+      getConfig().maxSearchOffset = 200;
+      try {
+        await systemRepo.readHistory('Patient', versions.v1.id, { offset: 300 });
+        throw new Error('Expected to throw');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toStrictEqual('Search offset exceeds maximum (got 300, max 200)');
+      } finally {
+        getConfig().maxSearchOffset = prevMax;
+      }
+    });
+  });
 
   test('Update patient', () =>
     withTestContext(async () => {

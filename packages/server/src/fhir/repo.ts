@@ -115,6 +115,7 @@ import { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
+import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -557,6 +558,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
 
+      if (options?.offset !== undefined) {
+        const maxOffset = getConfig().maxSearchOffset;
+        if (maxOffset !== undefined && options.offset > maxOffset) {
+          throw new OperationOutcomeError(
+            badRequest(`Search offset exceeds maximum (got ${options.offset}, max ${maxOffset})`)
+          );
+        }
+      }
+
       const rows = await new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
@@ -564,8 +574,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         .column('lastUpdated')
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
-        .limit(Math.min(options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
-        .offset(options?.offset ?? 0)
+        .limit(clamp(0, options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
+        .offset(Math.max(0, options?.offset ?? 0))
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const countRows = await new SelectQuery(resourceType + '_History')
