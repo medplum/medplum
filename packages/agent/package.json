@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "4.3.12",
+  "version": "4.3.13",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -25,16 +25,16 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.3.12",
-    "@medplum/hl7": "4.3.12",
+    "@medplum/core": "4.3.13",
+    "@medplum/hl7": "4.3.13",
     "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.7.0",
     "semver": "7.7.2",
     "ws": "8.18.3"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.3.12",
-    "@medplum/mock": "4.3.12",
+    "@medplum/fhirtypes": "4.3.13",
+    "@medplum/mock": "4.3.13",
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",

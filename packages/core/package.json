@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "4.3.12",
+  "version": "4.3.13",
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
@@ -57,8 +57,8 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "4.3.12",
-    "@medplum/fhirtypes": "4.3.12",
+    "@medplum/definitions": "4.3.13",
+    "@medplum/fhirtypes": "4.3.13",
     "jest-websocket-mock": "2.5.0"
   },
   "peerDependencies": {
