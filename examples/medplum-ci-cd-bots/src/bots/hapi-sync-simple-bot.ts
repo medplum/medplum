@@ -1,6 +1,6 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
+import { makeConditionalFhirRequest, makeExternalRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
 
 /**
  * HAPI FHIR Server Sync Bot (Simple Version)
@@ -16,7 +16,7 @@ import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../s
  */
 
 /** Base URL for the HAPI FHIR server */
-const HAPI_SERVER = 'http://hapi-server:8080';
+const HAPI_SERVER = 'https://hapi.fhir.org/baseR4';
 
 /**
  * Synchronizes a patient resource to the HAPI FHIR server
@@ -44,14 +44,24 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
       ],
     };
 
-    // Send patient record to HAPI FHIR server using conditional operation
-    await makeConditionalFhirRequest(
-      HAPI_SERVER,
-      'Patient',
-      `https://medplum.com/patient-id|${patient.id}`,
-      verb,
-      patientForHapi
-    );
+    // Send patient record to HAPI FHIR server
+    if (patient.id) {
+      // Use conditional operation for existing patients
+      await makeConditionalFhirRequest(
+        HAPI_SERVER,
+        'Patient',
+        `https://medplum.com/patient-id|${patient.id}`,
+        verb,
+        patientForHapi
+      );
+    } else {
+      // For new patients without ID, use POST to create
+      await makeExternalRequest(
+        `${HAPI_SERVER}/Patient`,
+        HTTP_VERBS.POST,
+        patientForHapi
+      );
+    }
 
     logExternalRequest(`HAPI sync ${verb}`, patient.id || 'unknown', true);
 
@@ -98,4 +108,8 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
     // Create or update a copy of the patient record
     await syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
+  
+  return patient;
 }
+
+// CommonJS export for Medplum bots

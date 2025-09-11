@@ -15,7 +15,7 @@
  * @version 1.0.0
  */
 
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, PatchOperation } from '@medplum/core';
 import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
@@ -32,7 +32,6 @@ function saveConfig(): void {
 interface SubscriptionConfig {
   botName: string;
   resourceType: string;
-  criteria: string;
   description: string;
 }
 
@@ -92,11 +91,13 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           code: botSource,
           runtimeVersion: 'awslambda',
           identifier: [
-            {
-              system: 'https://medplum.com/bots',
-              value: 'ci-cd-bot',
-            },
-          ],
+              {
+                system: 'https://medplum.com/bots',
+                value: bot.name,
+              },
+            ],
+          runAsUser: true,
+          system: true,
         });
       } else {
         // Create new bot
@@ -108,19 +109,39 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           code: botSource,
           runtimeVersion: 'awslambda',
           identifier: [
-            {
-              system: 'https://medplum.com/bots',
-              value: 'ci-cd-bot',
-            },
-          ],
+              {
+                system: 'https://medplum.com/bots',
+                value: bot.name,
+              },
+            ],
+          runAsUser: true,
+          system: true,
         });
 
         // Update the config with the new bot ID
         bot.id = botResource.id || '';
-
-        // Save the updated config to persist the bot ID
         saveConfig();
       }
+
+
+      const baseFilename = `${bot.name}.js`;
+      const executableCode = await medplum.createAttachment({
+        data: readFileSync(`dist/bots/${baseFilename}`, 'utf8'),
+        contentType: 'text/javascript',
+        filename: baseFilename,
+      });
+
+      console.log('hey guys');
+      const operations: PatchOperation[] = [
+        {
+          op: 'add',
+          path: '/executableCode',
+          value: executableCode,
+        },
+      ];
+      await medplum.patchResource('Bot', bot.id, operations);
+
+      await medplum.post(medplum.fhirUrl('Bot', bot.id,'$deploy').toString(), {});
 
       results.push({
         botName: bot.name,
@@ -157,14 +178,13 @@ async function createSubscription(
   botName: string,
   botId: string,
   resourceType: string,
-  criteria: string
 ): Promise<any> {
   try {
     const subscription = await medplum.createResource({
       resourceType: 'Subscription',
       status: 'active',
       reason: `CI/CD Bot: ${botName}`,
-      criteria: `${resourceType}?${criteria}`,
+      criteria: `${resourceType}`,
       channel: {
         type: 'rest-hook',
         endpoint: `Bot/${botId}`,
@@ -196,13 +216,11 @@ async function createAllSubscriptions(
     {
       botName: 'hapi-sync-bot',
       resourceType: 'Patient',
-      criteria: '_lastUpdated=gt2023-01-01',
       description: 'Syncs patient data to HAPI server and returns enriched resource',
     },
     {
       botName: 'hapi-sync-simple-bot',
       resourceType: 'Patient',
-      criteria: '_lastUpdated=gt2023-01-01',
       description: 'Syncs patient data to HAPI server (simple version)',
     },
   ];
@@ -234,7 +252,6 @@ async function createAllSubscriptions(
         subscription.botName,
         deployedBot.botId!,
         subscription.resourceType,
-        subscription.criteria
       );
 
       results.push({
@@ -263,6 +280,19 @@ async function createAllSubscriptions(
  */
 async function main(): Promise<void> {
   const deployOnly = process.argv.includes('--deploy-only');
+
+  // Check required environment variables
+  const requiredEnvVars = ['MEDPLUM_CLIENT_ID', 'MEDPLUM_CLIENT_SECRET'];
+  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+  if (missingEnvVars.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingEnvVars.forEach(envVar => {
+      console.error(`   - ${envVar}`);
+    });
+    console.error('\nPlease set these environment variables before running the script.');
+    process.exit(1);
+  }
 
   try {
     if (deployOnly) {

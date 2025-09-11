@@ -14,6 +14,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 
 /** HTTP methods used for external API operations */
 export enum HTTP_VERBS {
+  'POST', // Create new resource
   'PUT', // Create or update resource
   'DELETE', // Delete resource
 }
@@ -35,6 +36,7 @@ export async function makeExternalRequest(
   headers: Record<string, string> = {}
 ): Promise<any> {
   try {
+    console.log(`Making ${HTTP_VERBS[method]} request to: ${url}`);
     const response = await fetch(url, {
       method: HTTP_VERBS[method],
       headers: {
@@ -46,12 +48,21 @@ export async function makeExternalRequest(
     });
 
     if (!response.ok) {
-      // If the request failed, parse the response body for error details
-      let errorBody;
+      // If the request failed, try to parse the response body for error details
+      let errorBody = '';
       try {
-        errorBody = await response.json();
+        // Clone the response to avoid consuming the body
+        const responseClone = response.clone();
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType?.includes('application/json')) {
+          errorBody = JSON.stringify(await responseClone.json());
+        } else {
+          errorBody = await responseClone.text();
+        }
       } catch {
-        errorBody = await response.text();
+        // If we can't parse the error body, just use the status text
+        errorBody = response.statusText;
       }
 
       // Create an OperationOutcome with the HTTP error details
@@ -123,7 +134,9 @@ export async function makeConditionalFhirRequest(
   method: HTTP_VERBS,
   body?: any
 ): Promise<any> {
-  const url = `${baseUrl}/fhir/${resourceType}?identifier=${identifier}`;
+  // Ensure baseUrl doesn't end with / and construct the proper FHIR endpoint
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  const url = `${cleanBaseUrl}/${resourceType}?identifier=${identifier}`;
   return makeExternalRequest(url, method, body);
 }
 

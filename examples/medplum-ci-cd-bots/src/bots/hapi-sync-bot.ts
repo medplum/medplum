@@ -1,6 +1,6 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient, Identifier } from '@medplum/fhirtypes';
-import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
+import { makeConditionalFhirRequest, makeExternalRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
 
 /**
  * HAPI FHIR Server Sync Bot with External EHR Integration
@@ -21,7 +21,7 @@ import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../s
  */
 
 /** Base URL for the HAPI FHIR server */
-const HAPI_SERVER = 'http://hapi-server:8080';
+const HAPI_SERVER = 'https://hapi.fhir.org/baseR4';
 
 /**
  * Synchronizes a patient resource to the HAPI FHIR server
@@ -50,19 +50,30 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Pat
       ],
     };
 
-    // Send patient record to HAPI FHIR server using conditional operation
-    const responseData = await makeConditionalFhirRequest(
-      HAPI_SERVER,
-      'Patient',
-      `https://medplum.com/patient-id|${patient.id}`,
-      verb,
-      patientForHapi
-    );
+    // Send patient record to HAPI FHIR server
+    let responseData;
+    if (patient.id) {
+      // Use conditional operation for existing patients
+      responseData = await makeConditionalFhirRequest(
+        HAPI_SERVER,
+        'Patient',
+        `https://medplum.com/patient-id|${patient.id}`,
+        verb,
+        patientForHapi
+      );
+    } else {
+      // For new patients without ID, use POST to create
+      responseData = await makeExternalRequest(
+        `${HAPI_SERVER}/Patient`,
+        HTTP_VERBS.POST,
+        patientForHapi
+      );
+    }
 
     const hapiPatientId = responseData.id;
 
-    // For PUT operations, enrich the patient with HAPI server ID
-    if (hapiPatientId && verb === HTTP_VERBS['PUT']) {
+    // For PUT/POST operations, enrich the patient with HAPI server ID
+    if (hapiPatientId && (verb === HTTP_VERBS['PUT'] || verb === HTTP_VERBS['POST'])) {
       const updatedIdentifiers = [...(patient.identifier || [])];
 
       // Check if HAPI identifier already exists to avoid duplicates
@@ -150,3 +161,5 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
     return syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
 }
+
+// CommonJS export for Medplum bots

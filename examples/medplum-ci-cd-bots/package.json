@@ -9,8 +9,8 @@
     "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
-    "setup:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts",
-    "deploy:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts --deploy-only"
+    "setup:bots": "npm run build && node --import tsx scripts/setup-bots-and-subscriptions.ts",
+    "deploy:bots": "npm run build && node --import tsx scripts/setup-bots-and-subscriptions.ts --deploy-only"
   },
   "prettier": {
     "printWidth": 120,
@@ -38,6 +38,7 @@
     "@vitest/ui": "3.2.4",
     "esbuild": "0.25.8",
     "rimraf": "6.0.1",
+    "tsx": "^4.7.0",
     "typescript": "5.8.3",
     "vitest": "3.2.4"
   },
