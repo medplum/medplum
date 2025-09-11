@@ -91,11 +91,11 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           code: botSource,
           runtimeVersion: 'awslambda',
           identifier: [
-              {
-                system: 'https://medplum.com/bots',
-                value: bot.name,
-              },
-            ],
+            {
+              system: 'https://medplum.com/bots',
+              value: bot.name,
+            },
+          ],
           runAsUser: true,
           system: true,
         });
@@ -109,11 +109,11 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           code: botSource,
           runtimeVersion: 'awslambda',
           identifier: [
-              {
-                system: 'https://medplum.com/bots',
-                value: bot.name,
-              },
-            ],
+            {
+              system: 'https://medplum.com/bots',
+              value: bot.name,
+            },
+          ],
           runAsUser: true,
           system: true,
         });
@@ -122,7 +122,6 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
         bot.id = botResource.id || '';
         saveConfig();
       }
-
 
       const baseFilename = `${bot.name}.js`;
       const executableCode = await medplum.createAttachment({
@@ -141,7 +140,7 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
       ];
       await medplum.patchResource('Bot', bot.id, operations);
 
-      await medplum.post(medplum.fhirUrl('Bot', bot.id,'$deploy').toString(), {});
+      await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy').toString(), {});
 
       results.push({
         botName: bot.name,
@@ -177,7 +176,7 @@ async function createSubscription(
   medplum: MedplumClient,
   botName: string,
   botId: string,
-  resourceType: string,
+  resourceType: string
 ): Promise<any> {
   try {
     const subscription = await medplum.createResource({
@@ -251,7 +250,7 @@ async function createAllSubscriptions(
         medplum,
         subscription.botName,
         deployedBot.botId!,
-        subscription.resourceType,
+        subscription.resourceType
       );
 
       results.push({
@@ -283,11 +282,11 @@ async function main(): Promise<void> {
 
   // Check required environment variables
   const requiredEnvVars = ['MEDPLUM_CLIENT_ID', 'MEDPLUM_CLIENT_SECRET'];
-  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
   if (missingEnvVars.length > 0) {
     console.error('❌ Missing required environment variables:');
-    missingEnvVars.forEach(envVar => {
+    missingEnvVars.forEach((envVar) => {
       console.error(`   - ${envVar}`);
     });
     console.error('\nPlease set these environment variables before running the script.');

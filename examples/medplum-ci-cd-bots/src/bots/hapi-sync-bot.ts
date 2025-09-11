@@ -1,6 +1,11 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient, Identifier } from '@medplum/fhirtypes';
-import { makeConditionalFhirRequest, makeExternalRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
+import {
+  makeConditionalFhirRequest,
+  makeExternalRequest,
+  HTTP_VERBS,
+  logExternalRequest,
+} from '../shared/http-helpers';
 
 /**
  * HAPI FHIR Server Sync Bot with External EHR Integration
@@ -63,11 +68,7 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Pat
       );
     } else {
       // For new patients without ID, use POST to create
-      responseData = await makeExternalRequest(
-        `${HAPI_SERVER}/Patient`,
-        HTTP_VERBS.POST,
-        patientForHapi
-      );
+      responseData = await makeExternalRequest(`${HAPI_SERVER}/Patient`, HTTP_VERBS.POST, patientForHapi);
     }
 
     const hapiPatientId = responseData.id;

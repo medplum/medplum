@@ -54,7 +54,7 @@ export async function makeExternalRequest(
         // Clone the response to avoid consuming the body
         const responseClone = response.clone();
         const contentType = response.headers.get('content-type');
-        
+
         if (contentType?.includes('application/json')) {
           errorBody = JSON.stringify(await responseClone.json());
         } else {

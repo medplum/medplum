@@ -24,7 +24,7 @@ async function buildBots() {
         // This footer ensures proper CommonJS exports
         footer: { js: 'Object.assign(exports, module.exports);' },
       });
-      
+
       console.log(`✅ Built ${bot.name} -> ${bot.dist}`);
     } catch (error) {
       console.error(`❌ Failed to build ${bot.name}:`, error);
