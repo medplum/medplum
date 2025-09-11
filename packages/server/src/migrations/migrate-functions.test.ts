@@ -66,7 +66,7 @@ describe('migrate-functions', () => {
   beforeEach(async () => {
     // Create a test table
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
-    await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER, name TEXT)`);
+    await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER NOT NULL, name TEXT)`);
   });
 
   describe('idempotentCreateIndex', () => {
@@ -154,7 +154,7 @@ describe('migrate-functions', () => {
   });
 
   describe('nonBlockingAlterColumnNotNull', () => {
-    test('should throw if there are NULL values', async () => {
+    test('throws if there are NULL values', async () => {
       const columnName = 'name';
 
       const results: MigrationActionResult[] = [];
@@ -178,6 +178,44 @@ describe('migrate-functions', () => {
         /violates not-null constraint/
       );
     });
+
+    test('happy path', async () => {
+      const results: MigrationActionResult[] = [];
+      await nonBlockingAlterColumnNotNull(client, results, tableName, 'name');
+      expect(results).toStrictEqual([
+        {
+          durationMs: expect.any(Number),
+          name: 'SELECT COUNT(*) FROM "Test_Table" WHERE "name" IS NULL',
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" ADD CONSTRAINT "Test_Table_name_not_null" CHECK ("name" IS NOT NULL) NOT VALID',
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "Test_Table_name_not_null"',
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" ALTER COLUMN "name" SET NOT NULL',
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" DROP CONSTRAINT "Test_Table_name_not_null"',
+        },
+      ]);
+
+      // idempotent
+      const idempotentResults: MigrationActionResult[] = [];
+      await nonBlockingAlterColumnNotNull(client, idempotentResults, tableName, 'name');
+      expect(idempotentResults).toStrictEqual([]);
+    });
+
+    test('noop if column is already NOT NULL', async () => {
+      const results: MigrationActionResult[] = [];
+      await nonBlockingAlterColumnNotNull(client, results, tableName, 'id');
+      expect(results).toStrictEqual([]);
+    });
   });
 
   describe('nonBlockingAddConstraint', () => {
@@ -186,39 +224,41 @@ describe('migrate-functions', () => {
 
       await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
 
-      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+      const constraintName = 'Table_Name_reserved_id_check';
+
+      await nonBlockingAddCheckConstraint(client, results, tableName, constraintName, `id <> 5`);
 
       const expectedResults = [
         {
-          name: `ALTER TABLE ${escapedTableName} ADD CONSTRAINT "reserved_id_check" CHECK (id <> 5) NOT VALID`,
+          name: `ALTER TABLE ${escapedTableName} ADD CONSTRAINT "${constraintName}" CHECK (id <> 5) NOT VALID`,
           durationMs: expect.any(Number),
         },
         {
           durationMs: expect.any(Number),
-          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+          name: `ALTER TABLE ${escapedTableName} VALIDATE CONSTRAINT "${constraintName}"`,
         },
       ];
       expect(results).toStrictEqual(expectedResults);
 
       //idempotent
-      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+      await nonBlockingAddCheckConstraint(client, results, tableName, constraintName, `id <> 5`);
 
       expect(results).toStrictEqual(expectedResults);
     });
 
-    test('drops existing invalid constraint', async () => {
+    test('validates existing invalid constraint', async () => {
       // test setup; create an invalid constraint
-      await addCheckConstraint(client, [], tableName, 'reserved_id_check', `id <> 5`, true);
+      await addCheckConstraint(client, [], tableName, 'Table_Name_reserved_id_check', `id <> 5`, true);
 
       await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
 
       const results: MigrationActionResult[] = [];
-      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'Table_Name_reserved_id_check', `id <> 5`);
 
       const expectedResults = [
         {
           durationMs: expect.any(Number),
-          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+          name: `ALTER TABLE ${escapedTableName} VALIDATE CONSTRAINT "Table_Name_reserved_id_check"`,
         },
       ];
       expect(results).toStrictEqual(expectedResults);
