@@ -135,7 +135,7 @@ describe('Agent Logger', () => {
 
       const [config, warnings] = parseLoggerConfigFromArgs(args);
 
-      expect(warnings).toContain('config.main.logDir must be a valid filepath string');
+      expect(warnings).toContain('logger.main.logDir must be a valid filepath string');
       // Invalid logDir should be cleaned up and default used
       expect(config.main.logDir).toBe(DEFAULT_LOGGER_CONFIG.logDir);
       // Other valid configs should still work
@@ -155,8 +155,8 @@ describe('Agent Logger', () => {
 
       const [config, warnings] = parseLoggerConfigFromArgs(args);
 
-      expect(warnings).toContain('config.main.maxFileSizeMb must be a valid integer');
-      expect(warnings).toContain('config.channel.maxFileSizeMb must be a valid integer');
+      expect(warnings).toContain('logger.main.maxFileSizeMb must be a valid integer');
+      expect(warnings).toContain('logger.channel.maxFileSizeMb must be a valid integer');
       // Invalid maxFileSizeMb should be cleaned up and default used
       expect(config.main.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
       expect(config.channel.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
@@ -177,8 +177,8 @@ describe('Agent Logger', () => {
 
       const [config, warnings] = parseLoggerConfigFromArgs(args);
 
-      expect(warnings).toContain('config.main.filesToKeep must be a valid integer');
-      expect(warnings).toContain('config.channel.filesToKeep must be a valid integer');
+      expect(warnings).toContain('logger.main.filesToKeep must be a valid integer');
+      expect(warnings).toContain('logger.channel.filesToKeep must be a valid integer');
       // Invalid filesToKeep should be cleaned up and default used
       expect(config.main.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
       expect(config.channel.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
@@ -226,8 +226,8 @@ describe('Agent Logger', () => {
 
       const [config, warnings] = parseLoggerConfigFromArgs(args);
 
-      expect(warnings).toContain('config.main.filesToKeep must be a valid integer');
-      expect(warnings).toContain('config.channel.logDir must be a valid filepath string');
+      expect(warnings).toContain('logger.main.filesToKeep must be a valid integer');
+      expect(warnings).toContain('logger.channel.logDir must be a valid filepath string');
       expect(warnings).toContain('Error while parsing logger.channel.logLevel: Invalid log level: INVALID_LEVEL');
       expect(warnings).toContain('logger.main.invalidProp is not a valid setting name');
 

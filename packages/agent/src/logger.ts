@@ -121,7 +121,7 @@ export function cleanupFullLoggerConfig(candidate: unknown): string[] {
       continue;
     }
 
-    warnings.push(...cleanupLoggerConfig(fullConfig[configType], `config.${configType}`));
+    warnings.push(...cleanupLoggerConfig(fullConfig[configType], `logger.${configType}`));
   }
 
   return warnings;
@@ -173,7 +173,7 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConf
     } else if (LOGGER_CONFIG_INTEGER_KEYS.includes(settingName as LoggerConfigIntegerKey)) {
       try {
         configValue = Number.parseInt(propVal, 10);
-      } catch (err) {
+      } catch (_err) {
         warnings.push(`Error while parsing ${propName}: ${propVal} is not a valid integer`);
       }
     } else {
