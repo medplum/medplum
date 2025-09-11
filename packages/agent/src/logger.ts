@@ -225,7 +225,11 @@ export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerT
       {
         transform: (info) => {
           const { message, level, ...otherProps } = info;
-          return { ...otherProps, level: LEVELS_TO_UPPERCASE[level as ValidWinstonLogLevel], msg: message } as any;
+          return {
+            ...otherProps,
+            level: LEVELS_TO_UPPERCASE[level as ValidWinstonLogLevel],
+            msg: message,
+          } as unknown as winston.Logform.TransformableInfo;
         },
       },
       winston.format.json()
