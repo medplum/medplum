@@ -6,15 +6,15 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  isMain,
   isPopulated,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { resolve } from 'path';
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
-import { fileURLToPath } from 'url';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
@@ -33,9 +33,10 @@ import {
   TableDefinition,
 } from './types';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const SCHEMA_DIR = resolve(__dirname, 'schema');
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+// const SCHEMA_DIR = resolve(__dirname, 'schema');
+const SCHEMA_DIR = resolve('./src/migrations/schema');
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -1494,7 +1495,7 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   return result;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta)) {
   main().catch((reason) => {
     console.error(reason);
     process.exit(1);

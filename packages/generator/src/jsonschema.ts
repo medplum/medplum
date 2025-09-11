@@ -6,13 +6,13 @@ import {
   indexStructureDefinitionBundle,
   InternalSchemaElement,
   InternalTypeSchema,
+  isMain,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 import { getValueSetValues } from './valuesets';
 
 // Generate fhir.schema.json
@@ -203,6 +203,6 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   return undefined;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta)) {
   main();
 }

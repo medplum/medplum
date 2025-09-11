@@ -7,12 +7,12 @@ import {
   indexStructureDefinitionBundle,
   InternalTypeSchema,
   isLowerCase,
+  isMain,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -52,6 +52,6 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta)) {
   main();
 }

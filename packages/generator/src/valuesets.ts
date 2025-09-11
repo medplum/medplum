@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isMain } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   Bundle,
@@ -13,7 +14,6 @@ import {
 import csv from 'csv-parser';
 import { createReadStream, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const valueSets = new Map<string, CodeSystem | ValueSet>();
 
@@ -276,6 +276,6 @@ async function main(): Promise<void> {
   writeFileSync(resolve(__dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta)) {
   main().catch(console.error);
 }

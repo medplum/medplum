@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isMain } from '@medplum/core';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import { createInterface } from 'node:readline';
-import { fileURLToPath } from 'node:url';
 
 /**
  * This utilitity generates data for ValueSet and ConceptMap resources from the UMLS Metathesaurus.
@@ -160,7 +160,7 @@ async function processMrconso(): Promise<void> {
   icd10Stream.end();
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta)) {
   main()
     .then(() => console.log('Done'))
     .catch(console.error);
