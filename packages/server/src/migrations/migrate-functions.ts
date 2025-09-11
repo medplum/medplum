@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { SqlBuilder, UpdateQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { MigrationActionResult } from './types';
+import { getCheckConstraints } from './migrate';
+import { CheckConstraintDefinition, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
   client: Client | Pool | PoolClient,
@@ -94,7 +96,7 @@ export async function analyzeTable(
  * @param constraintName - The name of the constraint to add.
  * @param constraintExpression - The expression for the constraint.
  */
-export async function nonBlockingAddConstraint(
+export async function nonBlockingAddCheckConstraint(
   client: Client | Pool | PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
@@ -116,8 +118,15 @@ export async function nonBlockingAddConstraint(
   VALIDATE CONSTRAINT finally succeeds.
   */
 
-  // add constraint with NOT VALID to avoid a blocking full table scan
-  await addCheckConstraint(client, actions, tableName, constraintName, constraintExpression, true);
+  const existing = await getExistingConstraint(client, tableName, constraintName);
+
+  if (!existing) {
+    // add constraint with NOT VALID to avoid a blocking full table scan
+    await addCheckConstraint(client, actions, tableName, constraintName, constraintExpression, true);
+  } else if (existing.valid) {
+    // constraint is already valid, so nothing to do
+    return;
+  }
 
   // validate constraint; does not block updates to the table
   await query(
@@ -125,6 +134,15 @@ export async function nonBlockingAddConstraint(
     actions,
     `ALTER TABLE ${escapeIdentifier(tableName)} VALIDATE CONSTRAINT ${escapeIdentifier(constraintName)}`
   );
+}
+
+async function getExistingConstraint(
+  client: Client | Pool | PoolClient,
+  tableName: string,
+  constraintName: string
+): Promise<CheckConstraintDefinition | undefined> {
+  const constraints = await getCheckConstraints(client, tableName);
+  return constraints.find((c) => c.name === constraintName);
 }
 
 /**
@@ -156,7 +174,7 @@ export async function nonBlockingAlterColumnNotNull(
 
   const constraintName = `${tableName}_${columnName}_not_null`;
 
-  await nonBlockingAddConstraint(
+  await nonBlockingAddCheckConstraint(
     client,
     actions,
     tableName,
@@ -197,4 +215,40 @@ export async function addCheckConstraint(
   notValid: boolean
 ): Promise<void> {
   await query(client, actions, getCheckConstraintQuery(tableName, constraintName, constraintExpression, notValid));
+}
+
+/**
+ * Updates rows in batches to avoid locking the table.
+ * @param client - The database client or pool.
+ * @param actions - The list of action results to push operations performed.
+ * @param updateQuery - The update query to execute. The query must include a RETURNING clause and return no rows when there are no rows to update.
+ * @param maxIterations - The maximum number of iterations to perform, Infinity is valid.
+ */
+export async function batchedUpdate(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  updateQuery: UpdateQuery,
+  maxIterations: number
+): Promise<void> {
+  const start = Date.now();
+  let rowCount: number | null = Infinity;
+  const sql = new SqlBuilder();
+  updateQuery.buildSql(sql);
+  const updateQueryStr = sql.toString();
+  const updateQueryValues = sql.getValues();
+  if (!updateQuery.returning) {
+    throw new Error('Update query for batchedUpdate must include a RETURNING clause');
+  }
+
+  let iterations = 0;
+  while (rowCount !== null && rowCount > 0) {
+    if (iterations >= maxIterations) {
+      throw new Error(`Exceeded max iterations of ${maxIterations}`);
+    }
+    const result = await client.query(updateQueryStr, updateQueryValues);
+    rowCount = result.rowCount;
+    iterations++;
+  }
+
+  actions.push({ name: updateQueryStr, durationMs: Date.now() - start, iterations });
 }

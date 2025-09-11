@@ -4,7 +4,15 @@ import { Client, escapeIdentifier, Pool } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
-import { analyzeTable, idempotentCreateIndex, nonBlockingAlterColumnNotNull } from './migrate-functions';
+import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
+import {
+  addCheckConstraint,
+  analyzeTable,
+  batchedUpdate,
+  idempotentCreateIndex,
+  nonBlockingAddCheckConstraint,
+  nonBlockingAlterColumnNotNull,
+} from './migrate-functions';
 import { MigrationActionResult } from './types';
 
 interface IndexInfo {
@@ -59,11 +67,6 @@ describe('migrate-functions', () => {
     // Create a test table
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER, name TEXT)`);
-  });
-
-  afterEach(async () => {
-    // Clean up test table and indexes
-    await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
   });
 
   describe('idempotentCreateIndex', () => {
@@ -174,6 +177,95 @@ describe('migrate-functions', () => {
       await expect(client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (4, NULL)`)).rejects.toThrow(
         /violates not-null constraint/
       );
+    });
+  });
+
+  describe('nonBlockingAddConstraint', () => {
+    test('is idempotent', async () => {
+      const results: MigrationActionResult[] = [];
+
+      await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
+
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      const expectedResults = [
+        {
+          name: `ALTER TABLE ${escapedTableName} ADD CONSTRAINT "reserved_id_check" CHECK (id <> 5) NOT VALID`,
+          durationMs: expect.any(Number),
+        },
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+        },
+      ];
+      expect(results).toStrictEqual(expectedResults);
+
+      //idempotent
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      expect(results).toStrictEqual(expectedResults);
+    });
+
+    test('drops existing invalid constraint', async () => {
+      // test setup; create an invalid constraint
+      await addCheckConstraint(client, [], tableName, 'reserved_id_check', `id <> 5`, true);
+
+      await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
+
+      const results: MigrationActionResult[] = [];
+      await nonBlockingAddCheckConstraint(client, results, tableName, 'reserved_id_check', `id <> 5`);
+
+      const expectedResults = [
+        {
+          durationMs: expect.any(Number),
+          name: 'ALTER TABLE "Test_Table" VALIDATE CONSTRAINT "reserved_id_check"',
+        },
+      ];
+      expect(results).toStrictEqual(expectedResults);
+    });
+  });
+
+  describe('batchedUpdate', () => {
+    test.each([1, 10])('should update rows in batches with %i maxIterations', async (maxIterations) => {
+      await client.query(
+        `INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null'), (4, NULL)`
+      );
+
+      const results: MigrationActionResult[] = [];
+      const update = new UpdateQuery(tableName, ['id']);
+      const cte = { name: 'cte', expr: new SelectQuery(tableName).column('id').where('name', '=', null).limit(2) };
+      update.from(cte);
+      update.set('name', 'new default');
+      update.where(new Column(cte.name, 'id'), '=', new Column(tableName, 'id'));
+
+      if (maxIterations < 3) {
+        await expect(batchedUpdate(client, results, update, maxIterations)).rejects.toThrow(
+          `Exceeded max iterations of ${maxIterations}`
+        );
+        return;
+      }
+
+      await batchedUpdate(client, results, update, maxIterations);
+
+      const expectedQuery =
+        'WITH "cte" AS (SELECT "Test_Table"."id" FROM "Test_Table" WHERE "Test_Table"."name" IS NULL LIMIT 2) UPDATE "Test_Table" SET "name" = $1 FROM "cte" WHERE "cte"."id" = "Test_Table"."id" RETURNING "Test_Table"."id"';
+
+      expect(results).toEqual([
+        {
+          name: expectedQuery,
+          durationMs: expect.any(Number),
+          iterations: 3,
+        },
+      ]);
+
+      const result = await client.query(`SELECT * FROM ${escapedTableName} ORDER BY id`);
+      expect(result.rowCount).toBe(4);
+      expect(result.rows).toStrictEqual([
+        { id: 1, name: 'new default' },
+        { id: 2, name: 'new default' },
+        { id: 3, name: 'not null' },
+        { id: 4, name: 'new default' },
+      ]);
     });
   });
 });

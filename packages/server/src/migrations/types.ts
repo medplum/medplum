@@ -45,6 +45,9 @@ export interface CheckConstraintDefinition {
   type: 'check';
   name: string;
   expression: string;
+
+  // excluded from equality checks
+  valid?: boolean;
 }
 
 export type MigrationAction =
@@ -62,4 +65,8 @@ export type MigrationAction =
   | { type: 'ADD_CONSTRAINT'; tableName: string; constraintName: string; constraintExpression: string }
   | { type: 'ANALYZE_TABLE'; tableName: string };
 
-export type MigrationActionResult = { name: string; durationMs: number };
+export interface MigrationActionResult {
+  name: string;
+  durationMs: number;
+  [key: string]: string | number | undefined;
+}

@@ -16,12 +16,7 @@ import { resolve } from 'path';
 import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import {
-  ColumnSearchParameterImplementation,
-  getSearchParameterImplementation,
-  SearchParameterImplementation,
-  TokenColumnSearchParameterImplementation,
-} from '../fhir/searchparameter';
+import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
@@ -373,20 +368,21 @@ export function parseIndexName(indexdef: string): string | undefined {
   return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
 }
 
-async function getCheckConstraints(
+export async function getCheckConstraints(
   db: Client | Pool | PoolClient,
   tableName: string
-): Promise<CheckConstraintDefinition[]> {
+): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
   const rs = await db.query<{
     table_name: string;
     conname: string;
     contype: string;
+    convalidated: boolean;
     condef: string;
-  }>(`SELECT conrelid::regclass AS table_name, conname, contype, pg_get_constraintdef(oid, TRUE) as condef
+  }>(`SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
 FROM pg_catalog.pg_constraint
 WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::regclass) AND contype = 'c'`);
 
-  const cds: CheckConstraintDefinition[] = [];
+  const cds: (CheckConstraintDefinition & { valid: boolean })[] = [];
   for (const row of rs.rows) {
     if (row.contype === 'c') {
       const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
@@ -397,6 +393,7 @@ WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::re
         name: row.conname,
         type: 'check',
         expression: expressionMatch[1],
+        valid: row.convalidated,
       });
     }
   }
@@ -515,10 +512,6 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     }
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
-    if (impl.searchStrategy === 'lookup-table') {
-      continue;
-    }
-
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
@@ -550,9 +543,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
-): ColumnDefinition[] {
+function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
       if (impl.type !== SearchParameterType.TEXT) {
@@ -568,6 +559,12 @@ function getSearchParameterColumns(
     }
     case 'column':
       return [getColumnDefinition(impl.columnName, impl)];
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ name: impl.sortColumnName, type: 'TEXT' }];
+      }
+      return [];
+    }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
@@ -575,7 +572,7 @@ function getSearchParameterColumns(
 
 function getSearchParameterIndexes(
   searchParam: SearchParameter,
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+  impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -600,6 +597,12 @@ function getSearchParameterIndexes(
         indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
       }
       return indexes;
+    }
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ columns: [impl.sortColumnName], indexType: 'btree' }];
+      }
+      return [];
     }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
@@ -909,9 +912,9 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 
 export async function executeMigrationActions(
   client: Client | Pool | PoolClient,
+  results: MigrationActionResult[],
   actions: MigrationAction[]
-): Promise<MigrationActionResult[]> {
-  const results: MigrationActionResult[] = [];
+): Promise<void> {
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
@@ -976,7 +979,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'ADD_CONSTRAINT': {
-        await fns.nonBlockingAddConstraint(
+        await fns.nonBlockingAddCheckConstraint(
           client,
           results,
           action.tableName,
@@ -987,7 +990,6 @@ export async function executeMigrationActions(
       }
     }
   }
-  return results;
 }
 
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
@@ -1444,7 +1446,7 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
-  return deepEquals(a, b);
+  return deepEquals({ ...a, valid: undefined }, { ...b, valid: undefined });
 }
 
 const TableNameAbbreviations: Record<string, string | undefined> = {

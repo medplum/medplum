@@ -4,26 +4,17 @@ import { getResourceTypes } from '@medplum/core';
 import { PoolClient } from 'pg';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { withLongRunningDatabaseClient } from '../migration-utils';
 import { MigrationActionResult } from '../types';
 import { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
   prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-  run: async (repo, job, jobData) => {
-    return runCustomMigration(repo, job, jobData, async () => {
-      return withLongRunningDatabaseClient(async (client) => {
-        const results: MigrationActionResult[] = [];
-        await run(client, results);
-        return results;
-      });
-    });
-  },
+  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
 // prettier-ignore
-async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   const resourceTypes = getResourceTypes();
   for (const resourceType of resourceTypes) {
     await fns.query(client, results, `UPDATE "${resourceType}" SET "__version" = -1 WHERE __version IS NULL`);
