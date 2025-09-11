@@ -56,7 +56,7 @@ export async function agentMain(argv: string[]): Promise<App> {
     }
   }
 
-  // Replace logger logLevels if logLevel is specified
+  // Replace logger logLevels if top-level logLevel is specified
   if (args.logLevel) {
     args['logger.main.logLevel'] = args.logLevel;
     args['logger.channel.logLevel'] = args.logLevel;

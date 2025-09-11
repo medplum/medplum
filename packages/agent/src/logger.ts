@@ -32,11 +32,6 @@ export const DEFAULT_LOGGER_CONFIG = {
 export const LOGGER_CONFIG_INTEGER_KEYS = ['maxFileSizeMb', 'filesToKeep'] as const;
 export type LoggerConfigIntegerKey = (typeof LOGGER_CONFIG_INTEGER_KEYS)[number];
 
-export const DEFAULT_FULL_LOGGER_CONFIG = {
-  main: DEFAULT_LOGGER_CONFIG,
-  channel: DEFAULT_LOGGER_CONFIG,
-} as const satisfies FullAgentLoggerConfig;
-
 const LEVELS_TO_UPPERCASE = {
   debug: 'DEBUG',
   info: 'INFO',
@@ -167,14 +162,19 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConf
     }
 
     // If the setting is 'logLevel', we should convert to the LogLevel enum
-    let configValue: string | number;
+    let configValue: string | number | undefined;
     if (settingName === 'logLevel') {
       try {
-        configValue = parseLogLevel(propVal.toString());
+        configValue = parseLogLevel(propVal);
       } catch (err) {
         // Invalid log level
         warnings.push(`Error while parsing ${propName}: ${normalizeErrorString(err)}`);
-        configValue = LogLevel.INFO;
+      }
+    } else if (LOGGER_CONFIG_INTEGER_KEYS.includes(settingName as LoggerConfigIntegerKey)) {
+      try {
+        configValue = Number.parseInt(propVal, 10);
+      } catch (err) {
+        warnings.push(`Error while parsing ${propName}: ${propVal} is not a valid integer`);
       }
     } else {
       configValue = propVal;
