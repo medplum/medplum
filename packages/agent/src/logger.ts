@@ -255,11 +255,11 @@ export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerT
 
 export class WinstonWrapperLogger implements ILogger {
   readonly loggerType: LoggerType;
-  private parentLogger?: WinstonWrapperLogger;
-  private config: AgentLoggerConfig;
-  private metadata?: Record<string, any>;
-  private prefix?: string;
-  private winston: winston.Logger;
+  private readonly parentLogger?: WinstonWrapperLogger;
+  private readonly config: AgentLoggerConfig;
+  private readonly metadata?: Record<string, any>;
+  private readonly prefix?: string;
+  private readonly winston: winston.Logger;
   level: LogLevel;
 
   constructor(config: AgentLoggerConfig, loggerType: LoggerType, options?: WinstonWrapperLoggerInitOptions) {
