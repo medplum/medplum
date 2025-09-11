@@ -26,7 +26,6 @@ describe('Agent Logger', () => {
       expect(config.main.logLevel).toBe(LogLevel.DEBUG);
       expect(config.channel.logDir).toBe('/tmp/channel-logs');
       expect(config.channel.logLevel).toBe(LogLevel.WARN);
-      // Numeric values use defaults since strings are not converted to numbers
       expect(config.main.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
       expect(config.main.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
       expect(config.channel.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
@@ -40,23 +39,26 @@ describe('Agent Logger', () => {
         clientSecret: 'test-client-secret',
         agentId: 'test-agent-id',
         'logger.main.logDir': '/var/log/medplum',
-        'logger.main.logLevel': 'INFO',
+        'logger.main.logLevel': 'ERROR',
+        'logger.main.maxFileSizeMb': '100',
+        'logger.main.filesToKeep': '15',
         'logger.channel.logDir': '/var/log/medplum/channels',
         'logger.channel.logLevel': 'INFO',
+        'logger.channel.maxFileSizeMb': '50',
+        'logger.channel.filesToKeep': '20',
       };
 
       const [config, warnings] = parseLoggerConfigFromArgs(args);
 
       expect(warnings).toHaveLength(0);
       expect(config.main.logDir).toBe('/var/log/medplum');
-      expect(config.main.logLevel).toBe(LogLevel.INFO);
+      expect(config.main.logLevel).toBe(LogLevel.ERROR);
       expect(config.channel.logDir).toBe('/var/log/medplum/channels');
       expect(config.channel.logLevel).toBe(LogLevel.INFO);
-      // Numeric values use defaults since strings are not converted to numbers
-      expect(config.main.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
-      expect(config.main.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
-      expect(config.channel.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
-      expect(config.channel.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
+      expect(config.main.maxFileSizeMb).toBe(100);
+      expect(config.main.filesToKeep).toBe(15);
+      expect(config.channel.maxFileSizeMb).toBe(50);
+      expect(config.channel.filesToKeep).toBe(20);
     });
 
     test('should emit warning when an invalid prop name is encountered', () => {
@@ -119,27 +121,6 @@ describe('Agent Logger', () => {
       expect(config.main.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
       expect(config.channel.logDir).toBe(DEFAULT_LOGGER_CONFIG.logDir);
       expect(config.channel.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
-    });
-
-    test('should emit warning when main or channel is not an object', () => {
-      // This test is tricky because parseLoggerConfigFromArgs doesn't directly handle non-object configs
-      // The cleanupFullLoggerConfig function handles this, but it's called internally
-      // We need to test the behavior through the cleanup functions
-      const args: AgentArgs = {
-        baseUrl: 'https://api.medplum.com',
-        clientId: 'test-client-id',
-        clientSecret: 'test-client-secret',
-        agentId: 'test-agent-id',
-        'logger.main.logDir': '/tmp/logs',
-        'logger.channel.logDir': '/tmp/channel-logs',
-      };
-
-      const [config, warnings] = parseLoggerConfigFromArgs(args);
-
-      // Should not have warnings for valid object configs
-      expect(warnings).toHaveLength(0);
-      expect(config.main.logDir).toBe('/tmp/logs');
-      expect(config.channel.logDir).toBe('/tmp/channel-logs');
     });
 
     test('should emit warning when logDir is an invalid value', () => {
@@ -258,7 +239,8 @@ describe('Agent Logger', () => {
       expect(config.main.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
       expect(config.channel.logDir).toBe(DEFAULT_LOGGER_CONFIG.logDir);
       expect(config.channel.logLevel).toBe(LogLevel.INFO); // Fallback from parseLogLevel error
-      // Numeric values use defaults since strings are not converted to numbers
+
+      // Values not specified should also use defaults
       expect(config.main.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
       expect(config.channel.maxFileSizeMb).toBe(DEFAULT_LOGGER_CONFIG.maxFileSizeMb);
       expect(config.channel.filesToKeep).toBe(DEFAULT_LOGGER_CONFIG.filesToKeep);
@@ -284,7 +266,7 @@ describe('Agent Logger', () => {
       expect(config.channel.logLevel).toBe(DEFAULT_LOGGER_CONFIG.logLevel);
     });
 
-    test('should handle empty args object', () => {
+    test('should handle args object without logger config options', () => {
       const args: AgentArgs = {
         baseUrl: 'https://api.medplum.com',
         clientId: 'test-client-id',
