@@ -111,7 +111,7 @@ export function addPropertyFilter(
 ): SelectQuery {
   const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
     new Conjunction([
-      new Condition(new Column(query.tableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+      new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
       new Condition('value', operator, value),
     ])
   );
@@ -122,7 +122,7 @@ export function addPropertyFilter(
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
-      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.tableName, 'property')),
+      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.effectiveTableName, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
       new Condition(new Column(csPropertyTable, 'system'), '=', codeSystem.id),
     ])

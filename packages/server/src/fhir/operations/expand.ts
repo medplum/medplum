@@ -296,7 +296,7 @@ export function expansionQuery(
             query = addDescendants(query, codeSystem, condition.value);
           }
           if (condition.op !== 'is-a') {
-            query.where(new Column(query.tableName, 'code'), '!=', condition.value);
+            query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
           }
           break;
         case '=':
@@ -351,7 +351,7 @@ function addAbstractFilter(query: SelectQuery): SelectQuery {
     'Coding_Property',
     propertyTable,
     new Conjunction([
-      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
       new Condition(new Column(propertyTable, 'value'), '=', 'true'),
     ])
   );

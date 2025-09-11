@@ -11,12 +11,13 @@ import { executeFissionFunction } from './utils';
  * @returns The bot execution result.
  */
 export async function executeFissionBot(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId, headers } = request;
+  const { bot, accessToken, secrets, requester, input, contentType, traceId, headers } = request;
   const config = getConfig();
   const payload = {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
     accessToken,
+    requester,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
     secrets,

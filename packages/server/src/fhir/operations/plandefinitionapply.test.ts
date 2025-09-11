@@ -479,17 +479,17 @@ describe('PlanDefinition apply', () => {
   });
 
   test('Dynamic and static assigned owner and performerType', async () => {
-    // 1. Create an ActivityDefinition
+    // 1. Create two ActivityDefinitions with different kinds
     // 2. Create a PlanDefinition
     // 3. Create a Patient
     // 4. Create a Practitioner
     // 5. Create an Organization
     // 6. Create an Encounter
     // 7. Apply the PlanDefinition with all parameters
-    // 8. Verify the Task includes all references
+    // 8. Verify both Tasks include all references
 
-    // 1. Create an ActivityDefinition
-    const res1 = await request(app)
+    // 1a. Create an ActivityDefinition with kind 'ServiceRequest'
+    const res1a = await request(app)
       .post(`/fhir/R4/ActivityDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -538,21 +538,68 @@ describe('PlanDefinition apply', () => {
         intent: 'order',
         priority: 'routine',
       });
-    expect(res1.status).toBe(201);
+    expect(res1a.status).toBe(201);
 
-    // 2. Create a PlanDefinition
+    // 1b. Create a second ActivityDefinition with kind 'Task' to test task-elements extension works for non-ServiceRequest kinds
+    const res1b = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        kind: 'Task', // Different kind to test the fix
+        name: 'GeneralTaskWithOwner',
+        title: 'General Task with Dynamic Owner',
+        description: 'A general task that should also respect task-elements extension',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
+            extension: [
+              {
+                url: 'owner',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%organization',
+                },
+              },
+              {
+                url: 'performerType',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                      code: 'SPRF',
+                      display: 'secondary performer',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+        intent: 'order',
+        priority: 'routine',
+      });
+    expect(res1b.status).toBe(201);
+
+    // 2. Create a PlanDefinition with both ActivityDefinitions
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'PlanDefinition',
-        title: 'Example Plan Definition with ActivityDefinition',
+        title: 'Example Plan Definition with Multiple ActivityDefinitions',
         status: 'active',
         action: [
           {
-            title: res1.body.title,
-            definitionCanonical: getReferenceString(res1.body),
+            title: res1a.body.title,
+            definitionCanonical: getReferenceString(res1a.body),
+          },
+          {
+            title: res1b.body.title,
+            definitionCanonical: getReferenceString(res1b.body),
           },
         ],
       });
@@ -691,29 +738,47 @@ describe('PlanDefinition apply', () => {
       });
     expect(res7.status).toBe(200);
     expect(res7.body.resourceType).toStrictEqual('RequestGroup');
-    expect((res7.body as RequestGroup).action).toHaveLength(1);
+    expect((res7.body as RequestGroup).action).toHaveLength(2);
     expect((res7.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+    expect((res7.body as RequestGroup).action?.[1]?.resource?.reference).toBeDefined();
 
-    // 8. Verify the Task includes all references
-    const res8 = await request(app)
+    // 8a. Verify the first Task (ServiceRequest kind) includes all references
+    const res8a = await request(app)
       .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(200);
-    expect(res8.body.resourceType).toStrictEqual('Task');
+    expect(res8a.status).toBe(200);
+    expect(res8a.body.resourceType).toStrictEqual('Task');
 
-    const resultTask = res8.body as Task;
-    expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
-    expect(resultTask.encounter).toMatchObject(createReference(res6.body));
-    expect(resultTask.input).toHaveLength(1);
-    expect(resultTask.input?.[0]?.type?.text).toStrictEqual('ServiceRequest');
-    expect(resultTask.basedOn).toHaveLength(1);
-    expect(resultTask.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
-    expect(resultTask.owner).toMatchObject(createReference(res4.body));
-    expect(resultTask.performerType).toHaveLength(1);
-    expect(resultTask.performerType?.[0]?.coding?.[0]?.code).toStrictEqual('ATND');
+    const resultTask1 = res8a.body as Task;
+    expect(resultTask1.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask1.encounter).toMatchObject(createReference(res6.body));
+    expect(resultTask1.input).toHaveLength(1);
+    expect(resultTask1.input?.[0]?.type?.text).toStrictEqual('ServiceRequest');
+    expect(resultTask1.basedOn).toHaveLength(1);
+    expect(resultTask1.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+    expect(resultTask1.owner).toMatchObject(createReference(res4.body)); // %practitioner
+    expect(resultTask1.performerType).toHaveLength(1);
+    expect(resultTask1.performerType?.[0]?.coding?.[0]?.code).toStrictEqual('ATND');
 
-    // 9. Verify the ServiceRequest was created
-    const serviceRequestRef = resultTask.focus?.reference;
+    // 8b. Verify the second Task (Task kind) also includes task-elements extension values
+    const res8b = await request(app)
+      .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[1]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res8b.status).toBe(200);
+    expect(res8b.body.resourceType).toStrictEqual('Task');
+
+    const resultTask2 = res8b.body as Task;
+    expect(resultTask2.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask2.encounter).toMatchObject(createReference(res6.body));
+    expect(resultTask2.basedOn).toHaveLength(1);
+    expect(resultTask2.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+    expect(resultTask2.owner).toMatchObject(createReference(res5.body)); // %organization (from the second ActivityDefinition)
+    expect(resultTask2.performerType).toHaveLength(1);
+    expect(resultTask2.performerType?.[0]?.coding?.[0]?.code).toStrictEqual('SPRF');
+    expect(resultTask2.code?.text).toStrictEqual(res1b.body.title);
+
+    // 9. Verify the ServiceRequest was created for the first task
+    const serviceRequestRef = resultTask1.focus?.reference;
     expect(serviceRequestRef).toBeDefined();
     const res9 = await request(app)
       .get(`/fhir/R4/${serviceRequestRef}`)
