@@ -1,0 +1,409 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:ea0b2f23-604e-40cb-bdec-4e946e8235fd",
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=b11-predictive-dsi-source-attributes"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "title": "Predictive DSI Source Attributes Questionnaire",
+        "name": "b11-predictive-dsi-source-attributes",
+        "identifier": [
+          {
+            "system": "https://medplum.com/questionnaires",
+            "value": "b11-predictive-dsi-source-attributes"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "dsi",
+            "text": "Decision Support Intervention",
+            "type": "reference",
+            "required": true,
+            "extension": [
+              {
+                "id": "dsi-reference",
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/fhir-types",
+                      "code": "Subscription"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "details",
+            "text": "Details and output of the intervention",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "name-and-contact",
+                "text": "Name and contact information for the intervention developer",
+                "type": "string"
+              },
+              {
+                "linkId": "technical-implementation",
+                "text": "Funding source of the technical implementation for the intervention(s) development",
+                "type": "string"
+              },
+              {
+                "linkId": "output-description",
+                "text": "Description of value that the intervention produces as an output",
+                "type": "string"
+              },
+              {
+                "linkId": "output-type",
+                "text": "Whether the intervention output is a prediction, classification, recommendation, evaluation, analysis, or other type of output",
+                "type": "choice",
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "code": "prediction",
+                      "display": "Prediction"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "code": "classification",
+                      "display": "Classification"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "code": "recommendation",
+                      "display": "Recommendation"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "code": "evaluation",
+                      "display": "Evaluation"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "code": "analysis",
+                      "display": "Analysis"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "code": "other",
+                      "display": "Other"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "linkId": "purpose",
+            "text": "Purpose of the intervention",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "intended-use",
+                "text": "Intended use of the intervention",
+                "type": "string"
+              },
+              {
+                "linkId": "intended-population",
+                "text": "Intended patient population(s) for the intervention's use",
+                "type": "string"
+              },
+              {
+                "linkId": "intended-users",
+                "text": "Intended user(s)",
+                "type": "string"
+              },
+              {
+                "linkId": "decision-making-role",
+                "text": "Intended decision-making role for which the intervention was designed to be used/for (e.g., informs, augments, replaces clinical management)",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "out-of-scope",
+            "text": "Cautioned out-of-scope use of the intervention",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "cautioned-tasks",
+                "text": "Description of tasks, situations, or populations where a user is cautioned against applying the intervention",
+                "type": "string"
+              },
+              {
+                "linkId": "known-risks",
+                "text": "Known risks, inappropriate settings, inappropriate uses, or known limitations",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "development-details",
+            "text": "Intervention development details and input features",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "inclusion-exclusion-criteria",
+                "text": "Exclusion and inclusion criteria that influenced the training data set",
+                "type": "string"
+              },
+              {
+                "linkId": "variable-use",
+                "text": "Use of variables in paragraph (b)(11)(iv)(A)(5)-(13) as input features",
+                "type": "string"
+              },
+              {
+                "linkId": "demographic-representativeness",
+                "text": "Description of demographic representativeness according to variables in paragraph (b)(11)(iv)(A)(5)-(13) including, at a minimum, those used as input features in the intervention",
+                "type": "string"
+              },
+              {
+                "linkId": "training-data-relevance",
+                "text": "Description of relevance of training data to intended deployed setting",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "fairness-process",
+            "text": "Process used to ensure fairness in development of the intervention",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "fairness-approach",
+                "text": "Description of the approach the intervention developer has taken to ensure that the intervention's output is fair",
+                "type": "string"
+              },
+              {
+                "linkId": "bias-management",
+                "text": "Description of approaches to manage, reduce, or eliminate bias",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "external-validation",
+            "text": "External validation process",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "validation-data-source",
+                "text": "Description of the data source, clinical setting, or environment where an intervention's validity and fairness has been assessed, other than the source of training and testing data",
+                "type": "string"
+              },
+              {
+                "linkId": "external-testing-party",
+                "text": "Party that conducted the external testing",
+                "type": "string"
+              },
+              {
+                "linkId": "external-demographic-representativeness",
+                "text": "Description of demographic representativeness of external data according to variables in paragraph (b)(11)(iv)(A)(5)-(13) including, at a minimum, those used as input features in the intervention",
+                "type": "string"
+              },
+              {
+                "linkId": "external-validation-process",
+                "text": "Description of external validation process",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "performance-measures",
+            "text": "Quantitative measures of performance",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "validity-test-data",
+                "text": "Validity of intervention in test data derived from the same source as the initial training data",
+                "type": "string"
+              },
+              {
+                "linkId": "fairness-test-data",
+                "text": "Fairness of intervention in test data derived from the same source as the initial training data",
+                "type": "string"
+              },
+              {
+                "linkId": "validity-external-data",
+                "text": "Validity of intervention in data external to or from a different source than the initial training data",
+                "type": "string"
+              },
+              {
+                "linkId": "fairness-external-data",
+                "text": "Fairness of intervention in data external to or from a different source than the initial training data",
+                "type": "string"
+              },
+              {
+                "linkId": "outcomes-evaluation",
+                "text": "References to evaluation of use of the intervention on outcomes, including, bibliographic citations or hyperlinks to evaluations of how well the intervention reduced morbidity, mortality, length of stay, or other outcomes",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "ongoing-maintenance",
+            "text": "Ongoing maintenance of intervention implementation and use",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "validity-monitoring-process",
+                "text": "Description of process and frequency by which the intervention's validity is monitored over time",
+                "type": "string"
+              },
+              {
+                "linkId": "validity-local-data",
+                "text": "Validity of intervention in local data",
+                "type": "string"
+              },
+              {
+                "linkId": "fairness-monitoring-process",
+                "text": "Description of the process and frequency by which the intervention's fairness is monitored over time",
+                "type": "string"
+              },
+              {
+                "linkId": "fairness-local-data",
+                "text": "Fairness of intervention in local data",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "update-schedule",
+            "text": "Update and continued validation or fairness assessment schedule",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "update-process",
+                "text": "Description of process and frequency by which the intervention is updated",
+                "type": "string"
+              },
+              {
+                "linkId": "performance-correction",
+                "text": "Description of frequency by which the intervention's performance is corrected when risks related to validity and fairness are identified",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:55ddc295-cfc3-4f6a-8cfc-c3a809b814b9",
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=b11-evidence-based-dsi-source-attributes"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "title": "Evidence-Based DSI Source Attributes Questionnaire",
+        "name": "b11-evidence-based-dsi-source-attributes",
+        "identifier": [
+          {
+            "system": "https://medplum.com/questionnaires",
+            "value": "b11-evidence-based-dsi-source-attributes"
+          }
+        ],
+        "item": [
+          {
+            "linkId": "dsi",
+            "text": "Decision Support Intervention",
+            "type": "reference",
+            "required": true,
+            "extension": [
+              {
+                "id": "dsi-reference",
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/fhir-types",
+                      "code": "Subscription"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "linkId": "bibliographic-citation",
+            "text": "Bibliographic citation of the intervention (clinical research or guideline)",
+            "type": "string"
+          },
+          {
+            "linkId": "developer",
+            "text": "Developer of the intervention (translation from clinical research or guideline)",
+            "type": "string"
+          },
+          {
+            "linkId": "funding-source",
+            "text": "Funding source of the technical implementation for the intervention(s) development",
+            "type": "string"
+          },
+          {
+            "linkId": "release-dates",
+            "text": "Release and, if applicable, revision dates of the intervention or reference source",
+            "type": "string"
+          },
+          {
+            "linkId": "use-race",
+            "text": "Use of race as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-ethnicity",
+            "text": "Use of ethnicity as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-language",
+            "text": "Use of language as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-sexual-orientation",
+            "text": "Use of sexual orientation as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-gender-identity",
+            "text": "Use of gender identity as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-sex",
+            "text": "Use of sex as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-date-of-birth",
+            "text": "Use of date of birth as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-sdoh-data",
+            "text": "Use of social determinants of health data as expressed in the standards in § 170.213",
+            "type": "string"
+          },
+          {
+            "linkId": "use-health-status-assessments",
+            "text": "Use of health status assessments data as expressed in the standards in § 170.213",
+            "type": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

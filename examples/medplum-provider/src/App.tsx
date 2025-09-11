@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ProfileResource, getReferenceString } from '@medplum/core';
+import { Questionnaire } from '@medplum/fhirtypes';
 import {
   AppShell,
   Loading,
@@ -12,17 +13,21 @@ import {
 } from '@medplum/react';
 import {
   IconClipboardCheck,
+  IconFileExport,
+  IconForms,
   IconMail,
   IconPencil,
   IconPill,
   IconTimeDuration0,
+  IconToggleRightFilled,
   IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { JSX, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
+import { TaskSelectEmpty } from './components/tasks/TaskSelectEmpty';
 import './index.css';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
@@ -48,12 +53,37 @@ import { TaskDetailsModal } from './pages/tasks/TaskDetailsModal';
 import { TaskDetails } from './pages/tasks/TaskDetails';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
-import { TaskSelectEmpty } from './components/tasks/TaskSelectEmpty';
+import { showErrorNotification } from './utils/notifications';
+import { BulkCertificationPage } from './pages/c1/BulkCertificationPage';
+import { C1CertificationPage } from './pages/c1/C1CertificationPage';
+import { FormPage } from './pages/c1/FormPage';
+import { DSIPage } from './pages/b11/DSIPage';
+import { DSIFeedbackPage } from './pages/b11/DSIFeedbackPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useMedplumNavigate();
+
+  const [dsiSourceAttributesQuestionnaires, setDSISourceAttributesQuestionnaires] = useState<
+    Questionnaire[] | undefined
+  >();
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    medplum
+      .searchResources('Questionnaire', [
+        ['identifier', 'b11-evidence-based-dsi-source-attributes,b11-predictive-dsi-source-attributes'],
+        ['_sort', 'name'],
+      ])
+      .then((resources) => setDSISourceAttributesQuestionnaires(resources))
+      .catch((err) => {
+        showErrorNotification(err);
+      });
+  }, [medplum, profile]);
 
   if (medplum.isLoading()) {
     return null;
@@ -97,6 +127,23 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
             ...(hasDoseSpot ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' }] : []),
+          ],
+        },
+        {
+          title: 'Decision Support',
+          links: [
+            { icon: <IconToggleRightFilled />, label: 'Decision Support Interventions', href: '/dsi' },
+            { icon: <IconFileExport />, label: 'Feedback Export', href: '/dsi/feedback' },
+            ...(dsiSourceAttributesQuestionnaires?.map((q) => ({
+              icon: <IconForms />,
+              label: q.title,
+              href: `/forms/${q.id}`,
+            })) ?? []),
+            {
+              icon: <IconTransformPoint />,
+              label: 'Integrations',
+              href: '/ClientApplication?_count=20&_fields=_lastUpdated,name&_sort=-_lastUpdated',
+            },
           ],
         },
       ]}
@@ -163,6 +210,11 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/bulk/:resourceType" element={<BulkCertificationPage />} />
+              <Route path="/forms/:id" element={<FormPage />} />
+              <Route path="/c1/:id" element={<C1CertificationPage />} />
+              <Route path="/dsi" element={<DSIPage />} />
+              <Route path="/dsi/feedback" element={<DSIFeedbackPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
