@@ -270,12 +270,22 @@ export function ToolsPage(): JSX.Element | null {
       <Form onSubmit={handleFetchLogs}>
         <Title order={2}>Fetch Logs</Title>
         <p>Fetch logs from the agent.</p>
-        {logs?.length ? <Code block>{logs}</Code> : null}
+        {logs?.length ? (
+          <Code block mb={15}>
+            {logs}
+          </Code>
+        ) : null}
         <Group>
-          <Button loading={fetchingLogs} disabled={working && !fetchingLogs} aria-label="Fetch logs" type="submit">
+          <NumberInput w={100} id="logLimit" name="logLimit" placeholder="10" label="Log Limit" />
+          <Button
+            mt={22}
+            loading={fetchingLogs}
+            disabled={working && !fetchingLogs}
+            aria-label="Fetch logs"
+            type="submit"
+          >
             Fetch Logs
           </Button>
-          <NumberInput id="logLimit" name="logLimit" placeholder="10" label="Log Limit" />
         </Group>
       </Form>
       <Divider my="lg" />
