@@ -30,6 +30,8 @@
     "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.7.0",
     "semver": "7.7.2",
+    "winston": "3.17.0",
+    "winston-daily-rotate-file": "5.0.0",
     "ws": "8.18.3"
   },
   "devDependencies": {
