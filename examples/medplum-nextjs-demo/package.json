@@ -25,8 +25,8 @@
     "@mantine/notifications": "7.17.8",
     "@medplum/core": "4.3.13",
     "@medplum/react": "4.3.13",
-    "@next/bundle-analyzer": "15.5.2",
-    "next": "15.5.2",
+    "@next/bundle-analyzer": "15.5.3",
+    "next": "15.5.3",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "rfc6902": "5.1.2"
@@ -37,7 +37,7 @@
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.5.2",
+    "eslint-config-next": "15.5.3",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "typescript": "5.9.2"
