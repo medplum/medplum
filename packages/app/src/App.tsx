@@ -7,6 +7,7 @@ import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react'
 import {
   IconBrandAsana,
   IconBuilding,
+  IconDatabase,
   IconForms,
   IconId,
   IconLock,
@@ -91,6 +92,9 @@ const resourceTypeToIcon: Record<string, FunctionComponent> = {
 };
 
 function getIcon(to: string): JSX.Element | undefined {
+  if (to.includes('admin/super/db')) {
+    return <IconDatabase />;
+  }
   try {
     const resourceType = new URL(to, 'https://app.medplum.com').pathname.split('/')[1];
     if (resourceType in resourceTypeToIcon) {

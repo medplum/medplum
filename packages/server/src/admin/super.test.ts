@@ -20,7 +20,6 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { CronJobData, getCronQueue } from '../workers/cron';
 import { getReindexQueue, ReindexJobData } from '../workers/reindex';
-import { isValidTableName } from './super';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -37,16 +36,6 @@ jest.mock('../migrations/data/index', () => {
     v2: jest.requireMock('../migrations/data/v2'),
     v3: jest.requireMock('../migrations/data/v2'),
   };
-});
-
-describe('isValidTableName', () => {
-  test('isValidTableName', () => {
-    expect(isValidTableName('Observation')).toStrictEqual(true);
-    expect(isValidTableName('Observation_History')).toStrictEqual(true);
-    expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
-    expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
-    expect(isValidTableName('Observation History')).toStrictEqual(false);
-  });
 });
 
 describe('Super Admin routes', () => {

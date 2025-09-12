@@ -12,6 +12,7 @@ import {
   UnionAllBuilder,
   UpdateQuery,
   ValuesQuery,
+  isValidTableName,
   periodToRangeString,
 } from './sql';
 
@@ -304,4 +305,12 @@ describe('SqlBuilder', () => {
       expect(sql.getValues()).toStrictEqual([123, 'new-name']);
     });
   });
+});
+
+test('isValidTableName', () => {
+  expect(isValidTableName('Observation')).toStrictEqual(true);
+  expect(isValidTableName('Observation_History')).toStrictEqual(true);
+  expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
+  expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidTableName('Observation History')).toStrictEqual(false);
 });

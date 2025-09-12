@@ -28,6 +28,7 @@ import { codeSystemValidateCodeHandler } from './operations/codesystemvalidateco
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
+import { dbGinIndexesHandler } from './operations/dbgetginindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
@@ -346,6 +347,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('POST', '/$explain', dbExplainHandler);
+  router.add('GET', '/$db-gin-indexes', dbGinIndexesHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
