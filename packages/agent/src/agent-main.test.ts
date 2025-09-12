@@ -1,10 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LogLevel, sleep } from '@medplum/core';
+import { ILogger, LogLevel, sleep } from '@medplum/core';
 import fs from 'node:fs';
 import { agentMain } from './agent-main';
 import { App } from './app';
 import * as loggerModule from './logger';
+
+function mockLogger(level: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock } {
+  return {
+    warn: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+    log: jest.fn(),
+    clone: jest.fn(),
+    level,
+  };
+}
 
 jest.mock('./constants', () => ({
   RETRY_WAIT_DURATION_MS: 150,
@@ -167,25 +179,8 @@ describe('Main', () => {
 
   test('Warnings from logger config parsing are logged', async () => {
     // Mock a logger that has warnings
-    const mockMainLogger = {
-      warn: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      log: jest.fn(),
-      clone: jest.fn(),
-      level: LogLevel.INFO,
-    };
-
-    const mockChannelLogger = {
-      warn: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      log: jest.fn(),
-      clone: jest.fn(),
-      level: LogLevel.INFO,
-    };
+    const mockMainLogger = mockLogger(LogLevel.INFO);
+    const mockChannelLogger = mockLogger(LogLevel.INFO);
 
     // Mock the WinstonWrapperLogger constructor to return our mock
     const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
@@ -235,8 +230,8 @@ describe('Main', () => {
       );
 
     // Create a mock logger to capture the config
-    let capturedMainLoggerConfig: any;
-    let capturedChannelLoggerConfig: any;
+    let capturedMainLoggerConfig!: loggerModule.AgentLoggerConfig;
+    let capturedChannelLoggerConfig!: loggerModule.AgentLoggerConfig;
 
     const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
       if (loggerType === 'main') {
@@ -244,16 +239,7 @@ describe('Main', () => {
       } else if (loggerType === 'channel') {
         capturedChannelLoggerConfig = config;
       }
-
-      return {
-        warn: jest.fn(),
-        debug: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-        log: jest.fn(),
-        clone: jest.fn(),
-        level: config.logLevel,
-      };
+      return mockLogger(config.logLevel);
     });
 
     // Mock parseLoggerConfigFromArgs to return empty warnings
