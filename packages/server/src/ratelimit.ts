@@ -71,10 +71,10 @@ export function closeRateLimiter(): void {
 function isAuthRequest(req: Request): boolean {
   // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
   // These URLs have a different rate limit than the rest of the API
-  if (req.originalUrl === '/auth/me') {
+  if (req.originalUrl === '/fhir-server/auth/me') {
     return false; // Read-only URL doesn't need the same rate limit protection
   }
-  return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+  return req.originalUrl.startsWith('/fhir-server/auth/') || req.originalUrl.startsWith('/fhir-server/oauth2/');
 }
 
 function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {

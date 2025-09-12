@@ -116,7 +116,7 @@
     "assert/strict": "node:assert/strict",
     "events": "node:events",
     "stream": "node:stream",
-    "buffer": "node:buffer",
+    "buffer": "npm:buffer@6.0.3",
     "process": "node:process",
     "assert": "node:assert",
     "node:events": "node:events",

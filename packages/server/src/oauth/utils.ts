@@ -64,6 +64,7 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
+import { Buffer } from 'buffer';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 

@@ -206,6 +206,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   }
 
   app.use('/api/', apiRouter);
+  app.use('/fhir-server', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);
   return server;
