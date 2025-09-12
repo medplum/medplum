@@ -130,7 +130,9 @@ export async function fetchPatientData(
 function buildQRDADocument(data: QRDAPatientData, params: QRDAGenerationParams): Record<string, any> {
   const { patient, encounters, interventions, procedures, coverages } = data;
 
-  const currentDateTime = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+  const now = new Date();
+  now.setMilliseconds(0);
+  const currentDateTime = formatHl7DateTime(now);
   const documentId = randomUUID();
 
   return {
