@@ -23,6 +23,7 @@ import {
   flatMapFilter,
   forbidden,
   formatSearchQuery,
+  getIdentifier,
   getReferenceString,
   getStatus,
   gone,
@@ -88,7 +89,7 @@ import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, getOptimizedIdentifierColumnName } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
@@ -1556,6 +1557,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           options: { unit: 'ms' },
         }
       );
+    }
+
+    const config = getConfig();
+    if (config.optimizedIdentifiers) {
+      for (const identifier of config.optimizedIdentifiers) {
+        if (identifier.resourceType === resourceType) {
+          const columnName = getOptimizedIdentifierColumnName(identifier.resourceType, identifier.system);
+          row[columnName] = getIdentifier(resource, identifier.system);
+        }
+      }
     }
 
     return row;

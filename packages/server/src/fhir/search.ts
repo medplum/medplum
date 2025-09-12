@@ -983,7 +983,7 @@ function buildSearchFilterExpression(
     };
   }
 
-  const impl = getSearchParameterImplementation(resourceType, param);
+  const impl = getSearchParameterImplementation(resourceType, param, filter);
 
   if (impl.searchStrategy === 'token-column') {
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
@@ -1284,6 +1284,9 @@ function buildTokenSearchFilter(
   operator: Operator,
   values: string[]
 ): Expression {
+  if (impl.stripSystem) {
+    values = values.map((v) => (v.includes('|') ? v.split('|')[1] : v));
+  }
   const column = new Column(table, impl.columnName);
   const condition = buildEqualityCondition(impl, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
