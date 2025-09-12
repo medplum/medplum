@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, BundleEntryRequest, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, BundleEntryRequest, ExtractResource, Resource, ResourceType } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -265,4 +265,13 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   // This adds fullUrl and request properties to each entry
   // and reorders the bundle to ensure that contained resources are created before they are referenced.
   return convertToTransactionBundle(simpleBundle);
+}
+
+export function findResourceInBundle<K extends ResourceType>(
+  bundle: Bundle,
+  resourceType: K,
+  id: string
+): ExtractResource<K> {
+  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+    ?.resource as ExtractResource<K>;
 }

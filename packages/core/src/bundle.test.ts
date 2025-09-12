@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
+import { Bundle, BundleEntry, DiagnosticReport, Observation, Patient, Resource, Specimen } from '@medplum/fhirtypes';
+import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -403,6 +403,129 @@ describe('Bundle tests', () => {
             },
           },
         ],
+      });
+    });
+  });
+
+  describe('findResourceById', () => {
+    test('Single resource', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('No matches', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Observation', '123');
+      expect(result).toBeUndefined();
+    });
+
+    test('Two resources, same type', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const patient2: Patient = {
+        resourceType: 'Patient',
+        id: '456',
+        name: [{ given: ['Jane'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: patient2 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types, same id', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        id: '123',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
       });
     });
   });
