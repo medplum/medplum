@@ -16,7 +16,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   // Read SFTP connection data from project secrets
   const host = event.secrets['SFTP_HOST']?.valueString;
   const user = event.secrets['SFTP_USER']?.valueString;
-  const key = event.secrets['SFTP_PRIVATE_KEY'].valueString;
+  const key = event.secrets['SFTP_PRIVATE_KEY']?.valueString;
 
   if (!host || !user || !key) {
     throw new Error('Missing required secrets: SFTP_HOST, SFTP_USER, SFTP_PRIVATE_KEY');
