@@ -496,7 +496,6 @@ describe('Bundle tests', () => {
       });
     });
 
-
     test('Two resources, different types, same id', () => {
       const patient1: Patient = {
         resourceType: 'Patient',
