@@ -142,6 +142,7 @@ async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]):
   builder.param(schemaName);
   builder.append(' AND t.relname IN ');
   builder.appendParameters(tableNames, true);
+  builder.append(' ORDER BY "tableName", "indexName"');
 
   const results = await client.query<{
     schemaName: string;
@@ -154,11 +155,6 @@ async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]):
 
   const rows = results.rows as GinIndexInfo[];
   for (const row of rows) {
-    for (const k in row) {
-      if ((row as any)[k] === null) {
-        (row as any)[k] = undefined;
-      }
-    }
     if (row.indexOptions) {
       row.indexOptions = arrayToString(row.indexOptions as unknown as string[]);
     }

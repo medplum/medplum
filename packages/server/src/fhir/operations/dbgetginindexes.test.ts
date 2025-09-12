@@ -23,9 +23,12 @@ describe('dbgetginindexes', () => {
     // Create a test table
     const client = getDatabasePool(DatabaseMode.WRITER);
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
-    await client.query(`CREATE TABLE ${escapedTableName} (name UUID[])`);
+    await client.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
     await client.query(
-      `CREATE INDEX CONCURRENTLY "Gin_Index_Test_Table_name_idx" ON ${escapedTableName} USING gin (name) WITH (gin_pending_list_limit = 1024)`
+      `CREATE INDEX CONCURRENTLY "Gin_Index_Test_Table_aaa_idx" ON ${escapedTableName} USING gin (aaa) WITH (fastupdate = ye, gin_pending_list_limit = 1024)`
+    );
+    await client.query(
+      `CREATE INDEX CONCURRENTLY "Gin_Index_Test_Table_bbb_idx" ON ${escapedTableName} USING gin (bbb)`
     );
   });
 
@@ -70,8 +73,23 @@ describe('dbgetginindexes', () => {
     });
 
     const indexes = (res.body.parameter as ParametersParameter[]).filter((p) => p.name === 'index');
-    expect(indexes).toHaveLength(1);
-    expectIndex(indexes[0]);
+    expect(indexes).toHaveLength(2);
+
+    expect(indexes[0].name).toBe('index');
+    expect(indexes[0].part?.find((p) => p.name === 'tableName')?.valueString).toBe('Gin_Index_Test_Table');
+    expect(indexes[0].part?.find((p) => p.name === 'indexName')?.valueString).toBe('Gin_Index_Test_Table_aaa_idx');
+    expect(indexes[0].part?.find((p) => p.name === 'fastUpdate')?.valueBoolean).toBe(true);
+    expect(indexes[0].part?.find((p) => p.name === 'indexOptions')?.valueString).toBe(
+      '{fastupdate=ye,gin_pending_list_limit=1024}'
+    );
+    expect(indexes[0].part?.find((p) => p.name === 'ginPendingListLimit')?.valueInteger).toBe(1024);
+
+    expect(indexes[1].name).toBe('index');
+    expect(indexes[1].part?.find((p) => p.name === 'tableName')?.valueString).toBe('Gin_Index_Test_Table');
+    expect(indexes[1].part?.find((p) => p.name === 'indexName')?.valueString).toBe('Gin_Index_Test_Table_bbb_idx');
+    expect(indexes[1].part?.find((p) => p.name === 'fastUpdate')?.valueBoolean).toBe(true);
+    expect(indexes[1].part?.find((p) => p.name === 'indexOptions')).toBeUndefined();
+    expect(indexes[1].part?.find((p) => p.name === 'ginPendingListLimit')?.valueInteger).toBeUndefined();
   });
 
   test('Invalid tableName', async () => {
@@ -92,31 +110,3 @@ describe('dbgetginindexes', () => {
     });
   });
 });
-
-function expectIndex(indexParam: ParametersParameter | undefined): void {
-  expect(indexParam).toMatchObject({
-    name: 'index',
-    part: expect.arrayContaining([
-      expect.objectContaining({
-        name: 'tableName',
-        valueString: 'Gin_Index_Test_Table',
-      }),
-      expect.objectContaining({
-        name: 'indexName',
-        valueString: 'Gin_Index_Test_Table_name_idx',
-      }),
-      expect.objectContaining({
-        name: 'indexOptions',
-        valueString: '{gin_pending_list_limit=1024}',
-      }),
-      expect.objectContaining({
-        name: 'fastUpdate',
-        valueBoolean: true,
-      }),
-      expect.objectContaining({
-        name: 'ginPendingListLimit',
-        valueInteger: 1024,
-      }),
-    ]),
-  });
-}

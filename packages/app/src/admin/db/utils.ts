@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { sortStringArray } from '@medplum/core';
+
 export function getAvailableTables(resourceTypes: string[]): string[] {
-  const tables: string[] = [];
+  let tables: string[] = [];
   for (const resourceType of resourceTypes) {
     tables.push(resourceType);
     tables.push(resourceType + '_History');
@@ -14,6 +16,6 @@ export function getAvailableTables(resourceTypes: string[]): string[] {
   tables.push('Coding');
   tables.push('Coding_Property');
   tables.push('DatabaseMigration');
-  tables.sort();
+  tables = sortStringArray(tables);
   return tables;
 }
