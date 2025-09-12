@@ -24,7 +24,7 @@ import { getReferenceString } from '@medplum/core';
 import { ChatList } from './ChatList';
 import { NewTopicDialog } from './NewTopicDialog';
 import { useThreadInbox } from '../../hooks/useThreadInbox';
-import classes from './TopicInbox.module.css';
+import classes from './ThreadInbox.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import { showErrorNotification } from '../../utils/notifications';
 import cx from 'clsx';
@@ -32,13 +32,14 @@ import cx from 'clsx';
 interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
-  showPatientSummary: boolean | undefined;
+  subject?: Reference<Patient> | Patient | undefined;
+  showPatientSummary?: boolean | undefined;
   handleNewThread: (message: Communication) => void;
   onSelectedItem: (topic: Communication) => string;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
-  const { query, threadId, showPatientSummary = false, handleNewThread, onSelectedItem } = props;
+  const { query, threadId, subject, showPatientSummary = false, handleNewThread, onSelectedItem } = props;
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
@@ -206,7 +207,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} />
+      <NewTopicDialog subject={subject} opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} />
     </>
   );
 }
