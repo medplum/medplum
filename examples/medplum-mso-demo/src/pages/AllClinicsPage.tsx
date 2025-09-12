@@ -8,11 +8,11 @@ import { Outlet } from 'react-router';
 import { useAdminStatus } from '../utils/admin';
 
 /**
- * A page component that displays a searchable list of all clinics in the system.
- * Shows clinics accessible to the current user in the current project context.
- * Provides search functionality and navigation to individual clinic details.
+ * A page component that displays a searchable list of all healthcare services in the system.
+ * Shows healthcare services accessible to the current user in the current project context.
+ * Provides search functionality and navigation to individual healthcare service details.
  *
- * @returns The clinics listing page
+ * @returns The healthcare services listing page
  */
 export function ClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();
@@ -22,7 +22,7 @@ export function ClinicPage(): JSX.Element {
   if (adminLoading) {
     return (
       <Document>
-        <Title>Manage Clinics</Title>
+        <Title>Manage Healthcare Services</Title>
         <Text>Loading...</Text>
       </Document>
     );
@@ -32,7 +32,7 @@ export function ClinicPage(): JSX.Element {
   if (!isAdmin) {
     return (
       <Document>
-        <Title>Manage Clinics</Title>
+        <Title>Manage Healthcare Services</Title>
         <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
           You need to be an Admin to view this page. Please contact your system administrator for access.
         </Alert>
@@ -42,11 +42,11 @@ export function ClinicPage(): JSX.Element {
 
   return (
     <Document>
-      <Title>Manage Clinics</Title>
-      <Text>Select a clinic to manage</Text>
+        <Title>Manage Healthcare Services</Title>
+        <Text>Select a healthcare service to manage</Text>
       <SearchControl
         search={{
-          resourceType: 'Organization',
+          resourceType: 'HealthcareService',
           fields: ['name', '_lastUpdated'],
           sortRules: [
             {
@@ -55,7 +55,7 @@ export function ClinicPage(): JSX.Element {
             },
           ],
         }}
-        onClick={(e) => navigate(`/Organization/${e.resource.id}/manage`)}
+        onClick={(e) => navigate(`/HealthcareService/${e.resource.id}/manage`)}
         hideToolbar={true}
       />
       <Outlet />

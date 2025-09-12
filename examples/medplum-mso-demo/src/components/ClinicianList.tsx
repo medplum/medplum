@@ -4,25 +4,25 @@ import { Badge, Button, Group, Modal, MultiSelect, Stack, Table, Text, TextInput
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { Organization, Practitioner } from '@medplum/fhirtypes';
+import { HealthcareService, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { enrollPractitioner, getEnrolledPractitioners, unEnrollPractitioner } from '../utils/enrollment';
 
 interface ClinicianListProps {
-  organization: Organization;
+  healthcareService: HealthcareService;
 }
 
 /**
- * A component that displays a list of clinicians for an organization.
+ * A component that displays a list of clinicians for a healthcare service.
  * Supports searching, filtering, enrollment, and unenrollment actions.
  *
  * @param props - The component props
- * @param props.organization - The organization to show clinicians for
+ * @param props.healthcareService - The healthcare service to show clinicians for
  * @returns A table displaying the clinicians with their names and actions
  */
-export function ClinicianList({ organization }: ClinicianListProps): JSX.Element {
+export function ClinicianList({ healthcareService }: ClinicianListProps): JSX.Element {
   const medplum = useMedplum();
   const [clinicians, setClinicians] = useState<Practitioner[]>([]);
   const [filteredClinicians, setFilteredClinicians] = useState<Practitioner[]>([]);
@@ -34,11 +34,11 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
   const [selectedClinicianIds, setSelectedClinicianIds] = useState<string[]>([]);
   const navigate = useMedplumNavigate();
 
-  // Load enrolled Practitioners to display for the current clinic
+  // Load enrolled Practitioners to display for the current healthcare service
   const loadClinicians = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const practitioners = await getEnrolledPractitioners(medplum, organization);
+      const practitioners = await getEnrolledPractitioners(medplum, healthcareService);
       setClinicians(practitioners);
       setFilteredClinicians(practitioners);
     } catch (error) {
@@ -50,9 +50,9 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     } finally {
       setIsLoading(false);
     }
-  }, [medplum, organization]);
+  }, [medplum, healthcareService]);
 
-  // Load the available practitioners for enrollment (practitioners not already enrolled in the clinic)
+  // Load the available practitioners for enrollment (practitioners not already enrolled in the healthcare service)
   const loadAvailableClinicians = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
@@ -63,7 +63,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
       });
 
       const allPractitioners = searchResult.entry?.map((e) => e.resource as Practitioner) ?? [];
-      const enrolledPractitioners = await getEnrolledPractitioners(medplum, organization);
+      const enrolledPractitioners = await getEnrolledPractitioners(medplum, healthcareService);
 
       // Filter out already enrolled practitioners and the current user
       const availablePractitioners = allPractitioners.filter(
@@ -86,7 +86,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     } finally {
       setIsLoading(false);
     }
-  }, [medplum, organization]);
+  }, [medplum, healthcareService]);
 
   useEffect(() => {
     loadClinicians().catch(console.error);
@@ -119,10 +119,10 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     return `${name.given?.[0] ?? ''} ${name.family ?? ''}`.trim();
   };
 
-  // Unenroll a Practitioner from the organization
+  // Unenroll a Practitioner from the healthcareService
   const handleUnenroll = async (practitioner: Practitioner): Promise<void> => {
     try {
-      await unEnrollPractitioner(medplum, practitioner, organization);
+      await unEnrollPractitioner(medplum, practitioner, healthcareService);
       // Refresh the list after unenrollment
       const updatedClinicians = clinicians.filter((c) => c.id !== practitioner.id);
       setClinicians(updatedClinicians);
@@ -130,7 +130,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
       showNotification({
         title: 'Success',
-        message: `Successfully unenrolled ${getName(practitioner)} from ${organization.name}`,
+        message: `Successfully unenrolled ${getName(practitioner)} from ${healthcareService.name}`,
         color: 'green',
       });
 
@@ -165,7 +165,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     try {
       if (selectedClinicians.length > 0) {
         const results = await Promise.allSettled(
-          selectedClinicians.map((practitioner) => enrollPractitioner(medplum, practitioner, organization))
+          selectedClinicians.map((practitioner) => enrollPractitioner(medplum, practitioner, healthcareService))
         );
 
         const successCount = results.filter((result) => result.status === 'fulfilled').length;
@@ -173,7 +173,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
         showNotification({
           title: 'Success',
-          message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
+          message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${healthcareService.name}`,
           color: 'green',
         });
 

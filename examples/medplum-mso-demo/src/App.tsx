@@ -47,14 +47,14 @@ export function App(): JSX.Element {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/" element={<LandingPage />} />
               <Route path="/Patient" element={<PatientPage />} />
-              <Route path="/Organization" element={<ClinicPage />} />
-              <Route path="/Organization/:id/manage" element={<ManageClinicPage />} />
+              <Route path="/HealthcareService" element={<ClinicPage />} />
+              <Route path="/HealthcareService/:id/manage" element={<ManageClinicPage />} />
               <Route path="/Observation" element={<ObservationPage />} />
               <Route path="/DiagnosticReport" element={<DiagnosticReportPage />} />
               <Route path="/Encounter" element={<EncounterPage />} />
               <Route path="/Communication" element={<CommunicationPage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
-              <Route path="/Organization/new" element={<NewClinicPage />} />
+              <Route path="/HealthcareService/new" element={<NewClinicPage />} />
               <Route path="/Practitioner/new" element={<NewClinicianPage />} />
               <Route path="/admin/access-policy" element={<UploadAccessPolicyPage />} />
               <Route path="/admin/upload-bundle" element={<UploadBundlePage />} />
@@ -102,8 +102,8 @@ const menus = [
     links: [
       {
         icon: <IconBuildingHospital />,
-        label: 'Create New Clinic',
-        href: '/Organization/new',
+        label: 'Create New Healthcare Service',
+        href: '/HealthcareService/new',
       },
       {
         icon: <IconUserPlus />,
@@ -112,8 +112,8 @@ const menus = [
       },
       {
         icon: <IconBuildingCommunity />,
-        label: 'Manage Clinics',
-        href: '/Organization',
+        label: 'Manage Healthcare Services',
+        href: '/HealthcareService',
       },
     ],
   },

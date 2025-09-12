@@ -1,5 +1,5 @@
 <h1 align="center">Medplum Managed Service Organization (MSO) Demo App</h1>
-<p align="center">A starter application for building a MSO platform on Medplum. It shows how to control clinician access where clinicians and patients can be enrolled at multiple clinics.</p>
+<p align="center">A starter application for building a MSO platform on Medplum. It shows how to control clinician access where clinicians and patients can be enrolled at multiple healthcare services.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-mso-demo/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -8,8 +8,8 @@
 
 ## Overview
 
-- Operations to enroll and unenroll clinicians and patients across different clinics with automatic access policy updates - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
-- Fetching all patients and clinicians enrolled in a clinic - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
+- Operations to enroll and unenroll clinicians and patients across different healthcare services with automatic access policy updates - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
+- Fetching all patients and clinicians enrolled in a healthcare service - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
 - Clinician and Patient management interface - see [src/components/ClinicianList.tsx](./src/components/ClinicianList.tsx) and [src/components/PatientList.tsx](./src/components/PatientList.tsx)
 - MSO Access Policy - see [src/data/access-policy.ts](./src/data/access-policy.ts)
 
@@ -53,9 +53,9 @@ For Managed Service Organizations (MSOs), complexity stems from practitioners po
 
 This demo implements a solution where:
 
-- Tenants are separated as Organizations (clinics) within a single Medplum Project
-- Patients and clinicians can each be enrolled in multiple clinics
-- AccessPolicy controls limit clinician access to resources only within shared clinics
+- Tenants are separated as HealthcareServices within a single Medplum Project
+- Patients and clinicians can each be enrolled in multiple healthcare services
+- AccessPolicy controls limit clinician access to resources only within shared healthcare services
 
 <img src="./public/how-it-works.png" alt="How it works" />
 
@@ -63,15 +63,15 @@ This demo implements a solution where:
 
 ### Admin Features
 
-- Create new clinics (Organizations)
+- Create new healthcare services (HealthcareServices)
 - Create new clinicians (Practitioners)
-- Enroll practitioners in one or more clinics
-- Enroll patients in one or more clinics
+- Enroll practitioners in one or more healthcare services
+- Enroll patients in one or more healthcare services
 - Manage access policies
 
 ### Clinician Features
 
-- View patients, observations, diagnostic reports, encounters, and communications affiliated with their clinics - simulating what they would see in their EHR
+- View patients, observations, diagnostic reports, encounters, and communications affiliated with their healthcare services - simulating what they would see in their EHR
 
 ## Code Organization
 
@@ -84,20 +84,20 @@ This repo is organized into several main directories:
 
 ## Key Workflows
 
-1. **Creating a new clinic**: Admins can create new Clinics to represent clinics
-2. **Creating a new clinician**: Admins can create new Practitioners and assign them to Clinics
-3. **Enrolling a practitioner in a clinic**: Configures access policies for that Practitioner to be able to read/write to all Patients in that Clinic
-4. **Enrolling a patient in a clinic**: Configures access policies for Clinicians in that Clinic to be able to read/write to that Patient
-5. **Viewing patient data**: Practitioners can only see patients and their clinical data if they share an organizational affiliation
+1. **Creating a new healthcare service**: Admins can create new HealthcareServices to represent healthcare services
+2. **Creating a new clinician**: Admins can create new Practitioners and assign them to HealthcareServices
+3. **Enrolling a practitioner in a healthcare service**: Configures access policies for that Practitioner to be able to read/write to all Patients in that HealthcareService
+4. **Enrolling a patient in a healthcare service**: Configures access policies for Clinicians in that HealthcareService to be able to read/write to that Patient
+5. **Viewing patient data**: Practitioners can only see patients and their clinical data if they share a healthcare service affiliation
 
 ## Resources Used
 
 This demo uses the following FHIR and Medplum resources:
 
 - **AccessPolicy**: Defines the access rules for clinicians to resources across the project
-- **Organization**: Represents a clinic
+- **HealthcareService**: Represents a healthcare service
 - **Practitioner**: Represents a clinician
-- **ProjectMembership**: Stores references to the clinics that the clinician can access
+- **ProjectMembership**: Stores references to the healthcare services that the clinician can access
 - **Patient**: Represents an individual receiving care
 - **Observation**: Represents clinical measurements and findings
 - **DiagnosticReport**: Represents diagnostic test results

@@ -4,7 +4,7 @@ import { Alert, Button, MultiSelect, PasswordInput, Stack, Text, TextInput, Titl
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { AccessPolicy, Organization } from '@medplum/fhirtypes';
+import { AccessPolicy, HealthcareService } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
@@ -16,12 +16,12 @@ interface NewClinicianForm {
   lastName: string;
   email: string;
   password: string;
-  organizations: string[];
+  healthcareServices: string[];
 }
 
 /**
  * New clinician page component for the MSO demo.
- * Allows admins to create new clinicians and assign them to organizations.
+ * Allows admins to create new clinicians and assign them to healthcare services.
  *
  * @returns The new clinician page component
  */
@@ -33,19 +33,19 @@ export function NewClinicianPage(): JSX.Element {
     lastName: '',
     email: '',
     password: '',
-    organizations: [],
+    healthcareServices: [],
   });
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [healthcareServices, setHealthcareServices] = useState<HealthcareService[]>([]);
   const [loading, setLoading] = useState(false);
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   useEffect(() => {
-    const fetchOrgs = async (): Promise<void> => {
-      const orgs = await medplum.search('Organization', {});
-      setOrganizations(orgs.entry?.map((e) => e.resource as Organization) ?? []);
+    const fetchHealthcareServices = async (): Promise<void> => {
+      const services = await medplum.search('HealthcareService', {});
+      setHealthcareServices(services.entry?.map((e) => e.resource as HealthcareService) ?? []);
     };
 
-    fetchOrgs().catch((error) => {
+    fetchHealthcareServices().catch((error) => {
       showNotification({
         title: 'Error',
         message: normalizeErrorString(error),
@@ -60,7 +60,7 @@ export function NewClinicianPage(): JSX.Element {
       !formData.password ||
       !formData.firstName ||
       !formData.lastName ||
-      formData.organizations.length === 0
+      formData.healthcareServices.length === 0
     ) {
       return;
     }
@@ -77,13 +77,13 @@ export function NewClinicianPage(): JSX.Element {
         throw new Error('Access policy not found');
       }
 
-      // Create the access array for each selected organization
-      const access = formData.organizations.map((orgId) => ({
+      // Create the access array for each selected healthcare service
+      const access = formData.healthcareServices.map((serviceId) => ({
         policy: { reference: `AccessPolicy/${policy.id}` },
         parameter: [
           {
-            name: 'organization',
-            valueReference: { reference: `Organization/${orgId}` },
+            name: 'healthcare_service',
+            valueReference: { reference: `HealthcareService/${serviceId}` },
           },
         ],
       }));
@@ -188,14 +188,14 @@ export function NewClinicianPage(): JSX.Element {
         />
 
         <MultiSelect
-          label="Clinics"
-          placeholder="Select clinics"
-          data={organizations.map((org) => ({
-            value: org.id as string,
-            label: org.name as string,
+          label="Healthcare Services"
+          placeholder="Select healthcare services"
+          data={healthcareServices.map((service) => ({
+            value: service.id as string,
+            label: service.name as string,
           }))}
-          value={formData.organizations}
-          onChange={(values) => setFormData((prev) => ({ ...prev, organizations: values }))}
+          value={formData.healthcareServices}
+          onChange={(values) => setFormData((prev) => ({ ...prev, healthcareServices: values }))}
         />
 
         <Button
@@ -206,7 +206,7 @@ export function NewClinicianPage(): JSX.Element {
             !formData.password ||
             !formData.firstName ||
             !formData.lastName ||
-            formData.organizations.length === 0
+            formData.healthcareServices.length === 0
           }
         >
           Create Clinician

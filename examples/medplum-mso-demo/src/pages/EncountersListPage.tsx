@@ -15,7 +15,7 @@ import { JSX } from 'react';
 import { Outlet } from 'react-router';
 
 /**
- * A page component that displays a searchable list of clinical encounters.
+ * A page component that displays a searchable list of healthcare encounters.
  * Shows encounters accessible to the current user in the current project context.
  * Provides search functionality by type, subject, and participants, with navigation to encounter details.
  *

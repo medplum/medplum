@@ -4,7 +4,7 @@ import { Alert, Tabs, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { Organization } from '@medplum/fhirtypes';
+import { HealthcareService } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
@@ -14,26 +14,26 @@ import { PatientList } from '../components/PatientList';
 import { useAdminStatus } from '../utils/admin';
 
 /**
- * A page component for managing a specific clinic and its members.
+ * A page component for managing a specific healthcare service and its members.
  * Provides interfaces for enrolling and managing patients and practitioners
- * associated with the clinic.
+ * associated with the healthcare service.
  *
- * @returns The clinic management page
+ * @returns The healthcare service management page
  */
 export function ManageClinicPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams();
-  const [organization, setOrganization] = useState<Organization>();
+  const [healthcareService, setHealthcareService] = useState<HealthcareService>();
   const [activeTab, setActiveTab] = useState<string | null>('practitioners');
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   useEffect(() => {
-    const loadOrganization = async (): Promise<void> => {
-      const org = await medplum.readResource('Organization', id as string);
-      setOrganization(org);
+    const loadHealthcareService = async (): Promise<void> => {
+      const service = await medplum.readResource('HealthcareService', id as string);
+      setHealthcareService(service);
     };
 
-    loadOrganization().catch((error) => {
+    loadHealthcareService().catch((error) => {
       showNotification({
         title: 'Error',
         message: normalizeErrorString(error),
@@ -46,7 +46,7 @@ export function ManageClinicPage(): JSX.Element {
   if (adminLoading) {
     return (
       <Document>
-        <Title>Manage Clinic</Title>
+        <Title>Manage Healthcare Service</Title>
         <Text>Loading...</Text>
       </Document>
     );
@@ -56,7 +56,7 @@ export function ManageClinicPage(): JSX.Element {
   if (!isAdmin) {
     return (
       <Document>
-        <Title>Manage Clinic</Title>
+        <Title>Manage Healthcare Service</Title>
         <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
           You need to be an Admin to view this page. Please contact your system administrator for access.
         </Alert>
@@ -64,7 +64,7 @@ export function ManageClinicPage(): JSX.Element {
     );
   }
 
-  if (!organization) {
+  if (!healthcareService) {
     return (
       <Document>
         <Title>Loading...</Title>
@@ -74,9 +74,9 @@ export function ManageClinicPage(): JSX.Element {
 
   return (
     <Document>
-      {organization && (
+      {healthcareService && (
         <>
-          <Title>{organization.name}</Title>
+          <Title>{healthcareService.name}</Title>
 
           <Tabs value={activeTab} onChange={setActiveTab}>
             <Tabs.List mb="md">
@@ -85,11 +85,11 @@ export function ManageClinicPage(): JSX.Element {
             </Tabs.List>
 
             <Tabs.Panel value="practitioners">
-              <ClinicianList organization={organization} />
+              <ClinicianList healthcareService={healthcareService} />
             </Tabs.Panel>
 
             <Tabs.Panel value="patients">
-              <PatientList organization={organization} />
+              <PatientList healthcareService={healthcareService} />
             </Tabs.Panel>
           </Tabs>
         </>

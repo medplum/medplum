@@ -15,7 +15,7 @@ import { JSX } from 'react';
 import { Outlet } from 'react-router';
 
 /**
- * A page component that displays a searchable list of clinical observations.
+ * A page component that displays a searchable list of healthcare observations.
  * Shows observations accessible to the current user in the current project context.
  * Provides search functionality by code, subject, and value, with navigation to observation details.
  *

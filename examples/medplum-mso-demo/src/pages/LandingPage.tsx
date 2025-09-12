@@ -32,15 +32,15 @@ export function LandingPage(): JSX.Element {
 
         <Text>
           This Managed Service Organization (MSO) example demonstrates how to manage tenants with shared resources
-          across multiple Organization resources. It is recommended to create a new medplum project to use with this
+          across multiple HealthcareService resources. It is recommended to create a new medplum project to use with this
           demo app.
         </Text>
 
         {isAdmin && (
           <Stack>
             <Text>
-              As an admin user, you can create new clinics, create new clinicians, and manage the enrolled patients and
-              clinicians across different clinics.
+              As an admin user, you can create new healthcare services, create new clinicians, and manage the enrolled patients and
+              clinicians across different healthcare services.
             </Text>
             <List type="ordered">
               <List.Item>
@@ -54,18 +54,18 @@ export function LandingPage(): JSX.Element {
                 </Anchor>
               </List.Item>
               <List.Item>
-                <Anchor component={Link} to="/Organization/new">
-                  Create Clinics
+                <Anchor component={Link} to="/HealthcareService/new">
+                  Create Healthcare Services
                 </Anchor>
               </List.Item>
               <List.Item>
                 <Anchor component={Link} to="/Practitioner/new">
-                  Create Clinicians and assign them to one or more Clinics (note: keep track of email and password)
+                  Create Clinicians and assign them to one or more Healthcare Services (note: keep track of email and password)
                 </Anchor>
               </List.Item>
               <List.Item>
-                <Anchor component={Link} to="/Organization">
-                  Manage Clinics by enrolling or unenrolling Patients and Clinicians
+                <Anchor component={Link} to="/HealthcareService">
+                  Manage Healthcare Services by enrolling or unenrolling Patients and Clinicians
                 </Anchor>
               </List.Item>
               <List.Item>
@@ -73,7 +73,7 @@ export function LandingPage(): JSX.Element {
                 <List withPadding listStyleType="disc">
                   <List.Item>Log out from admin account</List.Item>
                   <List.Item>Login as one of the Clinicians</List.Item>
-                  <List.Item>Verify you only see resources affiliated with Patients in your clinics</List.Item>
+                  <List.Item>Verify you only see resources affiliated with Patients in your healthcare services</List.Item>
                 </List>
               </List.Item>
             </List>
@@ -84,7 +84,7 @@ export function LandingPage(): JSX.Element {
           <Stack>
             <Text>
               When logged in as a clinician user, your access will permit you to view all resources affiliated with any
-              of your assigned organizations. Here are some examples:
+              of your assigned healthcare services. Here are some examples:
             </Text>
             <List type="ordered">
               <List.Item>

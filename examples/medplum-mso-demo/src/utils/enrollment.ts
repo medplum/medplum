@@ -3,7 +3,7 @@
 import { createReference, getReferenceString, MedplumClient, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
-  Organization,
+  HealthcareService,
   Parameters,
   ParametersParameter,
   Patient,
@@ -29,7 +29,7 @@ import {
 export async function enrollPractitioner(
   medplum: MedplumClient,
   practitioner: Practitioner,
-  organization: Organization
+  organization: HealthcareService
 ): Promise<ProjectMembership> {
   // 1. Search for the practitioner's project membership, if there is no project membership, throw an error
   const projectMembershipSearch = await medplum.searchOne('ProjectMembership', {
@@ -41,25 +41,25 @@ export async function enrollPractitioner(
     const existingAccess = membershipResource.access || [];
 
     // 2. Check if this organization reference already exists in any access array
-    const organizationExists = existingAccess.some((access) =>
+    const healthcareServiceExists = existingAccess.some((access) =>
       access.parameter?.some(
-        (param) => param.name === 'organization' && param.valueReference?.reference === getReferenceString(organization)
+        (param) => param.name === 'healthcare_service' && param.valueReference?.reference === getReferenceString(organization)
       )
     );
 
     // 3. If the organization reference does not exist, add the organization to the ProjectMembership.access array
-    if (!organizationExists) {
+    if (!healthcareServiceExists) {
       const policy = await getAccessPolicyByName(medplum, 'Managed Service Organization Access Policy');
 
       if (existingAccess.length > 0) {
         existingAccess.push({
-          parameter: [{ name: 'organization', valueReference: createReference(organization) }],
+          parameter: [{ name: 'healthcare_service', valueReference: createReference(organization) }],
           policy: { reference: getReferenceString(policy) },
         });
       } else {
         membershipResource.access = [
           {
-            parameter: [{ name: 'organization', valueReference: createReference(organization) }],
+            parameter: [{ name: 'healthcare_service', valueReference: createReference(organization) }],
             policy: { reference: getReferenceString(policy) },
           },
         ];
@@ -78,33 +78,33 @@ export async function enrollPractitioner(
 }
 
 /**
- * Enrolls a patient in an organization. This is done by adding a reference to the organization the patient with the $set-accounts operation.
+ * Enrolls a patient in a healthcare service. This is done by adding a reference to the healthcare service the patient with the $set-accounts operation.
  *
  *  1. Get the patient's pre-existing accounts
  *  2. Check if already enrolled, and if so, return
- *  3. Construct the Parameters resource with the existing accounts and the new organization
+ *  3. Construct the Parameters resource with the existing accounts and the new healthcare service
  *  4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
  *     See docs: https://www.medplum.com/docs/api/fhir/operations/patient-set-accounts
  *
  * @param medplum - The Medplum client.
  * @param patient - The patient to enroll.
- * @param organization - The organization to enroll the patient in.
+ * @param healthcareService - The healthcare service to enroll the patient in.
  */
 export async function enrollPatient(
   medplum: MedplumClient,
   patient: Patient,
-  organization: Organization
+  healthcareService: HealthcareService
 ): Promise<void> {
   // 1. Get the patient's pre-existing accounts
   const accounts = patient.meta?.accounts || [];
-  const orgReference = getReferenceString(organization);
+  const healthcareServiceReference = getReferenceString(healthcareService);
 
   // 2. Check if already enrolled, and if so, return
-  if (accounts.some((a: Reference) => a.reference === orgReference)) {
+  if (accounts.some((a: Reference) => a.reference === healthcareServiceReference)) {
     return;
   }
 
-  // 3. Construct the Parameters resource with the existing accounts and the new organization
+  // 3. Construct the Parameters resource with the existing accounts and the new healthcare service
   const parameters: Parameters = {
     resourceType: 'Parameters',
     parameter: [
@@ -115,10 +115,10 @@ export async function enrollPatient(
           reference: account.reference,
         },
       })),
-      // Add the new organization
+      // Add the new healthcare service
       {
         name: 'accounts',
-        valueReference: createReference(organization),
+        valueReference: createReference(healthcareService),
       },
       // Propagate changes to all resources in the Patient compartment
       {
@@ -137,7 +137,7 @@ export async function enrollPatient(
 }
 
 /**
- * Unenrolls a patient from an organization.
+ * Unenrolls a patient from a healthcare service.
  *
  *  1. Get the patient's pre-existing accounts
  *  2. Construct the Parameters resource with the existing accounts except the one to remove
@@ -146,20 +146,20 @@ export async function enrollPatient(
  *
  * @param medplum - The Medplum client.
  * @param patient - The patient to unenroll.
- * @param organization - The organization to unenroll the patient from.
+ * @param healthcareService - The healthcare service to unenroll the patient from.
  */
 export async function unEnrollPatient(
   medplum: MedplumClient,
   patient: Patient,
-  organization: Organization
+  healthcareService: HealthcareService
 ): Promise<void> {
   // 1. Get the patient's pre-existing accounts
   const accounts = patient.meta?.accounts || [];
-  const orgReference = getReferenceString(organization);
+  const healthcareServiceReference = getReferenceString(healthcareService);
 
   // 2. Construct the Parameters resource with the existing accounts except the one to remove
   const parameter: ParametersParameter[] = accounts
-    .filter((a: Reference) => a.reference !== orgReference)
+    .filter((a: Reference) => a.reference !== healthcareServiceReference)
     .map((account) => ({
       name: 'accounts',
       valueReference: {
@@ -178,20 +178,20 @@ export async function unEnrollPatient(
 }
 
 /**
- * Unenrolls a practitioner from an organization.
+ * Unenrolls a practitioner from a healthcare service.
  *
  *  1. Search for the practitioner's project membership
- *  2. Remove the organization from the access array of the practitioner's project membership
+ *  2. Remove the healthcare service from the access array of the practitioner's project membership
  *  3. Update the ProjectMembership resource
  *
  * @param medplum - The Medplum client.
  * @param practitioner - The practitioner to unenroll.
- * @param organization - The organization to unenroll the practitioner from.
+ * @param healthcareService - The healthcare service to unenroll the practitioner from.
  */
 export async function unEnrollPractitioner(
   medplum: MedplumClient,
   practitioner: Practitioner,
-  organization: Organization
+  healthcareService: HealthcareService
 ): Promise<void> {
   // 1. Search for the practitioner's project membership
   const membershipResource = await medplum.searchOne('ProjectMembership', {
@@ -203,7 +203,7 @@ export async function unEnrollPractitioner(
     membershipResource.access = membershipResource.access?.filter((access) =>
       access.parameter?.some(
         (param: ProjectMembershipAccessParameter) =>
-          param.valueReference?.reference !== getReferenceString(organization)
+          param.valueReference?.reference !== getReferenceString(healthcareService)
       )
     );
 
@@ -217,30 +217,30 @@ export async function unEnrollPractitioner(
 }
 
 /**
- * Gets practitioners enrolled in a specific organization.
+ * Gets practitioners enrolled in a specific healthcare service.
  *
  *  1. Search for all ProjectMembership resources
- *  2. Filter the memberships to only include those with access to the organization
- *  3. Search for the Practitioner resources that have ProjectMembership resources with access to this organization
+ *  2. Filter the memberships to only include those with access to the healthcare service
+ *  3. Search for the Practitioner resources that have ProjectMembership resources with access to this healthcare service
  *  4. Return the Practitioners
  *
  * @param medplum - The Medplum client.
- * @param organization - The organization to get enrolled practitioners for.
- * @returns Array of practitioners enrolled in the organization.
+ * @param healthcareService - The healthcare service to get enrolled practitioners for.
+ * @returns Array of practitioners enrolled in the healthcare service.
  */
 export async function getEnrolledPractitioners(
   medplum: MedplumClient,
-  organization: Organization
+  healthcareService: HealthcareService
 ): Promise<Practitioner[]> {
   // 1. Search for all ProjectMembership resources
   const memberships = await medplum.searchResources('ProjectMembership');
 
-  // 2. Filter ProjectMembership resources to only the practitioners with access to this organization
+  // 2. Filter ProjectMembership resources to only the practitioners with access to this healthcare service
   const practitionerRefs = memberships
     .filter((membership) =>
       membership.access?.some((a) =>
         a.parameter?.some(
-          (p) => p.name === 'organization' && p.valueReference?.reference === getReferenceString(organization)
+          (p) => p.name === 'healthcare_service' && p.valueReference?.reference === getReferenceString(healthcareService)
         )
       )
     )
@@ -248,7 +248,7 @@ export async function getEnrolledPractitioners(
     .filter(Boolean);
 
   if (practitionerRefs.length > 0) {
-    // 3. Search for the Practitioner resources that have ProjectMembership resources with access to this organization
+    // 3. Search for the Practitioner resources that have ProjectMembership resources with access to this healthcare service
     const practitioners = await medplum.searchResources('Practitioner', {
       _id: practitionerRefs.map((ref) => resolveId(ref)).join(','),
       _fields: 'name',
@@ -262,23 +262,23 @@ export async function getEnrolledPractitioners(
 }
 
 /**
- * Gets patients enrolled in a specific organization.
+ * Gets patients enrolled in a specific healthcare service.
  *
  *  1. Invalidate the Patient search cache first
- *  2. Search for all patients with this organization in their compartment
+ *  2. Search for all patients with this healthcare service in their compartment
  *  3. Return the patients
  *
  * @param medplum - The Medplum client.
- * @param organization - The organization to get enrolled patients for.
- * @returns Array of patients enrolled in the organization.
+ * @param healthcareService - The healthcare service to get enrolled patients for.
+ * @returns Array of patients enrolled in the healthcare service.
  */
-export async function getEnrolledPatients(medplum: MedplumClient, organization: Organization): Promise<Patient[]> {
+export async function getEnrolledPatients(medplum: MedplumClient, healthcareService: HealthcareService): Promise<Patient[]> {
   // 1. Invalidate the Patient search cache first
   medplum.invalidateSearches('Patient');
 
-  // 2. Search for all patients with this organization in their compartment
+  // 2. Search for all patients with this healthcare service in their compartment
   const patients = await medplum.searchResources('Patient', {
-    _compartment: getReferenceString(organization),
+    _compartment: getReferenceString(healthcareService),
     _fields: 'name',
   });
 

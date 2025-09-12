@@ -15,7 +15,7 @@ import { JSX } from 'react';
 import { Outlet } from 'react-router';
 
 /**
- * A page component that displays a searchable list of clinical communications.
+ * A page component that displays a searchable list of healthcare communications.
  * Shows communications accessible to the current user in the current project context.
  * Provides search functionality by subject, sender, recipient, and payload content,
  * with navigation to communication details.
