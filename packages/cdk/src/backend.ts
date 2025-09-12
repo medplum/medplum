@@ -62,6 +62,10 @@ export class BackEnd extends Construct {
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
 
+  smtpPassword: secretsmanager.ISecret;
+  smtpSecretsParameter: ssm.StringParameter;
+  smtpSecrets: secretsmanager.ISecret;
+
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
 
@@ -286,6 +290,34 @@ export class BackEnd extends Construct {
     });
     this.redisSecrets.node.addDependency(this.redisPassword);
     this.redisSecrets.node.addDependency(this.redisCluster);
+
+    // SMTP
+
+    // karl: do we need both an SMTPPassword and an SMTPSecrets?  Redis does this
+    this.smtpPassword = new secretsmanager.Secret(this, 'SmtpPassword', {
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'password',
+        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
+      },
+    });
+
+    this.smtpSecrets = new secretsmanager.Secret(this, 'SmtpSecrets', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          password: this.smtpPassword.secretValueFromJson('password').toString(),
+        }),
+      },
+    });
+
+    this.smtpSecretsParameter = new ssm.StringParameter(this, 'SmtpSecretsParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/SMTPSecrets`,
+      description: 'SMTP secrets ARN',
+      stringValue: this.smtpPassword.secretArn,
+    });
+
+    this.smtpSecrets.node.addDependency(this.smtpPassword);
 
     // ECS Cluster
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };

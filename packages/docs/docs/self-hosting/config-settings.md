@@ -699,6 +699,10 @@ Example `RedisSecrets` value:
 }
 ```
 
+### SMTP Config
+
+TBD
+
 ### External Secrets
 
 Some users may want to load their config parameters from an external provider, such as the `AWS Parameter Store`.
