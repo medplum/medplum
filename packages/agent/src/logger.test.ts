@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { LogLevel, LogLevelNames, parseLogLevel } from '@medplum/core';
+import { mkdtemp, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
+  createWinstonFromLoggerConfig,
   DEFAULT_LOGGER_CONFIG,
   getWinstonLevelFromMedplumLevel,
   LoggerType,
@@ -543,6 +547,311 @@ describe('Agent Logger', () => {
       expect(consoleSpy.log).toHaveBeenCalled();
       const call = consoleSpy.log.mock.calls[0][0];
       expect(call).toContain('Child message');
+    });
+  });
+
+  describe('createWinstonFromLoggerConfig', () => {
+    let tempDir: string;
+    let originalNodeEnv: string | undefined;
+
+    beforeAll(() => {
+      console.log = jest.fn();
+    });
+
+    beforeEach(async () => {
+      // Create a temporary directory for test logs
+      tempDir = await mkdtemp(join(tmpdir(), 'medplum-logger-test-'));
+      
+      // Store original NODE_ENV and set to non-test
+      originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+    });
+
+    afterEach(async () => {
+      // Restore original NODE_ENV
+      process.env.NODE_ENV = originalNodeEnv;
+      
+      // Clean up temporary directory
+      try {
+        await rm(tempDir, { recursive: true, force: true });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    });
+
+    test('should create winston logger with console transport in test environment', () => {
+      // Set NODE_ENV back to test for this specific test
+      process.env.NODE_ENV = 'test';
+      
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      expect(logger).toBeDefined();
+      expect(logger.transports).toHaveLength(1);
+      expect((logger.transports[0] as any).name).toBe('console');
+      
+      // Restore NODE_ENV for other tests
+      process.env.NODE_ENV = 'production';
+    });
+
+    test('should create winston logger with daily rotate transport in non-test environment', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+        maxFileSizeMb: 5,
+        filesToKeep: 3,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      expect(logger).toBeDefined();
+      expect(logger.transports).toHaveLength(2); // console + daily rotate
+      
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      expect(dailyRotateTransport).toBeDefined();
+    });
+
+    test('should create correct filename for main logger type', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      // The filename should contain 'medplum-agent-main'
+      expect((dailyRotateTransport as any).options.filename).toContain('medplum-agent-main');
+    });
+
+    test('should create correct filename for channel logger type', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.CHANNEL);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      // The filename should contain 'medplum-agent-channels'
+      expect((dailyRotateTransport as any).options.filename).toContain('medplum-agent-channels');
+    });
+
+    test('should use correct dirname from config', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      // The dirname property is stored in the options
+      expect((dailyRotateTransport as any).options.dirname).toBe(tempDir);
+    });
+
+    test('should use correct maxSize from config', () => {
+      const maxFileSizeMb = 15;
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+        maxFileSizeMb,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      // The maxSize property is stored in the options
+      expect((dailyRotateTransport as any).options.maxSize).toBe(`${maxFileSizeMb}m`);
+    });
+
+    test('should use correct maxFiles from config', () => {
+      const filesToKeep = 7;
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+        filesToKeep,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      // The maxFiles property is stored in the options
+      expect((dailyRotateTransport as any).options.maxFiles).toBe(filesToKeep);
+    });
+
+    test('should set correct log level from config', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.DEBUG,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      expect(logger.level).toBe('debug');
+    });
+
+    test('should set logger to silent when log level is NONE', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.NONE,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      expect(logger.silent).toBe(true);
+    });
+
+    test('should not be silent when log level is not NONE', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      expect(logger.silent).toBe(false);
+    });
+
+    test('should have error handler attached to daily rotate transport', () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      const dailyRotateTransport = logger.transports.find(t => (t as any).name === 'dailyRotateFile');
+      
+      expect(dailyRotateTransport).toBeDefined();
+      
+      // Check that the error handler is attached by examining the listeners
+      const listeners = (dailyRotateTransport as any).listeners('error');
+      expect(listeners.length).toBeGreaterThan(0);
+      
+      // The error handler should be a function that calls console.error
+      const errorHandler = listeners[0];
+      expect(typeof errorHandler).toBe('function');
+    });
+
+    test('should create log files when logging messages', async () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      // Log some messages
+      logger.info('Test info message', { testData: 'value' });
+      logger.warn('Test warn message', { testData: 'value2' });
+      logger.error('Test error message', { testData: 'value3' });
+
+      // Give winston time to write to file
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if log files were created
+      const fs = await import('fs/promises');
+      const files = await fs.readdir(tempDir);
+      const logFiles = files.filter(file => file.includes('medplum-agent-main'));
+      
+      expect(logFiles.length).toBeGreaterThan(0);
+      
+      // Check that the log file contains our messages
+      const logFile = logFiles[0];
+      const logContent = await fs.readFile(join(tempDir, logFile), 'utf-8');
+      expect(logContent).toContain('Test info message');
+      expect(logContent).toContain('Test warn message');
+      expect(logContent).toContain('Test error message');
+    });
+
+    test('should format log messages correctly with timestamp and level transformation', async () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.INFO,
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      // Log a message
+      logger.info('Test message', { key: 'value' });
+
+      // Give winston time to write to file
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check the log file content
+      const fs = await import('fs/promises');
+      const files = await fs.readdir(tempDir);
+      const logFiles = files.filter(file => file.includes('medplum-agent-main'));
+      
+      expect(logFiles.length).toBeGreaterThan(0);
+      
+      const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
+      const logLines = logContent.trim().split('\n');
+      const logEntry = JSON.parse(logLines[logLines.length - 1]);
+      
+      // Check the format transformation
+      expect(logEntry.level).toBe('INFO'); // Should be uppercase
+      expect(logEntry.msg).toBe('Test message'); // Should be 'msg' not 'message'
+      expect(logEntry.key).toBe('value');
+      expect(logEntry.timestamp).toBeDefined(); // Should have timestamp
+    });
+
+    test('should respect log level filtering', async () => {
+      const config = {
+        ...DEFAULT_LOGGER_CONFIG,
+        logDir: tempDir,
+        logLevel: LogLevel.WARN, // Only WARN and ERROR should be logged
+      };
+
+      const logger = createWinstonFromLoggerConfig(config, LoggerType.MAIN);
+      
+      // Log messages at different levels
+      logger.debug('Debug message'); // Should be filtered out
+      logger.info('Info message'); // Should be filtered out
+      logger.warn('Warn message'); // Should be logged
+      logger.error('Error message'); // Should be logged
+
+      // Give winston time to write to file
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check the log file content
+      const fs = await import('fs/promises');
+      const files = await fs.readdir(tempDir);
+      const logFiles = files.filter(file => file.includes('medplum-agent-main'));
+      
+      if (logFiles.length > 0) {
+        const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
+        
+        // Should not contain debug or info messages
+        expect(logContent).not.toContain('Debug message');
+        expect(logContent).not.toContain('Info message');
+        
+        // Should contain warn and error messages
+        expect(logContent).toContain('Warn message');
+        expect(logContent).toContain('Error message');
+      }
     });
   });
 });
