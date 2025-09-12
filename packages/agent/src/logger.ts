@@ -234,7 +234,7 @@ export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerT
       },
       winston.format.json()
     ),
-    transports: [new winston.transports.Console()],
+    transports: [new winston.transports.Console({ forceConsole: true })],
   });
 
   if (process.env.NODE_ENV !== 'test') {
@@ -320,7 +320,7 @@ export class WinstonWrapperLogger implements ILogger {
 
   clone(override?: Partial<ILoggerConfig>): WinstonWrapperLogger {
     return new WinstonWrapperLogger(this.config, this.loggerType, {
-      parentLogger: this.parentLogger,
+      parentLogger: this.parentLogger ?? this,
       prefix: override?.options?.prefix ?? this.prefix,
       metadata: override?.metadata ?? this.metadata,
     });
