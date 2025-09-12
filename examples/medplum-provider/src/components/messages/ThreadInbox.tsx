@@ -32,8 +32,8 @@ import cx from 'clsx';
 interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
-  subject: Reference<Patient> | Patient | undefined;
-  showPatientSummary: boolean | undefined;
+  subject?: Reference<Patient> | Patient | undefined;
+  showPatientSummary?: boolean | undefined;
   handleNewThread: (message: Communication) => void;
   onSelectedItem: (topic: Communication) => string;
 }
