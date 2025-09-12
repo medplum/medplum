@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { LogLevel, LogLevelNames, parseLogLevel } from '@medplum/core';
-import { DEFAULT_LOGGER_CONFIG, getWinstonLevelFromMedplumLevel, LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
+import {
+  DEFAULT_LOGGER_CONFIG,
+  getWinstonLevelFromMedplumLevel,
+  LoggerType,
+  parseLoggerConfigFromArgs,
+  WinstonWrapperLogger,
+} from './logger';
 import type { AgentArgs } from './types';
 
 describe('Agent Logger', () => {
@@ -365,7 +371,7 @@ describe('Agent Logger', () => {
         { ...DEFAULT_LOGGER_CONFIG, logLevel: LogLevel.DEBUG },
         LoggerType.MAIN
       );
-      
+
       debugLogger.debug('Debug message', { key: 'value' });
 
       expect(consoleSpy.log).toHaveBeenCalled();
