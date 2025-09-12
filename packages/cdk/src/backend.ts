@@ -102,7 +102,7 @@ export class BackEnd extends Construct {
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
-        rds.AuroraPostgresEngineVersion.VER_12_9
+        rds.AuroraPostgresEngineVersion.VER_16_9
       );
 
       const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
