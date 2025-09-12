@@ -6,7 +6,7 @@ import { Container, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/re
 import { JSX, useState } from 'react';
 import { GINIndexes } from './db/GINIndexes';
 
-export function DatabaseConfigPage(): JSX.Element {
+export function DatabaseToolsPage(): JSX.Element {
   const medplum = useMedplum();
   const tabs = ['GIN Indexes'];
   const [currentTab, setCurrentTab] = useState(tabs[0]);
