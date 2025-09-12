@@ -3,15 +3,13 @@
 import { Combobox, InputBase, InputBaseProps, PolymorphicComponentProps, useCombobox } from '@mantine/core';
 import { JSX, useState } from 'react';
 
-export function SearchableSelect({
-  inputProps,
-  data,
-  onChange,
-}: {
-  inputProps?: PolymorphicComponentProps<'input', InputBaseProps>;
-  data: string[];
-  onChange?: (value: string) => void;
-}): JSX.Element {
+interface SearchableSelectProps {
+  readonly inputProps?: PolymorphicComponentProps<'input', InputBaseProps>;
+  readonly data: string[];
+  readonly onChange?: (value: string) => void;
+}
+
+export function SearchableSelect({ inputProps, data, onChange }: SearchableSelectProps): JSX.Element {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });

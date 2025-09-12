@@ -156,13 +156,13 @@ export function GINIndexes(): JSX.Element {
   );
 }
 
-function StatTd({
-  value,
-  onClick,
-}: {
-  value: boolean | string | number | undefined;
-  onClick?: (value: boolean | string | number | undefined) => void;
-}): JSX.Element {
+type StatValue = boolean | string | number | undefined;
+interface StatTdProps {
+  readonly value: StatValue;
+  readonly onClick?: (value: StatValue) => void;
+}
+
+function StatTd({ value, onClick }: StatTdProps): JSX.Element {
   return (
     <Table.Td style={{ cursor: 'pointer' }} onClick={() => onClick?.(value)}>
       {formatValue(value)}
@@ -170,13 +170,11 @@ function StatTd({
   );
 }
 
-function formatValue(val: boolean | string | number | undefined): string | number | undefined {
+function formatValue(val: StatValue): string | number | undefined {
   if (typeof val === 'string') {
     return val.length > 30 ? val.substring(0, 30) + '...' : val;
-  }
-
-  // boolean false values aren't rendered by React, so just stringify them
-  if (typeof val === 'boolean') {
+  } else if (typeof val === 'boolean') {
+    // boolean false values aren't rendered by React, so just stringify them
     return val.toString().toLocaleUpperCase();
   }
 

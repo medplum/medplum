@@ -1216,5 +1216,5 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
 };
 
 export function isValidTableName(tableName: string): boolean {
-  return /^[\w_]+$/.test(tableName);
+  return /^\w+$/.test(tableName);
 }
