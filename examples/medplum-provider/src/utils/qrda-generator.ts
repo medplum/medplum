@@ -210,6 +210,7 @@ function buildRecordTarget(patient: Patient): Record<string, any> {
   const address = patient.address?.[0];
   const telecom = patient.telecom?.find((t) => t.system === 'phone');
   const email = patient.telecom?.find((t) => t.system === 'email');
+  const identifier = patient.identifier?.find((i) => i.system === 'http://example.com/patientId')?.value;
   const raceExtension = getExtensionValue(
     patient,
     'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
@@ -225,7 +226,7 @@ function buildRecordTarget(patient: Patient): Record<string, any> {
   return {
     patientRole: {
       id: {
-        '@_extension': patient.id,
+        '@_extension': identifier,
         '@_root': '1.3.6.1.4.1.115',
       },
       addr: address
