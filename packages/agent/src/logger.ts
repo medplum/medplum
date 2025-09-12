@@ -55,12 +55,12 @@ export interface AgentLoggerConfig {
   logLevel: LogLevel;
 }
 
-export interface FullAgentLoggerConfig {
+export interface AgentMultiLoggerConfig {
   main: AgentLoggerConfig;
   channel: AgentLoggerConfig;
 }
 
-export interface PartialFullAgentLoggerConfig {
+export interface PartialAgentMultiLoggerConfig {
   main?: Partial<AgentLoggerConfig>;
   channel?: Partial<AgentLoggerConfig>;
 }
@@ -109,9 +109,9 @@ export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPa
   return warnings;
 }
 
-export function cleanupFullLoggerConfig(candidate: unknown): string[] {
+export function cleanupMultiLoggerConfig(candidate: unknown): string[] {
   const warnings = [];
-  const fullConfig = candidate as FullAgentLoggerConfig;
+  const fullConfig = candidate as AgentMultiLoggerConfig;
 
   for (const configType of ['main', 'channel'] as const) {
     if (!isObject(fullConfig[configType])) {
@@ -128,8 +128,8 @@ export function cleanupFullLoggerConfig(candidate: unknown): string[] {
 }
 
 export function mergeLoggerConfigWithDefaults(
-  config: PartialFullAgentLoggerConfig
-): asserts config is FullAgentLoggerConfig {
+  config: PartialAgentMultiLoggerConfig
+): asserts config is AgentMultiLoggerConfig {
   config.main ??= DEFAULT_LOGGER_CONFIG;
   config.channel ??= DEFAULT_LOGGER_CONFIG;
   for (const configType of ['main', 'channel'] as const) {
@@ -142,7 +142,7 @@ export function mergeLoggerConfigWithDefaults(
   }
 }
 
-export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConfig, string[]] {
+export function parseLoggerConfigFromArgs(args: AgentArgs): [AgentMultiLoggerConfig, string[]] {
   const config: { main: Partial<AgentLoggerConfig>; channel: Partial<AgentLoggerConfig> } = {
     main: {},
     channel: {},
@@ -189,7 +189,7 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [FullAgentLoggerConf
     }
   }
 
-  warnings.push(...cleanupFullLoggerConfig(config));
+  warnings.push(...cleanupMultiLoggerConfig(config));
   mergeLoggerConfigWithDefaults(config);
 
   return [config, warnings];
