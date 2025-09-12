@@ -6,7 +6,7 @@ import {
   Hl7Message,
   streamToBuffer,
   normalizeErrorString,
-  getReferenceString,
+  createReference,
 } from '@medplum/core';
 import { default as SftpClient } from 'ssh2-sftp-client';
 import { ReadStream } from 'ssh2';
@@ -133,28 +133,26 @@ export async function processAdtMessage(medplum: MedplumClient, message: Hl7Mess
 
     // Create or update Patient
     const patient = createPatient(message);
-    let patientRef: string | undefined;
+    let upsertedPatient: Patient | undefined;
     if (patient) {
-      const upsertedPatient = await medplum.upsertResource(patient, {
+      upsertedPatient = await medplum.upsertResource(patient, {
         identifier: `${patient.identifier?.[0]?.system}|${patient.identifier?.[0]?.value}`,
       });
-      patientRef = getReferenceString(upsertedPatient);
       console.log('Upserted Patient');
     }
 
     // Create or update Practitioner
     const practitioner = createPractitioner(message);
-    let practitionerRef: string | undefined;
+    let upsertedPractitioner: Practitioner | undefined;
     if (practitioner) {
-      const upsertedPractitioner = await medplum.upsertResource(practitioner, {
+      upsertedPractitioner = await medplum.upsertResource(practitioner, {
         identifier: `${practitioner.identifier?.[0]?.system}|${practitioner.identifier?.[0]?.value}`,
       });
-      practitionerRef = getReferenceString(upsertedPractitioner);
       console.log('Upserted Practitioner');
     }
 
     // Create or update Encounter
-    const encounter = createEncounter(message, patientRef, practitionerRef);
+    const encounter = createEncounter(message, upsertedPatient, upsertedPractitioner);
     if (encounter) {
       await medplum.upsertResource(encounter, {
         identifier: `${encounter.identifier?.[0]?.system}|${encounter.identifier?.[0]?.value}`,
@@ -163,15 +161,15 @@ export async function processAdtMessage(medplum: MedplumClient, message: Hl7Mess
     }
 
     // Create or update AllergyIntolerance resources
-    const allergies = createAllergyIntolerances(message, patientRef);
+    const allergies = createAllergyIntolerances(message, upsertedPatient);
     for (const allergy of allergies) {
-      if (!patientRef) {
-        console.error('Missing patient reference for allergy creation');
+      if (!upsertedPatient) {
+        console.error('Missing patient for allergy creation');
         continue;
       }
 
       await medplum.upsertResource(allergy, {
-        patient: patientRef,
+        patient: createReference(upsertedPatient).reference,
         code: `${allergy.code?.coding?.[0]?.system}|${allergy.code?.coding?.[0]?.code}`,
       });
       console.log('Upserted AllergyIntolerance');
@@ -390,8 +388,8 @@ function createPractitioner(message: Hl7Message): Practitioner | null {
 
 function createEncounter(
   message: Hl7Message,
-  patientRef: string | undefined,
-  practitionerRef: string | undefined
+  patient: Patient | undefined,
+  practitioner: Practitioner | undefined
 ): Encounter | null {
   const pv1 = message.getSegment('PV1');
 
@@ -400,19 +398,12 @@ function createEncounter(
     return null;
   }
 
-  if (!patientRef) {
-    console.error('Missing patient reference for encounter creation');
+  if (!patient) {
+    console.error('Missing patient for encounter creation');
     return null;
   }
 
   try {
-    // Get patient name for display
-    const pid = message.getSegment('PID');
-    const patientDisplayName = getPatientDisplayName(pid);
-
-    // Get practitioner name for display
-    const practitionerDisplayName = getPractitionerDisplayName(pv1);
-
     const encounter: Encounter = {
       resourceType: 'Encounter',
       status: (() => {
@@ -441,20 +432,14 @@ function createEncounter(
         code: mapPatientClass(pv1.getField(2)?.getComponent(1)) || 'IMP',
         display: 'inpatient encounter',
       },
-      subject: {
-        reference: patientRef,
-        display: patientDisplayName,
-      },
+      subject: createReference(patient),
     };
 
     // Add practitioner if available
-    if (practitionerRef) {
+    if (practitioner) {
       encounter.participant = [
         {
-          individual: {
-            reference: practitionerRef,
-            display: practitionerDisplayName,
-          },
+          individual: createReference(practitioner),
         },
       ];
     }
@@ -498,11 +483,11 @@ function createEncounter(
   }
 }
 
-function createAllergyIntolerances(message: Hl7Message, patientRef: string | undefined): AllergyIntolerance[] {
+function createAllergyIntolerances(message: Hl7Message, patient: Patient | undefined): AllergyIntolerance[] {
   const allergies: AllergyIntolerance[] = [];
 
-  if (!patientRef) {
-    console.error('Missing patient reference for allergy creation');
+  if (!patient) {
+    console.error('Missing patient for allergy creation');
     return allergies;
   }
 
@@ -516,9 +501,7 @@ function createAllergyIntolerances(message: Hl7Message, patientRef: string | und
     for (const al1 of al1Segments) {
       const allergy: AllergyIntolerance = {
         resourceType: 'AllergyIntolerance',
-        patient: {
-          reference: patientRef,
-        },
+        patient: createReference(patient),
         clinicalStatus: {
           coding: [
             {
