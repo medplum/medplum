@@ -14,6 +14,7 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentBulkStatusHandler } from './operations/agentbulkstatus';
+import { agentFetchLogsHandler } from './operations/agentfetchlogs';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
@@ -256,6 +257,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Agent $upgrade operation
   router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
   router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
+
+  // Agent $fetch-logs operation
+  router.add('GET', '/Agent/$fetch-logs', agentFetchLogsHandler);
+  router.add('GET', '/Agent/:id/$fetch-logs', agentFetchLogsHandler);
 
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
