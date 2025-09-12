@@ -406,6 +406,13 @@ function createEncounter(
   }
 
   try {
+    // Get patient name for display
+    const pid = message.getSegment('PID');
+    const patientDisplayName = getPatientDisplayName(pid);
+
+    // Get practitioner name for display
+    const practitionerDisplayName = getPractitionerDisplayName(pv1);
+
     const encounter: Encounter = {
       resourceType: 'Encounter',
       status: (() => {
@@ -436,6 +443,7 @@ function createEncounter(
       },
       subject: {
         reference: patientRef,
+        display: patientDisplayName,
       },
     };
 
@@ -445,6 +453,7 @@ function createEncounter(
         {
           individual: {
             reference: practitionerRef,
+            display: practitionerDisplayName,
           },
         },
       ];
@@ -708,5 +717,109 @@ function getMessageTypeDisplay(messageType: string): string {
       return 'Update patient information';
     default:
       return messageType;
+  }
+}
+
+function getPatientDisplayName(pid: any): string | undefined {
+  if (!pid) {
+    return undefined;
+  }
+
+  try {
+    const nameField = pid.getField(5);
+    if (!nameField) {
+      return undefined;
+    }
+
+    const familyName = nameField.getComponent(1) || '';
+    const givenName1 = nameField.getComponent(2) || '';
+    const givenName2 = nameField.getComponent(3) || '';
+    const suffix = nameField.getComponent(4) || '';
+    const prefix = nameField.getComponent(5) || '';
+
+    const nameParts = [];
+
+    // Add prefix (e.g., "Dr", "Mr", "Ms")
+    if (prefix) {
+      nameParts.push(prefix);
+    }
+
+    // Add given names
+    if (givenName1) {
+      nameParts.push(givenName1);
+    }
+    if (givenName2) {
+      nameParts.push(givenName2);
+    }
+
+    // Add family name
+    if (familyName) {
+      nameParts.push(familyName);
+    }
+
+    // Add suffix (e.g., "Jr", "Sr")
+    if (suffix) {
+      nameParts.push(suffix);
+    }
+
+    return nameParts.length > 0 ? nameParts.join(' ') : undefined;
+  } catch (err: any) {
+    console.error('Error extracting patient display name:', normalizeErrorString(err));
+    return undefined;
+  }
+}
+
+function getPractitionerDisplayName(pv1: any): string | undefined {
+  if (!pv1) {
+    return undefined;
+  }
+
+  try {
+    const attendingDoctor = pv1.getField(7);
+    if (!attendingDoctor) {
+      return undefined;
+    }
+
+    const familyName = attendingDoctor.getComponent(2) || '';
+    const givenName1 = attendingDoctor.getComponent(3) || '';
+    const givenName2 = attendingDoctor.getComponent(4) || '';
+    const suffix = attendingDoctor.getComponent(5) || '';
+    const prefix = attendingDoctor.getComponent(6) || '';
+    const title = attendingDoctor.getComponent(7) || '';
+
+    const nameParts = [];
+
+    // Add title (e.g., "Dr")
+    if (title) {
+      nameParts.push(title);
+    }
+
+    // Add prefix if different from title
+    if (prefix && prefix !== title) {
+      nameParts.push(prefix);
+    }
+
+    // Add given names
+    if (givenName1) {
+      nameParts.push(givenName1);
+    }
+    if (givenName2) {
+      nameParts.push(givenName2);
+    }
+
+    // Add family name
+    if (familyName) {
+      nameParts.push(familyName);
+    }
+
+    // Add suffix (e.g., "Jr", "Sr")
+    if (suffix) {
+      nameParts.push(suffix);
+    }
+
+    return nameParts.length > 0 ? nameParts.join(' ') : undefined;
+  } catch (err: any) {
+    console.error('Error extracting practitioner display name:', normalizeErrorString(err));
+    return undefined;
   }
 }

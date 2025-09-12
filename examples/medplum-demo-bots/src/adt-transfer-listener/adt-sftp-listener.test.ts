@@ -119,6 +119,38 @@ describe('ADT SFTP Listener', () => {
       ],
     });
 
+    // Check that Practitioner was created
+    const practitioners = await medplum.searchResources('Practitioner', 'identifier=C007');
+    expect(practitioners).toHaveLength(1);
+
+    const practitioner = practitioners?.[0] as Practitioner;
+    expect(practitioner).toMatchObject({
+      resourceType: 'Practitioner',
+      identifier: [
+        {
+          system: 'http://hospital.smarthealthit.org/practitioner',
+          value: 'C007',
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'MD',
+                display: 'Medical License number',
+              },
+            ],
+          },
+        },
+      ],
+      name: [
+        {
+          family: 'Litherland',
+          given: ['Natasha'],
+          prefix: ['Dr'],
+          use: 'official',
+        },
+      ],
+    });
+
     // Check that Encounter was created
     const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
     expect(encounters).toHaveLength(1);
@@ -134,6 +166,7 @@ describe('ADT SFTP Listener', () => {
       },
       subject: {
         reference: getReferenceString(patient),
+        display: 'Miss AKI Scenario 8 Gladys Young',
       },
       identifier: [
         {
@@ -151,6 +184,14 @@ describe('ADT SFTP Listener', () => {
       period: {
         start: '2020-05-08T13:07:36Z',
       },
+      participant: [
+        {
+          individual: {
+            reference: `Practitioner/${practitioner.id}`,
+            display: 'Dr Natasha Litherland',
+          },
+        },
+      ],
     });
 
     // Check that AllergyIntolerance resources were created
@@ -238,38 +279,6 @@ describe('ADT SFTP Listener', () => {
       onsetDateTime: '2019-12-30',
     });
 
-    // Check that Practitioner was created
-    const practitioners = await medplum.searchResources('Practitioner', 'identifier=C007');
-    expect(practitioners).toHaveLength(1);
-
-    const practitioner = practitioners?.[0] as Practitioner;
-    expect(practitioner).toMatchObject({
-      resourceType: 'Practitioner',
-      identifier: [
-        {
-          system: 'http://hospital.smarthealthit.org/practitioner',
-          value: 'C007',
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'MD',
-                display: 'Medical License number',
-              },
-            ],
-          },
-        },
-      ],
-      name: [
-        {
-          family: 'Litherland',
-          given: ['Natasha'],
-          prefix: ['Dr'],
-          use: 'official',
-        },
-      ],
-    });
-
     // Check that MessageHeader was created
     const messageHeaders = await medplum.searchResources('MessageHeader');
     expect(messageHeaders).toHaveLength(1);
@@ -314,25 +323,6 @@ describe('ADT SFTP Listener', () => {
       gender: 'female',
     });
 
-    // Check that Encounter was created
-    const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
-    expect(encounters).toHaveLength(1);
-
-    const encounter = encounters?.[0] as Encounter;
-    expect(encounter).toMatchObject({
-      resourceType: 'Encounter',
-      status: 'arrived',
-      class: {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-        code: 'IMP',
-        display: 'inpatient encounter',
-      },
-    });
-
-    // Check that no AllergyIntolerance resources were created
-    const allergies = await medplum.searchResources('AllergyIntolerance', `patient=${getReferenceString(patient)}`);
-    expect(allergies).toHaveLength(0);
-
     // Check that Practitioner was created
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C004');
     expect(practitioners).toHaveLength(1);
@@ -364,6 +354,37 @@ describe('ADT SFTP Listener', () => {
         },
       ],
     });
+
+    // Check that Encounter was created
+    const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
+    expect(encounters).toHaveLength(1);
+
+    const encounter = encounters?.[0] as Encounter;
+    expect(encounter).toMatchObject({
+      resourceType: 'Encounter',
+      status: 'arrived',
+      class: {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: 'IMP',
+        display: 'inpatient encounter',
+      },
+      subject: {
+        reference: getReferenceString(patient),
+        display: 'Miss Gabrielle Joanne Woolridge',
+      },
+      participant: [
+        {
+          individual: {
+            reference: `Practitioner/${practitioner.id}`,
+            display: 'Dr Joyce Walsh',
+          },
+        },
+      ],
+    });
+
+    // Check that no AllergyIntolerance resources were created
+    const allergies = await medplum.searchResources('AllergyIntolerance', `patient=${getReferenceString(patient)}`);
+    expect(allergies).toHaveLength(0);
   });
 
   test('Process ADT A01 Message with Male Patient', async (ctx: any) => {
@@ -450,21 +471,6 @@ describe('ADT SFTP Listener', () => {
       gender: 'female',
     });
 
-    // Check that Encounter was created with outpatient class
-    const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
-    expect(encounters).toHaveLength(1);
-
-    const encounter = encounters?.[0] as Encounter;
-    expect(encounter).toMatchObject({
-      resourceType: 'Encounter',
-      status: 'arrived',
-      class: {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-        code: 'AMB',
-        display: 'inpatient encounter',
-      },
-    });
-
     // Check that Practitioner was created
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C003');
     expect(practitioners).toHaveLength(1);
@@ -493,6 +499,33 @@ describe('ADT SFTP Listener', () => {
           given: ['Kevin'],
           prefix: ['Dr'],
           use: 'official',
+        },
+      ],
+    });
+
+    // Check that Encounter was created with outpatient class
+    const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
+    expect(encounters).toHaveLength(1);
+
+    const encounter = encounters?.[0] as Encounter;
+    expect(encounter).toMatchObject({
+      resourceType: 'Encounter',
+      status: 'arrived',
+      class: {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: 'AMB',
+        display: 'inpatient encounter',
+      },
+      subject: {
+        reference: getReferenceString(patient),
+        display: 'Mrs Lisa Barnes B.Sc',
+      },
+      participant: [
+        {
+          individual: {
+            reference: `Practitioner/${practitioner.id}`,
+            display: 'Dr Kevin Cuddy',
+          },
         },
       ],
     });
@@ -575,10 +608,15 @@ describe('ADT SFTP Listener', () => {
     expect(encounter).toMatchObject({
       resourceType: 'Encounter',
       status: 'arrived',
+      subject: {
+        reference: getReferenceString(patient),
+        display: 'Patient Test',
+      },
       participant: [
         {
           individual: {
             reference: `Practitioner/${practitioner.id}`,
+            display: 'Dr John Michael Smith Jr',
           },
         },
       ],
