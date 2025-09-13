@@ -13,6 +13,7 @@ const testDataFolder = resolve(__dirname, '../testdata');
 const testData = [
   'MinimalPassingValidator',
   'Patient',
+  'Participants',
   'AllergyToEgg',
   'MedicationAtBedtime',
   'ProblemPneumonia',
@@ -27,7 +28,6 @@ const testData = [
   'ProcedureSectionObservationEntry',
   'ProcedureSectionProcedureEntry',
   // 'EncounterHospitalDischarge',
-  // 'AliceNewman_USCDIv3_21Jan_2025',
 ];
 
 describe('convertCcdaToFhir', () => {
@@ -35,6 +35,19 @@ describe('convertCcdaToFhir', () => {
     const name = 'MinimalPassingValidator';
     const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
     writeFileSync(join(testDataFolder, `${name}.clean.xml`), convertCcdaToXml(ccda));
+  });
+
+  test.skip('Alice', () => {
+    const name = 'AliceNewman_USCDIv3_21Jan_2025';
+    const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
+    const bundle = normalizeFhir(convertCcdaToFhir(ccda));
+
+    if (!existsSync(join(testDataFolder, `${name}.json`))) {
+      writeFileSync(join(testDataFolder, `${name}.json`), stringify(bundle, true));
+    }
+
+    const expected = JSON.parse(readFileSync(join(testDataFolder, `${name}.json`), 'utf8'));
+    expect(bundle).toEqual(expected);
   });
 
   test.each(testData)('should convert %s CCDA to FHIR', (name) => {

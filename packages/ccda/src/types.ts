@@ -11,6 +11,7 @@ export interface Ccda {
   effectiveTime?: CcdaEffectiveTime[];
   custodian?: CcdaCustodian;
   informationRecipient?: CcdaInformationRecipient;
+  participant?: CcdaParticipant[];
   documentationOf?: CcdaDocumentationOf;
   title?: string;
   code?: CcdaCode;
@@ -182,6 +183,7 @@ export interface CcdaAssignedAuthor {
   id?: CcdaId[];
   code?: CcdaCode;
   assignedPerson?: CcdaAssignedPerson;
+  associatedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
@@ -229,6 +231,7 @@ export interface CcdaParticipant {
   '@_classCode'?: string;
   '@_typeCode'?: string;
   participantRole?: CcdaParticipantRole;
+  associatedEntity?: CcdaAssignedAuthor;
 }
 
 export interface CcdaParticipantRole {
@@ -290,7 +293,12 @@ export interface CcdaQuantity {
   '@_unit'?: string;
 }
 
-export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference;
+export interface CcdaInteger {
+  '@_xsi:type': 'INT';
+  '@_value': string;
+}
+
+export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference | CcdaInteger;
 
 export interface CcdaPeriod {
   '@_xsi:type'?: 'PIVL_TS';
@@ -385,7 +393,7 @@ export interface CcdaOrganization {
 }
 
 export interface CcdaOrganizer {
-  '@_classCode': 'CLUSTER';
+  '@_classCode': 'CLUSTER' | 'OBS';
   '@_moodCode': 'EVN';
   templateId: CcdaTemplateId[];
   id: CcdaId[];

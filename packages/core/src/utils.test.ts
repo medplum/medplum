@@ -28,6 +28,7 @@ import {
   deepEquals,
   deepIncludes,
   escapeHtml,
+  findCodeBySystem,
   findObservationInterval,
   findObservationReferenceRange,
   findObservationReferenceRanges,
@@ -823,6 +824,21 @@ describe('Core Utils', () => {
     expect(output).not.toBe(input);
 
     expect(deepClone(undefined)).toBeUndefined();
+  });
+
+  test('findCodeBySystem', () => {
+    const categories: CodeableConcept[] = [
+      {},
+      { text: 'test' },
+      { coding: [{ system: 'x', code: '1' }] },
+      { coding: [{ system: 'y', code: '2' }] },
+      { coding: [{ system: 'x', code: '3' }] },
+    ];
+    expect(findCodeBySystem(undefined, 'x')).toBeUndefined();
+    expect(findCodeBySystem([], 'x')).toBeUndefined();
+    expect(findCodeBySystem(categories, 'x')).toStrictEqual('1');
+    expect(findCodeBySystem(categories, 'y')).toStrictEqual('2');
+    expect(findCodeBySystem(categories, 'z')).toStrictEqual(undefined);
   });
 
   test('Capitalize', () => {

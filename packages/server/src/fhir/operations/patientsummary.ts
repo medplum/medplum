@@ -24,12 +24,14 @@ import {
   allOk,
   createReference,
   escapeHtml,
+  findCodeBySystem,
   formatCodeableConcept,
   formatDate,
   formatObservationValue,
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
+  ProfileResource,
   resolveId,
   WithId,
 } from '@medplum/core';
@@ -39,7 +41,6 @@ import {
   Bundle,
   CarePlan,
   ClinicalImpression,
-  CodeableConcept,
   Composition,
   CompositionEvent,
   CompositionSection,
@@ -114,6 +115,7 @@ const resourceTypes: ResourceType[] = [
   'MedicationRequest',
   'Observation',
   'Procedure',
+  'RelatedPerson',
   'ServiceRequest',
 ];
 
@@ -175,6 +177,7 @@ export class PatientSummaryBuilder {
   private readonly patient: Patient;
   private readonly everything: WithId<Resource>[];
   private readonly params: PatientSummaryParameters;
+  private readonly participants: ProfileResource[] = [];
   private readonly allergies: AllergyIntolerance[] = [];
   private readonly medications: MedicationRequest[] = [];
   private readonly problemList: Condition[] = [];
@@ -250,6 +253,18 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'Condition' && resource.evidence) {
+        for (const evidence of resource.evidence) {
+          if (evidence.detail) {
+            for (const detail of evidence.detail) {
+              if (detail.reference) {
+                this.nestedIds.add(resolveId(detail) as string);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -274,6 +289,12 @@ export class PatientSummaryBuilder {
    */
   private chooseSectionForResource(resource: Resource): void {
     switch (resource.resourceType) {
+      // Participants
+      case 'Practitioner':
+      case 'RelatedPerson':
+        this.participants.push(resource);
+        break;
+
       // Simple resource types - add to section directly
       case 'AllergyIntolerance':
         this.allergies.push(resource);
@@ -332,7 +353,7 @@ export class PatientSummaryBuilder {
   }
 
   private chooseSectionForCondition(condition: Condition): void {
-    const categoryCode = findCategoryBySystem(condition.category, LOINC);
+    const categoryCode = findCodeBySystem(condition.category, LOINC);
     if (categoryCode === LOINC_HEALTH_CONCERNS_SECTION) {
       this.healthConcerns.push(condition);
     } else {
@@ -341,9 +362,10 @@ export class PatientSummaryBuilder {
   }
 
   private chooseSectionForObservation(obs: Observation): void {
-    const categoryCode = findCategoryBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
+    const categoryCode = findCodeBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
     switch (categoryCode) {
       case 'social-history':
+      case 'survey':
         this.socialHistory.push(obs);
         break;
       case 'vital-signs':
@@ -796,21 +818,4 @@ function createSection(code: string, title: string, html: string, entry: Resourc
     text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>` },
     entry: entry.map(createReference),
   };
-}
-
-function findCategoryBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
-      if (coding.system === system) {
-        return coding.code;
-      }
-    }
-  }
-  return undefined;
 }

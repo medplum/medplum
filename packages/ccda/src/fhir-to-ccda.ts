@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, generateId, getExtension } from '@medplum/core';
+import {
+  capitalize,
+  generateId,
+  getExtension,
+  getTypedPropertyValueWithoutSchema,
+  isPopulated,
+  toTypedValue,
+} from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -52,6 +59,8 @@ import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ALLERGY_OBSERVATION,
   OID_ALLERGY_PROBLEM_ACT,
+  OID_ASSESSMENT_SCALE_OBSERVATION,
+  OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
   OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
   OID_BIRTH_SEX,
@@ -81,6 +90,7 @@ import {
   OID_PRODUCT_INSTANCE,
   OID_REACTION_OBSERVATION,
   OID_REASON_FOR_REFERRAL,
+  OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION,
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
@@ -104,9 +114,11 @@ import {
   LOINC_ADMINISTRATIVE_SEX,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
+  LOINC_CLINICAL_FINDING,
   LOINC_CONDITION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_HISTORY_OF_SOCIAL_FUNCTION,
   LOINC_HISTORY_OF_TOBACCO_USE,
   LOINC_MEDICATION_INSTRUCTIONS,
   LOINC_NOTES_SECTION,
@@ -268,6 +280,7 @@ class FhirToCcdaConverter {
       author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
       custodian: this.mapCustodian(this.composition.custodian),
       informationRecipient: this.mapRecipient(referral),
+      participant: this.createParticipants(),
       documentationOf: this.mapDocumentationOf(this.composition.event),
       component:
         sections.length > 0
@@ -954,6 +967,33 @@ class FhirToCcdaConverter {
     };
   }
 
+  private createParticipants(): CcdaParticipant[] | undefined {
+    const relatedPersons = this.bundle.entry
+      ?.filter((e) => e.resource?.resourceType === 'RelatedPerson')
+      .map((e) => e.resource as RelatedPerson);
+
+    if (!relatedPersons || relatedPersons.length === 0) {
+      return undefined;
+    }
+
+    return relatedPersons.map((person) => ({
+      '@_typeCode': 'IND',
+      templateId: [
+        { '@_root': OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION, '@_extension': '2023-05-01' },
+      ],
+      associatedEntity: {
+        '@_classCode': 'PRS',
+        id: this.mapIdentifiers(person.id, person.identifier),
+        code: mapCodeableConceptToCcdaCode(person.relationship?.[0]),
+        addr: this.mapFhirAddressArrayToCcdaAddressArray(person.address),
+        telecom: this.mapTelecom(person.telecom),
+        associatedPerson: {
+          name: this.mapNames(person.name),
+        },
+      },
+    }));
+  }
+
   private mapDocumentationOf(events: CompositionEvent[] | undefined): CcdaDocumentationOf | undefined {
     if (!events || events.length === 0) {
       return undefined;
@@ -1280,7 +1320,58 @@ class FhirToCcdaConverter {
     };
   }
 
-  private createHealthConcernEntry(problem: Condition): CcdaEntry {
+  private createHealthConcernEntry(healthConcern: Condition): CcdaEntry {
+    const entryRelationship: CcdaEntryRelationship[] = [];
+
+    if (healthConcern.evidence) {
+      for (const evidence of healthConcern.evidence) {
+        if (evidence.detail) {
+          for (const detailRef of evidence.detail) {
+            const detail = this.findResourceByReference(detailRef);
+            if (detail?.resourceType === 'Observation') {
+              entryRelationship.push({
+                '@_typeCode': 'REFR',
+                observation: [
+                  {
+                    '@_classCode': 'OBS',
+                    '@_moodCode': 'EVN',
+                    templateId: [
+                      { '@_root': OID_PROBLEM_OBSERVATION },
+                      { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+                    ],
+                    id: this.mapIdentifiers(detail.id, detail.identifier) as CcdaId[],
+                    text: this.createTextFromExtensions(detail.extension),
+                    code: {
+                      '@_code': '404684003',
+                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                      '@_codeSystemName': 'SNOMED CT',
+                      '@_displayName': 'Clinical finding (finding)',
+                      translation: [
+                        {
+                          '@_code': LOINC_CLINICAL_FINDING,
+                          '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                          '@_codeSystemName': 'LOINC',
+                          '@_displayName': 'Clinical finding',
+                        },
+                      ],
+                    },
+                    statusCode: { '@_code': 'completed' },
+                    effectiveTime: this.mapEffectivePeriod(
+                      detail.effectivePeriod?.start,
+                      detail.effectivePeriod?.end,
+                      true
+                    ),
+                    value: mapCodeableConceptToCcdaValue(detail.valueCodeableConcept),
+                    author: this.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
+                  },
+                ],
+              });
+            }
+          }
+        }
+      }
+    }
+
     return {
       act: [
         {
@@ -1290,7 +1381,7 @@ class FhirToCcdaConverter {
             { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
             { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
           ],
-          id: this.mapIdentifiers(problem.id, undefined),
+          id: this.mapIdentifiers(healthConcern.id, undefined),
           code: {
             '@_code': LOINC_HEALTH_CONCERNS_SECTION,
             '@_codeSystem': OID_LOINC_CODE_SYSTEM,
@@ -1299,11 +1390,12 @@ class FhirToCcdaConverter {
           },
           statusCode: {
             '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
-              problem.clinicalStatus?.coding?.[0]?.code,
+              healthConcern.clinicalStatus?.coding?.[0]?.code,
               'active'
             ),
           },
-          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
+          effectiveTime: this.mapEffectivePeriod(healthConcern.recordedDate, undefined),
+          entryRelationship,
         },
       ],
     };
@@ -1421,7 +1513,8 @@ class FhirToCcdaConverter {
   }
 
   private createObservationEntry(observation: Observation): CcdaEntry {
-    if (observation.hasMember) {
+    const obsValue = getTypedPropertyValueWithoutSchema(toTypedValue(observation), 'value');
+    if (observation.hasMember && !isPopulated(obsValue)) {
       // Organizer
       return {
         organizer: [this.createVitalSignsOrganizer(observation)],
@@ -1459,17 +1552,10 @@ class FhirToCcdaConverter {
   private createGoalEntry(section: CompositionSection, resource: Goal): CcdaEntry | undefined {
     const sectionCode = section.code?.coding?.[0]?.code;
 
-    let templateId: CcdaTemplateId[];
-    if (sectionCode === LOINC_PLAN_OF_TREATMENT_SECTION) {
-      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
-    } else if (sectionCode === LOINC_GOALS_SECTION) {
-      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
-    } else {
-      return undefined;
-    }
-
     let code: CcdaCode | undefined;
-    if (sectionCode === LOINC_GOALS_SECTION) {
+    if (resource.category?.[0]) {
+      code = mapCodeableConceptToCcdaCode(resource.category[0]);
+    } else if (sectionCode === LOINC_GOALS_SECTION) {
       code = {
         '@_code': LOINC_OVERALL_GOAL,
         '@_codeSystem': OID_LOINC_CODE_SYSTEM,
@@ -1482,6 +1568,27 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
+    let templateId: CcdaTemplateId[];
+    if (sectionCode === LOINC_PLAN_OF_TREATMENT_SECTION) {
+      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
+    } else if (code?.['@_code'] === LOINC_HISTORY_OF_SOCIAL_FUNCTION) {
+      templateId = [
+        { '@_root': OID_GOAL_OBSERVATION },
+        { '@_root': OID_GOAL_OBSERVATION, '@_extension': '2022-06-01' },
+      ];
+    } else if (sectionCode === LOINC_GOALS_SECTION) {
+      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
+    } else {
+      return undefined;
+    }
+
+    let value: CcdaValue | undefined;
+    if (resource.description.coding?.[0]?.code) {
+      value = mapCodeableConceptToCcdaValue(resource.description);
+    } else if (resource.description.text) {
+      value = { '@_xsi:type': 'ST', '#text': resource.description.text };
+    }
+
     return {
       observation: [
         {
@@ -1492,7 +1599,7 @@ class FhirToCcdaConverter {
           code,
           statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
-          value: resource.description?.text ? { '@_xsi:type': 'ST', '#text': resource.description.text } : undefined,
+          value,
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
             '@_typeCode': 'RSON',
@@ -1569,6 +1676,22 @@ class FhirToCcdaConverter {
   }
 
   private createVitalSignObservation(observation: Observation): CcdaObservation {
+    const entryRelationship: CcdaEntryRelationship[] = [];
+
+    if (observation.hasMember) {
+      for (const member of observation.hasMember) {
+        const child = this.findResourceByReference(member);
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        entryRelationship.push({
+          '@_typeCode': 'COMP',
+          observation: [this.createVitalSignObservation(child as Observation)],
+        });
+      }
+    }
+
     const result: CcdaObservation = {
       '@_classCode': 'OBS',
       '@_moodCode': 'EVN',
@@ -1581,6 +1704,7 @@ class FhirToCcdaConverter {
       referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
       text: this.createTextFromExtensions(observation.extension),
       author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
+      entryRelationship,
     };
 
     return result;
@@ -1644,6 +1768,13 @@ class FhirToCcdaConverter {
       return [{ '@_root': OID_RESULT_OBSERVATION }, { '@_root': OID_RESULT_OBSERVATION, '@_extension': '2015-08-01' }];
     }
 
+    if (category === 'survey') {
+      if (observation.hasMember) {
+        return [{ '@_root': OID_ASSESSMENT_SCALE_OBSERVATION, '@_extension': '2022-06-01' }];
+      }
+      return [{ '@_root': OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION }];
+    }
+
     // Otherwise, fall back to the default template ID.
     return [
       { '@_root': OID_VITAL_SIGNS_OBSERVATION },
@@ -1664,8 +1795,12 @@ class FhirToCcdaConverter {
       return mapCodeableConceptToCcdaValue(observation.valueCodeableConcept);
     }
 
-    if (observation.valueString) {
+    if (observation.valueString !== undefined) {
       return { '@_xsi:type': 'ST', '#text': observation.valueString };
+    }
+
+    if (observation.valueInteger !== undefined) {
+      return { '@_xsi:type': 'INT', '@_value': observation.valueInteger.toString() };
     }
 
     return undefined;
