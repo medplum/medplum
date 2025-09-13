@@ -114,6 +114,7 @@ import {
   LOINC_ADMINISTRATIVE_SEX,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
+  LOINC_CLINICAL_FINDING,
   LOINC_CONDITION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
@@ -1319,7 +1320,58 @@ class FhirToCcdaConverter {
     };
   }
 
-  private createHealthConcernEntry(problem: Condition): CcdaEntry {
+  private createHealthConcernEntry(healthConcern: Condition): CcdaEntry {
+    const entryRelationship: CcdaEntryRelationship[] = [];
+
+    if (healthConcern.evidence) {
+      for (const evidence of healthConcern.evidence) {
+        if (evidence.detail) {
+          for (const detailRef of evidence.detail) {
+            const detail = this.findResourceByReference(detailRef);
+            if (detail?.resourceType === 'Observation') {
+              entryRelationship.push({
+                '@_typeCode': 'REFR',
+                observation: [
+                  {
+                    '@_classCode': 'OBS',
+                    '@_moodCode': 'EVN',
+                    templateId: [
+                      { '@_root': OID_PROBLEM_OBSERVATION },
+                      { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+                    ],
+                    id: this.mapIdentifiers(detail.id, detail.identifier) as CcdaId[],
+                    text: this.createTextFromExtensions(detail.extension),
+                    code: {
+                      '@_code': '404684003',
+                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                      '@_codeSystemName': 'SNOMED CT',
+                      '@_displayName': 'Clinical finding (finding)',
+                      translation: [
+                        {
+                          '@_code': LOINC_CLINICAL_FINDING,
+                          '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                          '@_codeSystemName': 'LOINC',
+                          '@_displayName': 'Clinical finding',
+                        },
+                      ],
+                    },
+                    statusCode: { '@_code': 'completed' },
+                    effectiveTime: this.mapEffectivePeriod(
+                      detail.effectivePeriod?.start,
+                      detail.effectivePeriod?.end,
+                      true
+                    ),
+                    value: mapCodeableConceptToCcdaValue(detail.valueCodeableConcept),
+                    author: this.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
+                  },
+                ],
+              });
+            }
+          }
+        }
+      }
+    }
+
     return {
       act: [
         {
@@ -1329,7 +1381,7 @@ class FhirToCcdaConverter {
             { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
             { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
           ],
-          id: this.mapIdentifiers(problem.id, undefined),
+          id: this.mapIdentifiers(healthConcern.id, undefined),
           code: {
             '@_code': LOINC_HEALTH_CONCERNS_SECTION,
             '@_codeSystem': OID_LOINC_CODE_SYSTEM,
@@ -1338,11 +1390,12 @@ class FhirToCcdaConverter {
           },
           statusCode: {
             '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
-              problem.clinicalStatus?.coding?.[0]?.code,
+              healthConcern.clinicalStatus?.coding?.[0]?.code,
               'active'
             ),
           },
-          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
+          effectiveTime: this.mapEffectivePeriod(healthConcern.recordedDate, undefined),
+          entryRelationship,
         },
       ],
     };

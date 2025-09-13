@@ -253,6 +253,18 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'Condition' && resource.evidence) {
+        for (const evidence of resource.evidence) {
+          if (evidence.detail) {
+            for (const detail of evidence.detail) {
+              if (detail.reference) {
+                this.nestedIds.add(resolveId(detail) as string);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
