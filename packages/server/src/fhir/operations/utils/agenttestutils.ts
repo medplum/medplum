@@ -18,6 +18,7 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { MessageEvent, WebSocket } from 'ws';
+import { Buffer } from 'buffer';
 
 let serverPort: number | undefined;
 const agentWsMap = new Map<string, WebSocket>();

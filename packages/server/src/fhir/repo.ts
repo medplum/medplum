@@ -119,6 +119,7 @@ import {
   TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
+import { Buffer } from 'buffer';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;

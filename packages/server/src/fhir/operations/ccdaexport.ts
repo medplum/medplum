@@ -5,6 +5,7 @@ import { Binary, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientSummary, operation as patientSummaryOperation, PatientSummaryParameters } from './patientsummary';
 import { parseInputParameters } from './utils/parameters';
+import { Buffer } from 'buffer';
 
 export const operation = {
   ...patientSummaryOperation,

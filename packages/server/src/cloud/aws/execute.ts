@@ -4,6 +4,7 @@ import { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'util';
 import { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { Buffer } from 'buffer';
 
 /**
  * Executes a Bot in an AWS Lambda.

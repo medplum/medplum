@@ -38,6 +38,7 @@ import {
   tryLogin,
   verifyMultipleMatchingException,
 } from './utils';
+import { Buffer } from 'buffer';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
