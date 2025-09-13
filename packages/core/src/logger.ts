@@ -24,6 +24,13 @@ export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 
 export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'] as const;
 
+export interface LogMessage {
+  level: (typeof LogLevelNames)[number];
+  msg: string;
+  timestamp: string;
+  [key: string]: string | boolean | number;
+}
+
 export interface LoggerOptions {
   prefix?: string;
 }
