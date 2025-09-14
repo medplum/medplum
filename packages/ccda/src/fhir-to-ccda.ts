@@ -6,6 +6,7 @@ import {
   getExtension,
   getTypedPropertyValueWithoutSchema,
   isPopulated,
+  SNOMED,
   toTypedValue,
 } from '@medplum/core';
 import {
@@ -88,6 +89,7 @@ import {
   OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION,
   OID_PAYER_PERFORMER,
   OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
+  OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE,
   OID_POLICY_ACTIVITY,
   OID_POLICY_HOLDER_PARTICIPANT,
   OID_PROBLEM_ACT,
@@ -2204,6 +2206,31 @@ class FhirToCcdaConverter {
   }
 
   private createPlanOfTreatmentServiceRequestEntry(resource: ServiceRequest): CcdaEntry {
+    // Under some circumstances, we need to use a `<procedure>` element instead of an `<observation>` element.
+    // This is a pretty nasty interoperability quirk, but it's what C-CDA requires.
+    // The quick 80/20 solution is to use `<procedure>` when ServiceRequest.code is a SNOMED CT code.
+    const system = resource.code?.coding?.[0]?.system;
+    if (system === SNOMED) {
+      return {
+        procedure: [
+          {
+            '@_classCode': 'PROC',
+            '@_moodCode': 'RQO',
+            templateId: [
+              { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE },
+              { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+              { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2022-06-01' },
+            ],
+            id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+            code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+            statusCode: { '@_code': 'active' }, // USCDI v2 requires statusCode to be "active"
+            effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.authoredOn) }],
+            text: this.createTextFromExtensions(resource.extension),
+          },
+        ],
+      };
+    }
+
     const result: CcdaEntry = {
       observation: [
         {

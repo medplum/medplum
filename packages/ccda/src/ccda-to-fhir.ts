@@ -1408,7 +1408,10 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
-      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
+        procedure.statusCode?.['@_code'],
+        'completed'
+      ) as Procedure['status'],
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),

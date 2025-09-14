@@ -150,7 +150,7 @@ export interface CcdaProcedure {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaCode<'completed' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
+  statusCode: CcdaCode<'completed' | 'active' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   methodCode?: CcdaCode;
   targetSiteCode?: CcdaCode;
