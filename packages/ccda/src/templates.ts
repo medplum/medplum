@@ -216,6 +216,7 @@ export const CARE_TEAM_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
 
 export const INSURANCE_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
   { '@_root': OID_PAYERS_SECTION, '@_extension': '2015-08-01' },
+  { '@_root': OID_PAYERS_SECTION },
 ];
 
 // 1. Allergies and Intolerances

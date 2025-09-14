@@ -8,6 +8,7 @@ import {
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_INSURANCE_SECTION,
   LOINC_MEDICATIONS_SECTION,
   LOINC_NOTE_DOCUMENT,
   LOINC_NOTES_SECTION,
@@ -37,6 +38,7 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  Account,
   AllergyIntolerance,
   Bundle,
   CarePlan,
@@ -103,9 +105,11 @@ export const operation = {
 } satisfies OperationDefinition;
 
 const resourceTypes: ResourceType[] = [
+  'Account',
   'AllergyIntolerance',
   'CarePlan',
   'ClinicalImpression',
+  'Coverage',
   'Condition',
   'DeviceUseStatement',
   'DiagnosticReport',
@@ -194,6 +198,7 @@ export class PatientSummaryBuilder {
   private readonly healthConcerns: Condition[] = [];
   private readonly notes: ClinicalImpression[] = [];
   private readonly reasonForReferral: ServiceRequest[] = [];
+  private readonly insurance: Account[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(
@@ -265,6 +270,14 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'Account' && resource.coverage) {
+        for (const coverage of resource.coverage) {
+          if (coverage.coverage?.reference) {
+            this.nestedIds.add(resolveId(coverage.coverage) as string);
+          }
+        }
+      }
     }
   }
 
@@ -296,6 +309,9 @@ export class PatientSummaryBuilder {
         break;
 
       // Simple resource types - add to section directly
+      case 'Account':
+        this.insurance.push(resource);
+        break;
       case 'AllergyIntolerance':
         this.allergies.push(resource);
         break;
@@ -428,6 +444,7 @@ export class PatientSummaryBuilder {
         this.createHealthConcernsSection(),
         this.createNotesSection(),
         this.createReasonForReferralSection(),
+        this.createInsuranceSection(),
       ].filter(Boolean) as CompositionSection[],
     };
     return composition;
@@ -682,6 +699,22 @@ export class PatientSummaryBuilder {
       'Reason for Referral',
       this.buildPlanTable(this.reasonForReferral),
       this.reasonForReferral
+    );
+  }
+
+  private createInsuranceSection(): CompositionSection | undefined {
+    if (this.insurance.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_INSURANCE_SECTION,
+      'Insurance',
+      createTable(
+        ['Coverage', 'Status', 'Type'],
+        this.insurance.map((a) => [a.name, a.status, a.type ? formatCodeableConcept(a.type) : undefined])
+      ),
+      this.insurance
     );
   }
 

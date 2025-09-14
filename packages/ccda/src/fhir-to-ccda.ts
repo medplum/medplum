@@ -9,6 +9,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import {
+  Account,
   Address,
   AllergyIntolerance,
   Bundle,
@@ -66,6 +67,8 @@ import {
   OID_BIRTH_SEX,
   OID_CARE_TEAM_ORGANIZER_ENTRY,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+  OID_COVERAGE_ACTIVITY,
+  OID_COVERED_PARTY_PARTICIPANT,
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
   OID_FDA_CODE_SYSTEM,
@@ -81,7 +84,10 @@ import {
   OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
   OID_NOTE_ACTIVITY,
   OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION,
+  OID_PAYER_PERFORMER,
   OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
+  OID_POLICY_ACTIVITY,
+  OID_POLICY_HOLDER_PARTICIPANT,
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_ACT,
@@ -111,6 +117,7 @@ import {
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
+  INSURANCE_COVERAGE_TYPE_MAPPER,
   LOINC_ADMINISTRATIVE_SEX,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
@@ -596,6 +603,8 @@ class FhirToCcdaConverter {
 
   private createEntry(section: CompositionSection, resource: Resource): CcdaEntry | undefined {
     switch (resource.resourceType) {
+      case 'Account':
+        return this.createInsuranceEntry(resource);
       case 'AllergyIntolerance':
         return this.createAllergyEntry(resource as AllergyIntolerance);
       case 'CarePlan':
@@ -2334,6 +2343,157 @@ class FhirToCcdaConverter {
               author: this.mapAuthor(resource.requester, resource.occurrenceDateTime),
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private createInsuranceEntry(account: Account): CcdaEntry | undefined {
+    const entryRelationship: CcdaEntryRelationship[] = [];
+
+    if (account.coverage) {
+      for (const accountCoverage of account.coverage) {
+        const coverage = this.findResourceByReference(accountCoverage.coverage);
+        if (!coverage || coverage.resourceType !== 'Coverage') {
+          continue;
+        }
+
+        const coveragePlan = coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan');
+        const payor = this.findResourceByReference(coverage.payor?.[0]) as Organization | undefined;
+        const policyHolder = this.findResourceByReference(coverage.policyHolder) as RelatedPerson | undefined;
+
+        entryRelationship.push({
+          '@_typeCode': 'COMP',
+          sequenceNumber: { '@_xsi:type': 'INT', '@_value': entryRelationship.length.toString() },
+          act: [
+            {
+              '@_classCode': 'ACT',
+              '@_moodCode': 'EVN',
+              templateId: [
+                { '@_root': OID_POLICY_ACTIVITY, '@_extension': '2015-08-01' },
+                { '@_root': OID_POLICY_ACTIVITY },
+              ],
+              id: this.mapIdentifiers(coverage.id, coverage.identifier) as CcdaId[],
+              code: {
+                '@_code': INSURANCE_COVERAGE_TYPE_MAPPER.mapFhirToCcdaWithDefault(
+                  coverage.type?.coding?.[0]?.code,
+                  '9999'
+                ),
+                '@_displayName': coverage.type?.coding?.[0]?.display || 'Unknown',
+                '@_codeSystemName': 'Source of Payment Typology (PHDSC)',
+                '@_codeSystem': '2.16.840.1.113883.3.221.5',
+              },
+              statusCode: { '@_code': 'completed' },
+              text: this.createTextFromExtensions(coverage.extension),
+              performer: [
+                {
+                  '@_typeCode': 'PRF',
+                  templateId: [{ '@_root': OID_PAYER_PERFORMER }],
+                  assignedEntity: {
+                    id: [{ '@_root': '2.16.840.1.113883.6.300', '@_extension': '999999' }],
+                    code: {
+                      '@_code': 'PAYOR',
+                      '@_codeSystem': '2.16.840.1.113883.5.110',
+                      '@_codeSystemName': 'HL7 RoleCode',
+                      '@_displayName': 'invoice payor',
+                    },
+                    addr: this.mapFhirAddressArrayToCcdaAddressArray(payor?.address),
+                    telecom: this.mapTelecom(payor?.telecom),
+                    representedOrganization: {
+                      name: payor?.name ? [payor.name] : undefined,
+                      telecom: this.mapTelecom(payor?.telecom),
+                      addr: this.mapFhirAddressArrayToCcdaAddressArray(payor?.address),
+                    },
+                  },
+                },
+              ],
+              participant: [
+                {
+                  '@_typeCode': 'COV',
+                  templateId: [{ '@_root': OID_COVERED_PARTY_PARTICIPANT }],
+                  participantRole: {
+                    '@_classCode': 'PAT',
+                    id: [
+                      {
+                        '@_root': '2.16.840.1.113883.6.300',
+                        '@_extension': policyHolder?.identifier?.[0]?.value || '88800933502',
+                      },
+                    ],
+                    code: {
+                      '@_code': 'FAMDEP',
+                      '@_codeSystem': '2.16.840.1.113883.5.111',
+                      '@_displayName': policyHolder ? 'self' : 'dependent',
+                    },
+                    addr: this.mapFhirAddressArrayToCcdaAddressArray(policyHolder?.address),
+                    playingEntity: {
+                      '@_classCode': 'PSN',
+                      name: this.mapNames(policyHolder?.name),
+                      'sdtc:birthTime': mapFhirToCcdaDate(policyHolder?.birthDate),
+                    },
+                  },
+                },
+                policyHolder
+                  ? {
+                      '@_typeCode': 'HLD',
+                      templateId: [{ '@_root': OID_POLICY_HOLDER_PARTICIPANT }],
+                      participantRole: {
+                        id: [
+                          {
+                            '@_root': '2.16.840.1.113883.6.300',
+                            '@_extension': policyHolder.identifier?.[0]?.value || '888009335',
+                          },
+                        ],
+                        addr: this.mapFhirAddressArrayToCcdaAddressArray(policyHolder.address),
+                        playingEntity: {
+                          name: this.mapNames(policyHolder.name),
+                        },
+                      },
+                    }
+                  : undefined,
+              ].filter(Boolean) as CcdaParticipant[],
+              entryRelationship: [
+                {
+                  '@_typeCode': 'REFR',
+                  act: [
+                    {
+                      '@_classCode': 'ACT',
+                      '@_moodCode': 'DEF',
+                      id: this.mapIdentifiers(coverage.id, coverage.identifier) as CcdaId[],
+                      code: {
+                        '@_code': 'PAYOR',
+                        '@_codeSystem': '2.16.840.1.113883.5.110',
+                        '@_codeSystemName': 'HL7 RoleCode',
+                        '@_displayName': 'invoice payor',
+                      },
+                      text: coveragePlan?.value ? { '#text': coveragePlan.value } : undefined,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      }
+    }
+
+    return {
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_COVERAGE_ACTIVITY, '@_extension': '2015-08-01' },
+            { '@_root': OID_COVERAGE_ACTIVITY },
+          ],
+          id: this.mapIdentifiers(account.id, account.identifier),
+          code: {
+            '@_code': '48768-6',
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+            '@_displayName': 'Payment Sources',
+          },
+          statusCode: { '@_code': 'completed' },
+          entryRelationship,
         },
       ],
     };

@@ -5,11 +5,17 @@ import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
 import { EnumMapper, mapCcdaCodeToCodeableConcept, mapCodeableConceptToCcdaCode } from './systems';
 
 describe('EnumMapper', () => {
-  const mapper = new EnumMapper<string, string>('SNOMED CT', OID_SNOMED_CT_CODE_SYSTEM, SNOMED, [
-    { ccdaValue: 'c0', fhirValue: 'f0', displayName: 'd0' },
-    { ccdaValue: 'c1', fhirValue: 'f1', displayName: 'd1' },
-    { ccdaValue: 'c2', fhirValue: 'f2', displayName: 'd2' },
-  ]);
+  const mapper = new EnumMapper<string, string>(
+    {
+      ccdaSystemOid: OID_SNOMED_CT_CODE_SYSTEM,
+      fhirSystemUrl: SNOMED,
+    },
+    [
+      { ccdaValue: 'c0', fhirValue: 'f0', displayName: 'd0' },
+      { ccdaValue: 'c1', fhirValue: 'f1', displayName: 'd1' },
+      { ccdaValue: 'c2', fhirValue: 'f2', displayName: 'd2' },
+    ]
+  );
 
   test('getEntryByFhir', () => {
     expect(mapper.getEntryByFhir('f0')?.ccdaValue).toBe('c0');
