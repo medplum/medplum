@@ -72,6 +72,8 @@ import {
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
   OID_FDA_CODE_SYSTEM,
+  OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION,
+  OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
   OID_GOAL_OBSERVATION,
   OID_HEALTH_CONCERN_ACT,
   OID_HL7_REGISTERED_MODELS,
@@ -99,6 +101,7 @@ import {
   OID_RELATED_PERSON_RELATIONSHIP_AND_NAME_PARTICIPANT_PARTICIPATION,
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
+  OID_SELF_CARE_ACTIVITIES_ADL_AND_IADL,
   OID_SEVERITY_OBSERVATION,
   OID_SEX_OBSERVATION,
   OID_SMOKING_STATUS_OBSERVATION,
@@ -123,6 +126,7 @@ import {
   LOINC_BIRTH_SEX,
   LOINC_CLINICAL_FINDING,
   LOINC_CONDITION,
+  LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_HISTORY_OF_SOCIAL_FUNCTION,
@@ -1523,7 +1527,7 @@ class FhirToCcdaConverter {
 
   private createObservationEntry(observation: Observation): CcdaEntry {
     const obsValue = getTypedPropertyValueWithoutSchema(toTypedValue(observation), 'value');
-    if (observation.hasMember && !isPopulated(obsValue)) {
+    if ((observation.component || observation.hasMember) && !isPopulated(obsValue)) {
       // Organizer
       return {
         organizer: [this.createVitalSignsOrganizer(observation)],
@@ -1646,6 +1650,14 @@ class FhirToCcdaConverter {
   private createVitalSignsOrganizer(observation: Observation): CcdaOrganizer {
     const components: CcdaOrganizerComponent[] = [];
 
+    if (observation.component) {
+      for (const component of observation.component) {
+        components.push({
+          observation: [this.createVitalSignComponentObservation(observation, component)],
+        });
+      }
+    }
+
     if (observation.hasMember) {
       for (const member of observation.hasMember) {
         const child = this.findResourceByReference(member);
@@ -1670,10 +1682,7 @@ class FhirToCcdaConverter {
     const result: CcdaOrganizer = {
       '@_classCode': 'CLUSTER',
       '@_moodCode': 'EVN',
-      templateId: [
-        { '@_root': OID_VITAL_SIGNS_ORGANIZER },
-        { '@_root': OID_VITAL_SIGNS_ORGANIZER, '@_extension': '2015-08-01' },
-      ],
+      templateId: this.mapOrganizerTemplateId(observation),
       id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
       code: mapCodeableConceptToCcdaCode(observation.code) as CcdaCode,
       statusCode: { '@_code': 'completed' },
@@ -1726,7 +1735,7 @@ class FhirToCcdaConverter {
     const result: CcdaObservation = {
       '@_classCode': 'OBS',
       '@_moodCode': 'EVN',
-      templateId: this.mapObservationTemplateId(observation),
+      templateId: this.mapObservationTemplateId(observation, component),
       id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
       code: mapCodeableConceptToCcdaCode(component.code),
       statusCode: { '@_code': 'completed' },
@@ -1740,7 +1749,23 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
+  private mapOrganizerTemplateId(observation: Observation): CcdaTemplateId[] {
+    if (observation.code?.coding?.[0]?.code === 'd5') {
+      // ICF functional status organizer
+      return [
+        { '@_root': OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER, '@_extension': '2014-06-09' },
+        { '@_root': OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER },
+      ];
+    }
+
+    // Default to vital signs organizer
+    return [
+      { '@_root': OID_VITAL_SIGNS_ORGANIZER },
+      { '@_root': OID_VITAL_SIGNS_ORGANIZER, '@_extension': '2015-08-01' },
+    ];
+  }
+
+  private mapObservationTemplateId(observation: Observation, component?: ObservationComponent): CcdaTemplateId[] {
     const code = observation.code?.coding?.[0]?.code;
     const category = observation.category?.[0]?.coding?.[0]?.code;
 
@@ -1764,6 +1789,18 @@ class FhirToCcdaConverter {
 
     if (code === LOINC_BIRTH_SEX) {
       return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
+    }
+
+    if (code === 'd5') {
+      const componentCode = component?.code?.coding?.[0]?.code;
+      if (componentCode === LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE) {
+        return [{ '@_root': OID_SELF_CARE_ACTIVITIES_ADL_AND_IADL }];
+      }
+
+      return [
+        { '@_root': OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION, '@_extension': '2014-06-09' },
+        { '@_root': OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION },
+      ];
     }
 
     if (category === 'exam') {
@@ -2428,7 +2465,9 @@ class FhirToCcdaConverter {
                     playingEntity: {
                       '@_classCode': 'PSN',
                       name: this.mapNames(policyHolder?.name),
-                      'sdtc:birthTime': mapFhirToCcdaDate(policyHolder?.birthDate),
+                      'sdtc:birthTime': policyHolder?.birthDate
+                        ? { '@_value': mapFhirToCcdaDate(policyHolder.birthDate) }
+                        : undefined,
                     },
                   },
                 },

@@ -4,7 +4,9 @@ import {
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_DEVICES_SECTION,
+  LOINC_DISABILITY_STATUS,
   LOINC_ENCOUNTERS_SECTION,
+  LOINC_FUNCTIONAL_STATUS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
@@ -196,6 +198,7 @@ export class PatientSummaryBuilder {
   private readonly devices: DeviceUseStatement[] = [];
   private readonly goals: Goal[] = [];
   private readonly healthConcerns: Condition[] = [];
+  private readonly functionalStatus: Observation[] = [];
   private readonly notes: ClinicalImpression[] = [];
   private readonly reasonForReferral: ServiceRequest[] = [];
   private readonly insurance: Account[] = [];
@@ -378,11 +381,18 @@ export class PatientSummaryBuilder {
   }
 
   private chooseSectionForObservation(obs: Observation): void {
+    const code = obs.code?.coding?.[0]?.code;
     const categoryCode = findCodeBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
     switch (categoryCode) {
       case 'social-history':
-      case 'survey':
         this.socialHistory.push(obs);
+        break;
+      case 'survey':
+        if (code === 'd5' || code === LOINC_DISABILITY_STATUS) {
+          this.functionalStatus.push(obs);
+        } else {
+          this.socialHistory.push(obs);
+        }
         break;
       case 'vital-signs':
         this.vitalSigns.push(obs);
@@ -442,6 +452,7 @@ export class PatientSummaryBuilder {
         this.createPlanOfTreatmentSection(),
         this.createGoalsSection(),
         this.createHealthConcernsSection(),
+        this.createFunctionalStatusSection(),
         this.createNotesSection(),
         this.createReasonForReferralSection(),
         this.createInsuranceSection(),
@@ -670,6 +681,19 @@ export class PatientSummaryBuilder {
         ])
       ),
       this.healthConcerns
+    );
+  }
+
+  private createFunctionalStatusSection(): CompositionSection | undefined {
+    if (this.functionalStatus.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_FUNCTIONAL_STATUS_SECTION,
+      'Functional Status',
+      this.buildResultTable(this.functionalStatus),
+      this.functionalStatus
     );
   }
 

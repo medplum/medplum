@@ -19,6 +19,7 @@ import {
   OID_DIET_STATEMENT_NUTRITION,
   OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION,
   OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
+  OID_ICF_CODE_SYSTEM,
   OID_LABORATORY_BATTERY_ID,
   OID_LABORATORY_OBSERVATION_ID,
   OID_LABORATORY_RESULT_ORGANIZER_ID,
@@ -235,6 +236,7 @@ export const VA_MEDRT_URL = `${HTTP}//va.gov/terminology/medrt`;
 export const NDFRT_URL = `${HTTP}//hl7.org/fhir/ndfrt`;
 export const CVX_URL = `${HTTP}//nucc.org/cvx`;
 export const FHIR_CVX_URL = `${HTTP_HL7_ORG}/fhir/sid/cvx`;
+export const FHIR_ICF_URL = `${HTTP_HL7_ORG}/fhir/sid/icf`;
 export const XSI_URL = `${HTTP}//www.w3.org/2001/XMLSchema-instance`;
 export const CCDA_NARRATIVE_REFERENCE_URL = 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference';
 
@@ -274,6 +276,9 @@ export const LOINC_ADMINISTRATIVE_SEX = '46098-0';
 export const LOINC_BIRTH_SEX = '76689-9';
 export const LOINC_HISTORY_OF_SOCIAL_FUNCTION = '8689-2';
 export const LOINC_CLINICAL_FINDING = '75321-0';
+export const LOINC_FUNCTIONAL_STATUS_SECTION = '47420-5';
+export const LOINC_DISABILITY_STATUS = '89571-4';
+export const LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE = '47420-5';
 
 export const SYSTEM_MAPPER = new EnumMapper<string, string>({}, [
   {
@@ -358,6 +363,11 @@ export const SYSTEM_MAPPER = new EnumMapper<string, string>({}, [
     ccdaValue: OID_CVX_CODE_SYSTEM,
     fhirValue: FHIR_CVX_URL,
     displayName: 'Vaccine Administered Code Set (CVX)',
+  },
+  {
+    ccdaValue: OID_ICF_CODE_SYSTEM,
+    fhirValue: FHIR_ICF_URL,
+    displayName: 'International Classification of Functioning, Disability and Health (ICF)',
   },
 ]);
 
