@@ -54,7 +54,7 @@ import {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
+import { mapFhirPeriodOrDateTimeToCcda, mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
   OID_ACT_CLASS_CODE_SYSTEM,
   OID_ACT_CODE_CODE_SYSTEM,
@@ -65,11 +65,14 @@ import {
   OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
   OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
+  OID_BASIC_INDUSTRY_OBSERVATION,
+  OID_BASIC_OCCUPATION_OBSERVATION,
   OID_BIRTH_SEX,
   OID_CARE_TEAM_ORGANIZER_ENTRY,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
   OID_COVERAGE_ACTIVITY,
   OID_COVERED_PARTY_PARTICIPANT,
+  OID_DISABILITY_STATUS_OBSERVATION,
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
   OID_FDA_CODE_SYSTEM,
@@ -92,6 +95,7 @@ import {
   OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE,
   OID_POLICY_ACTIVITY,
   OID_POLICY_HOLDER_PARTICIPANT,
+  OID_PREGNANCY_OBSERVATION,
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_ACT,
@@ -109,6 +113,7 @@ import {
   OID_SMOKING_STATUS_OBSERVATION,
   OID_SNOMED_CT_CODE_SYSTEM,
   OID_TOBACCO_USE_OBSERVATION,
+  OID_TRIBAL_AFFILIATION_OBSERVATION,
   OID_VITAL_SIGNS_OBSERVATION,
   OID_VITAL_SIGNS_ORGANIZER,
 } from './oids';
@@ -128,20 +133,25 @@ import {
   LOINC_BIRTH_SEX,
   LOINC_CLINICAL_FINDING,
   LOINC_CONDITION,
+  LOINC_DISABILITY_STATUS,
   LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_HISTORY_OF_OCCUPATION,
+  LOINC_HISTORY_OF_OCCUPATION_INDUSTRY,
   LOINC_HISTORY_OF_SOCIAL_FUNCTION,
   LOINC_HISTORY_OF_TOBACCO_USE,
   LOINC_MEDICATION_INSTRUCTIONS,
   LOINC_NOTES_SECTION,
   LOINC_OVERALL_GOAL,
   LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PREGNANCY_STATUS,
   LOINC_PROBLEMS_SECTION,
   LOINC_REASON_FOR_REFERRAL_SECTION,
   LOINC_REFERRAL_NOTE,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   LOINC_TOBACCO_SMOKING_STATUS,
+  LOINC_TRIBAL_AFFILIATION,
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
@@ -1537,7 +1547,7 @@ class FhirToCcdaConverter {
     } else {
       // Direct observation
       return {
-        observation: [this.createVitalSignObservation(observation)],
+        observation: [this.createCcdaObservation(observation)],
       };
     }
   }
@@ -1655,7 +1665,7 @@ class FhirToCcdaConverter {
     if (observation.component) {
       for (const component of observation.component) {
         components.push({
-          observation: [this.createVitalSignComponentObservation(observation, component)],
+          observation: [this.createCcdaObservation(observation, component)],
         });
       }
     }
@@ -1670,12 +1680,12 @@ class FhirToCcdaConverter {
         if (child.component) {
           for (const component of child.component) {
             components.push({
-              observation: [this.createVitalSignComponentObservation(child as Observation, component)],
+              observation: [this.createCcdaObservation(child as Observation, component)],
             });
           }
         } else {
           components.push({
-            observation: [this.createVitalSignObservation(child as Observation)],
+            observation: [this.createCcdaObservation(child as Observation)],
           });
         }
       }
@@ -1695,7 +1705,17 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private createVitalSignObservation(observation: Observation): CcdaObservation {
+  private createCcdaObservation(observation: Observation, component?: ObservationComponent): CcdaObservation {
+    let code: CcdaCode | undefined = mapCodeableConceptToCcdaCode(component?.code ?? observation.code);
+    if (code?.['@_code'] === LOINC_PREGNANCY_STATUS) {
+      // This is a ridiculous special case.
+      // USCDI v3 requires that the pregnancy status observation use:
+      code = {
+        '@_code': 'ASSERTION',
+        '@_codeSystem': '2.16.840.1.113883.5.4',
+      };
+    }
+
     const entryRelationship: CcdaEntryRelationship[] = [];
 
     if (observation.hasMember) {
@@ -1707,7 +1727,7 @@ class FhirToCcdaConverter {
 
         entryRelationship.push({
           '@_typeCode': 'COMP',
-          observation: [this.createVitalSignObservation(child as Observation)],
+          observation: [this.createCcdaObservation(child as Observation)],
         });
       }
     }
@@ -1715,37 +1735,16 @@ class FhirToCcdaConverter {
     const result: CcdaObservation = {
       '@_classCode': 'OBS',
       '@_moodCode': 'EVN',
-      templateId: this.mapObservationTemplateId(observation),
-      id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
-      code: mapCodeableConceptToCcdaCode(observation.code),
-      statusCode: { '@_code': 'completed' },
-      effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
-      value: this.mapObservationValue(observation),
-      referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
-      text: this.createTextFromExtensions(observation.extension),
-      author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
-      entryRelationship,
-    };
-
-    return result;
-  }
-
-  private createVitalSignComponentObservation(
-    observation: Observation,
-    component: ObservationComponent
-  ): CcdaObservation {
-    const result: CcdaObservation = {
-      '@_classCode': 'OBS',
-      '@_moodCode': 'EVN',
       templateId: this.mapObservationTemplateId(observation, component),
       id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
-      code: mapCodeableConceptToCcdaCode(component.code),
+      code,
       statusCode: { '@_code': 'completed' },
-      effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
-      value: this.mapObservationValue(component),
-      referenceRange: this.mapReferenceRangeArray(component.referenceRange),
-      text: this.createTextFromExtensions(component.extension),
+      effectiveTime: [mapFhirPeriodOrDateTimeToCcda(observation.effectivePeriod, observation.effectiveDateTime)],
+      value: this.mapObservationValue(component ?? observation),
+      referenceRange: this.mapReferenceRangeArray(component?.referenceRange ?? observation.referenceRange),
+      text: this.createTextFromExtensions(component?.extension ?? observation.extension),
       author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
+      entryRelationship,
     };
 
     return result;
@@ -1791,6 +1790,29 @@ class FhirToCcdaConverter {
 
     if (code === LOINC_BIRTH_SEX) {
       return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
+    }
+
+    if (code === LOINC_DISABILITY_STATUS) {
+      return [
+        { '@_root': OID_DISABILITY_STATUS_OBSERVATION },
+        { '@_root': OID_DISABILITY_STATUS_OBSERVATION, '@_extension': '2023-05-01' },
+      ];
+    }
+
+    if (code === LOINC_HISTORY_OF_OCCUPATION) {
+      return [{ '@_root': OID_BASIC_OCCUPATION_OBSERVATION, '@_extension': '2023-05-01' }];
+    }
+
+    if (code === LOINC_HISTORY_OF_OCCUPATION_INDUSTRY) {
+      return [{ '@_root': OID_BASIC_INDUSTRY_OBSERVATION, '@_extension': '2023-05-01' }];
+    }
+
+    if (code === LOINC_PREGNANCY_STATUS) {
+      return [{ '@_root': OID_PREGNANCY_OBSERVATION }];
+    }
+
+    if (code === LOINC_TRIBAL_AFFILIATION) {
+      return [{ '@_root': OID_TRIBAL_AFFILIATION_OBSERVATION, '@_extension': '2023-05-01' }];
     }
 
     if (code === 'd5') {
@@ -2260,7 +2282,7 @@ class FhirToCcdaConverter {
         }
 
         components.push({
-          observation: [this.createVitalSignObservation(child as Observation)],
+          observation: [this.createCcdaObservation(child as Observation)],
         });
       }
     }
