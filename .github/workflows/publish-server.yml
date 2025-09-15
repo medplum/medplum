@@ -69,7 +69,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
-          registry-url: "https://npm.pkg.github.com"
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
           scope: "@data2evidence"
       - name: Setup NPM
         if: ${{ matrix.NPM }}
@@ -79,8 +79,6 @@ jobs:
         run: |
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
       - name: Update version
         run: |
           cd ${{ matrix.PKGPATH }}
@@ -110,13 +108,10 @@ jobs:
           sudo chown runner:docker ${{ matrix.DESTPATH }}
           cp -a . ${{ matrix.DESTPATH }}
           cd ${{ matrix.DESTPATH }}
-          npm install @data2evidence/trex:latest
           export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
           #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
           echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
           npm run trex_build
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
       - name: Use Node.js - Project
         uses: actions/setup-node@v4
         with:
