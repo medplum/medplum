@@ -1,6 +1,5 @@
-name: Publish-Server
+name: d2e build pslugin
 
-# Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +8,6 @@ on:
         required: false
         type: choice
         options:
-          - ohdsi/d2e-medplum
           - data2evidence/d2e-medplum
       GIT_BRANCH_NAME:
         default: main
@@ -32,6 +30,14 @@ on:
         type: boolean
         default: true
         required: true
+      artifacttype:
+        type: choice
+        required: true
+        default: "OSS-develop"
+        options:
+          - "OSS-develop"
+          - "OSS-release"
+          - "Project"
   pull_request:
     types: [opened, ready_for_review, reopened, synchronize]
   merge_group:
@@ -42,34 +48,46 @@ on:
 env:
   GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
   GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }} # workflow_dispatch || pull_request || push
+  NPM_ARTIFACT_TYPE: ${{ github.event.inputs.artifacttype || 'OSS-develop'}}
 
-jobs:   
-  build_and_check:
-    name: publish-server
+jobs:
+  check_file_changes:
     runs-on: ubuntu-latest
-    if: (github.ref_name == 'main' ||  contains('release/', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is develop/release/workflow_dispatch and doesnt have a PR
-    env:
-      NODE_VERSION: '20'
+    if: (github.ref_name == 'main' ||  contains('release/', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
+    outputs:
+      changes: ${{ steps.file_changes.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+  build:
+    runs-on: ubuntu-24.04
+    needs: [check_file_changes]
+    if: (github.ref_name == 'main' || contains('release', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft && needs.check_file_changes.outputs.changes == 'true' ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - PKGPATH: ./packages/server
+          - PKGPATH: ./packages/server/
             DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
             NPM: npm
 
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
+          submodules: recursive
+          fetch-depth: 0
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
-          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
+          registry-url: "https://npm.pkg.github.com"
           scope: "@data2evidence"
       - name: Setup NPM
         if: ${{ matrix.NPM }}
@@ -111,18 +129,32 @@ jobs:
           export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
           #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
           echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
-          npm ls
-          npm run trex_build
-      - name: Use Node.js - Project
+          npm run build
+      - name: Use Node.js - OSS Develop
         uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'OSS-develop'
         with:
           node-version: "18.x"
           registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
           scope: "@data2evidence"
+      - name: Use Node.js - OSS Release
+        uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'OSS-release'
+        with:
+          node-version: "18.x"
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/stable/npm/registry/"
+          scope: "@data2evidence"
+      - name: Use Node.js - Project
+        uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'Project'
+        with:
+          node-version: "18.x"
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/"
+          scope: "@data2evidence"
       - name: Publish
         env:
           CI: ${{ matrix.NPM != 'yarn' }}
-          SHOULD_PUBLISH: ${{ github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' }}
+          SHOULD_PUBLISH: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
         run: |
           cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
@@ -131,8 +163,9 @@ jobs:
           else
              ${{ matrix.NPM || 'npm' }} pack
           fi
+
   success:
-    needs: build_and_check
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Check
