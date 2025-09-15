@@ -16,7 +16,6 @@
     "os": "node:os",
     "http": "node:http",
     "fs": "node:fs",
-    "@appsignal/opentelemetry-instrumentation-bullmq": "npm:@appsignal/opentelemetry-instrumentation-bullmq@0.7.3",
     "@aws-sdk/client-cloudwatch-logs": "npm:@aws-sdk/client-cloudwatch-logs@3.849.0",
     "@aws-sdk/client-comprehendmedical": "npm:@aws-sdk/client-comprehendmedical@3.848.0",
     "@aws-sdk/client-lambda": "npm:@aws-sdk/client-lambda@3.851.0",
