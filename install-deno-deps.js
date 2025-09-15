@@ -99,7 +99,7 @@ function installDependencies(folderPath, errorSummary) {
       line.includes('Error:') ||
       line.includes('Failed')
     ) || errorLines[0];
-    
+    console.log(errorMessage)
     console.error(`   💥 ${mainError}`);
     
     errorSummary.installFailed.push({
