@@ -1,4 +1,4 @@
-name: d2e build pslugin
+name: d2e build plugin
 
 on:
   workflow_dispatch:
@@ -51,20 +51,9 @@ env:
   NPM_ARTIFACT_TYPE: ${{ github.event.inputs.artifacttype || 'OSS-develop'}}
 
 jobs:
-  check_file_changes:
-    runs-on: ubuntu-latest
-    if: (github.ref_name == 'main' ||  contains('release/', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
-    outputs:
-      changes: ${{ steps.file_changes.outputs.src }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
   build:
     runs-on: ubuntu-24.04
-    needs: [check_file_changes]
-    if: (github.ref_name == 'main' || contains('release', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft && needs.check_file_changes.outputs.changes == 'true' ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
+    if: (github.ref_name == 'main' || contains('release', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
 
     strategy:
       fail-fast: false
