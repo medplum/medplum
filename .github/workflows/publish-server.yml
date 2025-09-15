@@ -38,72 +38,93 @@ on:
   push:
     branches:
       - main
-      - csafreen/publish_src
 
 env:
   GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
   GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }} # workflow_dispatch || pull_request || push
 
-jobs:
+jobs:   
   build_and_check:
-    name: publish
+    name: publish-server
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      NODE_VERSION: '20'
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
-    permissions:
-      actions: read
-      contents: write
-      id-token: write
-      pull-requests: write
+    if: (github.ref_name == 'main' ||  contains('release/', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is develop/release/workflow_dispatch and doesnt have a PR
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - PKGPATH: ./packages/server/
+            DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
+            NPM: yarn
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@data2evidence"
+      - name: Setup NPM
+        if: ${{ matrix.NPM }}
+        run: npm install -g ${{ matrix.NPM }}
+      - name: Install dependencies
+        if: ${{ matrix.DESTPATH }}
+        run: |
+          npm install -g deno@2.1.13
+          node ./install-deno-deps.js ${{ matrix.PKGPATH }}
       - name: Update version
         run: |
-          cd ./packages/server
-          jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
+          cd ${{ matrix.PKGPATH }}
+          if [[ $GITHUB_EVENT_NAME == 'workflow_dispatch' ]]; then
+            RELEASE_VERSION=${{ github.event.inputs.tag }}
+            jq --arg v $RELEASE_VERSION '.version=$v' package.json > tmppkg; mv tmppkg package.json
+          else
+            jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
+          fi
+      - name: Build
+        run: |
+          cd ${{ matrix.PKGPATH }}
+          ${{ matrix.NPM == 'yarn' && 'yarn install' ||'npm install --ignore-scripts' }}
+        env:
+          CI: ${{ matrix.NPM != 'yarn' }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch Package
+        if: ${{ matrix.NPM }}
+        working-directory: ${{ matrix.PKGPATH }}
+        run: jq '.private=false' package.json > tmppkg; mv tmppkg package.json
+      - name: DEST
+        working-directory: ${{ matrix.PKGPATH }}
+        if:  ${{ matrix.DESTPATH }}
+        run: | 
+          cp package.json package.org.json
+          sudo mkdir -p ${{ matrix.DESTPATH }}
+          sudo chown runner:docker ${{ matrix.DESTPATH }}
+          cp -a . ${{ matrix.DESTPATH }}
+          cd ${{ matrix.DESTPATH }}
+          export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
+          #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
+          echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
+          npm run trex_build  
       - name: Use Node.js - Project
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
+          node-version: "18.x"
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/"
           scope: "@data2evidence"
-
-      - name: Cache node modules
-        uses: actions/cache@v4
+      - name: Publish
         env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          MEDPLUM_AWS_TEXTRACT_ENABLED: '__MEDPLUM_AWS_TEXTRACT_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
-
-      - name: Publish to NPM
-        run: ./scripts/publish-server.sh
-        env:
+          CI: ${{ matrix.NPM != 'yarn' }}
+          SHOULD_PUBLISH: ${{ github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
+        run: |
+          cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
+          if [[ $SHOULD_PUBLISH == true ]]; then
+             ${{ matrix.NPM || 'npm' }} publish
+          else
+             ${{ matrix.NPM || 'npm' }} pack
+          fi
