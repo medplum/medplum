@@ -39,6 +39,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
       break;
     case 'file':
       config = await loadFileConfig(configPath);
+      config = replace_env_var(config);
       break;
     case 'aws':
       config = await loadAwsConfig(configPath);
@@ -152,8 +153,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
   } else if (typeof import.meta !== 'undefined') {
     //@ts-ignore
     baseDir = dirname(fileURLToPath(import.meta.url));
-    console.log(baseDir);
-    baseDir = "/usr/src/data/plugins/node_modules/@data2evidence/d2e-medplum-server/src/config";
+    baseDir = `/usr/src/data/plugins/node_modules/@data2evidence/d2e-medplum-server/src/config`;
   }
   return JSON.parse(
     readFileSync(
@@ -161,4 +161,37 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
       { encoding: 'utf8' }
     )
   );
+}
+
+ function replace_env_var(config: MedplumServerConfig): MedplumServerConfig {
+  console.log("Processing configuration file...");
+  function replaceInValue(value: any): any {
+    if (typeof value === 'string') {
+      // Replace all ${VAR} with process.env.VAR
+      return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, varName) => {
+        return process.env[varName] ?? '';
+      });
+    } else if (Array.isArray(value)) {
+      return value.map(replaceInValue);
+    } else if (value && typeof value === 'object') {
+      for (const key of Object.keys(value)) {
+        value[key] = replaceInValue(value[key]);
+      }
+      return value;
+    }
+    return value;
+  }
+  try {
+    config = replaceInValue(config);
+    if (config.database?.port) {
+      config.database.port = Number(config.database.port);
+    }
+    if (config.redis?.port) {
+      config.redis.port = Number(config.redis.port);
+    }
+    return config;
+  } catch (err) {
+    console.error("Error processing configuration file:", err);
+    return config;
+  }
 }
