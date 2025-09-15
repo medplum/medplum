@@ -71,7 +71,7 @@
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",
     "@vitejs/plugin-react": "5.0.2",
-    "jsdom": "26.1.0",
+    "jsdom": "27.0.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router": "7.9.1",
