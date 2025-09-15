@@ -65,6 +65,12 @@ jobs:
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@data2evidence"
       - name: Setup NPM
         if: ${{ matrix.NPM }}
         run: npm install -g ${{ matrix.NPM }}
