@@ -48,6 +48,8 @@ jobs:
     name: publish-server
     runs-on: ubuntu-latest
     if: (github.ref_name == 'main' ||  contains('release/', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is develop/release/workflow_dispatch and doesnt have a PR
+    env:
+      NODE_VERSION: '20'
 
     strategy:
       fail-fast: false
@@ -55,7 +57,7 @@ jobs:
         include:
           - PKGPATH: ./packages/server/
             DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
-            NPM: yarn
+            NPM: npm
 
     steps:
       - name: Checkout repository
