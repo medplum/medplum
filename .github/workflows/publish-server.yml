@@ -96,7 +96,7 @@ jobs:
           ${{ matrix.NPM == 'yarn' && 'yarn install' ||'npm install --ignore-scripts' }}
         env:
           CI: ${{ matrix.NPM != 'yarn' }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Patch Package
         if: ${{ matrix.NPM }}
         working-directory: ${{ matrix.PKGPATH }}
