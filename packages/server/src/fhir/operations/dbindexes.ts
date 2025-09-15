@@ -7,7 +7,7 @@ import { Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
-import { isValidTableName, SqlBuilder } from '../sql';
+import { isValidTableName, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -132,12 +132,8 @@ async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]):
   }>(builder.toString(), builder.getValues());
 
   const rows = results.rows as GinIndexInfo[];
+  replaceNullWithUndefinedInRows(results.rows);
   for (const row of rows) {
-    for (const k in row) {
-      if ((row as any)[k] === null) {
-        (row as any)[k] = undefined;
-      }
-    }
     if (row.indexOptions) {
       row.indexOptions = arrayToString(row.indexOptions as unknown as string[]);
     }
