@@ -69,7 +69,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
-          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
+          registry-url: "https://npm.pkg.github.com"
           scope: "@data2evidence"
       - name: Setup NPM
         if: ${{ matrix.NPM }}
@@ -130,3 +130,9 @@ jobs:
           else
              ${{ matrix.NPM || 'npm' }} pack
           fi
+  success:
+    needs: build_and_check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        run: echo "Check"
