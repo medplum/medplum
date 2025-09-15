@@ -65,12 +65,6 @@ jobs:
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18.x"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@data2evidence"
       - name: Setup NPM
         if: ${{ matrix.NPM }}
         run: npm install -g ${{ matrix.NPM }}
@@ -118,7 +112,8 @@ jobs:
           cd ${{ matrix.DESTPATH }}
           export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
           #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
-          echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"          npm run trex_build
+          echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
+          npm run trex_build
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
       - name: Use Node.js - Project
