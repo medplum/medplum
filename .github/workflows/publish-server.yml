@@ -82,7 +82,7 @@ jobs:
         if: ${{ matrix.DESTPATH }}
         run: |
           npm install -g deno@2.1.13
-          node ./install-deno-deps.js ${{ matrix.PKGPATH }}
+          node ./install-deno-deps.js ./packages/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
