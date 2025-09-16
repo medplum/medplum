@@ -3,155 +3,90 @@ sidebar_position: 1
 tags: [auth]
 ---
 
-# Authentication Methods
+# Authentication
 
-Choose the right authentication approach for your Medplum integration in under 60 seconds.
+This page helps you choose the correct authentication method for your application, whether it's a browser, a server, or a device. The primary goal is to guide you to the right documentation page based on your use case.
 
-## Quick Decision Guide
+-----
 
-### 🔍 What are you building?
+## Authentication Categories
 
-**User-facing application** (web app, mobile app, patient portal)  
-→ **Client-Side Authentication**  
-Supports multiple identity providers
+Medplum's authentication methods are organized into two core categories.
 
-**Backend service or API** (server proxy, legacy system integration)  
-→ **Server-Side Authentication**  
-Trusted environment operations
+**Browser-based Authentication**: For user-facing applications like single-page apps (SPAs), mobile apps, and patient portals. This is the most common use case for most developers.
 
-**Device or automation** (lab equipment, CI/CD pipeline, data sync)  
-→ **Device/Host Authentication**  
-Machine-to-machine connectivity
+**Server-side Authentication**: For applications running in a trusted, back-end environment, such as proxies, API gateways, and automated data processing services.
 
----
+-----
 
-## Client-Side Authentication
+## Method Selection Table
 
-**Perfect for:** Patient portals, provider apps, mobile applications
+Use this table to quickly find the recommended authentication method for your scenario.
 
-### Choose Your Identity Provider
+| Scenario | Recommended Method | **Choose if...** |
+| :--- | :--- | :--- |
+| **User-facing application** (web, mobile, or SPA) | **Browser-based Authentication** (OAuth Authorization Code with PKCE) | You are building a **public client application** that runs in a web browser or on a mobile device and authenticates a user. You need to handle **user login** and manage user sessions securely. |
+| **Back-end service acting on its own behalf** (e.g., cron job, data processor) | **Server-side Authentication** (Client Credentials) | You are building a **confidential client application** in a trusted environment (like a server) that needs to access Medplum resources without a user's direct involvement. The actions will be performed on behalf of the `ClientApplication`'s access policy, **not a user's policy**. |
+| **Back-end service acting on behalf of a user** (e.g., a proxy API) | **Server-side Authentication** (On-Behalf-Of pattern) | You are creating a **proxy server or an API gateway** that receives an authentication token from a client and needs to exchange it for a new token to access Medplum on the user's behalf. This is the correct choice for the **"on behalf of" pattern**. |
+| **Non-web device** (lab analyzer, on-premise host, CI/CD) | **Server-side Authentication** (Client Credentials with restricted scope) | You need to authenticate a **physical device or a machine** that doesn't have a user interface. This method is for true machine-to-machine connectivity and should use an **extremely limited access policy**. |
 
-<table>
-<tr>
-<th>Scenario</th>
-<th>Recommended Method</th>
-</tr>
-<tr>
-<td><strong>Simple, fast setup</strong><br/>New application, basic login needs</td>
-<td><a href="/docs/auth/methods/oauth-auth-code">OAuth Authorization Code</a><br/>Use Medplum as identity provider</td>
-</tr>
-<tr>
-<td><strong>Enterprise SSO required</strong><br/>Auth0, Okta, Azure AD integration</td>
-<td><a href="/docs/auth/methods/external-identity-providers">External Identity Providers</a><br/>Federated authentication</td>
-</tr>
-<tr>
-<td><strong>Google-first experience</strong><br/>Consumer app, Google Workspace users</td>
-<td><a href="/docs/auth/methods/google-auth">Google Authentication</a><br/>Built-in Google integration</td>
-</tr>
-<tr>
-<td><strong>Advanced enterprise</strong><br/>Domain-wide SSO enforcement</td>
-<td><a href="/docs/auth/methods/domain-level-identity-providers">Domain-Level Identity Providers</a><br/>Automatic provider routing</td>
-</tr>
-</table>
+-----
 
-### 🚀 Quick Start Example
+## Browser-based Authentication
 
-```typescript
-// Using Medplum OAuth (simplest option)
-import { MedplumClient } from '@medplum/core';
+This category is for **user-facing applications** that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and authenticate a user. The recommended method is **OAuth Authorization Code Flow with PKCE**, which is the industry standard for public clients.
 
-const medplum = new MedplumClient({
-  baseUrl: 'https://api.medplum.com/',
-  clientId: 'YOUR_CLIENT_ID'
-});
+### Key Concepts
 
-// Start login flow
-await medplum.startLogin('user@example.com');
-```
+  * **PKCE (Proof Key for Code Exchange)** is a security extension for OAuth that prevents interception attacks in public clients. It ensures that only your application can exchange the authorization code for an access token. Use the `PKCE optional` setting in Medplum to enforce this.
+  * **External Identity Providers**: You can integrate with external IDPs like **Okta**, **Auth0**, and **Microsoft Entra ID** for **SSO** (Single Sign-On) and to enable alternative login flows (e.g., passwordless).
 
----
+### Guides
 
-## Server-Side Authentication
+  * [**OAuth Authorization Code**](/docs/auth/methods/oauth-auth-code): The default authentication method.
+  * [**External Identity Providers**](/docs/auth/methods/external-identity-providers): Comprehensive guide for connecting with popular IDPs.
+  * [**Okta Integration Guide**](/docs/auth/guides/okta): Step-by-step instructions for Okta.
+  * [**Auth0 Integration Guide**](/docs/auth/guides/auth0): Step-by-step instructions for Auth0.
+  * [**Microsoft Entra ID Integration Guide**](/docs/auth/guides/entra-id): Step-by-step instructions for Microsoft Entra ID.
 
-**Perfect for:** Backend APIs, legacy system integration, server proxies
+-----
 
-### When to Use Server-Side Auth
-- ✅ Adding Medplum to existing applications
-- ✅ Building API gateways or proxies
-- ✅ Need server-side token management
-- ✅ Operating in trusted environments
+## Server-side Authentication
 
-### Implementation Options
+This category is for **back-end services** or machines running in a trusted environment. These applications do not directly authenticate a user but operate on behalf of an application or device.
 
-| Method | Use Case | Security Level |
-|--------|----------|----------------|
-| **[Client Credentials](/docs/auth/methods/client-credentials)** | Standard server auth | 🔒 OAuth2 (Recommended) |
-| **[Basic Authentication](/docs/auth/methods/basic-auth)** | Stateless environments | 🔒 HTTP Basic |
+### Implementation Details
 
-### 🚀 Quick Start Example
+The recommended method is **Client Credentials Flow**, where the application uses its own credentials to obtain a token. This is ideal for scenarios like:
 
-```typescript
-// Client Credentials (recommended)
-const medplum = new MedplumClient({
-  baseUrl: 'https://api.medplum.com/',
-  clientId: 'YOUR_CLIENT_ID',
-  clientSecret: 'YOUR_CLIENT_SECRET'
-});
+  * Integrating Medplum with a legacy system.
+  * Building a proxy API that handles requests for multiple clients.
+  * Connecting a medical device or a CI/CD pipeline.
 
-await medplum.startClientLogin();
-```
+### Guides
 
----
+  * [**Client Credentials**](/docs/auth/methods/client-credentials): The primary method for server-side and device authentication.
+  * [**Basic Authentication**](/docs/auth/methods/basic-auth): An alternative for legacy or stateless environments where Client Credentials is not feasible.
 
-## Device/Host Authentication
+-----
 
-**Perfect for:** Lab analyzers, IoT devices, automated systems, CI/CD pipelines
+## User Management
 
-### When to Use Device Auth
-- ✅ True machine-to-machine connectivity
-- ✅ Non-interactive authentication
-- ✅ Minimal access scope requirements
-- ✅ No user interface available
+User Management has been moved to its own top-level section in the documentation to consolidate all relevant topics.
 
-### Security-First Approach
-Device authentication uses the same **[Client Credentials](/docs/auth/methods/client-credentials)** method as server-side auth, but with:
-- 🔒 **Extremely restricted access policies** (principle of least privilege)
-- 🌐 **Network isolation** (VPC/firewall restrictions recommended)
-- 🔑 **Secrets management** (never store credentials on disk)
+This new section is the central place for documentation on:
 
----
+  * **User invites** and provisioning.
+  * **SCIM**: System for Cross-domain Identity Management.
+  * **User scoping**: Defining which data a user can access.
+  * **Linking users**: The difference between using **External IDs** and email addresses.
 
-## Special Topics
+-----
 
-### 🔄 Migration & Token Management
-- **[Token Exchange](/docs/auth/methods/token-exchange)** - Convert external tokens to Medplum tokens
-- **[External IDs](/docs/auth/methods/external-ids)** - Map non-email identities
-- **[User Management](/docs/auth/user-management-guide)** - Create and manage user accounts
+## Security Best Practices
 
-### 🛡️ Security & Compliance
-- **[IP Address Restrictions](/docs/access/ip-access-rules)** - Network-based access control
-- **[Access Policies](/docs/access/access-policies)** - Fine-grained permissions
+Regardless of the authentication method you choose, always follow these best practices:
 
----
-
-## Need Help Choosing?
-
-### Common Questions
-
-**"I'm migrating from Firebase Auth"**  
-→ Use [External Identity Providers](/docs/auth/methods/external-identity-providers) to integrate your existing Firebase setup
-
-**"I need both web and mobile apps"**  
-→ [OAuth Authorization Code](/docs/auth/methods/oauth-auth-code) works for both with the same client configuration
-
-**"My organization requires Okta SSO"**  
-→ [External Identity Providers](/docs/auth/methods/external-identity-providers) + [Domain-Level Identity Providers](/docs/auth/methods/domain-level-identity-providers) for automatic routing
-
-**"I'm building a lab integration"**  
-→ [Client Credentials](/docs/auth/methods/client-credentials) with device-specific access policies
-
-### Still Unsure?
-
-1. **Start simple:** Most applications should begin with [OAuth Authorization Code](/docs/auth/methods/oauth-auth-code)
-2. **Add complexity later:** You can always add external identity providers or additional authentication methods
-3. **Get help:** Join our [Discord community](https://discord.gg/medplum) or [schedule a consultation](https://www.medplum.com/contact)
+  * **Principle of Least Privilege**: Ensure your `ClientApplication` and user access policies are as restrictive as possible.
+  * **Secrets Management**: Never store credentials or tokens directly on disk. Use a secrets management service.
+  * **Network Isolation**: Restrict host access via a VPC or firewall to prevent access from the public internet.
