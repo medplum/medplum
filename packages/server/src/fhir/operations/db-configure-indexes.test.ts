@@ -84,7 +84,7 @@ describe('dbgetginindexes', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: 'fastUpdate or ginPendingListLimit must be specified' },
+          details: { text: 'At least one of fastUpdateAction or ginPendingListLimitAction must be specified' },
         },
       ],
     });
@@ -103,11 +103,19 @@ describe('dbgetginindexes', () => {
             valueString: tableName,
           },
           {
-            name: 'fastUpdate',
+            name: 'fastUpdateAction',
+            valueString: 'set',
+          },
+          {
+            name: 'fastUpdateValue',
             valueBoolean: true,
           },
           {
-            name: 'ginPendingListLimit',
+            name: 'ginPendingListLimitAction',
+            valueString: 'set',
+          },
+          {
+            name: 'ginPendingListLimitValue',
             valueInteger: 128,
           },
         ],
@@ -121,6 +129,10 @@ describe('dbgetginindexes', () => {
           name: 'result',
           part: [
             {
+              name: 'schemaName',
+              valueString: 'public',
+            },
+            {
               name: 'tableName',
               valueString: 'Gin_Index_Configure_Test_Table',
             },
@@ -133,6 +145,10 @@ describe('dbgetginindexes', () => {
         {
           name: 'result',
           part: [
+            {
+              name: 'schemaName',
+              valueString: 'public',
+            },
             {
               name: 'tableName',
               valueString: 'Gin_Index_Configure_Test_Table',
@@ -160,12 +176,16 @@ describe('dbgetginindexes', () => {
             valueString: tableName,
           },
           {
-            name: 'fastUpdate',
+            name: 'fastUpdateAction',
+            valueString: 'set',
+          },
+          {
+            name: 'fastUpdateValue',
             valueBoolean: false,
           },
           {
-            name: 'ginPendingListLimit',
-            valueInteger: 128,
+            name: 'ginPendingListLimitAction',
+            valueString: 'reset',
           },
         ],
       });
@@ -177,6 +197,10 @@ describe('dbgetginindexes', () => {
         {
           name: 'result',
           part: [
+            {
+              name: 'schemaName',
+              valueString: 'public',
+            },
             {
               name: 'tableName',
               valueString: 'Gin_Index_Configure_Test_Table',
@@ -194,6 +218,10 @@ describe('dbgetginindexes', () => {
         {
           name: 'result',
           part: [
+            {
+              name: 'schemaName',
+              valueString: 'public',
+            },
             {
               name: 'tableName',
               valueString: 'Gin_Index_Configure_Test_Table',

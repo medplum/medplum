@@ -106,17 +106,25 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   if (params.fastUpdateAction === 'reset') {
     config.fastUpdate = 'reset';
   } else if (params.fastUpdateAction === 'set') {
+    if (typeof params.fastUpdateValue !== 'boolean') {
+      throw new OperationOutcomeError(badRequest('fastUpdateValue must be a boolean'));
+    }
     config.fastUpdate = params.fastUpdateValue;
   }
 
   if (params.ginPendingListLimitAction === 'reset') {
     config.ginPendingListLimit = 'reset';
   } else if (params.ginPendingListLimitAction === 'set') {
+    if (!Number.isInteger(params.ginPendingListLimitValue)) {
+      throw new OperationOutcomeError(badRequest('ginPendingListLimitValue must be an integer'));
+    }
     config.ginPendingListLimit = params.ginPendingListLimitValue;
   }
 
   if (config.fastUpdate === undefined && config.ginPendingListLimit === undefined) {
-    throw new OperationOutcomeError(badRequest('fastUpdate or ginPendingListLimit must be specified'));
+    throw new OperationOutcomeError(
+      badRequest('At least one of fastUpdateAction or ginPendingListLimitAction must be specified')
+    );
   }
 
   const client = getDatabasePool(DatabaseMode.WRITER);
