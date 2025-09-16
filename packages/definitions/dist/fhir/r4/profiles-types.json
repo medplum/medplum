@@ -12621,7 +12621,7 @@
             "key" : "eld-16",
             "severity" : "error",
             "human" : "sliceName must be composed of proper tokens separated by \"/\"",
-            "expression" : "sliceName.empty() or sliceName.matches('^[a-zA-Z0-9\\\\/\\\\-_\\\\[\\\\]\\\\@]+$')",
+            "expression" : "sliceName.empty() or sliceName.matches('^[a-zA-Z0-9\\/\\-_\\[\\]\\@]+$')",
             "xpath" : "not(exists(f:sliceName/@value)) or matches(f:sliceName/@value, '^[a-zA-Z0-9\\/\\-_\\[\\]\\@]+$')"
           },
           {
@@ -12635,14 +12635,14 @@
             "key" : "eld-19",
             "severity" : "error",
             "human" : "Element names cannot include some special characters",
-            "expression" : "path.matches('[^\\\\s\\\\.,:;\\\\\\'\"\\\\/|?!@#$%&*()\\\\[\\\\]{}]{1,64}(\\\\.[^\\\\s\\\\.,:;\\\\\\'\"\\\\/|?!@#$%&*()\\\\[\\\\]{}]{1,64}(\\\\[x\\\\])?(\\\\:[^\\\\s\\\\.]+)?)*')",
+            "expression" : "path.matches('[^\\s\\.,:;\\'\"\\/|?!@#$%&*()\\[\\]{}]{1,64}(\\.[^\\s\\.,:;\\'\"\\/|?!@#$%&*()\\[\\]{}]{1,64}(\\[x\\])?(\\:[^\\s\\.]+)?)*')",
             "xpath" : "matches(path/@value, '[^\\s\\.,:;\\'&quot;\\/|?!@#$%&amp;*()\\[\\]{}]{1,64}(\\.[^\\s\\.,:;\\'&quot;\\/|?!@#$%&amp;*()\\[\\]{}]{1,64}(\\[x\\])?(\\:[^\\s\\.]+)?)*')"
           },
           {
             "key" : "eld-20",
             "severity" : "warning",
             "human" : "Element names should be simple alphanumerics with a max of 64 characters, or code generation tools may be broken",
-            "expression" : "path.matches('[A-Za-z][A-Za-z0-9]*(\\\\.[a-z][A-Za-z0-9]*(\\\\[x])?)*')",
+            "expression" : "path.matches('[A-Za-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*(\\[x])?)*')",
             "xpath" : "matches(path/@value, '[A-Za-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*(\\[x])?)*')"
           },
           {
@@ -16544,7 +16544,7 @@
             "key" : "eld-19",
             "severity" : "error",
             "human" : "Element names cannot include some special characters",
-            "expression" : "path.matches('[^\\\\s\\\\.,:;\\\\\\'\"\\\\/|?!@#$%&*()\\\\[\\\\]{}]{1,64}(\\\\.[^\\\\s\\\\.,:;\\\\\\'\"\\\\/|?!@#$%&*()\\\\[\\\\]{}]{1,64}(\\\\[x\\\\])?(\\\\:[^\\\\s\\\\.]+)?)*')",
+            "expression" : "path.matches('[^\\s\\.,:;\\'\"\\/|?!@#$%&*()\\[\\]{}]{1,64}(\\.[^\\s\\.,:;\\'\"\\/|?!@#$%&*()\\[\\]{}]{1,64}(\\[x\\])?(\\:[^\\s\\.]+)?)*')",
             "xpath" : "matches(path/@value, '[^\\s\\.,:;\\'&quot;\\/|?!@#$%&amp;*()\\[\\]{}]{1,64}(\\.[^\\s\\.,:;\\'&quot;\\/|?!@#$%&amp;*()\\[\\]{}]{1,64}(\\[x\\])?(\\:[^\\s\\.]+)?)*')"
           },
           {
@@ -16614,7 +16614,7 @@
             "key" : "eld-16",
             "severity" : "error",
             "human" : "sliceName must be composed of proper tokens separated by \"/\"",
-            "expression" : "sliceName.empty() or sliceName.matches('^[a-zA-Z0-9\\\\/\\\\-_\\\\[\\\\]\\\\@]+$')",
+            "expression" : "sliceName.empty() or sliceName.matches('^[a-zA-Z0-9\\/\\-_\\[\\]\\@]+$')",
             "xpath" : "not(exists(f:sliceName/@value)) or matches(f:sliceName/@value, '^[a-zA-Z0-9\\/\\-_\\[\\]\\@]+$')"
           },
           {
@@ -16635,7 +16635,7 @@
             "key" : "eld-20",
             "severity" : "warning",
             "human" : "Element names should be simple alphanumerics with a max of 64 characters, or code generation tools may be broken",
-            "expression" : "path.matches('[A-Za-z][A-Za-z0-9]*(\\\\.[a-z][A-Za-z0-9]*(\\\\[x])?)*')",
+            "expression" : "path.matches('[A-Za-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*(\\[x])?)*')",
             "xpath" : "matches(path/@value, '[A-Za-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*(\\[x])?)*')"
           }],
           "mapping" : [{
