@@ -77,7 +77,7 @@ export interface AgentLogsRequest extends BaseAgentRequestMessage {
   level?: LogLevel;
 }
 
-export interface AgentLogResponse extends BaseAgentMessage {
+export interface AgentLogsResponse extends BaseAgentMessage {
   type: 'agent:logs:response';
   statusCode: number;
   logs: LogMessage[];
@@ -97,7 +97,7 @@ export type AgentResponseMessage =
   | AgentTransmitResponse
   | AgentReloadConfigResponse
   | AgentUpgradeResponse
-  | AgentLogResponse
+  | AgentLogsResponse
   | AgentError;
 
 export type AgentMessage = AgentRequestMessage | AgentResponseMessage;
