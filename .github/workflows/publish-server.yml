@@ -69,14 +69,14 @@ jobs:
           repository: ${{ env.GIT_REPO_FULL_NAME }}
           submodules: recursive
           fetch-depth: 0
-      # - name: Use Node.js
-      #   uses: actions/setup-node@v5
-      #   with:
-      #     node-version: 18
-      #     registry-url: "https://npm.pkg.github.com"
-      #     scope: "@data2evidence"
-      #     package-manager-cache: false
-      #     token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Use Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 18
+          # registry-url: "https://npm.pkg.github.com"
+          # scope: "@data2evidence"
+          # package-manager-cache: false
+          # token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup NPM
         if: ${{ matrix.NPM }}
         run: npm install -g ${{ matrix.NPM }}
