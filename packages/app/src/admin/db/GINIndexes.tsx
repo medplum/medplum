@@ -94,54 +94,53 @@ export function GINIndexes(): JSX.Element {
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
+                <Table.Th>Schema</Table.Th>
                 <Table.Th>Table</Table.Th>
                 <Table.Th>Index</Table.Th>
                 <Table.Th>fastupdate</Table.Th>
                 <Table.Th>gin_pending_list_limit</Table.Th>
-                <Table.Th>Pending List Bytes</Table.Th>
-                <Table.Th>n_pending_pages</Table.Th>
-                <Table.Th>n_pending_tuples</Table.Th>
-                <Table.Th>pending_head</Table.Th>
-                <Table.Th>pending_tail</Table.Th>
-                <Table.Th>tail_free_size</Table.Th>
-                <Table.Th>n_total_pages</Table.Th>
-                <Table.Th>n_entry_pages</Table.Th>
-                <Table.Th>n_data_pages</Table.Th>
-                <Table.Th>n_entries</Table.Th>
+                <Table.Th>options</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {indexes?.map((index) => {
                 const part = index.part ?? [];
                 const indexName = part.find((p) => p.name === 'indexName')?.valueString;
-                const ginPendingListLimit = part.find((p) => p.name === 'ginPendingListLimit')?.valueInteger;
                 if (!indexName) {
                   throw new Error('Index missing name', { cause: index });
                 }
                 return (
                   <Table.Tr key={indexName}>
-                    <StatTd value={part.find((p) => p.name === 'tableName')?.valueString} {...statTdProps} />
+                    <Table.Td>{part.find((p) => p.name === 'schemaName')?.valueString}</Table.Td>
+                    <Table.Td>{part.find((p) => p.name === 'tableName')?.valueString}</Table.Td>
                     <Table.Td>{indexName}</Table.Td>
-                    <StatTd value={part.find((p) => p.name === 'fastUpdate')?.valueBoolean} {...statTdProps} />
-                    <Table.Td>
-                      {ginPendingListLimit === undefined ? (
+                    <StatTd
+                      value={part.find((p) => p.name === 'fastUpdate')?.valueBoolean}
+                      defaultValue={
+                        <Text span c="dimmed" fs="italic">
+                          default&nbsp;({formatValue(true)})
+                        </Text>
+                      }
+                      {...statTdProps}
+                    />
+                    <StatTd
+                      value={part.find((p) => p.name === 'ginPendingListLimit')?.valueInteger}
+                      defaultValue={
                         <Text span c="dimmed" fs="italic">
                           default&nbsp;({defaultGinPendingListLimit})
                         </Text>
-                      ) : (
-                        ginPendingListLimit
-                      )}
-                    </Table.Td>
-                    <StatTd value={part.find((p) => p.name === 'bytesPending')?.valueInteger} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nPendingPages')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nPendingTuples')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'pendingHead')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'pendingTail')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'tailFreeSize')?.valueInteger} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nTotalPages')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nEntryPages')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nDataPages')?.valueString} {...statTdProps} />
-                    <StatTd value={part.find((p) => p.name === 'nEntries')?.valueString} {...statTdProps} />
+                      }
+                      {...statTdProps}
+                    />
+                    <StatTd
+                      value={part.find((p) => p.name === 'indexOptions')?.valueString}
+                      defaultValue={
+                        <Text span c="dimmed" fs="italic">
+                          NULL
+                        </Text>
+                      }
+                      {...statTdProps}
+                    />
                   </Table.Tr>
                 );
               })}
@@ -160,19 +159,20 @@ type StatValue = boolean | string | number | undefined;
 interface StatTdProps {
   readonly value: StatValue;
   readonly onClick?: (value: StatValue) => void;
+  readonly defaultValue?: React.ReactNode;
 }
 
-function StatTd({ value, onClick }: StatTdProps): JSX.Element {
+function StatTd({ value, onClick, defaultValue }: StatTdProps): JSX.Element {
   return (
     <Table.Td style={{ cursor: 'pointer' }} onClick={() => onClick?.(value)}>
-      {formatValue(value)}
+      {value === undefined ? defaultValue : formatValue(value)}
     </Table.Td>
   );
 }
 
 function formatValue(val: StatValue): string | number | undefined {
   if (typeof val === 'string') {
-    return val.length > 30 ? val.substring(0, 30) + '...' : val;
+    return val.length > 50 ? val.substring(0, 50) + '...' : val;
   } else if (typeof val === 'boolean') {
     // boolean false values aren't rendered by React, so just stringify them
     return val.toString().toLocaleUpperCase();

@@ -87,7 +87,7 @@ describe('dbgetginindexes', () => {
     expect(indexes[1].name).toBe('index');
     expect(indexes[1].part?.find((p) => p.name === 'tableName')?.valueString).toBe('Gin_Index_Test_Table');
     expect(indexes[1].part?.find((p) => p.name === 'indexName')?.valueString).toBe('Gin_Index_Test_Table_bbb_idx');
-    expect(indexes[1].part?.find((p) => p.name === 'fastUpdate')?.valueBoolean).toBe(true);
+    expect(indexes[1].part?.find((p) => p.name === 'fastUpdate')?.valueBoolean).toBeUndefined();
     expect(indexes[1].part?.find((p) => p.name === 'indexOptions')).toBeUndefined();
     expect(indexes[1].part?.find((p) => p.name === 'ginPendingListLimit')?.valueInteger).toBeUndefined();
   });

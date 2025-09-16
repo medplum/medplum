@@ -41,22 +41,12 @@ const operation: OperationDefinition = {
       min: 0,
       max: '*',
       part: [
+        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'indexName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'indexOptions', type: 'string', min: 0, max: '1' },
-        { use: 'out', name: 'fastUpdate', type: 'boolean', min: 1, max: '1' },
+        { use: 'out', name: 'fastUpdate', type: 'boolean', min: 0, max: '1' },
         { use: 'out', name: 'ginPendingListLimit', type: 'integer', min: 0, max: '1' },
-        { use: 'out', name: 'bytesPending', type: 'integer', min: 1, max: '1' },
-        { use: 'out', name: 'pendingHead', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'pendingTail', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'tailFreeSize', type: 'integer', min: 1, max: '1' },
-        { use: 'out', name: 'nPendingPages', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'nPendingTuples', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'nTotalPages', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'nEntryPages', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'nDataPages', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'nEntries', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'version', type: 'integer', min: 1, max: '1' },
       ],
     },
   ],
@@ -115,27 +105,15 @@ async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]):
     t.relname as "tableName",
     i.relname as "indexName",
     i.reloptions as "indexOptions",
-    coalesce((SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'fastupdate=(\\w+)'))[1]::boolean FROM unnest(coalesce(i.reloptions, '{}')) AS opt
-      WHERE opt ~ '^fastupdate='), TRUE) AS "fastUpdate",
+    (SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'fastupdate=(\\w+)'))[1]::boolean FROM unnest(coalesce(i.reloptions, '{}')) AS opt
+      WHERE opt ~ '^fastupdate=') AS "fastUpdate",
 		(SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'gin_pending_list_limit=(\\d+)'))[1]::INT FROM unnest(coalesce(i.reloptions, '{}')) AS opt
-      WHERE opt ~ '^gin_pending_list_limit=') AS "ginPendingListLimit",
-    gm.n_pending_pages::int * current_setting('block_size')::int as "bytesPending",
-		gm.pending_head as "pendingHead",
-		gm.pending_tail as "pendingTail",
-		gm.tail_free_size as "tailFreeSize",
-		gm.n_pending_pages as "nPendingPages",
-		gm.n_pending_tuples as "nPendingTuples",
-		gm.n_total_pages as "nTotalPages",
-		gm.n_entry_pages as "nEntryPages",
-		gm.n_data_pages as "nDataPages",
-		gm.n_entries as "nEntries",
-		gm.version as "version"
+      WHERE opt ~ '^gin_pending_list_limit=') AS "ginPendingListLimit"
     FROM pg_index ix
     JOIN pg_class i ON ix.indexrelid = i.oid
     JOIN pg_class t ON ix.indrelid = t.oid
     JOIN pg_namespace AS n ON n.oid = t.relnamespace
     JOIN pg_am a ON i.relam = a.oid
-    CROSS JOIN LATERAL gin_metapage_info(get_raw_page(quote_ident(i.relname), 0)) AS gm
     WHERE a.amname = 'gin'
     AND n.nspname = `;
   builder.append(sql);
