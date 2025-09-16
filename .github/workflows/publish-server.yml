@@ -111,6 +111,8 @@ jobs:
       - name: DEST
         working-directory: ${{ matrix.PKGPATH }}
         if:  ${{ matrix.DESTPATH }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: | 
           cp package.json package.org.json
           sudo mkdir -p ${{ matrix.DESTPATH }}
