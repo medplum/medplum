@@ -129,18 +129,6 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
           npm i @data2evidence/trex
           npm run trex_build
-      - name: Show package.json after build
-        run: |
-          cat ${{ matrix.DESTPATH }}/package.json
-      - name: Check DESTPATH exists
-        run: |
-          if [ -d "${{ matrix.DESTPATH }}" ]; then
-            echo "DESTPATH exists: ${{ matrix.DESTPATH }}"
-            ls -l ${{ matrix.DESTPATH }}/src
-          else
-            echo "DESTPATH does NOT exist: ${{ matrix.DESTPATH }}"
-            exit 1
-          fi
       - name: Use Node.js - OSS Develop
         uses: actions/setup-node@v4
         if: env.NPM_ARTIFACT_TYPE == 'OSS-develop'
