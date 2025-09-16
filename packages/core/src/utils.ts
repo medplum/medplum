@@ -1390,7 +1390,7 @@ export function removeProfileFromResource<T extends Resource = Resource>(resourc
   return resource;
 }
 
-export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | undefined): U[] {
+export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | U[] | undefined): U[] {
   const result: U[] = [];
   if (!arr) {
     return result;
@@ -1399,7 +1399,7 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   for (let i = 0; i < arr.length; i++) {
     const resultValue = fn(arr[i], i);
     if (Array.isArray(resultValue)) {
-      result.push(...resultValue.flat());
+      result.push(...resultValue);
     } else if (resultValue !== undefined) {
       result.push(resultValue);
     }

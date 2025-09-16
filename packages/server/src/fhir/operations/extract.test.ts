@@ -480,6 +480,8 @@ describe('Expand', () => {
       resourceType: 'QuestionnaireResponse',
       status: 'completed',
       questionnaire: questionnaire.url as string,
+      author: { reference: 'Practitioner/author' },
+      authored: '2025-09-16',
       item: [
         {
           linkId: 'patient',

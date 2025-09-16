@@ -7,6 +7,7 @@ import {
   CrawlerVisitor,
   crawlTypedValue,
   evalFhirPathTyped,
+  flatMapFilter,
   getExtension,
   InternalTypeSchema,
   OperationOutcomeError,
@@ -22,6 +23,7 @@ import {
   Extension,
   OperationDefinition,
   Questionnaire,
+  QuestionnaireItem,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   Resource,
@@ -192,12 +194,17 @@ class TemplateExtractor implements CrawlerVisitor {
   private variables: Record<string, TypedValue>;
   private templates: Record<string, Resource>;
 
-  constructor(questionnaire: Questionnaire, response: QuestionnaireResponse, variables?: Record<string, TypedValue>) {
+  constructor(
+    questionnaire: Questionnaire,
+    response: QuestionnaireResponse,
+    variables?: Record<string, TypedValue>,
+    context?: TemplateExtractionContext
+  ) {
     this.questionnaire = questionnaire;
     this.response = response;
 
     const typedResponse = toTypedValue(response);
-    this.context = [{ path: 'QuestionnaireResponse', values: [typedResponse] }];
+    this.context = [context ?? { path: 'Questionnaire', values: [typedResponse] }];
 
     // Gather template resources from Questionnaire by internal reference ID
     this.templates = Object.create(null);
@@ -216,14 +223,6 @@ class TemplateExtractor implements CrawlerVisitor {
       this.context.pop();
     }
   }
-
-  // onEnterResource(path: string, value: TypedValueWithPath, schema: InternalTypeSchema): void {
-  //   console.log('ENTER RESOURCE', schema.name);
-  // }
-
-  // onExitResource(path: string, value: TypedValueWithPath, schema: InternalTypeSchema): void {
-  //   console.log('EXIT RESOURCE', schema.name);
-  // }
 
   private isTopLevelExtension(
     path: string,
@@ -315,26 +314,36 @@ class TemplateExtractor implements CrawlerVisitor {
     }
 
     // TODO: Need to copy variables/context to stack before recursively scanning
-    const context = parent.path === 'Questionnaire' ? this.response : this.extractResponseItem();
-    const visitor = new TemplateExtractor(context, this.templates, this.variables);
+    const context = this.extractResponseItem(parent);
+    const visitor = new TemplateExtractor(this.questionnaire, this.response, this.variables, {
+      path: parent.path,
+      values: context,
+    });
     crawlTypedValue(toTypedValue(template), visitor, { skipMissingProperties: true });
 
     // TODO: Construct resource from template and add to Bundle
     // bundle.entry?.push(createBundleEntry(resource, extension));
   }
 
-  private extractResponseItem(linkId: string): QuestionnaireResponseItem[] | undefined {
-    return this.response.item?.filter((item) => item.linkId === linkId);
+  private extractResponseItem(parent: TypedValueWithPath): TypedValue[] {
+    if (parent.type === 'Questionnaire') {
+      return [toTypedValue(this.response)];
+    } else if (parent.type === 'QuestionnaireItem') {
+      const linkId = (parent.value as QuestionnaireItem).linkId;
+      return flatMapFilter(this.response.item, (item) => extractResponseItem(item, linkId));
+    } else {
+      throw new OperationOutcomeError(badRequest('Extraction cannot begin on element of type ' + parent.type));
+    }
   }
 
   private processValue(expr: string, parent: TypedValueWithPath): void {
     // Evaluate expression in context and use value to generate patch ops
-    const results = evalFhirPathTyped(expr, this.currentContext().values, this.variables);
+    const context = this.currentContext().values;
+    const results = evalFhirPathTyped(expr, context, this.variables);
     this.makeModification(results, parent);
   }
 
   private makeModification(results: TypedValue[], parent: TypedValueWithPath): void {
-    console.log('===== MODIFY!', parent, results);
     // Compute JSON patch ops to modify template resource
     if (!results.length) {
       // Remove element from template
@@ -357,4 +366,14 @@ function createBundleEntry(resource: Resource, extension: Extension): BundleEntr
       // TODO: Include conditional header fields
     },
   };
+}
+
+function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): TypedValue | TypedValue[] | undefined {
+  if (item.linkId === linkId) {
+    return toTypedValue(item);
+  } else if (item.item) {
+    return flatMapFilter(item.item, (nestedItem) => extractResponseItem(nestedItem, linkId));
+  } else {
+    return undefined;
+  }
 }
