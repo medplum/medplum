@@ -599,7 +599,7 @@ function buildEncounterEntry(
               },
               value: {
                 '@_code': diagnosisCondition.code?.coding?.[0]?.code ?? '',
-                '@_codeSystem': '2.16.840.1.113883.6.96"',
+                '@_codeSystem': '2.16.840.1.113883.6.96',
                 '@_codeSystemName': 'SNOMEDCT',
                 '@_xsi:type': 'CD',
               },
