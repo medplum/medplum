@@ -175,6 +175,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
         run: |
           cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
+          echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/" >> ~/.npmrc
+          echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           if [[ $SHOULD_PUBLISH == true ]]; then
              ${{ matrix.NPM || 'npm' }} publish
           else
