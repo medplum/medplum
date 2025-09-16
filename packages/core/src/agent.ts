@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LogLevel, LogMessage } from './logger';
+import { LogMessage } from './logger';
 
 export interface BaseAgentMessage {
   type: string;
@@ -74,7 +74,6 @@ export interface AgentUpgradeResponse extends BaseAgentMessage {
 export interface AgentLogsRequest extends BaseAgentRequestMessage {
   type: 'agent:logs:request';
   limit?: number;
-  level?: LogLevel;
 }
 
 export interface AgentLogsResponse extends BaseAgentMessage {

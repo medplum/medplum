@@ -77,7 +77,6 @@ export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOpt
 
 export interface FetchLogsOptions {
   limit?: number;
-  level?: LogLevel;
 }
 
 export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPathRoot: string = 'config'): string[] {
