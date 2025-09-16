@@ -4,8 +4,9 @@ import { Button, Group, Modal, Stack, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { Form, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { JSX, ReactNode, useEffect, useState } from 'react';
+import ConfigureGINIndexesForm from './ConfigureGINIndexesForm';
 import { SearchableSelect } from './SearchableSelect';
 import { getAvailableTables } from './utils';
 
@@ -19,7 +20,7 @@ export function GINIndexes(): JSX.Element {
   const [table, setTable] = useState<string | undefined>(undefined);
   const [defaultGinPendingListLimit, setDefaultGinPendingListLimit] = useState(0);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [indexes, setIndexes] = useState<ParametersParameter[]>([]);
+  const [indexes, setIndexes] = useState<ParametersParameter[] | undefined>(undefined);
   const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [refreshTable, setRefreshTable] = useState(0);
 
@@ -61,6 +62,13 @@ export function GINIndexes(): JSX.Element {
       });
   }, [medplum, table, refreshTable]);
 
+  const handleConfigureResponse = (response: Parameters): void => {
+    const indexes = response.parameter?.filter((p) => p.name === 'result');
+    setModalTitle('Configure Results');
+    setModalContent(<pre>{JSON.stringify(indexes, null, 2)}</pre>);
+    openModal();
+  };
+
   const statTdProps = {
     onClick: (value: boolean | string | number | undefined) => {
       setModalTitle('Details');
@@ -69,8 +77,16 @@ export function GINIndexes(): JSX.Element {
     },
   };
 
+  let nothingToShowMessage: string | undefined;
+  if (loadingStats) {
+    nothingToShowMessage = 'Loading...';
+  } else if (!table) {
+    nothingToShowMessage = 'Select a table';
+  } else if (indexes?.length === 0) {
+    nothingToShowMessage = 'No GIN indexes on this table';
+  }
   return (
-    <Form onSubmit={() => {}}>
+    <>
       <Stack gap="sm">
         <Group>
           <Text span fw={700}>
@@ -78,6 +94,15 @@ export function GINIndexes(): JSX.Element {
           </Text>
           {defaultGinPendingListLimit}
         </Group>
+        <h2>Configure GIN indexes</h2>
+        <Group>
+          <ConfigureGINIndexesForm
+            defaultGinPendingListLimit={defaultGinPendingListLimit}
+            availableTables={availableTables}
+            onResponse={handleConfigureResponse}
+          />
+        </Group>
+        <h2>GIN index stats</h2>
         <Group>
           <SearchableSelect
             data={availableTables}
@@ -86,7 +111,7 @@ export function GINIndexes(): JSX.Element {
               setTable(value);
             }}
           />
-          <Button loading={loadingStats} onClick={() => setRefreshTable((prev) => prev + 1)}>
+          <Button loading={loadingStats} onClick={() => setRefreshTable((prev) => prev + 1)} disabled={!table}>
             Refresh
           </Button>
         </Group>
@@ -103,47 +128,53 @@ export function GINIndexes(): JSX.Element {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {indexes?.map((index) => {
-                const part = index.part ?? [];
-                const indexName = part.find((p) => p.name === 'indexName')?.valueString;
-                if (!indexName) {
-                  throw new Error('Index missing name', { cause: index });
-                }
-                return (
-                  <Table.Tr key={indexName}>
-                    <Table.Td>{part.find((p) => p.name === 'schemaName')?.valueString}</Table.Td>
-                    <Table.Td>{part.find((p) => p.name === 'tableName')?.valueString}</Table.Td>
-                    <Table.Td>{indexName}</Table.Td>
-                    <StatTd
-                      value={part.find((p) => p.name === 'fastUpdate')?.valueBoolean}
-                      defaultValue={
-                        <Text span c="dimmed" fs="italic">
-                          default&nbsp;({formatValue(true)})
-                        </Text>
-                      }
-                      {...statTdProps}
-                    />
-                    <StatTd
-                      value={part.find((p) => p.name === 'ginPendingListLimit')?.valueInteger}
-                      defaultValue={
-                        <Text span c="dimmed" fs="italic">
-                          default&nbsp;({defaultGinPendingListLimit})
-                        </Text>
-                      }
-                      {...statTdProps}
-                    />
-                    <StatTd
-                      value={part.find((p) => p.name === 'indexOptions')?.valueString}
-                      defaultValue={
-                        <Text span c="dimmed" fs="italic">
-                          NULL
-                        </Text>
-                      }
-                      {...statTdProps}
-                    />
-                  </Table.Tr>
-                );
-              })}
+              {nothingToShowMessage && (
+                <Table.Tr>
+                  <Table.Td colSpan={16}>{nothingToShowMessage}</Table.Td>
+                </Table.Tr>
+              )}
+              {!nothingToShowMessage &&
+                indexes?.map((index) => {
+                  const part = index.part ?? [];
+                  const indexName = part.find((p) => p.name === 'indexName')?.valueString;
+                  if (!indexName) {
+                    throw new Error('Index missing name', { cause: index });
+                  }
+                  return (
+                    <Table.Tr key={indexName}>
+                      <Table.Td>{part.find((p) => p.name === 'schemaName')?.valueString}</Table.Td>
+                      <Table.Td>{part.find((p) => p.name === 'tableName')?.valueString}</Table.Td>
+                      <Table.Td>{indexName}</Table.Td>
+                      <StatTd
+                        value={part.find((p) => p.name === 'fastUpdate')?.valueBoolean}
+                        defaultValue={
+                          <Text span c="dimmed" fs="italic">
+                            default&nbsp;({formatValue(true)})
+                          </Text>
+                        }
+                        {...statTdProps}
+                      />
+                      <StatTd
+                        value={part.find((p) => p.name === 'ginPendingListLimit')?.valueInteger}
+                        defaultValue={
+                          <Text span c="dimmed" fs="italic">
+                            default&nbsp;({defaultGinPendingListLimit})
+                          </Text>
+                        }
+                        {...statTdProps}
+                      />
+                      <StatTd
+                        value={part.find((p) => p.name === 'indexOptions')?.valueString}
+                        defaultValue={
+                          <Text span c="dimmed" fs="italic">
+                            NULL
+                          </Text>
+                        }
+                        {...statTdProps}
+                      />
+                    </Table.Tr>
+                  );
+                })}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
@@ -151,7 +182,7 @@ export function GINIndexes(): JSX.Element {
       <Modal opened={modalOpened} onClose={closeModal} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
-    </Form>
+    </>
   );
 }
 

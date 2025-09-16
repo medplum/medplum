@@ -29,14 +29,28 @@ const operation: OperationDefinition = {
     },
     {
       use: 'in',
-      name: 'fastUpdate',
+      name: 'fastUpdateAction',
+      type: 'string',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'in',
+      name: 'fastUpdateValue',
       type: 'boolean',
       min: 0,
       max: '1',
     },
     {
       use: 'in',
-      name: 'ginPendingListLimit',
+      name: 'ginPendingListLimitAction',
+      type: 'string',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'in',
+      name: 'ginPendingListLimitValue',
       type: 'integer',
       min: 0,
       max: '1',
@@ -47,6 +61,7 @@ const operation: OperationDefinition = {
       min: 0,
       max: '*',
       part: [
+        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'indexName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'pagesCleaned', type: 'string', min: 0, max: '1' },
@@ -64,17 +79,17 @@ interface GinIndexInfo {
 
 type InputParameters = {
   tableName?: string[];
-  fastUpdate?: boolean;
-  ginPendingListLimit?: number;
+  fastUpdateAction?: 'set' | 'reset';
+  fastUpdateValue?: boolean;
+  ginPendingListLimitAction?: 'set' | 'reset';
+  ginPendingListLimitValue?: number;
 };
 
 export async function dbGinIndexeConfigureHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
   const params = parseInputParameters<InputParameters>(operation, req);
-  if (params.fastUpdate === undefined && params.ginPendingListLimit === undefined) {
-    throw new OperationOutcomeError(badRequest('fastUpdate or ginPendingListLimit must be specified'));
-  }
+  const config: GinIndexConfig = {};
 
   let tableNames: string[];
   if (params.tableName && params.tableName.length > 0) {
@@ -88,32 +103,70 @@ export async function dbGinIndexeConfigureHandler(req: FhirRequest): Promise<Fhi
     throw new OperationOutcomeError(badRequest('tableName must be specified'));
   }
 
+  if (params.fastUpdateAction === 'reset') {
+    config.fastUpdate = 'reset';
+  } else if (params.fastUpdateAction === 'set') {
+    config.fastUpdate = params.fastUpdateValue;
+  }
+
+  if (params.ginPendingListLimitAction === 'reset') {
+    config.ginPendingListLimit = 'reset';
+  } else if (params.ginPendingListLimitAction === 'set') {
+    config.ginPendingListLimit = params.ginPendingListLimitValue;
+  }
+
+  if (config.fastUpdate === undefined && config.ginPendingListLimit === undefined) {
+    throw new OperationOutcomeError(badRequest('fastUpdate or ginPendingListLimit must be specified'));
+  }
+
   const client = getDatabasePool(DatabaseMode.WRITER);
 
-  const result = await configureGinIndexes(client, tableNames, params);
+  const result = await configureGinIndexes(client, tableNames, config);
   const output: { result: GinIndexInfo[] } = { result };
 
   return [allOk, buildOutputParameters(operation, output)];
 }
 
+type GinIndexConfig = {
+  fastUpdate?: 'reset' | true | false;
+  ginPendingListLimit?: 'reset' | number;
+};
+
 async function configureGinIndexes(
   client: PoolClient | Pool,
   tableNames: string[],
-  config: { fastUpdate?: boolean; ginPendingListLimit?: number }
+  config: GinIndexConfig
 ): Promise<GinIndexInfo[]> {
+  const resetStrings: string[] = [];
   const setStrings: string[] = [];
-  if (config.fastUpdate !== undefined) {
+  let resetSql = '';
+  let setSql = '';
+  let cleanListSql = '';
+
+  if (config.fastUpdate === 'reset') {
+    resetStrings.push('fastupdate');
+  } else if (typeof config.fastUpdate === 'boolean') {
     setStrings.push(`fastupdate = ${config.fastUpdate}`);
   }
-  if (config.ginPendingListLimit !== undefined) {
+
+  if (config.ginPendingListLimit === 'reset') {
+    resetStrings.push('gin_pending_list_limit');
+  } else if (typeof config.ginPendingListLimit === 'number') {
     setStrings.push(`gin_pending_list_limit = ${config.ginPendingListLimit}`);
   }
 
-  let cleanListSql = '';
+  if (resetStrings.length > 0) {
+    resetSql = `EXECUTE format('ALTER INDEX %I.%I RESET (${resetStrings.join(', ')})', idx.schemaname, idx.indexname);`;
+  }
+
+  if (setStrings.length > 0) {
+    setSql = `EXECUTE format('ALTER INDEX %I.%I SET (${setStrings.join(', ')})', idx.schemaname, idx.indexname);`;
+  }
+
   if (config.fastUpdate === false) {
     cleanListSql = `
       EXECUTE format('SELECT gin_clean_pending_list(%L::regclass)',
-          quote_ident(idx.schemaname) || '.' || quote_ident(idx.indexname))
+        quote_ident(idx.schemaname) || '.' || quote_ident(idx.indexname))
         INTO pages_cleaned;
     `;
   }
@@ -141,9 +194,8 @@ async function configureGinIndexes(
         AND n.nspname = 'public'
         AND t.relname IN (${tableNames.map((name) => `'${name}'`).join(', ')})
       LOOP
-        EXECUTE format('ALTER INDEX %I.%I SET (${setStrings.join(', ')})',
-          idx.schemaname, 
-          idx.indexname);
+        ${resetSql}
+        ${setSql}
         ${cleanListSql}
         INSERT INTO gin_cleanup_results VALUES (
           idx.schemaname,
