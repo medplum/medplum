@@ -87,7 +87,6 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
-          ls -l ${{ matrix.PKGPATH }}/node_modules
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
@@ -101,6 +100,8 @@ jobs:
           fi
       - name: Build
         run: |
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           cd ${{ matrix.PKGPATH }}
           ${{ matrix.NPM == 'yarn' && 'yarn install' ||'npm install --ignore-scripts' }}
         env:
