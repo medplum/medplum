@@ -4,6 +4,7 @@ import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow
 import { SqlBuilder, UpdateQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
+import { getColumns } from './migrate-utils';
 import { CheckConstraintDefinition, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
@@ -160,6 +161,16 @@ export async function nonBlockingAlterColumnNotNull(
   tableName: string,
   columnName: string
 ): Promise<void> {
+  const columns = await getColumns(client, tableName);
+  const column = columns.find((c) => c.name === columnName);
+  if (!column) {
+    throw new Error(`Column "${tableName}"."${columnName}" not found`);
+  }
+
+  if (column.notNull) {
+    return;
+  }
+
   const nullCountResult = await query<{ count: number }>(
     client,
     actions,

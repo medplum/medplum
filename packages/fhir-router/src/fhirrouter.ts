@@ -187,7 +187,9 @@ async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise
 // Read resource history
 async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const bundle = await repo.readHistory(resourceType as ResourceType, id);
+  const offset = parseIntegerQueryParam(req.query, '_offset');
+  const limit = parseIntegerQueryParam(req.query, '_count');
+  const bundle = await repo.readHistory(resourceType as ResourceType, id, { offset, limit });
   return [allOk, bundle];
 }
 
@@ -365,6 +367,17 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+function parseIntegerQueryParam(query: Record<string, string | string[] | undefined>, key: string): number | undefined {
+  const value = query[key];
+  let strValue: string | undefined;
+  if (Array.isArray(value)) {
+    strValue = value[value.length - 1];
+  } else {
+    strValue = value;
+  }
+  return strValue ? parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

@@ -13,13 +13,14 @@ import { getConfig } from '../../config/loader';
  * @returns The bot execution result.
  */
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId, headers } = request;
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
   const payload = {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
+    requester,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,

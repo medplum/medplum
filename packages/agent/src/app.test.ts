@@ -372,9 +372,7 @@ describe('App', () => {
 
   test('Unknown endpoint protocol', async () => {
     const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
     console.log = jest.fn();
-    console.error = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -429,7 +427,6 @@ describe('App', () => {
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
     console.log = originalConsoleLog;
-    console.error = originalConsoleError;
   });
 
   test('Reload config', async () => {
@@ -2642,8 +2639,8 @@ describe('App', () => {
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
       const originalConsoleLog = console.log;
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
       console.log = jest.fn();
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2958,6 +2955,7 @@ describe('App', () => {
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
     const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
     const fetchSpy = mockFetchForUpgrader();
@@ -2974,7 +2972,6 @@ describe('App', () => {
     const isAppRunningSpy = jest
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation((appName: string) => appName === 'medplum-upgrading-agent');
-    console.log = jest.fn();
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;
@@ -3071,6 +3068,7 @@ describe('App', () => {
 
     const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation();
     const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
     const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
     const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -3090,7 +3088,6 @@ describe('App', () => {
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
       );
-    console.log = jest.fn();
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;

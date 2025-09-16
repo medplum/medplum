@@ -1511,6 +1511,14 @@ describe('Client', () => {
       'https://api.medplum.com/fhir/R4/Patient/123/_history',
       expect.objectContaining({ method: 'GET' })
     );
+    fetch.mockClear();
+
+    const r2 = await client.readHistory('Patient', '123', { count: 5, offset: 100 });
+    expect(r2).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123/_history?_count=5&_offset=100',
+      expect.objectContaining({ method: 'GET' })
+    );
   });
 
   test('Read patient everything', async () => {

@@ -10,6 +10,7 @@ import {
   AgentUpgradeResponse,
   ContentType,
   Hl7Message,
+  ILogger,
   LogLevel,
   Logger,
   MEDPLUM_VERSION,
@@ -54,12 +55,17 @@ async function execAsync(
   });
 }
 
+export interface AppOptions {
+  mainLogger?: ILogger;
+  channelLogger?: ILogger;
+}
+
 export class App {
   static instance: App;
   readonly medplum: MedplumClient;
   readonly agentId: string;
-  readonly logLevel: LogLevel;
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -76,12 +82,12 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
 
-  constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
+  constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
     this.medplum = medplum;
     this.agentId = agentId;
-    this.logLevel = logLevel;
-    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 
   async start(): Promise<void> {
@@ -97,7 +103,9 @@ export class App {
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket().catch(this.log.error);
+        this.connectWebSocket().catch((err) => {
+          this.log.error(normalizeErrorString(err));
+        });
       } else {
         this.startWebSocketWorker();
       }
@@ -176,7 +184,9 @@ export class App {
   private async heartbeat(): Promise<void> {
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket().catch(this.log.error);
+      this.connectWebSocket().catch((err) => {
+        this.log.error(normalizeErrorString(err));
+      });
       return;
     }
 

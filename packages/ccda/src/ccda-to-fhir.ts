@@ -276,7 +276,7 @@ class CcdaToFhirConverter {
       return undefined;
     }
     return addresses?.map((addr) => ({
-      '@_use': addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
+      use: addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
       line: addr.streetAddressLine,
       city: addr.city,
       state: addr.state,
@@ -290,7 +290,7 @@ class CcdaToFhirConverter {
       return undefined;
     }
     return telecoms?.map((tel) => ({
-      '@_use': tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
+      use: tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
       system: this.getTelecomSystem(tel['@_value']),
       value: this.getTelecomValue(tel['@_value']),
     }));

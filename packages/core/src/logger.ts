@@ -22,22 +22,34 @@ export const LogLevel = {
 };
 export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 
-export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
+export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'] as const;
 
 export interface LoggerOptions {
   prefix?: string;
 }
 
-export interface LoggerConfig {
-  write: (msg: string) => void;
-  metadata: Record<string, any>;
+export interface ILoggerConfig {
   level: LogLevel;
   options?: LoggerOptions;
+  metadata: Record<string, any>;
+}
+
+export interface LoggerConfig extends ILoggerConfig {
+  write: (msg: string) => void;
 }
 
 export type LoggerConfigOverride = Partial<LoggerConfig>;
 
-export class Logger {
+export interface ILogger {
+  level: LogLevel;
+  error(msg: string, data?: Record<string, any> | Error): void;
+  warn(msg: string, data?: Record<string, any> | Error): void;
+  info(msg: string, data?: Record<string, any> | Error): void;
+  debug(msg: string, data?: Record<string, any> | Error): void;
+  clone(overrides?: Partial<ILoggerConfig>): ILogger;
+}
+
+export class Logger implements ILogger {
   readonly write: (msg: string) => void;
   readonly metadata: Record<string, any>;
   readonly options?: LoggerOptions;

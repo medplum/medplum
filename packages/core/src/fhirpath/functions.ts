@@ -1887,7 +1887,9 @@ function applyStringFunc<T>(
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  const result = func(value, ...argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value));
+
+  const args = argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value);
+  const result = func(value, ...args);
   if (result === undefined) {
     return [];
   }
