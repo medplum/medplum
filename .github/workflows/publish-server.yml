@@ -59,7 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - PKGPATH: ./packages/
+          - PKGPATH: ./packages/server/
             DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
             NPM: npm
 
