@@ -123,7 +123,7 @@ jobs:
           #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
           echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
           echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
-          npm i @data2vidence/trex
+          npm i @data2evidence/trex
           npm run trex_build
       - name: Use Node.js - OSS Develop
         uses: actions/setup-node@v4
