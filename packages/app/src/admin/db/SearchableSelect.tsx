@@ -19,7 +19,9 @@ export function SearchableSelect({ inputProps, data, onChange }: SearchableSelec
   const [value, setValue] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const filteredOptions = data.filter((item) => item.toLowerCase().includes(search.toLowerCase().trim()));
+  const filteredOptions = useMemo(() => {
+    return data.filter((item) => item.toLowerCase().includes(search.toLowerCase().trim()));
+  }, [data, search]);
 
   const displayedOptions = useMemo(() => {
     const result: JSX.Element[] = new Array(Math.min(filteredOptions.length, MAX_DISPLAYED_OPTIONS));

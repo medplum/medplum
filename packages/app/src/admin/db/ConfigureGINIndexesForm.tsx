@@ -13,7 +13,7 @@ interface ConfigureGINIndexesFormProps {
   onResponse: (response: Parameters) => void;
 }
 
-export default function ConfigureGINIndexesForm({
+export function ConfigureGINIndexesForm({
   defaultGinPendingListLimit,
   availableTables,
   onResponse,
@@ -109,6 +109,7 @@ export default function ConfigureGINIndexesForm({
             <Group>
               <Radio size="sm" value="set" label="Set to (kB)" />
               <NumberInput
+                title="gin_pending_list_limit_value"
                 name="gin_pending_list_limit_value"
                 value={(ginPendingListLimit === 'set' ? ginPendingListLimitValue : '') || ''}
                 disabled={ginPendingListLimit !== 'set'}

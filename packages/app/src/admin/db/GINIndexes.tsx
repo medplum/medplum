@@ -6,7 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { JSX, ReactNode, useEffect, useState } from 'react';
-import ConfigureGINIndexesForm from './ConfigureGINIndexesForm';
+import { ConfigureGINIndexesForm } from './ConfigureGINIndexesForm';
 import { SearchableSelect } from './SearchableSelect';
 import { formatValue, getAvailableTables } from './utils';
 
@@ -64,7 +64,7 @@ export function GINIndexes(): JSX.Element {
 
   const handleConfigureResponse = (response: Parameters): void => {
     const indexes = response.parameter?.filter((p) => p.name === 'result');
-    setModalTitle('Configure Results');
+    setModalTitle('Configure results');
     setModalContent(<pre>{JSON.stringify(indexes, null, 2)}</pre>);
     openModal();
     setRefreshTable((prev) => (prev + 1) % 100);
