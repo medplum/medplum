@@ -142,7 +142,7 @@
         {
           "source": "/fhir-server",
           "function": "/src",
-          "env": "d2e-medplum-server",
+          "env": "d2e-fhir-server",
           "imports": "/deno.json"
         }
       ],
