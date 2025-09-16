@@ -87,7 +87,6 @@ jobs:
         if: ${{ matrix.DESTPATH }}
         run: |
           # echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
-          # //npm.pkg.github.com/:_authToken=${{ NODE_AUTH_TOKEN }} >> ./.npmrc
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
         env:
