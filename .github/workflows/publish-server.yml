@@ -83,12 +83,11 @@ jobs:
       - name: Install dependencies
         if: ${{ matrix.DESTPATH }}
         run: |
-          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           npm install -g deno@2.1.13
-          ls -l ${{ matrix.PKGPATH }}
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
-          npm i @data2evidence/trex
+          ls -l ${{ matrix.PKGPATH }}/node_modules
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
