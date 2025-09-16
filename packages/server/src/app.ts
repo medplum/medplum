@@ -44,7 +44,7 @@ import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
-import { closeWebSockets, initWebSockets } from './websockets';
+// import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 
@@ -154,7 +154,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   await initAppServices(config);
   server = http.createServer(app);
-  initWebSockets(server);
+  // initWebSockets(server);
 
   app.set('etag', false);
   app.set('trust proxy', 1);
@@ -232,7 +232,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
-  await closeWebSockets();
+  //await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {
       (server as http.Server).close(resolve);

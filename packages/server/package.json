@@ -156,7 +156,7 @@
       },
       "scopes": [
         {
-          "path": "^/fhir-server/(*)",
+          "path": "^/fhir-server/(.*)",
           "scopes": [
             "fhir.server.create"
           ],
