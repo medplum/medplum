@@ -62,8 +62,6 @@ jobs:
           - PKGPATH: ./packages/server/
             DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
             NPM: npm
-
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,7 +69,6 @@ jobs:
           repository: ${{ env.GIT_REPO_FULL_NAME }}
           submodules: recursive
           fetch-depth: 0
-
       - name: Use Node.js
         uses: actions/setup-node@v5
         with:
@@ -86,10 +83,12 @@ jobs:
       - name: Install dependencies
         if: ${{ matrix.DESTPATH }}
         run: |
-          # echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+          echo "///npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
           npm install -g deno@2.1.13
           ls -l ${{ matrix.PKGPATH }}
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
+          npm i @data2evidence/trex
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
