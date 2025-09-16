@@ -88,6 +88,7 @@ jobs:
         run: |
           # echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
           npm install -g deno@2.1.13
+          ls -l ${{ matrix.PKGPATH }}
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
