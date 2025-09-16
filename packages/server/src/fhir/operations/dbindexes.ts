@@ -61,7 +61,7 @@ interface GinIndexInfo {
   ginPendingListLimit?: number;
 }
 
-export async function dbGinIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
+export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
   const params = parseInputParameters<{ tableName?: string }>(operation, req);

@@ -11,10 +11,10 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'db-gin-index-configure',
+  name: 'db-configure-indexes',
   status: 'active',
   kind: 'operation',
-  code: 'db-gin-index-configure',
+  code: 'db-configure-indexes',
   experimental: true,
   system: true,
   type: false,
@@ -85,7 +85,7 @@ type InputParameters = {
   ginPendingListLimitValue?: number;
 };
 
-export async function dbGinIndexeConfigureHandler(req: FhirRequest): Promise<FhirResponse> {
+export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
   const params = parseInputParameters<InputParameters>(operation, req);

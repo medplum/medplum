@@ -8,7 +8,7 @@ import { useMedplum } from '@medplum/react';
 import { JSX, ReactNode, useEffect, useState } from 'react';
 import ConfigureGINIndexesForm from './ConfigureGINIndexesForm';
 import { SearchableSelect } from './SearchableSelect';
-import { getAvailableTables } from './utils';
+import { formatValue, getAvailableTables } from './utils';
 
 export function GINIndexes(): JSX.Element {
   const medplum = useMedplum();
@@ -67,6 +67,7 @@ export function GINIndexes(): JSX.Element {
     setModalTitle('Configure Results');
     setModalContent(<pre>{JSON.stringify(indexes, null, 2)}</pre>);
     openModal();
+    setRefreshTable((prev) => (prev + 1) % 100);
   };
 
   const statTdProps = {
@@ -88,12 +89,6 @@ export function GINIndexes(): JSX.Element {
   return (
     <>
       <Stack gap="sm">
-        <Group>
-          <Text span fw={700}>
-            Default gin_pending_list_limit:
-          </Text>
-          {defaultGinPendingListLimit}
-        </Group>
         <h2>Configure GIN indexes</h2>
         <Group>
           <ConfigureGINIndexesForm
@@ -111,7 +106,7 @@ export function GINIndexes(): JSX.Element {
               setTable(value);
             }}
           />
-          <Button loading={loadingStats} onClick={() => setRefreshTable((prev) => prev + 1)} disabled={!table}>
+          <Button loading={loadingStats} onClick={() => setRefreshTable((prev) => (prev + 1) % 100)} disabled={!table}>
             Refresh
           </Button>
         </Group>
@@ -199,15 +194,4 @@ function StatTd({ value, onClick, defaultValue }: StatTdProps): JSX.Element {
       {value === undefined ? defaultValue : formatValue(value)}
     </Table.Td>
   );
-}
-
-function formatValue(val: StatValue): string | number | undefined {
-  if (typeof val === 'string') {
-    return val.length > 50 ? val.substring(0, 50) + '...' : val;
-  } else if (typeof val === 'boolean') {
-    // boolean false values aren't rendered by React, so just stringify them
-    return val.toString().toLocaleUpperCase();
-  }
-
-  return val;
 }

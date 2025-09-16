@@ -38,7 +38,7 @@ describe('dbgetginindexes', () => {
 
   test('tableName is required', async () => {
     const res = await request(app)
-      .post('/fhir/R4/$db-gin-index-configure')
+      .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -65,7 +65,7 @@ describe('dbgetginindexes', () => {
 
   test('fastUpdate or ginPendingListLimit is required', async () => {
     const res = await request(app)
-      .post('/fhir/R4/$db-gin-index-configure')
+      .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -92,7 +92,7 @@ describe('dbgetginindexes', () => {
 
   test('Success with tableName and fastupdate=on and ginPendingListLimit', async () => {
     const res = await request(app)
-      .post('/fhir/R4/$db-gin-index-configure')
+      .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -149,7 +149,7 @@ describe('dbgetginindexes', () => {
 
   test('Success with tableName and fastupdate=off', async () => {
     const res = await request(app)
-      .post('/fhir/R4/$db-gin-index-configure')
+      .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -214,7 +214,7 @@ describe('dbgetginindexes', () => {
 
   test('Invalid tableName', async () => {
     const res = await request(app)
-      .post('/fhir/R4/$db-gin-index-configure')
+      .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({

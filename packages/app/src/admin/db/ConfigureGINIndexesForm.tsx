@@ -54,7 +54,7 @@ export default function ConfigureGINIndexesForm({
 
     setLoading(true);
     medplum
-      .post('fhir/R4/$db-gin-index-configure', toSubmit)
+      .post('fhir/R4/$db-configure-indexes', toSubmit)
       .then((res: Parameters) => {
         onResponse(res);
       })
@@ -87,9 +87,9 @@ export default function ConfigureGINIndexesForm({
         >
           <Group h="36">
             <Radio size="sm" value="unspecified" label="unspecified" />
-            <Radio size="sm" value="reset" label="reset" />
-            <Radio size="sm" value="on" label="on" />
+            <Radio size="sm" value="reset" label="reset to default (on)" />
             <Radio size="sm" value="off" label="off" />
+            <Radio size="sm" value="on" label="on" />
           </Group>
         </Radio.Group>
         <Radio.Group
