@@ -64,50 +64,6 @@ describe('GINIndexes', () => {
                   name: 'ginPendingListLimit',
                   valueInteger: 1024,
                 },
-                {
-                  name: 'bytesPending',
-                  valueInteger: 8192,
-                },
-                {
-                  name: 'pendingHead',
-                  valueString: '4294967295',
-                },
-                {
-                  name: 'pendingTail',
-                  valueString: '4294967295',
-                },
-                {
-                  name: 'tailFreeSize',
-                  valueInteger: 0,
-                },
-                {
-                  name: 'nPendingPages',
-                  valueString: '0',
-                },
-                {
-                  name: 'nPendingTuples',
-                  valueString: '0',
-                },
-                {
-                  name: 'nTotalPages',
-                  valueString: '2',
-                },
-                {
-                  name: 'nEntryPages',
-                  valueString: '1',
-                },
-                {
-                  name: 'nDataPages',
-                  valueString: '0',
-                },
-                {
-                  name: 'nEntries',
-                  valueString: '0',
-                },
-                {
-                  name: 'version',
-                  valueInteger: 2,
-                },
               ],
             },
           ],
@@ -160,7 +116,7 @@ describe('GINIndexes', () => {
 
     // trigger modal
     await act(async () => {
-      fireEvent.click(screen.getByText('8192'));
+      fireEvent.click(screen.getByText('1024'));
     });
 
     // The title of the modal
