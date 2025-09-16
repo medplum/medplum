@@ -43,7 +43,7 @@ on:
   merge_group:
   push:
     branches:
-      - satish-a0/fix-publish
+      - main
 
 env:
   GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
