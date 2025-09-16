@@ -134,7 +134,7 @@
       "init": [
         {
           "function": "/src",
-          "imports": "/src/deno.json",
+          "imports": "deno.json",
           "env": "d2e-medplum-server"
         }
       ],
