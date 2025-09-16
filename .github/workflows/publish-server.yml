@@ -151,10 +151,10 @@ jobs:
           CI: ${{ matrix.NPM != 'yarn' }}
           SHOULD_PUBLISH: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
+        if: env.SHOULD_PUBLISH == true
         run: |
-          if [[ $SHOULD_PUBLISH == true ]]; then
-            ./scripts/publish.sh
-            
+            ./scripts/publish-server.sh
+  
   success:
     needs: build
     runs-on: ubuntu-latest
