@@ -46,8 +46,6 @@ function installDependencies(folderPath, errorSummary) {
   const folderName = path.basename(folderPath);
   const denoJsonPath = path.join(folderPath, 'deno.json');
 
-  console.log(`installDependencies before ${denoJsonPath}`)
-
   // Check if deno.json exists
   if (!fs.existsSync(denoJsonPath)) {
     console.log(`⚠️  No deno.json found in ${folderName}`);
@@ -59,7 +57,7 @@ function installDependencies(folderPath, errorSummary) {
     console.log(`🔧 Installing dependencies for ${folderName}...`);
     
     // Run deno install with detailed output
-    const result = execSync('deno install --allow-scripts --force --reload', { 
+    const result = execSync('deno install --allow-scripts', { 
       cwd: folderPath, 
       stdio: 'pipe',
       encoding: 'utf8'
@@ -149,7 +147,6 @@ function main() {
   const foldersWithDenoJson = folders.filter(folderName => {
     const folderPath = path.join(FUNCTIONS_DIR, folderName);
     const denoJsonPath = path.join(folderPath, 'deno.json');
-    console.log(`JSON PATH ${denoJsonPath}`)
     return fs.existsSync(denoJsonPath);
   });
 
