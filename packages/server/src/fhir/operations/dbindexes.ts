@@ -12,10 +12,10 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'db-gin-indexes',
+  name: 'db-indexes',
   status: 'active',
   kind: 'operation',
-  code: 'db-gin-indexes',
+  code: 'db-indexes',
   experimental: true,
   system: true,
   type: false,

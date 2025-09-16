@@ -41,7 +41,7 @@ describe('dbgetginindexes', () => {
 
   test('Success without tableName', async () => {
     const res = await request(app)
-      .get('/fhir/R4/$db-gin-indexes?tableName=')
+      .get('/fhir/R4/$db-indexes?tableName=')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -58,7 +58,7 @@ describe('dbgetginindexes', () => {
 
   test('Success with tableName', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/$db-gin-indexes?tableName=${tableName}`)
+      .get(`/fhir/R4/$db-indexes?tableName=${tableName}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -94,7 +94,7 @@ describe('dbgetginindexes', () => {
 
   test('Invalid tableName', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/$db-gin-indexes?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
+      .get(`/fhir/R4/$db-indexes?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(400);

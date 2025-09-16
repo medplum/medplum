@@ -41,7 +41,7 @@ export function GINIndexes(): JSX.Element {
   useEffect(() => {
     setLoadingStats(true);
     medplum
-      .get('fhir/R4/$db-gin-indexes?tableName=' + encodeURIComponent(table ?? ''), { cache: 'no-cache' })
+      .get('fhir/R4/$db-indexes?tableName=' + encodeURIComponent(table ?? ''), { cache: 'no-cache' })
       .then((res: Parameters) => {
         const defaultGinPendingListLimit =
           res.parameter?.find((p) => p.name === 'defaultGinPendingListLimit')?.valueInteger ?? 0;

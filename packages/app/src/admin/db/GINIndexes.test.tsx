@@ -31,7 +31,7 @@ describe('GINIndexes', () => {
     jest.useFakeTimers();
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
 
-    medplum.router.add('GET', '$db-gin-indexes', async () => {
+    medplum.router.add('GET', '$db-indexes', async () => {
       return [
         allOk,
         {
