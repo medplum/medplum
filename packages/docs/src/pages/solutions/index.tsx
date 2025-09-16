@@ -45,7 +45,9 @@ export default function SolutionsPage(): JSX.Element {
         </Jumbotron>
         <Jumbotron>
           <div className={styles.heroContent}>
-            <h2>Interoperability and Data Platform</h2>
+            <h2>
+              <Link to="/solutions/interoperability">Interoperability and Data Platform</Link>
+            </h2>
             <p className={styles.heroText}>
               Healthcare data is fragmented and complex. Medplum acts as your central interoperability hub, allowing you
               to connect disparate systems and data sources with ease. Our platform provides a modern, programmable
