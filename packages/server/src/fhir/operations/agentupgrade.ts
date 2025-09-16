@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentUpgradeResponse, OperationOutcomeError, WithId, badRequest, serverError } from '@medplum/core';
+import { AgentUpgradeResponse, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
-import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
+import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
 const DEFAULT_UPGRADE_TIMEOUT = 45000;
@@ -58,24 +58,14 @@ async function upgradeAgent(agent: WithId<Agent>, options?: AgentUpgradeOptions)
     timeout = MAX_UPGRADE_TIMEOUT;
   }
 
-  // Send agent message
-  const [outcome, result] = await publishAgentRequest<AgentUpgradeResponse>(
+  return sendAndHandleAgentRequest<AgentUpgradeResponse>(
     agent,
     {
       type: 'agent:upgrade:request',
       ...(options?.version ? { version: options.version } : undefined),
       ...(options?.force ? { force: true } : undefined),
     },
-    { waitForResponse: true, timeout }
+    'agent:upgrade:response',
+    { messageOptions: { timeout } }
   );
-
-  if (!result || result.type === 'agent:upgrade:response') {
-    return [outcome];
-  }
-
-  if (result.type === 'agent:error') {
-    throw new OperationOutcomeError(badRequest(result.body));
-  }
-
-  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
 }

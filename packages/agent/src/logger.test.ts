@@ -841,17 +841,15 @@ describe('Agent Logger', () => {
       const files = await fs.readdir(tempDir);
       const logFiles = files.filter((file) => file.includes('medplum-agent-main'));
 
-      if (logFiles.length > 0) {
-        const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
+      const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
 
-        // Should not contain debug or info messages
-        expect(logContent).not.toContain('Debug message');
-        expect(logContent).not.toContain('Info message');
+      // Should not contain debug or info messages
+      expect(logContent).not.toContain('Debug message');
+      expect(logContent).not.toContain('Info message');
 
-        // Should contain warn and error messages
-        expect(logContent).toContain('Warn message');
-        expect(logContent).toContain('Error message');
-      }
+      // Should contain warn and error messages
+      expect(logContent).toContain('Warn message');
+      expect(logContent).toContain('Error message');
     });
   });
 });
