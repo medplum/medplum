@@ -70,11 +70,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Use Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          # registry-url: "https://npm.pkg.github.com"
-          # scope: "@data2evidence"
+          node-version: "18.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@data2evidence"
           # package-manager-cache: false
           # token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup NPM
@@ -83,8 +83,8 @@ jobs:
       - name: Install dependencies
         if: ${{ matrix.DESTPATH }}
         run: |
-          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          # echo "@data2evidence:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          # echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
         env:
