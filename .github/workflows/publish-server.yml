@@ -162,12 +162,24 @@ jobs:
           node-version: "18.x"
           registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/"
           scope: "@data2evidence"
+      # - name: Publish
+      #   env:
+      #     CI: ${{ matrix.NPM != 'yarn' }}
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
+      #   run: |
+      #       ./scripts/publish-server.sh
       - name: Publish
         env:
           CI: ${{ matrix.NPM != 'yarn' }}
+          SHOULD_PUBLISH: ${{ github.ref_name == 'develop' || github.event_name == 'workflow_dispatch' }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
         run: |
-            ./scripts/publish-server.sh
+          cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
+          if [[ $SHOULD_PUBLISH == true ]]; then
+             ${{ matrix.NPM || 'npm' }} publish
+          else
+             ${{ matrix.NPM || 'npm' }} pack
+          fi
   
   success:
     needs: build
