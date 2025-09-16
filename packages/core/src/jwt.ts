@@ -1,4 +1,6 @@
-import { decodeBase64 } from './base64';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { decodeBase64Url } from './base64';
 
 /**
  * Recognized JWT Claims Set members, any other members may also be present.
@@ -58,14 +60,7 @@ export interface JWTPayload {
  * @returns Collection of key value claims in the JWT payload.
  */
 function decodePayload(payload: string): JWTPayload {
-  const cleanedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const decodedPayload = decodeBase64(cleanedPayload);
-  const uriEncodedPayload = Array.from(decodedPayload).reduce((acc, char) => {
-    const uriEncodedChar = ('00' + char.charCodeAt(0).toString(16)).slice(-2);
-    return `${acc}%${uriEncodedChar}`;
-  }, '');
-  const jsonPayload = decodeURIComponent(uriEncodedPayload);
-  return JSON.parse(jsonPayload);
+  return JSON.parse(decodeBase64Url(payload));
 }
 
 /**

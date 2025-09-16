@@ -40,3 +40,5 @@ On occasion, the [Medplum team](/about) gives talks about our community, product
 * [Alex Goel](https://www.linkedin.com/in/alexanderkgoel/) and Reshma Khilnani host a talk on [Building Your own Integrations with Open Source](https://youtu.be/XuJxyoyrlNA).
 
 * [Healthcare Devtools Panel](https://www.youtube.com/watch?v=5nfam24QbtI) with Cody Ebberson, [Aaron Neiderheiser](https://www.linkedin.com/in/aaronneiderhiser) and [Josh Kelly](https://www.linkedin.com/in/joshua-kelly-444b03150).
+
+* [Gene Vestel](https://evestel.substack.com/) interviews Cody Ebberson on [Out of the FHIR Podcast - Episode 3](https://evestel.substack.com/p/out-of-the-fhir-podcast-episode-3?r=11sq0x).

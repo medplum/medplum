@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { WithId, createReference, getReferenceString, sleep } from '@medplum/core';
 import {
   AccessPolicy,
@@ -83,7 +85,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       client = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: randomUUID(),
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           project: project.id,
         },
@@ -137,8 +139,8 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       }
 
       if (options?.withRepo) {
-        const repoContext = {
-          projects: [project.id],
+        const repoContext: RepositoryContext = {
+          projects: [project],
           currentProject: project,
           author: createReference(client),
           superAdmin: options?.superAdmin,

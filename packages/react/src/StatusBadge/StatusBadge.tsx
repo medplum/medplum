@@ -1,4 +1,6 @@
-import { Badge, BadgeVariant, DefaultMantineColor } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Badge, BadgeProps, DefaultMantineColor } from '@mantine/core';
 import { JSX } from 'react';
 
 /*
@@ -65,16 +67,16 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   planned: 'gray',
 };
 
-export interface StatusBadgeProps {
+export interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
   readonly status: string;
-  readonly color?: DefaultMantineColor;
-  readonly variant?: BadgeVariant;
 }
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
+  const { status, ...badgeProps } = props;
+
   return (
-    <Badge color={props.color || statusToColor[props.status]} variant={props.variant}>
-      {props.status.replace(/-/g, ' ')}
+    <Badge color={props.color || statusToColor[status]} {...badgeProps}>
+      {status.replace(/-/g, ' ')}
     </Badge>
   );
 }

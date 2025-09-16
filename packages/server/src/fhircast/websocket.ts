@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { IncomingMessage } from 'node:http';
@@ -56,7 +58,7 @@ export function stopFhircastHeartbeat(): void {
 }
 
 /**
- * Handles a new WebSocket connection to the FHIRCast hub.
+ * Handles a new WebSocket connection to the FHIRcast hub.
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */

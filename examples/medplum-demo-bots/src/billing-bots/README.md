@@ -1,19 +1,8 @@
 # Medplum Billing Demo Bots
 
-This directory contains example bots that can be used to implement billing workflows by creating representations of common forms. These forms include the CMS 1500 and a Superbill.
+This directory contains an example bot that can be used to implement billing workflows by creating representations of common forms. This includes a Superbill.
 
-The implementation consists of two bots:
-
-1. A CMS 1500 bot that creates a text representation of the CMS 1500 saved as a CSV.
-2. A Superbill bot that creates a PDF of a superbill that can be provided to a client.
-
-## CMS 1500
-
-The CMS 1500 is a common form for medical claims used to bill Medicare and Medicaid carriers. There are two CMS 1500 bots available:
-
-1. A CSV bot that takes a [`Claim`](../../../../packages/docs/docs/api/fhir/resources/claim.mdx) resource and maps it to the answers of each item on the CMS 1500 form, returning a CSV text representation of these answers.
-
-2. A PDF bot that takes a [`Claim`](../../../../packages/docs/docs/api/fhir/resources/claim.mdx) resource and generates a PDF document following the official CMS 1500 form template, with all fields properly positioned according to the form specifications.
+The implementation consists of a Superbill bot that creates a PDF of a superbill that can be provided to a client.
 
 ## Superbill
 

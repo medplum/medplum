@@ -1,4 +1,6 @@
-import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -25,6 +27,7 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { tryCustomOperation } from './operations/custom';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
@@ -32,21 +35,23 @@ import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
+import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
-import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
+import { setAccountsHandler } from './operations/set-accounts';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
+import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
@@ -133,6 +138,8 @@ publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
 });
 
 // SMART-on-FHIR configuration
+// Medplum hosts the SMART well-known both at the root and at the /fhir/R4 paths.
+// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 
@@ -195,6 +202,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Project $init
   router.add('POST', '/Project/$init', projectInitHandler);
+
+  // Update User email
+  router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
 
   // ConceptMap $translate
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
@@ -275,6 +285,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Resource $graph operation
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
 
+  // Resource $set-accounts operation
+  router.add('POST', '/:resourceType/:id/$set-accounts', setAccountsHandler);
+
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
   router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
@@ -282,9 +295,6 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
   router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
-
-  // Patient $set-accounts operation
-  router.add('POST', '/Patient/:id/$set-accounts', patientSetAccountsHandler);
 
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
@@ -335,6 +345,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('POST', '/$explain', dbExplainHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
@@ -344,21 +355,18 @@ function initInternalFhirRouter(): FhirRouter {
   router.addEventListener('batch', (event: any) => {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
-
     const { count, errors, size, bundleType } = event as BatchEvent;
-    const batchMetricOptions = { attributes: { bundleType, projectId } };
-    if (count !== undefined) {
-      recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
-    }
-    if (errors !== undefined) {
-      recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
 
-      if (errors > 0 && bundleType === 'transaction') {
-        ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
-      }
+    const metricOpts = { attributes: { bundleType, projectId } };
+    if (count !== undefined) {
+      recordHistogramValue('medplum.batch.entries', count, metricOpts);
+    }
+    if (errors?.length) {
+      recordHistogramValue('medplum.batch.errors', errors.length, metricOpts);
+      ctx.logger.warn('Error processing batch', { bundleType, count, errors, size, project: projectId });
     }
     if (size !== undefined) {
-      recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
+      recordHistogramValue('medplum.batch.size', size, metricOpts);
     }
   });
 
@@ -389,7 +397,15 @@ protectedRoutes.use(
       },
     };
 
-    const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+    let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+
+    if (isNotFound(result[0])) {
+      const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+      if (customOperationResponse) {
+        result = customOperationResponse;
+      }
+    }
+
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);

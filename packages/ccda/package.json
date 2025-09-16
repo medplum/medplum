@@ -1,6 +1,6 @@
 {
   "name": "@medplum/ccda",
-  "version": "4.1.6",
+  "version": "4.3.13",
   "description": "Medplum C-CDA Library",
   "keywords": [
     "medplum",
@@ -51,17 +51,18 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.1.6",
-    "fast-xml-parser": "5.2.3"
+    "@medplum/core": "4.3.13",
+    "fast-xml-parser": "5.2.5"
   },
   "devDependencies": {
-    "@medplum/definitions": "4.1.6",
-    "@medplum/fhirtypes": "4.1.6"
+    "@medplum/definitions": "4.3.13",
+    "@medplum/fhirtypes": "4.3.13"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

@@ -8,14 +8,17 @@ Medplum supports customizable creation of CMS 1500 for use in billing.
 
 The CMS 1500 form is a standardized form used in the United States to submit healthcare claims to Medicare and other health insurance providers. It is widely used by non-institutional providers and suppliers, such as physicians and outpatient clinics, to bill Medicare Part B and other insurers for services provided to patients. The CMS 1500 requires information about the patient, the medical services provided, and their costs.
 
-Medplum supports generating the CMS 1500 form as both plaintext and [PDF](/docs/bots/creating-a-pdf), using a `Claim` resource as input. The plaintext approach maps claim data to the corresponding fields on the form and outputs a comma-separated text line suitable for use in a CSV file. The PDF approach formats the claim data into a structured PDF document, following the official CMS 1500 template with all fields positioned according to specifications.
+
 
 ## CMS 1500 and FHIR
 
 The data that fills the content of the CMS 1500 lives (largely) on the [Patient](/docs/api/fhir/resources/patient), [Coverage](/docs/api/fhir/resources/coverage), [Claim](/docs/api/fhir/resources/claim) and [Encounter](/docs/api/fhir/resources/encounter) FHIR resources. Your charting process should accurately populate these resources to ensure streamlined billing.
 
-Commonly, the generation of the CMS 1500 is linked to the finalization of the encounter, for example when an `Encounter.status` is finished, a CMS 1500 is created and synchronized to clearinghouse or billing service. Creating a `Subscription` where the `criteria` is `status=finished` is a minimum implementation of this workflow. It is recommended to have implement generation of the CMS 1500 as a bot.
+## Claim Export FHIR Operation
 
-## Synchronizing Data
+To export a claim as PDF you can use the following operation
 
-Data will need to be synchronized to a clearinghouse to initiate the claims process.
+```bash
+curl 'https://api.medplum.com/fhir/R4/Claim/<CLAIM_ID>/$export' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```

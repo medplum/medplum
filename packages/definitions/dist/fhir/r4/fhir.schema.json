@@ -59566,6 +59566,162 @@
             "$ref": "#/definitions/ProjectDefaultProfile"
           },
           "type": "array"
+        },
+        "exportedResourceType": {
+          "description": "The resource types exported by the project when linked",
+          "items": {
+            "enum": [
+              "Account",
+              "ActivityDefinition",
+              "AdverseEvent",
+              "AllergyIntolerance",
+              "Appointment",
+              "AppointmentResponse",
+              "AuditEvent",
+              "Basic",
+              "Binary",
+              "BiologicallyDerivedProduct",
+              "BodyStructure",
+              "Bundle",
+              "CapabilityStatement",
+              "CarePlan",
+              "CareTeam",
+              "CatalogEntry",
+              "ChargeItem",
+              "ChargeItemDefinition",
+              "Claim",
+              "ClaimResponse",
+              "ClinicalImpression",
+              "CodeSystem",
+              "Communication",
+              "CommunicationRequest",
+              "CompartmentDefinition",
+              "Composition",
+              "ConceptMap",
+              "Condition",
+              "Consent",
+              "Contract",
+              "Coverage",
+              "CoverageEligibilityRequest",
+              "CoverageEligibilityResponse",
+              "DetectedIssue",
+              "Device",
+              "DeviceDefinition",
+              "DeviceMetric",
+              "DeviceRequest",
+              "DeviceUseStatement",
+              "DiagnosticReport",
+              "DocumentManifest",
+              "DocumentReference",
+              "DomainResource",
+              "EffectEvidenceSynthesis",
+              "Encounter",
+              "Endpoint",
+              "EnrollmentRequest",
+              "EnrollmentResponse",
+              "EpisodeOfCare",
+              "EventDefinition",
+              "Evidence",
+              "EvidenceVariable",
+              "ExampleScenario",
+              "ExplanationOfBenefit",
+              "FamilyMemberHistory",
+              "Flag",
+              "Goal",
+              "GraphDefinition",
+              "Group",
+              "GuidanceResponse",
+              "HealthcareService",
+              "ImagingStudy",
+              "Immunization",
+              "ImmunizationEvaluation",
+              "ImmunizationRecommendation",
+              "ImplementationGuide",
+              "InsurancePlan",
+              "Invoice",
+              "Library",
+              "Linkage",
+              "List",
+              "Location",
+              "Measure",
+              "MeasureReport",
+              "Media",
+              "Medication",
+              "MedicationAdministration",
+              "MedicationDispense",
+              "MedicationKnowledge",
+              "MedicationRequest",
+              "MedicationStatement",
+              "MedicinalProduct",
+              "MedicinalProductAuthorization",
+              "MedicinalProductContraindication",
+              "MedicinalProductIndication",
+              "MedicinalProductIngredient",
+              "MedicinalProductInteraction",
+              "MedicinalProductManufactured",
+              "MedicinalProductPackaged",
+              "MedicinalProductPharmaceutical",
+              "MedicinalProductUndesirableEffect",
+              "MessageDefinition",
+              "MessageHeader",
+              "MolecularSequence",
+              "NamingSystem",
+              "NutritionOrder",
+              "Observation",
+              "ObservationDefinition",
+              "OperationDefinition",
+              "OperationOutcome",
+              "Organization",
+              "OrganizationAffiliation",
+              "Parameters",
+              "Patient",
+              "PaymentNotice",
+              "PaymentReconciliation",
+              "Person",
+              "PlanDefinition",
+              "Practitioner",
+              "PractitionerRole",
+              "Procedure",
+              "Provenance",
+              "Questionnaire",
+              "QuestionnaireResponse",
+              "RelatedPerson",
+              "RequestGroup",
+              "ResearchDefinition",
+              "ResearchElementDefinition",
+              "ResearchStudy",
+              "ResearchSubject",
+              "Resource",
+              "RiskAssessment",
+              "RiskEvidenceSynthesis",
+              "Schedule",
+              "SearchParameter",
+              "ServiceRequest",
+              "Slot",
+              "Specimen",
+              "SpecimenDefinition",
+              "StructureDefinition",
+              "StructureMap",
+              "Subscription",
+              "Substance",
+              "SubstanceNucleicAcid",
+              "SubstancePolymer",
+              "SubstanceProtein",
+              "SubstanceReferenceInformation",
+              "SubstanceSourceMaterial",
+              "SubstanceSpecification",
+              "SupplyDelivery",
+              "SupplyRequest",
+              "Task",
+              "TerminologyCapabilities",
+              "TestReport",
+              "TestScript",
+              "ValueSet",
+              "VerificationResult",
+              "VisionPrescription"
+            ]
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -59815,8 +59971,15 @@
           "$ref": "#/definitions/uri"
         },
         "redirectUri": {
-          "description": "Optional redirect URI used when redirecting a client back to the client application.",
+          "description": "@deprecated This field is deprecated. Use redirectUris instead.",
           "$ref": "#/definitions/uri"
+        },
+        "redirectUris": {
+          "description": "Optional redirect URI array used when redirecting a client back to the client application.",
+          "items": {
+            "$ref": "#/definitions/uri"
+          },
+          "type": "array"
         },
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",
@@ -59840,6 +60003,13 @@
         },
         "allowedOrigin": {
           "description": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "defaultScope": {
+          "description": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
           "items": {
             "$ref": "#/definitions/string"
           },
@@ -59935,6 +60105,10 @@
         "mfaSecret": {
           "description": "Shared secret for MFA authenticator applications.",
           "$ref": "#/definitions/string"
+        },
+        "mfaRequired": {
+          "description": "Whether the user is required to complete MFA enrollment. If true, the user must complete MFA enrollment before they can log in.",
+          "$ref": "#/definitions/boolean"
         },
         "mfaEnrolled": {
           "description": "Whether the user has completed MFA enrollment.",
@@ -60277,10 +60451,22 @@
         "qi": {
           "description": "The first CRT coefficient.",
           "$ref": "#/definitions/string"
+        },
+        "x": {
+          "description": "The x coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "y": {
+          "description": "The y coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "crv": {
+          "description": "The cryptographic curve identifier (e.g., \u0027P-256\u0027, \u0027P-384\u0027, \u0027P-521\u0027).",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
-      "required": ["resourceType"]
+      "required": ["resourceType", "alg", "kty"]
     },
     "Bot": {
       "description": "Bot account for automated actions.",
@@ -60347,7 +60533,7 @@
         },
         "runtimeVersion": {
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
-          "enum": ["awslambda", "vmcontext"]
+          "enum": ["awslambda", "vmcontext", "fission"]
         },
         "timeout": {
           "description": "The maximum allowed execution time of the bot in seconds.",
@@ -60378,6 +60564,10 @@
         },
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",
+          "$ref": "#/definitions/boolean"
+        },
+        "publicWebhook": {
+          "description": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
           "$ref": "#/definitions/boolean"
         },
         "auditEventTrigger": {
@@ -61899,8 +62089,15 @@
           "$ref": "#/definitions/string"
         },
         "readonly": {
-          "description": "Optional flag to indicate that the resource type is read-only.",
+          "description": "@deprecated Use AccessPolicy.resource.interaction \u003d [\u0027search\u0027, \u0027read\u0027, \u0027vread\u0027, \u0027history\u0027]",
           "$ref": "#/definitions/boolean"
+        },
+        "interaction": {
+          "description": "Permitted FHIR interactions with this resource type",
+          "items": {
+            "enum": ["read", "vread", "update", "delete", "history", "create", "search"]
+          },
+          "type": "array"
         },
         "hiddenFields": {
           "description": "Optional list of hidden fields.  Hidden fields are not readable or writeable.",

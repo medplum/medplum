@@ -64,6 +64,46 @@ Beware passing in a `string`! This will cause the string to be encoded as UTF-8,
 
 In addition to `medplum.createBinary()`, the Medplum SDK also provides `medplum.createAttachment()` which is similar but also creates an `Attachment` object. Note that `Attachment` is not a resource type, it is merely an in memory object to make it easier to work with binary data.
 
+### Create `Binary` via external URL
+
+For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
+
+<BrowserOnlyTabs groupId="language">
+  <TabItem value="typescript" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="mediaImport,externalUrl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```py
+
+API_URL = 'https://api.medplum.com/fhir/R4'
+MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883'
+media = {
+  'resourceType': 'Media',
+  'basedOn': [{
+    'reference': 'ServiceRequest/12345'
+  }],
+  'status': 'completed',    # `status` is a required field
+  'content': {
+    'title': 'plums-python.jpg',
+    'contentType': 'image/jpeg',
+    'url': MEDIA_URL,
+  }
+};
+
+requests.post(f'{API_URL}/Media', json=media, headers={
+  'Authorization': f'Bearer {auth_token}'
+})
+
+```
+
+  </TabItem>
+</BrowserOnlyTabs>
+
+See the [**Client Credentials tutorial**](/docs/auth/methods/client-credentials) guide for how to obtain an access token
+
 ## Referencing a `Binary` in an Attachment
 
 Once uploaded, the `Binary` resource can be referenced in various FHIR resources.
@@ -109,9 +149,9 @@ Unfortunately, this poses of challenges:
 1. Accessing content in a browser can be tricky. Elements like `<img>` or `<video>` can't easily set the `Authorization` header.
 2. When dealing with massive files, especially videos, downloading the whole file isn't optimal. Instead, HTTP range requests, which fetch specific byte ranges, are preferred.
 
-**Medplum's Solution: AWS CloudFront Presigned URLs:**
+**Medplum's Solution: Presigned URLs:**
 
-Medplum bypasses these limitations by automatically rewriting FHIR Attachment URLs referencing `Binary` resources to short-lived presigned URLs.
+Medplum sidesteps these limitations by automatically rewriting FHIR Attachment URLs referencing `Binary` resources to short-lived presigned URLs.
 
 Instead of a normal `Binary/{id}` URL, the Attachment URL will look like this:
 
@@ -175,42 +215,49 @@ When self-hosting, this feature requires configuring a signing key. The Medplum 
 
 Learn more about AWS CloudFront presigned URLs: [Using signed URLs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html)
 
-## Create `Binary` via external URL
+## Proxy `Binary` content through Medplum server
 
-For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
+While Medplum's default behavior of rewriting Attachment URLs to presigned URLs offers many benefits (as described above), there are scenarios where you might prefer to serve binary content directly through your Medplum server instance. This can be useful for:
 
-<BrowserOnlyTabs groupId="language">
-  <TabItem value="typescript" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="mediaImport,externalUrl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="python" label="Python">
+- **Self-hosting environments** where direct access might be restricted or undesirable.
+- **Simplified network configuration** by routing all traffic through a single endpoint.
+- **Centralized logging and monitoring** on your Medplum server for binary data access.
 
-```py
+Medplum provides a way to configure your server to act as a proxy for binary content, allowing all `Attachment.url` references to be served directly from your Medplum API endpoint.
 
-API_URL = 'https://api.medplum.com/fhir/R4'
-MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883'
-media = {
-  'resourceType': 'Media',
-  'basedOn': [{
-    'reference': 'ServiceRequest/12345'
-  }],
-  'status': 'completed',    # `status` is a required field
-  'content': {
-    'title': 'plums-python.jpg',
-    'contentType': 'image/jpeg',
-    'url': MEDIA_URL,
-  }
-};
+#### How it Works
 
-requests.post(f'{API_URL}/Media', json=media, headers={
-  'Authorization': f'Bearer {auth_token}'
-})
+When configured for proxying, Medplum will continue to store your binary data in your chosen storage solution (e.g., S3, Azure Blob Storage, Google Cloud Storage, local filesystem). However, instead of generating presigned URLs that point directly to the storage provider, it will generate URLs that point back to your Medplum server's `/storage/` endpoint. When a request comes to this endpoint, the Medplum server retrieves the binary content from your configured storage and proxies it back to the client.
 
+#### Configuration Steps
+
+To enable the Medplum server as a binary content proxy, you need to set two key configuration properties in your Medplum server's configuration:
+
+1.  **`binaryStorage`**: This setting specifies your underlying storage solution. This is where the binary files will actually be stored.
+
+    - **Examples:** `file:./binary/`, `s3:your-bucket-name`, `azure:your-container-name`, `gs:your-bucket-name`
+
+2.  **`storageBaseUrl`**: This setting tells Medplum the base URL for serving binary content. For server proxying, this should be your Medplum `baseUrl` followed by `/storage/`.
+
+    - **Example:**
+      If your `baseUrl` is `https://api.example.com/`, then `storageBaseUrl` should be `https://api.example.com/storage/`.
+
+Here's an example of how these settings might appear in your Medplum server configuration (e.g., `medplum.config.json`):
+
+```json
+{
+  "baseUrl": "https://api.example.com/",
+  "binaryStorage": "s3:my-medplum-binary-bucket",
+  "storageBaseUrl": "https://api.example.com/storage/"
+  // ... other configuration settings
+}
 ```
 
-  </TabItem>
-</BrowserOnlyTabs>
+**Important Considerations:**
 
-See the [**Client Credentials tutorial**](/docs/auth/methods/client-credentials) guide for how to obtain an access token
+- **Performance:** Proxying binary data through your Medplum server adds an extra hop and processing overhead compared to direct access via presigned URLs. For very high-traffic applications or extremely large files, consider the performance implications.
+- **Scalability:** Ensure your Medplum server infrastructure (e.g., CPU, memory, network bandwidth) is adequately scaled to handle the increased load if you are proxying a large volume of binary data.
+- **CORS:** When proxying, your `storageBaseUrl` will be on the same origin as your Medplum API. This can simplify CORS configurations for clients compared to accessing external storage domains.
+- **Security:** While proxying can centralize access control, ensure your Medplum server is properly secured and hardened, as it will now be directly exposed for serving binary content.
+
+By configuring `binaryStorage` and `storageBaseUrl` appropriately, you gain more control over how your binary content is served, tailoring Medplum to your specific deployment and operational requirements.

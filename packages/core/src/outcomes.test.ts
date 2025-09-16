@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { CodeableConcept, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
   assertOk,
   badRequest,
+  businessRule,
   conflict,
   created,
   forbidden,
@@ -11,6 +14,7 @@ import {
   gone,
   isAccepted,
   isCreated,
+  isError,
   isGone,
   isNotFound,
   isOk,
@@ -100,6 +104,7 @@ describe('Outcomes', () => {
     [gone, 410],
     [preconditionFailed, 412],
     [multipleMatches, 412],
+    [businessRule('rule-id', 'Message'), 422],
     [tooManyRequests, 429],
     [serverError(new Error('bad')), 500],
     [serverTimeout(), 504],
@@ -122,6 +127,15 @@ describe('Outcomes', () => {
     expect(normalizeErrorString({ resourceType: 'OperationOutcome' })).toBe('Unknown error');
     expect(normalizeErrorString({ foo: 'bar' })).toBe('{"foo":"bar"}');
     expect(normalizeErrorString({ code: 'ERR_INVALID_ARG_TYPE' })).toBe('ERR_INVALID_ARG_TYPE');
+  });
+
+  test('isError', () => {
+    expect(isError(undefined)).toBe(false);
+    expect(isError(null)).toBe(false);
+    expect(isError('foo')).toBe(false);
+    expect(isError({ resourceType: 'Patient' })).toBe(false);
+    expect(isError(new Error('foo'))).toBe(true);
+    expect(isError(new DOMException('foo'))).toBe(true);
   });
 
   test('isOperationOutcome', () => {

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Patient } from '@medplum/fhirtypes';
 import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
@@ -572,7 +574,7 @@ describe('FHIRPath functions', () => {
       functions.replaceMatches(
         context,
         [toTypedValue('banana')],
-        new LiteralAtom(toTypedValue('nana')),
+        new LiteralAtom(toTypedValue('(na)+')),
         new LiteralAtom(toTypedValue('tman'))
       )
     ).toStrictEqual([toTypedValue('batman')]);

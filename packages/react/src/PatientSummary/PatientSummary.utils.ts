@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { capitalize, getExtension, HTTP_HL7_ORG } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 
@@ -54,7 +56,6 @@ export function formatPatientGenderDisplay(patient: Patient): string {
 export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
   const race = getRace(patient);
   const ethnicity = getEthnicity(patient);
-
   const parts: string[] = [];
 
   if (race) {
@@ -66,3 +67,16 @@ export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
 
   return parts.join(' · ');
 }
+
+export const getPreferredLanguage = (patient: Patient): string | undefined => {
+  if (!patient.communication?.length) {
+    return undefined;
+  }
+
+  const preferred = patient.communication?.find((comm) => comm.preferred === true);
+  if (preferred?.language?.coding?.[0]?.display) {
+    return preferred.language.coding[0].display;
+  }
+
+  return patient.communication[0]?.language?.coding?.[0]?.display;
+};

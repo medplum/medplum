@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
   badRequest,
@@ -1212,12 +1214,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
-    try {
-      await repo.readReference(createReference(patient));
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as Error).message).toBe('Not found');
-    }
+    await expect(repo.readReference(createReference(patient))).rejects.toThrow('Not found');
   });
 
   test('Reference missing reference property', async () => {

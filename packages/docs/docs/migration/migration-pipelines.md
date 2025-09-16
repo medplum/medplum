@@ -87,6 +87,26 @@ In this transaction, both the Encounter and ClinicalImpression are created toget
 
 For large-scale migrations, you can combine batches and transactions to balance performance and data integrity. Create batches of smaller transactions to avoid the performance hit of very large transactions while still maintaining atomicity for related resources.
 
+## Migrating Binary Files 
+
+When migrating files to Medplum, you can use our [auto-download feature](https://www.medplum.com/docs/self-hosting/config-settings#autodownloadenabled) to simplify your migration. If your current system can generate pre-signed URLs (or URLs that are accessible to our servers), Medplum will automatically detect any external URLs and attempt to download them and store them in the Medplum storage system. An example DocumentReference is shown below: 
+
+```
+{
+  "resourceType": "DocumentReference",
+  "status": "current",
+  "content": [
+    {
+      "attachment": {
+        "contentType": "application/jpeg",
+        "url": "https://images.pexels.com/photos/14961968/pexels-photo-14961968/free-photo-of-a-wooden-window-on-pink-wall.jpeg",
+        "title": "pink-wall.jpeg"
+      }
+    }
+  ]
+}
+```
+
 ## An End-to-End Example
 
 Let's demonstrate a complete data pipeline that incorporates all the concepts we've discussed. We'll migrate patients, conditions, encounters, and clinical impressions in separate steps.

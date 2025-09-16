@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, List, Stack, Text, Title } from '@mantine/core';
-import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
+import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
   Annotation,
   DiagnosticReport,
@@ -25,11 +27,13 @@ export interface DiagnosticReportDisplayProps {
   readonly value?: DiagnosticReport | Reference<DiagnosticReport>;
   readonly hideObservationNotes?: boolean;
   readonly hideSpecimenInfo?: boolean;
+  readonly hideSubject?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
   hideObservationNotes: false,
   hideSpecimenInfo: false,
+  hideSubject: false,
 } as DiagnosticReportDisplayProps;
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -66,7 +70,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   return (
     <Stack>
       <Title>Diagnostic Report</Title>
-      <DiagnosticReportHeader value={diagnosticReport} />
+      <DiagnosticReportHeader value={diagnosticReport} hideSubject={props.hideSubject} />
       {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
@@ -78,12 +82,13 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
 interface DiagnosticReportHeaderProps {
   readonly value: DiagnosticReport;
+  readonly hideSubject?: boolean;
 }
 
-function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
+function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
   return (
     <Group mt="md" gap={30}>
-      {value.subject && (
+      {value.subject && !hideSubject && (
         <div>
           <Text size="xs" tt="uppercase" c="dimmed">
             Subject
@@ -120,7 +125,7 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
           <Text size="xs" tt="uppercase" c="dimmed">
             Status
           </Text>
-          <Text>{capitalize(value.status)}</Text>
+          <StatusBadge status={value.status} />
         </div>
       )}
     </Group>
@@ -252,7 +257,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           )}
         </td>
         <td>
-          {observation.performer?.map((performer) => <ReferenceDisplay key={performer.reference} value={performer} />)}
+          {observation.performer?.map((performer) => (
+            <ReferenceDisplay key={performer.reference} value={performer} />
+          ))}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>

@@ -25,6 +25,7 @@ const response = await medplum.post('/admin/projects/:projectId/invite', {
   scope: 'project' // or 'server'
 })
 ```
+
 ```mermaid  
 flowchart TD
     subgraph MedplumServer["<div style='font-size:25px; font-weight:bold;'>Medplum Server</div>"]
@@ -64,11 +65,41 @@ flowchart TD
 
 ```
 
-
 :::info
-For **hosted customers**, you will only have control over the User resources for your project scoped users, but hosted customers can access **server scoped users** from their [super admin project](/docs/self-hosting/super-admin-guide).
+For **hosted customers**, you will only have control over the User resources for your project scoped users. Self-hosted customers can access **server scoped users** from their [super admin project](/docs/self-hosting/super-admin-guide).
 :::
 
 :::note
 If you want to create a [custom email flow](/docs/auth/custom-emails) for your Practitioners, they will need to be invited as a Project Scoped Users so that the UserSecurityRequest resources are also scoped to the project.
 :::
+
+## Changing the Name and Email of a Project-Scoped User
+
+Project Admins have the ability to update the name and email address of project-scoped users directly from the Medplum Admin App or via the API. This is in contrast to server-scoped users, whose details can only be changed by Super Admins.
+
+:::info
+To change the email address that is displayed in the Medplum app (and in FHIR resources), you must update both the User resource and the user's Profile resource (such as Patient or Practitioner). The User resource controls login and authentication, while the Profile resource controls the display name and email shown in clinical and administrative contexts.
+
+For example, if you update a user's email via the Admin App or API, be sure to also update the `telecom` field on their Profile resource to reflect the new email address.
+:::
+
+**How to update a project-scoped user's login email:**
+
+- **Medplum Admin App:**  
+  Navigate to the Project Admin page, select the "Users" tab, and click on the user you wish to edit. You can update their email address directly from the user details page.
+
+- **API (SCIM):**  
+  Project Admins can update a user's email using the SCIM API:
+  ```bash
+  curl -X PATCH 'https://api.medplum.com/scim/v2/Users/{userId}' \
+    -H 'Authorization: Bearer {accessToken}' \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+      "Operations": [{
+        "op": "replace",
+        "path": "emails[type eq \"work\"].value",
+        "value": "new-email@example.com"
+      }]
+    }'
+  ```

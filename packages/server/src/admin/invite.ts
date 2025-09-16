@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
   badRequest,
@@ -5,19 +7,22 @@ import {
   createReference,
   getReferenceString,
   InviteRequest,
+  isCreated,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
   ProfileResource,
   resolveId,
+  SearchRequest,
   WithId,
 } from '@medplum/core';
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
+import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
@@ -25,7 +30,6 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
-import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const inviteValidator = makeValidationMiddleware([
@@ -76,60 +80,44 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   const { project, email } = request;
-  let user = undefined;
-  let existingUser = true;
-  let passwordResetUrl = undefined;
+  let existingUser = false;
+  let passwordResetUrl: string | undefined;
 
+  // Upsert User resource
+  const userResource = await makeUserResource(request);
+  let user: WithId<User>;
   if (email) {
-    if (request.resourceType === 'Patient') {
-      user = await getUserByEmailInProject(email, project.id);
-    } else {
-      user = await getUserByEmailWithoutProject(email);
-    }
+    const searchRequest: SearchRequest<User> = {
+      resourceType: 'User',
+      filters: [
+        {
+          code: 'email',
+          operator: Operator.EXACT,
+          value: email,
+        },
+        request.resourceType === 'Patient' || request.scope === 'project'
+          ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
+          : { code: 'project', operator: Operator.MISSING, value: 'true' },
+      ],
+    };
+
+    const { resource: result, outcome } = await systemRepo.conditionalCreate(userResource, searchRequest);
+    user = result;
+    existingUser = !isCreated(outcome);
+  } else {
+    user = await systemRepo.createResource(userResource);
   }
 
-  if (!user) {
-    existingUser = false;
-    logger.info('User creation request received', { email });
-    user = await createUser(request);
-    logger.info('User created', { id: user.id, email });
+  logger.info('User created', { id: user.id, email });
+  if (!existingUser) {
     passwordResetUrl = await resetPassword(user, 'invite');
   }
 
-  let profile = await searchForExistingProfile(request);
-  if (!profile) {
-    logger.info('Creating profile for invite request', {
-      project: getReferenceString(project),
-      email,
-      profileType: request.resourceType,
-    });
-    profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
+  // Upsert profile Resource (e.g. Patient or Practitioner)
+  const profile = await upsertProfileResource(systemRepo, request);
 
-    logger.info('Profile  created', { reference: getReferenceString(profile) });
-  }
-
-  const membershipTemplate = request.membership ?? {};
-  if (request.externalId !== undefined) {
-    membershipTemplate.externalId = request.externalId;
-  }
-  if (request.accessPolicy !== undefined) {
-    membershipTemplate.accessPolicy = request.accessPolicy;
-  }
-  if (request.access !== undefined) {
-    membershipTemplate.access = request.access;
-  }
-  if (request.admin !== undefined) {
-    membershipTemplate.admin = request.admin;
-  }
-
-  const membership = await createOrUpdateProjectMembership(
-    systemRepo,
-    user,
-    project,
-    profile,
-    membershipTemplate,
-    !!request.upsert
-  );
+  // Upsert ProjectMembership resource to connect User to profile resource in the given Project
+  const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
 
   if (email && request.sendEmail !== false) {
     await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
@@ -138,8 +126,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   return { user, profile, membership };
 }
 
-async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
-  const { firstName, lastName, externalId, scope } = request;
+async function makeUserResource(request: ServerInviteRequest): Promise<User> {
+  const { firstName, lastName, externalId, scope, mfaRequired } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
@@ -153,8 +141,12 @@ async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
     project = createReference(request.project);
   }
 
-  const systemRepo = getSystemRepo();
-  return systemRepo.createResource<User>({
+  let mfaSecret: string | undefined = undefined;
+  if (mfaRequired) {
+    mfaSecret = authenticator.generateSecret();
+  }
+
+  return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
     firstName,
@@ -162,78 +154,130 @@ async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
     email,
     passwordHash,
     project,
-  });
+    mfaRequired,
+    mfaSecret,
+  };
 }
 
-async function searchForExistingProfile(request: ServerInviteRequest): Promise<WithId<ProfileResource> | undefined> {
-  const { project, resourceType, membership, email } = request;
-  const systemRepo = getSystemRepo();
-
-  if (membership?.profile) {
-    const result = await systemRepo.readReference(membership.profile);
-    if (result.meta?.project !== project.id) {
+async function upsertProfileResource(
+  systemRepo: Repository,
+  request: ServerInviteRequest
+): Promise<WithId<ProfileResource>> {
+  if (request.membership?.profile) {
+    const profile = await systemRepo.readReference(request.membership.profile);
+    if (profile.meta?.project !== request.project.id) {
       throw new OperationOutcomeError(badRequest('Profile does not belong to project'));
     }
-    if (result.resourceType !== resourceType) {
+    if (profile.resourceType !== request.resourceType) {
       throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
     }
-    return result;
-  }
-
-  if (email) {
-    return systemRepo.searchOne<ProfileResource>({
+    return profile;
+  } else {
+    const { resourceType, firstName, lastName, project, email } = request;
+    const resource = {
       resourceType,
-      filters: [
+      meta: {
+        project: project.id,
+      },
+      name: [
         {
-          code: '_project',
-          operator: Operator.EQUALS,
-          value: project.id,
-        },
-        {
-          code: 'email',
-          operator: Operator.EQUALS,
-          value: email,
+          given: [firstName],
+          family: lastName,
         },
       ],
-    });
-  }
+      telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
+    } as ProfileResource;
 
-  return undefined;
+    if (email) {
+      const { resource: result, outcome } = await systemRepo.conditionalCreate<ProfileResource>(resource, {
+        resourceType,
+        filters: [
+          {
+            code: '_project',
+            operator: Operator.EQUALS,
+            value: project.id,
+          },
+          {
+            code: 'email',
+            operator: Operator.EQUALS,
+            value: email,
+          },
+        ],
+      });
+
+      if (isCreated(outcome)) {
+        getLogger().info('Profile created', {
+          reference: getReferenceString(result),
+          project: getReferenceString(project),
+          email,
+        });
+      }
+      return result;
+    } else {
+      const profile = await systemRepo.createResource(resource);
+      getLogger().info('Profile created', {
+        reference: getReferenceString(profile),
+        project: getReferenceString(project),
+        email,
+      });
+      return profile;
+    }
+  }
 }
 
-async function createOrUpdateProjectMembership(
+async function upsertProjectMembership(
   systemRepo: Repository,
-  user: WithId<User>,
+  request: ServerInviteRequest,
   project: WithId<Project>,
-  profile: ProfileResource,
-  membershipTemplate: Partial<ProjectMembership>,
-  upsert: boolean
+  user: WithId<User>,
+  profile: WithId<ProfileResource>
 ): Promise<WithId<ProjectMembership>> {
-  const existingMembership = await searchForExistingMembership(systemRepo, user, project);
-  if (existingMembership) {
-    if (!upsert) {
-      throw new OperationOutcomeError(conflict('User is already a member of this project'));
-    }
+  const partialMembership: Partial<ProjectMembership> = {
+    externalId: request.externalId,
+    accessPolicy: request.accessPolicy,
+    access: request.access,
+    admin: request.admin,
+    ...request.membership,
+  };
 
-    if (existingMembership.profile?.reference !== getReferenceString(profile)) {
-      throw new OperationOutcomeError(conflict('User is already a member of this project with a different profile'));
-    }
-
-    // Update the existing membership
-    // Be careful to preserve the critical properties: id, project, user, and profile
-    return systemRepo.updateResource<ProjectMembership>({
-      ...existingMembership,
-      ...membershipTemplate,
-      resourceType: 'ProjectMembership',
-      id: existingMembership.id,
-      project: createReference(project),
-      user: createReference(user),
-      profile: createReference(profile),
-    });
+  if (request.forceNewMembership) {
+    return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
 
-  // Otherwise, create the new membership
-  return createProjectMembership(user, project, profile, membershipTemplate);
+  // Upsert ProjectMembership resource to connect User to profile resource in the given Project
+  const membership = await systemRepo.withTransaction(
+    async () => {
+      const existingMembership = await searchForExistingMembership(systemRepo, user, project);
+      if (existingMembership) {
+        if (!request.upsert) {
+          throw new OperationOutcomeError(conflict('User is already a member of this project'));
+        }
+
+        if (existingMembership.profile?.reference !== getReferenceString(profile)) {
+          throw new OperationOutcomeError(
+            conflict('User is already a member of this project with a different profile')
+          );
+        }
+
+        // Update the existing membership
+        // Be careful to preserve the critical properties: id, project, user, and profile
+        return systemRepo.updateResource<ProjectMembership>({
+          ...existingMembership,
+          ...partialMembership,
+          resourceType: 'ProjectMembership',
+          id: existingMembership.id,
+          project: createReference(project),
+          user: createReference(user),
+          profile: createReference(profile),
+        });
+      } else {
+        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+      }
+    },
+    { serializable: true }
+  );
+
+  return membership;
 }
 
 async function searchForExistingMembership(

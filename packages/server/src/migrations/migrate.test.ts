@@ -1,5 +1,5 @@
-import { getDataType, InternalTypeSchema } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   buildCreateTables,
   columnDefinitionsEqual,
@@ -18,19 +18,33 @@ describe('Generator', () => {
 
     test('Patient', () => {
       const result: SchemaDefinition = { tables: [], functions: [] };
-      const dataTypes: [ResourceType, InternalTypeSchema][] = [['Patient', getDataType('Patient')]];
-      for (const [resourceType, typeSchema] of dataTypes) {
-        buildCreateTables(result, resourceType, typeSchema);
-      }
-      expect(result.tables.map((t) => t.name)).toStrictEqual([
-        'Patient',
-        'Patient_History',
-        'Patient_Token',
-        'Patient_References',
-      ]);
+      buildCreateTables(result, 'Patient');
+      expect(result.tables.map((t) => t.name)).toStrictEqual(['Patient', 'Patient_History', 'Patient_References']);
 
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();
+
+      const tokenCodes = [
+        '_compartmentIdentifier',
+        '_security',
+        '_tag',
+        'email',
+        'generalPractitionerIdentifier',
+        'identifier',
+        'language',
+        'linkIdentifier',
+        'organizationIdentifier',
+        'phone',
+        'telecom',
+      ];
+
+      const sharedTokenCodes = [
+        '_compartmentIdentifier',
+        '_security',
+        'generalPractitionerIdentifier',
+        'linkIdentifier',
+        'organizationIdentifier',
+      ];
 
       const expectedColumns: ColumnDefinition[] = [
         {
@@ -63,10 +77,12 @@ describe('Generator', () => {
         {
           name: 'projectId',
           type: 'UUID',
+          notNull: true,
         },
         {
           name: '__version',
           type: 'INTEGER',
+          notNull: true,
         },
         {
           name: '_source',
@@ -137,57 +153,50 @@ describe('Generator', () => {
           notNull: false,
         },
         {
-          name: '__tokens',
+          name: '__sharedTokens',
+          type: 'UUID[]',
+        },
+        {
+          name: '__sharedTokensText',
           type: 'TEXT[]',
         },
         {
-          name: '__tokensText',
-          type: 'TEXT[]',
-        },
-        {
-          name: '___securitySort',
+          name: '__familySort',
           type: 'TEXT',
         },
         {
-          name: '___tagSort',
+          name: '__givenSort',
           type: 'TEXT',
         },
         {
-          name: '__emailSort',
+          name: '__nameSort',
           type: 'TEXT',
         },
-        {
-          name: '__identifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__languageSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__phoneSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__telecomSort',
-          type: 'TEXT',
-        },
-        {
-          name: '___compartmentIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__generalPractitionerIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__linkIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__organizationIdentifierSort',
-          type: 'TEXT',
-        },
+        ...tokenCodes.flatMap((code) => {
+          // both dedicated and shared tokens have a sort column
+          const expectedCols = [
+            {
+              name: `__${code}Sort`,
+              type: 'TEXT',
+            },
+          ];
+
+          // add dedicated columns
+          if (!sharedTokenCodes.includes(code)) {
+            expectedCols.push(
+              {
+                name: `__${code}`,
+                type: 'UUID[]',
+              },
+              {
+                name: `__${code}Text`,
+                type: 'TEXT[]',
+              }
+            );
+          }
+
+          return expectedCols;
+        }),
       ];
 
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
@@ -206,7 +215,12 @@ describe('Generator', () => {
         'CREATE INDEX "DomainConfiguration_compartments_idx" ON public."DomainConfiguration" USING gin (compartments)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['compartments'], indexType: 'gin', unique: false, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['compartments'],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -216,7 +230,12 @@ describe('Generator', () => {
       const indexdef = 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['id'], indexType: 'btree', unique: true, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['id'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();

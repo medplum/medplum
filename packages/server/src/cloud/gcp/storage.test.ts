@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
 import { GoogleCloudStorage } from './storage';
@@ -28,6 +30,19 @@ describe('Integration Tests for GoogleCloudStorage', () => {
     contentStream.end(content);
 
     await storage.writeBinary(testBinary, 'test.txt', 'text/plain', contentStream);
+
+    const readStream = await storage.readBinary(testBinary);
+    let data = '';
+    for await (const chunk of readStream) {
+      data += chunk;
+    }
+    expect(data).toEqual(content);
+  });
+
+  test('should write a string', async () => {
+    const content = 'Hello, world!';
+
+    await storage.writeBinary(testBinary, 'test.txt', 'text/plain', content);
 
     const readStream = await storage.readBinary(testBinary);
     let data = '';

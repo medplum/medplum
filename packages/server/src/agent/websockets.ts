@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AgentConnectRequest,
   AgentMessage,
@@ -13,8 +15,8 @@ import { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { IncomingMessage } from 'node:http';
 import ws from 'ws';
+import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -203,6 +205,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       agent,
       bot,
       runAs: authState.membership,
+      requester: authState.membership.profile,
       contentType: command.contentType,
       input,
       remoteAddress,

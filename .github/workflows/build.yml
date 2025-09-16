@@ -11,6 +11,9 @@ on:
     types: [opened, synchronize, reopened]
   merge_group:
     types: [checks_requested]
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
@@ -27,15 +30,15 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -60,7 +63,7 @@ jobs:
           echo "node version: $(node --version)"
           echo "npm version: $(npm --version)"
       - name: Install
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Build Project
         run: npm run build
         env:
@@ -81,15 +84,15 @@ jobs:
       eslint_errs: ${{ steps.fmt.outputs.eslint_errs }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -101,7 +104,7 @@ jobs:
             ${{ runner.os }}-
       - id: install
         name: Install eslint
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Setup TurboRepo
         # Conditionally setup turborepo
         # In the past, turborepo would silently ignore empty environment variables
@@ -156,7 +159,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [14, 16]
+        pg-version: [13, 17]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -189,15 +192,15 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -209,7 +212,7 @@ jobs:
             ${{ runner.os }}-
       - id: install
         name: Install deps
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Setup TurboRepo
         # Conditionally setup turborepo
         # In the past, turborepo would silently ignore empty environment variables
@@ -237,8 +240,8 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        uses: actions/upload-artifact@v4
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
@@ -251,7 +254,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [14, 16]
+        pg-version: [13, 17]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -284,15 +287,15 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -304,7 +307,7 @@ jobs:
             ${{ runner.os }}-
       - id: install
         name: Install deps
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Setup TurboRepo
         # Conditionally setup turborepo
         # In the past, turborepo would silently ignore empty environment variables
@@ -362,10 +365,10 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
-        uses: actions/upload-artifact@v4
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7) }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: e2e-test-results
+          name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
           path: |
             packages/e2e/playwright-report/
             packages/e2e/test-results/
@@ -383,15 +386,15 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:

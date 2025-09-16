@@ -1,4 +1,13 @@
-import { AgentTransmitResponse, ContentType, Logger, createReference, normalizeErrorString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  AgentTransmitResponse,
+  ContentType,
+  createReference,
+  ILogger,
+  normalizeErrorString,
+  sleep,
+} from '@medplum/core';
 import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
@@ -14,7 +23,9 @@ export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
+  private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -130,7 +141,8 @@ export class AgentDicomChannel extends BaseChannel {
           });
           response.setStatus(dimse.constants.Status.Success);
         } catch (err) {
-          DcmjsDimseScp.channel.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+          DcmjsDimseScp.channel.log.error(`DICOM error - check channel logs`);
+          DcmjsDimseScp.channel.channelLog.error(`DICOM error: ${normalizeErrorString(err)}`);
           response.setStatus(dimse.constants.Status.ProcessingFailure);
         }
 
@@ -144,7 +156,36 @@ export class AgentDicomChannel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
+    this.prefix = `[DICOM:${definition.name}] `;
+    this.log = app.log.clone({ options: { prefix: this.prefix } });
+    this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
+  }
+
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+    this.prefix = `[DICOM:${definition.name}] `;
+
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    if (this.needToRebindToPort(previousEndpoint, endpoint)) {
+      await this.stop();
+      this.start();
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    }
+  }
+
+  private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
+    if (
+      firstEndpoint.address === secondEndpoint.address ||
+      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+    ) {
+      return false;
+    }
+    return true;
   }
 
   start(): void {
@@ -154,8 +195,16 @@ export class AgentDicomChannel extends BaseChannel {
     this.started = true;
     const address = new URL(this.getEndpoint().address as string);
     this.log.info(`Channel starting on ${address}`);
-    this.server.on('networkError', (e) => console.log('Network error: ', e));
-    this.server.listen(Number.parseInt(address.port, 10));
+    const port = Number.parseInt(address.port, 10);
+    this.server.on('networkError', async (err) => {
+      this.log.error('Network error: ', { err });
+      if ((err as Error & { code?: string })?.code === 'EADDRINUSE') {
+        await sleep(50);
+        this.server.close();
+        this.server.listen(port);
+      }
+    });
+    this.server.listen(port);
     this.log.info('Channel started successfully');
   }
 

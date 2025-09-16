@@ -95,3 +95,13 @@ Then, [re-deploy the app](/docs/self-hosting/install-on-aws#deploy-the-app) usin
 ```
 npx medplum aws update-app <environment>
 ```
+
+### Common Login Issues
+
+If a user is experiencing issues logging in through Google SSO, follow these troubleshooting steps:
+
+1. Clear browser cache and cookies
+2. Try logging in using a different browser
+3. Ensure the system clock on the user's device is set to the correct time and timezone
+  - Incorrect system time can cause authentication tokens to be invalidated
+  - Authentication tokens have a 1-hour timeout window which is validated against the system time

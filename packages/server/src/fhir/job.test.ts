@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -29,7 +31,7 @@ describe('Job status', () => {
     accessToken = testProject.accessToken;
     asyncJobManager = new AsyncJobExecutor(
       new Repository({
-        projects: [testProject.project.id],
+        projects: [testProject.project],
         author: { reference: 'User/' + randomUUID() },
       })
     );

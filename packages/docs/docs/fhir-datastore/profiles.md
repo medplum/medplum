@@ -37,14 +37,144 @@ The schema for each FHIR resource type is defined by a [`StructureDefinition`](/
 
 FHIR profiles are also stored as [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
 
+### Manual Profile Creation
+
 Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains.
 
 For example:
 
-- [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
+- [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the "floor" of standards to promote interoperability throughout the US healthcare system.
 - [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/): Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
 - [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/): Health insurers' drug formulary information for patients/consumers.
 - [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange dental providers.
+
+### FHIR Shorthand (FSH)
+
+[FHIR Shorthand (FSH)](https://build.fhir.org/ig/HL7/fhir-shorthand/) is a domain-specific language designed to simplify the creation of FHIR profiles, extensions, implementation guides, and other FHIR artifacts. FSH provides a more readable and maintainable alternative to writing JSON `StructureDefinition` resources directly.
+
+#### Benefits of FSH
+
+FSH offers several advantages over manually creating FHIR profiles:
+
+- **Readability**: FSH syntax is more human-readable than raw JSON StructureDefinitions
+- **Maintainability**: Changes are easier to track and review in FSH format
+- **Error Prevention**: FSH compiler (SUSHI) catches many common profiling errors
+- **Tooling**: Rich ecosystem of tools for validation, publishing, and documentation generation
+- **Version Control**: FSH files work better with git diff and merge tools
+
+#### FSH Syntax Overview
+
+FSH uses a simple, declarative syntax. Here's a basic example of a Patient profile:
+
+```fsh
+Profile: MedplumTestPatient
+Parent: Patient
+Id: medplum-test-patient
+Title: "Medplum Test Patient Profile"
+Description: "A Patient profile that requires a birth date"
+* birthDate 1..1 MS
+* name 1..* MS
+```
+
+This FSH definition creates a Patient profile that:
+- Requires exactly one birth date (`1..1`)
+- Requires at least one name (`1..*`) 
+- Marks both fields as Must Support (`MS`)
+
+#### FSH Project Structure
+
+A typical FSH project for Medplum profiles might look like:
+
+```text
+├── src/
+│   └── profiles/                   # FSH profile definitions
+│       ├── patient-test.fsh        # Patient profile
+│       └── health-care-service.fsh # HealthcareService profile and vocabularies
+├── dist/                           # Built FHIR artifacts (generated)
+├── sushi-config.yaml               # SUSHI configuration
+└── package.json
+```
+
+You can find a complete example of this structure in the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles), which includes working FSH definitions for Patient and HealthcareService profiles along with custom vocabularies.
+
+#### Setting Up FSH with Medplum
+
+To use FSH for creating Medplum profiles:
+
+1. **Install Prerequisites**:
+   ```bash
+   npm install -g fsh-sushi
+   ```
+
+For a complete working example, see the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles) which demonstrates FSH profile creation with Patient and HealthcareService examples.
+
+2. **Create SUSHI Configuration** (`sushi-config.yaml`):
+   ```yaml
+   id: medplum-example-profiles
+   canonical: https://medplum.com/profiles/example-fsh-profiles
+   version: 1.0.0
+   name: MedplumExampleProfiles
+   title: "Medplum Example FSH Profiles"
+   description: "Example FHIR profiles for Medplum using FSH"
+   fhirVersion: 4.0.1
+   copyrightYear: 2024+
+   releaseLabel: STU1
+   ```
+
+3. **Build Profiles**:
+   ```bash
+   sushi .
+   ```
+
+This generates FHIR JSON `StructureDefinition` resources in the `fsh-generated` directory.
+
+#### Example FSH Profiles
+
+Here's an example of a more complex healthcare service profile with custom vocabularies:
+
+```fsh
+// Code System for Service Types
+CodeSystem: ServiceTypes
+Id: service-types
+Title: "Service Types"
+Description: "Types of healthcare service domains"
+* ^url = "https://medplum.com/fhir/CodeSystem/service-types"
+* #task-management "Task Management"
+* #order-management "Order Management"
+* #scheduling "Scheduling"
+
+// Value Set referencing the Code System
+ValueSet: ServiceTypesVS
+Id: service-types-vs
+Title: "Service Types Value Set"
+Description: "Value set containing service type codes"
+* ^url = "https://medplum.com/fhir/ValueSet/service-types-vs"
+* include codes from system ServiceTypes
+
+// Healthcare Service Profile
+Profile: ServiceManagementHealthcareService
+Parent: HealthcareService
+Id: service-management-healthcare-service
+Title: "Service Management Healthcare Service"
+Description: "Healthcare service profile for service management with required categorization"
+* type 1..1 MS
+* type from ServiceTypesVS (required)
+* category 1..1 MS
+```
+
+#### Converting FSH to Medplum
+
+After building your FSH profiles with SUSHI, the generated `StructureDefinition` resources can be uploaded directly to your Medplum project. The generated resources include both `snapshot` and `differential` elements - Medplum's server tooling uses the `snapshot` for validation, while `differential` can be safely removed to reduce resource size.
+
+To upload the generated profiles to Medplum:
+
+```typescript
+import { MedplumClient } from '@medplum/core';
+import profileDefinition from './fsh-generated/resources/StructureDefinition-medplum-test-patient.json';
+
+const medplum = new MedplumClient();
+await medplum.createResource(profileDefinition);
+```
 
 ## Profile adoption
 
@@ -187,6 +317,34 @@ For example, say you have a patient profile that requires patients to have an as
 - Update the `url` on the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) with an appropriate new version number.
 - Create the updated [`StructureDefinition](/docs/api/fhir/resources/structuredefinition).
 - Validate and update your [`Patient`](/docs/api/fhir/resources/patient) resources to adhere to the new profile.
+
+### Updating FSH Profiles
+
+When using FSH, the profile update process becomes more streamlined:
+
+1. **Update the FSH definition** with your changes
+2. **Increment the version** in your `sushi-config.yaml`
+3. **Rebuild the profiles** using SUSHI
+4. **Upload the new StructureDefinition** to Medplum
+5. **Migrate existing resources** to the new profile version
+
+For example, updating the FSH patient profile to require a phone number:
+
+```fsh
+Profile: MedplumTestPatient
+Parent: Patient
+Id: medplum-test-patient
+Title: "Medplum Test Patient Profile"
+Description: "A Patient profile that requires a birth date and phone number"
+* birthDate 1..1 MS
+* name 1..* MS
+* telecom 1..* MS  // New requirement
+* telecom ^slicing.discriminator.type = #pattern
+* telecom ^slicing.discriminator.path = "system"
+* telecom ^slicing.rules = #open
+* telecom contains phone 1..1 MS
+* telecom[phone].system = #phone (exactly)
+```
 
 <details>
 <summary>Example: Update your profile</summary>

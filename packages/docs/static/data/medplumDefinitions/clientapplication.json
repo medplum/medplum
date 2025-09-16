@@ -316,7 +316,23 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Optional redirect URI used when redirecting a client back to the client application.",
+      "definition": "@deprecated This field is deprecated. Use redirectUris instead.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "redirectUris",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ClientApplication.redirectUris",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional redirect URI array used when redirecting a client back to the client application.",
       "comment": "",
       "inherited": false
     },
@@ -398,6 +414,38 @@
       "max": "1",
       "short": "",
       "definition": "Optional configuration to set the refresh token duration",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "allowedOrigin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.allowedOrigin",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "defaultScope",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.defaultScope",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
       "comment": "",
       "inherited": false
     }

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, getReferenceString, WithId } from '@medplum/core';
 import { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -214,8 +216,12 @@ describe('FHIR Routes', () => {
   test('Read resource history', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}/_history`)
+      .query({ _count: 2, _offset: '0' })
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toBeDefined();
+    expect(bundle.entry).toHaveLength(1);
   });
 
   test('Read resource history invalid UUID', async () => {

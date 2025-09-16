@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -52,12 +54,7 @@ describe('CLI rest', () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'delete', `Patient/${patient.id}`]);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('OK'));
-    try {
-      await medplum.readReference(createReference(patient));
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as Error).message).toBe('Not found');
-    }
+    await expect(medplum.readReference(createReference(patient))).rejects.toThrow('Not found');
   });
 
   test('Get command', async () => {

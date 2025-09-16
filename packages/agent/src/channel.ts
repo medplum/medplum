@@ -1,9 +1,12 @@
-import { AgentTransmitResponse, Logger } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { App } from './app';
 
 export interface Channel {
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   start(): void;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
@@ -14,8 +17,8 @@ export interface Channel {
 
 export abstract class BaseChannel implements Channel {
   readonly app: App;
-  private definition: AgentChannel;
-  private endpoint: Endpoint;
+  protected definition: AgentChannel;
+  protected endpoint: Endpoint;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     this.app = app;
@@ -23,26 +26,12 @@ export abstract class BaseChannel implements Channel {
     this.endpoint = endpoint;
   }
 
-  abstract readonly log: Logger;
+  abstract readonly log: ILogger;
+  abstract readonly channelLog: ILogger;
   abstract start(): void;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;
-
-  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    const previousEndpoint = this.endpoint;
-    this.definition = definition;
-    this.endpoint = endpoint;
-
-    this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    if (needToRebindToPort(previousEndpoint, endpoint)) {
-      await this.stop();
-      this.start();
-      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
-    }
-  }
+  abstract reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
 
   getDefinition(): AgentChannel {
     return this.definition;
@@ -51,16 +40,6 @@ export abstract class BaseChannel implements Channel {
   getEndpoint(): Endpoint {
     return this.endpoint;
   }
-}
-
-export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
-  if (
-    firstEndpoint.address === secondEndpoint.address ||
-    new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
-  ) {
-    return false;
-  }
-  return true;
 }
 
 export const ChannelType = {

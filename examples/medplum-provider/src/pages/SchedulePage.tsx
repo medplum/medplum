@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Drawer, Group, SegmentedControl, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, getReferenceString, WithId } from '@medplum/core';
@@ -5,6 +7,8 @@ import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -279,6 +283,10 @@ export function SchedulePage(): JSX.Element | null {
 
     return result;
   }
+
+  dayjs.extend(utc);
+  dayjs.extend(timezone);
+  dayjs.tz.setDefault(dayjs.tz.guess());
 
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>

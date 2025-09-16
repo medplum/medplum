@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import {
   Account,
@@ -114,6 +116,14 @@ describe('FHIR resource validation', () => {
       birthDate: 'Aug 14, 1949',
     };
     expect(() => validateResource(invalidFormat)).toThrow();
+  });
+
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
   });
 
   test('Invalid numeric value', () => {
@@ -867,6 +877,44 @@ describe('FHIR resource validation', () => {
       expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.identifier[0].system');
       expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.name[1].given[1]');
+    }
+  });
+
+  test('Empty object', () => {
+    const p1: Patient = { resourceType: 'Patient', maritalStatus: { text: 'Single' } };
+    const p2: Patient = { resourceType: 'Patient', maritalStatus: {} };
+
+    expect(() => validateResource(p1)).not.toThrow();
+    expect(() => validateResource(p2)).not.toThrow();
+  });
+
+  test('Empty object in array element', () => {
+    const p1: Patient = { resourceType: 'Patient', address: [] };
+    const p3: Patient = { resourceType: 'Patient', address: [{}, { use: 'home' }, {}] };
+    const p2: Patient = { resourceType: 'Patient', address: [{}] };
+
+    expect(() => validateResource(p1)).not.toThrow();
+
+    try {
+      validateResource(p2);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(1);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+    }
+
+    try {
+      validateResource(p3);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.address[2]');
     }
   });
 

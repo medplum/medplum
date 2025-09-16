@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TypeName } from './types';
 
 export const ExternalSecretSystems = {
@@ -64,6 +66,8 @@ export interface MedplumSourceInfraConfig {
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
   hostedZoneName?: ValueOrExternalSecret<string>;
+  wafLogGroupName?: ValueOrExternalSecret<string>;
+  wafLogGroupCreate?: ValueOrExternalSecret<boolean>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -75,7 +79,9 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
+  /** @deprecated Use containerInsightsV2 instead */
   containerInsights?: ValueOrExternalSecret<boolean>;
+  containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
     logGroupCreate?: ValueOrExternalSecret<boolean>;
@@ -93,6 +99,25 @@ export interface MedplumSourceInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+      secretOptions?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: ValueOrExternalSecret<string>;
+    };
+  };
 }
 
 export interface MedplumInfraConfig {
@@ -144,6 +169,8 @@ export interface MedplumInfraConfig {
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
   hostedZoneName?: string;
+  wafLogGroupName?: string;
+  wafLogGroupCreate?: boolean;
   additionalContainers?: {
     name: string;
     image: string;
@@ -155,7 +182,9 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
+  /** @deprecated Use containerInsightsV2 instead */
   containerInsights?: boolean;
+  containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;
     logGroupCreate?: boolean;
@@ -173,4 +202,23 @@ export interface MedplumInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: string;
+      };
+      secretOptions?: {
+        [key: string]: string;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: string;
+    };
+  };
 }

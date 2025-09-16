@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
 import { globalLogger } from './logger';
+import { getServerVersion } from './util/version';
 
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
@@ -29,7 +32,7 @@ export async function main(configName: string): Promise<void> {
     process.exit(1);
   });
 
-  globalLogger.info('Starting Medplum Server...', { configName });
+  globalLogger.info('Starting Medplum Server...', { configName, version: getServerVersion() });
 
   const config = await loadConfig(configName);
 

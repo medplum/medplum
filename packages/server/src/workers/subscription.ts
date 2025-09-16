@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
   BackgroundJobContext,
@@ -20,13 +22,26 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
+import {
+  Bot,
+  ClientApplication,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
+import { executeBot } from '../bots/execute';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
-import { executeBot } from '../fhir/operations/execute';
+import { isPreCommitSubscription } from '../fhir/precommit';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
@@ -245,6 +260,11 @@ export async function addSubscriptionJobs(
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
   for (const subscription of subscriptions) {
+    if (isPreCommitSubscription(subscription)) {
+      // Ignore pre-commit subscriptions
+      continue;
+    }
+
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
       logFn('Subscription does not match options.subscription');
       continue;
@@ -645,9 +665,12 @@ async function execBot(
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
-  let runAs: ProjectMembership | undefined;
+  const requester = resource.meta?.author as Reference<
+    Bot | ClientApplication | Patient | Practitioner | RelatedPerson
+  >;
+  let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, resource.meta?.author as Reference);
+    runAs = await findProjectMembership(project, requester);
   } else {
     runAs = await findProjectMembership(project, createReference(bot));
   }
@@ -660,6 +683,7 @@ async function execBot(
     subscription,
     bot,
     runAs,
+    requester,
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,

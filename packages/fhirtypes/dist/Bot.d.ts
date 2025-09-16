@@ -112,7 +112,7 @@ export interface Bot {
    * The identifier of the bot runtime environment (i.e., vmcontext,
    * awslambda, etc).
    */
-  runtimeVersion?: 'awslambda' | 'vmcontext';
+  runtimeVersion?: 'awslambda' | 'vmcontext' | 'fission';
 
   /**
    * The maximum allowed execution time of the bot in seconds.
@@ -150,6 +150,14 @@ export interface Bot {
    * Optional flag to indicate that the bot should be run as the user.
    */
   runAsUser?: boolean;
+
+  /**
+   * Optional flag to indicate that the bot can be used as an
+   * unauthenticated public webhook. Note that this is a security risk and
+   * should only be used for public bots that do not require
+   * authentication.
+   */
+  publicWebhook?: boolean;
 
   /**
    * Criteria for creating an AuditEvent as a result of the bot invocation.

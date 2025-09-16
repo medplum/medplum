@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
 import { MedplumServerConfig } from './types';
 
@@ -18,6 +20,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.tokenUrl ||= concatUrls(config.baseUrl, '/oauth2/token');
   config.userInfoUrl ||= concatUrls(config.baseUrl, '/oauth2/userinfo');
   config.introspectUrl ||= concatUrls(config.baseUrl, '/oauth2/introspect');
+  config.registerUrl ||= concatUrls(config.baseUrl, '/oauth2/register');
   config.storageBaseUrl ||= concatUrls(config.baseUrl, '/storage');
   config.maxJsonSize ||= '1mb';
   config.maxBatchSize ||= '50mb';
@@ -70,7 +73,38 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
+const integerKeys = [
+  'accurateCountThreshold',
+  'bcryptHashSalt',
+  'defaultAuthRateLimit',
+  'defaultFhirQuota',
+  'defaultRateLimit',
+  'heartbeatMilliseconds',
+  'keepAliveTimeout',
+  'maxBotLogLengthForLogs',
+  'maxBotLogLengthForResource',
+  'maxSearchOffset',
+  'port',
+  'shutdownTimeoutMilliseconds',
+  'transactionAttempts',
+  'transactionExpBackoffBaseDelayMs',
+
+  'database.maxConnections',
+  'database.port',
+  'database.queryTimeout',
+  'readonlyDatabase.maxConnections',
+  'readonlyDatabase.port',
+  'readonlyDatabase.queryTimeout',
+
+  'redis.db',
+  'redis.port',
+
+  'smtp.port',
+
+  'bullmq.concurrency',
+
+  'fission.routerPort',
+];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
@@ -92,6 +126,7 @@ const booleanKeys = [
   'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'logAuditEvents',
+  'mcpEnabled',
   'registerEnabled',
   'require',
   'rejectUnauthorized',
@@ -102,5 +137,5 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting';
+  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
 }

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
@@ -15,7 +17,7 @@ import { getConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
-import { closeDatabase, initDatabase, maybeAutoRunPendingPostDeployMigration } from './database';
+import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
@@ -28,6 +30,8 @@ import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { getLogger, globalLogger } from './logger';
+import { mcpRouter } from './mcp/routes';
+import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -38,6 +42,7 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
@@ -160,6 +165,13 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
+
+  // Add logging middleware immediately after setting up request context, to ensure that
+  // any errors in later middleware don't skip the request logging
+  if (config.logRequests) {
+    app.use(loggingMiddleware);
+  }
+
   app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
 
@@ -174,10 +186,6 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
-
-  if (config.logRequests) {
-    app.use(loggingMiddleware);
-  }
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
@@ -198,6 +206,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
+  if (config.mcpEnabled) {
+    apiRouter.use('/mcp', mcpRouter);
+  }
+
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);
@@ -216,6 +228,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
+    initServerRegistryHeartbeatListener();
     await maybeAutoRunPendingPostDeployMigration();
   });
 }
@@ -245,10 +258,10 @@ export async function shutdownApp(): Promise<void> {
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
-  const start = Date.now();
+  const start = new Date();
 
   res.on('close', () => {
-    const duration = Date.now() - start;
+    const duration = Date.now() - start.valueOf();
 
     ctx.logger.info('Request served', {
       durationMs: duration,

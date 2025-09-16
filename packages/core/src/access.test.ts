@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import { AccessPolicy, Bundle, Communication, Observation, SearchParameter } from '@medplum/fhirtypes';
 import {
@@ -42,6 +44,10 @@ const restrictedPolicy: AccessPolicy = {
       resourceType: 'Communication',
       readonly: true,
       criteria: 'Communication?status=completed',
+    },
+    {
+      resourceType: 'List',
+      interaction: ['read', 'search', 'create'],
     },
   ],
 };
@@ -123,6 +129,20 @@ describe('Access', () => {
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'completed' },
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )
+    ).toBeUndefined();
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
+        AccessPolicyInteraction.CREATE,
+        restrictedPolicy
+      )
+    ).toStrictEqual(expect.objectContaining({ resourceType: 'List' }));
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )

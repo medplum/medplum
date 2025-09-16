@@ -12324,6 +12324,17 @@
               "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
+        },
+        {
+          "id": "Project.exportedResourceType",
+          "path": "Project.exportedResourceType",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
         }
       ]
     }
@@ -12574,6 +12585,17 @@
         {
           "id": "Bot.runAsUser",
           "path": "Bot.runAsUser",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Bot.publicWebhook",
+          "path": "Bot.publicWebhook",
           "min": 0,
           "max": "1",
           "type": [

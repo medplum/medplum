@@ -1,19 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  convertToSearchableTokens,
   evalFhirPathTyped,
   getSearchParameterDetails,
   OperationOutcomeError,
   Operator,
   PropertyType,
+  TokensContext,
   toTypedValue,
-  TypedValue,
 } from '@medplum/core';
-import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
-
-export const TokenColumnsFeature = {
-  write: true,
-  read: false,
-};
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 
 export interface Token {
   readonly code: string;
@@ -90,136 +88,28 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
  * @param result - The result array where tokens will be added.
  * @param resource - The resource.
  * @param searchParam - The search parameter.
+ * @param textSearchSystem - (optional) The system to use for :text-searchable tokens. Defaults to 'text'.
  */
-export function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
+export function buildTokensForSearchParameter(
+  result: Token[],
+  resource: Resource,
+  searchParam: SearchParameter,
+  textSearchSystem: string = 'text'
+): void {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
-  for (const typedValue of typedValues) {
-    buildTokens(result, searchParam, resource, typedValue);
-  }
-}
-
-interface TokensContext {
-  searchParam: SearchParameter;
-  caseInsensitive: boolean;
-}
-
-/**
- * Builds a list of zero or more tokens for a search parameter and value.
- * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param resource - The resource.
- * @param typedValue - A typed value to be indexed for the search parameter.
- */
-function buildTokens(result: Token[], searchParam: SearchParameter, resource: Resource, typedValue: TypedValue): void {
-  const { type, value } = typedValue;
 
   const context: TokensContext = {
-    searchParam,
     caseInsensitive: getTokenIndexType(searchParam, resource.resourceType) === TokenIndexTypes.CASE_INSENSITIVE,
+    textSearchSystem,
   };
 
-  switch (type) {
-    case PropertyType.Identifier:
-      buildIdentifierToken(result, context, value as Identifier);
-      break;
-    case PropertyType.CodeableConcept:
-      buildCodeableConceptToken(result, context, value as CodeableConcept);
-      break;
-    case PropertyType.Coding:
-      buildCodingToken(result, context, value as Coding);
-      break;
-    case PropertyType.ContactPoint:
-      buildContactPointToken(result, context, value as ContactPoint);
-      break;
-    default:
-      buildSimpleToken(result, context, undefined, value?.toString() as string | undefined);
-  }
-}
-
-/**
- * Builds an identifier token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param identifier - The Identifier object to be indexed.
- */
-function buildIdentifierToken(result: Token[], context: TokensContext, identifier: Identifier | undefined): void {
-  if (identifier?.type?.text) {
-    buildSimpleToken(result, context, 'text', identifier.type.text);
-  }
-  buildSimpleToken(result, context, identifier?.system, identifier?.value);
-}
-
-/**
- * Builds zero or more CodeableConcept tokens.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param codeableConcept - The CodeableConcept object to be indexed.
- */
-function buildCodeableConceptToken(
-  result: Token[],
-  context: TokensContext,
-  codeableConcept: CodeableConcept | undefined
-): void {
-  if (codeableConcept?.text) {
-    buildSimpleToken(result, context, 'text', codeableConcept.text);
-  }
-  if (codeableConcept?.coding) {
-    for (const coding of codeableConcept.coding) {
-      buildCodingToken(result, context, coding);
-    }
-  }
-}
-
-/**
- * Builds a Coding token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param coding - The Coding object to be indexed.
- */
-function buildCodingToken(result: Token[], context: TokensContext, coding: Coding | undefined): void {
-  if (coding) {
-    if (coding.display) {
-      buildSimpleToken(result, context, 'text', coding.display);
-    }
-    buildSimpleToken(result, context, coding.system, coding.code);
-  }
-}
-
-/**
- * Builds a ContactPoint token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param contactPoint - The ContactPoint object to be indexed.
- */
-function buildContactPointToken(result: Token[], context: TokensContext, contactPoint: ContactPoint | undefined): void {
-  if (contactPoint) {
-    buildSimpleToken(result, context, contactPoint.system, contactPoint.value?.toLocaleLowerCase());
-  }
-}
-
-/**
- * Builds a simple token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param system - The token system.
- * @param value - The token value.
- */
-function buildSimpleToken(
-  result: Token[],
-  context: TokensContext,
-  system: string | undefined,
-  value: string | undefined
-): void {
-  // Only add the token if there is a system or a value, and if it is not already in the list.
-  if (
-    (system || value) &&
-    !result.some((token) => token.code === context.searchParam.code && token.system === system && token.value === value)
-  ) {
+  const tokens = convertToSearchableTokens(typedValues, context);
+  for (const token of tokens) {
     result.push({
-      code: context.searchParam.code as string,
-      system,
-      value: value && context.caseInsensitive ? value.toLocaleLowerCase() : value,
+      code: searchParam.code,
+      system: token.system,
+      value: context.caseInsensitive ? token.value?.toLocaleLowerCase() : token.value,
     });
   }
 }
@@ -256,81 +146,4 @@ export function shouldTokenExistForMissingOrPresent(
     }
   }
   return true;
-}
-
-/**
- * The following search parameters are affected by a change in FHIRpath's toString() method.
- * Each entry is in the format "<resourceType>|<SearchParameter.code>". SearchParameter.id is
- * not precise enough. E.g. `MedicationRequest|code` is included, but `Observation|code` is not
- * and both of those share the SearchParameter.id `clinical-code`.
- *
- * Background:
- *
- * PR #6266 fixed parentheses in infix operators' toString() methods. This revealed that
- * Atom.toString() is used in getSearchParameterDetails() when finding ElementDefinitions,
- * causing repo.ts to use different search strategies.
- *
- * These parameters previously used the "column" strategy but should use the "lookup-table" strategy.
- * To maintain backward compatibility during migration:
- * 1. We've added special case handling for these parameters (current state)
- * 2. We'll implement double-writing to both strategies (see GitHub issue https://github.com/medplum/medplum/issues/6271)
- * 3. We'll complete the transition during the token-table cleanup project
- *
- * Critical parameters to watch:
- * - MedicationRequest-code
- * - Observation-value-concept
- *
- * Most others are rarely-used "usageContext" parameters.
- *
- * DO NOT MODIFY THIS LIST without coordinating with the team responsible for search parameter
- * implementation. Any changes may require database reindexing.
- *
- * See follow-up issue: https://github.com/medplum/medplum/issues/6271
- */
-const legacyTokenColumnSearchParamResourceTypeAndCodes = new Set([
-  'ActivityDefinition|context',
-  'CapabilityStatement|context',
-  'ChargeItemDefinition|context',
-  'CodeSystem|context',
-  'CompartmentDefinition|context',
-  'Composition|related-id',
-  'ConceptMap|context',
-  'DeviceRequest|code',
-  'EffectEvidenceSynthesis|context',
-  'EventDefinition|context',
-  'Evidence|context',
-  'EvidenceVariable|context',
-  'ExampleScenario|context',
-  'GraphDefinition|context',
-  'Group|value',
-  'ImplementationGuide|context',
-  'Library|context',
-  'Measure|context',
-  'Medication|ingredient-code',
-  'MedicationAdministration|code',
-  'MedicationDispense|code',
-  'MedicationKnowledge|ingredient-code',
-  'MedicationRequest|code',
-  'MedicationStatement|code',
-  'MessageDefinition|context',
-  'NamingSystem|context',
-  'Observation|combo-value-concept',
-  'Observation|component-value-concept',
-  'Observation|value-concept',
-  'OperationDefinition|context',
-  'PlanDefinition|context',
-  'Questionnaire|context',
-  'ResearchDefinition|context',
-  'ResearchElementDefinition|context',
-  'RiskEvidenceSynthesis|context',
-  'SearchParameter|context',
-  'StructureDefinition|context',
-  'StructureMap|context',
-  'TerminologyCapabilities|context',
-  'TestScript|context',
-  'ValueSet|context',
-]);
-
-export function isLegacyTokenColumnSearchParameter(searchParam: SearchParameter, resourceType: string): boolean {
-  return legacyTokenColumnSearchParamResourceTypeAndCodes.has(`${resourceType}|${searchParam.code}`);
 }

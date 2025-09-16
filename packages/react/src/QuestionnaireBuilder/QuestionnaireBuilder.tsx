@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
 import {
@@ -8,23 +10,25 @@ import {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import {
+  getQuestionnaireItemReferenceTargetTypes,
+  isChoiceQuestion,
+  QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QuestionnaireItemType,
+  setQuestionnaireItemReferenceTargetTypes,
+  useMedplum,
+  useResource,
+} from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
 import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { killEvent } from '../utils/dom';
-import {
-  getQuestionnaireItemReferenceTargetTypes,
-  isChoiceQuestion,
-  QuestionnaireItemType,
-  setQuestionnaireItemReferenceTargetTypes,
-} from '../utils/questionnaire';
 import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
@@ -219,13 +223,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div className={classes.preserveBreaks}>{item.text}</div>}
             {!isContainer && (
-              <QuestionnaireFormItem
-                item={item}
-                index={0}
-                required={false}
-                onChange={() => undefined}
-                response={{ linkId: item.linkId }}
-              />
+              <QuestionnaireFormItem item={item} index={0} required={false} responseItem={{ linkId: item.linkId }} />
             )}
           </>
         )}
@@ -651,7 +649,7 @@ function createPage(): QuestionnaireItem {
     text: `New Page`,
     extension: [
       {
-        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        url: QUESTIONNAIRE_ITEM_CONTROL_URL,
         valueCodeableConcept: {
           coding: [
             {

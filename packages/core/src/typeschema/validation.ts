@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
@@ -268,6 +270,8 @@ class ResourceValidator implements CrawlerVisitor {
   private checkPropertyValue(value: TypedValueWithPath): void {
     if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value);
+    } else if (isEmpty(value.value)) {
+      this.issues.push(createStructureIssue(value.path, `Invalid empty non-primitive value`));
     }
   }
 
@@ -509,6 +513,13 @@ class ResourceValidator implements CrawlerVisitor {
   private validateString(str: string, type: string, path: string): void {
     if (!str.trim()) {
       this.issues.push(createStructureIssue(path, 'String must contain non-whitespace content'));
+      return;
+    }
+
+    // FHIR strings have a maximum length of 1 MB
+    // @see https://hl7.org/fhir/R4/datatypes.html#string
+    if (str.length > 1024 * 1024) {
+      this.issues.push(createStructureIssue(path, 'String cannot be larger than 1 MB'));
       return;
     }
 

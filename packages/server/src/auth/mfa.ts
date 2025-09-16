@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
@@ -47,6 +49,35 @@ mfaRouter.get(
       enrollUri: otp,
       enrollQrCode: await toDataURL(otp),
     });
+  })
+);
+
+mfaRouter.post(
+  '/login-enroll',
+  [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
+  asyncWrap(async (req: Request, res: Response) => {
+    const systemRepo = getSystemRepo();
+    const login = await systemRepo.readResource<Login>('Login', req.body.login);
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+    if (user.mfaEnrolled) {
+      sendOutcome(res, badRequest('Already enrolled'));
+      return;
+    }
+
+    if (!user.mfaSecret) {
+      sendOutcome(res, badRequest('Secret not found'));
+      return;
+    }
+
+    const result = await verifyMfaToken(login, req.body.token);
+
+    await systemRepo.updateResource({
+      ...user,
+      mfaEnrolled: true,
+    });
+
+    await sendLoginResult(res, result);
   })
 );
 

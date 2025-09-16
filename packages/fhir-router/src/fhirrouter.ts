@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   EventTarget,
   OperationOutcomeError,
@@ -185,7 +187,9 @@ async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise
 // Read resource history
 async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const bundle = await repo.readHistory(resourceType as ResourceType, id);
+  const offset = parseIntegerQueryParam(req.query, '_offset');
+  const limit = parseIntegerQueryParam(req.query, '_count');
+  const bundle = await repo.readHistory(resourceType as ResourceType, id, { offset, limit });
   return [allOk, bundle];
 }
 
@@ -267,6 +271,22 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
+// Conditional PATCH
+async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+  const patch = req.body as Operation[];
+  if (!patch) {
+    return [badRequest('Empty patch body')];
+  }
+  if (!Array.isArray(patch)) {
+    return [badRequest('Patch body must be an array')];
+  }
+
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
+  const resource = await repo.conditionalPatch(search, patch);
+  return [allOk, resource];
+}
+
 /** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
   | CapabilityStatementRestInteraction['code']
@@ -298,6 +318,7 @@ export class FhirRouter extends EventTarget {
     this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
     this.router.add('DELETE', ':resourceType', conditionalDelete, { interaction: 'delete' });
     this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
+    this.router.add('PATCH', ':resourceType', conditionalPatch, { interaction: 'patch' });
     this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }
 
@@ -346,6 +367,17 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+function parseIntegerQueryParam(query: Record<string, string | string[] | undefined>, key: string): number | undefined {
+  const value = query[key];
+  let strValue: string | undefined;
+  if (Array.isArray(value)) {
+    strValue = value[value.length - 1];
+  } else {
+    strValue = value;
+  }
+  return strValue ? parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

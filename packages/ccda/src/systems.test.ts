@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LOINC, SNOMED } from '@medplum/core';
 import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
 import { EnumMapper, mapCodeableConceptToCcdaCode } from './systems';

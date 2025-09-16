@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs';
 import { getConfig, loadConfig } from './loader';
 
@@ -23,6 +25,8 @@ describe('Config', () => {
     process.env.MEDPLUM_DATABASE_PORT = '5432';
     process.env.MEDPLUM_REDIS_TLS = '{}';
     process.env.MEDPLUM_DATABASE_SSL = '{"require":true}';
+    process.env.MEDPLUM_SMTP_HOST = 'smtp.example.com';
+
     const config = await loadConfig('env');
     expect(config).toBeDefined();
     expect(config.baseUrl).toStrictEqual('http://localhost:3000');
@@ -30,6 +34,7 @@ describe('Config', () => {
     expect(config.database.port).toStrictEqual(5432);
     expect(config.redis.tls).toStrictEqual({});
     expect(config.database.ssl).toStrictEqual({ require: true });
+    expect(config.smtp?.host).toStrictEqual('smtp.example.com');
     expect(getConfig()).toBe(config);
   });
 });
