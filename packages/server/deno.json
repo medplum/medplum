@@ -146,6 +146,7 @@
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/redis": "./src/redis.ts",
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/request-context-store": "./src/request-context-store.ts",
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/seed": "./src/seed.ts",
+    "/var/tmp/sb-compile-trex/d2e-fhir-server/src/seed-d2e": "./src/seed-d2e.ts",
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/server-registry": "./src/server-registry.ts",
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/traceparent": "./src/traceparent.ts",
     "/var/tmp/sb-compile-trex/d2e-fhir-server/src/wellknown": "./src/wellknown.ts",

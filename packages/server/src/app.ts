@@ -40,6 +40,7 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { seed_d2e } from './seed-d2e';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
@@ -219,6 +220,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     await initDatabase(config);
     await seedDatabase();
+    await seed_d2e(); // For d2e specific seeding  
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
