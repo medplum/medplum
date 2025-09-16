@@ -90,7 +90,6 @@ export function SearchableMultiSelect({
                   setSearch('');
                 }}
                 value={search}
-                placeholder="Search values"
                 onChange={(event) => {
                   combobox.updateSelectedOptionIndex();
                   setSearch(event.currentTarget.value);

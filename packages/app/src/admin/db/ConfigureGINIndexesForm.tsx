@@ -76,7 +76,7 @@ export default function ConfigureGINIndexesForm({
           <SearchableMultiSelect
             data={availableTables}
             onChange={(value) => setTableName(value)}
-            inputProps={{ name: 'tables' }}
+            inputProps={{ name: 'tables', placeholder: 'e.g. Observation' }}
           />
         </InputWrapper>
         <Radio.Group
