@@ -83,6 +83,8 @@ jobs:
         run: |
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
+          cd ${{ matrix.PKGPATH }}
+          deno install --allow-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
