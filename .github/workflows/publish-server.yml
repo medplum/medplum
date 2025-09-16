@@ -151,13 +151,9 @@ jobs:
           SHOULD_PUBLISH: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
         run: |
-          cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
           if [[ $SHOULD_PUBLISH == true ]]; then
-             ${{ matrix.NPM || 'npm' }} publish
-          else
-             ${{ matrix.NPM || 'npm' }} pack
-          fi
-
+            ./scripts/publish.sh
+            
   success:
     needs: build
     runs-on: ubuntu-latest

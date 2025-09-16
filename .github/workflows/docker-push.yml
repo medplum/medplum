@@ -90,6 +90,8 @@ jobs:
       
       - name: Install dependencies
         run: npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build
         run: npm run build
