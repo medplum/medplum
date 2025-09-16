@@ -122,6 +122,7 @@ jobs:
           export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
           #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
           echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
           npm i @data2vidence/trex
           npm run trex_build
       - name: Use Node.js - OSS Develop
