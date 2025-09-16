@@ -46,6 +46,8 @@ function installDependencies(folderPath, errorSummary) {
   const folderName = path.basename(folderPath);
   const denoJsonPath = path.join(folderPath, 'deno.json');
 
+  console.log(`JSON PATH ${denoJsonPath}`)
+
   // Check if deno.json exists
   if (!fs.existsSync(denoJsonPath)) {
     console.log(`⚠️  No deno.json found in ${folderName}`);
