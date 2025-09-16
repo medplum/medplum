@@ -40,7 +40,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   // The value was primarily tuned for one particular cluster with 6 server instances
   // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
   config.defaultRateLimit ??= 60_000;
-  config.defaultAuthRateLimit ??= 160;
+  config.defaultAuthRateLimit ??= 2000;
 
   config.defaultFhirQuota ??= 50_000;
   return config as ServerConfig;
