@@ -12,7 +12,7 @@ import { getRedis } from './redis';
 // The value was primarily tuned for one particular cluster with 6 server instances
 // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
-const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
+const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 2000;
 
 let handler: Handler | undefined;
 export function rateLimitHandler(config: MedplumServerConfig): Handler {
