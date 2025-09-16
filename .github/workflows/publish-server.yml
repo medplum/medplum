@@ -86,8 +86,6 @@ jobs:
         run: |
           npm install -g deno@2.1.13
           node ./install-deno-deps.js ${{ matrix.PKGPATH }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PROJECT_TOKEN_MEDPLUM }}
       - name: Update version
         run: |
           cd ${{ matrix.PKGPATH }}
