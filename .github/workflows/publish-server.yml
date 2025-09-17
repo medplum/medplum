@@ -78,24 +78,24 @@ jobs:
       - name: Setup NPM
         if: ${{ matrix.NPM }}
         run: npm install -g ${{ matrix.NPM }}
-      - name: Install dependencies
-        if: ${{ matrix.DESTPATH }}
-        run: |
-          npm install -g deno@2.1.13
-          export PATH="$(npm root -g)/deno/bin:$PATH"
-          denover="$(deno --version | grep deno | awk '{print $2}')"
-          echo "Deno version: $denover"
-          denover_expected="2.1.13"
-          if [ "$denover" != "$denover_expected" ]; then
-            echo "Error: Deno version is $denover, expected $denover_expected"
-            exit 1
-          fi
-          cd ${{ matrix.PKGPATH }}
-          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
-          deno install --allow-scripts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Install dependencies
+      #   if: ${{ matrix.DESTPATH }}
+      #   run: |
+      #     npm install -g deno@2.1.13
+      #     export PATH="$(npm root -g)/deno/bin:$PATH"
+      #     denover="$(deno --version | grep deno | awk '{print $2}')"
+      #     echo "Deno version: $denover"
+      #     denover_expected="2.1.13"
+      #     if [ "$denover" != "$denover_expected" ]; then
+      #       echo "Error: Deno version is $denover, expected $denover_expected"
+      #       exit 1
+      #     fi
+      #     cd ${{ matrix.PKGPATH }}
+      #     echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+      #     echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+      #     deno install --allow-scripts
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
         run: |
           cd ${{ matrix.PKGPATH }}
