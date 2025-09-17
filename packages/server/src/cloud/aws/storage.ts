@@ -52,6 +52,9 @@ export class S3Storage extends BaseBinaryStorage {
    * @param stream - The Node.js stream of readable content.
    */
   async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 7); // Expire bulk data exports after one week
+
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
@@ -59,6 +62,7 @@ export class S3Storage extends BaseBinaryStorage {
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
         Body: stream,
+        Expires: expirationDate,
       },
       client: this.client,
       queueSize: 3,
