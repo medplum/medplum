@@ -1,5 +1,5 @@
 {
-  "version": "5",
+  "version": "4",
   "specifiers": {
     "npm:@appsignal/opentelemetry-instrumentation-bullmq@0.7.3": "0.7.3_bullmq@5.56.8_@opentelemetry+api@1.9.0",
     "npm:@aws-sdk/client-cloudwatch-logs@3.849.0": "3.849.0",
