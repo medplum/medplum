@@ -3301,8 +3301,8 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('1.round() = 1', patient)).toStrictEqual([true]);
     });
 
-    test.skip('testRound2', () => {
-      expect(evalFhirPath('3.14159.round(3) = 2', patient)).toStrictEqual([true]);
+    test('testRound2', () => {
+      expect(evalFhirPath('3.14159.round(3) = 3.142', patient)).toStrictEqual([true]);
     });
   });
 
