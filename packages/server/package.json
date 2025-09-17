@@ -146,6 +146,27 @@
           "imports": "/deno.json"
         }
       ],
+       "env": { 
+          "d2e-fhir-server": {
+              "FHIR_SERVER_BASE_URL": "http://${PROJECT_NAME:-d2e}-trex.${TLS__INTERNAL__DOMAIN:-alp.local}:33001",
+              "PG__PORT": "${PG__PORT}",
+              "PG__HOST":"${PG__HOST}",
+              "PG__DB_NAME": "alp",
+              "PG_SUPER_PASSWORD": "${PG_SUPER_PASSWORD}",
+              "PG_SUPER_USER": "${PG_SUPER_USER:-postgres}",
+              "FHIR__LOG_LEVEL": "debug",
+              "FHIR_CUSTOM_SCHEMA": "${FHIR_CUSTOM_SCHEMA:-fhir}",
+              "FHIR__CLIENT_ID": "${FHIR__CLIENT_ID:-${FHIR__CLIENT_ID:-db6b2304-f236-45ec-b10c-a852681e7129}}",
+              "FHIR__CLIENT_SECRET": "${FHIR__CLIENT_SECRET}",
+              "FHIR_PLUGIN_PATH": "/usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server",
+              "FHIR_FUNCTIONS_PLUGIN_PATH": "/usr/src/plugins/fhir/",
+              "REDIS_PASSWORD": "${REDIS_PASSWORD}",
+              "REDIS_HOST": "${REDIS_HOST:-${PROJECT_NAME:-d2e}-minerva-redis-1}",
+              "REDIS_PORT": "${REDIS_PORT:-6379}",
+              "BINARY_UPLOAD_LIMIT_SIZE": "${BINARY_UPLOAD_LIMIT_SIZE:-50mb}",
+              "AUTH_RATE_LIMIT": "${AUTH_RATE_LIMIT:-1000}"
+          }
+      },
       "roles": {
         "ALP_SYSTEM_ADMIN": [
           "fhir.server.create"

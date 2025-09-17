@@ -145,9 +145,9 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
-  if (process.env.NODE_ENV !== 'test') {
-    await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
-  }
+  // if (process.env.NODE_ENV !== 'test') {
+  //   await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  // }
 
   if (config.logLevel) {
     globalLogger.level = parseLogLevel(config.logLevel);

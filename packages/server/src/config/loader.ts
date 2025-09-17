@@ -1,5 +1,6 @@
 import { splitN } from '@medplum/core';
-import { mkdtempSync, readFileSync } from 'fs';
+import { mkdtempSync } from 'fs';
+import * as fs from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -146,21 +147,26 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  let baseDir: string = "";
-  if (typeof __dirname !== 'undefined') {
-    baseDir = __dirname;
-    //@ts-ignore
-  } else if (typeof import.meta !== 'undefined') {
-    //@ts-ignore
-    baseDir = dirname(fileURLToPath(import.meta.url));
-    baseDir = `/usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server/src/config`;
+  try{
+    let baseDir: string = "";
+    if (typeof __dirname !== 'undefined') {
+      baseDir = __dirname;
+      // @ts-expect-error
+    } else if (typeof import.meta !== 'undefined') {
+      // @ts-expect-error
+      baseDir = dirname(fileURLToPath(import.meta.url));
+      baseDir = `${process.env.FHIR_PLUGIN_PATH}/src/config`;
+    }
+    const filePath = resolve(baseDir, '../../', path);
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(await fs.readFileSync(filePath, 'utf-8'))
+    } else {
+      throw new Error(`Configuration file not found at path: ${filePath}`);
+    }
+  } catch (err) {
+    console.error("Error loading configuration file:", err);
+    throw err;
   }
-  return JSON.parse(
-    readFileSync(
-      resolve(baseDir, '../../', path),
-      { encoding: 'utf8' }
-    )
-  );
 }
 
  function replace_env_var(config: MedplumServerConfig): MedplumServerConfig {

@@ -8,8 +8,8 @@
   "tokenUrl": "http://alp-trex.alp.local:33001/oauth2/token",
   "userInfoUrl": "http://alp-trex.alp.local:33001/oauth2/userinfo",
   "appBaseUrl": "https://localhost:41130/",  
-  "maxJsonSize": "50mb",
-  "maxBatchSize": "50mb",
+  "maxJsonSize": "${BINARY_UPLOAD_LIMIT_SIZE}",
+  "maxBatchSize": "${BINARY_UPLOAD_LIMIT_SIZE}",
   "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
   "vmContextBotsEnabled": true,
@@ -42,5 +42,6 @@
   "logRequests": true,
   "defaultProjectFeatures": [
     "bots"
-  ]
+  ],
+  "defaultAuthRateLimit": "${AUTH_RATE_LIMIT}"
 }
