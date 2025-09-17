@@ -184,26 +184,18 @@ type TemplateExtractionContext = {
 };
 
 class TemplateExtractor implements CrawlerVisitor {
-  private questionnaire: Questionnaire;
   private response: QuestionnaireResponse;
   private context: TemplateExtractionContext[]; // Context stack
   private variables: Record<string, TypedValue>;
   private templates: Record<string, Resource>;
-
   private bundle: Bundle;
   private patch: Operation[];
 
-  constructor(
-    questionnaire: Questionnaire,
-    response: QuestionnaireResponse,
-    variables?: Record<string, TypedValue>,
-    context?: TemplateExtractionContext
-  ) {
-    this.questionnaire = questionnaire;
+  constructor(questionnaire: Questionnaire, response: QuestionnaireResponse, variables?: Record<string, TypedValue>) {
     this.response = response;
 
     const typedResponse = toTypedValue(response);
-    this.context = [context ?? { path: 'Questionnaire', values: [typedResponse] }];
+    this.context = [{ path: 'Questionnaire', values: [typedResponse] }];
 
     // Gather template resources from Questionnaire by internal reference ID
     this.templates = Object.create(null);
@@ -216,8 +208,17 @@ class TemplateExtractor implements CrawlerVisitor {
     this.variables = variables ?? Object.create(null);
     this.variables['%resource'] = typedResponse;
 
+    // Initialize output collections
     this.bundle = { resourceType: 'Bundle', type: 'transaction', entry: [] };
     this.patch = [];
+  }
+
+  private currentContext(): TemplateExtractionContext {
+    return this.context[this.context.length - 1];
+  }
+
+  private evaluateExpression(expression: string): TypedValue[] {
+    return evalFhirPathTyped(expression, this.currentContext().values, this.variables);
   }
 
   onExitObject(path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
@@ -270,41 +271,41 @@ class TemplateExtractor implements CrawlerVisitor {
     }
   }
 
-  private currentContext(): TemplateExtractionContext {
-    return this.context[this.context.length - 1];
-  }
-
   private processContext(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
     let results: TypedValue[];
-    const context = this.currentContext().values;
     const extension = ext.value as Extension;
     if (extension.valueString) {
-      results = evalFhirPathTyped(extension.valueString, context, this.variables);
+      results = this.evaluateExpression(extension.valueString);
     } else if (extension.valueExpression) {
-      const expr = extension.valueExpression;
-      if (extension.valueExpression.language !== 'text/fhirpath' || !expr.expression) {
+      const { expression, name } = extension.valueExpression;
+      if (extension.valueExpression.language !== 'text/fhirpath' || !expression) {
         throw new OperationOutcomeError(
-          badRequest('Questionnaire extraction context requires FHIRPath expression', parent.path + '.extension')
+          badRequest('Questionnaire extraction context requires FHIRPath expression', ext.path)
         );
       }
 
-      results = evalFhirPathTyped(expr.expression, context, this.variables);
+      results = this.evaluateExpression(expression);
 
       // Assign named expressions as FHIRPath variables for evaluation of expressions on or underneath this element
-      if (expr.name) {
+      if (name) {
         // TODO: Ensure context variables are scoped to this subtree in the resource
-        this.variables['%' + expr.name] = results[0] ?? { type: 'undefined', value: undefined };
+        this.variables['%' + name] = results[0] ?? { type: 'undefined', value: undefined };
       }
     } else {
-      throw new OperationOutcomeError(badRequest('Invalid extraction context extension', parent.path + '.extension'));
+      throw new OperationOutcomeError(badRequest('Invalid extraction context extension', ext.path));
     }
 
     this.context.push({ path: parent.path, values: results });
-    this.makeModification(results, parent, ext);
+    this.makePatch(results, parent, ext);
   }
 
+  /**
+   * "Recurse" and scan the referenced template resource to populate it.
+   * @param extension - The templateExtract extension.
+   * @param parent - The element containing the extension.
+   */
   private extractIntoTemplate(extension: Extension, parent: TypedValueWithPath): void {
-    // "Recurse" and scan the referenced template resource to populate it
+    // Clone the template resource specified in the extension
     const templateRef = getExtension(extension, 'template')?.valueReference?.reference ?? '';
     const template: Resource | undefined = deepClone(this.templates[templateRef]);
     if (!template) {
@@ -313,47 +314,58 @@ class TemplateExtractor implements CrawlerVisitor {
       );
     }
 
-    // TODO: Need to copy variables/context to stack before recursively scanning
-    const context = this.extractResponseItem(parent);
-    const visitor = new TemplateExtractor(this.questionnaire, this.response, this.variables, {
-      path: parent.path,
-      values: context,
-    });
-    crawlTypedValue(toTypedValue(template), visitor, { skipMissingProperties: true });
+    // Scan template resource and evaluate expressions to compute inserted values
+    this.context.push({ path: parent.path, values: this.getExtractionContext(parent) });
+    crawlTypedValue(toTypedValue(template), this, { skipMissingProperties: true });
 
-    const patch = visitor.getTemplatePatch();
+    // Insert values into template resource and add to transaction Bundle
+    const patch = this.getTemplatePatch();
     applyPatch(template, patch);
-    this.bundle.entry?.push(createBundleEntry(template, extension));
+    this.bundle.entry?.push(this.createBundleEntry(template, extension));
   }
 
-  private extractResponseItem(parent: TypedValueWithPath): TypedValue[] {
-    if (parent.type === 'Questionnaire') {
-      return [toTypedValue(this.response)];
-    } else if (parent.type === 'QuestionnaireItem') {
-      const linkId = (parent.value as QuestionnaireItem).linkId;
-      return flatMapFilter(this.response.item, (item) => extractResponseItem(item, linkId));
-    } else {
-      throw new OperationOutcomeError(badRequest('Extraction cannot begin on element of type ' + parent.type));
+  private createBundleEntry(resource: Resource, extension: Extension): BundleEntry {
+    // TODO: Evaluate expressions for values to fill into the entry
+    const resourceId = getExtension(extension, 'resourceId')?.valueString;
+    return {
+      fullUrl: getExtension(extension, 'fullUrl')?.valueString ?? `urn:uuid:${randomUUID()}`,
+      resource,
+      request: {
+        method: resourceId ? 'PUT' : 'POST',
+        url: resourceId ? `${resource.resourceType}/${resourceId}` : resource.resourceType,
+        // TODO: Include conditional header fields
+      },
+    };
+  }
+
+  private getExtractionContext(parent: TypedValueWithPath): TypedValue[] {
+    switch (parent.type) {
+      case 'Questionnaire':
+        return [toTypedValue(this.response)];
+      case 'QuestionnaireItem': {
+        const linkId = (parent.value as QuestionnaireItem).linkId;
+        return flatMapFilter(this.response.item, (item) => extractResponseItem(item, linkId));
+      }
+      default:
+        throw new OperationOutcomeError(badRequest('Extraction cannot begin on element of type ' + parent.type));
     }
   }
 
   private processValue(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
-    const expr = ext.value.valueString as string;
-    // Evaluate expression in context and use value to generate patch ops
-    const results = evalFhirPathTyped(expr, this.currentContext().values, this.variables);
-    this.makeModification(results, parent, ext);
+    // Evaluate expression in context and use value to generate patch ops on template resource
+    const results = this.evaluateExpression(ext.value.valueString as string);
+    this.makePatch(results, parent, ext);
   }
 
-  private makeModification(results: TypedValue[], parent: TypedValueWithPath, ext: TypedValueWithPath): void {
+  private makePatch(results: TypedValue[], parent: TypedValueWithPath, ext: TypedValueWithPath): void {
     let path = parent.path;
-    const lastPathSegmentIndex = path.lastIndexOf('.');
-    const isPrimitiveExtension = path[lastPathSegmentIndex + 1] === '_';
+    const lastDotIndex = path.lastIndexOf('.');
+    const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
     if (isPrimitiveExtension) {
-      // Primitive extensions should always be removed
+      // Always remove primitive extension field
       this.patch.push({ op: 'remove', path: asJsonPath(path) });
-
       // Convert to "real" path
-      path = path.slice(0, lastPathSegmentIndex + 1) + path.slice(lastPathSegmentIndex + 2);
+      path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
     }
 
     const extensionUrl = ext.value.url as string;
@@ -361,22 +373,19 @@ class TemplateExtractor implements CrawlerVisitor {
       // Remove element from template
       this.patch.push({ op: 'remove', path: asJsonPath(path) });
     } else {
-      for (const element of results) {
-        // Clone template object and remove SDC extension
-        const templateElement = parent.value;
+      for (const value of results) {
         if (extensionUrl === contextExtension) {
+          // Clone template object and remove SDC extension from it
           if (isPrimitiveExtension) {
-            this.patch.push({ op: 'add', path: asJsonPath(path), value: templateElement });
+            this.patch.push({ op: 'add', path: asJsonPath(path), value: parent.value });
           }
           this.patch.push({ op: 'remove', path: asJsonPath(ext.path) });
-        }
-
-        // Insert templated element(s) with context value
-        if (extensionUrl === valueExtension) {
+        } else if (extensionUrl === valueExtension) {
+          // Insert templated element with computed value
           this.patch.push({
             op: isPrimitiveExtension ? 'add' : 'replace',
             path: asJsonPath(path),
-            value: element.value,
+            value: value.value,
           });
         }
       }
@@ -387,22 +396,11 @@ class TemplateExtractor implements CrawlerVisitor {
     return this.bundle;
   }
 
-  getTemplatePatch(): Operation[] {
-    return this.patch;
+  private getTemplatePatch(): Operation[] {
+    const patch = this.patch;
+    this.patch = [];
+    return patch;
   }
-}
-
-function createBundleEntry(resource: Resource, extension: Extension): BundleEntry {
-  const resourceId = getExtension(extension, 'resourceId')?.valueString;
-  return {
-    fullUrl: getExtension(extension, 'fullUrl')?.valueString ?? `urn:uuid:${randomUUID()}`,
-    resource,
-    request: {
-      method: resourceId ? 'PUT' : 'POST',
-      url: resourceId ? `${resource.resourceType}/${resourceId}` : resource.resourceType,
-      // TODO: Include conditional header fields
-    },
-  };
 }
 
 function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): TypedValue | TypedValue[] | undefined {
@@ -419,9 +417,6 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
 
 function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
-  let result = '/' + path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
-  if (result.endsWith('/')) {
-    result = result.slice(0, result.length - 1); // Trim trailing slash
-  }
-  return result;
+  const result = '/' + path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
+  return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
 }

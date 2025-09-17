@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -588,6 +588,16 @@ describe('Expand', () => {
     const batch = res.body as Bundle;
 
     expect(batch.type).toBe('transaction');
-    console.log(batch.entry);
+    console.log(JSON.stringify(batch.entry, null, 2));
+    expect(batch.entry).toHaveLength(4);
+    const [patientEntry, relatedEntry, heightEntry, weightEntry] = batch.entry as BundleEntry[];
+
+    expect(patientEntry.resource?.resourceType).toBe('Patient');
+
+    expect(relatedEntry.resource?.resourceType).toBe('RelatedPerson');
+
+    expect(heightEntry.resource?.resourceType).toBe('Observation');
+
+    expect(weightEntry.resource?.resourceType).toBe('Observation');
   });
 });
