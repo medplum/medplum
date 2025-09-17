@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  badRequest,
   ContentType,
   createReference,
   getReferenceString,
@@ -1386,5 +1387,28 @@ describe('Batch', () => {
     const result = await processBatch(req, repo, router, bundle);
     const report = result.entry?.[1]?.resource as DiagnosticReport;
     expect(report.basedOn?.[0].reference).toStrictEqual('ServiceRequest/12345');
+  });
+
+  test('No self-assigned ID in upsert', async () => {
+    const id = randomUUID();
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'PUT', url: 'Patient?_id=' + id },
+          resource: { resourceType: 'Patient', id },
+        },
+      ],
+    };
+    const result = await processBatch(req, repo, router, bundle);
+
+    expect(result.entry?.[0]).toStrictEqual<BundleEntry>({
+      response: expect.objectContaining({
+        status: '400',
+        outcome: badRequest('Cannot provide ID for create by update'),
+      }),
+      resource: undefined,
+    });
   });
 });

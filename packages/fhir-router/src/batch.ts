@@ -272,11 +272,7 @@ class BatchProcessor {
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
-    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
-      return undefined;
-    }
-
-    const placeholder = entry.fullUrl;
+    const placeholder = entry.fullUrl ?? '';
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -296,11 +292,7 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
-    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
-      return undefined;
-    }
-
-    const placeholder = entry.fullUrl;
+    const placeholder = entry.fullUrl ?? '';
     if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
 
