@@ -210,12 +210,14 @@ describe('Expand', () => {
           ],
           code: { coding: [{ system: 'http://loinc.org', code: '8302-2', display: 'Body height' }] },
           subject: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%NewPatientId',
-              },
-            ],
+            _reference: {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                  valueString: `'Patient/' + %NewPatientId`,
+                },
+              ],
+            },
           },
           effectiveDateTime: '1900-01-01',
           _effectiveDateTime: {
@@ -287,12 +289,14 @@ describe('Expand', () => {
           ],
           code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Weight' }] },
           subject: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%NewPatientId',
-              },
-            ],
+            _reference: {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                  valueString: `'Patient/' + %NewPatientId`,
+                },
+              ],
+            },
           },
           effectiveDateTime: '1900-01-01',
           _effectiveDateTime: {
@@ -481,7 +485,7 @@ describe('Expand', () => {
       status: 'completed',
       questionnaire: questionnaire.url as string,
       author: { reference: 'Practitioner/author' },
-      authored: '2025-09-16',
+      authored: '2025-09-16T12:34:56.000-07:00',
       item: [
         {
           linkId: 'patient',
@@ -579,11 +583,11 @@ describe('Expand', () => {
     const res = await request(app)
       .get(`/fhir/R4/QuestionnaireResponse/${response.id}/$extract`)
       .set('Authorization', 'Bearer ' + accessToken);
-    // console.log(res.body.issue);
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
     expect(batch.type).toBe('transaction');
+    console.log(batch.entry);
   });
 });

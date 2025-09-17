@@ -6,6 +6,7 @@ import {
   badRequest,
   CrawlerVisitor,
   crawlTypedValue,
+  deepClone,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
@@ -29,7 +30,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { Operation } from 'rfc6902';
+import { applyPatch, Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 
@@ -174,13 +175,7 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
   const extractor = new TemplateExtractor(questionnaire, response);
   crawlTypedValue(toTypedValue({ ...questionnaire, contained: undefined }), extractor, { skipMissingProperties: true });
 
-  const bundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: [],
-  };
-
-  return [allOk, bundle];
+  return [allOk, extractor.getTransactionBundle()];
 }
 
 type TemplateExtractionContext = {
@@ -194,6 +189,9 @@ class TemplateExtractor implements CrawlerVisitor {
   private context: TemplateExtractionContext[]; // Context stack
   private variables: Record<string, TypedValue>;
   private templates: Record<string, Resource>;
+
+  private bundle: Bundle;
+  private patch: Operation[];
 
   constructor(
     questionnaire: Questionnaire,
@@ -217,6 +215,9 @@ class TemplateExtractor implements CrawlerVisitor {
     // Initialize FHIRPath variables
     this.variables = variables ?? Object.create(null);
     this.variables['%resource'] = typedResponse;
+
+    this.bundle = { resourceType: 'Bundle', type: 'transaction', entry: [] };
+    this.patch = [];
   }
 
   onExitObject(path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
@@ -241,9 +242,6 @@ class TemplateExtractor implements CrawlerVisitor {
   ): void {
     // Scan for extensions throughout the resource that could contain SDC annotations
     if (this.isTopLevelExtension(path, propertyValues)) {
-      // Log extensions found in the resource
-      console.log(path, JSON.stringify(propertyValues[0], null, 2), parent);
-
       // Process SDC extensions in order: first setting up context and variables, then extracting values;
       // or starting a new extraction into a resource template
       const extensions = propertyValues[0].sort((a, b) => getOrder(a) - getOrder(b));
@@ -308,7 +306,7 @@ class TemplateExtractor implements CrawlerVisitor {
   private extractIntoTemplate(extension: Extension, parent: TypedValueWithPath): void {
     // "Recurse" and scan the referenced template resource to populate it
     const templateRef = getExtension(extension, 'template')?.valueReference?.reference ?? '';
-    const template: Resource | undefined = this.templates[templateRef];
+    const template: Resource | undefined = deepClone(this.templates[templateRef]);
     if (!template) {
       throw new OperationOutcomeError(
         badRequest(`Missing template resource ${templateRef}`, 'Questionnaire.contained')
@@ -323,8 +321,9 @@ class TemplateExtractor implements CrawlerVisitor {
     });
     crawlTypedValue(toTypedValue(template), visitor, { skipMissingProperties: true });
 
-    // TODO: Construct resource from template and add to Bundle
-    // bundle.entry?.push(createBundleEntry(resource, extension));
+    const patch = visitor.getTemplatePatch();
+    applyPatch(template, patch);
+    this.bundle.entry?.push(createBundleEntry(template, extension));
   }
 
   private extractResponseItem(parent: TypedValueWithPath): TypedValue[] {
@@ -346,42 +345,50 @@ class TemplateExtractor implements CrawlerVisitor {
   }
 
   private makeModification(results: TypedValue[], parent: TypedValueWithPath, ext: TypedValueWithPath): void {
-    console.log('===== MODIFY', results, parent);
-    const patch: Operation[] = [];
-
     let path = parent.path;
     const lastPathSegmentIndex = path.lastIndexOf('.');
     const isPrimitiveExtension = path[lastPathSegmentIndex + 1] === '_';
     if (isPrimitiveExtension) {
       // Primitive extensions should always be removed
-      patch.push({ op: 'remove', path: asJsonPath(path) });
+      this.patch.push({ op: 'remove', path: asJsonPath(path) });
 
       // Convert to "real" path
-      path = path.slice(0, lastPathSegmentIndex) + path.slice(lastPathSegmentIndex + 2);
+      path = path.slice(0, lastPathSegmentIndex + 1) + path.slice(lastPathSegmentIndex + 2);
     }
 
     const extensionUrl = ext.value.url as string;
     if (!results.length) {
       // Remove element from template
-      patch.push({ op: 'remove', path: asJsonPath(path) });
+      this.patch.push({ op: 'remove', path: asJsonPath(path) });
     } else {
       for (const element of results) {
         // Clone template object and remove SDC extension
         const templateElement = parent.value;
         if (extensionUrl === contextExtension) {
-          patch.push({ op: 'add', path: asJsonPath(path), value: templateElement });
-          patch.push({ op: 'remove', path: asJsonPath(ext.path) });
+          if (isPrimitiveExtension) {
+            this.patch.push({ op: 'add', path: asJsonPath(path), value: templateElement });
+          }
+          this.patch.push({ op: 'remove', path: asJsonPath(ext.path) });
         }
 
         // Insert templated element(s) with context value
         if (extensionUrl === valueExtension) {
-          patch.push({ op: 'add', path: asJsonPath(path), value: element.value });
+          this.patch.push({
+            op: isPrimitiveExtension ? 'add' : 'replace',
+            path: asJsonPath(path),
+            value: element.value,
+          });
         }
       }
     }
+  }
 
-    // TODO: Store/emit patches per template resource
-    console.log('===== PATCHES:', patch);
+  getTransactionBundle(): Bundle {
+    return this.bundle;
+  }
+
+  getTemplatePatch(): Operation[] {
+    return this.patch;
   }
 }
 
@@ -412,5 +419,9 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
 
 function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
-  return path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
+  let result = '/' + path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
+  if (result.endsWith('/')) {
+    result = result.slice(0, result.length - 1); // Trim trailing slash
+  }
+  return result;
 }
