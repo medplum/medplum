@@ -30,7 +30,6 @@ const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
-const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
 
