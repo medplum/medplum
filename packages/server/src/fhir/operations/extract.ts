@@ -29,6 +29,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
+import { Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 
@@ -254,12 +255,12 @@ class TemplateExtractor implements CrawlerVisitor {
             this.variables['%' + extension.valueString] = { type: 'string', value: randomUUID() };
             break;
           case contextExtension:
-            this.processContext(extension, parent);
+            this.processContext(ext, parent);
             break;
 
           // Then extract values into the template resource
           case valueExtension:
-            this.processValue(extension.valueString as string, parent);
+            this.processValue(ext, parent);
             break;
 
           // Alteratively, begin extraction into a template using this item
@@ -275,9 +276,10 @@ class TemplateExtractor implements CrawlerVisitor {
     return this.context[this.context.length - 1];
   }
 
-  private processContext(extension: Extension, parent: TypedValueWithPath): void {
+  private processContext(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
     let results: TypedValue[];
     const context = this.currentContext().values;
+    const extension = ext.value as Extension;
     if (extension.valueString) {
       results = evalFhirPathTyped(extension.valueString, context, this.variables);
     } else if (extension.valueExpression) {
@@ -300,7 +302,7 @@ class TemplateExtractor implements CrawlerVisitor {
     }
 
     this.context.push({ path: parent.path, values: results });
-    this.makeModification(results, parent);
+    this.makeModification(results, parent, ext);
   }
 
   private extractIntoTemplate(extension: Extension, parent: TypedValueWithPath): void {
@@ -336,22 +338,50 @@ class TemplateExtractor implements CrawlerVisitor {
     }
   }
 
-  private processValue(expr: string, parent: TypedValueWithPath): void {
+  private processValue(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
+    const expr = ext.value.valueString as string;
     // Evaluate expression in context and use value to generate patch ops
-    const context = this.currentContext().values;
-    const results = evalFhirPathTyped(expr, context, this.variables);
-    this.makeModification(results, parent);
+    const results = evalFhirPathTyped(expr, this.currentContext().values, this.variables);
+    this.makeModification(results, parent, ext);
   }
 
-  private makeModification(results: TypedValue[], parent: TypedValueWithPath): void {
-    // Compute JSON patch ops to modify template resource
+  private makeModification(results: TypedValue[], parent: TypedValueWithPath, ext: TypedValueWithPath): void {
+    console.log('===== MODIFY', results, parent);
+    const patch: Operation[] = [];
+
+    let path = parent.path;
+    const lastPathSegmentIndex = path.lastIndexOf('.');
+    const isPrimitiveExtension = path[lastPathSegmentIndex + 1] === '_';
+    if (isPrimitiveExtension) {
+      // Primitive extensions should always be removed
+      patch.push({ op: 'remove', path: asJsonPath(path) });
+
+      // Convert to "real" path
+      path = path.slice(0, lastPathSegmentIndex) + path.slice(lastPathSegmentIndex + 2);
+    }
+
+    const extensionUrl = ext.value.url as string;
     if (!results.length) {
       // Remove element from template
+      patch.push({ op: 'remove', path: asJsonPath(path) });
     } else {
       for (const element of results) {
+        // Clone template object and remove SDC extension
+        const templateElement = parent.value;
+        if (extensionUrl === contextExtension) {
+          patch.push({ op: 'add', path: asJsonPath(path), value: templateElement });
+          patch.push({ op: 'remove', path: asJsonPath(ext.path) });
+        }
+
         // Insert templated element(s) with context value
+        if (extensionUrl === valueExtension) {
+          patch.push({ op: 'add', path: asJsonPath(path), value: element.value });
+        }
       }
     }
+
+    // TODO: Store/emit patches per template resource
+    console.log('===== PATCHES:', patch);
   }
 }
 
@@ -369,6 +399,8 @@ function createBundleEntry(resource: Resource, extension: Extension): BundleEntr
 }
 
 function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): TypedValue | TypedValue[] | undefined {
+  // Link IDs are unique within the entire Questionnaire, so it's safe to use this at any level of the
+  // possibly-nested hierarchy for matching; we don't need to consider the full path of linkIds
   if (item.linkId === linkId) {
     return toTypedValue(item);
   } else if (item.item) {
@@ -376,4 +408,9 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
   } else {
     return undefined;
   }
+}
+
+function asJsonPath(path: string): string {
+  const pathStart = path.indexOf('.') + 1;
+  return path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
 }
