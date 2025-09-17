@@ -6,7 +6,7 @@ import { OperationDefinition } from '@medplum/fhirtypes';
 import { escapeIdentifier, Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { isValidTableName, replaceNullWithUndefinedInRows } from '../sql';
+import { isValidTableName } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -57,45 +57,15 @@ const operation: OperationDefinition = {
     },
     {
       use: 'out',
-      name: 'result',
+      name: 'action',
       min: 0,
       max: '*',
       part: [
-        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'indexName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'resetSql', type: 'string', min: 0, max: '1' },
-        { use: 'out', name: 'setSql', type: 'string', min: 0, max: '1' },
-      ],
-    },
-    {
-      use: 'out',
-      name: 'vacuumResult',
-      min: 0,
-      max: '1',
-      part: [
-        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'sql', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'durationMs', type: 'integer', min: 1, max: '1' },
+        { use: 'out', name: 'durationMs', type: 'integer', min: 0, max: '1' },
       ],
     },
   ],
-};
-
-type ConfigureIndexResult = {
-  schemaName: string;
-  tableName: string;
-  indexName: string;
-  resetSql?: string;
-  setSql?: string;
-};
-
-type VacuumResult = {
-  schemaName: string;
-  tableName: string;
-  sql: string;
-  durationMs: number;
 };
 
 type InputParameters = {
@@ -106,9 +76,9 @@ type InputParameters = {
   ginPendingListLimitValue?: number;
 };
 
-type OutputParameters = {
-  result: ConfigureIndexResult[];
-  vacuumResult?: VacuumResult[];
+type OutputAction = {
+  sql: string;
+  durationMs?: number;
 };
 
 export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -154,19 +124,18 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   }
 
   const client = getDatabasePool(DatabaseMode.WRITER);
+  const action: OutputAction[] = [];
 
-  const result = await configureGinIndexes(client, tableNames, config);
+  await configureGinIndexes(client, action, tableNames, config);
 
-  const vacuumResult: VacuumResult[] = [];
+  // Vacuum if the fastupdate is disabled to flush GIN pending lists
   if (config.fastUpdate === false) {
     for (const tableName of tableNames) {
-      const res = await vacuumTable(client, tableName);
-      vacuumResult.push(res);
+      await vacuumTable(client, action, tableName);
     }
   }
 
-  const output: OutputParameters = { result, vacuumResult };
-  return [allOk, buildOutputParameters(operation, output)];
+  return [allOk, buildOutputParameters(operation, { action })];
 }
 
 type GinIndexConfig = {
@@ -176,9 +145,10 @@ type GinIndexConfig = {
 
 async function configureGinIndexes(
   client: PoolClient | Pool,
+  actions: OutputAction[],
   tableNames: string[],
   config: GinIndexConfig
-): Promise<ConfigureIndexResult[]> {
+): Promise<void> {
   const resetStrings: string[] = [];
   const setStrings: string[] = [];
   let resetSql = '';
@@ -213,7 +183,7 @@ async function configureGinIndexes(
       reset_sql TEXT;
       set_sql TEXT;
     BEGIN
-      CREATE TEMP TABLE configure_index_results (
+      CREATE TEMP TABLE configure_index_actions (
           "schemaName" TEXT,
           "tableName" TEXT,
           "indexName" TEXT,
@@ -233,7 +203,7 @@ async function configureGinIndexes(
       LOOP
         ${resetSql}
         ${setSql}
-        INSERT INTO configure_index_results VALUES (
+        INSERT INTO configure_index_actions VALUES (
           idx.schemaname,
           idx.tablename,
           idx.indexname,
@@ -244,15 +214,28 @@ async function configureGinIndexes(
     END $$`;
 
   await client.query(doSql);
-  const results = await client.query(`SELECT * FROM configure_index_results`);
-  replaceNullWithUndefinedInRows(results.rows);
-  await client.query(`DROP TABLE configure_index_results`);
-  return results.rows;
+  const configureActions = await client.query<{
+    schemaName: string;
+    tableName: string;
+    indexName: string;
+    resetSql?: string;
+    setSql?: string;
+  }>(`SELECT * FROM configure_index_actions`);
+  await client.query(`DROP TABLE configure_index_actions`);
+
+  for (const action of configureActions.rows) {
+    if (action.resetSql) {
+      actions.push({ sql: action.resetSql });
+    }
+    if (action.setSql) {
+      actions.push({ sql: action.setSql });
+    }
+  }
 }
 
-async function vacuumTable(client: PoolClient | Pool, tableName: string): Promise<VacuumResult> {
+async function vacuumTable(client: PoolClient | Pool, actions: OutputAction[], tableName: string): Promise<void> {
   const sql = `VACUUM ${escapeIdentifier(tableName)}`;
   const startTime = Date.now();
   await client.query(sql);
-  return { sql, durationMs: Date.now() - startTime, schemaName: 'public', tableName };
+  actions.push({ sql, durationMs: Date.now() - startTime });
 }

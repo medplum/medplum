@@ -126,44 +126,20 @@ describe('dbgetginindexes', () => {
       resourceType: 'Parameters',
       parameter: [
         {
-          name: 'result',
+          name: 'action',
           part: [
             {
-              name: 'schemaName',
-              valueString: 'public',
-            },
-            {
-              name: 'tableName',
-              valueString: 'Gin_Index_Configure_Test_Table',
-            },
-            {
-              name: 'indexName',
-              valueString: 'Gin_Index_Configure_Test_Table_aaa_idx',
-            },
-            {
-              name: 'setSql',
+              name: 'sql',
               valueString:
                 'ALTER INDEX public."Gin_Index_Configure_Test_Table_aaa_idx" SET (fastupdate = true, gin_pending_list_limit = 128)',
             },
           ],
         },
         {
-          name: 'result',
+          name: 'action',
           part: [
             {
-              name: 'schemaName',
-              valueString: 'public',
-            },
-            {
-              name: 'tableName',
-              valueString: 'Gin_Index_Configure_Test_Table',
-            },
-            {
-              name: 'indexName',
-              valueString: 'Gin_Index_Configure_Test_Table_bbb_idx',
-            },
-            {
-              name: 'setSql',
+              name: 'sql',
               valueString:
                 'ALTER INDEX public."Gin_Index_Configure_Test_Table_bbb_idx" SET (fastupdate = true, gin_pending_list_limit = 128)',
             },
@@ -200,71 +176,48 @@ describe('dbgetginindexes', () => {
         ],
       });
     expect(res.status).toBe(200);
-    expect(res.body.parameter).toHaveLength(3);
     expect(res.body).toStrictEqual({
       resourceType: 'Parameters',
       parameter: [
         {
-          name: 'result',
+          name: 'action',
           part: [
             {
-              name: 'schemaName',
-              valueString: 'public',
-            },
-            {
-              name: 'tableName',
-              valueString: 'Gin_Index_Configure_Test_Table',
-            },
-            {
-              name: 'indexName',
-              valueString: 'Gin_Index_Configure_Test_Table_aaa_idx',
-            },
-            {
-              name: 'resetSql',
+              name: 'sql',
               valueString: 'ALTER INDEX public."Gin_Index_Configure_Test_Table_aaa_idx" RESET (gin_pending_list_limit)',
             },
+          ],
+        },
+        {
+          name: 'action',
+          part: [
             {
-              name: 'setSql',
+              name: 'sql',
               valueString: 'ALTER INDEX public."Gin_Index_Configure_Test_Table_aaa_idx" SET (fastupdate = false)',
             },
           ],
         },
         {
-          name: 'result',
+          name: 'action',
           part: [
             {
-              name: 'schemaName',
-              valueString: 'public',
-            },
-            {
-              name: 'tableName',
-              valueString: 'Gin_Index_Configure_Test_Table',
-            },
-            {
-              name: 'indexName',
-              valueString: 'Gin_Index_Configure_Test_Table_bbb_idx',
-            },
-            {
-              name: 'resetSql',
+              name: 'sql',
               valueString: 'ALTER INDEX public."Gin_Index_Configure_Test_Table_bbb_idx" RESET (gin_pending_list_limit)',
             },
+          ],
+        },
+        {
+          name: 'action',
+          part: [
             {
-              name: 'setSql',
+              name: 'sql',
               valueString: 'ALTER INDEX public."Gin_Index_Configure_Test_Table_bbb_idx" SET (fastupdate = false)',
             },
           ],
         },
         {
-          name: 'vacuumResult',
+          name: 'action',
           part: [
-            {
-              name: 'schemaName',
-              valueString: 'public',
-            },
-            {
-              name: 'tableName',
-              valueString: 'Gin_Index_Configure_Test_Table',
-            },
             {
               name: 'sql',
               valueString: 'VACUUM "Gin_Index_Configure_Test_Table"',
