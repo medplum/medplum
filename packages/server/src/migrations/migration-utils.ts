@@ -1,6 +1,6 @@
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
+import * as fs from 'fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Pool, PoolClient } from 'pg';
@@ -93,7 +93,7 @@ export function getPostDeployManifestEntry(migrationNumber: number): {
     baseDir = dirname(fileURLToPath(import.meta.url));
   }
   const manifest = JSON.parse(
-    readFileSync(
+    fs.readFileSync(
       resolve(baseDir, 'data/data-version-manifest.json'),
       { encoding: 'utf-8' }
     )
