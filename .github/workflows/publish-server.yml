@@ -1,4 +1,4 @@
-name: d2e publish fhir server plugin
+name: Publish-Server
 
 on:
   workflow_dispatch:
@@ -82,11 +82,15 @@ jobs:
         if: ${{ matrix.DESTPATH }}
         run: |
           npm install -g deno@2.1.13
-          node ./install-deno-deps.js ./packages/
-          #cd ${{ matrix.PKGPATH }}
-          #echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
-          #echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
-          #deno install --allow-scripts
+          export PATH="$(npm root -g)/deno/bin:$PATH"
+          denover="$(deno --version | grep deno | awk '{print $2}')"
+          echo "Deno version: $denover"
+          denover_expected="2.1.13"
+          if [ "$denover" != "$denover_expected" ]; then
+            echo "Error: Deno version is $denover, expected $denover_expected"
+            exit 1
+          fi
+          deno install --allow-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version
