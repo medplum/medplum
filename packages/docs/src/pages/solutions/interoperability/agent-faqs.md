@@ -25,7 +25,7 @@ The Medplum Agent can run on any operating system version that is currently supp
 
 ## Are auto-updates supported? As a member of our security team, what kinds of controls are available? 
 
-The Medplum Agent supports [remote monitoring and upgrade features](/docs/agent/features) that allow for auto-updates. We recognize that healthcare organizations have varying requirements for update management based on their security policies and operational workflows, and aim to allow provide operational flexibility for our users. 
+The Medplum Agent supports [remote monitoring and upgrade features](/docs/agent/features) that allow for auto-updates. We recognize that healthcare organizations have varying requirements for update management based on their security policies and operational workflows, and aim to provide operational flexibility for our users. 
 
 #### Control Structure  
 
