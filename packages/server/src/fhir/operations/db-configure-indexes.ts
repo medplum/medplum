@@ -3,7 +3,7 @@
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import { escapeIdentifier, Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { isValidTableName, replaceNullWithUndefinedInRows } from '../sql';
@@ -64,18 +64,39 @@ const operation: OperationDefinition = {
         { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
         { use: 'out', name: 'indexName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'pagesCleaned', type: 'string', min: 0, max: '1' },
+        { use: 'out', name: 'resetSql', type: 'string', min: 0, max: '1' },
+        { use: 'out', name: 'setSql', type: 'string', min: 0, max: '1' },
+      ],
+    },
+    {
+      use: 'out',
+      name: 'vacuumResult',
+      min: 0,
+      max: '1',
+      part: [
+        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
+        { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
+        { use: 'out', name: 'sql', type: 'string', min: 1, max: '1' },
+        { use: 'out', name: 'durationMs', type: 'integer', min: 1, max: '1' },
       ],
     },
   ],
 };
 
-interface GinIndexInfo {
+type ConfigureIndexResult = {
   schemaName: string;
   tableName: string;
   indexName: string;
-  pagesCleaned?: number;
-}
+  resetSql?: string;
+  setSql?: string;
+};
+
+type VacuumResult = {
+  schemaName: string;
+  tableName: string;
+  sql: string;
+  durationMs: number;
+};
 
 type InputParameters = {
   tableName?: string[];
@@ -83,6 +104,11 @@ type InputParameters = {
   fastUpdateValue?: boolean;
   ginPendingListLimitAction?: 'set' | 'reset';
   ginPendingListLimitValue?: number;
+};
+
+type OutputParameters = {
+  result: ConfigureIndexResult[];
+  vacuumResult?: VacuumResult[];
 };
 
 export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -130,8 +156,16 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   const client = getDatabasePool(DatabaseMode.WRITER);
 
   const result = await configureGinIndexes(client, tableNames, config);
-  const output: { result: GinIndexInfo[] } = { result };
 
+  const vacuumResult: VacuumResult[] = [];
+  if (config.fastUpdate === false) {
+    for (const tableName of tableNames) {
+      const res = await vacuumTable(client, tableName);
+      vacuumResult.push(res);
+    }
+  }
+
+  const output: OutputParameters = { result, vacuumResult };
   return [allOk, buildOutputParameters(operation, output)];
 }
 
@@ -144,12 +178,11 @@ async function configureGinIndexes(
   client: PoolClient | Pool,
   tableNames: string[],
   config: GinIndexConfig
-): Promise<GinIndexInfo[]> {
+): Promise<ConfigureIndexResult[]> {
   const resetStrings: string[] = [];
   const setStrings: string[] = [];
   let resetSql = '';
   let setSql = '';
-  let cleanListSql = '';
 
   if (config.fastUpdate === 'reset') {
     resetStrings.push('fastupdate');
@@ -164,32 +197,28 @@ async function configureGinIndexes(
   }
 
   if (resetStrings.length > 0) {
-    resetSql = `EXECUTE format('ALTER INDEX %I.%I RESET (${resetStrings.join(', ')})', idx.schemaname, idx.indexname);`;
+    resetSql = `SELECT format('ALTER INDEX %I.%I RESET (${resetStrings.join(', ')})', idx.schemaname, idx.indexname) INTO reset_sql;
+      EXECUTE reset_sql;`;
   }
 
   if (setStrings.length > 0) {
-    setSql = `EXECUTE format('ALTER INDEX %I.%I SET (${setStrings.join(', ')})', idx.schemaname, idx.indexname);`;
-  }
-
-  if (config.fastUpdate === false) {
-    cleanListSql = `
-      EXECUTE format('SELECT gin_clean_pending_list(%L::regclass)',
-        quote_ident(idx.schemaname) || '.' || quote_ident(idx.indexname))
-        INTO pages_cleaned;
-    `;
+    setSql = `SELECT format('ALTER INDEX %I.%I SET (${setStrings.join(', ')})', idx.schemaname, idx.indexname) INTO set_sql;
+      EXECUTE set_sql;`;
   }
 
   const doSql = `
     DO $$
     DECLARE
       idx RECORD;
-      pages_cleaned BIGINT;
+      reset_sql TEXT;
+      set_sql TEXT;
     BEGIN
-      CREATE TEMP TABLE gin_cleanup_results (
+      CREATE TEMP TABLE configure_index_results (
           "schemaName" TEXT,
           "tableName" TEXT,
           "indexName" TEXT,
-          "pagesCleaned" BIGINT
+          "resetSql" TEXT,
+          "setSql" TEXT
       );
       FOR idx IN 
         SELECT n.nspname schemaname, t.relname tablename, i.relname indexname
@@ -204,19 +233,26 @@ async function configureGinIndexes(
       LOOP
         ${resetSql}
         ${setSql}
-        ${cleanListSql}
-        INSERT INTO gin_cleanup_results VALUES (
+        INSERT INTO configure_index_results VALUES (
           idx.schemaname,
           idx.tablename,
           idx.indexname,
-          pages_cleaned
+          reset_sql,
+          set_sql
         );
       END LOOP;
     END $$`;
 
   await client.query(doSql);
-  const results = await client.query(`SELECT * FROM gin_cleanup_results`);
+  const results = await client.query(`SELECT * FROM configure_index_results`);
   replaceNullWithUndefinedInRows(results.rows);
-  await client.query(`DROP TABLE gin_cleanup_results`);
+  await client.query(`DROP TABLE configure_index_results`);
   return results.rows;
+}
+
+async function vacuumTable(client: PoolClient | Pool, tableName: string): Promise<VacuumResult> {
+  const sql = `VACUUM ${escapeIdentifier(tableName)}`;
+  const startTime = Date.now();
+  await client.query(sql);
+  return { sql, durationMs: Date.now() - startTime, schemaName: 'public', tableName };
 }
