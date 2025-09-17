@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, cleanNotifications } from '@mantine/notifications';
 import {
   ContentType,
+  LogMessage,
   MEDPLUM_RELEASES_URL,
   MEDPLUM_VERSION,
   allOk,
@@ -591,6 +592,79 @@ describe('ToolsPage', () => {
       medplum.fhirUrl('Agent', agent.id as string, '$upgrade'),
       expect.objectContaining({ cache: 'reload' })
     );
+
+    await act(async () => {
+      await sleep(500);
+    });
+
+    expect(await screen.findByText(/something is broken/i)).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Success', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => {
+      return [
+        allOk,
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'logs',
+              valueString: (
+                [
+                  { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 1' },
+                  { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 2' },
+                  { level: 'WARN', timestamp: new Date().toISOString(), msg: 'Test 3' },
+                  {
+                    level: 'ERROR',
+                    timestamp: new Date().toISOString(),
+                    msg: 'There is an error',
+                    error: 'There is an error',
+                  },
+                ] as LogMessage[]
+              )
+                .map((msg) => JSON.stringify(msg))
+                .join('\n'),
+            },
+          ],
+        },
+      ];
+    });
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Fetch logs success',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
+
+    expect((await screen.findAllByText(/there is an error/i))[0]).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Error', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => [
+      serverError(new Error('Something is broken')),
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Fetch logs error',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
 
     await act(async () => {
       await sleep(500);
