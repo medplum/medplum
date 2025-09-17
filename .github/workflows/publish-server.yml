@@ -90,6 +90,9 @@ jobs:
             echo "Error: Deno version is $denover, expected $denover_expected"
             exit 1
           fi
+          cd ${{ matrix.PKGPATH }}
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
           deno install --allow-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
