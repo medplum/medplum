@@ -155,7 +155,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
     } else if (typeof import.meta !== 'undefined') {
       // @ts-expect-error
       baseDir = dirname(fileURLToPath(import.meta.url));
-      baseDir = `${process.env.FHIR_PLUGIN_PATH}/src/config`;
+      baseDir = `/usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server/src/config`;
     }
     const filePath = resolve(baseDir, '../../', path);
     if (fs.existsSync(filePath)) {
