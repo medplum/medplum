@@ -1,5 +1,5 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
     "npm:@appsignal/opentelemetry-instrumentation-bullmq@0.7.3": "0.7.3_bullmq@5.56.8_@opentelemetry+api@1.9.0",
     "npm:@aws-sdk/client-cloudwatch-logs@3.849.0": "3.849.0",
@@ -73,7 +73,7 @@
     "npm:cors@2.8.5": "2.8.5",
     "npm:cron-validator@1.4.0": "1.4.0",
     "npm:dataloader@2.2.3": "2.2.3",
-    "npm:deno@latest": "2.5.1",
+    "npm:deno@2.1.13": "2.1.13",
     "npm:dotenv@17.2.1": "17.2.1",
     "npm:express-validator@7.2.1": "7.2.1",
     "npm:express@4.21.2": "4.21.2",
@@ -1226,30 +1226,60 @@
         "@jridgewell/trace-mapping"
       ]
     },
+    "@deno/darwin-arm64@2.1.13": {
+      "integrity": "sha512-yCS2eZKtkOuLGeWHVrbzd1ekr7FijJhdz/vgEyox8zs5rRJl6oxfnJ0887whfqf9fiaYhmsdIezwbLJPTFZ3vA==",
+      "os": ["darwin"],
+      "cpu": ["arm64"]
+    },
     "@deno/darwin-arm64@2.5.1": {
       "integrity": "sha512-vmAI6Bbmp3G4qw2ih/YWfU/uMJbVPNOTBv/I0FAExJMK0R+2WFXeRqWMqEnVqR6wWpOxLs8q2aEvFpetLS3YZg==",
       "os": ["darwin"],
       "cpu": ["arm64"]
+    },
+    "@deno/darwin-x64@2.1.13": {
+      "integrity": "sha512-R7ybsZHOKYhM6SLm8/2jocvLH4cQyN78RCl2c3gqJcAMhZ1U4crd7Ilw1xd2p0JpcxnX/KFha7AN2+JqhDSqjg==",
+      "os": ["darwin"],
+      "cpu": ["x64"]
     },
     "@deno/darwin-x64@2.5.1": {
       "integrity": "sha512-C+a9H0BrIufPMVUctB9EdLyXB6fINpQuyHaWCIlEdPEnJGFy9URU7ycJhdvh4RTV//U5FDEg4DBOTPHvY2hs2g==",
       "os": ["darwin"],
       "cpu": ["x64"]
     },
+    "@deno/linux-arm64-glibc@2.1.13": {
+      "integrity": "sha512-DF/iYGEn9ktiJLE06CW9D5maSeTClv3MUbtSuvZhWJCJiQ0j1A64nWSBSarR8cPRch3Jt4uvokBeuntp6YE30g==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
     "@deno/linux-arm64-glibc@2.5.1": {
       "integrity": "sha512-OuZeQfOh1S1HskMV6u74N8CSaY2JAoTh02Ev7HnZLt4RqKy1HtNt6oBSHS1Gx0ARHcJ16WAgh6YK9jM/aFZcVA==",
       "os": ["linux"],
       "cpu": ["arm64"]
+    },
+    "@deno/linux-x64-glibc@2.1.13": {
+      "integrity": "sha512-0vR/MJYEVTal1bHPC4nIJ4Of7thlWXi0LVbR2+We9yGcGX4LxICUwj6CnzyirzUNc2iP4LHw8tBXJv+5wvmNSQ==",
+      "os": ["linux"],
+      "cpu": ["x64"]
     },
     "@deno/linux-x64-glibc@2.5.1": {
       "integrity": "sha512-pGzU2UsDBqTY/g4HVENiMB4NSQgDTIxBcFhdgRXh0sMqB/WNcTbtfzmvik2SRNposk0pnkkWlKj9hGffWDfsxA==",
       "os": ["linux"],
       "cpu": ["x64"]
     },
+    "@deno/win32-arm64@2.1.13": {
+      "integrity": "sha512-gMG3kynPWLW9Tjk6T15TY7fA8fPNZBR9xb3STXJqDJxP3RvnfpbL3ybF579CjLj5nadUQn/X1NmBffOSya41xQ==",
+      "os": ["win32"],
+      "cpu": ["arm64"]
+    },
     "@deno/win32-arm64@2.5.1": {
       "integrity": "sha512-mHpxn2J6sU8woHQ2OKsJq5WeFtH6r//NhOZn2BOTvt7gd1V2PdnVX1t1C/iXzYtodfZHIfqevflU0mkJWW9EbA==",
       "os": ["win32"],
       "cpu": ["arm64"]
+    },
+    "@deno/win32-x64@2.1.13": {
+      "integrity": "sha512-QozBxYpYFr413J66hTeUPYn3UNU8C+O7ri1Hs4Soi24x+vCHXupfBGgRxhCb36gVJsWvAreed2+RjMgWanvrUQ==",
+      "os": ["win32"],
+      "cpu": ["x64"]
     },
     "@deno/win32-x64@2.5.1": {
       "integrity": "sha512-9QFaXjH28E0D5j5X0J09c1HTh8DRgtg99nojw6oIoyCApevOZsBYGwePzHSYkk+lsMgVSI+8XHLsLo8oJr15dg==",
@@ -3372,15 +3402,15 @@
     "delayed-stream@1.0.0": {
       "integrity": "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="
     },
-    "deno@2.5.1": {
-      "integrity": "sha512-fQK5AuQLYtNvq+vTeGlwphcWf1ro9DtL//T7tVnmnazWdcV0AHnveUQgf0BQY/vtLwB6KjuJOtvV/3of/B1d9g==",
+    "deno@2.1.13": {
+      "integrity": "sha512-OFvkKK28XBK0Ypw+uluE3iUlEvRsqJv1J3mfArl/cNErif0cojbJJwIUM6AMc1n0d4c5e3tvjSX1wDSdo/KFZw==",
       "optionalDependencies": [
-        "@deno/darwin-arm64",
-        "@deno/darwin-x64",
-        "@deno/linux-arm64-glibc",
-        "@deno/linux-x64-glibc",
-        "@deno/win32-arm64",
-        "@deno/win32-x64"
+        "@deno/darwin-arm64@2.1.13",
+        "@deno/darwin-x64@2.1.13",
+        "@deno/linux-arm64-glibc@2.1.13",
+        "@deno/linux-x64-glibc@2.1.13",
+        "@deno/win32-arm64@2.1.13",
+        "@deno/win32-x64@2.1.13"
       ],
       "scripts": true,
       "bin": true
@@ -5668,7 +5698,7 @@
         "npm:cors@2.8.5",
         "npm:cron-validator@1.4.0",
         "npm:dataloader@2.2.3",
-        "npm:deno@latest",
+        "npm:deno@2.1.13",
         "npm:dotenv@17.2.1",
         "npm:express-validator@7.2.1",
         "npm:express@4.21.2",

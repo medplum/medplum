@@ -124,7 +124,7 @@
     "superwstest": "2.1.1",
     "ts-node-dev": "2.0.0",
     "@data2evidence/trex": "latest",
-    "deno": "latest"
+    "deno": "2.1.13"
   },
   "engines": {
     "node": ">=20.0.0"
