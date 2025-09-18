@@ -28,8 +28,8 @@ export const PROFILE_URLS: Record<string, string> = {
 };
 
 export const extensionURLMapping: Record<string, string> = {
-  race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
-  ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
+  race: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.836',
+  ethnicity: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.837',
   veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
   patientBirthTime: HTTP_HL7_ORG + '/fhir/StructureDefinition/patient-birthTime',
   // Custom
@@ -409,4 +409,17 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
 
   // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+export function getPatientGender(code: string | undefined): Patient['gender'] {
+  if (!code) {
+    return undefined;
+  }
+  const map: { [key: string]: Patient['gender'] } = {
+    F: 'female',
+    M: 'male',
+    OTH: 'other',
+    UNK: 'unknown',
+  };
+  return map[code];
 }

@@ -10,9 +10,6 @@ import { JSX, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { C1_CERTIFICATION_BOT_IDENTIFIER, MEDPLUM_BOTS } from '../../constants';
 
-const NOTIFICATION_ID = 'c1-certification';
-const NOTIFICATION_TITLE = 'C1 Certification';
-
 export function C1CertificationPage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const location = useLocation();
@@ -23,6 +20,10 @@ export function C1CertificationPage(): JSX.Element {
   const medplum = useMedplum();
 
   async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    if (!questionnaire) {
+      return;
+    }
+
     if (subjectList && subjectList.length > 0) {
       const patientIds = subjectList.map((subject) => subject.split('/')[1]).join(',');
       questionnaireResponse.item = questionnaireResponse.item || [];
@@ -32,9 +33,10 @@ export function C1CertificationPage(): JSX.Element {
       });
     }
 
+    const { id: notificationId, title: notificationTitle } = questionnaire;
     notifications.show({
-      id: NOTIFICATION_ID,
-      title: NOTIFICATION_TITLE,
+      id: notificationId,
+      title: notificationTitle,
       loading: true,
       message: 'Generating QRDA files...',
       autoClose: false,
@@ -56,8 +58,8 @@ export function C1CertificationPage(): JSX.Element {
       }
 
       notifications.update({
-        id: NOTIFICATION_ID,
-        title: NOTIFICATION_TITLE,
+        id: notificationId,
+        title: notificationTitle,
         color: 'green',
         message: 'Done',
         icon: <IconCheck size="1rem" />,
@@ -67,8 +69,8 @@ export function C1CertificationPage(): JSX.Element {
       });
     } catch (error) {
       notifications.update({
-        id: NOTIFICATION_ID,
-        title: NOTIFICATION_TITLE,
+        id: notificationId,
+        title: notificationTitle,
         color: 'red',
         message: normalizeErrorString(error),
         icon: <IconX size="1rem" />,

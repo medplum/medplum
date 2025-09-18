@@ -11,6 +11,7 @@ import {
   getGroupRepeatedAnswers,
   getHumanName,
   getPatientAddress,
+  getPatientGender,
   PROFILE_URLS,
 } from '../utils/intake-utils';
 
@@ -68,7 +69,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   if (answers['gender-identity']?.valueCoding?.code) {
-    patient.gender = answers['gender-identity'].valueCoding.code as Patient['gender'];
+    patient.gender = getPatientGender(answers['gender-identity'].valueCoding.code);
   }
 
   patient.telecom = [];
