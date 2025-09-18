@@ -343,6 +343,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.rateLimiter()?.recordWrite();
     await this.resourceCap()?.created();
 
+    if (options?.assignedId && resource.id) {
+      // NB: To be removed after proper client assigned ID support is added
+      const systemRepo = getSystemRepo();
+      const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
+      if (existing) {
+        throw new Error('Assigned ID is already in use');
+      }
+    }
+
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
