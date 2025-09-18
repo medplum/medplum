@@ -350,7 +350,7 @@ export class WinstonWrapperLogger implements ILogger {
         `Invalid limit: ${options.limit} - must be a valid positive integer less than or equal to ${MAX_LOG_LIMIT}`
       );
     }
-    let limit = options?.limit ?? DEFAULT_LOG_LIMIT;
+    const limit = options?.limit ?? DEFAULT_LOG_LIMIT;
     return new Promise((resolve, reject) => {
       this.winston.query(
         { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
