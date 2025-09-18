@@ -5,7 +5,7 @@ import { Bundle, Resource } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
-import { convertFhirToCcda } from './fhir-to-ccda';
+import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import { Ccda } from './types';
 import { convertCcdaToXml, convertXmlToCcda } from './xml';
 
