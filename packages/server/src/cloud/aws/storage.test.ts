@@ -53,13 +53,16 @@ describe('Storage', () => {
     const sdkStream = sdkStreamMixin(req);
     mockS3Client.on(GetObjectCommand).resolves({ Body: sdkStream });
 
+    jest.useFakeTimers({ now: new Date('2025-09-27T13:16:19.000-07:00') });
     await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);
+    jest.useRealTimers();
 
     expect(mockS3Client.send.callCount).toBe(1);
     expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
       Bucket: 'foo',
       Key: 'binary/123/456',
       ContentType: ContentType.TEXT,
+      Expires: new Date('2025-10-04T13:16:19.000-07:00'),
     });
 
     // Read a file
