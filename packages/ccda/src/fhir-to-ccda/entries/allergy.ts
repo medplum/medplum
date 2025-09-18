@@ -92,7 +92,7 @@ export function createAllergyEntry(converter: FhirToCcdaConverter, allergy: Alle
                   allergy.onsetPeriod?.end,
                   true
                 ),
-                value: converter.mapAllergyCategory(allergy.category),
+                value: mapAllergyCategory(allergy.category),
                 author: converter.mapAuthor(allergy.asserter, allergy.recordedDate),
                 participant: [
                   {
