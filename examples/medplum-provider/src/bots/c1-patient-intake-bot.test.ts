@@ -68,7 +68,7 @@ describe('C1 Patient Intake Bot', () => {
         ],
       });
       // Gender
-      expect(patient.gender).toStrictEqual('M');
+      expect(patient.gender).toStrictEqual('male');
       // Rance and Ethnicity
       expect(patient.extension).toStrictEqual([
         {

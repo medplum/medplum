@@ -213,6 +213,7 @@ function buildRecordTarget(patient: Patient): Record<string, any> {
   const telecom = patient.telecom?.find((t) => t.system === 'phone');
   const email = patient.telecom?.find((t) => t.system === 'email');
   const identifier = patient.identifier?.find((i) => i.system === 'http://example.com/patientId')?.value;
+  const gender = patient.gender ? { female: 'F', male: 'M', other: 'OTH', unknown: 'UNK' }[patient.gender] : '';
   const raceExtension = getExtensionValue(
     patient,
     'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
@@ -251,7 +252,7 @@ function buildRecordTarget(patient: Patient): Record<string, any> {
           family: patientName?.family ?? '',
         },
         administrativeGenderCode: {
-          '@_code': patient.gender,
+          '@_code': gender,
           '@_codeSystem': '2.16.840.1.113883.5.1',
           '@_codeSystemName': 'AdministrativeGender',
         },
