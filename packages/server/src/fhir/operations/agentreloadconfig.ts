@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentReloadConfigResponse, OperationOutcomeError, WithId, badRequest, serverError } from '@medplum/core';
+import { WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
-import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
+import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -34,20 +34,5 @@ export async function agentReloadConfigHandler(req: FhirRequest): Promise<FhirRe
 }
 
 async function reloadConfig(agent: WithId<Agent>): Promise<FhirResponse> {
-  // Send agent message
-  const [outcome, result] = await publishAgentRequest<AgentReloadConfigResponse>(
-    agent,
-    { type: 'agent:reloadconfig:request' },
-    { waitForResponse: true }
-  );
-
-  if (!result || result.type === 'agent:reloadconfig:response') {
-    return [outcome];
-  }
-
-  if (result.type === 'agent:error') {
-    throw new OperationOutcomeError(badRequest(result.body));
-  }
-
-  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
+  return sendAndHandleAgentRequest(agent, { type: 'agent:reloadconfig:request' }, 'agent:reloadconfig:response');
 }

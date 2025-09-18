@@ -211,6 +211,39 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
   return [allOk];
 }
 
+export interface SendAndHandleAgentRequestOptions<T extends AgentResponseMessage = AgentResponseMessage> {
+  successHandler?: (response: T) => Parameters;
+  messageOptions?: Partial<AgentMessageOptions>;
+}
+
+export async function sendAndHandleAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
+  agent: WithId<Agent>,
+  message: AgentRequestMessage,
+  expectedResponseType: T['type'],
+  options?: SendAndHandleAgentRequestOptions<T>
+): Promise<FhirResponse> {
+  // Send agent message
+  const [outcome, result] = await publishAgentRequest<T>(agent, message, {
+    ...options?.messageOptions,
+    waitForResponse: true,
+  });
+
+  if (!result) {
+    return [outcome];
+  }
+
+  if (result.type === 'agent:error') {
+    throw new OperationOutcomeError(badRequest(result.body));
+  }
+
+  if (result.type === expectedResponseType) {
+    const parameters = options?.successHandler?.(result);
+    return parameters ? [outcome, parameters] : [outcome];
+  }
+
+  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
+}
+
 function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(
   agent: WithId<Agent>,
   message: T
