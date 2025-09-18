@@ -63,9 +63,8 @@ export function GINIndexes(): JSX.Element {
   }, [medplum, table, refreshTable]);
 
   const handleConfigureResponse = (response: Parameters): void => {
-    const indexes = response.parameter?.filter((p) => p.name === 'result');
     setModalTitle('Configure results');
-    setModalContent(<pre>{JSON.stringify(indexes, null, 2)}</pre>);
+    setModalContent(<pre>{JSON.stringify(response, null, 2)}</pre>);
     openModal();
     setRefreshTable((prev) => (prev + 1) % 100);
   };
