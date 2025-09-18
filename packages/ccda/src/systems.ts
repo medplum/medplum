@@ -632,18 +632,13 @@ export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
 export const IMMUNIZATION_STATUS_MAPPER = new EnumMapper<
   Immunization['status'],
   'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'
->(
-  {
-    fhirSystemUrl: 'http://hl7.org/fhir/ValueSet/immunization-status',
-  },
-  [
-    { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
-    { ccdaValue: 'nullified', fhirValue: 'entered-in-error', displayName: 'Nullified' },
-    { ccdaValue: 'aborted', fhirValue: 'not-done', displayName: 'Aborted' },
-    { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Cancelled' },
-    { ccdaValue: 'obsolete', fhirValue: 'not-done', displayName: 'Obsolete' },
-  ]
-);
+>({}, [
+  { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
+  { ccdaValue: 'nullified', fhirValue: 'entered-in-error', displayName: 'Nullified' },
+  { ccdaValue: 'aborted', fhirValue: 'not-done', displayName: 'Aborted' },
+  { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Cancelled' },
+  { ccdaValue: 'obsolete', fhirValue: 'not-done', displayName: 'Obsolete' },
+]);
 
 export const ENCOUNTER_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
@@ -829,7 +824,7 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
 // (blank) Other or Unknown
 export const INSURANCE_COVERAGE_TYPE_MAPPER = new EnumMapper<string, string>(
   {
-    fhirSystemUrl: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+    fhirSystemUrl: ACT_CODE_SYSTEM,
   },
   [
     { ccdaValue: '71', fhirValue: 'HMO', displayName: 'Health Maintenance Organization' },
