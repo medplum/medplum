@@ -1506,10 +1506,22 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
    * @param context - The evaluation context.
    * @param input - The input collection.
+   * @param argsAtoms - Optional arguments: (precision: Integer)
    * @returns A collection containing the result.
    */
-  round: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return applyMathFunc(Math.round, context, input);
+  round: (context: AtomContext, input: TypedValue[], ...argsAtoms: Atom[]): TypedValue[] => {
+    return applyMathFunc(
+      (n, precision: unknown = 0) => {
+        if (typeof precision !== 'number' || precision < 0) {
+          throw new Error('Invalid precision provided to round()');
+        }
+        const exp = Math.pow(10, precision);
+        return Math.round(n * exp) / exp;
+      },
+      context,
+      input,
+      ...argsAtoms
+    );
   },
 
   /**

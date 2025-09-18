@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Combobox, InputBase, InputBaseProps, PolymorphicComponentProps, useCombobox } from '@mantine/core';
-import { JSX, useState } from 'react';
+import { JSX, useMemo, useState } from 'react';
+
+const MAX_DISPLAYED_OPTIONS = 8;
 
 interface SearchableSelectProps {
   readonly inputProps?: PolymorphicComponentProps<'input', InputBaseProps>;
@@ -17,13 +19,22 @@ export function SearchableSelect({ inputProps, data, onChange }: SearchableSelec
   const [value, setValue] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  const filteredOptions = data.filter((item) => item.toLowerCase().includes(search.toLowerCase().trim()));
+  const filteredOptions = useMemo(() => {
+    return data.filter((item) => item.toLowerCase().includes(search.toLowerCase().trim()));
+  }, [data, search]);
 
-  const options = filteredOptions.map((item) => (
-    <Combobox.Option value={item} key={item}>
-      {item}
-    </Combobox.Option>
-  ));
+  const displayedOptions = useMemo(() => {
+    const result: JSX.Element[] = new Array(Math.min(filteredOptions.length, MAX_DISPLAYED_OPTIONS));
+    for (let i = 0; i < result.length; i++) {
+      const item = filteredOptions[i];
+      result[i] = (
+        <Combobox.Option value={item} key={item}>
+          {item}
+        </Combobox.Option>
+      );
+    }
+    return result;
+  }, [filteredOptions]);
 
   return (
     <Combobox
@@ -60,7 +71,7 @@ export function SearchableSelect({ inputProps, data, onChange }: SearchableSelec
 
       <Combobox.Dropdown>
         <Combobox.Options>
-          {options.length > 0 ? options : <Combobox.Empty>Nothing found</Combobox.Empty>}
+          {displayedOptions.length > 0 ? displayedOptions : <Combobox.Empty>Nothing found</Combobox.Empty>}
         </Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>

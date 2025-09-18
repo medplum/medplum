@@ -3,15 +3,14 @@
 
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
-import { allOk } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
+import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { GINIndexes } from './GINIndexes';
 
 describe('GINIndexes', () => {
-  let medplum: MockClient;
+  let medplum: MedplumClient;
 
   function setup(): void {
     render(
@@ -27,14 +26,20 @@ describe('GINIndexes', () => {
   }
 
   beforeEach(() => {
-    medplum = new MockClient();
-    jest.useFakeTimers();
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+    const fetch = jest.fn(async (url) => {
+      let status: number | undefined;
+      let body: any;
 
-    medplum.router.add('GET', '$db-indexes', async () => {
-      return [
-        allOk,
-        {
+      if (url.includes('ValueSet/$expand')) {
+        status = 200;
+        body = {
+          resourceType: 'ValueSet',
+          status: 'active',
+          expansion: { timestamp: '2021-01-01T00:00:00.000Z', contains: [{ code: 'Login' } as any] },
+        };
+      } else if (url.includes('$db-indexes')) {
+        status = 200;
+        body = {
           resourceType: 'Parameters',
           parameter: [
             {
@@ -67,9 +72,26 @@ describe('GINIndexes', () => {
               ],
             },
           ],
+        };
+      } else {
+        status = 404;
+      }
+
+      return {
+        status,
+        headers: {
+          get(name: string): string | undefined {
+            return {
+              'content-type': ContentType.FHIR_JSON,
+            }[name];
+          },
         },
-      ];
+        json: jest.fn(async () => body),
+      };
     });
+    medplum = new MedplumClient({ fetch });
+    jest.useFakeTimers();
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
   });
 
   afterEach(async () => {
@@ -83,14 +105,16 @@ describe('GINIndexes', () => {
 
   test('GIN Indexes', async () => {
     setup();
-    expect(screen.getByText('Default gin_pending_list_limit:')).toBeInTheDocument();
+    expect(screen.getByText('GIN index stats')).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText('Table name') as HTMLInputElement;
 
     await act(async () => {
-      fireEvent.change(input, {
-        target: { value: 'Login' },
-      });
+      fireEvent.click(input);
+    });
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Login' } });
     });
 
     // Wait for the drop down

@@ -19,3 +19,14 @@ export function getAvailableTables(resourceTypes: string[]): string[] {
   tables = sortStringArray(tables);
   return tables;
 }
+
+export function formatValue(val: boolean | string | number | undefined): string | number | undefined {
+  if (typeof val === 'string') {
+    return val.length > 50 ? val.substring(0, 50) + '...' : val;
+  } else if (typeof val === 'boolean') {
+    // boolean false values aren't rendered by React, so just stringify them
+    return val.toString().toLocaleUpperCase();
+  }
+
+  return val;
+}

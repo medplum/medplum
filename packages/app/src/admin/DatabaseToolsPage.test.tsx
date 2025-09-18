@@ -48,6 +48,6 @@ describe('DatabaseToolsPage', () => {
 
   test('GIN Indexes', async () => {
     setup();
-    expect(screen.getByText('Default gin_pending_list_limit:')).toBeInTheDocument();
+    expect(screen.getByText('Configure GIN indexes')).toBeInTheDocument();
   });
 });
