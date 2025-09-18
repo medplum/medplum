@@ -30,6 +30,7 @@ const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
 
@@ -271,7 +272,11 @@ class BatchProcessor {
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
-    const placeholder = entry.fullUrl ?? '';
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -291,7 +296,11 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
-    const placeholder = entry.fullUrl ?? '';
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
     if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
 
