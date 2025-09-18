@@ -166,7 +166,7 @@ export function ToolsPage(): JSX.Element | null {
   const handleFetchLogs = useCallback(
     (formData: Record<string, string>) => {
       setFetchingLogs(true);
-      const limit = formData.logLimit || 10;
+      const limit = formData.logLimit || 20;
       medplum
         .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit !== undefined ? `?limit=${limit}` : ''}`), {
           cache: 'reload',
@@ -276,7 +276,7 @@ export function ToolsPage(): JSX.Element | null {
           </Code>
         ) : null}
         <Group>
-          <NumberInput w={100} id="logLimit" name="logLimit" placeholder="10" label="Log Limit" />
+          <NumberInput w={100} id="logLimit" name="logLimit" placeholder="20" label="Log Limit" />
           <Button
             mt={22}
             loading={fetchingLogs}
