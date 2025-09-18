@@ -1,6 +1,5 @@
 import { splitN } from '@medplum/core';
-import { mkdtempSync } from 'fs';
-import * as fs from 'fs';
+import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -157,12 +156,10 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
       baseDir = dirname(fileURLToPath(import.meta.url));
       baseDir = `/usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server/src/config`;
     }
-    const filePath = resolve(baseDir, '../../', path);
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(await fs.readFileSync(filePath, 'utf-8'))
-    } else {
-      throw new Error(`Configuration file not found at path: ${filePath}`);
-    }
+    return JSON.parse(readFileSync(
+      resolve(baseDir, '../../', path),
+      { encoding: 'utf8' }
+    ));
   } catch (err) {
     console.error("Error loading configuration file:", err);
     throw err;
@@ -170,7 +167,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 }
 
  function replace_env_var(config: MedplumServerConfig): MedplumServerConfig {
-  console.log("Processing configuration file...");
+  console.log("Processing configuration file by replacing environment variables");
   function replaceInValue(value: any): any {
     if (typeof value === 'string') {
       // Replace all ${VAR} with process.env.VAR
