@@ -11,10 +11,10 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
-  MockAgentResponseHandle,
   cleanupMockAgents,
   configMockAgents,
   mockAgentResponse,
+  MockAgentResponseHandle,
 } from './utils/agenttestutils';
 
 const NUM_DEFAULT_AGENTS = 2;
@@ -106,6 +106,45 @@ describe('Agent/$fetch-logs', () => {
     for (const handle of handles) {
       handle.cleanup();
     }
+  });
+
+  test('Fetch logs for Agent by ID', async () => {
+    const logs: LogMessage[] = [
+      { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 1' },
+      { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 2' },
+      {
+        level: 'ERROR',
+        timestamp: new Date().toISOString(),
+        msg: 'An error occurred',
+        error: new Error('This is an error').toString(),
+      },
+    ];
+
+    const { cleanup } = await mockAgentResponse<AgentLogsRequest, AgentLogsResponse>(
+      agents[0],
+      accessToken,
+      'agent:logs:request',
+      { type: 'agent:logs:response', statusCode: 200, logs }
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$fetch-logs`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const params = res.body as Parameters;
+
+    expect(params).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining<ParametersParameter>([
+        expect.objectContaining<ParametersParameter>({
+          name: 'logs',
+          valueString: logs.map((msg) => JSON.stringify(msg)).join('\n'),
+        }),
+      ]),
+    });
+
+    cleanup();
   });
 });
 
