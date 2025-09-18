@@ -87,7 +87,13 @@ describe('createInsuranceEntry', () => {
       payor: [createReference(organization)],
       policyHolder: createReference(relatedPerson),
       type: {
-        coding: [{ code: 'HMO', display: 'Health Maintenance Organization', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' }],
+        coding: [
+          {
+            code: 'HMO',
+            display: 'Health Maintenance Organization',
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          },
+        ],
       },
       class: [
         {
@@ -107,11 +113,7 @@ describe('createInsuranceEntry', () => {
     };
 
     // Add resources to bundle
-    bundle.entry?.push(
-      { resource: organization },
-      { resource: relatedPerson },
-      { resource: coverage }
-    );
+    bundle.entry?.push({ resource: organization }, { resource: relatedPerson }, { resource: coverage });
 
     const result = createInsuranceEntry(converter, account);
 
@@ -132,7 +134,9 @@ describe('createInsuranceEntry', () => {
     // Check performer (payor)
     expect(policyAct?.performer).toBeDefined();
     expect(policyAct?.performer?.[0]?.['@_typeCode']).toBe('PRF');
-    expect(policyAct?.performer?.[0]?.assignedEntity?.representedOrganization?.name?.[0]).toBe('Test Insurance Company');
+    expect(policyAct?.performer?.[0]?.assignedEntity?.representedOrganization?.name?.[0]).toBe(
+      'Test Insurance Company'
+    );
 
     // Check participants
     expect(policyAct?.participant).toBeDefined();
@@ -167,7 +171,13 @@ describe('createInsuranceEntry', () => {
       beneficiary: createReference(patient),
       payor: [{ display: 'Test Payor' }],
       type: {
-        coding: [{ code: 'PPO', display: 'Preferred Provider Organization', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' }],
+        coding: [
+          {
+            code: 'PPO',
+            display: 'Preferred Provider Organization',
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          },
+        ],
       },
     };
 
