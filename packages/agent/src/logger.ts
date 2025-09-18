@@ -7,6 +7,7 @@ import {
   LoggerOptions,
   LogLevel,
   LogLevelNames,
+  LogMessage,
   normalizeErrorString,
   parseLogLevel,
   splitN,
@@ -14,6 +15,7 @@ import {
 import { normalize } from 'path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
+import { DEFAULT_LOG_LIMIT, MAX_LOG_LIMIT } from './constants';
 import { AgentArgs } from './types';
 
 export const LoggerType = {
@@ -71,6 +73,10 @@ export interface WinstonWrapperLoggerOptions extends LoggerOptions {
 
 export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOptions {
   parentLogger?: WinstonWrapperLogger;
+}
+
+export interface FetchLogsOptions {
+  limit?: number;
 }
 
 export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPathRoot: string = 'config'): string[] {
@@ -243,6 +249,7 @@ export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerT
       dirname: normalize(config.logDir),
       maxSize: `${config.maxFileSizeMb}m`,
       maxFiles: config.filesToKeep,
+      json: true,
     });
 
     // Log any errors that happen
@@ -255,6 +262,10 @@ export function createWinstonFromLoggerConfig(config: AgentLoggerConfig, loggerT
   }
 
   return logger;
+}
+
+export function isWinstonWrapperLogger(logger: ILogger): logger is WinstonWrapperLogger {
+  return logger instanceof WinstonWrapperLogger;
 }
 
 export class WinstonWrapperLogger implements ILogger {
@@ -328,5 +339,29 @@ export class WinstonWrapperLogger implements ILogger {
 
   getWinston(): winston.Logger {
     return this.winston;
+  }
+
+  async fetchLogs(options?: FetchLogsOptions): Promise<LogMessage[]> {
+    if (
+      options?.limit !== undefined &&
+      (typeof options.limit !== 'number' || options.limit <= 0 || options.limit > MAX_LOG_LIMIT)
+    ) {
+      throw new Error(
+        `Invalid limit: ${options.limit} - must be a valid positive integer less than or equal to ${MAX_LOG_LIMIT}`
+      );
+    }
+    const limit = options?.limit ?? DEFAULT_LOG_LIMIT;
+    return new Promise((resolve, reject) => {
+      this.winston.query(
+        { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
+        (err, results: { dailyRotateFile: LogMessage[] }) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(results.dailyRotateFile);
+        }
+      );
+    });
   }
 }
