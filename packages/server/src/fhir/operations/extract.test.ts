@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Bundle, BundleEntry, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -352,7 +352,8 @@ describe('QuestionnaireResponse/$extract', () => {
   test('Success', async () => {
     const res = await request(app)
       .get(`/fhir/R4/QuestionnaireResponse/${response.id}/$extract`)
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
@@ -444,5 +445,31 @@ describe('QuestionnaireResponse/$extract', () => {
         issued: '2025-09-16T12:34:56.000-07:00',
       },
     });
+  });
+
+  test('Success at type level with passed in resources', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(5);
+    expect(batch.entry?.map((e) => e.request)).toStrictEqual([
+      { method: 'POST', url: 'Patient' },
+      { method: 'POST', url: 'RelatedPerson' },
+      { method: 'POST', url: 'RelatedPerson' },
+      { method: 'POST', url: 'Observation' },
+      { method: 'POST', url: 'Observation' },
+    ]);
   });
 });

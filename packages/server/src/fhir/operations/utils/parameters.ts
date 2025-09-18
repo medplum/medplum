@@ -7,6 +7,7 @@ import {
   flatMapFilter,
   isEmpty,
   isResource,
+  isResourceType,
   isTypedValue,
   validateResource,
 } from '@medplum/core';
@@ -170,7 +171,7 @@ function parseParams(
     } else {
       value = inParams?.map((v) => {
         const paramType = param.type ?? 'string';
-        if (paramType === 'Resource') {
+        if (paramType === 'Resource' || isResourceType(paramType)) {
           return v.resource;
         } else {
           return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
