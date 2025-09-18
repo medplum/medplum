@@ -22,6 +22,11 @@ describe('Expand', () => {
     await initApp(app, config);
     ({ accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
 
+    const extractExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract';
+    const allocIdExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId';
+    const contextExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext';
+    const valueExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue';
+
     questionnaire = await repo.createResource({
       resourceType: 'Questionnaire',
       contained: [
@@ -31,107 +36,55 @@ describe('Expand', () => {
           identifier: [
             {
               extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: "item.where(linkId = 'ihi').answer.value",
-                },
+                { url: contextExtension, valueString: "item.where(linkId = 'ihi').answer.value" },
                 { url: 'http://example.com/other/identifier', valueString: 'foo/bar/baz/quux' },
               ],
-              type: {
-                text: 'National Identifier (IHI)',
-              },
+              type: { text: 'National Identifier (IHI)' },
               system: 'http://example.org/nhio',
               _value: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: 'first()',
-                  },
-                ],
+                extension: [{ url: valueExtension, valueString: 'first()' }],
               },
             },
           ],
           name: [
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: "item.where(linkId = 'name')",
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'name')" }],
               _text: {
                 extension: [
                   {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    url: valueExtension,
                     valueString: "item.where(linkId='given' or linkId='family').answer.value.join(' ')",
                   },
                 ],
               },
               _family: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: "item.where(linkId = 'family').answer.value.first()",
-                  },
-                ],
+                extension: [{ url: valueExtension, valueString: "item.where(linkId = 'family').answer.value.first()" }],
               },
               _given: [
                 {
-                  extension: [
-                    {
-                      url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                      valueString: "item.where(linkId = 'given').answer.value",
-                    },
-                  ],
+                  extension: [{ url: valueExtension, valueString: "item.where(linkId = 'given').answer.value" }],
                 },
               ],
             },
           ],
           telecom: [
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: "item.where(linkId = 'mobile-phone').answer.value",
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone').answer.value" }],
               system: 'phone',
-              _value: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: 'first()',
-                  },
-                ],
-              },
+              _value: { extension: [{ url: valueExtension, valueString: 'first()' }] },
               use: 'mobile',
             },
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: "item.where(linkId = 'email').answer.value",
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'email').answer.value" }],
               system: 'email',
-              _value: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: 'first()',
-                  },
-                ],
-              },
+              _value: { extension: [{ url: valueExtension, valueString: 'first()' }] },
               use: 'home',
             },
           ],
           gender: 'unknown',
           _gender: {
             extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: "item.where(linkId = 'gender').answer.value.first().code",
-              },
+              { url: valueExtension, valueString: "item.where(linkId = 'gender').answer.value.first().code" },
             ],
           },
         },
@@ -139,24 +92,14 @@ describe('Expand', () => {
           resourceType: 'RelatedPerson',
           id: 'rpTemplate',
           patient: {
-            _reference: {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: '%NewPatientId',
-                },
-              ],
-            },
+            _reference: { extension: [{ url: valueExtension, valueString: '%NewPatientId' }] },
           },
           relationship: [
             {
               coding: [
                 {
                   extension: [
-                    {
-                      url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                      valueString: "item.where(linkId = 'relationship').answer.value.first()",
-                    },
+                    { url: valueExtension, valueString: "item.where(linkId = 'relationship').answer.value.first()" },
                   ],
                 },
               ],
@@ -166,31 +109,16 @@ describe('Expand', () => {
             {
               _text: {
                 extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: "item.where(linkId = 'contact-name').answer.value.first()",
-                  },
+                  { url: valueExtension, valueString: "item.where(linkId = 'contact-name').answer.value.first()" },
                 ],
               },
             },
           ],
           telecom: [
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: "item.where(linkId = 'phone').answer.value",
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'phone').answer.value" }],
               system: 'phone',
-              _value: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: 'first()',
-                  },
-                ],
-              },
+              _value: { extension: [{ url: valueExtension, valueString: 'first()' }] },
               use: 'mobile',
             },
           ],
@@ -200,81 +128,27 @@ describe('Expand', () => {
           id: 'obsTemplateHeight',
           status: 'final',
           category: [
-            {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-                  code: 'vital-signs',
-                },
-              ],
-            },
+            { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
           ],
           code: { coding: [{ system: 'http://loinc.org', code: '8302-2', display: 'Body height' }] },
           subject: {
-            _reference: {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: `%NewPatientId`,
-                },
-              ],
-            },
+            _reference: { extension: [{ url: valueExtension, valueString: `%NewPatientId` }] },
           },
           effectiveDateTime: '1900-01-01',
-          _effectiveDateTime: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%resource.authored',
-              },
-            ],
-          },
-          _issued: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%resource.authored',
-              },
-            ],
-          },
-          performer: [
-            {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: '%resource.author',
-                },
-              ],
-            },
-          ],
+          _effectiveDateTime: { extension: [{ url: valueExtension, valueString: '%resource.authored' }] },
+          _issued: { extension: [{ url: valueExtension, valueString: '%resource.authored' }] },
+          performer: [{ extension: [{ url: valueExtension, valueString: '%resource.author' }] }],
           valueQuantity: {
-            _value: {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: '(answer.value * 2.54).round()',
-                },
-              ],
-            },
+            _value: { extension: [{ url: valueExtension, valueString: '(answer.value * 2.54).round()' }] },
             unit: 'cm',
             system: 'http://unitsofmeasure.org',
             code: 'cm',
           },
           derivedFrom: [
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: '%resource.id',
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: '%resource.id' }],
               _reference: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: "'QuestionnaireResponse/' + %resource.id",
-                  },
-                ],
+                extension: [{ url: valueExtension, valueString: "'QuestionnaireResponse/' + %resource.id" }],
               },
             },
           ],
@@ -284,87 +158,31 @@ describe('Expand', () => {
           id: 'obsTemplateWeight',
           status: 'final',
           category: [
-            {
-              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }],
-            },
+            { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
           ],
           code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Weight' }] },
-          subject: {
-            _reference: {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: `%NewPatientId`,
-                },
-              ],
-            },
-          },
+          subject: { _reference: { extension: [{ url: valueExtension, valueString: `%NewPatientId` }] } },
           effectiveDateTime: '1900-01-01',
-          _effectiveDateTime: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%resource.authored',
-              },
-            ],
-          },
-          _issued: {
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                valueString: '%resource.authored',
-              },
-            ],
-          },
-          performer: [
-            {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: '%resource.author',
-                },
-              ],
-            },
-          ],
+          _effectiveDateTime: { extension: [{ url: valueExtension, valueString: '%resource.authored' }] },
+          _issued: { extension: [{ url: valueExtension, valueString: '%resource.authored' }] },
+          performer: [{ extension: [{ url: valueExtension, valueString: '%resource.author' }] }],
           valueQuantity: {
-            _value: {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: '(answer.value * 0.454).round(1)',
-                },
-              ],
-            },
+            _value: { extension: [{ url: valueExtension, valueString: '(answer.value * 0.454).round(1)' }] },
             unit: 'kg',
             system: 'http://unitsofmeasure.org',
             code: 'kg',
           },
           derivedFrom: [
             {
-              extension: [
-                {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
-                  valueString: '%resource.id',
-                },
-              ],
+              extension: [{ url: contextExtension, valueString: '%resource.id' }],
               _reference: {
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                    valueString: "'QuestionnaireResponse/' + %resource.id",
-                  },
-                ],
+                extension: [{ url: valueExtension, valueString: "'QuestionnaireResponse/' + %resource.id" }],
               },
             },
           ],
         },
       ],
-      extension: [
-        {
-          url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId',
-          valueString: 'NewPatientId',
-        },
-      ],
+      extension: [{ url: allocIdExtension, valueString: 'NewPatientId' }],
       url: 'http://hl7.org/fhir/uv/sdc/Questionnaire/extract-complex-template',
       version: '4.0.0',
       name: 'ExtractComplexTemplate',
@@ -378,17 +196,11 @@ describe('Expand', () => {
         {
           extension: [
             {
+              url: extractExtension,
               extension: [
-                {
-                  url: 'template',
-                  valueReference: { reference: '#patTemplate' },
-                },
-                {
-                  url: 'fullUrl',
-                  valueString: `%NewPatientId`,
-                },
+                { url: 'template', valueReference: { reference: '#patTemplate' } },
+                { url: 'fullUrl', valueString: `%NewPatientId` },
               ],
-              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
             },
           ],
           linkId: 'patient',
@@ -419,10 +231,7 @@ describe('Expand', () => {
         },
         {
           extension: [
-            {
-              extension: [{ url: 'template', valueReference: { reference: '#rpTemplate' } }],
-              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
-            },
+            { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#rpTemplate' } }] },
           ],
           linkId: 'contacts',
           text: 'Contacts',
@@ -447,13 +256,8 @@ describe('Expand', () => {
             {
               extension: [
                 {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
-                  extension: [
-                    {
-                      url: 'template',
-                      valueReference: { reference: '#obsTemplateHeight' },
-                    },
-                  ],
+                  url: extractExtension,
+                  extension: [{ url: 'template', valueReference: { reference: '#obsTemplateHeight' } }],
                 },
               ],
               linkId: 'height',
@@ -463,13 +267,8 @@ describe('Expand', () => {
             {
               extension: [
                 {
-                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
-                  extension: [
-                    {
-                      url: 'template',
-                      valueReference: { reference: '#obsTemplateWeight' },
-                    },
-                  ],
+                  url: extractExtension,
+                  extension: [{ url: 'template', valueReference: { reference: '#obsTemplateWeight' } }],
                 },
               ],
               linkId: 'weight',
@@ -509,27 +308,15 @@ describe('Expand', () => {
               linkId: 'gender',
               answer: [{ valueCoding: { system: 'http://hl7.org/fhir/administrative-gender', code: 'male' } }],
             },
-            {
-              linkId: 'dob',
-              answer: [{ valueDate: '1832-01-23' }],
-            },
-            {
-              linkId: 'ihi',
-              answer: [{ valueString: '012345' }],
-            },
-            {
-              linkId: 'mobile-phone',
-              answer: [{ valueString: '555-555-5555' }],
-            },
+            { linkId: 'dob', answer: [{ valueDate: '1832-01-23' }] },
+            { linkId: 'ihi', answer: [{ valueString: '012345' }] },
+            { linkId: 'mobile-phone', answer: [{ valueString: '555-555-5555' }] },
           ],
         },
         {
           linkId: 'contacts',
           item: [
-            {
-              linkId: 'contact-name',
-              answer: [{ valueString: 'Bureau of Land Management' }],
-            },
+            { linkId: 'contact-name', answer: [{ valueString: 'Bureau of Land Management' }] },
             {
               linkId: 'relationship',
               answer: [{ valueCoding: { system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'F' } }],
@@ -539,31 +326,19 @@ describe('Expand', () => {
         {
           linkId: 'contacts',
           item: [
-            {
-              linkId: 'contact-name',
-              answer: [{ valueString: 'Nathaniel Cooley Chapman' }],
-            },
+            { linkId: 'contact-name', answer: [{ valueString: 'Nathaniel Cooley Chapman' }] },
             {
               linkId: 'relationship',
               answer: [{ valueCoding: { system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'N' } }],
             },
-            {
-              linkId: 'phone',
-              answer: [{ valueString: '123-456-7890' }],
-            },
+            { linkId: 'phone', answer: [{ valueString: '123-456-7890' }] },
           ],
         },
         {
           linkId: 'obs',
           item: [
-            {
-              linkId: 'height',
-              answer: [{ valueDecimal: 66 }],
-            },
-            {
-              linkId: 'weight',
-              answer: [{ valueDecimal: 134 }],
-            },
+            { linkId: 'height', answer: [{ valueDecimal: 66 }] },
+            { linkId: 'weight', answer: [{ valueDecimal: 134 }] },
           ],
         },
       ],
