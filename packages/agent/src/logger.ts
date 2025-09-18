@@ -342,13 +342,15 @@ export class WinstonWrapperLogger implements ILogger {
   }
 
   async fetchLogs(options?: FetchLogsOptions): Promise<LogMessage[]> {
-    if (options?.limit !== undefined && (typeof options.limit !== 'number' || options.limit <= 0)) {
-      throw new Error(`Invalid limit: ${options.limit} - must be a valid positive integer less than ${MAX_LOG_LIMIT}`);
+    if (
+      options?.limit !== undefined &&
+      (typeof options.limit !== 'number' || options.limit <= 0 || options.limit > MAX_LOG_LIMIT)
+    ) {
+      throw new Error(
+        `Invalid limit: ${options.limit} - must be a valid positive integer less than or equal to ${MAX_LOG_LIMIT}`
+      );
     }
     let limit = options?.limit ?? DEFAULT_LOG_LIMIT;
-    if (limit > MAX_LOG_LIMIT) {
-      limit = MAX_LOG_LIMIT;
-    }
     return new Promise((resolve, reject) => {
       this.winston.query(
         { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
