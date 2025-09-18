@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Bundle, BundleEntry, Patient, Questionnaire, QuestionnaireResponse, RelatedPerson } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -214,7 +215,7 @@ describe('Expand', () => {
               extension: [
                 {
                   url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: `'Patient/' + %NewPatientId`,
+                  valueString: `%NewPatientId`,
                 },
               ],
             },
@@ -293,7 +294,7 @@ describe('Expand', () => {
               extension: [
                 {
                   url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: `'Patient/' + %NewPatientId`,
+                  valueString: `%NewPatientId`,
                 },
               ],
             },
@@ -384,7 +385,7 @@ describe('Expand', () => {
                 },
                 {
                   url: 'fullUrl',
-                  valueString: '%NewPatientId',
+                  valueString: `%NewPatientId`,
                 },
               ],
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
@@ -493,20 +494,14 @@ describe('Expand', () => {
             {
               linkId: 'name',
               item: [
-                {
-                  linkId: 'given',
-                  answer: [{ valueString: 'John' }, { valueString: 'Jacob' }],
-                },
+                { linkId: 'given', answer: [{ valueString: 'John' }, { valueString: 'Jacob' }] },
                 { linkId: 'family', answer: [{ valueString: 'Jingleheimer-Schmidt' }] },
               ],
             },
             {
               linkId: 'name',
               item: [
-                {
-                  linkId: 'given',
-                  answer: [{ valueString: 'Johnny' }],
-                },
+                { linkId: 'given', answer: [{ valueString: 'Johnny' }] },
                 { linkId: 'family', answer: [{ valueString: 'Appleseed' }] },
               ],
             },
@@ -592,12 +587,77 @@ describe('Expand', () => {
     expect(batch.entry).toHaveLength(4);
     const [patientEntry, relatedEntry, heightEntry, weightEntry] = batch.entry as BundleEntry[];
 
-    expect(patientEntry.resource?.resourceType).toBe('Patient');
+    expect(patientEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'Patient' },
+      resource: expect.objectContaining<Patient>({
+        resourceType: 'Patient',
+        identifier: [
+          {
+            extension: [{ url: 'http://example.com/other/identifier', valueString: 'foo/bar/baz/quux' }],
+            type: { text: 'National Identifier (IHI)' },
+            system: 'http://example.org/nhio',
+            value: '012345',
+          },
+        ],
+        name: [
+          { given: ['John', 'Jacob'], family: 'Jingleheimer-Schmidt', text: 'John Jacob Jingleheimer-Schmidt' },
+          { text: 'Johnny Appleseed', given: ['Johnny'], family: 'Appleseed' },
+        ],
+        telecom: [{ system: 'phone', use: 'mobile', value: '555-555-5555' }],
+        gender: 'male',
+      }),
+    });
+    const patientRef = patientEntry.fullUrl;
 
-    expect(relatedEntry.resource?.resourceType).toBe('RelatedPerson');
+    expect(relatedEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'RelatedPerson' },
+      resource: expect.objectContaining<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        patient: { reference: patientRef },
+        relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'N' }] }],
+        name: [{ text: 'Nathaniel Cooley Chapman' }],
+        telecom: [{ system: 'phone', use: 'mobile', value: '123-456-7890' }],
+      }),
+    });
 
-    expect(heightEntry.resource?.resourceType).toBe('Observation');
+    expect(heightEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'Observation' },
+      resource: {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { coding: [{ system: 'http://loinc.org', code: '8302-2', display: 'Body height' }] },
+        subject: { reference: patientRef },
+        effectiveDateTime: '2025-09-16T12:34:56.000-07:00',
+        performer: [{ reference: 'Practitioner/author' }],
+        valueQuantity: { value: 167.64000000000001, unit: 'cm', system: 'http://unitsofmeasure.org', code: 'cm' },
+        derivedFrom: [createReference(response)],
+        issued: '2025-09-16T12:34:56.000-07:00',
+      },
+    });
 
-    expect(weightEntry.resource?.resourceType).toBe('Observation');
+    expect(weightEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'Observation' },
+      resource: {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Weight' }] },
+        subject: { reference: patientRef },
+        effectiveDateTime: '2025-09-16T12:34:56.000-07:00',
+        performer: [{ reference: 'Practitioner/author' }],
+        valueQuantity: { value: 60.836, unit: 'kg', system: 'http://unitsofmeasure.org', code: 'kg' },
+        derivedFrom: [createReference(response)],
+        issued: '2025-09-16T12:34:56.000-07:00',
+      },
+    });
   });
 });

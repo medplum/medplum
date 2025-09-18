@@ -13,6 +13,7 @@ import {
   InternalTypeSchema,
   OperationOutcomeError,
   Operator,
+  singleton,
   toTypedValue,
   TypedValue,
   TypedValueWithPath,
@@ -127,9 +128,12 @@ const contextExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-que
 const valueExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue';
 
 const processingOrder: Record<string, number> = {
+  // First, allocate any UUIDs and evaluate context expressions
   allocIdExtension: 1,
   contextExtension: 2,
+  // Then extract values into the template resource
   valueExtension: 3,
+  // Alteratively, begin extraction into a template using this item
   extractExtension: 4,
 };
 const defaultOrder = 5;
@@ -171,7 +175,7 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
     ];
   }
 
-  // Scan Questionnaire for SDC extensions
+  // Scan Questionnaire for SDC extensions, excluding contained resource templates (which are scanned upon use)
   const extractor = new TemplateExtractor(questionnaire, response);
   crawlTypedValue(toTypedValue({ ...questionnaire, contained: undefined }), extractor, { skipMissingProperties: true });
 
@@ -182,6 +186,8 @@ type TemplateExtractionContext = {
   path: string;
   values: TypedValue[];
 };
+
+type ExtensionHandlerFn = (extension: TypedValueWithPath, parent: TypedValueWithPath) => void;
 
 class TemplateExtractor implements CrawlerVisitor {
   private response: QuestionnaireResponse;
@@ -217,8 +223,14 @@ class TemplateExtractor implements CrawlerVisitor {
     return this.context[this.context.length - 1];
   }
 
-  private evaluateExpression(expression: string): TypedValue[] {
-    return evalFhirPathTyped(expression, this.currentContext().values, this.variables);
+  private evaluateExpression(expression: string | undefined, type: string): TypedValue | undefined;
+  private evaluateExpression(expression: string | undefined): TypedValue[];
+  private evaluateExpression(expression: string | undefined, type?: string): TypedValue[] | TypedValue | undefined {
+    if (!expression) {
+      return type ? undefined : [];
+    }
+    const results = evalFhirPathTyped(expression, this.currentContext().values, this.variables);
+    return type ? singleton(results, type) : results;
   }
 
   onExitObject(path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
@@ -227,11 +239,36 @@ class TemplateExtractor implements CrawlerVisitor {
     }
   }
 
-  private isTopLevelExtension(
+  private getTopLevelExtensions(
     path: string,
     propertyValues: (TypedValueWithPath | TypedValueWithPath[])[]
-  ): propertyValues is TypedValueWithPath[][] {
-    return Array.isArray(propertyValues[0]) && path.endsWith('.extension') && !path.endsWith('.extension.extension');
+  ): TypedValueWithPath[] | undefined {
+    if (!path.endsWith('.extension') || path.endsWith('.extension.extension')) {
+      return undefined;
+    }
+
+    let results: TypedValueWithPath[];
+    if (Array.isArray(propertyValues[0])) {
+      results = propertyValues[0];
+    } else {
+      results = propertyValues as TypedValueWithPath[];
+    }
+    // Ensure SDC extensions are processed in the correct order
+    return results.sort((a, b) => getOrder(a) - getOrder(b));
+  }
+
+  private extensionHandler(extension: Extension): ExtensionHandlerFn | undefined {
+    switch (extension.url) {
+      case allocIdExtension:
+        return this.allocateId.bind(this);
+      case contextExtension:
+        return this.processContext.bind(this);
+      case valueExtension:
+        return this.processValue.bind(this);
+      case extractExtension:
+        return this.extractIntoTemplate.bind(this);
+    }
+    return undefined;
   }
 
   visitProperty(
@@ -242,45 +279,30 @@ class TemplateExtractor implements CrawlerVisitor {
     _schema: InternalTypeSchema
   ): void {
     // Scan for extensions throughout the resource that could contain SDC annotations
-    if (this.isTopLevelExtension(path, propertyValues)) {
-      // Process SDC extensions in order: first setting up context and variables, then extracting values;
-      // or starting a new extraction into a resource template
-      const extensions = propertyValues[0].sort((a, b) => getOrder(a) - getOrder(b));
-      for (const ext of extensions) {
-        const extension = ext.value as Extension;
-        switch (extension.url) {
-          // First allocate any UUIDs and evaluate context expressions
-          case allocIdExtension:
-            this.variables['%' + extension.valueString] = { type: 'string', value: randomUUID() };
-            break;
-          case contextExtension:
-            this.processContext(ext, parent);
-            break;
-
-          // Then extract values into the template resource
-          case valueExtension:
-            this.processValue(ext, parent);
-            break;
-
-          // Alteratively, begin extraction into a template using this item
-          case extractExtension:
-            this.extractIntoTemplate(extension, parent);
-            break;
-        }
+    const extensions = this.getTopLevelExtensions(path, propertyValues);
+    if (extensions?.length) {
+      for (const extension of extensions) {
+        const handler = this.extensionHandler(extension.value as Extension);
+        handler?.(extension, parent);
       }
     }
   }
 
-  private processContext(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
+  private allocateId(extension: TypedValueWithPath, _parent: TypedValueWithPath): void {
+    const name = (extension.value as Extension).valueString;
+    this.variables['%' + name] = { type: 'string', value: `urn:uuid:${randomUUID()}` };
+  }
+
+  private processContext(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     let results: TypedValue[];
-    const extension = ext.value as Extension;
-    if (extension.valueString) {
-      results = this.evaluateExpression(extension.valueString);
-    } else if (extension.valueExpression) {
-      const { expression, name } = extension.valueExpression;
-      if (extension.valueExpression.language !== 'text/fhirpath' || !expression) {
+    const { valueString, valueExpression } = extension.value as Extension;
+    if (valueString) {
+      results = this.evaluateExpression(valueString);
+    } else if (valueExpression) {
+      const { expression, language, name } = valueExpression;
+      if (!expression || language !== 'text/fhirpath') {
         throw new OperationOutcomeError(
-          badRequest('Questionnaire extraction context requires FHIRPath expression', ext.path)
+          badRequest('Questionnaire extraction context requires FHIRPath expression', extension.path)
         );
       }
 
@@ -292,11 +314,52 @@ class TemplateExtractor implements CrawlerVisitor {
         this.variables['%' + name] = results[0] ?? { type: 'undefined', value: undefined };
       }
     } else {
-      throw new OperationOutcomeError(badRequest('Invalid extraction context extension', ext.path));
+      throw new OperationOutcomeError(badRequest('Invalid extraction context extension', extension.path));
     }
 
     this.context.push({ path: parent.path, values: results });
-    this.makePatch(results, parent, ext);
+    this.makePatch(results, parent, extension);
+  }
+
+  private processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
+    const { valueString: expression } = extension.value as Extension;
+    const results = this.evaluateExpression(expression);
+    this.makePatch(results, parent, extension);
+  }
+
+  private makePatch(results: TypedValue[], parent: TypedValueWithPath, extension: TypedValueWithPath): void {
+    let path = parent.path;
+    const lastDotIndex = path.lastIndexOf('.');
+    const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
+    if (isPrimitiveExtension) {
+      // Always remove primitive extension field
+      this.patch.push({ op: 'remove', path: asJsonPath(path) });
+      // Convert to "real" path
+      path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
+    }
+
+    const { url } = extension.value;
+    if (!results.length) {
+      // Remove element from template
+      this.patch.push({ op: 'remove', path: asJsonPath(path) });
+    } else {
+      for (const value of results) {
+        if (url === contextExtension) {
+          // Clone template object and remove SDC extension from it
+          if (isPrimitiveExtension) {
+            this.patch.push({ op: 'add', path: asJsonPath(path), value: parent.value });
+          }
+          this.patch.push({ op: 'remove', path: asJsonPath(extension.path) });
+        } else if (url === valueExtension) {
+          // Insert templated element with computed value
+          this.patch.push({
+            op: isPrimitiveExtension ? 'add' : 'replace',
+            path: asJsonPath(path),
+            value: value.value,
+          });
+        }
+      }
+    }
   }
 
   /**
@@ -304,14 +367,12 @@ class TemplateExtractor implements CrawlerVisitor {
    * @param extension - The templateExtract extension.
    * @param parent - The element containing the extension.
    */
-  private extractIntoTemplate(extension: Extension, parent: TypedValueWithPath): void {
+  private extractIntoTemplate(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     // Clone the template resource specified in the extension
-    const templateRef = getExtension(extension, 'template')?.valueReference?.reference ?? '';
+    const templateRef = getExtension(extension.value, 'template')?.valueReference?.reference ?? '';
     const template: Resource | undefined = deepClone(this.templates[templateRef]);
     if (!template) {
-      throw new OperationOutcomeError(
-        badRequest(`Missing template resource ${templateRef}`, 'Questionnaire.contained')
-      );
+      throw new OperationOutcomeError(badRequest(`Missing template resource ${templateRef}`, extension.path));
     }
 
     // Scan template resource and evaluate expressions to compute inserted values
@@ -321,19 +382,39 @@ class TemplateExtractor implements CrawlerVisitor {
     // Insert values into template resource and add to transaction Bundle
     const patch = this.getTemplatePatch();
     applyPatch(template, patch);
-    this.bundle.entry?.push(this.createBundleEntry(template, extension));
+    this.bundle.entry?.push(this.createBundleEntry(template, extension.value as Extension));
   }
 
   private createBundleEntry(resource: Resource, extension: Extension): BundleEntry {
-    // TODO: Evaluate expressions for values to fill into the entry
-    const resourceId = getExtension(extension, 'resourceId')?.valueString;
+    // Compute Bundle entry values from expressions in complex extension
+    const idExpr = getExtension(extension, 'resourceId')?.valueString;
+    const resourceId = this.evaluateExpression(idExpr, 'string')?.value as string | undefined;
+
+    const urlExpr = getExtension(extension, 'fullUrl')?.valueString;
+    const fullUrl: string = this.evaluateExpression(urlExpr, 'string')?.value ?? `urn:uuid:${randomUUID()}`;
+
+    const ifMatchExpr = getExtension(extension, 'ifMatch')?.valueString;
+    const ifMatch = this.evaluateExpression(ifMatchExpr, 'string')?.value as string | undefined;
+
+    const ifNoneMatchExpr = getExtension(extension, 'ifNoneMatch')?.valueString;
+    const ifNoneMatch = this.evaluateExpression(ifNoneMatchExpr, 'string')?.value as string | undefined;
+
+    const ifNoneExistExpr = getExtension(extension, 'ifNoneExist')?.valueString;
+    const ifNoneExist = this.evaluateExpression(ifNoneExistExpr, 'string')?.value as string | undefined;
+
+    const ifModifiedSinceExpr = getExtension(extension, 'ifModifiedSince')?.valueString;
+    const ifModifiedSince = this.evaluateExpression(ifModifiedSinceExpr, 'string')?.value as string | undefined;
+
     return {
-      fullUrl: getExtension(extension, 'fullUrl')?.valueString ?? `urn:uuid:${randomUUID()}`,
+      fullUrl,
       resource,
       request: {
         method: resourceId ? 'PUT' : 'POST',
         url: resourceId ? `${resource.resourceType}/${resourceId}` : resource.resourceType,
-        // TODO: Include conditional header fields
+        ifMatch,
+        ifNoneMatch,
+        ifNoneExist,
+        ifModifiedSince,
       },
     };
   }
@@ -348,47 +429,6 @@ class TemplateExtractor implements CrawlerVisitor {
       }
       default:
         throw new OperationOutcomeError(badRequest('Extraction cannot begin on element of type ' + parent.type));
-    }
-  }
-
-  private processValue(ext: TypedValueWithPath, parent: TypedValueWithPath): void {
-    // Evaluate expression in context and use value to generate patch ops on template resource
-    const results = this.evaluateExpression(ext.value.valueString as string);
-    this.makePatch(results, parent, ext);
-  }
-
-  private makePatch(results: TypedValue[], parent: TypedValueWithPath, ext: TypedValueWithPath): void {
-    let path = parent.path;
-    const lastDotIndex = path.lastIndexOf('.');
-    const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
-    if (isPrimitiveExtension) {
-      // Always remove primitive extension field
-      this.patch.push({ op: 'remove', path: asJsonPath(path) });
-      // Convert to "real" path
-      path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
-    }
-
-    const extensionUrl = ext.value.url as string;
-    if (!results.length) {
-      // Remove element from template
-      this.patch.push({ op: 'remove', path: asJsonPath(path) });
-    } else {
-      for (const value of results) {
-        if (extensionUrl === contextExtension) {
-          // Clone template object and remove SDC extension from it
-          if (isPrimitiveExtension) {
-            this.patch.push({ op: 'add', path: asJsonPath(path), value: parent.value });
-          }
-          this.patch.push({ op: 'remove', path: asJsonPath(ext.path) });
-        } else if (extensionUrl === valueExtension) {
-          // Insert templated element with computed value
-          this.patch.push({
-            op: isPrimitiveExtension ? 'add' : 'replace',
-            path: asJsonPath(path),
-            value: value.value,
-          });
-        }
-      }
     }
   }
 
