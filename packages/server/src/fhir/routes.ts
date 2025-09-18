@@ -311,6 +311,7 @@ function initInternalFhirRouter(): FhirRouter {
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
+  router.add('POST', '/QuestionnaireResponse/$extract', extractHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
