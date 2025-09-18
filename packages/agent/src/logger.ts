@@ -15,7 +15,7 @@ import {
 import { normalize } from 'path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
-import { DEFAULT_LOG_LIMIT } from './constants';
+import { DEFAULT_LOG_LIMIT, MAX_LOG_LIMIT } from './constants';
 import { AgentArgs } from './types';
 
 export const LoggerType = {
@@ -342,9 +342,16 @@ export class WinstonWrapperLogger implements ILogger {
   }
 
   async fetchLogs(options?: FetchLogsOptions): Promise<LogMessage[]> {
+    if (options?.limit !== undefined && (typeof options.limit !== 'number' || options.limit <= 0)) {
+      throw new Error(`Invalid limit: ${options.limit} - must be a valid positive integer less than ${MAX_LOG_LIMIT}`);
+    }
+    let limit = options?.limit ?? DEFAULT_LOG_LIMIT;
+    if (limit > MAX_LOG_LIMIT) {
+      limit = MAX_LOG_LIMIT;
+    }
     return new Promise((resolve, reject) => {
       this.winston.query(
-        { order: 'desc', limit: options?.limit ?? DEFAULT_LOG_LIMIT, fields: ['level', 'msg', 'timestamp'] },
+        { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
         (err, results: { dailyRotateFile: LogMessage[] }) => {
           if (err) {
             reject(err);

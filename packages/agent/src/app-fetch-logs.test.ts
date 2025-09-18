@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { AgentLogsRequest, AgentLogsResponse, allOk, LogLevel, sleep } from '@medplum/core';
+import { AgentError, AgentLogsRequest, AgentLogsResponse, allOk, LogLevel, sleep } from '@medplum/core';
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
+import { MAX_LOG_LIMIT } from './constants';
 import { createTestWinstonLogger, generateTestLogs } from './test-utils';
 
 jest.mock('./constants', () => ({
@@ -328,6 +329,202 @@ describe('Fetch Logs', () => {
     expect(state.logsResponse.logs).toBeDefined();
     expect(Array.isArray(state.logsResponse.logs)).toBe(true);
     expect(state.logsResponse.logs.length).toStrictEqual(10);
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should only fetch up to MAX_LOG_LIMIT logs when limit is defined', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotLogsResponse: false,
+      logsResponse: undefined as unknown as AgentLogsResponse,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:logs:response':
+            state.gotLogsResponse = true;
+            state.logsResponse = command;
+            break;
+
+          case 'agent:error':
+            // We don't expect errors in this test
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 1500);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a logs request
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:logs:request',
+          limit: 200000, // Really large number of logs, too many
+          callback: randomUUID(),
+        } as AgentLogsRequest)
+      )
+    );
+
+    // Wait for the logs response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotLogsResponse) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for logs response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotLogsResponse).toBe(true);
+    expect(state.logsResponse.statusCode).toBe(200);
+    expect(state.logsResponse.logs).toBeDefined();
+    expect(Array.isArray(state.logsResponse.logs)).toBe(true);
+    expect(state.logsResponse.logs.length).toStrictEqual(1000);
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test.each(['invalid_limit', -1] as const)('should return an error when sending an invalid limit', async (limit) => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentError: false,
+      agentError: undefined as unknown as AgentError,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:logs:response':
+            // We don't a response in this test
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            state.agentError = command;
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 1500);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a logs request
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:logs:request',
+          limit, // Invalid limits
+          callback: randomUUID(),
+        } as AgentLogsRequest)
+      )
+    );
+
+    // Wait for the logs response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for logs response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentError).toBe(true);
+    expect(state.agentError).toBeDefined();
+    expect(state.agentError?.body).toStrictEqual(
+      `Invalid limit: ${limit} - must be a valid positive integer less than ${MAX_LOG_LIMIT}`
+    );
 
     await app.stop();
     await new Promise<void>((resolve) => {

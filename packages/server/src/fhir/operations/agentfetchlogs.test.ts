@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentLogsRequest, AgentLogsResponse, ContentType, LogMessage, WithId } from '@medplum/core';
-import { Agent, Bundle, BundleEntry, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { AgentLogsRequest, AgentLogsResponse, badRequest, ContentType, LogMessage, WithId } from '@medplum/core';
+import { Agent, Bundle, BundleEntry, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
@@ -145,6 +145,20 @@ describe('Agent/$fetch-logs', () => {
     });
 
     cleanup();
+  });
+
+  test('Fetch logs -- non-integer limit', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$fetch-logs`)
+      .query({ limit: 'true' })
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(400);
+    const outcome = res.body as OperationOutcome;
+
+    expect(outcome).toMatchObject<OperationOutcome>(
+      badRequest("Invalid value 'true' provided for integer parameter 'limit'")
+    );
   });
 });
 
