@@ -124,12 +124,8 @@ const processingOrder: Record<string, number> = {
   extractExtension: 4,
 };
 const defaultOrder = 5;
-function getOrder(v: TypedValue): number {
-  return processingOrder[v.value.url] ?? defaultOrder;
-}
-function sortExtractExtensions(a: TypedValue, b: TypedValue): number {
-  return getOrder(a) - getOrder(b);
-}
+const getOrder = (v: TypedValue): number => processingOrder[v.value.url] ?? defaultOrder;
+const sortExtractExtensions = (a: TypedValue, b: TypedValue): number => getOrder(a) - getOrder(b);
 
 export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ExtractParameters>(operation, req);

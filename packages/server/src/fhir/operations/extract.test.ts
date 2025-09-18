@@ -252,7 +252,7 @@ describe('Expand', () => {
               extension: [
                 {
                   url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: 'answer.value * 2.54',
+                  valueString: '(answer.value * 2.54).round()',
                 },
               ],
             },
@@ -331,7 +331,7 @@ describe('Expand', () => {
               extension: [
                 {
                   url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
-                  valueString: 'answer.value * 0.454',
+                  valueString: '(answer.value * 0.454).round(1)',
                 },
               ],
             },
@@ -645,7 +645,7 @@ describe('Expand', () => {
         subject: { reference: patientRef },
         effectiveDateTime: '2025-09-16T12:34:56.000-07:00',
         performer: [{ reference: 'Practitioner/author' }],
-        valueQuantity: { value: 167.64000000000001, unit: 'cm', system: 'http://unitsofmeasure.org', code: 'cm' },
+        valueQuantity: { value: 168, unit: 'cm', system: 'http://unitsofmeasure.org', code: 'cm' },
         derivedFrom: [createReference(response)],
         issued: '2025-09-16T12:34:56.000-07:00',
       },
@@ -664,7 +664,7 @@ describe('Expand', () => {
         subject: { reference: patientRef },
         effectiveDateTime: '2025-09-16T12:34:56.000-07:00',
         performer: [{ reference: 'Practitioner/author' }],
-        valueQuantity: { value: 60.836, unit: 'kg', system: 'http://unitsofmeasure.org', code: 'kg' },
+        valueQuantity: { value: 60.8, unit: 'kg', system: 'http://unitsofmeasure.org', code: 'kg' },
         derivedFrom: [createReference(response)],
         issued: '2025-09-16T12:34:56.000-07:00',
       },
