@@ -90,9 +90,9 @@ export function createGoalEntry(section: CompositionSection, resource: Goal): Cc
   };
 }
 
-function mapGoalStatus(status: string | undefined): string {
+function mapGoalStatus(status: Goal['lifecycleStatus'] | undefined): string {
   switch (status) {
-    case 'achieved':
+    case 'completed':
       return 'completed';
     case 'cancelled':
       return 'cancelled';

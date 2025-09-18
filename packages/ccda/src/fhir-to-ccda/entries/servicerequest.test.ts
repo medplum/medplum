@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { createReference } from '@medplum/core';
+import { createReference, SNOMED } from '@medplum/core';
 import { Bundle, Composition, Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { SNOMED } from '@medplum/core';
 import { OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION, OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE } from '../../oids';
 import { FhirToCcdaConverter } from '../convert';
 import { createPlanOfTreatmentServiceRequestEntry, mapPlanOfTreatmentStatus } from './servicerequest';
@@ -126,7 +125,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     const serviceRequest: ServiceRequest = {
       id: 'servicerequest-1',
       resourceType: 'ServiceRequest',
-      status: 'achieved',
+      status: 'completed',
       intent: 'order',
       subject: createReference(patient),
       extension: [
@@ -143,7 +142,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     expect(result.observation).toBeDefined();
     const observation = result.observation?.[0];
     expect(observation?.code).toBeUndefined();
-    expect(observation?.statusCode?.['@_code']).toBe('completed'); // 'achieved' maps to 'completed'
+    expect(observation?.statusCode?.['@_code']).toBe('completed');
     expect(observation?.text?.reference?.['@_value']).toBe('#service-request-text');
   });
 
@@ -151,7 +150,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     const serviceRequest: ServiceRequest = {
       id: 'servicerequest-1',
       resourceType: 'ServiceRequest',
-      status: 'cancelled',
+      status: 'entered-in-error',
       intent: 'order',
       subject: createReference(patient),
     };
@@ -180,11 +179,11 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
 
   describe('mapPlanOfTreatmentStatus', () => {
     test('should map achieved to completed', () => {
-      expect(mapPlanOfTreatmentStatus('achieved')).toBe('completed');
+      expect(mapPlanOfTreatmentStatus('completed')).toBe('completed');
     });
 
     test('should map cancelled to cancelled', () => {
-      expect(mapPlanOfTreatmentStatus('cancelled')).toBe('cancelled');
+      expect(mapPlanOfTreatmentStatus('entered-in-error')).toBe('cancelled');
     });
 
     test('should map unknown status to active', () => {

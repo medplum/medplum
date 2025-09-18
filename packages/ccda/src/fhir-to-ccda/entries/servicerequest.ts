@@ -56,11 +56,11 @@ export function createPlanOfTreatmentServiceRequestEntry(
   return result;
 }
 
-export function mapPlanOfTreatmentStatus(status: string | undefined): string {
+export function mapPlanOfTreatmentStatus(status: ServiceRequest['status'] | undefined): string {
   switch (status) {
-    case 'achieved':
+    case 'completed':
       return 'completed';
-    case 'cancelled':
+    case 'entered-in-error':
       return 'cancelled';
     default:
       return 'active';

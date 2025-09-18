@@ -48,6 +48,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
       id: 'careplan-1',
       resourceType: 'CarePlan',
       status: 'completed',
+      intent: 'plan',
       subject: createReference(patient),
       category: [
         {
@@ -86,6 +87,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
       id: 'careplan-1',
       resourceType: 'CarePlan',
       status: 'completed',
+      intent: 'plan',
       subject: createReference(patient),
       category: [
         {
@@ -118,6 +120,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
       id: 'careplan-1',
       resourceType: 'CarePlan',
       status: 'completed',
+      intent: 'plan',
       subject: createReference(patient),
       description: 'Simple care plan',
     };
@@ -135,6 +138,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
       id: 'careplan-1',
       resourceType: 'CarePlan',
       status: 'active',
+      intent: 'plan',
       subject: createReference(patient),
       category: [
         {
@@ -160,6 +164,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
       id: 'careplan-1',
       resourceType: 'CarePlan',
       status: 'draft',
+      intent: 'plan',
       subject: createReference(patient),
     };
 
@@ -172,6 +177,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
     const carePlan: CarePlan = {
       resourceType: 'CarePlan',
       status: 'completed',
+      intent: 'plan',
       subject: createReference(patient),
       description: 'Care plan without ID',
     };
