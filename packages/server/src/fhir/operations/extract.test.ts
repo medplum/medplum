@@ -601,7 +601,7 @@ describe('Expand', () => {
         ],
         name: [
           { given: ['John', 'Jacob'], family: 'Jingleheimer-Schmidt', text: 'John Jacob Jingleheimer-Schmidt' },
-          { text: 'Johnny Appleseed', given: ['Johnny'], family: 'Appleseed' },
+          { given: ['Johnny'], family: 'Appleseed', text: 'Johnny Appleseed' },
         ],
         telecom: [{ system: 'phone', use: 'mobile', value: '555-555-5555' }],
         gender: 'male',
