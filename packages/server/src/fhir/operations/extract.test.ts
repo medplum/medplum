@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Bundle, BundleEntry, Patient, Questionnaire, QuestionnaireResponse, RelatedPerson } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
 import { Repository } from '../repo';
 
-describe('Expand', () => {
+describe('QuestionnaireResponse/$extract', () => {
   const app = express();
   let accessToken: string;
   let repo: Repository;
@@ -364,7 +364,7 @@ describe('Expand', () => {
     expect(patientEntry).toMatchObject<BundleEntry>({
       fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
       request: { method: 'POST', url: 'Patient' },
-      resource: expect.objectContaining<Patient>({
+      resource: {
         resourceType: 'Patient',
         identifier: [
           {
@@ -380,31 +380,31 @@ describe('Expand', () => {
         ],
         telecom: [{ system: 'phone', use: 'mobile', value: '555-555-5555' }],
         gender: 'male',
-      }),
+      },
     });
     const patientRef = patientEntry.fullUrl;
 
     expect(contactEntry).toMatchObject<BundleEntry>({
       fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
       request: { method: 'POST', url: 'RelatedPerson' },
-      resource: expect.objectContaining<RelatedPerson>({
+      resource: {
         resourceType: 'RelatedPerson',
         patient: { reference: patientRef },
         relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'N' }] }],
         name: [{ text: 'Nathaniel Cooley Chapman' }],
         telecom: [{ system: 'phone', use: 'mobile', value: '123-456-7890' }],
-      }),
+      },
     });
 
     expect(agencyEntry).toMatchObject<BundleEntry>({
       fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
       request: { method: 'POST', url: 'RelatedPerson' },
-      resource: expect.objectContaining<RelatedPerson>({
+      resource: {
         resourceType: 'RelatedPerson',
         patient: { reference: patientRef },
         relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'F' }] }],
         name: [{ text: 'Bureau of Land Management' }],
-      }),
+      },
     });
 
     expect(heightEntry).toMatchObject<BundleEntry>({
