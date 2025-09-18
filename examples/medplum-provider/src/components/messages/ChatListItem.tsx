@@ -21,14 +21,14 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
   const trimmedMsg = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
-  const content = trimmedMsg ? `${topic.topic?.text}: ${trimmedMsg}` : `No messages available`;
+  const senderName = lastCommunication?.sender?.display ? `${lastCommunication?.sender?.display}: ` : '';
+  const content = trimmedMsg ? `${senderName} ${trimmedMsg}` : `No messages available`;
   const topicName = topic.topic?.text ?? content;
 
   return (
     <MedplumLink to={onSelectedItem(topic)} c="dark">
       <Group
         p="xs"
-        key={topic.id}
         align="center"
         wrap="nowrap"
         className={cx(classes.contentContainer, {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Stack } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { Fragment, JSX } from 'react';
 import { ChatListItem } from './ChatListItem';
 
 interface ChatListProps {
@@ -21,16 +21,15 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
         const lastCommunication = thread[1];
         const _isSelected = selectedCommunication?.id === topicCommunication.id;
         return (
-          <>
+          <Fragment key={topicCommunication.id}>
             <ChatListItem
-              key={topicCommunication.id}
               topic={topicCommunication}
               lastCommunication={lastCommunication}
               isSelected={_isSelected}
               onSelectedItem={onSelectedItem}
             />
             <Divider />
-          </>
+          </Fragment>
         );
       })}
     </Stack>
