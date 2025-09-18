@@ -49,20 +49,7 @@ const operation: OperationDefinition = {
   contact: [
     {
       name: 'HL7 International / FHIR Infrastructure',
-      telecom: [
-        {
-          system: 'url',
-          value: 'http://www.hl7.org/Special/committees/fiwg',
-        },
-      ],
-    },
-    {
-      telecom: [
-        {
-          system: 'url',
-          value: 'http://www.hl7.org/Special/committees/fiwg',
-        },
-      ],
+      telecom: [{ system: 'url', value: 'http://www.hl7.org/Special/committees/fiwg' }],
     },
   ],
   description:
@@ -229,7 +216,8 @@ class TemplateExtractor implements CrawlerVisitor {
     if (!expression) {
       return type ? undefined : [];
     }
-    const results = evalFhirPathTyped(expression, this.currentContext().values, this.variables);
+    const context = this.currentContext().values;
+    const results = evalFhirPathTyped(expression, context, this.variables);
     return type ? singleton(results, type) : results;
   }
 
@@ -318,17 +306,21 @@ class TemplateExtractor implements CrawlerVisitor {
     }
 
     this.context.push({ path: parent.path, values: results });
-    this.makePatch(results, parent, extension);
+    this.makePatch(results, parent.path, parent.value, extension);
   }
 
   private processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     const { valueString: expression } = extension.value as Extension;
-    const results = this.evaluateExpression(expression);
-    this.makePatch(results, parent, extension);
+    const path = parent.path;
+    const contextValues = this.currentContext().values;
+    for (let i = 0; i < contextValues.length; i++) {
+      const context = contextValues[i];
+      const results = expression ? evalFhirPathTyped(expression, [context], this.variables) : [];
+      this.makePatch(results, replacePathIndex(path, i, path.lastIndexOf('.')), parent.value, extension);
+    }
   }
 
-  private makePatch(results: TypedValue[], parent: TypedValueWithPath, extension: TypedValueWithPath): void {
-    let path = parent.path;
+  private makePatch(results: TypedValue[], path: string, template: any, extension: TypedValueWithPath): void {
     const lastDotIndex = path.lastIndexOf('.');
     const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
     if (isPrimitiveExtension) {
@@ -342,21 +334,37 @@ class TemplateExtractor implements CrawlerVisitor {
     if (!results.length) {
       // Remove element from template
       this.patch.push({ op: 'remove', path: asJsonPath(path) });
-    } else {
-      for (const value of results) {
-        if (url === contextExtension) {
-          // Clone template object and remove SDC extension from it
-          if (isPrimitiveExtension) {
-            this.patch.push({ op: 'add', path: asJsonPath(path), value: parent.value });
-          }
-          this.patch.push({ op: 'remove', path: asJsonPath(extension.path) });
-        } else if (url === valueExtension) {
-          // Insert templated element with computed value
-          this.patch.push({
-            op: isPrimitiveExtension ? 'add' : 'replace',
-            path: asJsonPath(path),
-            value: value.value,
-          });
+      return;
+    }
+
+    const isArrayElement = path.endsWith(']');
+    if (isArrayElement) {
+      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element
+    }
+
+    if (url === contextExtension) {
+      for (let i = 0; i < results.length; i++) {
+        if (isArrayElement) {
+          path = replacePathIndex(path, i);
+        }
+        // Clone template object and remove SDC extension from it
+        const extensionPath = path + extension.path.slice(extension.path.lastIndexOf('.extension'));
+        this.patch.push(
+          { op: 'add', path: asJsonPath(path), value: template },
+          { op: 'remove', path: asJsonPath(extensionPath) }
+        );
+      }
+    } else if (url === valueExtension) {
+      if (isArrayElement) {
+        const arrayPath = path.slice(0, path.lastIndexOf('['));
+        this.patch.push({
+          op: isPrimitiveExtension ? 'add' : 'replace',
+          path: asJsonPath(arrayPath),
+          value: results.map((r) => r.value),
+        });
+      } else {
+        for (const value of results) {
+          this.patch.push({ op: 'add', path: asJsonPath(path), value: value.value });
         }
       }
     }
@@ -370,19 +378,23 @@ class TemplateExtractor implements CrawlerVisitor {
   private extractIntoTemplate(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     // Clone the template resource specified in the extension
     const templateRef = getExtension(extension.value, 'template')?.valueReference?.reference ?? '';
-    const template: Resource | undefined = deepClone(this.templates[templateRef]);
+    const template: Resource | undefined = this.templates[templateRef];
     if (!template) {
       throw new OperationOutcomeError(badRequest(`Missing template resource ${templateRef}`, extension.path));
     }
 
     // Scan template resource and evaluate expressions to compute inserted values
-    this.context.push({ path: parent.path, values: this.getExtractionContext(parent) });
-    crawlTypedValue(toTypedValue(template), this, { skipMissingProperties: true });
+    const contextValues = this.getExtractionContext(parent);
+    for (const value of contextValues) {
+      const resource = deepClone(template);
+      this.context.push({ path: parent.path, values: [value] });
+      crawlTypedValue(toTypedValue(resource), this, { skipMissingProperties: true });
 
-    // Insert values into template resource and add to transaction Bundle
-    const patch = this.getTemplatePatch();
-    applyPatch(template, patch);
-    this.bundle.entry?.push(this.createBundleEntry(template, extension.value as Extension));
+      // Insert values into template resource and add to transaction Bundle
+      const patch = this.getTemplatePatch();
+      applyPatch(resource, patch);
+      this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
+    }
   }
 
   private createBundleEntry(resource: Resource, extension: Extension): BundleEntry {
@@ -459,4 +471,18 @@ function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
   const result = '/' + path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
   return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
+}
+
+function replacePathIndex(path: string, index: number, before?: number): string {
+  let arrayIndex: number;
+  if (before && before >= 0) {
+    arrayIndex = path.lastIndexOf('[', before);
+  } else {
+    arrayIndex = path.lastIndexOf('[');
+  }
+  if (arrayIndex === -1) {
+    return path;
+  }
+  const result = path.slice(0, arrayIndex + 1) + index + path.slice(path.indexOf(']', arrayIndex));
+  return result;
 }

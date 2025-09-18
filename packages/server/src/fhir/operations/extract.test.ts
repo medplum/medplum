@@ -583,9 +583,8 @@ describe('Expand', () => {
     const batch = res.body as Bundle;
 
     expect(batch.type).toBe('transaction');
-    console.log(JSON.stringify(batch.entry, null, 2));
-    expect(batch.entry).toHaveLength(4);
-    const [patientEntry, relatedEntry, heightEntry, weightEntry] = batch.entry as BundleEntry[];
+    expect(batch.entry).toHaveLength(5);
+    const [patientEntry, agencyEntry, contactEntry, heightEntry, weightEntry] = batch.entry as BundleEntry[];
 
     expect(patientEntry).toMatchObject<BundleEntry>({
       fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
@@ -610,7 +609,7 @@ describe('Expand', () => {
     });
     const patientRef = patientEntry.fullUrl;
 
-    expect(relatedEntry).toMatchObject<BundleEntry>({
+    expect(contactEntry).toMatchObject<BundleEntry>({
       fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
       request: { method: 'POST', url: 'RelatedPerson' },
       resource: expect.objectContaining<RelatedPerson>({
@@ -619,6 +618,17 @@ describe('Expand', () => {
         relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'N' }] }],
         name: [{ text: 'Nathaniel Cooley Chapman' }],
         telecom: [{ system: 'phone', use: 'mobile', value: '123-456-7890' }],
+      }),
+    });
+
+    expect(agencyEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'RelatedPerson' },
+      resource: expect.objectContaining<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        patient: { reference: patientRef },
+        relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0131', code: 'F' }] }],
+        name: [{ text: 'Bureau of Land Management' }],
       }),
     });
 
