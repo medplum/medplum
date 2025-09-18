@@ -392,12 +392,12 @@ export class FhirToCcdaConverter {
 
     let address: Address[] | undefined = undefined;
     if ('address' in mainResource) {
-      address = (mainResource as Patient | RelatedPerson).address;
+      address = mainResource.address;
     }
 
     let telecom: ContactPoint[] | undefined = undefined;
     if ('telecom' in mainResource) {
-      telecom = (mainResource as Patient | RelatedPerson).telecom;
+      telecom = mainResource.telecom;
     }
 
     let code: CodeableConcept | undefined = undefined;

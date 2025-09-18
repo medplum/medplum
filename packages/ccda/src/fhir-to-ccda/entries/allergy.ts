@@ -208,16 +208,12 @@ export function createAllergyEntry(converter: FhirToCcdaConverter, allergy: Alle
  * @returns The C-CDA allergy category.
  */
 export function mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue {
-  let code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category?.[0]);
-  if (!code) {
-    // Default to generic allergy if no category is provided
-    code = {
-      '@_code': '419199007',
-      '@_displayName': 'Allergy to substance (disorder)',
-      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-      '@_codeSystemName': 'SNOMED CT',
-    };
-  }
-
+  // Default to generic allergy if no category is provided
+  const code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category?.[0]) ?? {
+    '@_code': '419199007',
+    '@_displayName': 'Allergy to substance (disorder)',
+    '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+    '@_codeSystemName': 'SNOMED CT',
+  };
   return { '@_xsi:type': 'CD', ...code };
 }
