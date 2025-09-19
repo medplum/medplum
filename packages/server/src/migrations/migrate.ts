@@ -387,9 +387,7 @@ function buildTargetDefinition(): SchemaDefinition {
   return result;
 }
 
-export function buildCreateTables(result: SchemaDefinition, maybeResourceType: string): void {
-  const resourceType = maybeResourceType as ResourceType;
-
+export function buildCreateTables(result: SchemaDefinition, resourceType: ResourceType): void {
   const tableDefinition: TableDefinition = {
     name: resourceType,
     columns: [
@@ -410,6 +408,13 @@ export function buildCreateTables(result: SchemaDefinition, maybeResourceType: s
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
       { columns: ['__version'], indexType: 'btree' },
+      // This index is used to efficiently paginate through resources during reindexing
+      {
+        columns: ['lastUpdated', '__version'],
+        where: 'deleted = false',
+        indexType: 'btree',
+        indexNameOverride: `${resourceType}_reindex_idx`,
+      },
     ],
   };
 
@@ -1299,9 +1304,11 @@ function generateConstraintsActions(
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = tableName;
+  if (index.indexNameOverride) {
+    return index.indexNameOverride;
+  }
 
-  indexName = applyAbbreviations(indexName, TableNameAbbreviations) + '_';
+  let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
 
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
@@ -1391,7 +1398,8 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
     return {
       ...d,
       unique: d.unique ?? false,
-      // don't care about indexNameSuffix, indexdef, nor expression names
+      // don't care about these
+      indexNameOverride: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
       columns: d.columns.map((c) => (typeof c === 'string' ? c : c.expression)),
