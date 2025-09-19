@@ -143,11 +143,79 @@ export class Tokenizer {
 
   private consumeString(endChar: string): Token {
     this.advance();
-    const str = this.consumeWhile(() => this.prev() === '\\' || this.curr() !== endChar);
-    const unescaped = str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCodePoint(parseInt(hex, 16)));
-    const result = this.buildToken(endChar === '`' ? 'Symbol' : 'String', unescaped);
+    let str = '';
+    let char: string;
+    while ((char = this.consumeChar(endChar))) {
+      str += char;
+    }
+    const result = this.buildToken(endChar === '`' ? 'Symbol' : 'String', str);
     this.advance();
     return result;
+  }
+
+  private consumeChar(endChar: string): string {
+    const char1 = this.curr();
+
+    if (char1 === '\\') {
+      this.advance();
+      const char2 = this.curr();
+      if (char2 === "'") {
+        this.advance();
+        return "'";
+      }
+      if (char2 === '"') {
+        this.advance();
+        return '"';
+      }
+      if (char2 === '`') {
+        this.advance();
+        return '`';
+      }
+      if (char2 === 'r') {
+        this.advance();
+        return '\r';
+      }
+      if (char2 === 'n') {
+        this.advance();
+        return '\n';
+      }
+      if (char2 === 't') {
+        this.advance();
+        return '\t';
+      }
+      if (char2 === 'f') {
+        this.advance();
+        return '\f';
+      }
+      if (char2 === '\\') {
+        this.advance();
+        return '\\';
+      }
+      if (char2 === 'u') {
+        this.advance();
+        const hex = this.str.substring(this.pos.index, this.pos.index + 4).match(/^[0-9a-fA-F]{4}$/)?.[0];
+        if (!hex) {
+          // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
+          // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+          return 'u';
+        }
+        this.advance();
+        this.advance();
+        this.advance();
+        this.advance();
+        return String.fromCodePoint(parseInt(hex, 16));
+      }
+      // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
+      // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+      return this.consumeChar(endChar); // Skip backslash and consume next character
+    }
+
+    if (char1 === endChar || !char1) {
+      return ''; // No more characters to consume
+    }
+
+    this.advance();
+    return char1;
   }
 
   private consumeQuotedSymbol(endChar: string): Token {
@@ -267,10 +335,6 @@ export class Tokenizer {
 
   private curr(): string {
     return this.str[this.pos.index];
-  }
-
-  private prev(): string {
-    return this.str[this.pos.index - 1] ?? '';
   }
 
   private peek(): string {

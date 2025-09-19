@@ -3607,6 +3607,31 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
+  describe('testReplaceMatches', () => {
+    test('testReplaceMatches1', () => {
+      expect(evalFhirPath("'abc'.replaceMatches('c', 'cd')", {})).toStrictEqual(['abcd']);
+    });
+
+    test('testReplaceMatches2', () => {
+      expect(evalFhirPath("'abc'.replaceMatches('uvw', 'xyz')", {})).toStrictEqual(['abc']);
+    });
+
+    test('testReplaceMatches3', () => {
+      // See base StructureDefinition invariant sdf-8a:
+      // https://hl7.org/fhir/R4/structuredefinition-definitions.html#StructureDefinition.differential
+      expect(evalFhirPath("'Extension.url'.replaceMatches('\\\\..*', '')", {})).toStrictEqual(['Extension']);
+    });
+
+    test('testReplaceMatches4', () => {
+      expect(
+        evalFhirPath(
+          `'\\"wrapped in double quotes\\"'.replaceMatches('\\"', '\\'').replaceMatches('double', 'single')`,
+          {}
+        )
+      ).toStrictEqual(["'wrapped in single quotes'"]);
+    });
+  });
+
   // more "real-world" tests using FHIRPath to evaluate hypothetical constraints on AccessPolicy or Subscription resources
   describe('testRealWorldConstraints', () => {
     const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
