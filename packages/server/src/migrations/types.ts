@@ -38,6 +38,7 @@ export interface IndexDefinition {
   include?: string[];
   where?: string;
   indexNameSuffix?: string;
+  indexNameOverride?: string;
   indexdef?: string;
 }
 
