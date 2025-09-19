@@ -347,18 +347,7 @@ Creating Practitioners via API is an advanced scenario and should be done with e
 
 :::
 
-
-# Authentication and Identity
-
-Medplum supports multiple authentication configurations, with the intent to **enable required compliance and integration scenarios**. Implementations commonly use multiple authentication and authorization methods.
-
-This section covers Medplum's authentication tools (_are you who you say you are?_). Several authentication methods (e.g. Google Authentication) are supported.
-
-Authorization (what can you do?) are distinct in Medplum, and covered in the [Authorization and Access Controls](/docs/access) section.
-
 ## Login Flowchart
-
-The [User Management Guide](/docs/auth/user-management-guide) describes the Medplum user and project isolation model. Users can belong to multiple Medplum projects, and the service supports multiple types of authentication.
 
 The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
 

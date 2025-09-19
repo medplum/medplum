@@ -3,13 +3,7 @@ sidebar_position: 1
 tags: [auth]
 ---
 
-# Authentication and Identity
-
-Medplum supports multiple authentication configurations, with the intent to **enable required compliance and integration scenarios**. Implementations commonly use multiple authentication and authorization methods.
-
-This section covers Medplum's authentication tools (_are you who you say you are?_). Several authentication methods (e.g. Google Authentication) are supported.
-
-Authorization (what can you do?) are distinct in Medplum, and covered in the [Authorization and Access Controls](/docs/access) section.
+# Authentication
 
 This page helps you choose the correct authentication method for your application, whether it's a browser, a server, or a device. The primary goal is to guide you to the right documentation page based on your use case.
 
@@ -40,7 +34,7 @@ Use this table to quickly find the recommended authentication method for your sc
 
 ## Browser-based Authentication
 
-This category is for **user-facing applications** that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and authenticate a user. The recommended method is **OAuth Authorization Code Flow**, which is the industry standard for public clients.
+This category is for **user-facing applications** that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and authenticate a user. The recommended method is **OAuth Authorization Code Flow with PKCE**, which is the industry standard for public clients.
 
 ### Key Concepts
 
@@ -96,13 +90,3 @@ Regardless of the authentication method you choose, always follow these best pra
   * **Principle of Least Privilege**: Ensure your `ClientApplication` and user access policies are as restrictive as possible.
   * **Secrets Management**: Never store credentials or tokens directly on disk. Use a secrets management service.
   * **Network Isolation**: Restrict host access via a VPC or firewall to prevent access from the public internet.
-
-## Resources and Reference
-
-- See [authentication functions](./sdk/core.medplumclient) in the TypeScript SDK
-- [User profile](./sdk/core.medplumclient.getprofile) in the TypeScript SDK
-- [OAuth endpoints](./api/oauth) reference
-- [Medplum resources](./api/fhir/medplum) related to authentication and authorization
-- [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component
-- [Sign in form](https://storybook.medplum.com/?path=/docs/medplum-signinform--basic) react component
-- [Auth Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) on Github
