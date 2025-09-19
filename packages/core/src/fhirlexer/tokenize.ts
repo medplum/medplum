@@ -177,7 +177,7 @@ export class Tokenizer {
       }
       if (char2 === 'u') {
         this.advance();
-        const hex = this.str.substring(this.pos.index, this.pos.index + 4).match(/^[0-9a-fA-F]{4}$/)?.[0];
+        const hex = /^[0-9a-fA-F]{4}$/.exec(this.str.substring(this.pos.index, this.pos.index + 4))?.[0];
         if (!hex) {
           // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
           // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
