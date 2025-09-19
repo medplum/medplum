@@ -26,6 +26,6 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
-  npm publish --access public
+  npm publish --provenance --access public
   popd
 done
