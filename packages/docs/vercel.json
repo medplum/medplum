@@ -59,7 +59,7 @@
     },
     {
       "source": "/docs/auth/okta-auth",
-      "destination": "/docs/auth/methods/domain-level-identity-providers"
+      "destination": "/docs/auth/idp/domain-level-identity-providers"
     },
     {
       "source": "/docs/sdk/modules",

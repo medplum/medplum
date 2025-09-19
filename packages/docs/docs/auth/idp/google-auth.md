@@ -5,7 +5,7 @@ tags: [auth]
 
 # Google Authentication
 
-Medplum supports using Google Authentication as an external identity provider, as well as [other external identity providers]((/docs/auth/identity-providers/external-identity-providers)) using the OAuth2 protocol. Google Authentication allows users to log in to your application using their Google profile.
+Medplum supports using Google Authentication as an external identity provider, as well as [other external identity providers](/docs/auth/idp/external-identity-providers) using the OAuth2 protocol. Google Authentication allows users to log in to your application using their Google profile.
 
 By default, Medplum automatically syncs user profile data with each user login, thereby ensuring that changes made in the connection source are automatically updated in Medplum. Optionally, you can disable user profile data synchronization to allow for updating profile attributes from your application.
 

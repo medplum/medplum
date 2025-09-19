@@ -43,11 +43,9 @@ This category is for **user-facing applications** that connect directly to Medpl
 
 ### Guides
 
-  * [**OAuth Authorization Code**](/docs/auth/methods/oauth-auth-code): The default authentication method.
-  * [**External Identity Providers**](/docs/auth/idp/external-identity-providers): Comprehensive guide for connecting with popular IDPs.
-  * [**Okta Integration Guide**](/docs/auth/guides/okta): Step-by-step instructions for Okta.
-  * [**Auth0 Integration Guide**](/docs/auth/guides/auth0): Step-by-step instructions for Auth0.
-  * [**Microsoft Entra ID Integration Guide**](/docs/auth/guides/entra-id): Step-by-step instructions for Microsoft Entra ID.
+  * [**OAuth Authorization Code**](/docs/auth/idp/medplum-as-idp): The default authentication method.
+  * [**External Identity Providers**](/docs/auth/idp/external-identity-providers): Comprehensive guide for connecting with popular IDPs, like Auth0 and AWS Cognito
+  * [**Domain-level Identity Providers**](/docs/auth/idp/domain-level-identity-providers): Enterprise domain-level IDPs. 
 
 -----
 
@@ -66,7 +64,7 @@ The recommended method is **Client Credentials Flow**, where the application use
 ### Guides
 
   * [**Client Credentials**](/docs/auth/client-credentials): The primary method for server-side and device authentication.
-  * [**Basic Authentication**](/docs/auth/methods/basic-auth): An alternative for legacy or stateless environments where Client Credentials is not feasible.
+  * [**Token Exchange**](/docs/auth/token-exchange): An alternative for legacy or stateless environments where Client Credentials is not feasible.
 
 -----
 

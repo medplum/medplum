@@ -20,7 +20,7 @@ The Patients tab displays all of the [`Patient`](/docs/api/fhir/resources/patien
 
 ## Clients
 
-The Clients tab displays all of the [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resources that are associated with your project. It also allows you to create new [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). For more details, see the [Authentication Method docs](/docs/auth/methods/token-exchange#set-up-your-clientapplication).
+The Clients tab displays all of the [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resources that are associated with your project. It also allows you to create new [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). For more details, see the [Authentication Method docs](/docs/auth/token-exchange#set-up-your-clientapplication).
 
 ## Bots
 

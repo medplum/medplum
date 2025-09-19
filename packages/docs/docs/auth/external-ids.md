@@ -45,7 +45,7 @@ curl 'https://${baseUrl}/admin/projects/${projectId}/invite' \
 
 ## Login example
 
-You can then use the external auth provider as described in [External Identity Providers](./external-identity-providers)
+You can then use the external auth provider as described in [External Identity Providers](/docs/auth/idp/external-identity-providers)
 
 This will also work with the example repo:
 
