@@ -328,8 +328,7 @@ class TemplateExtractor implements CrawlerVisitor {
     }
 
     if (!results.length) {
-      // Null value: remove element from template
-      this.patch.push({ op: 'remove', path: asJsonPath(path) });
+      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
       return;
     }
 
@@ -410,6 +409,9 @@ class TemplateExtractor implements CrawlerVisitor {
     }
 
     const { resourceId, fullUrl, ifMatch, ifNoneMatch, ifNoneExist, ifModifiedSince } = values;
+    if (resourceId) {
+      resource.id = resourceId;
+    }
     return {
       fullUrl: fullUrl ?? `urn:uuid:${randomUUID()}`,
       resource,
@@ -437,7 +439,9 @@ class TemplateExtractor implements CrawlerVisitor {
         return flatMapFilter(this.response.item, (item) => extractResponseItem(item, linkId));
       }
       default:
-        throw new OperationOutcomeError(badRequest('Extraction cannot begin on element of type ' + parent.type));
+        throw new OperationOutcomeError(
+          badRequest('Extraction cannot begin on element of type ' + parent.type, parent.path)
+        );
     }
   }
 
@@ -466,7 +470,7 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
 
 function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
-  const result = '/' + path.slice(pathStart).replaceAll(/(\.|\[|\])+/g, '/');
+  const result = '/' + path.slice(pathStart).replaceAll(/[.[\]]+/g, '/');
   return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
 }
 

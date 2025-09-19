@@ -1,13 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Bundle, BundleEntry, Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  Expression,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Organization,
+  Parameters,
+  Patient,
+  Questionnaire,
+  QuestionnaireResponse,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
 import { Repository } from '../repo';
+
+const extractExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract';
+const allocIdExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId';
+const contextExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext';
+const valueExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue';
 
 describe('QuestionnaireResponse/$extract', () => {
   const app = express();
@@ -21,11 +37,6 @@ describe('QuestionnaireResponse/$extract', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     ({ accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
-
-    const extractExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract';
-    const allocIdExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId';
-    const contextExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext';
-    const valueExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue';
 
     questionnaire = await repo.createResource({
       resourceType: 'Questionnaire',
@@ -471,5 +482,283 @@ describe('QuestionnaireResponse/$extract', () => {
       { method: 'POST', url: 'Observation' },
       { method: 'POST', url: 'Observation' },
     ]);
+  });
+
+  test('QuestionnaireResponse must be specified', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'questionnaire', resource: questionnaire }],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('QuestionnaireResponse') },
+        }),
+      ],
+    });
+  });
+
+  test('Questionnaire must be specified', async () => {
+    // Questionnaire must be present
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } }],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          expression: ['QuestionnaireResponse.questionnaire'],
+        }),
+      ],
+    });
+
+    // Specified Questionnaire must be valid
+    const res2 = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'questionnaire-response',
+            resource: { ...response, questionnaire: 'http://example.com/survey/fake' },
+          },
+        ],
+      } satisfies Parameters);
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          expression: ['QuestionnaireResponse.questionnaire'],
+        }),
+      ],
+    });
+  });
+
+  test.each<[Expression | undefined, string]>([
+    // Non-FHIRPath expression is rejected
+    [{ expression: 'Patient?status=active', language: 'application/x-fhir-query' }, 'requires FHIRPath'],
+    // Expression must be present
+    [{ language: 'text/fhirpath' }, 'requires FHIRPath'],
+    // Invalid type should be rejected
+    [undefined, 'Invalid extraction context'],
+  ])('Context extensions must contain valid FHIRPath expressions', async (valueExpression, errorMsg) => {
+    const invalidQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      item: [
+        {
+          linkId: 'invalid',
+          type: 'string',
+          extension: [{ url: contextExtension, valueExpression, valueBoolean: true }],
+        },
+      ],
+    };
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [{ linkId: 'invalid', answer: [{ valueString: 'hi' }] }],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: invalidQuestionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          expression: ['Questionnaire.item[0].extension[0]'],
+          details: { text: expect.stringContaining(errorMsg) },
+        }),
+      ],
+    });
+  });
+
+  test('Named expression is stored as context variable', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      extension: [
+        { url: contextExtension, valueExpression: { language: 'text/fhirpath', expression: `'bar'`, name: 'foo' } },
+        { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#org' } }] },
+      ],
+      contained: [
+        {
+          resourceType: 'Organization',
+          id: 'org',
+          _name: { extension: [{ url: valueExtension, valueString: '%foo' }] },
+        } as unknown as Organization,
+      ],
+    };
+    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+    const entry = batch.entry?.[0] as BundleEntry;
+
+    expect(entry.resource).toMatchObject<Organization>({ resourceType: 'Organization', name: 'bar' });
+  });
+
+  test('Extraction cannot begin on incorrect element', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      identifier: [
+        {
+          system: 'http://example.com/id',
+          value: 'extractable',
+          extension: [
+            { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#org' } }] },
+          ],
+        },
+      ],
+      contained: [{ resourceType: 'Organization', id: 'org' }],
+    };
+    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          expression: ['Questionnaire.identifier[0]'],
+          details: { text: 'Extraction cannot begin on element of type Identifier' },
+        }),
+      ],
+    });
+  });
+
+  test('Requires template resource', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      extension: [
+        { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#wrongId' } }] },
+      ],
+      contained: [{ resourceType: 'Organization', id: 'org' }],
+    };
+    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          expression: ['Questionnaire.extension[0]'],
+          details: { text: expect.stringContaining('Missing template resource') },
+        }),
+      ],
+    });
+  });
+
+  test('Honors resourceId field', async () => {
+    const { id } = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      extension: [
+        {
+          url: extractExtension,
+          extension: [
+            { url: 'template', valueReference: { reference: '#patient' } },
+            { url: 'resourceId', valueString: `'${id}'` },
+          ],
+        },
+      ],
+      contained: [{ resourceType: 'Patient', id: 'patient', gender: 'unknown' }],
+    };
+    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+
+    // Actually send the batch to ensure it correctly updates the intended resource
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(batch);
+    expect(res2.status).toBe(200);
+
+    const patient = await repo.readResource<Patient>('Patient', id);
+    expect(patient.gender).toBe('unknown');
   });
 });
