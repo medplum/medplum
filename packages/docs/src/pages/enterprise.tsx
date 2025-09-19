@@ -125,7 +125,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Google SSO"
               title="Identity, security"
               imgUrl="/img/blog/google-logo.jpeg"
-              webUrl="/docs/auth/methods/google-auth"
+              webUrl="/docs/auth/idp/google-auth"
             />
           </CardContainer>
         </Section>
