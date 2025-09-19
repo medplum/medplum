@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, InputWrapper, NumberInput, Radio, Stack } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import { Parameters } from '@medplum/fhirtypes';
 import { Form, SubmitButton, useMedplum } from '@medplum/react';
 import { JSX, useState } from 'react';
+import { startAsyncJobAsync } from '../SuperAdminStartAsyncJob';
 import { SearchableMultiSelect } from './SearchableMultiSelect';
 
 interface ConfigureGINIndexesFormProps {
@@ -53,19 +53,15 @@ export function ConfigureGINIndexesForm({
     }
 
     setLoading(true);
-    medplum
-      .post('fhir/R4/$db-configure-indexes', toSubmit)
-      .then((res: Parameters) => {
+    startAsyncJobAsync<Parameters>(medplum, 'Configure GIN Indexes', 'fhir/R4/$db-configure-indexes', toSubmit)
+      .then((res: any) => {
         onResponse(res);
+      })
+      .catch(() => {
+        // startAsyncJobAsync shows a notification on error
       })
       .finally(() => {
         setLoading(false);
-      })
-      .catch((err) => {
-        showNotification({
-          color: 'red',
-          message: err.message,
-        });
       });
   };
 
