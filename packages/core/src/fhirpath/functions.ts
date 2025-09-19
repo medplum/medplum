@@ -1300,7 +1300,13 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   replaceMatches: (context: AtomContext, input: TypedValue[], regexAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
-      (str, pattern, substition) => str.replaceAll(new RegExp(pattern as string, 'g'), substition as string),
+      (str, pattern, substition) =>
+        str.replaceAll(
+          new RegExp(pattern as string, 'g'),
+          // The substition string may contain ${...} placeholders. Replace them with $<...>
+          // See https://build.fhir.org/ig/HL7/FHIRPath/#replacematchesregex--string-substitution-string--string
+          (substition as string).replaceAll(/\$\{(\w+)\}/g, '$<$1>')
+        ),
       context,
       input,
       regexAtom,
