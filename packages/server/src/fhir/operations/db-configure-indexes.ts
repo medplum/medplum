@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
 import { escapeIdentifier, Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
-import { DatabaseMode, getDatabasePool } from '../../database';
+import { getConfig } from '../../config/loader';
+import { DatabaseMode } from '../../database';
+import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
+import { getSystemRepo } from '../repo';
 import { isValidTableName } from '../sql';
+import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -83,6 +87,9 @@ type OutputAction = {
 
 export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
+  if (req.headers?.['prefer'] !== 'respond-async') {
+    throw new OperationOutcomeError(badRequest('Operation requires "Prefer: respond-async"'));
+  }
 
   const params = parseInputParameters<InputParameters>(operation, req);
   const config: GinIndexConfig = {};
@@ -123,19 +130,25 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     );
   }
 
-  const client = getDatabasePool(DatabaseMode.WRITER);
-  const action: OutputAction[] = [];
+  const systemRepo = getSystemRepo();
+  const { baseUrl } = getConfig();
+  const exec = new AsyncJobExecutor(systemRepo);
+  await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
+  exec.start(async () => {
+    const action: OutputAction[] = [];
+    await withLongRunningDatabaseClient(async (client) => {
+      await configureGinIndexes(client, action, tableNames, config);
 
-  await configureGinIndexes(client, action, tableNames, config);
-
-  // Vacuum if the fastupdate is disabled to flush GIN pending lists
-  if (config.fastUpdate === false) {
-    for (const tableName of tableNames) {
-      await vacuumTable(client, action, tableName);
-    }
-  }
-
-  return [allOk, buildOutputParameters(operation, { action })];
+      // Vacuum if the fastupdate is disabled to flush GIN pending lists
+      if (config.fastUpdate === false) {
+        for (const tableName of tableNames) {
+          await vacuumTable(client, action, tableName);
+        }
+      }
+    }, DatabaseMode.WRITER);
+    return buildOutputParameters(operation, { action });
+  });
+  return [accepted(exec.getContentLocation(baseUrl))];
 }
 
 type GinIndexConfig = {

@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 
 describe('dbgetginindexes', () => {
   const app = express();
@@ -36,11 +36,39 @@ describe('dbgetginindexes', () => {
     await shutdownApp();
   });
 
+  test('Must prefer async', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$db-configure-indexes')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'fastUpdate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Operation requires "Prefer: respond-async"' },
+        },
+      ],
+    });
+  });
+
   test('tableName is required', async () => {
     const res = await request(app)
       .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -68,6 +96,7 @@ describe('dbgetginindexes', () => {
       .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -95,6 +124,7 @@ describe('dbgetginindexes', () => {
       .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -120,9 +150,11 @@ describe('dbgetginindexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
-    expect(res.body.parameter).toHaveLength(2);
-    expect(res.body).toStrictEqual({
+    expect(res.status).toBe(202);
+
+    const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+
+    expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
       parameter: [
         {
@@ -154,6 +186,7 @@ describe('dbgetginindexes', () => {
       .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -175,8 +208,11 @@ describe('dbgetginindexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
-    expect(res.body).toStrictEqual({
+    expect(res.status).toBe(202);
+
+    const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+
+    expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
       parameter: [
         {
@@ -237,6 +273,7 @@ describe('dbgetginindexes', () => {
       .post('/fhir/R4/$db-configure-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
       .send({
         resourceType: 'Parameters',
         parameter: [
