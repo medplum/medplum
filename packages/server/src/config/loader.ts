@@ -1,7 +1,8 @@
 import { splitN } from '@medplum/core';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join, resolve } from 'path';
+import { join, resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 // import { loadGcpConfig } from '../cloud/gcp/config';
@@ -38,6 +39,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
       break;
     case 'file':
       config = await loadFileConfig(configPath);
+      config = replace_env_var(config);
       break;
     case 'aws':
       config = await loadAwsConfig(configPath);
@@ -144,5 +146,55 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(resolve(__dirname, '../../', path), { encoding: 'utf8' }));
+  try{
+    let baseDir: string = "";
+    if (typeof __dirname !== 'undefined') {
+      baseDir = __dirname;
+      // @ts-expect-error
+    } else if (typeof import.meta !== 'undefined') {
+      // @ts-expect-error
+      baseDir = dirname(fileURLToPath(import.meta.url));
+      baseDir = `/usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server/src/config`;
+    }
+    return JSON.parse(readFileSync(
+      resolve(baseDir, '../../', path),
+      { encoding: 'utf8' }
+    ));
+  } catch (err) {
+    console.error("Error loading configuration file:", err);
+    throw err;
+  }
+}
+
+ function replace_env_var(config: MedplumServerConfig): MedplumServerConfig {
+  console.log("Processing configuration file by replacing environment variables");
+  function replaceInValue(value: any): any {
+    if (typeof value === 'string') {
+      // Replace all ${VAR} with process.env.VAR
+      return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, varName) => {
+        return process.env[varName] ?? '';
+      });
+    } else if (Array.isArray(value)) {
+      return value.map(replaceInValue);
+    } else if (value && typeof value === 'object') {
+      for (const key of Object.keys(value)) {
+        value[key] = replaceInValue(value[key]);
+      }
+      return value;
+    }
+    return value;
+  }
+  try {
+    config = replaceInValue(config);
+    if (config.database?.port) {
+      config.database.port = Number(config.database.port);
+    }
+    if (config.redis?.port) {
+      config.redis.port = Number(config.redis.port);
+    }
+    return config;
+  } catch (err) {
+    console.error("Error processing configuration file:", err);
+    return config;
+  }
 }

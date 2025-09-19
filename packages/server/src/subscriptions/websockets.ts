@@ -16,6 +16,7 @@ import { MedplumBaseClaims, verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
+import { Buffer } from 'buffer';
 
 interface BaseSubscriptionClientMsg {
   type: string;

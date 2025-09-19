@@ -7,6 +7,7 @@ import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
+import { Buffer } from 'buffer';
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };

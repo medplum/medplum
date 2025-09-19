@@ -131,7 +131,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
     globalLogger.info('No keys found.  Creating new key...');
-    const keyResult = await generateKeyPair(PREFERRED_ALG);
+    const keyResult = await generateKeyPair(PREFERRED_ALG, {extractable: true});
     const jwk = await exportJWK(keyResult.privateKey);
     const createResult = await systemRepo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',

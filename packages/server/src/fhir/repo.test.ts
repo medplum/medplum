@@ -38,7 +38,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
@@ -49,6 +49,7 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { SelectQuery } from './sql';
+import { fileURLToPath } from 'url';
 
 jest.mock('hibp');
 
@@ -854,9 +855,16 @@ describe('FHIR Repo', () => {
   test('Profile validation', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
-
+      let baseDir: string = "";
+      if (typeof __dirname !== 'undefined') {
+        baseDir = __dirname;
+        //@ts-ignore
+      } else if (typeof import.meta !== 'undefined') {
+        //@ts-ignore
+        baseDir = dirname(fileURLToPath(import.meta.url));
+      }
       const profile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+        readFileSync(resolve(baseDir, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
       profile.url = (profile.url ?? '') + Math.random();
       const patient: Patient = {
@@ -889,9 +897,16 @@ describe('FHIR Repo', () => {
   test('Profile update', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
-
+      let baseDir: string = "";
+      if (typeof __dirname !== 'undefined') {
+        baseDir = __dirname;
+        //@ts-ignore
+      } else if (typeof import.meta !== 'undefined') {
+        //@ts-ignore
+        baseDir = dirname(fileURLToPath(import.meta.url));
+      }
       const originalProfile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+        readFileSync(resolve(baseDir, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
 
       const profile = await repo.createResource<StructureDefinition>({
@@ -1230,7 +1245,14 @@ describe('FHIR Repo', () => {
         ...project,
         link: [{ project: createReference(project2) }],
       });
-
+      let baseDir: string = "";
+      if (typeof __dirname !== 'undefined') {
+        baseDir = __dirname;
+        //@ts-ignore
+      } else if (typeof import.meta !== 'undefined') {
+        //@ts-ignore
+        baseDir = dirname(fileURLToPath(import.meta.url));
+      }
       const repo2 = await getRepoForLogin({
         login: {} as Login,
         membership: membership2,
@@ -1238,7 +1260,7 @@ describe('FHIR Repo', () => {
         userConfig: {} as UserConfiguration,
       });
       const profileJson = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+        readFileSync(resolve(baseDir, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
       const profile = await repo2.createResource(profileJson);
 

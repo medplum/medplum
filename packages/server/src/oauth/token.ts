@@ -38,6 +38,7 @@ import {
   tryLogin,
   verifyMultipleMatchingException,
 } from './utils';
+import { Buffer } from 'buffer';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
@@ -635,7 +636,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     profile: membership.profile,
     patient,
     encounter,
-    smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
+    smart_style_url: config.baseUrl + '/fhir-server/fhir/R4/.well-known/smart-styles.json',
     need_patient_banner: !!patient,
     ...fhircastProps, // Spreads no props when FHIRcast scopes not present
   });

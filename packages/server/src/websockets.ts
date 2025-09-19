@@ -11,6 +11,7 @@ import { globalLogger } from './logger';
 import { getRedis, getRedisSubscriber } from './redis';
 import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
+import { Buffer } from 'buffer';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);

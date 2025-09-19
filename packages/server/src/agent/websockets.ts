@@ -20,6 +20,7 @@ import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis, getRedisSubscriber } from '../redis';
 import { AgentConnectionState, AgentInfo } from './utils';
+import { Buffer } from 'buffer';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 

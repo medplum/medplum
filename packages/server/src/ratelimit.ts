@@ -12,7 +12,7 @@ import { getRedis } from './redis';
 // The value was primarily tuned for one particular cluster with 6 server instances
 // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
-const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
+const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 2000;
 
 let handler: Handler | undefined;
 export function rateLimitHandler(config: MedplumServerConfig): Handler {
@@ -71,10 +71,10 @@ export function closeRateLimiter(): void {
 function isAuthRequest(req: Request): boolean {
   // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
   // These URLs have a different rate limit than the rest of the API
-  if (req.originalUrl === '/auth/me') {
+  if (req.originalUrl === '/fhir-server/auth/me') {
     return false; // Read-only URL doesn't need the same rate limit protection
   }
-  return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+  return req.originalUrl.startsWith('/fhir-server/auth/') || req.originalUrl.startsWith('/fhir-server/oauth2/');
 }
 
 function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {

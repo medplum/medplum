@@ -1,4 +1,5 @@
 import stream from 'node:stream';
+import { Buffer } from 'buffer';
 
 export async function readStreamToString(stream: stream.Readable): Promise<string> {
   const chunks: Uint8Array[] = [];

@@ -1,0 +1,174 @@
+name: Publish-Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      GIT_REPO_FULL_NAME:
+        description: Select RepoName
+        required: false
+        type: choice
+        options:
+          - data2evidence/d2e-medplum
+      GIT_BRANCH_NAME:
+        default: main
+        description: Enter BranchName / ReleaseTagName
+        required: true
+        type: string
+      tag:
+        description: Enter tag for release
+        required: true
+        type: string
+      release:
+        description: Enter name for github release
+        required: true
+        type: string
+      prerelease:
+        type: boolean
+        default: true
+        required: true
+      overwrite:
+        type: boolean
+        default: true
+        required: true
+      artifacttype:
+        type: choice
+        required: true
+        default: "OSS-develop"
+        options:
+          - "OSS-develop"
+          - "OSS-release"
+          - "Project"
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+  merge_group:
+  push:
+    branches:
+      - main
+
+env:
+  GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }} # workflow_dispatch || pull_request || push
+  GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }} # workflow_dispatch || pull_request || push
+  NPM_ARTIFACT_TYPE: ${{ github.event.inputs.artifacttype || 'OSS-develop'}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: (github.ref_name == 'main' || contains('release', github.ref_name) || github.event_name == 'workflow_dispatch') || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) # Should run if branch is main/release/workflow_dispatch and doesnt have a PR
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - PKGPATH: ./packages/server/
+            DESTPATH: /usr/src/data/plugins/node_modules/@data2evidence/d2e-fhir-server
+            NPM: npm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.GIT_BRANCH_NAME }}
+          repository: ${{ env.GIT_REPO_FULL_NAME }}
+          submodules: recursive
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@data2evidence"
+      - name: Setup NPM
+        if: ${{ matrix.NPM }}
+        run: npm install -g ${{ matrix.NPM }}
+      - name: Install dependencies
+        if: ${{ matrix.DESTPATH }}
+        run: |
+          npm install -g deno@2.1.13
+          node ./install-deno-deps.js ${{ matrix.PKGPATH }}
+          cd ${{ matrix.PKGPATH }}
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          deno install --allow-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update version
+        run: |
+          cd ${{ matrix.PKGPATH }}
+          if [[ $GITHUB_EVENT_NAME == 'workflow_dispatch' ]]; then
+            RELEASE_VERSION=${{ github.event.inputs.tag }}
+            jq --arg v $RELEASE_VERSION '.version=$v' package.json > tmppkg; mv tmppkg package.json
+          else
+            jq --arg v "-$(date +%s)-$GITHUB_SHA" '.version+=$v' package.json > tmppkg; mv tmppkg package.json
+          fi
+      - name: Build
+        run: |
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          cd ${{ matrix.PKGPATH }}
+          ${{ matrix.NPM == 'yarn' && 'yarn install' ||'npm install --ignore-scripts' }}
+        env:
+          CI: ${{ matrix.NPM != 'yarn' }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch Package
+        if: ${{ matrix.NPM }}
+        working-directory: ${{ matrix.PKGPATH }}
+        run: jq '.private=false' package.json > tmppkg; mv tmppkg package.json
+      - name: DEST
+        working-directory: ${{ matrix.PKGPATH }}
+        if:  ${{ matrix.DESTPATH }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | 
+          cp package.json package.org.json
+          sudo mkdir -p ${{ matrix.DESTPATH }}
+          sudo chown runner:docker ${{ matrix.DESTPATH }}
+          cp -a . ${{ matrix.DESTPATH }}
+          cd ${{ matrix.DESTPATH }}
+          export TREX_DOCKER_TAG=sha256:468f1fa411b288f8ebac842dc0982bb7b8cb2d5eeb8dc25a494b734fcacfac42
+          #$(grep -m1 '^FROM ' $GITHUB_WORKSPACE/services/trex/Dockerfile | sed -E 's/.*@(sha256:[a-f0-9]+).*/\1/')
+          echo "Using TREX_DOCKER_TAG=$TREX_DOCKER_TAG"
+          echo "@data2evidence:registry=https://npm.pkg.github.com" >> ./.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          npm i @data2evidence/trex
+          npm run trex_build
+      - name: Use Node.js - OSS Develop
+        uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'OSS-develop'
+        with:
+          node-version: 20
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/"
+          scope: "@data2evidence"
+      - name: Use Node.js - OSS Release
+        uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'OSS-release'
+        with:
+          node-version: 20
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/stable/npm/registry/"
+          scope: "@data2evidence"
+      - name: Use Node.js - Project
+        uses: actions/setup-node@v4
+        if: env.NPM_ARTIFACT_TYPE == 'Project'
+        with:
+          node-version: 20
+          registry-url: "https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/"
+          scope: "@data2evidence"
+      - name: Publish
+        env:
+          CI: ${{ matrix.NPM != 'yarn' }}
+          SHOULD_PUBLISH: ${{ github.ref_name == 'main' || github.event_name == 'workflow_dispatch' || ( github.event_name == 'pull_request' && !github.event.pull_request.draft ) }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROJECT_TOKEN }}
+        run: |
+          cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
+          # Overwrite .npmrc with Azure DevOps registry settings
+          echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/" > ./.npmrc
+          echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          if [[ $SHOULD_PUBLISH == true ]]; then
+             ${{ matrix.NPM || 'npm' }} publish -tag latest
+          else
+             ${{ matrix.NPM || 'npm' }} pack
+          fi
+  
+  success:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        run: echo "Check"

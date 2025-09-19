@@ -1,4 +1,4 @@
-import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
+import { badRequest, ContentType, parseLogLevel } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -40,11 +40,12 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { seed_d2e } from './seed-d2e';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
-import { closeWebSockets, initWebSockets } from './websockets';
+// import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 
@@ -144,9 +145,9 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
-  if (process.env.NODE_ENV !== 'test') {
-    await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
-  }
+  // if (process.env.NODE_ENV !== 'test') {
+  //   await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  // }
 
   if (config.logLevel) {
     globalLogger.level = parseLogLevel(config.logLevel);
@@ -154,7 +155,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   await initAppServices(config);
   server = http.createServer(app);
-  initWebSockets(server);
+  // initWebSockets(server);
 
   app.set('etag', false);
   app.set('trust proxy', 1);
@@ -206,6 +207,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   }
 
   app.use('/api/', apiRouter);
+  app.use('/fhir-server', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);
   return server;
@@ -218,6 +220,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     await initDatabase(config);
     await seedDatabase();
+    await seed_d2e(); // For d2e specific seeding  
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
@@ -231,7 +234,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
-  await closeWebSockets();
+  //await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {
       (server as http.Server).close(resolve);

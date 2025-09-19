@@ -1,7 +1,8 @@
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import * as fs from 'fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -83,8 +84,19 @@ export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
   requiredBefore: string | undefined;
 } {
+  let baseDir: string = "";
+  if (typeof __dirname !== 'undefined') {
+    baseDir = __dirname;
+    //@ts-ignore
+  } else if (typeof import.meta !== 'undefined') {
+    //@ts-ignore
+    baseDir = dirname(fileURLToPath(import.meta.url));
+  }
   const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
+    fs.readFileSync(
+      resolve(baseDir, 'data/data-version-manifest.json'),
+      { encoding: 'utf-8' }
+    )
   ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
   return manifest['v' + migrationNumber];
 }
