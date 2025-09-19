@@ -316,11 +316,14 @@ describe('FHIRPath utils', () => {
   });
 
   test('getTypedPropertyValueWithSchema with primitive extensions', () => {
+    const primitiveValue = 'Johnny';
+    const primitiveExtension = { url: 'http://example.com', valueBoolean: true };
     const humanName = {
-      given: ['John', 'Johnny'],
-      _given: [{ extension: [{ url: 'http://example.com', valueBoolean: true }] }],
+      given: ['John', primitiveValue],
+      _given: [null, { extension: [primitiveExtension] }],
     };
-    const given: InternalSchemaElement = {
+
+    const elementSchema: InternalSchemaElement = {
       description: '',
       path: 'HumanName.given',
       min: 0,
@@ -328,11 +331,38 @@ describe('FHIRPath utils', () => {
       isArray: true,
       type: [{ code: 'string' }],
     };
-    getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', given);
-    expect(humanName.given).toStrictEqual(expect.arrayContaining(['John', 'Johnny']));
-    // with primitive extensions, array values can be changed into a `String` type which has a typeof 'object'
-    // ensure the original input array values is not mutated as such
+
+    // Extract elements with and without primitive extensions
+    const results = getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', elementSchema);
+
+    expect(results).toHaveLength(2);
+    const [simple, extended] = results as TypedValue[];
+    expect(simple).toStrictEqual({ type: 'string', value: 'John' });
+    expect(extended).toStrictEqual({
+      type: 'string',
+      value: expect.objectContaining(Object.assign('', primitiveValue, { extension: [primitiveExtension] })),
+    });
+
+    // Check that values look correct when access "normally"
+    expect(extended.value.valueOf()).toBe('Johnny');
+    expect(extended.value.extension).toStrictEqual([primitiveExtension]);
+
+    // With primitive extensions, array values can be changed into a `String` wrapper type which has a typeof 'object';
+    // need to ensure the original input array values are not mutated as such
     expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);
+
+    // If extension only is specified, should still extract
+    const results2 = getTypedPropertyValueWithSchema(
+      { type: 'HumanName', value: { _given: [{ extension: [primitiveExtension] }] } },
+      'given',
+      elementSchema
+    );
+    expect(results2).toHaveLength(1);
+    const [extensionOnly] = results2 as TypedValue[];
+    expect(extensionOnly).toStrictEqual({
+      type: 'string',
+      value: expect.objectContaining(Object.assign('', { extension: [primitiveExtension] })),
+    });
   });
 
   test.each<[any, boolean]>([
