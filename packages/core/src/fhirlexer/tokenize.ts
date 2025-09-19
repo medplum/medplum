@@ -30,6 +30,17 @@ const STANDARD_UNITS = [
   'milliseconds',
 ];
 
+const ESCAPE_MAP: Record<string, string> = {
+  "'": "'",
+  '"': '"',
+  '`': '`',
+  r: '\r',
+  n: '\n',
+  t: '\t',
+  f: '\f',
+  '\\': '\\',
+};
+
 export interface TokenizerOptions {
   dateTimeLiterals?: boolean;
   symbolRegex?: RegExp;
@@ -159,37 +170,10 @@ export class Tokenizer {
     if (char1 === '\\') {
       this.advance();
       const char2 = this.curr();
-      if (char2 === "'") {
+      const escaped = ESCAPE_MAP[char2];
+      if (escaped !== undefined) {
         this.advance();
-        return "'";
-      }
-      if (char2 === '"') {
-        this.advance();
-        return '"';
-      }
-      if (char2 === '`') {
-        this.advance();
-        return '`';
-      }
-      if (char2 === 'r') {
-        this.advance();
-        return '\r';
-      }
-      if (char2 === 'n') {
-        this.advance();
-        return '\n';
-      }
-      if (char2 === 't') {
-        this.advance();
-        return '\t';
-      }
-      if (char2 === 'f') {
-        this.advance();
-        return '\f';
-      }
-      if (char2 === '\\') {
-        this.advance();
-        return '\\';
+        return escaped;
       }
       if (char2 === 'u') {
         this.advance();
