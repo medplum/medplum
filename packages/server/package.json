@@ -167,17 +167,17 @@
       },
       "roles": {
         "ALP_SYSTEM_ADMIN": [
-          "fhir.server.create"
+          "fhir.server.admin"
         ],
         "IDP_ALP_DATA_CLIENT_ID": [
-          "fhir.server.create"
+          "fhir.server.admin"
         ]
       },
       "scopes": [
         {
           "path": "^/fhir-server/(.*)",
           "scopes": [
-            "fhir.server.create"
+            "fhir.server.admin"
           ],
           "httpMethods": [
             "POST",
