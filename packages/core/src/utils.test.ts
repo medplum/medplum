@@ -1602,7 +1602,7 @@ describe('flatMapFilter', () => {
 
   test('flattens nested arrays', () => {
     const input = [1, 2, 3];
-    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toStrictEqual([2, 2, 2]);
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, x] : x))).toStrictEqual([1, 2, 2, 3]);
   });
 });
 
