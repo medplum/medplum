@@ -3630,6 +3630,25 @@ describe('FHIRPath Test Suite', () => {
         )
       ).toStrictEqual(["'wrapped in single quotes'"]);
     });
+
+    test('testReplaceMatches5', () => {
+      /**
+       * Example taken from:
+       * https://build.fhir.org/ig/HL7/FHIRPath/#replacematchesregex--string-substitution-string--string
+       *
+       * '11/30/1972'.replaceMatches('\\b(?<month>\\d{1,2})/(?<day>\\d{1,2})/(?<year>\\d{2,4})\\b','${day}-${month}-${year}')
+       *
+       * Note:
+       * The above string is a FHIRPath string. So when we want to re-create the exact same
+       * character sequence in javascript, we need to escape the backslashes or use String.raw.
+       */
+      const regexFhirPathString = String.raw`'\\b(?<month>\\d{1,2})/(?<day>\\d{1,2})/(?<year>\\d{2,4})\\b'`;
+      // eslint-disable-next-line no-template-curly-in-string
+      const substitutionFhirPathString = "'${day}-${month}-${year}'";
+      expect(
+        evalFhirPath(`'11/30/1972'.replaceMatches(${regexFhirPathString}, ${substitutionFhirPathString})`, {})
+      ).toStrictEqual(['30-11-1972']);
+    });
   });
 
   // more "real-world" tests using FHIRPath to evaluate hypothetical constraints on AccessPolicy or Subscription resources
