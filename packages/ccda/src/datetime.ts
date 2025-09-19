@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { Period } from '@medplum/fhirtypes';
+import { CcdaEffectiveTime } from './types';
+
 /*
  * C-CDA date/time formats:
  *   1. YYYY
@@ -114,4 +117,24 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
     .replaceAll(/Z/g, '+0000'); // Replace Z with +0000
 
   return `${outDate}${outTime}`;
+}
+
+export function mapFhirPeriodOrDateTimeToCcda(
+  period: Period | undefined,
+  dateTime: string | undefined
+): CcdaEffectiveTime {
+  if (period?.start || period?.end) {
+    const effectiveTime: CcdaEffectiveTime = {};
+    if (period.start) {
+      effectiveTime.low = { '@_value': mapFhirToCcdaDateTime(period.start) ?? '' };
+    }
+    if (period.end) {
+      effectiveTime.high = { '@_value': mapFhirToCcdaDateTime(period.end) ?? '' };
+    }
+    return effectiveTime;
+  }
+  if (dateTime) {
+    return { '@_value': mapFhirToCcdaDateTime(dateTime) ?? '' };
+  }
+  return {};
 }
