@@ -177,7 +177,7 @@ type ExtensionHandlerFn = (extension: TypedValueWithPath, parent: TypedValueWith
 
 class TemplateExtractor implements CrawlerVisitor {
   private response: QuestionnaireResponse;
-  private templates: Record<string, Resource>;
+  private templates: Record<string, TypedValue>;
   private context: TemplateExtractionContext[]; // Context stack
   private variables: Record<string, TypedValue>;
   private patch: Operation[];
@@ -189,7 +189,7 @@ class TemplateExtractor implements CrawlerVisitor {
     // Gather template resources from Questionnaire by internal reference ID
     this.templates = Object.create(null);
     for (const resource of questionnaire.contained ?? []) {
-      this.templates['#' + resource.id] = resource;
+      this.templates['#' + resource.id] = toTypedValue(resource);
       resource.id = undefined;
     }
 
@@ -381,19 +381,19 @@ class TemplateExtractor implements CrawlerVisitor {
   private extractIntoTemplate(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     // Clone the template resource specified in the extension
     const templateRef = getExtension(extension.value, 'template')?.valueReference?.reference ?? '';
-    const template: Resource | undefined = this.templates[templateRef];
-    if (!template) {
+    const template = this.templates[templateRef];
+    if (!template?.value) {
       throw new OperationOutcomeError(badRequest(`Missing template resource ${templateRef}`, extension.path));
     }
 
     const contextValues = this.getExtractionContext(parent);
     for (const value of contextValues) {
       // Scan template resource and evaluate expressions to compute inserted values
-      const resource = deepClone(template);
-      this.context.push({ path: resource.resourceType, values: [value] });
-      crawlTypedValue(toTypedValue(resource), this, { skipMissingProperties: true });
+      this.context.push({ path: template.type, values: [value] });
+      crawlTypedValue(template, this, { skipMissingProperties: true });
 
       // Insert values into template resource and add to transaction Bundle
+      const resource = deepClone(template.value);
       const patch = this.getTemplatePatch();
       applyPatch(resource, patch);
       this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
