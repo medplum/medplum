@@ -26,4 +26,6 @@ export const ContentType = {
   XML: 'text/xml',
   // See: https://www.iana.org/assignments/media-types/application/cda+xml
   CDA_XML: 'application/cda+xml',
+  // Specifically for `transmit` backdoor in Medplum Agent
+  FETCH_LOGS_REQUEST: 'x-application/fetch-logs-request',
 } as const;

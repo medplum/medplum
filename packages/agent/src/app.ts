@@ -5,6 +5,7 @@ import {
   AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
+  AgentRequestMessage,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
@@ -284,6 +285,8 @@ export class App {
               this.sendAgentDisabledError(command);
             } else if (command.contentType === ContentType.PING) {
               await this.tryPingHost(command);
+            } else if (command.contentType === ContentType.FETCH_LOGS_REQUEST) {
+              await this.handleLogRequest(command);
             } else {
               this.pushMessage(command);
             }
@@ -834,7 +837,7 @@ export class App {
     }
   }
 
-  private async handleLogRequest(command: AgentLogsRequest): Promise<void> {
+  private async handleLogRequest(command: AgentLogsRequest | AgentTransmitRequest): Promise<void> {
     if (!isWinstonWrapperLogger(this.log)) {
       const errMsg = 'Unable to fetch logs since current logger instance does not support fetching';
       this.log.error(errMsg);
@@ -845,15 +848,41 @@ export class App {
       });
       return;
     }
-
+    let limit: number | undefined;
+    if (command.type === 'agent:logs:request') {
+      limit = command.limit;
+    } else if (this.isAgentPushMessage(command)) {
+      limit = this.parseLogCommandFromTransmitBody(command);
+    } else {
+      // This should only happen when type is `agent:transmit:request`, but might as well be defensive
+      throw new Error(
+        `Invalid message type for logs fetch request: ${(command as AgentTransmitRequest).type}, use 'agent:logs:request' or 'push'`
+      );
+    }
     try {
-      const logs = await this.log.fetchLogs({ limit: command.limit });
-      await this.sendToWebSocket({
-        type: 'agent:logs:response',
-        statusCode: 200,
-        logs,
-        callback: command.callback,
-      });
+      const logs = await this.log.fetchLogs({ limit });
+      if (this.isAgentPushMessage(command)) {
+        await this.sendToWebSocket({
+          // We are using this as a temporary punch-through solution because server only
+          // Writes messages on the Redis pub-sub callback channel whenever it recognizes the message type it receives
+          // In future versions, we will probably fix this by always writing the message back to the caller and letting the caller
+          // decide if it's an error or not
+          type: 'agent:transmit:response',
+          channel: command.channel,
+          contentType: ContentType.TEXT,
+          remote: command.remote,
+          callback: command.callback,
+          statusCode: 200,
+          body: logs.map((msg) => JSON.stringify(msg)).join('\n'),
+        } satisfies AgentTransmitResponse);
+      } else {
+        await this.sendToWebSocket({
+          type: 'agent:logs:response',
+          statusCode: 200,
+          logs,
+          callback: command.callback,
+        });
+      }
     } catch (err) {
       this.log.error(normalizeErrorString(err));
       await this.sendToWebSocket({
@@ -862,6 +891,28 @@ export class App {
         callback: command.callback,
       });
     }
+  }
+
+  private isAgentPushMessage(message: AgentRequestMessage): message is AgentTransmitRequest {
+    if ((message as any).type === 'push') {
+      return true;
+    }
+    return false;
+  }
+
+  private parseLogCommandFromTransmitBody(command: AgentTransmitRequest): number | undefined {
+    if (command.body.trim() === '') {
+      return undefined;
+    }
+    const [firstArg, secondArg] = command.body.split(' ');
+    if (firstArg !== 'LOGS') {
+      throw new Error('Invalid body for logs fetch request - must start with: LOGS');
+    }
+    const parsedLimit = Number.parseInt(secondArg, 10);
+    if (Number.isNaN(parsedLimit)) {
+      throw new Error('Invalid second arg to logs fetch request - Body must be empty or of format: LOGS [limit]');
+    }
+    return parsedLimit;
   }
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
