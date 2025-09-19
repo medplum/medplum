@@ -47,7 +47,10 @@ describe('Patient Everything Operation', () => {
       .post(`/fhir/R4/Practitioner`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Practitioner' });
+      .send({
+        resourceType: 'Practitioner',
+        qualification: [{ code: { text: 'MD' }, issuer: createReference(organization) }],
+      });
     expect(practRes.status).toBe(201);
     const practitioner = practRes.body as Practitioner;
 
@@ -107,6 +110,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const result = res4.body as Bundle;
+    expect(result.entry?.length).toStrictEqual(5);
     expect(
       result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
     ).toStrictEqual([
