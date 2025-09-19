@@ -7,6 +7,7 @@ on:
       - 'v*'
 
 permissions:
+  id-token: write  # Required for OIDC
   contents: read
 
 jobs:
@@ -89,10 +90,11 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
+      - name: Update npm # Ensure npm 11.5.1 or later is installed
+        run: npm install -g npm@latest
+
       - name: Publish to NPM
         run: ./scripts/publish.sh
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Sync example repos
         if: steps.check-latest.outputs.result == 'true'
