@@ -298,7 +298,7 @@ Unstructured PDF reports are stored as `DocumentReference` resources, with diffe
 - Standardized format across all labs
 - Optimized for electronic health record display
 - `DocumentReference.category` set to:
-  - **system:** https://www.medplum.com/integrations/health-gorilla/document-type`
+  - **system:** `https://www.medplum.com/integrations/health-gorilla/document-type`
   - **value**: `DiagnosticReport`
 
 **Lab-Branded PDFs:**
