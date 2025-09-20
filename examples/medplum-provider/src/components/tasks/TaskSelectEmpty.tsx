@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Center, Stack, Text, ThemeIcon } from '@mantine/core';
+import { Center, Flex, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconClipboardList } from '@tabler/icons-react';
 import { JSX } from 'react';
 
@@ -11,6 +11,7 @@ interface TaskSelectEmptyProps {
 export function TaskSelectEmpty(props: TaskSelectEmptyProps): JSX.Element {
   const { notFound = false } = props;
   return (
+    <Flex direction="row" h="100%" w="100%">
     <Center h="100%" w="100%">
       <Stack align="center" gap="md">
         <ThemeIcon size={64} variant="light" color="gray">
@@ -28,5 +29,6 @@ export function TaskSelectEmpty(props: TaskSelectEmptyProps): JSX.Element {
         </Stack>
       </Stack>
     </Center>
+    </Flex>
   );
 }
