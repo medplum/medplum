@@ -1282,4 +1282,37 @@ describe('GraphQL', () => {
 
     expect(result[2]?.contentType).toBe('application/json');
   });
+
+  test('Cursor pagination', async () => {
+    // There are 2 encounters created in beforeAll
+    // Cursor pagination only applies when sorting by _lastUpdated ascending AND using the Connection API
+    // Search for encounters with _count=1 to force multiple pages
+    const req1 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `
+          {
+            EncounterConnection(_count: 1, _sort: "_lastUpdated") {
+              edges {
+                resource {
+                  id
+                }
+              }
+              next
+            }
+          }
+        `,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res1 = await graphqlHandler(req1, repo, fhirRouter);
+    expect(res1).toBeDefined();
+    expect(res1.length).toBe(3);
+    expect(res1[0]).toMatchObject(allOk);
+
+    const data1 = (res1[1] as any).data;
+    expect(data1.EncounterConnection).toBeDefined();
+    expect(data1.EncounterConnection.edges).toHaveLength(1);
+    const firstId = data1.EncounterConnection.edges[0].resource.id;
+    expect([encounter1.id, encounter2.id]).toContain(firstId);
+    expect(data1.EncounterConnection.next).toBeDefined();
+  });
 });
