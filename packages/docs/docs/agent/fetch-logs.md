@@ -29,12 +29,12 @@ medplum get 'Agent/[id]/$fetch-logs'
 For example:
 
 ```bash
-medplum get 'Agent/$fetch-logs'
+medplum get 'Agent/$fetch-logs?_tag=Group+A'
 ```
 
 ## Parameters
 
-- `limit` (optional): Maximum number of log entries to return per agent
+- `limit` (optional; default: 20): Maximum number of log entries to return per agent
 
 ## Single Agent Response
 
