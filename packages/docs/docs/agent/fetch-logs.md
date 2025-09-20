@@ -34,7 +34,7 @@ medplum get 'Agent/$fetch-logs?_tag=Group+A'
 
 ## Parameters
 
-- `limit` (optional; default: 20): Maximum number of log entries to return per agent
+- `limit` (optional; default: `20`): Maximum number of log entries to return per agent
 
 ## Single Agent Response
 
