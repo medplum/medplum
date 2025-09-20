@@ -38,7 +38,7 @@ At a high level, the integration has the following components:
    }
    ```
 
-2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above.
+2. Create a [ClientApplication](https://www.medplum.com/docs/auth/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above.
 
 3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) your [Bot](https://www.medplum.com/docs/bots/bot-basics) using the code in this repository as a base.
 

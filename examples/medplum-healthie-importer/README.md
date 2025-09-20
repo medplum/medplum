@@ -14,7 +14,7 @@ Currently we support importing the following data:
 - Node.js (LTS version recommended)
 - npm
 - Medplum project with appropriate permissions (see our guide on setting up your [project](https://www.medplum.com/docs/tutorials/register))
-- Medplum Client ID and Client Secret (see our guide on [Client Credentials](https://www.medplum.com/docs/auth/methods/client-credentials))
+- Medplum Client ID and Client Secret (see our guide on [Client Credentials](https://www.medplum.com/docs/auth/client-credentials))
 
 ## Setup
 
