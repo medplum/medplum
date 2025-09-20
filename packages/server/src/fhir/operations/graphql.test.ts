@@ -1177,6 +1177,59 @@ describe('GraphQL', () => {
     expect(readerSpy).toHaveBeenCalledTimes(0);
     expect(writerSpy).toHaveBeenCalledTimes(1);
   });
+
+  test('Cursor pagination', async () => {
+    // There are 2 encounters created in beforeAll
+    // Cursor pagination only applies when sorting by _lastUpdated ascending AND using the Connection API
+    // Search for encounters with _count=1 to force multiple pages
+    const res1 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+          {
+            EncounterConnection(_count: 1, _sort: "_lastUpdated") {
+              edges {
+                resource {
+                  id
+                }
+              }
+              next
+            }
+          }
+        `,
+      });
+    expect(res1.status).toBe(200);
+    expect(res1.body.data.EncounterConnection.edges).toHaveLength(1);
+    const firstId = res1.body.data.EncounterConnection.edges[0].resource.id;
+    expect([encounter1.id, encounter2.id]).toContain(firstId);
+    expect(res1.body.data.EncounterConnection.next).toBeDefined();
+
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+          {
+            EncounterConnection(_count: 1, _sort: "_lastUpdated", _cursor: "${res1.body.data.EncounterConnection.next}") {
+              edges {
+                resource {
+                  id
+                }
+              }
+              next
+            }
+          }
+        `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.data.EncounterConnection.edges).toHaveLength(1);
+    const secondId = res2.body.data.EncounterConnection.edges[0].resource.id;
+    expect([encounter1.id, encounter2.id]).toContain(secondId);
+    expect(res2.body.data.EncounterConnection.next).toBeDefined();
+  });
 });
 
 function hasId<T extends Resource = Resource>(resource: T): asserts resource is T & { id: string } {
