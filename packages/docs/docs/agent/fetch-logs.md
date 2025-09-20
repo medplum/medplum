@@ -247,7 +247,7 @@ medplum get 'Agent/$fetch-logs?limit=5'
 
 ### Paging Through Agent Logs
 
-Fetch logs from agents in batches, 50 at a time:
+Fetch logs from agents in batches, 50 agents at a time:
 
 ```bash
 medplum get 'Agent/$fetch-logs?_count=50&_offset=0'
