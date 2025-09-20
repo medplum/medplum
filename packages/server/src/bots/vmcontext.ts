@@ -46,11 +46,20 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();
+  const processShim = Object.freeze({
+    env: {} as Record<string, string>,
+    version: (globalThis as any).process?.version,
+    versions: (globalThis as any).process?.versions,
+    platform: (globalThis as any).process?.platform,
+    arch: (globalThis as any).process?.arch,
+    nextTick: (cb: (...args: any[]) => void, ...args: any[]) => Promise.resolve().then(() => cb(...args)),
+  });
 
   const sandbox = {
     console: botConsole,
     fetch,
     require,
+    process: processShim,
     ContentType,
     Hl7Message,
     MedplumClient,
