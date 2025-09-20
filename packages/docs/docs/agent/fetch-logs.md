@@ -6,8 +6,6 @@ sidebar_position: 12
 
 Fetches log entries from a given agent or agents. Useful for debugging and monitoring agent behavior.
 
-> For querying multiple agent logs at once, or using `SearchParameters` to select agents to query, see the multi-agent examples below.
-
 ## Invoke the `$fetch-logs` operation
 
 ### Single Agent
