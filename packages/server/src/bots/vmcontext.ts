@@ -46,11 +46,29 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();
-
+  const bufferCtor = (globalThis as any).Buffer;
+  const setTimeoutShim = (globalThis as any).setTimeout?.bind(globalThis);
+  const clearTimeoutShim = (globalThis as any).clearTimeout?.bind(globalThis);
+  const setIntervalShim = (globalThis as any).setInterval?.bind(globalThis);
+  const clearIntervalShim = (globalThis as any).clearInterval?.bind(globalThis);
+  const processShim = Object.freeze({
+    env: {} as Record<string, string>,
+    version: (globalThis as any).process?.version,
+    versions: (globalThis as any).process?.versions,
+    platform: (globalThis as any).process?.platform,
+    arch: (globalThis as any).process?.arch,
+    nextTick: (cb: (...args: any[]) => void, ...args: any[]) => Promise.resolve().then(() => cb(...args)),
+  });
   const sandbox = {
     console: botConsole,
     fetch,
     require,
+    process: processShim,
+    Buffer: bufferCtor,
+    setTimeout: setTimeoutShim,
+    clearTimeout: clearTimeoutShim,
+    setInterval: setIntervalShim,
+    clearInterval: clearIntervalShim,
     ContentType,
     Hl7Message,
     MedplumClient,
