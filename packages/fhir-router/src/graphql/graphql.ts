@@ -13,7 +13,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
-import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
 import {
   ArgumentNode,
@@ -68,11 +68,16 @@ const introspectionResults = new LRUCache<ExecutionResult>();
  * This should be initialized at server startup.
  */
 let rootSchema: GraphQLSchema | undefined;
+
 interface ConnectionResponse {
   count?: number;
   offset?: number;
   pageSize?: number;
   edges?: ConnectionEdge[];
+  first?: string;
+  previous?: string;
+  next?: string;
+  last?: string;
 }
 
 interface ConnectionEdge {
@@ -342,6 +347,7 @@ async function resolveByConnectionApi(
       score: e.search?.score,
       resource: e.resource as Resource,
     })),
+    next: getNextCursor(bundle),
   };
 }
 
@@ -661,4 +667,12 @@ function isSearchField(node: FieldNode): boolean {
 
 function isLinkedResource(node: FieldNode): boolean {
   return node.name.value === 'resource';
+}
+
+function getNextCursor(bundle: Bundle): string | undefined {
+  const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+  if (!link) {
+    return undefined;
+  }
+  return new URL(link).searchParams.get('_cursor') || undefined;
 }
