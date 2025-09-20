@@ -27,6 +27,12 @@ sha256sum "medplum-agent-$MEDPLUM_VERSION-linux" > "medplum-agent-$MEDPLUM_VERSI
 # Check the installer checksum
 sha256sum --check "medplum-agent-$MEDPLUM_VERSION-linux.sha256"
 
+# Generate a GPG signature for the installer
+gpg --detach-sign --armor "medplum-agent-$MEDPLUM_VERSION-linux"
+
+# Check the signature
+gpg --verify "medplum-agent-$MEDPLUM_VERSION-linux.asc"
+
 # Check the build output within dist folder
 ls -la
 

@@ -127,6 +127,12 @@ sha256sum "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe" > "medplum-agent-i
 # Check the installer checksum
 sha256sum --check "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
+# Generate a GPG signature for the installer
+gpg --detach-sign --armor "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe"
+
+# Check the signature
+gpg --verify "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.asc"
+
 # Check the build output
 ls -la
 

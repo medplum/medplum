@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write  # Required for OIDC
+  id-token: write # Required for OIDC
   contents: read
 
 jobs:
@@ -125,6 +125,9 @@ jobs:
 
       - name: Install Wget
         run: choco install wget
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -253,6 +256,13 @@ jobs:
               name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
               data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
             });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.asc`)
+            });
 
   build_agent_linux:
     strategy:
@@ -275,6 +285,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -336,4 +349,11 @@ jobs:
               release_id: release.data.id,
               name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
               data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.asc`)
             });
