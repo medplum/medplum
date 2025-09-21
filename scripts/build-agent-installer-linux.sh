@@ -27,7 +27,7 @@ sha256sum "medplum-agent-$MEDPLUM_VERSION-linux" > "medplum-agent-$MEDPLUM_VERSI
 # Check the installer checksum
 sha256sum --check "medplum-agent-$MEDPLUM_VERSION-linux.sha256"
 
-if [ ! SKIP_SIGNING ]; then
+if [ -z "$SKIP_SIGNING" ]; then
   # Generate a GPG signature for the installer
   # --batch = Use batch mode. Never ask, do not allow interactive commands.
   # --yes = Assume "yes" on most questions. Should not be used in an option file.
