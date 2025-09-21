@@ -127,11 +127,26 @@ sha256sum "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe" > "medplum-agent-i
 # Check the installer checksum
 sha256sum --check "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
-# Generate a GPG signature for the installer
-gpg --detach-sign --armor "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe"
+if [ ! SKIP_SIGNING ]; then
+  # Generate a GPG signature for the installer
+  # --batch = Use batch mode. Never ask, do not allow interactive commands.
+  # --yes = Assume "yes" on most questions. Should not be used in an option file.
+  # --pinentry-mode loopback = Allows the passphrase to be set via command line or fd.
+  # --passphrase-fd 0 = Read the passphrase from file descriptor 0 (stdin).
+  # --local-user = Specify the key to use for signing.
+  # --detach-sign --armor = Create a detached ASCII armored signature.
+  echo "$GPG_PASSPHRASE" | gpg \
+    --batch \
+    --yes \
+    --pinentry-mode loopback \
+    --passphrase-fd 0 \
+    --local-user "$GPG_KEY_ID" \
+    --detach-sign --armor \
+    "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe"
 
-# Check the signature
-gpg --verify "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.asc"
+  # Check the signature
+  gpg --verify "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.asc"
+fi
 
 # Check the build output
 ls -la
