@@ -58,6 +58,10 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       : property.type[0].code;
   const propertyTypes = property.type as ElementDefinitionType[];
 
+  // Get securityContext from props or from context
+  const elementsContext = useContext(ElementsContext);
+  const securityContext = props.securityContext ?? (elementsContext as any).securityContext;
+
   if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return (
@@ -66,6 +70,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
           defaultValue={defaultValue}
           onChange={onChange}
           disabled={property.readonly}
+          securityContext={securityContext}
         />
       );
     }
