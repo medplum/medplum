@@ -578,7 +578,6 @@ describe('SuperAdminPage', () => {
       setup();
 
       medplum.router.add('POST', '$explain', async () => {
-        console.log('returning forbidden...');
         return [forbidden];
       });
 
@@ -588,7 +587,6 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      console.log('BEFORE');
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
       });

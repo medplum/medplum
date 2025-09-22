@@ -14,13 +14,16 @@ import {
   Practitioner,
   RelatedPerson,
   Task,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { runInAsyncContext } from '../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 
@@ -32,6 +35,10 @@ describe('Batch and Transaction processing', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -1158,6 +1165,74 @@ describe('Batch and Transaction processing', () => {
     });
   });
 
+  test('Nested transaction in batch', async () => {
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'POST', url: '/' },
+          resource: {
+            resourceType: 'Bundle',
+            type: 'transaction',
+            entry: [
+              {
+                fullUrl: 'urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b',
+                request: { method: 'POST', url: 'Organization' },
+                resource: {
+                  resourceType: 'Organization',
+                  name: { failing: 'this aint valid' } as unknown as string,
+                },
+              },
+              {
+                fullUrl: 'urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b',
+                request: { method: 'POST', url: 'Organization' },
+                resource: {
+                  resourceType: 'Organization',
+                  name: 'This is valid but the other isnt so this wont be created (except it does)',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+
+    const response = res.body as Bundle;
+    expect(response).toStrictEqual({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        {
+          response: {
+            outcome: {
+              resourceType: 'OperationOutcome',
+              issue: [
+                {
+                  severity: 'error',
+                  code: 'structure',
+                  details: {
+                    text: 'Invalid additional property "failing"',
+                  },
+                  expression: ['Organization.name.failing'],
+                },
+              ],
+            },
+            status: '400',
+          },
+        },
+      ],
+    });
+  });
+
   test('_include regression test', async () => {
     const transaction: Bundle = {
       resourceType: 'Bundle',
@@ -1245,5 +1320,119 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
     expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
+  });
+
+  test('Async batch sleeps over rate limit', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const { accessToken, login, membership, project } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      project: {
+        systemSetting: [
+          { name: 'userFhirQuota', valueInteger: 200 },
+          { name: 'enableFhirQuota', valueBoolean: true },
+        ],
+      },
+    });
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(batch);
+    expect(res.status).toBe(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({ bundle: batch })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    let count = 0;
+    const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
+      count = (count + 1) % 3;
+      if (!key.toString().includes(membership.id)) {
+        // allowed
+        return {
+          remainingPoints: 100,
+          msBeforeNext: 100,
+          consumedPoints: 100,
+          isFirstInDuration: false,
+        } as RateLimiterRes;
+      }
+
+      return {
+        remainingPoints: 200 - count * 100, // Allow every third call
+        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        consumedPoints: 100,
+        isFirstInDuration: false,
+      } as RateLimiterRes;
+    });
+
+    const jobResult = runInAsyncContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      () => execBatchJob(job)
+    );
+
+    // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
+
+    await expect(jobResult).resolves.toBe(undefined);
+    expect(consumeMock).toHaveBeenCalledTimes(10);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+
+    await waitForAsyncJob(res.header['content-location'], app, accessToken);
+
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
+    });
+
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    expect(res2.body).toMatchObject<Partial<Bundle>>({ resourceType: 'Bundle', type: 'batch-response' });
+
+    const results = res2.body as Bundle;
+    expect(results.entry).toHaveLength(4);
+    expect(results.type).toStrictEqual('batch-response');
+    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
   });
 });

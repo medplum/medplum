@@ -448,6 +448,8 @@ describe('HL7', () => {
   });
 
   test('Invalid messagesPerMin logs warning', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
@@ -495,6 +497,7 @@ describe('HL7', () => {
 
     await app.stop();
     mockServer.stop();
+    console.log = originalConsoleLog;
   });
 
   test('Push', async () => {

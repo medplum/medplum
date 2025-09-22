@@ -72,6 +72,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
           case 'agent:transmit:response':
           case 'agent:reloadconfig:response':
           case 'agent:upgrade:response':
+          case 'agent:logs:response':
             if (command.callback) {
               const redis = getRedis();
               await redis.publish(command.callback, JSON.stringify(command));
@@ -205,6 +206,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       agent,
       bot,
       runAs: authState.membership,
+      requester: authState.membership.profile,
       contentType: command.contentType,
       input,
       remoteAddress,

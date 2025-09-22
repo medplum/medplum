@@ -97,7 +97,8 @@ fi
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
 # graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql"
+# uuid - version 12+ requires ESM, holding back until server supports ESM
+MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

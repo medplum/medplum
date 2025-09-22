@@ -20,6 +20,7 @@ import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes'
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
+import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -94,8 +95,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
           operator: Operator.EXACT,
           value: email,
         },
-        request.resourceType === 'Patient'
-          ? { code: 'project', operator: Operator.EQUALS, value: project.id }
+        request.resourceType === 'Patient' || request.scope === 'project'
+          ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
           : { code: 'project', operator: Operator.MISSING, value: 'true' },
       ],
     };
@@ -126,7 +127,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
-  const { firstName, lastName, externalId, scope } = request;
+  const { firstName, lastName, externalId, scope, mfaRequired } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
@@ -140,6 +141,11 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
+  let mfaSecret: string | undefined = undefined;
+  if (mfaRequired) {
+    mfaSecret = authenticator.generateSecret();
+  }
+
   return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
@@ -148,6 +154,8 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     email,
     passwordHash,
     project,
+    mfaRequired,
+    mfaSecret,
   };
 }
 

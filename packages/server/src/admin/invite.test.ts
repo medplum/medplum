@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BundleEntry, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
+import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
@@ -10,6 +10,7 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
+import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -87,10 +88,11 @@ describe('Admin Invite', () => {
 
     expect(parsed.subject).toBe('Welcome to Medplum');
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Existing user to project', async () => {
@@ -141,10 +143,11 @@ describe('Admin Invite', () => {
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Existing practitioner to project', async () => {
@@ -190,10 +193,11 @@ describe('Admin Invite', () => {
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Specified practitioner to project', async () => {
@@ -241,10 +245,11 @@ describe('Admin Invite', () => {
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Access denied', async () => {
@@ -778,6 +783,162 @@ describe('Admin Invite', () => {
     expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
 
+  test('Invite user with forceNewMembership in different cases', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob two time as a patient
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const resBob1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(resBob1.status).toBe(200);
+    expect(resBob1.body.resourceType).toBe('ProjectMembership');
+
+    const resBob2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob 2',
+        lastName: 'Jones 2',
+        email: bobEmail,
+        forceNewMembership: true,
+      });
+    expect(resBob2.status).toBe(200);
+    expect(resBob2.body.resourceType).toBe('ProjectMembership');
+    expect(resBob2.body.id).not.toStrictEqual(resBob1.body.id);
+
+    // Invite Jack as a server scoped practitioner two times
+    const jackEmail = `jack${randomUUID()}@example.com`;
+    const resJack1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jack',
+        lastName: 'Jones',
+        email: jackEmail,
+      });
+    expect(resJack1.status).toBe(200);
+    expect(resJack1.body.resourceType).toBe('ProjectMembership');
+
+    const resJack2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Jack 2',
+        lastName: 'Jones 2',
+        email: jackEmail,
+        forceNewMembership: true,
+      });
+    expect(resJack2.status).toBe(200);
+    expect(resJack2.body.resourceType).toBe('ProjectMembership');
+    expect(resJack2.body.id).not.toStrictEqual(resJack1.body.id);
+
+    // Invite Jill as a project scoped practitioner two times
+    const jillEmail = `jill${randomUUID()}@example.com`;
+    const resJill1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jill',
+        lastName: 'Jones',
+        email: jillEmail,
+        scope: 'project',
+      });
+    expect(resJill1.status).toBe(200);
+    expect(resJill1.body.resourceType).toBe('ProjectMembership');
+
+    const resJill2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Jill 2',
+        lastName: 'Jones 2',
+        email: jillEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resJill2.status).toBe(200);
+    expect(resJill2.body.resourceType).toBe('ProjectMembership');
+    expect(resJill2.body.id).not.toStrictEqual(resJill1.body.id);
+
+    // Invite Cam as a patient and then as a project scoped practitioner
+    const camEmail = `cam${randomUUID()}@example.com`;
+    const resCam1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Cam',
+        lastName: 'Jones',
+        email: camEmail,
+      });
+    expect(resCam1.status).toBe(200);
+    expect(resCam1.body.resourceType).toBe('ProjectMembership');
+
+    const resCam2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Cam 2',
+        lastName: 'Jones 2',
+        email: camEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resCam2.status).toBe(200);
+    expect(resCam2.body.resourceType).toBe('ProjectMembership');
+    expect(resCam2.body.id).not.toStrictEqual(resCam1.body.id);
+
+    // Invite Tom as a scoped practitioner and then as a patient
+    const tomEmail = `tom${randomUUID()}@example.com`;
+    const resTom1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Tom',
+        lastName: 'Jones',
+        email: tomEmail,
+      });
+    expect(resTom1.status).toBe(200);
+    expect(resTom1.body.resourceType).toBe('ProjectMembership');
+
+    const resTom2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Tom 2',
+        lastName: 'Jones 2',
+        email: tomEmail,
+        scope: 'project',
+        forceNewMembership: true,
+      });
+    expect(resTom2.status).toBe(200);
+    expect(resTom2.body.resourceType).toBe('ProjectMembership');
+    expect(resTom2.body.id).not.toStrictEqual(resTom1.body.id);
+  });
+
   test('Invite project scoped user', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
@@ -843,5 +1004,102 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toBe('Bundle');
     expect(res2.body.entry).toBeUndefined();
+  });
+
+  test('End-to-end invite and require MFA', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        mfaRequired: true,
+      });
+
+    expect(res1.status).toBe(200);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.subject).toBe('Welcome to Medplum');
+
+    const setPasswordUrl = parsed.text?.match(/http[s]?:\/\/[^\s]+/)?.[0];
+    expect(setPasswordUrl).toBeDefined();
+
+    const setPasswordUrlParts = setPasswordUrl?.split('/') as string[];
+    const setPasswordId = setPasswordUrlParts[setPasswordUrlParts.length - 2].trim();
+    const setPasswordSecret = setPasswordUrlParts[setPasswordUrlParts.length - 1].trim();
+    expect(setPasswordId).toBeDefined();
+    expect(setPasswordSecret).toBeDefined();
+
+    // Set the password
+    const bobPassword = randomUUID();
+    const res2 = await request(app).post('/auth/setpassword').type('json').send({
+      id: setPasswordId,
+      secret: setPasswordSecret,
+      password: bobPassword,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body).toMatchObject(allOk);
+
+    // Start new login
+    const res3 = await request(app).post('/auth/login').type('json').send({
+      email: bobEmail,
+      password: bobPassword,
+      scope: 'openid',
+    });
+    expect(res3.status).toBe(200);
+    expect(res3.body.login).toBeDefined();
+    expect(res3.body.mfaEnrollRequired).toBe(true);
+    expect(res3.body.enrollUri).toBeDefined();
+
+    const enrollUri = new URL(res3.body.enrollUri);
+    const secret = enrollUri.searchParams.get('secret') as string;
+
+    // Try to enroll MFA with invalid token, should fail
+    const res4 = await request(app)
+      .post('/auth/mfa/login-enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ login: res3.body.login, token: 'invalid' });
+    expect(res4.status).toBe(400);
+    expect(res4.body.issue[0].details.text).toBe('Invalid MFA token');
+
+    // Enroll with actual token, should succeed
+    const res5 = await request(app)
+      .post('/auth/mfa/login-enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+    expect(res5.status).toBe(200);
+    expect(res5.body.login).toBeDefined();
+    expect(res5.body.code).toBeDefined();
+
+    // Try to enroll again with the same token, should fail
+    const res6 = await request(app)
+      .post('/auth/mfa/login-enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+    expect(res6.status).toBe(400);
+    expect(res6.body.issue[0].details.text).toBe('Already enrolled');
   });
 });

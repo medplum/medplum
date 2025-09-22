@@ -28,6 +28,7 @@ import {
   deepEquals,
   deepIncludes,
   escapeHtml,
+  findCodeBySystem,
   findObservationInterval,
   findObservationReferenceRange,
   findObservationReferenceRanges,
@@ -825,6 +826,21 @@ describe('Core Utils', () => {
     expect(deepClone(undefined)).toBeUndefined();
   });
 
+  test('findCodeBySystem', () => {
+    const categories: CodeableConcept[] = [
+      {},
+      { text: 'test' },
+      { coding: [{ system: 'x', code: '1' }] },
+      { coding: [{ system: 'y', code: '2' }] },
+      { coding: [{ system: 'x', code: '3' }] },
+    ];
+    expect(findCodeBySystem(undefined, 'x')).toBeUndefined();
+    expect(findCodeBySystem([], 'x')).toBeUndefined();
+    expect(findCodeBySystem(categories, 'x')).toStrictEqual('1');
+    expect(findCodeBySystem(categories, 'y')).toStrictEqual('2');
+    expect(findCodeBySystem(categories, 'z')).toStrictEqual(undefined);
+  });
+
   test('Capitalize', () => {
     expect(capitalize('id')).toStrictEqual('Id');
     expect(capitalize('Id')).toStrictEqual('Id');
@@ -1602,7 +1618,7 @@ describe('flatMapFilter', () => {
 
   test('flattens nested arrays', () => {
     const input = [1, 2, 3];
-    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toStrictEqual([2, 2, 2]);
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, x] : x))).toStrictEqual([1, 2, 2, 3]);
   });
 });
 

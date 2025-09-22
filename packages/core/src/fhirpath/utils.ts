@@ -164,6 +164,11 @@ export function getTypedPropertyValueWithSchema(
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
       }
+    } else if (!resultValue && Array.isArray(primitiveExtension)) {
+      resultValue = primitiveExtension.slice();
+      for (let i = 0; i < primitiveExtension.length; i++) {
+        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
+      }
     } else {
       resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
     }

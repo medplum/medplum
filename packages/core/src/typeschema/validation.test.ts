@@ -316,6 +316,81 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(medplumBundle)).not.toThrow();
   });
 
+  test('StructureDefinition with differential', () => {
+    const sd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://fhir.de/StructureDefinition/informationrecipient',
+      name: 'ExtensionInformationRecipient',
+      status: 'active',
+      kind: 'complex-type',
+      abstract: false,
+      context: [
+        {
+          type: 'element',
+          expression: 'Composition',
+        },
+      ],
+      type: 'Extension',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Extension',
+      derivation: 'constraint',
+      differential: {
+        element: [
+          {
+            id: 'Extension.extension',
+            path: 'Extension.extension',
+            max: '0',
+          },
+          {
+            id: 'Extension.url',
+            path: 'Extension.url',
+            fixedUri: 'http://fhir.de/StructureDefinition/informationrecipient',
+          },
+          {
+            id: 'Extension.value[x]',
+            path: 'Extension.value[x]',
+            slicing: {
+              discriminator: [
+                {
+                  type: 'type',
+                  path: '$this',
+                },
+              ],
+              ordered: false,
+              rules: 'open',
+            },
+            min: 1,
+            type: [
+              {
+                code: 'Reference',
+                targetProfile: [
+                  'http://hl7.org/fhir/StructureDefinition/Practitioner',
+                  'http://hl7.org/fhir/StructureDefinition/Device',
+                  'http://hl7.org/fhir/StructureDefinition/Patient',
+                  'http://hl7.org/fhir/StructureDefinition/RelatedPerson',
+                  'http://hl7.org/fhir/StructureDefinition/PractitionerRole',
+                  'http://hl7.org/fhir/StructureDefinition/Organization',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'Extension.value[x]:valueReference',
+            path: 'Extension.value[x]',
+            sliceName: 'valueReference',
+            min: 1,
+            max: '1',
+            type: [
+              {
+                code: 'Reference',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    expect(() => validateResource(sd)).not.toThrow();
+  });
+
   test('Profile with restriction on base type field', () => {
     const patient: Patient = {
       resourceType: 'Patient',

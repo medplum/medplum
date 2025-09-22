@@ -141,6 +141,12 @@ export interface User {
   mfaSecret?: string;
 
   /**
+   * Whether the user is required to complete MFA enrollment. If true, the
+   * user must complete MFA enrollment before they can log in.
+   */
+  mfaRequired?: boolean;
+
+  /**
    * Whether the user has completed MFA enrollment.
    */
   mfaEnrolled?: boolean;

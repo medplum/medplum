@@ -1,12 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
-import { Bundle, Condition, Observation, Organization, Patient, Practitioner, Resource } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  Condition,
+  Observation,
+  Organization,
+  Patient,
+  Practitioner,
+  Resource,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth } from '../../test.setup';
+import { searchPatientCompartment } from './patienteverything';
 
 const app = express();
 let accessToken: string;
@@ -37,7 +47,10 @@ describe('Patient Everything Operation', () => {
       .post(`/fhir/R4/Practitioner`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Practitioner' });
+      .send({
+        resourceType: 'Practitioner',
+        qualification: [{ code: { text: 'MD' }, issuer: createReference(organization) }],
+      });
     expect(practRes.status).toBe(201);
     const practitioner = practRes.body as Practitioner;
 
@@ -97,6 +110,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const result = res4.body as Bundle;
+    expect(result.entry?.length).toStrictEqual(5);
     expect(
       result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
     ).toStrictEqual([
@@ -154,5 +168,70 @@ describe('Patient Everything Operation', () => {
       .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8.status).toBe(200);
+  });
+});
+
+describe('searchPatientCompartment', () => {
+  beforeEach(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+  });
+
+  afterEach(async () => {
+    await shutdownApp();
+  });
+
+  test('Successfully paginates through resource types', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+    const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      address: [{ use: 'home', line: ['123 Main St'], city: 'Anywhere', state: 'CA', postalCode: '90210' }],
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+      managingOrganization: createReference(organization),
+    });
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: createReference(patient),
+      performer: [createReference(practitioner), createReference(organization)],
+    });
+
+    // This condition references the patient twice, once as subject and once as asserter
+    // This is to test that the condition is only returned once
+    const condition = await repo.createResource({
+      resourceType: 'Condition',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      asserter: createReference(patient),
+      subject: createReference(patient),
+      recorder: createReference(practitioner),
+    });
+
+    // Force search to paginate to ensure that it's handled correctly
+    const results: BundleEntry[] = [];
+    let offset = 0;
+    while (offset < 100) {
+      const bundle = await searchPatientCompartment(repo, patient, { count: 1, offset });
+      if (bundle.entry?.length) {
+        results.push(...bundle.entry);
+        offset += bundle.entry.length;
+      } else {
+        break;
+      }
+    }
+    expect(results).toHaveLength(3);
+    expect(results).toStrictEqual(
+      expect.arrayContaining<BundleEntry>([
+        expect.objectContaining({ resource: patient, search: { mode: 'match' } }),
+        expect.objectContaining({ resource: observation, search: { mode: 'match' } }),
+        expect.objectContaining({ resource: condition, search: { mode: 'match' } }),
+      ])
+    );
   });
 });

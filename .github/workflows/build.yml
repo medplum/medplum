@@ -239,12 +239,19 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
-      - name: Upload code coverage
+      - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        continue-on-error: true
+        uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
-          name: medplum-code-coverage
-          path: coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: SonarCloud Scan
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   e2e:
     name: Run e2e tests

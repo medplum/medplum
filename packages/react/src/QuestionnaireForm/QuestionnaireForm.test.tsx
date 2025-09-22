@@ -2604,8 +2604,8 @@ describe('QuestionnaireForm', () => {
     const answers = getQuestionnaireAnswers(response);
 
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
-    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
-    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+    expect(answers['q2']).toMatchObject({ valueDecimal: 37.78 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 310.93 }); // Calculated Kelvin
   });
 
   test('Questionnaire CalculatedExpression with nested groups and QuestionnaireResponse', async () => {
@@ -2703,8 +2703,8 @@ describe('QuestionnaireForm', () => {
     const answers = getQuestionnaireAnswers(response);
 
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
-    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
-    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+    expect(answers['q2']).toMatchObject({ valueDecimal: 37.78 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 310.93 }); // Calculated Kelvin
   });
 
   test('Required radio button choice validation', async () => {

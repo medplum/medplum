@@ -67,6 +67,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    requester: ctx.membership.profile,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.headers?.['content-type'] as string,
     headers: req.headers,

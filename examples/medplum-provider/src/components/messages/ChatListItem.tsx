@@ -12,17 +12,20 @@ interface ChatListItemProps {
   topic: Communication;
   lastCommunication: Communication | undefined;
   isSelected: boolean;
+  onSelectedItem: (topic: Communication) => string;
 }
 
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
-  const { topic, lastCommunication, isSelected } = props;
+  const { topic, lastCommunication, isSelected, onSelectedItem } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
-  const content = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
+  const trimmedMsg = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
+  const content = trimmedMsg ? `${topic.topic?.text}: ${trimmedMsg}` : `No messages available`;
+  const topicName = topic.topic?.text ?? content;
 
   return (
-    <MedplumLink to={`/Message/${topic.id}`} c="dark">
+    <MedplumLink to={onSelectedItem(topic)} c="dark">
       <Group
         p="xs"
         key={topic.id}
@@ -38,7 +41,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
             {patientName}
           </Text>
           <Text size="sm" fw={400} c="gray.7" lineClamp={2} className={classes.content}>
-            {content ? `${lastCommunication?.sender?.display}: ${content}` : `No messages available`}
+            {topicName}
           </Text>
           <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
             {lastCommunication ? formatDateTime(lastCommunication.sent) : ''}

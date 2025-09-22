@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator, WithId } from '@medplum/core';
-import { HumanName, Patient } from '@medplum/fhirtypes';
+import { formatFamilyName, formatGivenName, formatHumanName, Operator, WithId } from '@medplum/core';
+import { HumanName, Patient, Practitioner, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { HumanNameTable, HumanNameTableRow } from './humanname';
+import { getHumanNameSortValue, HumanNameTable, HumanNameTableRow } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -284,6 +284,34 @@ describe('HumanName Lookup Table', () => {
       expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
     }));
 
+  test.failing('FAILING Sort by name multi-type', () =>
+    withTestContext(async () => {
+      const name = randomUUID();
+      const identifier = randomUUID();
+
+      const prac1 = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Ashley'], family: name }],
+      });
+
+      const prac2 = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Bobby'], family: name }],
+      });
+      const ascendingMultiType = await systemRepo.search({
+        resourceType: 'MultipleTypes' as ResourceType,
+        types: ['Patient', 'Practitioner'],
+        sortRules: [{ code: 'name' }],
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+      });
+
+      expect(ascendingMultiType.entry?.length).toStrictEqual(5);
+      expect(ascendingMultiType.entry?.map((e) => e.resource?.id)).toStrictEqual([prac1.id, prac2.id]);
+    })
+  );
+
   test('Purges related resource type', async () => {
     const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
 
@@ -364,5 +392,27 @@ describe('HumanName Lookup Table', () => {
         family: 'Smith',
       },
     ]);
+  });
+});
+
+describe('getHumanNameSortValue', () => {
+  const given = { code: 'given' } as SearchParameter;
+  const family = { code: 'family' } as SearchParameter;
+  const name = { code: 'name' } as SearchParameter;
+
+  const usual: HumanName = { use: 'usual', given: ['AAAAA'], family: 'S5' };
+  const official: HumanName = { use: 'official', given: ['AAAA'], family: 'S4' };
+  const missing: HumanName = { use: 'invalid' as HumanName['use'], given: ['AAA'], family: 'S3' };
+  const maiden: HumanName = { use: 'maiden', given: ['A'], family: 'S1' };
+  test('usual preferred', () => {
+    expect(getHumanNameSortValue([maiden, usual, official, missing], given)).toStrictEqual(formatGivenName(usual));
+    expect(getHumanNameSortValue([maiden, usual, official, missing], family)).toStrictEqual(formatFamilyName(usual));
+    expect(getHumanNameSortValue([maiden, usual, official, missing], name)).toStrictEqual(formatHumanName(usual));
+  });
+
+  test('missing over maiden', () => {
+    expect(getHumanNameSortValue([maiden, missing], given)).toStrictEqual(formatGivenName(missing));
+    expect(getHumanNameSortValue([maiden, missing], family)).toStrictEqual(formatFamilyName(missing));
+    expect(getHumanNameSortValue([maiden, missing], name)).toStrictEqual(formatHumanName(missing));
   });
 });

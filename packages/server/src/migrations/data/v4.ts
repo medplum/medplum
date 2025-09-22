@@ -3,26 +3,17 @@
 import { PoolClient } from 'pg';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { withLongRunningDatabaseClient } from '../migration-utils';
 import { MigrationActionResult } from '../types';
 import { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
   prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-  run: async (repo, job, jobData) => {
-    return runCustomMigration(repo, job, jobData, async () => {
-      return withLongRunningDatabaseClient(async (client) => {
-        const results: MigrationActionResult[] = [];
-        await run(client, results);
-        return results;
-      });
-    });
-  },
+  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
 // prettier-ignore
-async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.idempotentCreateIndex(client, results, 'Account___tokens_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account___tokens_idx" ON "Account" USING gin ("__tokens")');
   await fns.idempotentCreateIndex(client, results, 'Account___tokensTrgm_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account___tokensTrgm_idx" ON "Account" USING gin (token_array_to_text("__tokensText") gin_trgm_ops)');
   await fns.idempotentCreateIndex(client, results, 'ActivityDefinition___tokens_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "ActivityDefinition___tokens_idx" ON "ActivityDefinition" USING gin ("__tokens")');

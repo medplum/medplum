@@ -102,7 +102,7 @@ export class BackEnd extends Construct {
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
-        rds.AuroraPostgresEngineVersion.VER_12_9
+        rds.AuroraPostgresEngineVersion.VER_16_9
       );
 
       const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
@@ -288,10 +288,13 @@ export class BackEnd extends Construct {
     this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
-    this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
-      vpc: this.vpc,
-      containerInsights: config.containerInsights,
-    });
+    let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
+    if (config.containerInsightsV2) {
+      clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
+    } else {
+      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
+    }
+    this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
     // Task Policies
     this.taskRolePolicies = new iam.PolicyDocument({
