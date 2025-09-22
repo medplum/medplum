@@ -11,8 +11,12 @@ import {
   getGroupRepeatedAnswers,
   getHumanName,
   getPatientAddress,
+  getPatientAdministrativeSex,
   getPatientGender,
+  observationCategoryMapping,
+  observationCodeMapping,
   PROFILE_URLS,
+  upsertObservation,
 } from '../utils/intake-utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Patient> {
@@ -91,6 +95,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // is configured for "create"-only event.
   response.subject = createReference(patient);
   await medplum.createResource(response);
+
+  // Handle observations
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.administrativeSex,
+    observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
+    getPatientAdministrativeSex(answers['gender-identity']?.valueCoding?.code)
+  );
 
   // Handle encounter
   const encounters = getGroupRepeatedAnswers(questionnaire, response, 'encounters');
