@@ -5,7 +5,7 @@ tags: [auth]
 
 # Identity Providers 
 
-Below is a table of all the identity providers methods we offer. 
+Below is a list of all the authentication flows with identity providers we offer. 
 
 - Use [Medplum as identity provider](./medplum-as-idp.md)
 - Use [Google Auth as identity provider](./google-auth.md)
