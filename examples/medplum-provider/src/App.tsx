@@ -44,11 +44,9 @@ import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
-import { TaskDetailsModal } from './pages/tasks/TaskDetailsModal';
-import { TaskDetails } from './pages/tasks/TaskDetails';
+import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
-import { TaskSelectEmpty } from './components/tasks/TaskSelectEmpty';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -154,10 +152,8 @@ export function App(): JSX.Element | null {
                 <Route index element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
               </Route>
-              <Route path="/Task" element={<TasksPage />}>
-                <Route index element={<TaskSelectEmpty />} />
-                <Route path=":taskId" element={<TaskDetails />} />
-              </Route>
+              <Route path="Task" element={<TasksPage />} />
+              <Route path="Task/:taskId" element={<TasksPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
