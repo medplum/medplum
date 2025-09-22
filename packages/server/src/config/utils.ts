@@ -30,6 +30,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds ??= 30_000;
   config.accurateCountThreshold ??= 1_000_000;
+  config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
@@ -65,6 +66,7 @@ type DefaultConfigKeys =
   | 'bullmq'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
+  | 'maxSearchOffset'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
