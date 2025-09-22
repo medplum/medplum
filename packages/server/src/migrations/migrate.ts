@@ -382,6 +382,8 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingTable(result);
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
+  buildConceptMappingTable(result);
+  buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -866,6 +868,59 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
+    ],
+  });
+}
+
+function buildConceptMappingTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping',
+    columns: [
+      {
+        name: 'id',
+        type: 'BIGINT',
+        notNull: true,
+        defaultValue: 'nextval(\'"ConceptMapping_id_seq"\'::regclass)',
+        primaryKey: true,
+      },
+      { name: 'conceptMap', type: 'UUID', notNull: true },
+      { name: 'sourceSystem', type: 'TEXT', notNull: true },
+      { name: 'sourceCode', type: 'TEXT', notNull: true },
+      { name: 'targetSystem', type: 'TEXT', notNull: true },
+      { name: 'targetCode', type: 'TEXT', notNull: true },
+      { name: 'relationship', type: 'TEXT' },
+      { name: 'sourceDisplay', type: 'TEXT' },
+      { name: 'targetDisplay', type: 'TEXT' },
+      { name: 'comment', type: 'TEXT' },
+    ],
+    indexes: [
+      {
+        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
+        unique: true,
+      },
+    ],
+  });
+}
+
+function buildConceptMappingAttributeTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping_Attribute',
+    columns: [
+      { name: 'mapping', type: 'BIGINT', notNull: true },
+      { name: 'uri', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'value', type: 'TEXT', notNull: true },
+      { name: 'kind', type: 'TEXT', notNull: true },
+    ],
+    indexes: [
+      {
+        indexNameOverride: 'ConceptMapping_Attribute_pkey_idx',
+        indexType: 'btree',
+        columns: ['mapping', 'uri', 'type', 'value', 'kind'],
+        unique: true,
+      },
     ],
   });
 }
