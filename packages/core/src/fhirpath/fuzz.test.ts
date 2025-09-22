@@ -25,7 +25,13 @@ describe('FHIRPath parser fuzz tests', () => {
         family: fc.string(),
       })
     ),
-    birthDate: fc.date().map((d) => d.toISOString().split('T')[0]),
+    birthDate: fc.date().map((d) => {
+      try {
+        return d.toISOString().split('T')[0];
+      } catch (_err) {
+        return undefined;
+      }
+    }),
   });
 
   const options = { numRuns: 1000 };
