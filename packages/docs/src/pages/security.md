@@ -176,11 +176,15 @@ https://securityscorecard.com/security-rating/medplum.com
 
 <a href="https://scorecard.dev/viewer/?uri=github.com/medplum/medplum" target="_blank"><img src="/img/compliance/openssf-scorecard-screenshot.webp" alt="OpenSSF Scorecard screenshot" width="500" /></a>
 
+https://scorecard.dev/viewer/?uri=github.com/medplum/medplum
+
 ### OpenSSF Best Practices
 
 [OpenSSF Best Practices](https://www.bestpractices.dev/en) is a badge program that allows open source projects to demonstrate their adherence to security-related best practices.
 
 <a href="https://www.bestpractices.dev/en/projects/10900" target="_blank"><img src="/img/compliance/openssf-best-practices-screenshot.webp" alt="OpenSSF Best Practices screenshot" width="500" /></a>
+
+https://www.bestpractices.dev/en/projects/10900
 
 ### Snyk
 
