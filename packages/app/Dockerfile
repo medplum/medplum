@@ -1,4 +1,4 @@
-FROM nginxinc/nginx-unprivileged:alpine
+FROM nginxinc/nginx-unprivileged:alpine@sha256:5b0effa0dadea18909b023518bce97be3d9d41ea7b6d0f669985f678f4fdc203
 
 # Start off as user root so we have permissions to run APK and chown
 USER root

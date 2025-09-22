@@ -11,7 +11,7 @@
 # linux/amd64, linux/arm64, linux/arm/v7
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
-FROM node:20-slim
+FROM node:20-slim@sha256:d38efce970505168e50665d2350ae7d102204235d7072a1076afbdf227c1ea17
 
 ENV NODE_ENV=production
 
