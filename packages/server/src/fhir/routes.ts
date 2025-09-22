@@ -26,6 +26,7 @@ import { claimExportGetHandler, claimExportPostHandler } from './operations/clai
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
+import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
@@ -213,6 +214,10 @@ function initInternalFhirRouter(): FhirRouter {
   // ConceptMap $translate
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
+
+  // ConceptMap $import
+  router.add('POST', '/ConceptMap/$import', conceptMapImportHandler);
+  router.add('POST', '/ConceptMap/:id/$import', conceptMapImportHandler);
 
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
