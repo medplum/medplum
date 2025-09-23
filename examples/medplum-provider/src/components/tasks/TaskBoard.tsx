@@ -116,7 +116,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks()
-      .then(() => onTaskChange(task))
       .catch(showErrorNotification);
     onTaskChange(task);
   };

@@ -8,15 +8,14 @@ import { CodeableConceptInput, CodeInput, DateTimeInput, ReferenceInput, Resourc
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
 
-export interface NewTaskModalProps {
-  patient?: Patient;    
+export interface NewTaskModalProps { 
   opened: boolean;
   onClose: () => void;
   onTaskCreated?: (task: Task) => void;
 }
 
 export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
-  const { opened, onClose, patient, onTaskCreated } = props;
+  const { opened, onClose, onTaskCreated } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
@@ -28,9 +27,7 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
   const [priority, setPriority] = useState<string>('routine');
   const [assignee, setAssignee] = useState<Reference<Practitioner> | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
-  const [taskPatient, setTaskPatient] = useState<Reference<Patient> | undefined>(
-    patient ? createReference(patient) : undefined
-  );
+  const [taskPatient, setTaskPatient] = useState<Reference<Patient> | undefined>();
 
   const [taskCode, setTaskCode] = useState<CodeableConcept | undefined>();
   const [performerType, setPerformerType] = useState<CodeableConcept | undefined>();
@@ -106,9 +103,7 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
     setDueDate(undefined);
     setTaskCode(undefined);
     setPerformerType(undefined);
-    if (!patient) {
-      setTaskPatient(undefined);
-    }
+    setTaskPatient(undefined);
     setIsSubmitting(false);
     onClose();
   };
@@ -196,7 +191,6 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
                       onChange={(value: Patient | undefined) =>
                         setTaskPatient(value ? createReference(value) : undefined)
                       }
-                      disabled={!!patient}
                     />
 
                     <Box>
