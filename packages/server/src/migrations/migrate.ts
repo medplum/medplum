@@ -219,11 +219,6 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
     tables.push(await getTableDefinition(db, tableName));
   }
 
-  const unusedParsers = SpecialIndexParsers.filter((p) => !p.usageCount);
-  if (unusedParsers.length) {
-    throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
-  }
-
   return { tables, functions };
 }
 
@@ -271,41 +266,8 @@ async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Pr
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
-// If the index definition is beyond the ability of the parser, define a special-handler function here
-type SpecialIndexParser = ((indexdef: string) => IndexDefinition | undefined) & { usageCount?: number };
-const SpecialIndexParsers: SpecialIndexParser[] = [
-  // example special parser that is no longer needed
-  // (indexdef: string) => {
-  //   // CREATE INDEX "Coding_display_idx" ON public."Coding" USING gin (system, to_tsvector('english'::regconfig, display)) WHERE (display IS NOT NULL)
-  //   const tsVectorExpr = tsVectorExpression('english', 'display');
-  //   const match = indexdef.endsWith(`USING gin (system, ${tsVectorExpr}) WHERE (display IS NOT NULL)`);
-  //   if (!match) {
-  //     return undefined;
-  //   }
-  //   return {
-  //     columns: ['system', { expression: tsVectorExpr, name: 'display' }],
-  //     indexType: 'gin',
-  //     where: 'display IS NOT NULL',
-  //   };
-  // },
-];
-
 export function parseIndexDefinition(indexdef: string): IndexDefinition {
   const fullIndexDef = indexdef;
-
-  const specialMatches = SpecialIndexParsers.map((p) => {
-    const result = p(indexdef);
-    if (result) {
-      p.usageCount = (p.usageCount ?? 0) + 1;
-    }
-    return p(indexdef);
-  }).filter((d): d is IndexDefinition => !!d);
-  if (specialMatches.length > 1) {
-    throw new Error('Multiple special index parsers matched: ' + indexdef);
-  } else if (specialMatches.length === 1) {
-    specialMatches[0].indexdef = fullIndexDef;
-    return specialMatches[0];
-  }
 
   let where: string | undefined;
   const whereMatch = indexdef.match(/ WHERE \((.+)\)$/);
