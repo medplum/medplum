@@ -12,7 +12,7 @@ import {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { JSX, useEffect, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
@@ -93,6 +93,30 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     fetchSlots({ start: getStart(month), end: getEnd(month) }).then(setSlots);
   }, [medplum, props.schedule, month]);
 
+  // Create a map of start times to slots to handle duplicate start times
+  const startTimeToSlotMap = useMemo(() => {
+    if (!date) {
+      return null;
+    }
+    const sortedSlots = (slots || [])
+      // Filter slots to only include those that are within the date range
+      .filter((slot) => {
+        return (
+          new Date(slot.start as string).getTime() > date.getTime() &&
+          new Date(slot.start as string).getTime() < date.getTime() + 24 * 3600 * 1000
+        );
+      })
+      // Sort slots by start time
+      .sort((a, b) => {
+        return new Date(a.start as string).getTime() - new Date(b.start as string).getTime();
+      });
+    const startTimeToSlotMap = new Map<string, Slot>();
+    for (const slot of sortedSlots) {
+      startTimeToSlotMap.set(formatTime(new Date(slot.start as string)), slot);
+    }
+    return startTimeToSlotMap;
+  }, [slots, date]);
+
   if (!slots || !questionnaire) {
     return null;
   }
@@ -121,17 +145,13 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
           <div>
             <h3>Select time</h3>
             <Stack>
-              {slots.map((s) => {
-                const slotStart = new Date(s.start as string);
+              {Array.from(startTimeToSlotMap?.entries() ?? []).map(([startTime, slot]) => {
                 return (
-                  slotStart.getTime() > date.getTime() &&
-                  slotStart.getTime() < date.getTime() + 24 * 3600 * 1000 && (
-                    <div key={s.id}>
-                      <Button variant="outline" style={{ width: 150 }} onClick={() => setSelectedSlot(s)}>
-                        {formatTime(slotStart)}
-                      </Button>
-                    </div>
-                  )
+                  <div key={slot.id}>
+                    <Button variant="outline" style={{ width: 150 }} onClick={() => setSelectedSlot(slot)}>
+                      {startTime}
+                    </Button>
+                  </div>
                 );
               })}
             </Stack>
