@@ -30,6 +30,7 @@ import { TaskSelectEmpty } from './TaskSelectEmpty';
 import { TasksInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
 import { NewTaskModal } from './NewTaskModal';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 
 interface FilterState {
   showMyTasks: boolean;
@@ -57,6 +58,8 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const selectedPatient = useResource(selectedTask?.for);
   const [activeTab, setActiveTab] = useState<string>('properties');
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
+  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
+
 
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
@@ -117,14 +120,16 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks()
       .catch(showErrorNotification);
-    onTaskChange(task);
+    handleTaskChange(task)
+    .catch(showErrorNotification);
   };
 
-  const handleTaskChange = (task: Task): void => {
+  const handleTaskChange = async (task: Task): Promise<void> => {
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
     onTaskChange(task);
+    setSelectedTask(task);
+    await debouncedUpdateResource(task);
   };
-
 
   const handleDeleteTask = (task: Task): void => {
     setTasks(tasks.filter((t) => t.id !== task.id));
@@ -286,7 +291,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                               key={selectedTask.id}
                               p="md"
                               task={selectedTask}
-                              onTaskChange={onTaskChange}
+                              onTaskChange={handleTaskChange}
                             />
                           </ScrollArea>
                         )}
