@@ -71,7 +71,6 @@ describe('SignatureInput', () => {
     });
   });
 
-
   test('Signature data is raw binary (base64)', async () => {
     const handleChange = jest.fn();
 
@@ -220,4 +219,3 @@ describe('SignatureInput', () => {
     expect(decodedData.charCodeAt(3)).toBe(71); // 'G'
   });
 });
-
