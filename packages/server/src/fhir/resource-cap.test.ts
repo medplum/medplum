@@ -20,9 +20,9 @@ describe('FHIR Resource Limits', () => {
 
   beforeEach(async () => {
     app = express();
-    await initApp(app, config);
     config.defaultRateLimit = -1;
     config.redis.db = 6; // Use different temp Redis instance for these tests
+    await initApp(app, config);
   });
 
   afterEach(async () => {
