@@ -97,7 +97,7 @@ export class AgentByteStreamChannel extends BaseChannel {
   }
 
   private configureTcpServerAndConnections(): void {
-    const address = new URL(this.getEndpoint().address as string);
+    const address = new URL(this.getEndpoint().address);
 
     const startCharStr = address.searchParams.get('startChar');
     const endCharStr = address.searchParams.get('endChar');
@@ -127,7 +127,7 @@ export class AgentByteStreamChannel extends BaseChannel {
 }
 
 export class ByteStreamChannelConnection {
-  private msgChunks: Buffer[] = [];
+  private readonly msgChunks: Buffer[] = [];
   private msgTotalLength = -1; // -1 signals message start char has not yet been received
   readonly channel: AgentByteStreamChannel;
   readonly socket: net.Socket;
@@ -172,7 +172,7 @@ export class ByteStreamChannelConnection {
           this.channel.app.addToWebSocketQueue({
             type: 'agent:transmit:request',
             accessToken: 'placeholder',
-            channel: this.channel.getDefinition().name as string,
+            channel: this.channel.getDefinition().name,
             remote: this.remote,
             contentType: ContentType.OCTET_STREAM,
             body: messageBuffer.toString('hex'),
