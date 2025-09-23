@@ -197,7 +197,6 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
                         setTaskPatient(value ? createReference(value) : undefined)
                       }
                       disabled={!!patient}
-                      required
                     />
 
                     <Box>
