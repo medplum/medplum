@@ -306,10 +306,9 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexdef = indexdef.substring(0, whereMatch.index);
   }
 
-  let _withClause: string | undefined;
+  // parse but ignore WITH clause since we don't want to consider any index settings in the official schema
   const withMatch = indexdef.match(/ WITH \((.+)\)$/);
   if (withMatch) {
-    _withClause = withMatch[1];
     indexdef = indexdef.substring(0, withMatch.index);
   }
 
