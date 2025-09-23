@@ -514,7 +514,7 @@ describe('App', () => {
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
-    const bytestreamProdEndpoint = await medplum.createResource<Endpoint>({
+    let bytestreamProdEndpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
       address: 'tcp://0.0.0.0:9005?startChar=a&endChar=b',
@@ -632,6 +632,17 @@ describe('App', () => {
       address: enhancedProdAddress.toString(),
     });
 
+    // Test rebinding to port for byte stream channel
+    const oldPortBytestreamAddress = bytestreamProdEndpoint.address;
+    const changedPortEndpointAddress = new URL(bytestreamProdEndpoint.address);
+    changedPortEndpointAddress.port = '9010';
+
+    // Update the new address
+    bytestreamProdEndpoint = await medplum.updateResource<Endpoint>({
+      ...bytestreamProdEndpoint,
+      address: changedPortEndpointAddress.toString(),
+    });
+
     // Update endpoint name
     await medplum.updateResource({
       ...agent,
@@ -721,6 +732,11 @@ describe('App', () => {
 
     // But enhanced mode should be active on the existing connection
     expect(hl7ProdConnectionAfter.hl7Connection.enhancedMode).toStrictEqual(true);
+
+    // Check that the byte stream channel was rebound
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining(`Address changed: ${oldPortBytestreamAddress} => ${bytestreamProdEndpoint.address}`)
+    );
 
     // Make sure old staging channel is closed
     shouldThrow = false;
