@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
+import { Client, Pool, PoolClient } from 'pg';
 import { ColumnDefinition } from './types';
+
+/**
+ * When comparing introspective SQL statements, column names are often only wrapped in double quotes when they are mixed case.
+ * @param name - a column name
+ * @returns The name, possibly wrapped in double quotes if it is mixed case
+ */
+function escapeMixedCaseIdentifier(name: string): string {
+  return name === name.toLocaleLowerCase() ? name : '"' + name + '"';
+}
 
 /**
  * When writing SQL statements to a file, adds an escaped backslash, i.e. \\, before single quotes in the expression.
@@ -22,7 +31,7 @@ export function doubleEscapeSingleQuotes(expression: string): string {
  * @returns The SQL expression
  */
 export function tsVectorExpression(config: 'simple' | 'english', column: string): string {
-  return `to_tsvector('${config}'::regconfig, ${escapeIdentifier(column)})`;
+  return `to_tsvector('${config}'::regconfig, ${escapeMixedCaseIdentifier(column)})`;
 }
 
 /**

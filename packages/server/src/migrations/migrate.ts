@@ -20,7 +20,13 @@ import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
-import { escapeUnicode, getColumns, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
+import {
+  escapeUnicode,
+  getColumns,
+  parseIndexColumns,
+  splitIndexColumnNames,
+  tsVectorExpression,
+} from './migrate-utils';
 import {
   CheckConstraintDefinition,
   ColumnDefinition,
@@ -724,32 +730,32 @@ function buildAddressTable(result: SchemaDefinition): void {
     ['address', 'city', 'country', 'postalCode', 'state', 'use'],
     [
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, address)", name: 'address' }],
+        columns: [{ expression: tsVectorExpression('simple', 'address'), name: 'address' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: 'to_tsvector(\'simple\'::regconfig, "postalCode")', name: 'postalCode' }],
+        columns: [{ expression: tsVectorExpression('simple', 'postalCode'), name: 'postalCode' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, city)", name: 'city' }],
+        columns: [{ expression: tsVectorExpression('simple', 'city'), name: 'city' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, use)", name: 'use' }],
+        columns: [{ expression: tsVectorExpression('simple', 'use'), name: 'use' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, country)", name: 'country' }],
+        columns: [{ expression: tsVectorExpression('simple', 'country'), name: 'country' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, state)", name: 'state' }],
+        columns: [{ expression: tsVectorExpression('simple', 'state'), name: 'state' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
@@ -784,19 +790,19 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         indexType: 'gin',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
+        columns: [{ expression: tsVectorExpression('simple', 'name'), name: 'name' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
+        columns: [{ expression: tsVectorExpression('simple', 'given'), name: 'given' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
+        columns: [{ expression: tsVectorExpression('simple', 'family'), name: 'family' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
