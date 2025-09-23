@@ -170,6 +170,22 @@ https://hub.docker.com/r/medplum/medplum-server
 
 https://securityscorecard.com/security-rating/medplum.com
 
+### OpenSSF Scorecard
+
+[OpenSSF Scorecard](https://scorecard.dev/) is a tool that automatically checks a project's repository against a set of security best practices and assigns a risk score.
+
+<a href="https://scorecard.dev/viewer/?uri=github.com/medplum/medplum" target="_blank"><img src="/img/compliance/openssf-scorecard-screenshot.webp" alt="OpenSSF Scorecard screenshot" width="500" /></a>
+
+https://scorecard.dev/viewer/?uri=github.com/medplum/medplum
+
+### OpenSSF Best Practices
+
+[OpenSSF Best Practices](https://www.bestpractices.dev/en) is a badge program that allows open source projects to demonstrate their adherence to security-related best practices.
+
+<a href="https://www.bestpractices.dev/en/projects/10900" target="_blank"><img src="/img/compliance/openssf-best-practices-screenshot.webp" alt="OpenSSF Best Practices screenshot" width="500" /></a>
+
+https://www.bestpractices.dev/en/projects/10900
+
 ### Snyk
 
 [Snyk](https://snyk.io/) is a comprehensive developer security platform that integrates security scanning across proprietary code, open source dependencies, container images, and cloud infrastructure, providing unified vulnerability detection and remediation capabilities throughout the development lifecycle.
