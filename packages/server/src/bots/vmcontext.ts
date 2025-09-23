@@ -52,6 +52,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     console: botConsole,
     fetch,
     require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
+    process,
     ContentType,
     Hl7Message,
     MedplumClient,
