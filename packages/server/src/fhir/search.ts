@@ -404,11 +404,7 @@ function getBaseSelectQueryForResourceType(
       .column(new Column(resourceType, 'content'));
   }
   if (opts?.maxResourceVersion !== undefined) {
-    const col = new Column(resourceType, '__version');
-    builder.whereExpr(
-      // PENDING{v4.4.0} - remove null check
-      new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
-    );
+    builder.whereExpr(new Condition(new Column(resourceType, '__version'), '<=', opts.maxResourceVersion));
   }
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
@@ -1100,22 +1096,15 @@ function trySpecialSearchParameter(
       );
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-        // PENDING{v4.4.0} Once `projectId` is NOT NULL, remove `null` handling
         if (
           (filter.operator === Operator.MISSING && filter.value === 'true') ||
           (filter.operator === Operator.PRESENT && filter.value !== 'true')
         ) {
           // missing
-          return new Disjunction([
-            new Condition(new Column(table, 'projectId'), '=', null),
-            new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId),
-          ]);
+          return new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId);
         } else {
           // present
-          return new Conjunction([
-            new Condition(new Column(table, 'projectId'), '!=', null),
-            new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId),
-          ]);
+          return new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId);
         }
       }
 
@@ -1514,7 +1503,7 @@ function addOrderByClause(
   if (impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
     builder.orderBy(impl.columnName, sortRule.descending);
