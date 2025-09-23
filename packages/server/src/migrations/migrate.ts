@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  deepClone,
   deepEquals,
   FileBuilder,
   getResourceTypes,
@@ -428,18 +429,6 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodeSystemPropertyTable(result);
   buildDatabaseMigrationTable(result);
 
-  // translate SERIAL types to INT types
-  for (const tableDef of result.tables) {
-    for (const columnDef of tableDef.columns) {
-      if (SerialColumnTypes.has(columnDef.type.toLocaleUpperCase())) {
-        columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
-        columnDef.notNull = true;
-        const sequenceName = [tableDef.name, columnDef.name, 'seq'].join('_');
-        columnDef.defaultValue = "nextval('" + escapeIdentifier(sequenceName) + "'::regclass)";
-      }
-    }
-  }
-
   return result;
 }
 
@@ -539,7 +528,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
-        if (!columnDefinitionsEqual(existing, column)) {
+        if (!columnDefinitionsEqual(tableDefinition, existing, column)) {
           throw new Error(
             `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
           );
@@ -1164,7 +1153,7 @@ function generateColumnsActions(
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
       actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
-    } else if (!columnDefinitionsEqual(startColumn, targetColumn)) {
+    } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
       actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
     }
   }
@@ -1568,7 +1557,26 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
   return deepEquals(aPrime, bPrime);
 }
 
-export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
+/**
+ * Translate SERIAL types to INT types based on {@link https://www.postgresql.org/docs/16/datatype-numeric.html#DATATYPE-SERIAL}
+ *
+ * @param tableDef - the table definition
+ * @param inputColumnDef - the column definition to desugar
+ * @returns the desugared column definition if it was a SERIAL type, otherwise the original column definition
+ */
+function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
+  if (SerialColumnTypes.has(inputColumnDef.type.toLocaleUpperCase())) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
+    columnDef.notNull = true;
+    const sequenceName = [tableDef.name, columnDef.name, 'seq'].join('_');
+    columnDef.defaultValue = `nextval('${escapeIdentifier(sequenceName)}'::regclass)`;
+    return columnDef;
+  }
+  return inputColumnDef;
+}
+
+export function columnDefinitionsEqual(table: TableDefinition, a: ColumnDefinition, b: ColumnDefinition): boolean {
   // Populate optional fields with default values before comparing
   for (const def of [a, b]) {
     def.defaultValue ??= undefined;
@@ -1577,7 +1585,7 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
-  return deepEquals(a, b);
+  return deepEquals(desugarSerialColumnTypes(table, a), desugarSerialColumnTypes(table, b));
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
