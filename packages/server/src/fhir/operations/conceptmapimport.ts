@@ -120,7 +120,6 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   const params = parseInputParameters<ConceptMapImportParameters>(operation, req);
-  console.log('===== GOT PARAMS', JSON.stringify(params, null, 2));
 
   let conceptMap: WithId<ConceptMap>;
   if (req.params.id) {

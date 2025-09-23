@@ -155,7 +155,7 @@ describe('ConceptMap/$import', () => {
                 name: 'dependsOn',
                 part: [
                   { name: 'code', valueCode: 'context' },
-                  { name: 'value', valueCode: '403625006' },
+                  { name: 'value', valueCoding: { system: SNOMED, code: '403625006' } },
                 ],
               },
             ],
@@ -171,8 +171,10 @@ describe('ConceptMap/$import', () => {
       .column('conceptMap')
       .column('sourceSystem')
       .column('sourceCode')
+      .column('sourceDisplay')
       .column('targetSystem')
       .column('targetCode')
+      .column('targetDisplay')
       .column('relationship')
       .column('comment')
       .join(
@@ -201,8 +203,8 @@ describe('ConceptMap/$import', () => {
       relationship: null,
       kind: 'dependsOn',
       uri: 'context',
-      type: 'code',
-      value: `"403625006"`,
+      type: 'Coding',
+      value: `{"system":"http://snomed.info/sct","code":"403625006"}`,
     });
   });
 });
