@@ -29,6 +29,7 @@ import {
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
+  SerialColumnTypes,
   TableDefinition,
 } from './types';
 
@@ -426,6 +427,18 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
   buildDatabaseMigrationTable(result);
+
+  // translate SERIAL types to INT types
+  for (const tableDef of result.tables) {
+    for (const columnDef of tableDef.columns) {
+      if (SerialColumnTypes.has(columnDef.type.toLocaleUpperCase())) {
+        columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
+        columnDef.notNull = true;
+        const sequenceName = [tableDef.name, columnDef.name, 'seq'].join('_');
+        columnDef.defaultValue = "nextval('" + escapeIdentifier(sequenceName) + "'::regclass)";
+      }
+    }
+  }
 
   return result;
 }
@@ -833,11 +846,8 @@ function buildCodingTable(result: SchemaDefinition): void {
     columns: [
       {
         name: 'id',
-        type: 'BIGINT',
+        type: 'BIGSERIAL',
         primaryKey: true,
-        notNull: true,
-        serial: true,
-        defaultValue: 'nextval(\'"Coding_id_seq"\'::regclass)',
       },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
@@ -898,11 +908,8 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
     columns: [
       {
         name: 'id',
-        type: 'BIGINT',
+        type: 'BIGSERIAL',
         primaryKey: true,
-        notNull: true,
-        serial: true,
-        defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
       },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
@@ -1237,10 +1244,10 @@ function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfEx
   const queries: string[] = [];
   const createTableLines = [];
   for (const column of tableDef.columns) {
-    const typePart = column.serial ? column.type.replace('INT', 'SERIAL') : column.type;
+    const typePart = column.type;
     const pkPart = column.primaryKey ? ' PRIMARY KEY' : '';
     const notNullPart = column.notNull && !column.primaryKey ? ' NOT NULL' : '';
-    const defaultPart = column.defaultValue && !column.serial ? ' DEFAULT ' + column.defaultValue : '';
+    const defaultPart = column.defaultValue ? ' DEFAULT ' + column.defaultValue : '';
     createTableLines.push(`  "${column.name}" ${typePart}${pkPart}${notNullPart}${defaultPart}`);
   }
 
@@ -1546,7 +1553,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
-      unique: d.unique ?? false,
+      unique: (d.primaryKey || d.unique) ?? false,
       // parseIndexDefinition does not include primary key information
       primaryKey: undefined,
       // for expressions, ignore names since those are only used for index name generation

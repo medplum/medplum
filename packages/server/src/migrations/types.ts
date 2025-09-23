@@ -15,13 +15,14 @@ export interface TableDefinition {
   constraints?: CheckConstraintDefinition[];
 }
 
+export const SerialColumnTypes = new Set(['BIGSERIAL', 'SERIAL', 'SMALLSERIAL']);
+
 export interface ColumnDefinition {
   name: string;
   type: string;
   notNull?: boolean;
   defaultValue?: string;
   primaryKey?: boolean;
-  serial?: boolean;
 }
 
 export const IndexTypes = ['btree', 'gin', 'gist'] as const;
