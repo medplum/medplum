@@ -415,3 +415,71 @@ test('Uses correct patient name from resource', async () => {
   createResourceSpy.mockRestore();
   readResourceSpy.mockRestore();
 });
+
+test('Uses correct practitioner name in healthcare provider section', async () => {
+  const medplum = new MockClient();
+
+  // Create a practitioner with specific name
+  const practitioner = {
+    resourceType: 'Practitioner',
+    id: 'practitioner-123',
+    name: [
+      {
+        given: ['Jane'],
+        prefix: ['Dr.'],
+        family: 'Smith',
+      },
+    ],
+  };
+
+  const mockBinary = { id: 'binary-123' };
+  const createPdfSpy = vi.spyOn(medplum, 'createPdf').mockResolvedValue(mockBinary as any);
+
+  const mockDocumentReference = {
+    id: 'doc-ref-123',
+    resourceType: 'DocumentReference',
+  };
+  const createResourceSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(mockDocumentReference as any);
+
+  // Mock the readResource method to return our practitioner
+  const readResourceSpy = vi.spyOn(medplum, 'readResource').mockResolvedValue(practitioner);
+
+  const questionnaireResponse: QuestionnaireResponse = {
+    resourceType: 'QuestionnaireResponse',
+    status: 'completed',
+    subject: createReference(HomerSimpson),
+    author: createReference(practitioner),
+    item: [
+      {
+        linkId: 'sick-note-needed',
+        answer: [{ valueBoolean: true }],
+      },
+      {
+        linkId: 'days-of-sick-note',
+        answer: [{ valueInteger: 3 }],
+      },
+    ],
+  };
+
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input: questionnaireResponse,
+    contentType,
+    secrets: {},
+  });
+
+  expect(result).toBe(mockDocumentReference);
+  expect(createPdfSpy).toHaveBeenCalledWith({
+    docDefinition: expect.objectContaining({
+      content: expect.arrayContaining([
+        expect.objectContaining({
+          text: 'Dr. Jane Smith',
+        }),
+      ]),
+    }),
+  });
+
+  createPdfSpy.mockRestore();
+  createResourceSpy.mockRestore();
+  readResourceSpy.mockRestore();
+});

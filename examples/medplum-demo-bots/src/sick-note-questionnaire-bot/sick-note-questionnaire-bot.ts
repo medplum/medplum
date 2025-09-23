@@ -68,7 +68,7 @@ export async function handler(
       if (practitionerId) {
         const practitioner = await medplum.readResource('Practitioner', practitionerId);
         practitionerName = practitioner.name?.[0]
-          ? `${practitioner.name[0].given?.join(' ')} ${practitioner.name[0].family}`
+          ? `${practitioner.name[0].prefix?.join(' ')} ${practitioner.name[0].given?.join(' ')} ${practitioner.name[0].family}`
           : 'Healthcare Provider';
       } else {
         console.log('No practitioner ID found in author reference');
