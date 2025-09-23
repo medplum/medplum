@@ -4,11 +4,19 @@ import { Box, Button, Divider, Grid, Modal, Stack, Text, TextInput, Textarea } f
 import { notifications } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import { CodeableConcept, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
-import { CodeableConceptInput, CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  CodeableConceptInput,
+  CodeInput,
+  DateTimeInput,
+  ReferenceInput,
+  ResourceInput,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
 
-export interface NewTaskModalProps { 
+export interface NewTaskModalProps {
   opened: boolean;
   onClose: () => void;
   onTaskCreated?: (task: Task) => void;
@@ -211,8 +219,9 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
                       placeholder="Select performer type (optional)"
                       binding="http://hl7.org/fhir/ValueSet/performer-role"
                       maxValues={1}
-                      onChange={(value) => setPerformerType(value as CodeableConcept)} 
-                      path={'Task.performerType'}                    />
+                      onChange={(value) => setPerformerType(value as CodeableConcept)}
+                      path={'Task.performerType'}
+                    />
                   </Stack>
                 </Box>
               </Stack>
