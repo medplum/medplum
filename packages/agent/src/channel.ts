@@ -45,7 +45,7 @@ export abstract class BaseChannel implements Channel {
 export const ChannelType = {
   HL7_V2: 'HL7_V2',
   DICOM: 'DICOM',
-  BYTE_STREAM: 'byte_stream',
+  BYTE_STREAM: 'BYTE_STREAM',
 } as const;
 export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
@@ -74,7 +74,7 @@ export function getChannelTypeShortName(endpoint: Endpoint): string {
         return 'Byte Stream';
       default:
         channelType satisfies never;
-        return 'Unknown'; // This should never happen
+        throw new Error('Unreachable');
     }
   } catch (err) {
     throw new Error(`Invalid endpoint type with address '${endpoint.address}'`, { cause: err });
