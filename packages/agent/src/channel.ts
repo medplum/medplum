@@ -63,14 +63,20 @@ export function getChannelType(endpoint: Endpoint): ChannelType {
 }
 
 export function getChannelTypeShortName(endpoint: Endpoint): string {
-  switch (getChannelType(endpoint)) {
-    case ChannelType.HL7_V2:
-      return 'HL7';
-    case ChannelType.DICOM:
-      return 'DICOM';
-    case ChannelType.BYTE_STREAM:
-      return 'Byte Stream';
-    default:
-      throw new Error(`Invalid endpoint type with address '${endpoint.address}'`);
+  try {
+    const channelType = getChannelType(endpoint);
+    switch (channelType) {
+      case ChannelType.HL7_V2:
+        return 'HL7';
+      case ChannelType.DICOM:
+        return 'DICOM';
+      case ChannelType.BYTE_STREAM:
+        return 'Byte Stream';
+      default:
+        channelType satisfies never;
+        return 'Unknown'; // This should never happen
+    }
+  } catch (err) {
+    throw new Error(`Invalid endpoint type with address '${endpoint.address}'`, { cause: err });
   }
 }

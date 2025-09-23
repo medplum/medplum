@@ -520,18 +520,24 @@ export class App {
       return;
     }
 
-    switch (getChannelType(endpoint)) {
-      case ChannelType.DICOM:
-        channel = new AgentDicomChannel(this, definition, endpoint);
-        break;
-      case ChannelType.HL7_V2:
-        channel = new AgentHl7Channel(this, definition, endpoint);
-        break;
-      case ChannelType.BYTE_STREAM:
-        channel = new AgentByteStreamChannel(this, definition, endpoint);
-        break;
-      default:
-        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    try {
+      const channelType = getChannelType(endpoint);
+      switch (channelType) {
+        case ChannelType.DICOM:
+          channel = new AgentDicomChannel(this, definition, endpoint);
+          break;
+        case ChannelType.HL7_V2:
+          channel = new AgentHl7Channel(this, definition, endpoint);
+          break;
+        case ChannelType.BYTE_STREAM:
+          channel = new AgentByteStreamChannel(this, definition, endpoint);
+          break;
+        default:
+          throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+      }
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      return;
     }
 
     channel.start();

@@ -62,7 +62,7 @@ describe('App', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
-    // console.log = jest.fn();
+    console.log = jest.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
