@@ -15,6 +15,8 @@ export interface TableDefinition {
   constraints?: CheckConstraintDefinition[];
 }
 
+export const SerialColumnTypes = new Set(['BIGSERIAL', 'SERIAL', 'SMALLSERIAL']);
+
 export interface ColumnDefinition {
   name: string;
   type: string;
@@ -35,6 +37,7 @@ export interface IndexDefinition {
   columns: (string | IndexColumn)[];
   indexType: IndexType;
   unique?: boolean;
+  primaryKey?: boolean;
   include?: string[];
   where?: string;
   indexNameSuffix?: string;
