@@ -21,6 +21,7 @@ export interface ColumnDefinition {
   notNull?: boolean;
   defaultValue?: string;
   primaryKey?: boolean;
+  serial?: boolean;
 }
 
 export const IndexTypes = ['btree', 'gin', 'gist'] as const;
@@ -35,6 +36,7 @@ export interface IndexDefinition {
   columns: (string | IndexColumn)[];
   indexType: IndexType;
   unique?: boolean;
+  primaryKey?: boolean;
   include?: string[];
   where?: string;
   indexNameSuffix?: string;
