@@ -37,7 +37,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
         ],
         when: new Date().toISOString(),
         who: who ?? createReference(medplum.getProfile() as ProfileResource),
-        data: signaturePadRef.current?.toDataURL(),
+        data: signaturePadRef.current?.toDataURL().split(',')[1],
       });
     }
 
