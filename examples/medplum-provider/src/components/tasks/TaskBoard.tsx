@@ -60,7 +60,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
-
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
     status: undefined,
@@ -118,10 +117,8 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   }, [selectedTaskId, tasks, medplum, navigate]);
 
   const handleNewTaskCreated = (task: Task): void => {
-    fetchTasks()
-      .catch(showErrorNotification);
-    handleTaskChange(task)
-    .catch(showErrorNotification);
+    fetchTasks().catch(showErrorNotification);
+    handleTaskChange(task).catch(showErrorNotification);
   };
 
   const handleTaskChange = async (task: Task): Promise<void> => {
@@ -228,12 +225,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   />
                 </Group>
 
-                <ActionIcon 
-                  radius="50%" 
-                  variant="filled" 
-                  color="blue" 
-                  onClick={() => setNewTaskModalOpened(true)}
-                >
+                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewTaskModalOpened(true)}>
                   <IconPlus size={16} />
                 </ActionIcon>
               </Flex>
@@ -332,7 +324,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
           </Flex>
         )}
       </Flex>
-      
+
       <NewTaskModal
         opened={newTaskModalOpened}
         onClose={() => setNewTaskModalOpened(false)}
