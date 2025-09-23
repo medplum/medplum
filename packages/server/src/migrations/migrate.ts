@@ -397,9 +397,12 @@ export async function getCheckConstraints(
     contype: string;
     convalidated: boolean;
     condef: string;
-  }>(`SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
+  }>(
+    `SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
 FROM pg_catalog.pg_constraint
-WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::regclass) AND contype = 'c'`);
+WHERE connamespace = 'public'::regnamespace AND conrelid IN($1::regclass) AND contype = 'c'`,
+    [escapeIdentifier(tableName)]
+  );
 
   const cds: (CheckConstraintDefinition & { valid: boolean })[] = [];
   for (const row of rs.rows) {

@@ -171,7 +171,8 @@ export async function getColumns(
   tableName: string
 ): Promise<(ColumnDefinition & { primaryKey: boolean; notNull: boolean })[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
-  const rs = await db.query(`
+  const rs = await db.query(
+    `
     SELECT
       attname,
       attnotnull,
@@ -185,12 +186,14 @@ export async function getColumns(
       LEFT JOIN pg_catalog.pg_attrdef d ON (pg_attribute.attrelid, pg_attribute.attnum) = (d.adrelid, d.adnum)
     WHERE
       pg_namespace.nspname = 'public'
-      AND pg_class.relname = '${tableName}'
+      AND pg_class.relname = $1
       AND attnum > 0
       AND NOT attisdropped
     ORDER BY
       attnum
-  `);
+  `,
+    [tableName]
+  );
 
   return rs.rows.map((row) => ({
     name: row.attname,
