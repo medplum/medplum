@@ -247,7 +247,7 @@ async function getFunctionDefinition(
 ): Promise<SqlFunctionDefinition | undefined> {
   let result: QueryResult<{ pg_get_functiondef: string }>;
   try {
-    result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
+    result = await db.query(`SELECT pg_catalog.pg_get_functiondef($1::regproc::oid);`, [name]);
   } catch (_err) {
     return undefined;
   }
@@ -267,7 +267,7 @@ async function getFunctionDefinition(
 }
 
 async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Promise<IndexDefinition[]> {
-  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
+  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
