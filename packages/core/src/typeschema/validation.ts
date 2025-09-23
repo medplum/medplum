@@ -194,6 +194,14 @@ class ResourceValidator implements CrawlerVisitor {
       throw new Error(`Missing element validation schema for ${key}`);
     }
 
+    // Special handling for Binary.data
+    // - Treat as opaque base64; do not recurse or apply generic string constraints (1 MB cap, trim, etc.)
+    // - This prevents excessive work and potential stack overflow on very large payloads
+    const isBinaryData =
+      this.currentResource.length > 0 &&
+      this.currentResource[this.currentResource.length - 1]?.resourceType === 'Binary' &&
+      key === 'data';
+
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
         return;
@@ -232,12 +240,39 @@ class ResourceValidator implements CrawlerVisitor {
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
-      for (const value of values) {
-        this.constraintsCheck(value, element);
-        this.referenceTypeCheck(value, element);
-        this.checkPropertyValue(value);
+      for (const v of values) {
+        this.constraintsCheck(v, element);
+        this.referenceTypeCheck(v, element);
 
-        const sliceName = checkSliceElement(value, element.slicing);
+        if (isBinaryData) {
+          // Fast-path validation for Binary.data
+          const pathForIssues = v.path;
+          if (typeof v.value !== 'string') {
+            this.issues.push(createStructureIssue(pathForIssues, 'Invalid JSON type: expected string, but got ' + typeof v.value));
+          } else {
+            // Validate base64 shape with a permissive regex; avoid expensive ops like trim on very large strings
+            const base64Re = validationRegexes.base64Binary;
+            if (!base64Re.exec(v.value)) {
+              this.issues.push(createStructureIssue(pathForIssues, 'Invalid base64Binary format'));
+            }
+            // Optional upper bound to avoid pathological payloads; allow large binaries (50MB decoded)
+            let padding = 0;
+            if (v.value.endsWith('==')) {
+              padding = 2;
+            } else if (v.value.endsWith('=')) {
+              padding = 1;
+            }
+            const approxBytes = Math.max(0, Math.floor((v.value.length * 3) / 4) - padding);
+            const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+            if (approxBytes > MAX_BYTES) {
+              this.issues.push(createStructureIssue(pathForIssues, `base64Binary exceeds ${MAX_BYTES} bytes`));
+            }
+          }
+        } else {
+          this.checkPropertyValue(v);
+        }
+
+        const sliceName = checkSliceElement(v, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }

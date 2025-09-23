@@ -1069,6 +1069,22 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(binary)).not.toThrow();
   });
 
+  test('Binary.data allows large base64 and skips 1MB string cap', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const buf = Buffer.alloc(2 * 1024 * 1024, 1); // 2 MB decoded
+    binary.data = buf.toString('base64');
+    expect(() => validateResource(binary)).not.toThrow();
+  });
+
+  test('Binary.data invalid object does not recurse', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.JSON };
+    // Intentionally invalid: data should be base64 string, not object
+    binary.data = { foo: 'bar' } as unknown as string;
+    expect(() => validateResource(binary)).toThrow(
+      'Invalid JSON type: expected string, but got object (Binary.data)'
+    );
+  });
+
   test('boolean', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
