@@ -131,9 +131,14 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     await debouncedUpdateResource(task);
   };
 
-  const handleDeleteTask = (task: Task): void => {
-    setTasks(tasks.filter((t) => t.id !== task.id));
-    onDeleteTask(task);
+  const handleDeleteTask = async (task: Task): Promise<void> => {
+    try {
+      await medplum.deleteResource('Task', task.id as string);
+      setTasks(tasks.filter((t) => t.id !== task.id));
+      onDeleteTask(task);
+    } catch (error) {
+      showErrorNotification(error);
+    }
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {

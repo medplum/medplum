@@ -70,13 +70,8 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   };
 
   const confirmDeleteTask = async (): Promise<void> => {
-    try {
-      await medplum.deleteResource('Task', task.id as string);
-      onDeleteTask(task);
-      setShowDeleteModal(false);
-    } catch (error) {
-      showErrorNotification(error);
-    }
+    onDeleteTask(task);
+    setShowDeleteModal(false);
   };
 
   const handleMarkAsCompleted = async (): Promise<void> => {
