@@ -21,7 +21,7 @@ function escapeMixedCaseIdentifier(name: string): string {
  * @returns The expression with single quotes escaped
  */
 export function doubleEscapeSingleQuotes(expression: string): string {
-  return expression.replace(/'/g, "\\'");
+  return expression.replaceAll("'", String.raw`\'`);
 }
 
 /**
@@ -42,13 +42,15 @@ export function tsVectorExpression(config: 'simple' | 'english', column: string)
  */
 export function splitIndexColumnNames(indexColumnNames: string): string[] {
   const parts = indexColumnNames.split('_');
-  for (let i = parts.length - 1; i >= 0; i--) {
+  let i = parts.length - 1;
+  while (i >= 0) {
     const part = parts[i];
     if (part === '') {
       parts[i + 1] = '_' + parts[i + 1];
       parts.splice(i, 1);
       i++;
     }
+    i--;
   }
   return parts;
 }
@@ -58,82 +60,82 @@ type Token = {
   value: string;
 };
 
+function tokenizeIndexExpression(input: string): Token[] {
+  const tokens: Token[] = [];
+  let current = 0;
+  let text = '';
+
+  function pushText(): void {
+    if (text) {
+      tokens.push({ type: 'TEXT', value: text });
+    }
+    text = '';
+  }
+
+  while (current < input.length) {
+    const char = input[current];
+
+    if (char === '(') {
+      pushText();
+      tokens.push({ type: 'LPAREN', value: '(' });
+      current++;
+    } else if (char === ')') {
+      pushText();
+      tokens.push({ type: 'RPAREN', value: ')' });
+      current++;
+    } else if (char === ',') {
+      pushText();
+      tokens.push({ type: 'COMMA', value: ',' });
+      current++;
+    } else {
+      text += char;
+      current++;
+    }
+  }
+
+  pushText();
+  return tokens;
+}
+
+// Parse the tokens into columns
+function parseIndexExpression(tokens: Token[]): string[] {
+  const columns: string[] = [];
+  let currentColumn = '';
+  let parenCount = 0;
+
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'LPAREN':
+        parenCount++;
+        currentColumn += token.value;
+        break;
+      case 'RPAREN':
+        parenCount--;
+        currentColumn += token.value;
+        break;
+      case 'COMMA':
+        if (parenCount === 0) {
+          columns.push(currentColumn);
+          currentColumn = '';
+        } else {
+          currentColumn += token.value;
+        }
+        break;
+      case 'TEXT':
+        currentColumn += token.value;
+        break;
+    }
+  }
+
+  if (currentColumn) {
+    columns.push(currentColumn.trim());
+  }
+
+  return columns;
+}
+
 export function parseIndexColumns(expression: string): string[] {
-  function tokenize(input: string): Token[] {
-    const tokens: Token[] = [];
-    let current = 0;
-    let text = '';
-
-    function pushText(): void {
-      if (text) {
-        tokens.push({ type: 'TEXT', value: text });
-      }
-      text = '';
-    }
-
-    while (current < input.length) {
-      const char = input[current];
-
-      if (char === '(') {
-        pushText();
-        tokens.push({ type: 'LPAREN', value: '(' });
-        current++;
-      } else if (char === ')') {
-        pushText();
-        tokens.push({ type: 'RPAREN', value: ')' });
-        current++;
-      } else if (char === ',') {
-        pushText();
-        tokens.push({ type: 'COMMA', value: ',' });
-        current++;
-      } else {
-        text += char;
-        current++;
-      }
-    }
-
-    pushText();
-    return tokens;
-  }
-
-  // Parse the tokens into columns
-  function parse(tokens: Token[]): string[] {
-    const columns: string[] = [];
-    let currentColumn = '';
-    let parenCount = 0;
-
-    for (const token of tokens) {
-      switch (token.type) {
-        case 'LPAREN':
-          parenCount++;
-          currentColumn += token.value;
-          break;
-        case 'RPAREN':
-          parenCount--;
-          currentColumn += token.value;
-          break;
-        case 'COMMA':
-          if (parenCount === 0) {
-            columns.push(currentColumn);
-            currentColumn = '';
-          } else {
-            currentColumn += token.value;
-          }
-          break;
-        case 'TEXT':
-          currentColumn += token.value;
-          break;
-      }
-    }
-
-    if (currentColumn) {
-      columns.push(currentColumn.trim());
-    }
-
-    return columns;
-  }
-
-  return parse(tokenize(expression));
+  return parseIndexExpression(tokenizeIndexExpression(expression));
 }
 
 /**
@@ -145,8 +147,13 @@ export function parseIndexColumns(expression: string): string[] {
  */
 export function escapeUnicode(str: string): string {
   // eslint-disable-next-line no-control-regex
-  return str.replace(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
-    const code = char.charCodeAt(0);
+  return str.replaceAll(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
+    // const code = char.charCodeAt(0);
+    const code = char.codePointAt(0);
+    if (code === undefined) {
+      throw new Error('Unhandled character: ' + char);
+    }
+
     // tab, carriage return, line feed are okay
     if (code === 0x09 || code === 0x0a || code === 0x0d) {
       return char;
