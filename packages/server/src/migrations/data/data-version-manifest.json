@@ -48,51 +48,67 @@
     "requiredBefore": "4.2.0"
   },
   "v13": {
-    "serverVersion": "4.3.0"
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
   },
   "v14": {
-    "serverVersion": "4.3.0"
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
   },
   "v15": {
-    "serverVersion": "4.3.0"
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
   },
   "v16": {
-    "serverVersion": "4.3.2"
+    "serverVersion": "4.3.2",
+    "requiredBefore": "4.4.0"
   },
   "v17": {
-    "serverVersion": "4.3.2"
+    "serverVersion": "4.3.2",
+    "requiredBefore": "4.4.0"
   },
   "v18": {
-    "serverVersion": "4.3.4"
+    "serverVersion": "4.3.4",
+    "requiredBefore": "4.4.0"
   },
   "v19": {
-    "serverVersion": "4.3.6"
+    "serverVersion": "4.3.6",
+    "requiredBefore": "4.4.0"
   },
   "v20": {
-    "serverVersion": "4.3.6"
+    "serverVersion": "4.3.6",
+    "requiredBefore": "4.4.0"
   },
   "v21": {
-    "serverVersion": "4.3.9"
+    "serverVersion": "4.3.9",
+    "requiredBefore": "4.4.0"
   },
   "v22": {
-    "serverVersion": "4.3.11"
+    "serverVersion": "4.3.11",
+    "requiredBefore": "4.4.0"
   },
   "v23": {
-    "serverVersion": "4.3.11"
+    "serverVersion": "4.3.11",
+    "requiredBefore": "4.4.0"
   },
   "v24": {
-    "serverVersion": "4.3.12"
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
   },
   "v25": {
-    "serverVersion": "4.3.12"
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
   },
   "v26": {
-    "serverVersion": "4.3.12"
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
   },
   "v27": {
-    "serverVersion": "4.3.12"
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
   },
   "v28": {
-    "serverVersion": "4.3.14"
+    "serverVersion": "4.3.14",
+    "requiredBefore": "4.4.0"
   }
 }
