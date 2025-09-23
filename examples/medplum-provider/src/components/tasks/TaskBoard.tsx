@@ -14,7 +14,7 @@ import {
   Box,
   SegmentedControl,
 } from '@mantine/core';
-import React, { JSX, useEffect, useMemo, useState } from 'react';
+import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import cx from 'clsx';
 import classes from './TaskBoard.module.css';
 import { CodeableConcept, ResourceType, Task } from '@medplum/fhirtypes';
@@ -29,6 +29,7 @@ import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
 import { TasksInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
+import { NewTaskModal } from './NewTaskModal';
 
 interface FilterState {
   showMyTasks: boolean;
@@ -55,6 +56,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
   const selectedPatient = useResource(selectedTask?.for);
   const [activeTab, setActiveTab] = useState<string>('properties');
+  const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
 
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
@@ -62,35 +64,35 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     performerType: undefined,
   });
 
+  const fetchTasks = useCallback(async (): Promise<void> => {
+    const searchParams = new URLSearchParams(query);
+
+    if (profileRef && filters.showMyTasks) {
+      searchParams.append('owner', getReferenceString(profileRef));
+    }
+    if (filters.status) {
+      searchParams.append('status', filters.status);
+    }
+
+    let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
+    const performerTypes = results.flatMap((task) => task.performerType || []);
+
+    if (filters.performerType) {
+      results = results.filter(
+        (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
+      );
+    }
+
+    setPerformerTypes(performerTypes);
+    setTasks(results);
+  }, [medplum, profileRef, filters, query]);
+
   useEffect(() => {
-    const fetchTasks = async (): Promise<void> => {
-      const searchParams = new URLSearchParams(query);
-
-      if (profileRef && filters.showMyTasks) {
-        searchParams.append('owner', getReferenceString(profileRef));
-      }
-      if (filters.status) {
-        searchParams.append('status', filters.status);
-      }
-
-      let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-      const performerTypes = results.flatMap((task) => task.performerType || []);
-
-      if (filters.performerType) {
-        results = results.filter(
-          (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
-        );
-      }
-
-      setPerformerTypes(performerTypes);
-      setTasks(results);
-    };
-
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, filters, query]);
+  }, [medplum, profileRef, filters, query, fetchTasks]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -112,10 +114,18 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     });
   }, [selectedTaskId, tasks, medplum, navigate]);
 
+  const handleNewTaskCreated = (task: Task): void => {
+    fetchTasks()
+      .then(() => onTaskChange(task))
+      .catch(showErrorNotification);
+    onTaskChange(task);
+  };
+
   const handleTaskChange = (task: Task): void => {
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
     onTaskChange(task);
   };
+
 
   const handleDeleteTask = (task: Task): void => {
     setTasks(tasks.filter((t) => t.id !== task.id));
@@ -156,6 +166,25 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     });
   };
 
+  const getTabData = (): { label: string; value: string }[] => {
+    const baseTabs = [
+      { label: 'Properties', value: 'properties' },
+      { label: 'Activity Log', value: 'activity-log' },
+    ];
+
+    if (selectedPatient?.resourceType === 'Patient') {
+      baseTabs.push({ label: 'Patient Summary', value: 'patient-summary' });
+    }
+
+    return baseTabs;
+  };
+
+  useEffect(() => {
+    if (activeTab === 'patient-summary' && selectedPatient?.resourceType !== 'Patient') {
+      setActiveTab('properties');
+    }
+  }, [selectedPatient, activeTab]);
+
   return (
     <Box w="100%" h="100%">
       <Flex h="100%">
@@ -190,15 +219,18 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   />
                 </Group>
 
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => navigate('/Task/new')}>
+                <ActionIcon 
+                  radius="50%" 
+                  variant="filled" 
+                  color="blue" 
+                  onClick={() => setNewTaskModalOpened(true)}
+                >
                   <IconPlus size={16} />
                 </ActionIcon>
               </Flex>
             </Paper>
 
             <Divider />
-
-            {/* Task List */}
             <Paper style={{ flex: 1, overflow: 'hidden' }}>
               <ScrollArea h="100%" id="task-list-scrollarea">
                 {loading && <TaskListSkeleton />}
@@ -230,19 +262,14 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
               )}
             </Box>
 
-            {/* Yellow Column - 450px width */}
-            {selectedTask && selectedPatient?.resourceType === 'Patient' && (
+            {selectedTask && (
               <Box h="100%" w="400px">
                 <Paper h="100%" style={{ overflow: 'hidden' }}>
                   <Box px="md" pb="md" pt="md">
                     <SegmentedControl
                       value={activeTab}
                       onChange={(value: string) => handleTabChange(value)}
-                      data={[
-                        { label: 'Properties', value: 'properties' },
-                        { label: 'Activity Log', value: 'activity-log' },
-                        { label: 'Patient Summary', value: 'patient-summary' },
-                      ]}
+                      data={getTabData()}
                       fullWidth
                       radius="md"
                       color="gray"
@@ -252,7 +279,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   </Box>
 
                   <Box>
-                    {selectedTask && selectedPatient?.resourceType === 'Patient' && (
+                    {selectedTask && (
                       <>
                         {activeTab === 'properties' && (
                           <ScrollArea h="calc(100vh - 120px)">
@@ -278,7 +305,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                             />
                           </ScrollArea>
                         )}
-                        {activeTab === 'patient-summary' && selectedPatient && (
+                        {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
                           <ScrollArea h="calc(100vh - 120px)">
                             <PatientSummary patient={selectedPatient} />
                           </ScrollArea>
@@ -296,6 +323,12 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
           </Flex>
         )}
       </Flex>
+      
+      <NewTaskModal
+        opened={newTaskModalOpened}
+        onClose={() => setNewTaskModalOpened(false)}
+        onTaskCreated={handleNewTaskCreated}
+      />
     </Box>
   );
 }
