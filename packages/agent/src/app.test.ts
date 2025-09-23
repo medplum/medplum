@@ -62,7 +62,7 @@ describe('App', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
-    console.log = jest.fn();
+    // console.log = jest.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -435,6 +435,7 @@ describe('App', () => {
       mySocket: undefined as Client | undefined,
       gotAgentReloadResponse: false,
       gotAgentError: false,
+      agentError: undefined as AgentError | undefined,
     };
 
     function mockConnectionHandler(socket: Client): void {
@@ -459,6 +460,7 @@ describe('App', () => {
 
           case 'agent:error':
             state.gotAgentError = true;
+            state.agentError = command;
             break;
 
           default:
@@ -512,6 +514,14 @@ describe('App', () => {
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
+    const bytestreamProdEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'tcp://0.0.0.0:9005?startChar=a&endChar=b',
+      connectionType: { code: ContentType.OCTET_STREAM },
+      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+    });
+
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     const agent = await medplum.createResource<Agent>({
@@ -544,6 +554,11 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
       ],
     });
 
@@ -562,7 +577,8 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-staging')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
 
     const prodChannel = app.channels.get('hl7-prod') as AgentHl7Channel;
     expect(prodChannel).toBeDefined();
@@ -650,6 +666,12 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        // No changes
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
       ],
     });
 
@@ -683,7 +705,8 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
 
     // Check that our prod connection for the prod channel is the same connection as before
     expect(prodChannel.connections.size).toStrictEqual(1);
@@ -766,6 +789,12 @@ describe('App', () => {
           endpoint: createReference(hl7StagingEndpoint),
           targetReference: createReference(bot),
         },
+        // No changes
+        {
+          name: 'bytestream-prod',
+          endpoint: createReference(bytestreamProdEndpoint),
+          targetReference: createReference(bot),
+        },
         {
           name: 'hl7-conflicting',
           endpoint: createReference(hl7ConflictingEndpoint),
@@ -811,7 +840,110 @@ describe('App', () => {
     expect(app.channels.has('dicom-test')).toStrictEqual(true);
     expect(app.channels.has('dicom-prod')).toStrictEqual(true);
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
-    expect(app.channels.size).toStrictEqual(5);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(6);
+
+    // Fix bad conflicting ports
+    const fixedHl7ConflictingUrl = new URL(hl7ConflictingEndpoint.address);
+    fixedHl7ConflictingUrl.port = '9006';
+    await medplum.updateResource<Endpoint>({ ...hl7ConflictingEndpoint, address: fixedHl7ConflictingUrl.toString() });
+
+    const fixedDicomConflictingUrl = new URL(dicomConflictingEndpoint.address);
+    fixedDicomConflictingUrl.port = '10006';
+    await medplum.updateResource<Endpoint>({
+      ...dicomConflictingEndpoint,
+      address: fixedDicomConflictingUrl.toString(),
+    });
+
+    // Make sure config works again
+
+    // Send reloadconfig message
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentReloadResponse) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // We should get back `agent:error` message
+    expect(state.gotAgentReloadResponse).toStrictEqual(true);
+    expect(state.gotAgentError).toStrictEqual(false);
+
+    // Check channels have been updated
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.has('hl7-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('dicom-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(8);
+
+    // Try removing endChar from bytestream-prod
+    const invalidBytestreamAddress = new URL(bytestreamProdEndpoint.address);
+    invalidBytestreamAddress.searchParams.delete('endChar');
+
+    await medplum.updateResource<Endpoint>({ ...bytestreamProdEndpoint, address: invalidBytestreamAddress.toString() });
+
+    // Send reloadconfig message
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    state.gotAgentReloadResponse = false;
+    state.gotAgentError = false;
+    state.agentError = undefined;
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // We should get back `agent:error` message
+    expect(state.gotAgentReloadResponse).toStrictEqual(false);
+    expect(state.gotAgentError).toStrictEqual(true);
+    expect(state.agentError).toMatchObject<AgentError>({
+      type: 'agent:error',
+      body: expect.stringContaining('Failed to parse startChar and/or endChar query param(s) from'),
+    });
+
+    // Check channels are the same
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.has('hl7-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('dicom-conflicting')).toStrictEqual(true);
+    expect(app.channels.has('bytestream-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(8);
 
     await hl7Client.close();
     await app.stop();

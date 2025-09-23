@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, Logger, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, ILogger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
@@ -13,7 +13,8 @@ export class AgentByteStreamChannel extends BaseChannel {
   readonly server: net.Server;
   private started = false;
   readonly connections = new Map<string, ByteStreamChannelConnection>();
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
 
   startChar = -1;
   endChar = -1;
@@ -27,6 +28,7 @@ export class AgentByteStreamChannel extends BaseChannel {
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
     this.log = app.log.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
+    this.channelLog = app.channelLog.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
   }
 
   start(): void {
@@ -103,11 +105,11 @@ export class AgentByteStreamChannel extends BaseChannel {
       throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
     }
 
-    assert(this.startChar !== -1 && this.endChar !== -1);
-
-    // These should never eval to -1, but just in case we assert
     this.startChar = startCharStr.codePointAt(0) ?? -1;
     this.endChar = endCharStr.codePointAt(0) ?? -1;
+
+    // These should never eval to -1, but just in case we assert
+    assert(this.startChar !== -1 && this.endChar !== -1);
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
@@ -142,7 +144,7 @@ export class ByteStreamChannelConnection {
 
   private async handler(data: Buffer): Promise<void> {
     try {
-      this.channel.log.info(`Received: ${data.toString('hex').replaceAll('\r', '\n')}`);
+      this.channel.channelLog.info(`Received: ${data.toString('hex').replaceAll('\r', '\n')}`);
 
       let lastEndIndex = -1;
 
@@ -172,7 +174,7 @@ export class ByteStreamChannelConnection {
             accessToken: 'placeholder',
             channel: this.channel.getDefinition().name as string,
             remote: this.remote,
-            contentType: 'application/octet-stream',
+            contentType: ContentType.OCTET_STREAM,
             body: messageBuffer.toString('hex'),
             callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
           });
@@ -193,7 +195,8 @@ export class ByteStreamChannelConnection {
         }
       }
     } catch (err) {
-      this.channel.log.error(`Byte stream error: ${normalizeErrorString(err)}`);
+      this.channel.log.error(`Byte stream error occurred - check channel logs`);
+      this.channel.channelLog.error(`Byte stream error: ${normalizeErrorString(err)}`);
     }
   }
 

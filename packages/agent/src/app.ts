@@ -16,6 +16,7 @@ import {
   Logger,
   MEDPLUM_VERSION,
   MedplumClient,
+  OperationOutcomeError,
   ReconnectingWebSocket,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
@@ -437,6 +438,8 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
+    const errors = [] as Error[];
+
     for (let i = 0; i < filteredChannels.length; i++) {
       const definition = filteredChannels[i];
       const endpoint = filteredEndpoints[i];
@@ -448,8 +451,26 @@ export class App {
       try {
         await this.startOrReloadChannel(definition, endpoint);
       } catch (err) {
+        errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
       }
+    }
+
+    // If there were any errors thrown during reloading, throw them as one error
+    if (errors.length) {
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: {
+              text: `${errors.length} error(s) occurred while reloading channels`,
+            },
+            diagnostics: errors.map((err) => normalizeErrorString(err)).join('\n'),
+          },
+        ],
+      });
     }
   }
 
@@ -506,7 +527,7 @@ export class App {
       case ChannelType.HL7_V2:
         channel = new AgentHl7Channel(this, definition, endpoint);
         break;
-      case ChannelType.BYTESTREAM:
+      case ChannelType.BYTE_STREAM:
         channel = new AgentByteStreamChannel(this, definition, endpoint);
         break;
       default:
