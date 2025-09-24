@@ -18,7 +18,7 @@ This category is for user-facing applications that connect directly to Medplum. 
 | Method | **Choose to...** |
 | :--- | :--- | 
 | [Medplum as IDP](./medplum-as-idp.md) | (default) **Get going fast**, and don't have external compliance requirements. |
-| [External IDP](./external-identity-providers.mdx) | Connect to an external IDP, like Google Auth, Auth0, or AWS Cognito. | 
+| [External IDP](./external-identity-providers.mdx) | Connect to an external IDP, like [Google Auth](./google-auth.md), Auth0, or AWS Cognito. | 
 | [Domain-level IDP](./domain-level-identity-providers.md) | Use your enterprise, domain-level **corporate identity solution.** |
 
 ## Server-side Authentication
