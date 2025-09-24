@@ -511,6 +511,123 @@
       }
     },
     {
+      "fullUrl": "urn:uuid:1899e995-ce01-4bbe-be25-b59cb2c7cc21",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.666.5.307"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/computable-valueset-cqfm",
+            "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-author",
+            "valueContactDetail": {
+              "name": "Lantana EH Author"
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/resource-lastReviewDate",
+            "valueDate": "2025-02-11"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+            "valueDate": "2020-03-07"
+          }
+        ],
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.666.5.307",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:2.16.840.1.113883.3.666.5.307"
+          }
+        ],
+        "version": "20200307",
+        "name": "EncounterInpatient",
+        "title": "Encounter Inpatient",
+        "status": "active",
+        "description": "CMS, eCQM Update 2024-05-02 using this value set",
+        "experimental": false,
+        "date": "2020-03-07T01:00:21-05:00",
+        "publisher": "Lantana EH Steward",
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts of  inpatient hospitalization encounters.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts that represent an encounter for inpatient hospitalizations.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "183452005",
+                  "display": "Emergency hospital admission (procedure)"
+                },
+                {
+                  "code": "32485007",
+                  "display": "Hospital admission (procedure)"
+                },
+                {
+                  "code": "8715000",
+                  "display": "Hospital admission, elective (procedure)"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a305e761-8619-4690-b4b7-1ccefd56c39c",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?url=http://example.com/fhir/ValueSet/encounter-codes"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "http://example.com/fhir/ValueSet/encounter-codes",
+        "name": "EncounterCodes",
+        "title": "Encounter Codes",
+        "status": "active",
+        "description": "Combined value set that includes codes for both encounter to document medications and inpatient encounters",
+        "experimental": false,
+        "jurisdiction": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unknown"
+              }
+            ]
+          }
+        ],
+        "purpose": "(Clinical Focus: The purpose of this value set is to represent concepts for both medication documentation encounters and inpatient encounters.),(Data Element Scope: This value set may use a model element related to Encounter.),(Inclusion Criteria: Includes concepts from both EncounterToDocumentMedications and EncounterInpatient value sets.),(Exclusion Criteria: No exclusions.)",
+        "compose": {
+          "include": [
+            {
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1834"]
+            },
+            {
+              "valueSet": ["http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.666.5.307"]
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "urn:uuid:b4de8466-9e17-4d27-90f4-ce36fe45a6c5",
       "request": {
         "method": "PUT",
@@ -958,7 +1075,7 @@
         "compose": {
           "include": [
             {
-              "system": "http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
+              "system": "https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets",
               "concept": [
                 {
                   "code": "G0101",

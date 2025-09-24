@@ -121,7 +121,7 @@
                 "linkId": "encounter-code",
                 "text": "Code",
                 "type": "choice",
-                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.1.1834",
+                "answerValueSet": "http://example.com/fhir/ValueSet/encounter-codes",
                 "required": true
               },
               {
