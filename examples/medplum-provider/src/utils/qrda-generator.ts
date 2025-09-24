@@ -701,12 +701,13 @@ function buildPayerEntry(coverage: Coverage): Record<string, any> {
 function buildInterventionEntry(intervention: Procedure): Record<string, any> {
   const performedDateTime = intervention.performedDateTime;
   const performedPeriodStart = intervention.performedPeriod?.start;
+  const negationReasonCode = intervention.statusReason?.coding?.[0]?.code;
 
   return {
     act: {
       '@_classCode': 'ACT',
       '@_moodCode': 'EVN',
-      '@_negationInd': 'true',
+      ...(negationReasonCode && { '@_negationInd': 'true' }),
       templateId: [
         // Consolidation CDA: Procedure Activity Act template
         { '@_root': '2.16.840.1.113883.10.20.22.4.12', '@_extension': '2014-06-09' },
@@ -735,7 +736,7 @@ function buildInterventionEntry(intervention: Procedure): Record<string, any> {
         },
       }),
       // QDM Attribute: Negation Rationale
-      ...(intervention.statusReason?.coding?.[0] && {
+      ...(negationReasonCode && {
         entryRelationship: {
           '@_typeCode': 'RSON',
           observation: {
@@ -750,7 +751,7 @@ function buildInterventionEntry(intervention: Procedure): Record<string, any> {
               '@_codeSystemName': 'LOINC',
             },
             value: {
-              '@_code': intervention.statusReason?.coding?.[0]?.code ?? '',
+              '@_code': negationReasonCode,
               '@_codeSystem': '2.16.840.1.113883.6.96',
               '@_codeSystemName': 'SNOMEDCT',
               '@_xsi:type': 'CD',
