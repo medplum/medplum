@@ -54,11 +54,11 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
     const taskNotes = [...(task.note || []), comment];
 
     try {
-      const result: Task = await medplum.updateResource({
+      const updatedTask = {
         ...task,
         note: taskNotes,
-      } as Task);
-      onTaskChange(result);
+      } as Task;
+      onTaskChange(updatedTask);
       setNote('');
     } catch (error) {
       showErrorNotification(error);
@@ -70,13 +70,8 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   };
 
   const confirmDeleteTask = async (): Promise<void> => {
-    try {
-      await medplum.deleteResource('Task', task.id as string);
-      onDeleteTask(task);
-      setShowDeleteModal(false);
-    } catch (error) {
-      showErrorNotification(error);
-    }
+    onDeleteTask(task);
+    setShowDeleteModal(false);
   };
 
   const handleMarkAsCompleted = async (): Promise<void> => {

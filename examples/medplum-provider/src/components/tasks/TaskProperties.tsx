@@ -3,10 +3,8 @@
 import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
+import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 
 interface TaskPropertiesProps extends PaperProps {
   task: Task;
@@ -16,9 +14,7 @@ interface TaskPropertiesProps extends PaperProps {
 export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
   const { task: initialTask, onTaskChange, ...paperProps } = props;
   const [task, setTask] = useState<Task | undefined>(initialTask);
-  const medplum = useMedplum();
   const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   useEffect(() => {
     setTask(initialTask);
@@ -49,11 +45,6 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
 
   const handleTaskUpdate = async (value: Task): Promise<void> => {
     onTaskChange(value);
-    try {
-      await debouncedUpdateResource(value);
-    } catch (error) {
-      showErrorNotification(error);
-    }
   };
 
   return (
