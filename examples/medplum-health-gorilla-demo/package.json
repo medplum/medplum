@@ -1,6 +1,6 @@
 {
   "name": "medplum-health-gorilla-demo",
-  "version": "4.3.14",
+  "version": "4.4.0",
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
@@ -22,15 +22,15 @@
   "devDependencies": {
     "@mantine/core": "7.17.8",
     "@mantine/notifications": "7.17.8",
-    "@medplum/core": "4.3.14",
-    "@medplum/eslint-config": "4.3.14",
-    "@medplum/health-gorilla-core": "4.3.14",
-    "@medplum/health-gorilla-react": "4.3.14",
-    "@medplum/react": "4.3.14",
-    "@tabler/icons-react": "3.34.1",
+    "@medplum/core": "4.4.0",
+    "@medplum/eslint-config": "4.4.0",
+    "@medplum/health-gorilla-core": "4.4.0",
+    "@medplum/health-gorilla-react": "4.4.0",
+    "@medplum/react": "4.4.0",
+    "@tabler/icons-react": "3.35.0",
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",
-    "@vitejs/plugin-react": "5.0.2",
+    "@vitejs/plugin-react": "5.0.3",
     "eslint": "8.57.1",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",
@@ -40,7 +40,7 @@
     "react-dom": "19.1.1",
     "react-router": "7.9.1",
     "typescript": "5.9.2",
-    "vite": "7.1.5"
+    "vite": "7.1.7"
   },
   "packageManager": "npm@10.9.3",
   "engines": {

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "4.3.14",
+  "version": "4.4.0",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -48,9 +48,9 @@
     "@docusaurus/tsconfig": "3.8.1",
     "@docusaurus/types": "3.8.1",
     "@mdx-js/react": "3.1.1",
-    "@medplum/core": "4.3.14",
-    "@medplum/fhirtypes": "4.3.14",
-    "@medplum/mock": "4.3.14",
+    "@medplum/core": "4.4.0",
+    "@medplum/fhirtypes": "4.4.0",
+    "@medplum/mock": "4.4.0",
     "@svgr/webpack": "8.1.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/ccda",
-  "version": "4.3.14",
+  "version": "4.4.0",
   "description": "Medplum C-CDA Library",
   "keywords": [
     "medplum",
@@ -55,12 +55,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.3.14",
+    "@medplum/core": "4.4.0",
     "fast-xml-parser": "5.2.5"
   },
   "devDependencies": {
-    "@medplum/definitions": "4.3.14",
-    "@medplum/fhirtypes": "4.3.14"
+    "@medplum/definitions": "4.4.0",
+    "@medplum/fhirtypes": "4.4.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
