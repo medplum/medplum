@@ -50,16 +50,16 @@ export const CustomSlotSearch = (): JSX.Element => {
     const currentDate = new Date(periodStart);
     let slotId = 1;
 
-    while (currentDate <= periodEnd) {
+    while (currentDate.getTime() <= periodEnd.getTime()) {
       // Skip weekends (Saturday = 6, Sunday = 0)
       if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
         // Generate morning slots (9 AM, 10 AM, 11 AM)
         for (const hour of [9, 10, 11]) {
           const slotStart = new Date(currentDate);
-          slotStart.setUTCHours(hour, 0, 0, 0);
+          slotStart.setHours(hour, 0, 0, 0);
 
           const slotEnd = new Date(slotStart);
-          slotEnd.setUTCHours(hour + 1, 0, 0, 0);
+          slotEnd.setHours(hour + 1, 0, 0, 0);
 
           slots.push({
             resourceType: 'Slot',
@@ -74,10 +74,10 @@ export const CustomSlotSearch = (): JSX.Element => {
         // Generate afternoon slots (2 PM, 3 PM, 4 PM)
         for (const hour of [14, 15, 16]) {
           const slotStart = new Date(currentDate);
-          slotStart.setUTCHours(hour, 0, 0, 0);
+          slotStart.setHours(hour, 0, 0, 0);
 
           const slotEnd = new Date(slotStart);
-          slotEnd.setUTCHours(hour + 1, 0, 0, 0);
+          slotEnd.setHours(hour + 1, 0, 0, 0);
 
           slots.push({
             resourceType: 'Slot',
@@ -91,7 +91,7 @@ export const CustomSlotSearch = (): JSX.Element => {
       }
 
       // Move to next day
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return slots;

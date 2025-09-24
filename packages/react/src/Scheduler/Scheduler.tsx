@@ -51,7 +51,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     } else {
       // Otherwise, search based on the schedule(s) provided
       fetchSlots = async (period: Period): Promise<Slot[]> => {
-        let scheduleArray: string[] = [];
+        const scheduleArray: string[] = [];
         if (!Array.isArray(props.schedule)) {
           scheduleArray.push(
             isReference(props.schedule)
@@ -80,17 +80,22 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
       // If a single schedule is provided, set the actor
       if (props.schedule && !Array.isArray(props.schedule)) {
         if (isReference(props.schedule)) {
-          medplum.readReference<Schedule>(props.schedule as Reference<Schedule>).then((schedule) => {
-            const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
-            setActor(actorRef);
-          });
+          medplum
+            .readReference<Schedule>(props.schedule as Reference<Schedule>)
+            .then((schedule) => {
+              const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
+              setActor(actorRef);
+            })
+            .catch(console.error);
         } else {
           setActor((props.schedule as Schedule).actor?.[0] as Reference<Practitioner>);
         }
       }
     }
 
-    fetchSlots({ start: getStart(month), end: getEnd(month) }).then(setSlots);
+    fetchSlots({ start: getStart(month), end: getEnd(month) })
+      .then(setSlots)
+      .catch(console.error);
   }, [medplum, props.schedule, month]);
 
   // Create a map of start times to slots to handle duplicate start times
