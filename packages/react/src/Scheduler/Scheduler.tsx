@@ -25,7 +25,6 @@ import classes from './Scheduler.module.css';
  * @param period - The time period to search within
  * @returns Promise resolving to an array of available slots
  */
-
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
   readonly schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
