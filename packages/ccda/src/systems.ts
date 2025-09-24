@@ -19,6 +19,7 @@ import {
   OID_DIET_STATEMENT_NUTRITION,
   OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION,
   OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
+  OID_ICF_CODE_SYSTEM,
   OID_LABORATORY_BATTERY_ID,
   OID_LABORATORY_OBSERVATION_ID,
   OID_LABORATORY_RESULT_ORGANIZER_ID,
@@ -42,6 +43,7 @@ import {
   OID_RESULT_OBSERVATION_V2,
   OID_RESULT_ORGANIZER,
   OID_RESULT_ORGANIZER_V2,
+  OID_ROLE_CODE_CODE_SYSTEM,
   OID_RXNORM_CODE_SYSTEM,
   OID_SECTION_TIME_RANGE,
   OID_SEX_OBSERVATION,
@@ -50,6 +52,7 @@ import {
   OID_SNOMED_CT_CODE_SYSTEM,
   OID_SOCIAL_HISTORY_OBSERVATION,
   OID_SOCIAL_HISTORY_OBSERVATION_V2,
+  OID_SOURCE_OF_PAYMENT_TYPOLOGY_CODE_SYSTEM,
   OID_TOBACCO_USE_OBSERVATION,
   OID_TRIBAL_AFFILIATION_OBSERVATION,
   OID_UNII_CODE_SYSTEM,
@@ -72,23 +75,19 @@ export interface EnumEntry<TFhirValue extends string = string, TCcdaValue extend
   displayName: string;
 }
 
+export interface EnumMapperDetails {
+  readonly ccdaSystemOid?: string;
+  readonly fhirSystemUrl?: string;
+}
+
 export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
-  readonly systemName: string;
-  readonly ccdaSystemOid: string;
-  readonly fhirSystemUrl: string;
+  readonly details: EnumMapperDetails;
   readonly entries: EnumEntry<TFhirValue, TCcdaValue>[];
   readonly ccdaToFhirMap: Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
   readonly fhirToCcdaMap: Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
 
-  constructor(
-    systemName: string,
-    ccdaSystemOid: string,
-    fhirSystemUrl: string,
-    entries: EnumEntry<TFhirValue, TCcdaValue>[]
-  ) {
-    this.systemName = systemName;
-    this.ccdaSystemOid = ccdaSystemOid;
-    this.fhirSystemUrl = fhirSystemUrl;
+  constructor(details: EnumMapperDetails, entries: EnumEntry<TFhirValue, TCcdaValue>[]) {
+    this.details = details;
     this.entries = entries;
     this.ccdaToFhirMap = {} as Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
     this.fhirToCcdaMap = {} as Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
@@ -135,7 +134,7 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
       return undefined;
     }
     return {
-      coding: [{ system: this.fhirSystemUrl, code: entry.fhirValue, display: entry.displayName }],
+      coding: [{ system: this.details.fhirSystemUrl, code: entry.fhirValue, display: entry.displayName }],
       text: entry.displayName,
     };
   }
@@ -158,8 +157,10 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return {
       '@_code': entry.ccdaValue,
       '@_displayName': entry.displayName,
-      '@_codeSystem': this.ccdaSystemOid,
-      '@_codeSystemName': SYSTEM_MAPPER.getEntryByCcda(this.ccdaSystemOid)?.displayName,
+      '@_codeSystem': this.details.ccdaSystemOid,
+      '@_codeSystemName': this.details.ccdaSystemOid
+        ? SYSTEM_MAPPER.getEntryByCcda(this.details.ccdaSystemOid)?.displayName
+        : undefined,
     };
   }
 }
@@ -190,6 +191,7 @@ export const PARTICIPATION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem
 export const DIAGNOSIS_ROLE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/diagnosis-role`;
 export const CONFIDENTIALITY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-Confidentiality`;
 export const OBSERVATION_CATEGORY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
+export const ROLE_CODE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-RoleCode`;
 
 /*
  * FHIR Value Sets
@@ -234,6 +236,7 @@ export const VA_MEDRT_URL = `${HTTP}//va.gov/terminology/medrt`;
 export const NDFRT_URL = `${HTTP}//hl7.org/fhir/ndfrt`;
 export const CVX_URL = `${HTTP}//nucc.org/cvx`;
 export const FHIR_CVX_URL = `${HTTP_HL7_ORG}/fhir/sid/cvx`;
+export const FHIR_ICF_URL = `${HTTP_HL7_ORG}/fhir/sid/icf`;
 export const XSI_URL = `${HTTP}//www.w3.org/2001/XMLSchema-instance`;
 export const CCDA_NARRATIVE_REFERENCE_URL = 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference';
 
@@ -271,8 +274,17 @@ export const LOINC_TOBACCO_SMOKING_STATUS = '72166-2';
 export const LOINC_HISTORY_OF_TOBACCO_USE = '11367-0';
 export const LOINC_ADMINISTRATIVE_SEX = '46098-0';
 export const LOINC_BIRTH_SEX = '76689-9';
+export const LOINC_HISTORY_OF_SOCIAL_FUNCTION = '8689-2';
+export const LOINC_CLINICAL_FINDING = '75321-0';
+export const LOINC_FUNCTIONAL_STATUS_SECTION = '47420-5';
+export const LOINC_DISABILITY_STATUS = '89571-4';
+export const LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE = '47420-5';
+export const LOINC_HISTORY_OF_OCCUPATION = '11341-5';
+export const LOINC_HISTORY_OF_OCCUPATION_INDUSTRY = '86188-0';
+export const LOINC_PREGNANCY_STATUS = '82810-3';
+export const LOINC_TRIBAL_AFFILIATION = '95370-3';
 
-export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
+export const SYSTEM_MAPPER = new EnumMapper<string, string>({}, [
   {
     ccdaValue: OID_PAN_CANADIAN_LOINC_OBSERVATION_CODE_SYSTEM,
     fhirValue: 'https://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD',
@@ -339,12 +351,27 @@ export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
     fhirValue: ADMINISTRATIVE_GENDER_CODE_SYSTEM,
     displayName: 'Administrative Sex',
   },
+  {
+    ccdaValue: OID_ROLE_CODE_CODE_SYSTEM,
+    fhirValue: ROLE_CODE_CODE_SYSTEM,
+    displayName: 'Role Code',
+  },
+  {
+    ccdaValue: OID_SOURCE_OF_PAYMENT_TYPOLOGY_CODE_SYSTEM,
+    fhirValue: '',
+    displayName: 'Insurance Type Code',
+  },
 
   // Alternate FHIR System:
   {
     ccdaValue: OID_CVX_CODE_SYSTEM,
     fhirValue: FHIR_CVX_URL,
     displayName: 'Vaccine Administered Code Set (CVX)',
+  },
+  {
+    ccdaValue: OID_ICF_CODE_SYSTEM,
+    fhirValue: FHIR_ICF_URL,
+    displayName: 'International Classification of Functioning, Disability and Health (ICF)',
   },
 ]);
 
@@ -358,6 +385,43 @@ export function mapCcdaSystemToFhir(ccda: string | undefined): string | undefine
     return undefined;
   }
   return SYSTEM_MAPPER.mapCcdaToFhir(ccda) ?? `urn:oid:${ccda}`;
+}
+
+/**
+ * Maps a C-CDA code to a FHIR CodeableConcept.
+ * @param ccdaCode - The C-CDA code to map.
+ * @returns The FHIR CodeableConcept.
+ */
+export function mapCcdaCodeToCodeableConcept(ccdaCode: CcdaCode | undefined): CodeableConcept | undefined {
+  if (!ccdaCode) {
+    return undefined;
+  }
+
+  const result: CodeableConcept = {
+    coding: [
+      {
+        system: mapCcdaSystemToFhir(ccdaCode['@_codeSystem']),
+        code: ccdaCode['@_code'],
+        display: ccdaCode['@_displayName'],
+      },
+    ],
+    text: ccdaCode['@_displayName'],
+  };
+
+  if (ccdaCode.translation) {
+    for (const translation of ccdaCode.translation) {
+      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+      if (translationSystem) {
+        result.coding?.push({
+          system: translationSystem,
+          code: translation['@_code'],
+          display: translation['@_displayName'],
+        });
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -381,7 +445,7 @@ export function mapFhirSystemToCcda(system: string | undefined): string | undefi
  * @returns The C-CDA code.
  */
 export function mapCodeableConceptToCcdaCode(codeableConcept: CodeableConcept | undefined): CcdaCode | undefined {
-  if (!codeableConcept?.coding) {
+  if (!codeableConcept?.coding?.[0]) {
     return undefined;
   }
 
@@ -434,9 +498,10 @@ export function mapCodeableConceptToCcdaValue(codeableConcept: CodeableConcept |
 }
 
 export const CONFIDENTIALITY_MAPPER = new EnumMapper(
-  'Confidentiality',
-  OID_CONFIDENTIALITY_VALUE_SET,
-  CONFIDENTIALITY_CODE_SYSTEM,
+  {
+    ccdaSystemOid: OID_CONFIDENTIALITY_VALUE_SET,
+    fhirSystemUrl: CONFIDENTIALITY_CODE_SYSTEM,
+  },
   [
     { ccdaValue: 'U', fhirValue: 'U', displayName: 'unrestricted' },
     { ccdaValue: 'L', fhirValue: 'L', displayName: 'low' },
@@ -451,38 +516,58 @@ export const CONFIDENTIALITY_MAPPER = new EnumMapper(
 // CDA Entity Name Use: https://hl7.org/cda/stds/core/2.0.0-sd/ValueSet-CDAEntityNameUse.html
 // CDA does not have any representation of "old" or "maiden" names
 // Instead, it should use "L" for legal with a "validTime" element to indicate the time range of the name
-export const HUMAN_NAME_USE_MAPPER = new EnumMapper('HumanNameUse', '', NAME_USE_VALUE_SET, [
-  { ccdaValue: 'C', fhirValue: 'usual', displayName: 'Common/Called by' },
-  { ccdaValue: 'L', fhirValue: 'official', displayName: 'Legal' },
-  { ccdaValue: 'TEMP', fhirValue: 'temp', displayName: 'Temporary' },
-  { ccdaValue: 'P', fhirValue: 'nickname', displayName: 'Nickname' },
-  { ccdaValue: 'ANON', fhirValue: 'anonymous', displayName: 'Anonymous' },
-  { ccdaValue: 'L', fhirValue: 'maiden', displayName: 'Maiden' },
-  { ccdaValue: 'L', fhirValue: 'old', displayName: 'Old' },
-]);
+export const HUMAN_NAME_USE_MAPPER = new EnumMapper(
+  {
+    fhirSystemUrl: NAME_USE_VALUE_SET,
+  },
+  [
+    { ccdaValue: 'C', fhirValue: 'usual', displayName: 'Common/Called by' },
+    { ccdaValue: 'L', fhirValue: 'official', displayName: 'Legal' },
+    { ccdaValue: 'TEMP', fhirValue: 'temp', displayName: 'Temporary' },
+    { ccdaValue: 'P', fhirValue: 'nickname', displayName: 'Nickname' },
+    { ccdaValue: 'ANON', fhirValue: 'anonymous', displayName: 'Anonymous' },
+    { ccdaValue: 'L', fhirValue: 'maiden', displayName: 'Maiden' },
+    { ccdaValue: 'L', fhirValue: 'old', displayName: 'Old' },
+  ]
+);
 
-export const GENDER_MAPPER = new EnumMapper('Gender', '', ADMINISTRATIVE_GENDER_VALUE_SET, [
-  { ccdaValue: 'F', fhirValue: 'female', displayName: 'Female' },
-  { ccdaValue: 'M', fhirValue: 'male', displayName: 'Male' },
-  { ccdaValue: 'UN', fhirValue: 'unknown', displayName: 'Unknown' },
-  { ccdaValue: 'UN', fhirValue: 'other', displayName: 'Other' },
-]);
+export const GENDER_MAPPER = new EnumMapper(
+  {
+    fhirSystemUrl: ADMINISTRATIVE_GENDER_VALUE_SET,
+  },
+  [
+    { ccdaValue: 'F', fhirValue: 'female', displayName: 'Female' },
+    { ccdaValue: 'M', fhirValue: 'male', displayName: 'Male' },
+    { ccdaValue: 'UN', fhirValue: 'unknown', displayName: 'Unknown' },
+    { ccdaValue: 'UN', fhirValue: 'other', displayName: 'Other' },
+  ]
+);
 
-export const ADDRESS_USE_MAPPER = new EnumMapper('AddressUse', '', ADDRESS_USE_VALUE_SET, [
-  { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
-  { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
-]);
+export const ADDRESS_USE_MAPPER = new EnumMapper(
+  {
+    fhirSystemUrl: ADDRESS_USE_VALUE_SET,
+  },
+  [
+    { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
+    { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
+  ]
+);
 
-export const TELECOM_USE_MAPPER = new EnumMapper('TelecomUse', '', CONTACT_ENTITY_USE_VALUE_SET, [
-  { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
-  { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
-  { ccdaValue: 'MC', fhirValue: 'mobile', displayName: 'Mobile' },
-]);
+export const TELECOM_USE_MAPPER = new EnumMapper(
+  {
+    fhirSystemUrl: CONTACT_ENTITY_USE_VALUE_SET,
+  },
+  [
+    { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
+    { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
+    { ccdaValue: 'MC', fhirValue: 'mobile', displayName: 'Mobile' },
+  ]
+);
 
 export const ALLERGY_STATUS_MAPPER = new EnumMapper<string, string>(
-  'AllergyStatus',
-  '',
-  ALLERGY_VERIFICATION_CODE_SYSTEM,
+  {
+    fhirSystemUrl: ALLERGY_VERIFICATION_CODE_SYSTEM,
+  },
   [
     { ccdaValue: 'unconfirmed', fhirValue: 'unconfirmed', displayName: 'Unconfirmed' },
     { ccdaValue: 'provisional', fhirValue: 'provisional', displayName: 'Provisional' },
@@ -495,9 +580,10 @@ export const ALLERGY_STATUS_MAPPER = new EnumMapper<string, string>(
 );
 
 export const ALLERGY_CATEGORY_MAPPER = new EnumMapper<string, string>(
-  'AllergyCategory',
-  OID_SNOMED_CT_CODE_SYSTEM,
-  ALLERGY_CLINICAL_CODE_SYSTEM,
+  {
+    ccdaSystemOid: OID_SNOMED_CT_CODE_SYSTEM,
+    fhirSystemUrl: ALLERGY_CLINICAL_CODE_SYSTEM,
+  },
   [
     { ccdaValue: '414285001', fhirValue: 'food', displayName: 'Allergy to food (finding)' },
     {
@@ -515,9 +601,10 @@ export const ALLERGY_CATEGORY_MAPPER = new EnumMapper<string, string>(
 );
 
 export const ALLERGY_SEVERITY_MAPPER = new EnumMapper<'mild' | 'moderate' | 'severe', string>(
-  'AllergySeverity',
-  SNOMED,
-  ALLERGY_CLINICAL_CODE_SYSTEM,
+  {
+    ccdaSystemOid: OID_SNOMED_CT_CODE_SYSTEM,
+    fhirSystemUrl: ALLERGY_CLINICAL_CODE_SYSTEM,
+  },
   [
     { ccdaValue: '255604002', fhirValue: 'mild', displayName: 'Mild' },
     { ccdaValue: '6736007', fhirValue: 'moderate', displayName: 'Moderate' },
@@ -526,9 +613,9 @@ export const ALLERGY_SEVERITY_MAPPER = new EnumMapper<'mild' | 'moderate' | 'sev
 );
 
 export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
-  'ProblemStatus',
-  '',
-  CONDITION_VER_STATUS_CODE_SYSTEM,
+  {
+    fhirSystemUrl: CONDITION_VER_STATUS_CODE_SYSTEM,
+  },
   [
     { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
     { ccdaValue: 'inactive', fhirValue: 'inactive', displayName: 'Inactive' },
@@ -545,7 +632,7 @@ export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
 export const IMMUNIZATION_STATUS_MAPPER = new EnumMapper<
   Immunization['status'],
   'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'
->('ImmunizationStatus', '', '', [
+>({}, [
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
   { ccdaValue: 'nullified', fhirValue: 'entered-in-error', displayName: 'Nullified' },
   { ccdaValue: 'aborted', fhirValue: 'not-done', displayName: 'Aborted' },
@@ -553,7 +640,7 @@ export const IMMUNIZATION_STATUS_MAPPER = new EnumMapper<
   { ccdaValue: 'obsolete', fhirValue: 'not-done', displayName: 'Obsolete' },
 ]);
 
-export const ENCOUNTER_STATUS_MAPPER = new EnumMapper('EncounterStatus', '', '', [
+export const ENCOUNTER_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
   { ccdaValue: 'completed', fhirValue: 'finished', displayName: 'Finished' },
   { ccdaValue: 'aborted', fhirValue: 'cancelled', displayName: 'Cancelled' },
@@ -561,8 +648,9 @@ export const ENCOUNTER_STATUS_MAPPER = new EnumMapper('EncounterStatus', '', '',
   { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
 ]);
 
-export const PROCEDURE_STATUS_MAPPER = new EnumMapper('ProcedureStatus', '', '', [
+export const PROCEDURE_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
+  { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
   { ccdaValue: 'aborted', fhirValue: 'stopped', displayName: 'Stopped' },
   { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Not Done' },
   { ccdaValue: 'new', fhirValue: 'not-done', displayName: 'Draft' },
@@ -574,7 +662,7 @@ export const PROCEDURE_STATUS_MAPPER = new EnumMapper('ProcedureStatus', '', '',
 export const MEDICATION_STATUS_MAPPER = new EnumMapper<
   Required<MedicationRequest['status']>,
   'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'
->('MedicationStatus', '', MEDICATION_REQUEST_STATUS_VALUE_SET, [
+>({}, [
   { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
   { ccdaValue: 'aborted', fhirValue: 'stopped', displayName: 'Stopped' },
@@ -587,9 +675,9 @@ export const MEDICATION_STATUS_MAPPER = new EnumMapper<
 ]);
 
 export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
-  'ObservationCategory',
-  '',
-  OBSERVATION_CATEGORY_CODE_SYSTEM,
+  {
+    fhirSystemUrl: OBSERVATION_CATEGORY_CODE_SYSTEM,
+  },
   [
     // ## social-history
     // FHIR Definition: Social History Observations define the patient's occupational, personal (e.g., lifestyle), social, familial, and environmental history and health risk factors that may impact the patient's health.
@@ -704,5 +792,46 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
       fhirValue: 'therapy',
       displayName: 'Monitoring, Evaluation and Outcome (Nutrition)',
     },
+  ]
+);
+
+// Coverage type
+// FHIR uses: https://hl7.org/fhir/R4/valueset-coverage-type.html
+// C-CDA uses: Source of Payment Typology (SOPT)
+// https://www.nahdo.org/sites/default/files/2020-12/SourceofPaymentTypologyVersion9_2%20-Dec%2011_2020_Final2.pdf
+// Analysis: https://docs.google.com/spreadsheets/d/1w69E-SB05sJ2YYWCUzNz1yGd_yGije01Ktui2l-zhWw
+//
+// These are very different code systems with different codes and meanings
+// We're going to implement a basic mapping here, but this will need to be revisited in the future
+// A full mapping would require looking at `Coverage.payor` and `Organization.type` to determine the correct mapping
+//
+// SOPT Codes:
+// 71	HMO
+// 72	PPO
+// 73	POS
+// 79	Other Managed Care
+// 81	Self-pay (Includes applicants for insurance and Medicaid applicants)
+// 82	No Charge
+// 99	No Typology Code available for payment source
+// 9999	Unavailable / No Payer Specified / Blank
+//
+// FHIR ValueSet Codes:
+// pay	Self Pay
+// MCPOL	managed care policy
+// POS	point of service policy
+// HMO	health maintenance organization policy
+// PPO	preferred provider organization policy
+// (blank) Other or Unknown
+export const INSURANCE_COVERAGE_TYPE_MAPPER = new EnumMapper<string, string>(
+  {
+    fhirSystemUrl: ACT_CODE_SYSTEM,
+  },
+  [
+    { ccdaValue: '71', fhirValue: 'HMO', displayName: 'Health Maintenance Organization' },
+    { ccdaValue: '72', fhirValue: 'PPO', displayName: 'Preferred Provider Organization' },
+    { ccdaValue: '73', fhirValue: 'POS', displayName: 'Point of Service' },
+    { ccdaValue: '79', fhirValue: 'MCPOL', displayName: 'Managed Care Policy' },
+    { ccdaValue: '81', fhirValue: 'pay', displayName: 'Self Pay' },
+    { ccdaValue: '9999', fhirValue: '', displayName: 'Unknown' },
   ]
 );

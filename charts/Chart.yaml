@@ -4,8 +4,8 @@ description: |
   Helm chart for deploying Medplum Server - an open source healthcare development platform.
   Provides FHIR server, auth, workflows, and APIs for building healthcare applications.
 type: application
-version: 4.3.11
-appVersion: '4.3.11'
+version: 4.3.14
+appVersion: '4.3.14'
 keywords:
   - healthcare
   - fhir

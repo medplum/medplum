@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Client } from 'pg';
 import {
+  CTE,
   Column,
   Condition,
   Negation,
@@ -9,7 +10,9 @@ import {
   SelectQuery,
   SqlBuilder,
   UnionAllBuilder,
+  UpdateQuery,
   ValuesQuery,
+  isValidTableName,
   periodToRangeString,
 } from './sql';
 
@@ -271,4 +274,43 @@ describe('SqlBuilder', () => {
       );
     });
   });
+
+  describe('UpdateQuery', () => {
+    test('Simple Update', () => {
+      const sql = new SqlBuilder();
+      const update = new UpdateQuery('MyTable', ['id', 'name']);
+      update.set('id', 123);
+      update.buildSql(sql);
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1 RETURNING "MyTable"."id", "MyTable"."name"');
+      expect(sql.getValues()).toStrictEqual([123]);
+    });
+
+    test('with CTE and RETURNING', () => {
+      const cteQuery = new SelectQuery('MyTable').column('id').column('name').where('projectId', '=', null).limit(10);
+      const cte: CTE = {
+        name: 'MyCTE',
+        expr: cteQuery,
+      };
+
+      const sql = new SqlBuilder();
+      const update = new UpdateQuery('MyTable', ['id']);
+      update.from(cte);
+      update.set('id', 123);
+      update.set('name', 'new-name');
+      update.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
+      update.buildSql(sql);
+      expect(sql.toString()).toBe(
+        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "id" = $1, "name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "MyTable"."id"'
+      );
+      expect(sql.getValues()).toStrictEqual([123, 'new-name']);
+    });
+  });
+});
+
+test('isValidTableName', () => {
+  expect(isValidTableName('Observation')).toStrictEqual(true);
+  expect(isValidTableName('Observation_History')).toStrictEqual(true);
+  expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
+  expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidTableName('Observation History')).toStrictEqual(false);
 });

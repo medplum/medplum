@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc="urn:hl7-org:v3/voc" xmlns:sdtc="urn:hl7-org:sdtc">
+    <realmCode code="US" />
+    <typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.1" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="cf27813f-10d2-433b-be9a-2f7e82bf9da8" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Alicia Newman Summary Record</title>
+    <effectiveTime value="20150622120000-0500" />
+    <confidentialityCode code="N" displayName="normal" codeSystem="2.16.840.1.113883.5.25"
+        codeSystemName="Confidentiality" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53" />
+            <id root="2.16.840.1.113883.4.1" extension="111223333" />
+            <addr nullFlavor="UNK" />
+            <telecom nullFlavor="UNK" />
+            <patient>
+                <name>
+                    <family>Newman</family>
+                    <given>Alice</given>
+                    <given>Jones</given>
+                </name>
+                <administrativeGenderCode code="F" displayName="Female"
+                    codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" />
+                <birthTime value="19700501" />
+                <raceCode code="2106-3" displayName="White" codeSystem="2.16.840.1.113883.6.238"
+                    codeSystemName="CDC Race and Ethnicity" />
+                <ethnicGroupCode code="2186-5" displayName="Not Hispanic or Latino"
+                    codeSystem="2.16.840.1.113883.6.238" codeSystemName="CDC Race and Ethnicity" />
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20150622120000-0500" />
+        <assignedAuthor>
+            <id root="20cf14fb-b65c-4c8c-a54d-b0cca834c18c" />
+            <id root="2.16.840.1.113883.4.6" extension="1122334455" />
+            <addr>
+                <streetAddressLine>2472 Rocky Place</streetAddressLine>
+                <city>Beaverton</city>
+                <state>CO</state>
+                <postalCode>97006</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom value="tel:+1(555)-555-1002" />
+            <assignedPerson>
+                <name>
+                    <prefix>Dr</prefix>
+                    <family>Davis</family>
+                    <given>Albert</given>
+                </name>
+            </assignedPerson>
+        </assignedAuthor>
+    </author>
+    <custodian>
+        <assignedCustodian>
+            <representedCustodianOrganization>
+                <id root="03e3df0b-c295-4434-aede-f35a9dafbe00" />
+                <id root="2.16.840.1.113883.4.6" extension="99999999" />
+                <name>Neighborhood Physicians Practice</name>
+                <telecom value="tel:+1(555)-555-1002" />
+                <addr>
+                    <streetAddressLine>2472 Rocky place</streetAddressLine>
+                    <city>Beaverton</city>
+                    <state>OR</state>
+                    <postalCode>97006</postalCode>
+                    <country>US</country>
+                </addr>
+            </representedCustodianOrganization>
+        </assignedCustodian>
+    </custodian>
+    <participant typeCode="IND">
+        <templateId root="2.16.840.1.113883.10.20.22.5.8" extension="2023-05-01" />
+        <associatedEntity classCode="PRS">
+            <id root="b3cbace4-c487-4999-aee3-b19334b66f12" />
+            <code
+                code="GRPRN"
+                displayName="grandparent"
+                codeSystem="2.16.840.1.113883.5.111"
+                codeSystemName="Role Code" />
+            <addr>
+                <streetAddressLine>1357 Amber Dr</streetAddressLine>
+                <city>Beaverton</city>
+                <state>OR</state>
+                <postalCode>97006</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom nullFlavor="UNK" />
+            <associatedPerson>
+                <name use="L">
+                    <prefix>Mr</prefix>
+                    <given>Rick</given>
+                    <family>Holler</family>
+                </name>
+            </associatedPerson>
+        </associatedEntity>
+    </participant>
+    <participant typeCode="IND">
+        <templateId root="2.16.840.1.113883.10.20.22.5.8" extension="2023-05-01" />
+        <associatedEntity classCode="PRS">
+            <id root="345e3164-be73-43ce-95d4-dc3aa226d619" />
+            <code
+                code="SPS"
+                displayName="SPOUSE"
+                codeSystem="2.16.840.1.113883.5.111"
+                codeSystemName="Role Code" />
+            <addr>
+                <streetAddressLine>1357 Amber Dr</streetAddressLine>
+                <city>Beaverton</city>
+                <state>OR</state>
+                <postalCode>97006</postalCode>
+                <country>US</country>
+            </addr>
+            <telecom nullFlavor="UNK" />
+            <associatedPerson>
+                <name use="L">
+                    <prefix>Mr</prefix>
+                    <given>Matthew</given>
+                    <family>Newman</family>
+                </name>
+            </associatedPerson>
+        </associatedEntity>
+    </participant>
+    <documentationOf>
+        <serviceEvent classCode="PCPR">
+            <effectiveTime xsi:type="IVL_TS">
+                <low value="20130720" />
+                <high value="20130815" />
+            </effectiveTime>
+        </serviceEvent>
+    </documentationOf>
+    <component>
+        <structuredBody>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
+                    <code code="48765-2" displayName="Allergies and Adverse Reactions"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Allergies, Adverse Reactions and Alerts</title>
+                    <text>Allergies</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09" />
+                    <code code="10160-0" displayName="History of Medication Use"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>MEDICATIONS</title>
+                    <text>Medications</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
+                    <code code="11450-4" displayName="Problem List"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Problem List</title>
+                    <text>Problems</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.3.1" extension="2015-08-01" />
+                    <code code="30954-2" displayName="Relevant Diagnostic Tests"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Results</title>
+                    <text>Results</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.17" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.17" extension="2015-08-01" />
+                    <code code="29762-2" displayName="Social History"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Social History</title>
+                    <text>Social History</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.4.1" extension="2015-08-01" />
+                    <code code="8716-3" displayName="Vital signs" codeSystem="2.16.840.1.113883.6.1"
+                        codeSystemName="LOINC" />
+                    <title>Vital Signs (Last Filed)</title>
+                    <text>Vital Signs</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.7.1" extension="2014-06-09" />
+                    <code code="47519-4" displayName="HISTORY OF PROCEDURES"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Procedures</title>
+                    <text>Procedures</text>
+                </section>
+            </component>
+            <component>
+                <section nullFlavor="NI">
+                    <templateId root="2.16.840.1.113883.10.20.22.2.10" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09" />
+                    <code code="18776-5" displayName="Plan of care note"
+                        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+                    <title>Plan of Treatment</title>
+                    <text>Plan of Treatment</text>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

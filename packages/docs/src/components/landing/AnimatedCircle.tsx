@@ -16,9 +16,9 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
         const startTime = Date.now();
         const timer = window.setInterval(() => {
           setValue(() => {
-            // Interpolate from 0 to props.value over 3 seconds
+            // Interpolate from 0 to props.value over 2 seconds
             const elapsedTime = Date.now() - startTime;
-            let percentComplete = elapsedTime / 3000;
+            let percentComplete = elapsedTime / 2000;
             if (percentComplete > 1) {
               percentComplete = 1;
               window.clearInterval(timer);
@@ -35,17 +35,7 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
 
   return (
     <svg viewBox="0 0 200 150" className="heroImage" ref={ref}>
-      <circle cx="100" cy="75" r="64" fill="none" stroke="rgb(148,106,249)" strokeWidth="1" />
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        fontSize="32"
-        fontWeight="bold"
-        fill="rgb(148,106,249)"
-        stroke="none"
-        dy="0.4em"
-      >
+      <text x="50%" y="50%" textAnchor="middle" fontSize="32" fontWeight="bold" fill="#9C36B5" stroke="none" dy="0.4em">
         {value.toLocaleString() + (props.suffix ?? '')}
       </text>
       {inView && (
@@ -61,6 +51,7 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
           transform="rotate(-90 100 75)"
         />
       )}
+      <circle cx="100" cy="75" r="64" fill="none" stroke="#9C36B5" strokeWidth="1" />
     </svg>
   );
 }

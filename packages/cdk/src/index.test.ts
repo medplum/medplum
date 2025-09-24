@@ -398,4 +398,16 @@ describe('Infra', () => {
     await expect(main({ config: filename })).resolves.not.toThrow();
     await unlink(filename);
   });
+
+  test('Use containerInsightsV2', async () => {
+    const filename = await writeConfig('./medplum.containerInsightsV2.config.json', {
+      ...baseConfig,
+      name: 'containerInsightsV2',
+      stackName: 'MedplumContainerInsightsV2Stack',
+      containerInsightsV2: 'enhanced',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
 });

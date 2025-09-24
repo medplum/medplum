@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
+import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import {
   InternalSchemaElement,
   PropertyType,
@@ -10,8 +10,8 @@ import {
   isEmpty,
 } from '@medplum/core';
 import { ElementDefinitionType } from '@medplum/fhirtypes';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
+import { JSX, useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -57,7 +57,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   const isIdProperty = property?.path?.endsWith('.id');
   if (isIdProperty) {
     return (
-      <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+      <Flex gap={3} align="center">
         {value}
         {!isEmpty(value) && (
           <CopyButton value={value} timeout={2000}>
@@ -70,7 +70,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
             )}
           </CopyButton>
         )}
-      </Box>
+      </Flex>
     );
   }
 
@@ -104,6 +104,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <>{value === undefined ? '' : Boolean(value).toString()}</>;
     case PropertyType.SystemString:
     case PropertyType.string:
+      // Check if this is a secret field that should be masked
+      if (props.property?.path?.toLowerCase().includes('secret')) {
+        return <SecretFieldDisplay value={value} />;
+      }
       return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
     case PropertyType.code:
     case PropertyType.date:
@@ -197,4 +201,55 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         />
       );
   }
+}
+
+interface SecretFieldDisplayProps {
+  readonly value: string;
+}
+
+function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
+  const [isVisible, setIsVisible] = useState(false);
+  const secretValue = props.value ?? '';
+  const hasValue = !isEmpty(secretValue);
+  const MASK = '•'.repeat(8);
+
+  return (
+    <Flex gap={3} align="center">
+      {isVisible ? (
+        <div style={{ whiteSpace: 'pre-wrap' }}>{secretValue}</div>
+      ) : (
+        <div style={{ whiteSpace: 'pre-wrap' }} aria-hidden="true">
+          {hasValue ? MASK : ''}
+        </div>
+      )}
+      {hasValue && (
+        <>
+          <CopyButton value={props.value} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? 'Copied' : 'Copy secret'} withArrow position="right">
+                <ActionIcon
+                  variant="subtle"
+                  color={copied ? 'teal' : 'gray'}
+                  onClick={copy}
+                  aria-label={copied ? 'Copied' : 'Copy secret'}
+                >
+                  {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+          <Tooltip label={isVisible ? 'Hide secret' : 'Show secret'} withArrow position="right">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={() => setIsVisible(!isVisible)}
+              aria-label={isVisible ? 'Hide secret' : 'Show secret'}
+            >
+              {isVisible ? <IconEyeOff size="1rem" /> : <IconEye size="1rem" />}
+            </ActionIcon>
+          </Tooltip>
+        </>
+      )}
+    </Flex>
+  );
 }

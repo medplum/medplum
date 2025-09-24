@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "4.3.11",
+  "version": "4.3.14",
   "description": "Medplum Code Examples",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -21,9 +21,9 @@
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",
-    "@medplum/core": "4.3.11",
-    "@medplum/fhirtypes": "4.3.11",
-    "@medplum/mock": "4.3.11",
+    "@medplum/core": "4.3.14",
+    "@medplum/fhirtypes": "4.3.14",
+    "@medplum/mock": "4.3.14",
     "jest": "29.7.0"
   },
   "engines": {

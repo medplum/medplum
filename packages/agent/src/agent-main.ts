@@ -4,17 +4,11 @@ import { MedplumClient, normalizeErrorString, parseLogLevel, sleep } from '@medp
 import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 import { RETRY_WAIT_DURATION_MS } from './constants';
-
-interface Args {
-  baseUrl: string;
-  clientId: string;
-  clientSecret: string;
-  agentId: string;
-  logLevel?: string;
-}
+import { LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
+import { AgentArgs } from './types';
 
 export async function agentMain(argv: string[]): Promise<App> {
-  let args: Args;
+  let args: AgentArgs;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
   } else if (argv.length === 3 && (argv[2] === '-h' || argv[2] === '--help')) {
@@ -62,7 +56,28 @@ export async function agentMain(argv: string[]): Promise<App> {
     }
   }
 
-  const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
+  // Replace logger logLevels if top-level logLevel is specified
+  if (args.logLevel) {
+    args['logger.main.logLevel'] = args.logLevel;
+    args['logger.channel.logLevel'] = args.logLevel;
+  }
+
+  // Parse logger config before handing it to the app
+  const [fullConfig, warnings] = parseLoggerConfigFromArgs(args);
+
+  // Create loggers based on parsed config
+  const mainLogger = new WinstonWrapperLogger(fullConfig[LoggerType.MAIN], LoggerType.MAIN);
+  const channelLogger = new WinstonWrapperLogger(fullConfig[LoggerType.CHANNEL], LoggerType.CHANNEL);
+
+  // Log out config warnings before proceeding to initializing app
+  for (const warning of warnings) {
+    mainLogger.warn(warning);
+  }
+
+  const app = new App(medplum, agentId, args.logLevel ? parseLogLevel(args.logLevel) : undefined, {
+    mainLogger,
+    channelLogger,
+  });
   await app.start();
 
   process.on('SIGINT', async () => {
@@ -74,12 +89,12 @@ export async function agentMain(argv: string[]): Promise<App> {
   return app;
 }
 
-function readCommandLineArgs(argv: string[]): Args {
+function readCommandLineArgs(argv: string[]): AgentArgs {
   const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
   return { baseUrl, clientId, clientSecret, agentId };
 }
 
-function readPropertiesFile(fileName: string): Args {
+function readPropertiesFile(fileName: string): AgentArgs {
   return Object.fromEntries(
     readFileSync(fileName)
       .toString()

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { deepClone, Logger, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -16,10 +16,18 @@ export class FhirRateLimiter {
   private delta: number;
   private logThreshold: number;
   private readonly enabled: boolean;
+  private readonly async: boolean;
 
   private readonly logger: Logger;
 
-  constructor(redis: Redis, authState: AuthState, userLimit: number, projectLimit: number, logger: Logger) {
+  constructor(
+    redis: Redis,
+    authState: AuthState,
+    userLimit: number,
+    projectLimit: number,
+    logger: Logger,
+    async?: boolean
+  ) {
     this.limiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:membership:',
       storeClient: redis,
@@ -41,6 +49,7 @@ export class FhirRateLimiter {
     this.logger = logger;
     this.logThreshold = Math.floor(userLimit * 0.1); // Log requests that consume at least 10% of the user's total limit
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean !== false;
+    this.async = async ?? false;
   }
 
   private setState(result: RateLimiterRes, ...others: RateLimiterRes[]): void {
@@ -67,12 +76,14 @@ export class FhirRateLimiter {
    */
   async consume(points: number): Promise<void> {
     // If user is already over the limit, just block
-    if (this.current && this.current.remainingPoints <= 0 && this.enabled) {
-      const outcome = deepClone(tooManyRequests);
-      outcome.issue[0].diagnostics = JSON.stringify({ ...this.current, limit: this.limiter.points });
-      throw new OperationOutcomeError(outcome);
+    if (this.current && this.current.remainingPoints <= 0) {
+      await this.block(points, this.current);
+      return;
     }
+    await this.consumeImpl(points);
+  }
 
+  private async consumeImpl(points: number): Promise<void> {
     this.delta += points;
     try {
       const result = await this.limiter.consume(this.userKey, points);
@@ -106,7 +117,19 @@ export class FhirRateLimiter {
         msToReset: result.msBeforeNext,
         enabled: this.enabled,
       });
-      if (this.enabled) {
+      await this.block(points, result);
+    }
+  }
+
+  async block(points: number, result: RateLimiterRes): Promise<void> {
+    if (this.enabled) {
+      if (this.async) {
+        // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
+        const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
+        await sleep(waitMs);
+        await this.consumeImpl(points);
+      } else {
+        // Block synchronous request
         const outcome = deepClone(tooManyRequests);
         outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
         throw new OperationOutcomeError(outcome);

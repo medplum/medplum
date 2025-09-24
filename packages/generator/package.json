@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "4.3.11",
+  "version": "4.3.14",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -26,15 +26,15 @@
     "valuesets": "ts-node src/valuesets.ts"
   },
   "devDependencies": {
-    "@medplum/core": "4.3.11",
-    "@medplum/definitions": "4.3.11",
-    "@medplum/fhirtypes": "4.3.11",
+    "@medplum/core": "4.3.14",
+    "@medplum/definitions": "4.3.14",
+    "@medplum/fhirtypes": "4.3.14",
     "@types/json-schema": "7.0.15",
     "@types/pg": "8.15.5",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
     "fast-xml-parser": "5.2.5",
-    "fhirpath": "4.5.1",
+    "fhirpath": "4.6.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.16.3",

@@ -48,6 +48,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
@@ -170,7 +171,7 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      const expr = buildReferenceEqualsCondition(builder.tableName, impl, referenceValues[0]);
+      const expr = buildReferenceEqualsCondition(builder.effectiveTableName, impl, referenceValues[0]);
       referenceConditions.push(expr);
       builder.whereExpr(expr);
 
@@ -188,7 +189,7 @@ export async function searchByReferenceImpl<T extends Resource>(
     }
     // Update each column with the current reference value literal
     for (const column of referenceColumns) {
-      column.columnName = `'${refValue}'`;
+      column.actualColumnName = `'${refValue}'`;
     }
     unionAllBuilder.add(searchQuery);
   }
@@ -405,6 +406,7 @@ function getBaseSelectQueryForResourceType(
   if (opts?.maxResourceVersion !== undefined) {
     const col = new Column(resourceType, '__version');
     builder.whereExpr(
+      // PENDING{v4.4.0} - remove null check
       new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
     );
   }
@@ -1096,16 +1098,41 @@ function trySpecialSearchParameter(
         filter.operator,
         filter.value
       );
-    case '_compartment':
     case '_project': {
-      if (filter.code === '_project') {
-        if (filter.operator === Operator.MISSING) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
-        } else if (filter.operator === Operator.PRESENT) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+        // PENDING{v4.4.0} Once `projectId` is NOT NULL, remove `null` handling
+        if (
+          (filter.operator === Operator.MISSING && filter.value === 'true') ||
+          (filter.operator === Operator.PRESENT && filter.value !== 'true')
+        ) {
+          // missing
+          return new Disjunction([
+            new Condition(new Column(table, 'projectId'), '=', null),
+            new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId),
+          ]);
+        } else {
+          // present
+          return new Conjunction([
+            new Condition(new Column(table, 'projectId'), '!=', null),
+            new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId),
+          ]);
         }
       }
 
+      return buildIdSearchFilter(
+        table,
+        {
+          columnName: 'projectId',
+          type: SearchParameterType.UUID,
+          array: false,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('projectId'),
+        },
+        filter.operator,
+        splitSearchOnComma(filter.value)
+      );
+    }
+    case '_compartment': {
       return buildIdSearchFilter(
         table,
         {
@@ -1485,12 +1512,12 @@ function addOrderByClause(
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'token-column') {
-    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+    addTokenColumnsOrderBy(builder, impl, sortRule);
   } else if (impl.searchStrategy === 'lookup-table') {
     impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
-    builder.orderBy(impl.columnName, !!sortRule.descending);
+    builder.orderBy(impl.columnName, sortRule.descending);
   }
 }
 
@@ -1587,11 +1614,11 @@ function buildChainedSearchUsingReferenceTable(
   let innerQuery: SelectQuery;
   if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCanonicalJoinCondition(selectQuery.tableName, link, currentTable)
+      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
   } else {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      lookupTableJoinCondition(selectQuery.tableName, link, currentTable)
+      lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
@@ -1729,11 +1756,15 @@ function parseChainedParameter(resourceType: string, searchFilter: Filter): Chai
       currentResourceType = link.targetType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, code);
-      if (!searchParam) {
-        throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+      if (code === '_filter') {
+        filter = { code: '_filter', operator: Operator.EQUALS, value: searchFilter.value };
+      } else {
+        const searchParam = getSearchParameter(currentResourceType, code);
+        if (!searchParam) {
+          throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
+        }
+        filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
       }
-      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);

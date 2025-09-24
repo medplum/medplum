@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM, WithId } from '@medplum/core';
 import { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
-import { convertFhirToCcda } from './fhir-to-ccda';
+import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_BIRTH_SEX,
