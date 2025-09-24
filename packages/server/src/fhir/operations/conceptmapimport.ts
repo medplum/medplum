@@ -16,7 +16,7 @@ import { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery } from '../sql';
 import { parseInputParameters } from './utils/parameters';
-import { findTerminologyResource } from './utils/terminology';
+import { findTerminologyResource, uniqueOn } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -187,7 +187,12 @@ export async function importConceptMap(
     }
     attributeRows.push(mappingAttributes);
   }
-  await writeMappingRows(db, mappingRows, attributeRows);
+
+  const uniqueMappings = uniqueOn(
+    mappingRows,
+    (r) => `${r.sourceSystem}|${r.sourceCode} : ${r.targetSystem}|${r.targetCode}`
+  );
+  await writeMappingRows(db, uniqueMappings, attributeRows);
 }
 
 export async function importConceptMapResource(db: PoolClient, conceptMap: WithId<ConceptMap>): Promise<void> {
