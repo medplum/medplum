@@ -453,7 +453,9 @@ export function isResource<T extends Resource>(value: unknown, resourceType?: T[
  * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
-export function isReference(value: unknown): value is Reference & { reference: string } {
+export function isReference<T extends Resource = Resource>(
+  value: unknown
+): value is Reference<T> & { reference: string } {
   return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
 }
 
