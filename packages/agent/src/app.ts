@@ -16,6 +16,7 @@ import {
   Logger,
   MEDPLUM_VERSION,
   MedplumClient,
+  OperationOutcomeError,
   ReconnectingWebSocket,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
@@ -23,7 +24,7 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -32,6 +33,7 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
+import { AgentByteStreamChannel } from './bytestream';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
@@ -436,6 +438,8 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
+    const errors = [] as Error[];
+
     for (let i = 0; i < filteredChannels.length; i++) {
       const definition = filteredChannels[i];
       const endpoint = filteredEndpoints[i];
@@ -447,8 +451,33 @@ export class App {
       try {
         await this.startOrReloadChannel(definition, endpoint);
       } catch (err) {
+        errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
       }
+    }
+
+    // If there were any errors thrown during reloading, throw them as one error
+    if (errors.length) {
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: {
+              text: `${errors.length} error(s) occurred while reloading channels`,
+            },
+          },
+          ...errors.map(
+            (err) =>
+              ({
+                severity: 'error',
+                code: 'invalid',
+                details: { text: normalizeErrorString(err) },
+              }) satisfies OperationOutcomeIssue
+          ),
+        ],
+      });
     }
   }
 
@@ -498,15 +527,24 @@ export class App {
       return;
     }
 
-    switch (getChannelType(endpoint)) {
-      case ChannelType.DICOM:
-        channel = new AgentDicomChannel(this, definition, endpoint);
-        break;
-      case ChannelType.HL7_V2:
-        channel = new AgentHl7Channel(this, definition, endpoint);
-        break;
-      default:
-        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    try {
+      const channelType = getChannelType(endpoint);
+      switch (channelType) {
+        case ChannelType.DICOM:
+          channel = new AgentDicomChannel(this, definition, endpoint);
+          break;
+        case ChannelType.HL7_V2:
+          channel = new AgentHl7Channel(this, definition, endpoint);
+          break;
+        case ChannelType.BYTE_STREAM:
+          channel = new AgentByteStreamChannel(this, definition, endpoint);
+          break;
+        default:
+          throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+      }
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      return;
     }
 
     channel.start();
