@@ -113,7 +113,7 @@ export class AgentByteStreamChannel extends BaseChannel {
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
-    const connection = this.connections.get(msg.remote as string);
+    const connection = this.connections.get(msg.remote);
     if (connection) {
       connection.write(Buffer.from(msg.body, 'hex'));
     }

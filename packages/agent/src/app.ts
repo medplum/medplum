@@ -24,7 +24,7 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -467,8 +467,15 @@ export class App {
             details: {
               text: `${errors.length} error(s) occurred while reloading channels`,
             },
-            diagnostics: errors.map((err) => normalizeErrorString(err)).join('\n'),
           },
+          ...errors.map(
+            (err) =>
+              ({
+                severity: 'error',
+                code: 'invalid',
+                details: { text: normalizeErrorString(err) },
+              }) satisfies OperationOutcomeIssue
+          ),
         ],
       });
     }
