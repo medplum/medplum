@@ -214,16 +214,8 @@ function buildRecordTarget(patient: Patient): Record<string, any> {
   const email = patient.telecom?.find((t) => t.system === 'email');
   const identifier = patient.identifier?.find((i) => i.system === 'http://example.com/patientId')?.value;
   const gender = patient.gender ? { female: 'F', male: 'M', other: 'OTH', unknown: 'UNK' }[patient.gender] : '';
-  const raceExtension = getExtensionValue(
-    patient,
-    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
-    'ombCategory'
-  ) as Coding;
-  const ethnicityExtension = getExtensionValue(
-    patient,
-    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
-    'ombCategory'
-  ) as Coding;
+  const raceExtension = getExtensionValue(patient, extensionURLMapping.race, 'ombCategory') as Coding;
+  const ethnicityExtension = getExtensionValue(patient, extensionURLMapping.ethnicity, 'ombCategory') as Coding;
   const birthDateTime = getExtensionValue((patient as any)._birthDate, extensionURLMapping.patientBirthTime) as string;
 
   return {
