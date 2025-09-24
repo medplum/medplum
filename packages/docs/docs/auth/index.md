@@ -31,11 +31,11 @@ Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow yo
 
 ## User Management
 
-See our [User Management](../user-management/) section for more information: 
-  * scoping users, and distinguishing [Project vs Server Scoped users](../user-management/project-vs-server-scoped-users.mdx)
-  * enabling [Open Patient Registration](../user-management/open-patient-registration.md)
-  * using [External ID's](../user-management/external-ids.md)
-  * creating [Custom Emails](../user-management/custom-emails.mdx) for user invites 
+See our [User Management](/docs/user-management/) section for more information: 
+  * scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users.mdx)
+  * enabling [Open Patient Registration](/docs/user-management/open-patient-registration.md)
+  * using [External ID's](/docs/user-management/external-ids.md)
+  * creating [Custom Emails](/docs/user-management/custom-emails.mdx) for user invites 
   
 -----
 
