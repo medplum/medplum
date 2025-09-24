@@ -3,40 +3,48 @@ on:
   workflow_run:
     workflows: [Build]
     types: [completed]
+
+permissions:
+  contents: read
+
 jobs:
   coveralls:
     name: Coveralls
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        if: github.event.workflow_run.head_repository.full_name == github.repository
         with:
-          repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
-      - name: 'Download code coverage'
-        uses: actions/github-script@v6
+      - name: 'Download build artifacts'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
-            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               run_id: context.payload.workflow_run.id,
-            });
-            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "medplum-code-coverage"
-            })[0];
-            let download = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: matchArtifact.id,
-               archive_format: 'zip',
-            });
-            let fs = require('fs');
-            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/medplum-code-coverage.zip`, Buffer.from(download.data));
-      - name: 'Unzip code coverage'
-        run: unzip medplum-code-coverage.zip -d coverage
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            async function downloadArtifact(artifactName, extractPath) {
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.payload.workflow_run.id,
+              });
+              const artifact = artifacts.data.artifacts.find(a => a.name === artifactName);
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+                archive_format: 'zip',
+              });
+              const zipPath = `${process.env.GITHUB_WORKSPACE}/${artifactName}.zip`;
+              fs.writeFileSync(zipPath, Buffer.from(download.data));
+              execSync(`unzip -q "${zipPath}" -d ${extractPath}`, { cwd: process.env.GITHUB_WORKSPACE });
+            }
+            await downloadArtifact('medplum-code-coverage', 'coverage');
       - name: Coveralls GitHub Action
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Client, escapeIdentifier, Pool } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
@@ -99,9 +101,9 @@ describe('migrate-functions', () => {
         })
       );
 
-      // Simulate an index that failed during creation: invalid and not live
+      // Simulate an index that failed during creation: invalid
       await client.query(
-        `UPDATE pg_index SET indisvalid = false, indislive = false 
+        `UPDATE pg_index SET indisvalid = false
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
       AND pg_class.relname = $1`,
         [indexName]
@@ -112,7 +114,6 @@ describe('migrate-functions', () => {
         expect.objectContaining({
           index_name: indexName,
           is_valid: false,
-          is_live: false,
           index_definition: indexDefinition,
         })
       );
@@ -132,29 +133,6 @@ describe('migrate-functions', () => {
           is_live: true,
           index_definition: indexDefinition,
         })
-      );
-
-      // Simulate an index that is being created by some other client: invalid but live
-      await client.query(
-        `UPDATE pg_index SET indisvalid = false, indislive = true 
-      FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
-      AND pg_class.relname = $1`,
-        [indexName]
-      );
-      const simulateCompetingClientIndexes = await getTableIndexes(client, tableName);
-      expect(simulateCompetingClientIndexes).toHaveLength(1);
-      expect(simulateCompetingClientIndexes[0]).toEqual(
-        expect.objectContaining({
-          index_name: indexName,
-          is_valid: false,
-          is_live: true,
-          index_definition: indexDefinition,
-        })
-      );
-
-      // Fails because index is being created by some other client
-      await expect(idempotentCreateIndex(client, [], indexName, createIndexSql)).rejects.toThrow(
-        'Another client is actively creating index'
       );
     });
   });

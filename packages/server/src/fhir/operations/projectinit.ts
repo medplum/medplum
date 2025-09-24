@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ProfileResource, WithId, badRequest, createReference, created } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
@@ -159,7 +161,7 @@ export async function createProject(
       admin.lastName as string,
       admin.email as string
     );
-    const membership = await createProjectMembership(admin, project, profile, { admin: true });
+    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };
   }
   return { project, client };

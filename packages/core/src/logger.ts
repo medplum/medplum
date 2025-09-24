@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * Once upon a time, we used Winston, and that was fine.
  * Then the log4j fiasco happened, and everyone started auditing logging libraries.

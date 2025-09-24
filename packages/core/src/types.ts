@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   Bundle,
   CodeableConcept,
@@ -170,7 +172,8 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
     globalSchema.types[resourceType] = typeSchema;
   }
 
-  if (!typeSchema.searchParams) {
+  // Binary has no search parameters; not even those inherited from Resource
+  if (!typeSchema.searchParams && resourceType !== 'Binary') {
     typeSchema.searchParams = {
       _id: {
         base: [resourceType],

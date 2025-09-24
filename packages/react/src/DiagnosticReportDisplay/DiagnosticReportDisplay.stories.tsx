@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, deepClone } from '@medplum/core';
 import { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';

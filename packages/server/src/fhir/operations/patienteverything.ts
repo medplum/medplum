@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
-  Filter,
+  append,
   flatMapFilter,
   getReferenceString,
   isReference,
   isResource,
   Operator,
+  SearchRequest,
   sortStringArray,
   WithId,
 } from '@medplum/core';
@@ -76,38 +79,54 @@ export async function getPatientEverything(
   params?: PatientEverythingParameters
 ): Promise<Bundle<WithId<Resource>>> {
   // First get all compartment resources
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = params?._type ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
-  types.push('Patient');
-  sortStringArray(types);
-
-  const filters: Filter[] = [
-    {
-      code: '_compartment',
-      operator: Operator.EQUALS,
-      value: getReferenceString(patient),
-    },
-  ];
-
-  if (params?._since) {
-    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params._since });
-  }
-
-  // Get initial bundle of compartment resources
-  const bundle = await repo.search({
-    resourceType: 'Patient',
-    types,
-    filters,
-    count: params?._count ?? defaultMaxResults,
+  const search: Partial<SearchRequest> = {
+    types: params?._type,
+    count: params?._count,
     offset: params?._offset,
-  });
+  };
+  if (params?._since) {
+    search.filters = append(search.filters, {
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params._since,
+    });
+  }
+  const bundle = await searchPatientCompartment(repo, patient, search);
 
   // Filter by requested date range
   filterByCareDate(bundle, params?.start, params?.end);
 
-  // Recursively resolve references
+  // Recursively resolve references to resources not in the official compartment, but
+  // which should be included for completeness
   await addResolvedReferences(repo, bundle.entry);
   return bundle;
+}
+
+export async function searchPatientCompartment(
+  repo: Repository,
+  target: WithId<Resource>,
+  search?: Partial<SearchRequest>
+): Promise<Bundle<WithId<Resource>>> {
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  const types = search?.types ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  types.push(target.resourceType);
+  sortStringArray(types);
+
+  const filters = search?.filters ?? [];
+  filters.push({
+    code: '_compartment',
+    operator: Operator.EQUALS,
+    value: getReferenceString(target),
+  });
+
+  // Get initial bundle of compartment resources
+  return repo.search({
+    resourceType: target.resourceType,
+    types,
+    filters,
+    count: search?.count ?? defaultMaxResults,
+    offset: search?.offset,
+  });
 }
 
 /**

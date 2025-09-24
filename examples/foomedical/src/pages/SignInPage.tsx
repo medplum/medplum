@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BackgroundImage, Box, SimpleGrid } from '@mantine/core';
 import { SignInForm } from '@medplum/react';
 import { JSX } from 'react';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
@@ -10,7 +12,7 @@ const operation: OperationDefinition = {
   name: 'db-stats',
   status: 'active',
   kind: 'operation',
-  code: 'status',
+  code: 'db-stats',
   experimental: true,
   system: true,
   type: false,

@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
+  append,
   badRequest,
   Event,
   getReferenceString,
@@ -376,30 +379,28 @@ class BatchProcessor {
     };
     this.router.dispatchEvent(preEvent);
 
-    let errors = 0;
-
+    let errors: string[] | undefined;
     for (let n = 0; n < bundleInfo.ordering.length; n++) {
       const entryIndex = bundleInfo.ordering[n];
       const entry = entries[entryIndex];
       const rewritten = this.rewriteIdsInObject(entry);
       try {
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
-      } catch (err) {
+      } catch (err: any) {
         if (this.isTransaction()) {
           throw err;
         }
 
+        errors = append(errors, err.message);
         if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
           // Rate limit reached; terminate batch and finish to avoid further load on server
           for (let i = n; i < bundleInfo.ordering.length; i++) {
             const entryIndex = bundleInfo.ordering[i];
             resultEntries[entryIndex] = buildBundleResponse(err.outcome);
           }
-          errors += bundleInfo.ordering.length - n;
           break;
         }
 
-        errors++;
         resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
         continue;
       }
@@ -600,7 +601,7 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
   count?: number;
-  errors?: number;
+  errors?: string[];
   size?: number;
 }
 

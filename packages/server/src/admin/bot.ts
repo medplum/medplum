@@ -1,11 +1,13 @@
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType, createReference, getReferenceString, WithId } from '@medplum/core';
 import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { Readable } from 'stream';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -39,7 +41,7 @@ export interface CreateBotRequest {
   readonly runtimeVersion?: 'awslambda' | 'vmcontext';
 }
 
-export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
+export async function createBot(repo: Repository, request: CreateBotRequest): Promise<WithId<Bot>> {
   const filename = 'index.ts';
   const contentType = ContentType.TYPESCRIPT;
   const binary = await repo.createResource<Binary>({

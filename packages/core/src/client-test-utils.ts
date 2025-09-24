@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import { encodeBase64Url } from './base64';
 import { FetchLike, MedplumClient } from './client';
 import { ContentType } from './contenttype';
 import { generateId } from './crypto';
@@ -121,5 +124,5 @@ export class MockMedplumClient extends MedplumClient {
 }
 
 export function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
+  return 'header.' + encodeBase64Url(JSON.stringify(claims)) + '.signature';
 }

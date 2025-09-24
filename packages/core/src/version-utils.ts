@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from './client';
 import { normalizeErrorString } from './outcomes';
 
@@ -90,7 +92,7 @@ export async function fetchVersionManifest(
  * @returns `true` if `version` is a valid semver version that conforms to the Medplum versioning system, otherwise `false`.
  */
 export function isValidMedplumSemver(version: string): boolean {
-  return /^\d+\.\d+\.\d+$/.test(version);
+  return /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/.test(version);
 }
 
 /**

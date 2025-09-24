@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   createReference,
@@ -735,7 +737,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PATCH',
-            url: 'Patient',
+            url: 'Patient/123/$everything',
           },
         },
       ],

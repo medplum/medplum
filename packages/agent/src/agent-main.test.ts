@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LogLevel, sleep } from '@medplum/core';
 import fs from 'node:fs';
 import { agentMain } from './agent-main';
@@ -32,12 +34,7 @@ describe('Main', () => {
   });
 
   test('Missing arguments', async () => {
-    try {
-      await agentMain(['node', 'index.js']);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
+    await expect(agentMain(['node', 'index.js'])).rejects.toThrow('process.exit');
     expect(console.log).toHaveBeenCalledWith('Missing arguments');
     expect(process.exit).toHaveBeenCalledWith(1);
   });
@@ -71,12 +68,8 @@ describe('Main', () => {
   test('Empty properties file', async () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
     jest.spyOn(fs, 'readFileSync').mockReturnValue('');
-    try {
-      await agentMain([]);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
+
+    await expect(agentMain([])).rejects.toThrow('process.exit');
     expect(console.log).toHaveBeenCalledWith('Missing arguments');
     expect(process.exit).toHaveBeenCalledWith(1);
   });

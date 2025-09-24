@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Alert, Button, Group, Menu, Stack, TextInput, useMantineTheme } from '@mantine/core';
 import {
   AccessPolicyInteraction,

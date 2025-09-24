@@ -1,7 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import http from 'node:http';
 import { shutdownApp } from './app';
 import { main } from './index';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
+import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+
+// This isn't really a mocked value, but it must be named that way to appease jest
+// If we followed the same mocking pattern as `database.test.ts`, this wouldn't be necessary
+const mockLatestVersion = getLatestPostDeployMigrationVersion();
 
 jest.mock('express', () => {
   const original = jest.requireActual('express');
@@ -34,7 +41,7 @@ jest.mock('pg', () => {
         return { rows: [{ version: 1000000 }] };
       }
       if (sql === mockQueries.GetDataVersionSql) {
-        return { rows: [{ dataVersion: 1 }] };
+        return { rows: [{ dataVersion: mockLatestVersion }] };
       }
       if (sql.startsWith('SELECT "User"."id"')) {
         return { rows: [{ id: '1', content: '{}' }] };

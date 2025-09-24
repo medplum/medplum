@@ -1,4 +1,6 @@
-import { ProjectSetting } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
 import { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -10,6 +12,7 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   introspectUrl: string;
+  registerUrl: string;
   appBaseUrl: string;
   logLevel?: string;
   binaryStorage?: string;
@@ -79,9 +82,6 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
-  /** Search strategy system repositories use when using token search parameters. */
-  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
-
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;
 
@@ -90,6 +90,21 @@ export interface MedplumServerConfig {
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
+
+  /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
+  preCommitSubscriptionsEnabled?: boolean;
+
+  /** Optional list of external authentication providers. */
+  externalAuthProviders?: MedplumExternalAuthConfig[];
+
+  /** Optional list of default OAuth2 clients */
+  defaultOAuthClients?: ClientApplication[];
+
+  /** Optional flag to enable the MCP server beta */
+  mcpEnabled?: boolean;
+
+  /** Optional config for Fission.io bots */
+  fission?: MedplumFissionConfig;
 
   /** @deprecated */
   auditEventLogGroup?: string;
@@ -155,4 +170,17 @@ export interface MedplumBullmqConfig {
   concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
+}
+
+export interface MedplumExternalAuthConfig {
+  readonly issuer: string;
+  readonly userInfoUrl: string;
+}
+
+export interface MedplumFissionConfig {
+  readonly namespace: string;
+  readonly fieldManager: string;
+  readonly environmentName: string;
+  readonly routerHost: string;
+  readonly routerPort: number;
 }

@@ -1,19 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
+  badRequest,
   CurrentContext,
   FhircastAnchorResourceType,
   FhircastDiagnosticReportCloseContext,
   FhircastDiagnosticReportOpenContext,
   FhircastEventPayload,
   FhircastMessagePayload,
-  OperationOutcomeError,
-  badRequest,
   generateId,
   getWebSocketUrl,
+  isResource,
   normalizeErrorString,
+  OperationOutcomeError,
   resolveId,
   serverError,
 } from '@medplum/core';
-import { Bundle, BundleEntry, DiagnosticReport, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
@@ -258,7 +261,11 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
   const currentContext = await getCurrentContext(projectId, event['hub.topic']);
   // If the current context is a DiagnosticReport anchor context, then store it for later
   if (currentContext && currentContext['context.type'] === 'DiagnosticReport') {
-    const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource as DiagnosticReport;
+    const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource;
+    if (!isResource(report, 'DiagnosticReport')) {
+      sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
+      return;
+    }
     await storeContext(projectId, event['hub.topic'], report, currentContext);
   }
 
@@ -501,7 +508,7 @@ protectedSTU2Routes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
+    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
     if (!currentContext) {
       res.status(200).json([]);
       return;

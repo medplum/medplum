@@ -1,6 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'react-refresh'],
+  plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -153,6 +153,19 @@ module.exports = {
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/tag-lines': 'off',
+
+    // Header
+    'header/header': [
+      'error',
+      'line',
+      [
+        ' SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors',
+        ' SPDX-License-Identifier: Apache-2.0',
+      ],
+    ],
+
+    // No Only Tests
+    'no-only-tests/no-only-tests': ['error', { fix: true }],
   },
   ignorePatterns: [
     'coverage',

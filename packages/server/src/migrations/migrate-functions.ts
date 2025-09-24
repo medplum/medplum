@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
 import { MigrationActionResult } from './types';
@@ -30,43 +32,39 @@ export async function idempotentCreateIndex(
   indexName: string,
   createIndexSql: string
 ): Promise<void> {
-  const existsResult = await client.query<{ exists: boolean; live: boolean; invalid: boolean }>(
+  const existsResult = await client.query<{
+    exists: boolean;
+    is_valid: boolean;
+  }>(
     `SELECT 
        EXISTS(SELECT 1 FROM pg_class WHERE relname = $1) AS exists,
        EXISTS(SELECT 1 
            FROM pg_index idx 
            JOIN pg_class i ON i.oid = idx.indexrelid 
-           WHERE i.relname = $1 AND idx.indislive
-       ) AS live,
-       EXISTS(SELECT 1 
-           FROM pg_index idx 
-           JOIN pg_class i ON i.oid = idx.indexrelid 
-           WHERE i.relname = $1 AND NOT idx.indisvalid
-       ) AS invalid`,
+           WHERE i.relname = $1 AND idx.indisvalid
+       ) AS is_valid`,
     [indexName]
   );
-  const { invalid, live } = existsResult.rows[0];
+  const { is_valid } = existsResult.rows[0];
   let exists = existsResult.rows[0].exists;
 
-  if (exists && invalid) {
-    if (live) {
-      throw new Error('Another client is actively creating index ' + indexName);
-    }
-
+  // Drop index if it is not valid
+  if (exists && !is_valid) {
     const start = Date.now();
     const dropQuery = `DROP INDEX IF EXISTS ${escapeIdentifier(indexName)}`;
     await client.query(dropQuery);
     const durationMs = Date.now() - start;
-    globalLogger.info('Dropped invalid index', { indexName, durationMs });
+    globalLogger.debug('Dropped invalid index', { indexName, durationMs });
     results.push({ name: dropQuery, durationMs });
     exists = false;
   }
 
+  // create index if it doesn't exist
   if (!exists) {
     const start = Date.now();
     await client.query(createIndexSql);
     const durationMs = Date.now() - start;
-    globalLogger.info('Created index', { indexName, durationMs });
+    globalLogger.debug('Created index', { indexName, durationMs });
     results.push({ name: createIndexSql, durationMs });
   }
 }
@@ -80,6 +78,6 @@ export async function analyzeTable(
   const analyzeQuery = `ANALYZE ${escapeIdentifier(tableName)}`;
   await client.query(analyzeQuery);
   const durationMs = Date.now() - start;
-  globalLogger.info('Analyzed table', { tableName, durationMs });
+  globalLogger.debug('Analyzed table', { tableName, durationMs });
   actions.push({ name: analyzeQuery, durationMs });
 }

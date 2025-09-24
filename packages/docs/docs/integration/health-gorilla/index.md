@@ -5,75 +5,92 @@ tags: [integration]
 
 # Health Gorilla Lab Orders
 
-Health Gorilla is an interoperability services used to order labs and diagnostics, and do records requests via API. Medplum offers a first party integration with Health Gorilla.
+Health Gorilla is an interoperability service that enables healthcare providers to order lab tests and diagnostics through a unified API. Medplum provides a first-party integration with Health Gorilla in order to optimize this experience, minimizing errors and enhancing the patient experience. 
 
 :::tip
-This is advanced integration. [Email us](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for more information.
+Need help? This is an advanced integration. [Contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for implementation support.
 :::
 
-The Medplum toolkit provides tooling to optimize the computerized provider order entry (CPOE) experience, to minimize errors and enhance patient experience. A well defined workflow with diagnostic menu will help set you up for success. The workflows shown here are intended to reduce the amount of repeated data entry required by clinicians and staff.
+This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering. 
 
-This guide is not comprehensive, but is meant to be used as a tool in planning and scoping your lab orders workflow.
+For more information about the FHIR resources involved in the integration, see [Sending Orders](./sending-orders.md) and [Receiving Results](./receiving-results.md). See our [Changelog](./hg-changelog.md) for information about integration upgrades. 
 
-## Workflow considerations
+## Prerequisites 
 
-The following flowchart shows the most common workflows associated with Lab orders for illustration.
+In order to integrate with Health Gorilla for labs, your organization must: 
+
+- Be a provider organization, i.e. with a clinician licensed to review lab orders, 
+- Have an account number with a [connected lab](https://developer.healthgorilla.com/docs/list-of-connected-labs), such as Quest or LabCorp. 
+
+## Requisite information for successful lab order 
+
+Below is a decision tree that helps determine what information must be collected for a successful lab order with this integration. 
 
 ```mermaid
 graph TD
-    A[Prerequisite: Ensure correct demographic/insurance for patient] --> B[Choose a lab panel, e.g., Hepatic Function Panel]
-    B --> C[Fill out Ask On Entry questions, e.g., Fasting? Y/N]
+    A[Ensure correct demographic information for patient] --> B[Select Performing Lab]
+    B --> C[Fill out Choose a lab panel, e.g., Hepatic Function Panel]
     C --> D[Are specimens collected onsite?]
-    D -- Yes --> E[Enter the collected date and time]
+    D -->|Yes| E[Enter Ask On Entry questions e.g., Fasting? Y/N, and collected date and time]
     E --> F[Are you synchronizing patient insurance to lab provider?]
-    F -- Yes --> G[Ensure Account and Coverage are collected]
+    F -->|Yes| G[Ensure Coverage is collected]
+    F -->|No| P
     G --> H[Medicare patient?]
-    H -- Yes --> I[Show the ABN] --> P[Capture diagnosis codes] --> Q[Lab receives specimen] --> M
-    D -- No --> J[Leave the collected date and time blank]
+    H -->|Yes| I[Show the ABN and and capture diagnosis codes] --> P[Attach requisition to specimen and send to lab] --> M
+    D -->|No| J[Leave the collected date and time blank]
     J --> K[Give patient requisition]
     K --> L[Lab collects insurance/specimen]
     L --> M[Receive results via API]
     M --> N[Release results to patient following state resulting protocol]
+    
+    classDef question fill:#A5D6A7,stroke:#333,stroke-width:2px
+    classDef action fill:#B088E1,stroke:#333,stroke-width:2px
+    
+    class D,F,H question
+    class A,B,C,E,G,I,J,K,L,M,N,P action
 ```
 
-As indicated by the flowchart, designing your workflow will require making decisions about which of the nodes in the above flowchart apply to your workflow. Refer to the following table for major considerations and implementation implications.
+Information on how to systemize the collection of this information is included below. 
 
-| Choice              | Implication                                  | Samples (Medplum Team)                                                                                                |
-| ------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Lab Menu            | Determines AOE questions                     | Coming soon                                                                                                           |
-| Specimens onsite    | Enter specimen date time                     | [Sample Req w/ collected date](https://drive.google.com/file/d/1gVvhw-2OnW9IlwZU2ly13jZGbGMAyW0O/view?usp=drive_link) |
-| Specimens offsite   | Share requisition with patient               | [Sample PSC Hold](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link)              |
-| Medicare insurance  | Diagnosis codes                              | [Diagnosis samples](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link)            |
-| Medicare insurance  | Show patient ABN, and collect copay          | [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link)                   |
-| Multiple insurances | Send insurances in priority order            | [Sample requisition](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link)           |
-| Release results     | Show patient PDF follow in state regulations | Coming soon                                                                                                           |
+### Ensure correct demographic information for patient 
 
-## Requisitions
+[FHIR profiles](/docs/fhir-datastore/profiles) are used to ensure that the correct patient demographic information is collected for every patient. 
 
-Requisitions from Health Gorilla are PDFs, and have multiple use cases based off of the desired workflow. The below describes the sample use cases for requisitions.
+### Select performing lab 
 
-| Scenario                               | Action                                                                  | Sample                                                                                                      |
-| -------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Specimens collected on site            | Attach requisition to sample when dropped off at lab                    | [Sample requisition](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link) |
-| Specimens collected at third party lab | Send patient with requisition to lab                                    | [Sample requisition](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link) |
-| Bill provider account                  | Send patient with requisition but they will not need to provide payment | Coming soon                                                                                                 |
-| Bill multiple insurances               | Send specimen to lab and lab will bill both insurances in order         | [Sample requisition](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link) |
+In order to use Health Gorilla's integration, you must retain an account number with the lab directly. This can be done programmatically (see [Sending Orders](./sending-orders.md) for more details). 
 
-## Specimens
+### Choose a lab panel 
 
-If collecting specimens on site, you'll need to provide the collection details and attach a printed specimen with barcode to the specimen to ensure correct chain of custody and turnaround times. This [sample requisition](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link) shows an example of a PDF that should be printed and attached.
+To standardize the labs or the sets of labs (i.e. blood glucose level, standard STD test set, etc) that can be selected by clinicians, care managers can set up [PlanDefinitions](/docs/api/fhir/resources/plandefinition), that are then instantiated into [ServiceRequests](/docs/api/fhir/resources/servicerequest) when they are ordered for a specific patient. For more information, see our [order structure FHIR data model](/docs/integration/health-gorilla/sending-orders#fhir-data-model). 
 
-## Medicare
+### Ensuring Coverage are collected 
 
-Medicare has two important integration features that need to be implemented in order to implement the workflow. These are (1) Advanced Beneficiary Notice (ABN) and (2) Diagnosis codes.
+When attaching insurance information to the lab order, ensure that the correct Coverage resource is attached. See [Sending Orders](./sending-orders.md) for more details. 
 
-In an integration, and Advanced Beneficiary Notice (ABN) is a PDF that is generated by the Health Gorilla system for orders that are placed for patients with Medicare coverage. They give the patient an indication of their out of pocket cost for the lab test. The patient should be informed of their expected cost before testing. This is a [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link).
+### Show ABN and capture diagnosis codes for Medicare patients
 
-In the majority of Medicare orders, patients need diagnosis codes added to their order to receive overage for the tests, so it's important to include those. These are ICD-10 codes, and a sample `ValueSet` with common ICD-10 codes can be [downloaded](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link)
+When billing lab orders to Medicare, two features are needed: (1) Advanced Beneficiary Notice (ABN) and (2) Diagnosis codes. 
 
-## Diagnosis Codes
+The Advanced Beneficiary Notice (ABN) is a PDF that is generated by the Health Gorilla system for orders that are placed for patients with Medicare coverage. Patients should be informed for their expected cost before testing, and these documents give an indication of their out-of-pocket costs for the lab test. For a sample ABN document, see [sample PDF's](#sample-health-gorilla-pdfs). 
 
-For all lab orders, entering diagnosis codes is a best practice, as interpretations of lab results can be a function of diagnosis.
+In the majority of Medicare orders, patients need diagnosis codes added to their order to receive overage for the tests. These are ICD-10 codes, and a sample `ValueSet` with common ICD-10 codes can be [downloaded](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link).
+
+### Attach requisition to sample and send to lab 
+
+If collecting specimens on site, you'll need to provide the collection details and attach a printed specimen with barcode to the specimen to ensure correct chain of custody and turnaround times. See [sample PDF's](#sample-health-gorilla-pdfs) for an example of a PDF that should be printed and attached.
+
+## Sample Health Gorilla PDF's 
+
+The below table includes a list of sample documents for PDF's provided by Health Gorilla during the lab order requisition process. Please [contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for access. 
+
+| Sample PDF             | Purpose                                 | 
+| ---------------------- | --------------------------------------- | 
+| [Sample Req w/ collected date](https://drive.google.com/file/d/1gVvhw-2OnW9IlwZU2ly13jZGbGMAyW0O/view?usp=drive_link) | Requisition for speciments collected onsite, with collection date and time. To be attached to the speciment when sending to lab. | 
+| [Sample PSC Hold](https://drive.google.com/file/d/1EIwAmFxrgdvRNBbL3p9pm4RarKXUS-ET/view?usp=drive_link) | Requisition for speciments collected offsite, to be shared with patient. | 
+| [Diagnosis samples](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=drive_link) | Sample diagnosis codes, for Medicare patients. | 
+| [Sample ABN](https://drive.google.com/file/d/1l6VbtqdlkDbCJr_DPQwfKOpoaRo2giTM/view?usp=drive_link) | Sample ABN document, for Medicare patients. | 
+| [Sample Req with multiple insurance](https://drive.google.com/file/d/1QMrLkP71ysQEMIi3EOKx0BWeJOATUeCw/view?usp=drive_link) | Requisition for patients with multiple insurance. | 
 
 ## Glossary
 

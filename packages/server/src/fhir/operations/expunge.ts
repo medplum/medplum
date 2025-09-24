@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
@@ -16,7 +18,7 @@ import { buildBinaryIds } from './utils/binary';
  */
 export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.superAdmin) {
+  if (!ctx.project.superAdmin && !ctx.membership.admin) {
     return [forbidden];
   }
 

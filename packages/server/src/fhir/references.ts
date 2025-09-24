@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
   crawlTypedValueAsync,
@@ -109,10 +111,10 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 
 async function resolveReplacementReference(
   repo: Repository,
-  reference: Reference,
+  reference: Reference | undefined,
   path: string
 ): Promise<Reference | undefined> {
-  if (!reference.reference?.includes?.('?')) {
+  if (!reference?.reference?.includes?.('?')) {
     return undefined;
   }
 

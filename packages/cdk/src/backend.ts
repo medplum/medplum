@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
@@ -19,7 +21,7 @@ import {
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -41,8 +43,8 @@ export class BackEnd extends Construct {
   taskRolePolicies: iam.PolicyDocument;
   taskRole: iam.Role;
   taskDefinition: ecs.FargateTaskDefinition;
-  logGroup: logs.ILogGroup;
-  logDriver: ecs.AwsLogDriver;
+  logGroup?: logs.ILogGroup;
+  logDriver: ecs.LogDriver;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
@@ -443,16 +445,24 @@ export class BackEnd extends Construct {
       taskRole: this.taskRole,
     });
 
-    // Log Groups
-    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: '/ecs/medplum/' + name,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    // Log Drivers
+    if (config.fireLens?.enabled) {
+      this.logDriver = new ecs.FireLensLogDriver({
+        options: {
+          ...config.fireLens.logDriverConfig?.options,
+        },
+      });
+    } else {
+      this.logGroup = new logs.LogGroup(this, 'LogGroup', {
+        logGroupName: '/ecs/medplum/' + name,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
 
-    this.logDriver = new ecs.AwsLogDriver({
-      logGroup: this.logGroup,
-      streamPrefix: 'Medplum',
-    });
+      this.logDriver = new ecs.AwsLogDriver({
+        logGroup: this.logGroup,
+        streamPrefix: 'Medplum',
+      });
+    }
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
@@ -480,6 +490,15 @@ export class BackEnd extends Construct {
       }
     }
 
+    if (config.fireLens?.enabled) {
+      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
+    }
+
     // Security Groups
     this.fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
       allowAllOutbound: true,
@@ -498,6 +517,7 @@ export class BackEnd extends Construct {
       desiredCount: config.desiredServerCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
+      minHealthyPercent: 50, // 50% is the default; make it explicit
     });
 
     // Add autoscaling
@@ -576,10 +596,14 @@ export class BackEnd extends Construct {
     });
 
     // WAF
-    this.waf = new wafv2.CfnWebACL(
+    this.waf = buildWaf(
       this,
       'BackEndWAF',
-      buildWafConfig(`${config.stackName}-BackEndWAF`, 'REGIONAL', config.apiWafIpSetArn)
+      `${config.stackName}-BackEndWAF`,
+      'REGIONAL',
+      config.apiWafIpSetArn,
+      config.wafLogGroupName,
+      config.wafLogGroupCreate
     );
 
     // Create an association between the load balancer and the WAF

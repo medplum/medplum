@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import { JSX } from 'react';
 import GitHubSvg from './github.svg';
 import LinkSvg from './link.svg';
@@ -25,28 +26,28 @@ export function ProfileCard(props: ProfileCardProps): JSX.Element {
       <p>{props.title}</p>
       <div className={styles.profileLinks}>
         {props.linkedInUrl && (
-          <a href={props.linkedInUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+          <Link href={props.linkedInUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <LinkedInSvg />
             <div>LinkedIn</div>
-          </a>
+          </Link>
         )}
         {props.githubUrl && (
-          <a href={props.githubUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+          <Link href={props.githubUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <GitHubSvg />
             <div>GitHub</div>
-          </a>
+          </Link>
         )}
         {props.webUrl && (
-          <a href={props.webUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+          <Link href={props.webUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <LinkSvg />
             <div>Web</div>
-          </a>
+          </Link>
         )}
         {props.youtubeUrl && (
-          <a href={props.youtubeUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
+          <Link href={props.youtubeUrl} rel="noreferrer" target="_blank" className={styles.profileLink}>
             <YouTubeSvg />
             <div>YouTube</div>
-          </a>
+          </Link>
         )}
       </div>
     </div>

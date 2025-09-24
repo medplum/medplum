@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
@@ -14,7 +16,10 @@ import {
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
 import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import { getRegisteredServers, ServerRegistryInfo } from '../server-registry';
 import { withTestContext } from '../test.setup';
+import * as versionModule from '../util/version';
+import { getServerVersion } from '../util/version';
 import {
   addPostDeployMigrationJobData,
   jobProcessor,
@@ -25,8 +30,11 @@ import {
 } from './post-deploy-migration';
 import { queueRegistry } from './utils';
 
+jest.mock('../server-registry');
+
 describe('Post-Deploy Migration Worker', () => {
   let config: MedplumServerConfig;
+  let mockRegisteredServers: ServerRegistryInfo[];
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -37,7 +45,18 @@ describe('Post-Deploy Migration Worker', () => {
   });
 
   beforeEach(() => {
-    jest.restoreAllMocks();
+    jest.resetModules();
+    jest.clearAllMocks();
+    mockRegisteredServers = [
+      {
+        id: 'test-id',
+        firstSeen: '2022-12-29T15:00:00Z',
+        lastSeen: '2025-06-27T17:26:00Z',
+        version: getServerVersion(),
+        fullVersion: getServerVersion() + '-test',
+      },
+    ];
+    (getRegisteredServers as jest.Mock).mockImplementation(() => mockRegisteredServers);
   });
 
   afterEach(async () => {
@@ -324,6 +343,7 @@ describe('Post-Deploy Migration Worker', () => {
       } else {
         expect(job.moveToDelayed).not.toHaveBeenCalled();
       }
+      getPostDeployMigrationSpy.mockRestore();
     }
   );
 
@@ -366,22 +386,93 @@ describe('Post-Deploy Migration Worker', () => {
       job.token = 'some-token';
     });
 
-    // DelayedError is part of the mocked bullmq module. Something about that causes
-    // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
-    // is no longer an `Error`. So instead, we manually check that it threw
-    let threw = undefined;
-    try {
-      await jobProcessor(job);
-      throw new Error('Expected jobProcessor to throw DelayedError');
-    } catch (err) {
-      threw = err;
-    }
-    expect(threw).toBeDefined();
-    expect(threw).toBeInstanceOf(DelayedError);
-
+    await expect(jobProcessor(job)).rejects.toBeInstanceOf(DelayedError);
     expect(mockCustomMigration.run).not.toHaveBeenCalled();
     expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
     expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');
+  });
+
+  test.each([
+    ['delays job when server cluster is not compatible', true],
+    ['runs job when server cluster is compatible', false],
+  ])('Job process %s ', async (_msg, includeOldServer) => {
+    const mockServerVersion = '4.3.0';
+    const oldServerVersion = '4.2.2';
+    jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => mockServerVersion);
+    await initWorkers(config);
+
+    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 13,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+      minServerVersion: mockServerVersion,
+    });
+
+    const mockCustomMigration: CustomPostDeployMigration = {
+      type: 'custom',
+      prepareJobData: jest.fn(),
+      run: jest.fn().mockImplementation(async (repo, job, jobData) => {
+        return runCustomMigration(repo, job, jobData, async () => {
+          const results: MigrationActionResult[] = [
+            { name: 'first', durationMs: 111 },
+            { name: 'second', durationMs: 222 },
+          ];
+          return results;
+        });
+      }),
+    };
+    const getPostDeployMigrationSpy = jest
+      .spyOn(migrationUtils, 'getPostDeployMigration')
+      .mockReturnValue(mockCustomMigration);
+
+    mockRegisteredServers = [
+      {
+        id: 'current-server-id',
+        firstSeen: '2022-12-29T15:00:00Z',
+        lastSeen: '2025-06-27T17:26:00Z',
+        version: mockServerVersion,
+        fullVersion: mockServerVersion + '-test',
+      },
+    ];
+
+    if (includeOldServer) {
+      mockRegisteredServers.push({
+        id: 'old-server-id',
+        firstSeen: '2022-12-29T15:00:00Z',
+        lastSeen: '2025-06-27T17:26:00Z',
+        version: oldServerVersion,
+        fullVersion: oldServerVersion + '-test',
+      });
+    }
+
+    const queue = getQueueFromRegistryOrThrow();
+
+    // temporarily set to {} to appease typescript since it gets set within withTestContext
+    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
+    await withTestContext(async () => {
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      job = new Job(queue, 'PostDeployMigrationJobData', jobData);
+      // Since the Job class is fully mocked, we need to set the data property manually
+      job.data = jobData;
+      // job.token generally gets set deep in the internals of bullmq, but we mock the module
+      job.token = 'some-token';
+    });
+
+    if (includeOldServer) {
+      process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS = 'true';
+      await expect(jobProcessor(job)).rejects.toBeInstanceOf(DelayedError);
+      delete process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS;
+      expect(mockCustomMigration.run).not.toHaveBeenCalled();
+      expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+      expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');
+    } else {
+      await expect(jobProcessor(job)).resolves.toBeUndefined();
+      expect(mockCustomMigration.run).toHaveBeenCalled();
+      expect(job.moveToDelayed).not.toHaveBeenCalled();
+    }
+    expect(getPostDeployMigrationSpy).toHaveBeenCalledWith(13);
   });
 
   test('Run custom migration success', async () => {

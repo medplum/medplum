@@ -1,4 +1,13 @@
-import { AgentTransmitResponse, ContentType, Logger, createReference, normalizeErrorString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  AgentTransmitResponse,
+  ContentType,
+  Logger,
+  createReference,
+  normalizeErrorString,
+  sleep,
+} from '@medplum/core';
 import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
@@ -147,6 +156,32 @@ export class AgentDicomChannel extends BaseChannel {
     this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
   }
 
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    if (this.needToRebindToPort(previousEndpoint, endpoint)) {
+      await this.stop();
+      this.start();
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    }
+  }
+
+  private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
+    if (
+      firstEndpoint.address === secondEndpoint.address ||
+      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+    ) {
+      return false;
+    }
+    return true;
+  }
+
   start(): void {
     if (this.started) {
       return;
@@ -154,8 +189,16 @@ export class AgentDicomChannel extends BaseChannel {
     this.started = true;
     const address = new URL(this.getEndpoint().address as string);
     this.log.info(`Channel starting on ${address}`);
-    this.server.on('networkError', (e) => console.log('Network error: ', e));
-    this.server.listen(Number.parseInt(address.port, 10));
+    const port = Number.parseInt(address.port, 10);
+    this.server.on('networkError', async (err) => {
+      this.log.error('Network error: ', { err });
+      if ((err as Error & { code?: string })?.code === 'EADDRINUSE') {
+        await sleep(50);
+        this.server.close();
+        this.server.listen(port);
+      }
+    });
+    this.server.listen(port);
     this.log.info('Channel started successfully');
   }
 

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
-import { getBinaryStorage } from '../storage/loader';
+import { getPresignedUrl } from '../storage/loader';
 import { Repository } from './repo';
 
 /**
@@ -168,7 +170,7 @@ class Rewriter {
       return `Binary/${id}`;
     }
 
-    return getBinaryStorage().getPresignedUrl(binary);
+    return getPresignedUrl(binary);
   }
 }
 

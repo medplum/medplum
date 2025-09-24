@@ -1,7 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 
 const medplum = new MockClient();

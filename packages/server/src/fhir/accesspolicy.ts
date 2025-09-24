@@ -1,4 +1,13 @@
-import { ProfileResource, createReference, projectAdminResourceTypes, resolveId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  ProfileResource,
+  WithId,
+  createReference,
+  isResource,
+  projectAdminResourceTypes,
+  resolveId,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -8,6 +17,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
+import { getLogger } from '../logger';
 import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
@@ -24,26 +34,42 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { project, login, membership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const membership = onBehalfOfMembership ?? realMembership;
+  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  let allowedProjects: string[] | undefined;
-  if (project.id) {
-    allowedProjects = [project.id];
-  }
-  if (project.link && allowedProjects?.length) {
+  const project = await systemRepo.readReference(membership.project);
+  const allowedProjects: WithId<Project>[] = [project];
+
+  if (project.link) {
+    const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
-      allowedProjects.push(resolveId(link.project) as string);
+      if (link.project) {
+        linkedProjectRefs.push(link.project);
+      }
+    }
+
+    const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
+    for (let i = 0; i < linkedProjectsOrError.length; i++) {
+      const linkedProjectOrError = linkedProjectsOrError[i];
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        // Ignore missing; if a super admin creates a project link to a non-existent project,
+        // searching it would be a no-op.
+        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
+      }
     }
   }
 
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: membership.profile as Reference,
+    author: realMembership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
-    projectAdmin: onBehalfOfMembership ? onBehalfOfMembership.admin : membership.admin,
+    projectAdmin: membership.admin,
     accessPolicy,
     strictMode: project.strictMode,
     extendedMode,
@@ -83,34 +109,36 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @returns The parameterized compound access policy.
  */
 export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
-  let access: ProjectMembershipAccess[] = [];
-
+  const access: ProjectMembershipAccess[] = [];
   if (membership.accessPolicy) {
     access.push({ policy: membership.accessPolicy });
   }
-
   if (membership.access) {
-    access = access.concat(membership.access);
+    access.push(...membership.access);
   }
 
-  const profile = membership.profile as Reference<ProfileResource>;
   let compartment: Reference | undefined = undefined;
-  let resourcePolicies: AccessPolicyResource[] = [];
-  let ipAccessRules: AccessPolicyIpAccessRule[] = [];
+  const resourcePolicies: AccessPolicyResource[] = [];
+  const ipAccessRules: AccessPolicyIpAccessRule[] = [];
   for (const entry of access) {
-    const replaced = await buildAccessPolicyResources(entry, profile);
+    const replaced = await buildAccessPolicyResources(entry, membership.profile as Reference<ProfileResource>);
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
     if (replaced.resource) {
-      resourcePolicies = resourcePolicies.concat(replaced.resource);
+      for (const resourcePolicy of replaced.resource) {
+        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
+          resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
+        }
+        resourcePolicies.push(resourcePolicy);
+      }
     }
     if (replaced.ipAccessRule) {
-      ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
+      ipAccessRules.push(...replaced.ipAccessRule);
     }
   }
 
-  if ((!membership.access || membership.access.length === 0) && !membership.accessPolicy) {
+  if (!membership?.access?.length && !membership.accessPolicy) {
     // Preserve legacy behavior of null access policy
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
@@ -123,7 +151,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     basedOn: access.map((a) => a.policy),
     compartment,
     resource: resourcePolicies,
-    ipAccessRule: ipAccessRules,
+    ipAccessRule: ipAccessRules.length ? ipAccessRules : undefined,
   };
 }
 

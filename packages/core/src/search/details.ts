@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
 import { Atom } from '../fhirlexer/parse';
 import {
@@ -11,7 +13,7 @@ import {
   UnionAtom,
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
-import { PropertyType, getElementDefinition, globalSchema } from '../types';
+import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
 
@@ -105,6 +107,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
       flattenedExpression().endsWith('extension.value.coding.code')
     ) {
       builder.array = true;
+      builder.propertyTypes.clear();
       builder.propertyTypes.add('code');
     } else {
       crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
@@ -117,12 +120,16 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     // extension were parsed since it specifies a cardinality of 0..1.
     if (flattenedExpression().endsWith('extension.valueDateTime')) {
       builder.array = false;
+      builder.propertyTypes.clear();
+      builder.propertyTypes.add('dateTime');
     }
   }
 
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
-    elementDefinitions: builder.elementDefinitions,
+    elementDefinitions: builder.elementDefinitions
+      .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
+      .filter((ed) => ed.type && ed.type.length > 0),
     parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
     array: builder.array,
   };

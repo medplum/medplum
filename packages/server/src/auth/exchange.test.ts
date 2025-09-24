@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, WithId } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -168,10 +170,6 @@ describe('Token Exchange', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.TEXT },
-      json: () => {
-        throw new Error('Invalid JSON');
-      },
-      text: () => 'Unexpected error',
     }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
@@ -180,7 +178,7 @@ describe('Token Exchange', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
 
   test('Subject auth success', async () => {

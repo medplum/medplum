@@ -80,6 +80,7 @@ test.describe('Medplum App Smoke Tests', () => {
 
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
+    await expect(page.getByText('An identifier for this patient.', { exact: true })).toBeVisible();
     await page
       .getByTestId('upload-file-input')
       .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));

@@ -133,10 +133,15 @@ export interface ClientApplication {
   jwksUri?: string;
 
   /**
-   * Optional redirect URI used when redirecting a client back to the
-   * client application.
+   * @deprecated This field is deprecated. Use redirectUris instead.
    */
   redirectUri?: string;
+
+  /**
+   * Optional redirect URI array used when redirecting a client back to the
+   * client application.
+   */
+  redirectUris?: string[];
 
   /**
    * Optional launch URI for SMART EHR launch sequence.
@@ -170,6 +175,13 @@ export interface ClientApplication {
    * all origins are allowed.
    */
   allowedOrigin?: string[];
+
+  /**
+   * Optional default OAuth scope for the client application. This scope is
+   * used when the client application does not specify a scope in the
+   * authorization request.
+   */
+  defaultScope?: string[];
 }
 
 /**

@@ -1,0 +1,54 @@
+{
+  "name": "medplum-healthie-importer",
+  "version": "4.3.11",
+  "description": "Medplum Healthie Importer",
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "scripts": {
+    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "deploy": "ts-node scripts/deploy-importer.ts",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prettier": "prettier --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest watch"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "extends": [
+      "@medplum/eslint-config"
+    ],
+    "root": true
+  },
+  "devDependencies": {
+    "@medplum/bot-layer": "4.3.11",
+    "@medplum/cli": "4.3.11",
+    "@medplum/core": "4.3.11",
+    "@medplum/eslint-config": "4.3.11",
+    "@medplum/fhirtypes": "4.3.11",
+    "@medplum/mock": "4.3.11",
+    "@types/node": "20.19.11",
+    "@types/node-fetch": "2.6.13",
+    "@types/ssh2-sftp-client": "9.0.5",
+    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/ui": "3.2.4",
+    "commander": "12.1.0",
+    "esbuild": "0.25.9",
+    "dotenv": "17.2.1",
+    "fast-glob": "3.3.3",
+    "node-fetch": "2.7.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

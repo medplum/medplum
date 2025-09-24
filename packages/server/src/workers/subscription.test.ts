@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   ContentType,
@@ -79,7 +81,7 @@ describe('Subscription Worker', () => {
     const botProjectDetails = await createTestProject({ withClient: true });
     botRepo = new Repository({
       extendedMode: true,
-      projects: [botProjectDetails.project.id],
+      projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
       currentProject: botProjectDetails.project,
     });

@@ -1,6 +1,8 @@
-// See: https://hl7.org/fhir/search_filter.html
-
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Operator } from '../search/search';
+
+// See: https://hl7.org/fhir/search_filter.html
 
 /**
  * The FhirFilterExpression type is the base type of all filter expressions.

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
@@ -45,8 +47,11 @@ async function synchronouslyRunPostDeployMigration(systemRepo: Repository, versi
 }
 
 describe('Seed', () => {
+  const originalConsoleLog = console.log;
+  let consoleLogSpy: jest.SpyInstance;
+
   beforeAll(async () => {
-    console.log = jest.fn();
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn());
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -64,6 +69,7 @@ describe('Seed', () => {
 
   afterAll(async () => {
     await shutdownApp();
+    consoleLogSpy.mockRestore();
   });
 
   test('Seeder completes successfully', () =>
@@ -79,6 +85,10 @@ describe('Seed', () => {
       expect(preDeployVersion).toBeGreaterThanOrEqual(67);
 
       const postDeployVersion = await getPostDeployVersion(pool);
+      // only show log messages if post-deploy migrations did not run successfully
+      if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
+        consoleLogSpy.mock.calls.forEach((call) => originalConsoleLog(...call));
+      }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
       // Make sure the first project is a super admin

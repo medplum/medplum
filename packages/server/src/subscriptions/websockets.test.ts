@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, OperationOutcomeError, WithId, getReferenceString, sleep } from '@medplum/core';
 import {
   Binary,
@@ -857,7 +859,7 @@ describe('Subscription Heartbeat', () => {
 
     repo = new Repository({
       extendedMode: true,
-      projects: [project.id],
+      projects: [project],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },

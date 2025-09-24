@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, List, Stack, Text, Title } from '@mantine/core';
 import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
@@ -255,7 +257,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           )}
         </td>
         <td>
-          {observation.performer?.map((performer) => <ReferenceDisplay key={performer.reference} value={performer} />)}
+          {observation.performer?.map((performer) => (
+            <ReferenceDisplay key={performer.reference} value={performer} />
+          ))}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>

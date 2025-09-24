@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest, createReference, OperationOutcomeError, WithId } from '@medplum/core';
 import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -72,7 +74,7 @@ export async function createPatient(
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  const membership = await createProjectMembership(user, project, profile, {
+  const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
 

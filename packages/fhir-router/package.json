@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "4.1.6",
+  "version": "4.3.11",
   "description": "Medplum FHIR Router",
   "keywords": [
     "medplum",
@@ -51,17 +51,18 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.1.6",
-    "@medplum/definitions": "4.1.6",
-    "@medplum/fhirtypes": "4.1.6",
+    "@medplum/core": "4.3.11",
+    "@medplum/definitions": "4.3.11",
+    "@medplum/fhirtypes": "4.3.11",
     "dataloader": "2.2.3",
     "graphql": "16.11.0",
     "rfc6902": "5.1.2"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

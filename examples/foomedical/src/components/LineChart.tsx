@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ChartData } from 'chart.js';
 import { JSX, lazy, Suspense } from 'react';
 

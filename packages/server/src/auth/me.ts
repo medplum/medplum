@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
 import {
   Login,
@@ -132,6 +134,7 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
       link: [
         { name: 'Projects', target: '/Project' },
         { name: 'Super Config', target: '/admin/super' },
+        { name: 'Super AsyncJob', target: '/admin/super/asyncjob' },
       ],
     });
   }

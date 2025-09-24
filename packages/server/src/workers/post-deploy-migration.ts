@@ -1,6 +1,9 @@
-import { getReferenceString, WithId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -14,11 +17,14 @@ import {
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
+  enforceStrictMigrationVersionChecks,
+  getPostDeployManifestEntry,
   getPostDeployMigration,
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
 import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import { getRegisteredServers } from '../server-registry';
 import {
   addVerboseQueueLogging,
   isJobActive,
@@ -60,6 +66,17 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
   addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
+
+export async function isClusterCompatible(migrationNumber: number): Promise<boolean> {
+  if (!enforceStrictMigrationVersionChecks()) {
+    return true;
+  }
+
+  const servers = await getRegisteredServers(true);
+  const entry = getPostDeployManifestEntry(migrationNumber);
+  const requiredVersion = entry.serverVersion;
+  return servers.every((server) => semver.gte(server.version, requiredVersion));
+}
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
@@ -104,6 +121,13 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     throw new Error(`Post-deploy migration ${migrationNumber} is not a ${job.data.type} migration`);
   }
 
+  if (!(await isClusterCompatible(migrationNumber))) {
+    await moveToDelayedAndThrow(
+      job,
+      `Post-deploy migration v${migrationNumber} delayed since the server cluster is not compatible`
+    );
+  }
+
   const result: PostDeployJobRunResult = await migration.run(getSystemRepo(), job, job.data);
 
   switch (result) {
@@ -133,6 +157,13 @@ async function runDynamicMigration(
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
+    const errorMsg = normalizeErrorString(err);
+    globalLogger.error('Post-deploy migration threw an error', {
+      error: errorMsg,
+      asyncJob: getReferenceString(asyncJob),
+      type: job.data.type,
+      dataVersion: asyncJob.dataVersion,
+    });
     await exec.failJob(repo, err);
   }
   return 'finished';
@@ -154,6 +185,13 @@ export async function runCustomMigration(
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
+    const errorMsg = normalizeErrorString(err);
+    globalLogger.error('Post-deploy migration threw an error', {
+      error: errorMsg,
+      asyncJob: getReferenceString(asyncJob),
+      type: jobData.type,
+      dataVersion: asyncJob.dataVersion,
+    });
     await exec.failJob(repo, err);
   }
   return 'finished';
@@ -212,17 +250,12 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
     throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
   }
 
-  globalLogger.debug('Adding post-deploy migration job', {
-    version: `v${asyncJob.dataVersion}`,
-    asyncJobId: asyncJob.id,
-  });
-
   const job = await queue.add('PostDeployMigrationJobData', jobData, {
     ...options,
     deduplication: { id: deduplicationId },
   });
 
-  globalLogger.info('Added post-deploy migration job', {
+  globalLogger.debug('Added post-deploy migration job', {
     jobId: job.id,
     ...getJobDataLoggingFields(job),
   });

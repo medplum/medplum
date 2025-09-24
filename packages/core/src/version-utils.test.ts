@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from './client';
 import {
   assertReleaseManifest,
@@ -19,6 +21,8 @@ test('isValidMedplumSemver', () => {
   expect(isValidMedplumSemver('10.256.121212')).toStrictEqual(true);
   expect(isValidMedplumSemver('10.256.121212-alpha')).toStrictEqual(false);
   expect(isValidMedplumSemver('10.256.121212-1012')).toStrictEqual(false);
+  expect(isValidMedplumSemver('10.256.121212-1z123a1')).toStrictEqual(true);
+  expect(isValidMedplumSemver('10.256.121212-test')).toStrictEqual(false);
 });
 
 test('assertReleaseManifest', () => {

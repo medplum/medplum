@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   deepEquals,
   FileBuilder,
@@ -22,7 +24,6 @@ import {
   TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
-import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import * as fns from './migrate-functions';
 import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
@@ -133,13 +134,21 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     }
   }
 
+  const matchedStartTables = new Set<TableDefinition>();
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (!startTable) {
       actions.push({ type: 'CREATE_TABLE', definition: targetTable });
     } else {
+      matchedStartTables.add(startTable);
       actions.push(...generateColumnsActions(ctx, startTable, targetTable));
       actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+    }
+  }
+
+  for (const startTable of startDefinition.tables) {
+    if (!matchedStartTables.has(startTable)) {
+      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
     }
   }
 
@@ -378,6 +387,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildHumanNameTable(result);
   buildCodingTable(result);
   buildCodingPropertyTable(result);
+  buildCodeSystemPropertyTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -401,7 +411,6 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'compartments', type: 'UUID[]', notNull: true },
       { name: 'projectId', type: 'UUID' },
       { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
@@ -410,13 +419,18 @@ export function buildCreateTables(
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
-      { columns: ['compartments'], indexType: 'gin' },
+      { columns: ['projectId', 'lastUpdated'], indexType: 'btree' },
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
       { columns: ['__version'], indexType: 'btree' },
     ],
   };
+
+  if (resourceType !== 'Binary') {
+    tableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
+    tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
+  }
 
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
@@ -434,27 +448,6 @@ export function buildCreateTables(
       { columns: ['id'], indexType: 'btree' },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['versionId'], indexType: 'btree', unique: true },
-    ],
-  });
-
-  result.tables.push({
-    name: resourceType + '_Token',
-    columns: [
-      { name: 'resourceId', type: 'UUID', notNull: true },
-      { name: 'code', type: 'TEXT', notNull: true },
-      { name: 'system', type: 'TEXT' },
-      { name: 'value', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
-      {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, value)", name: 'text' }],
-        indexType: 'gin',
-        where: "system = 'text'::text",
-        indexNameSuffix: 'idx_tsv',
-      },
-      { columns: ['code', 'value'], indexType: 'btree', include: ['resourceId'] },
-      { columns: ['code', 'system', 'value'], indexType: 'btree', include: ['resourceId'] },
     ],
   });
 
@@ -496,11 +489,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    const legacyColumnImpl = isLegacyTokenColumnSearchParameter(searchParam, resourceType)
-      ? getSearchParameterImplementation(resourceType, searchParam, true)
-      : undefined;
-
-    for (const column of getSearchParameterColumns(impl, legacyColumnImpl)) {
+    for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
         if (!columnDefinitionsEqual(existing, column)) {
@@ -513,7 +502,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       tableDefinition.columns.push(column);
     }
 
-    for (const index of getSearchParameterIndexes(impl, legacyColumnImpl)) {
+    for (const index of getSearchParameterIndexes(searchParam, impl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -532,8 +521,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 }
 
 function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
-  legacyColumnImpl?: ColumnSearchParameterImplementation
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
 ): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -541,14 +529,11 @@ function getSearchParameterColumns(
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
       const columns = [
-        { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
       ];
 
-      if (legacyColumnImpl) {
-        columns.push(getColumnDefinition(legacyColumnImpl.columnName, legacyColumnImpl));
-      }
       return columns;
     }
     case 'column':
@@ -559,31 +544,33 @@ function getSearchParameterColumns(
 }
 
 function getSearchParameterIndexes(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
-  legacyColumnImpl?: ColumnSearchParameterImplementation
+  searchParam: SearchParameter,
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
-      const columns: IndexDefinition[] = [
-        { columns: [impl.columnName], indexType: 'gin' },
+      const indexes: IndexDefinition[] = [
+        { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
             {
               expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
-              name: impl.columnName + 'Trgm',
+              name: impl.textSearchColumnName + 'Trgm',
             },
           ],
           indexType: 'gin',
         },
       ];
 
-      if (legacyColumnImpl) {
-        columns.push({ columns: [legacyColumnImpl.columnName], indexType: legacyColumnImpl.array ? 'gin' : 'btree' });
-      }
-      return columns;
+      return indexes;
     }
-    case 'column':
-      return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
+    case 'column': {
+      const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
+      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
+        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
+      }
+      return indexes;
+    }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
@@ -739,6 +726,18 @@ function buildHumanNameTable(result: SchemaDefinition): void {
     ['name', 'given', 'family'],
     [
       {
+        columns: [{ expression: 'name gin_trgm_ops', name: 'nameTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'given gin_trgm_ops', name: 'givenTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'family gin_trgm_ops', name: 'familyTrgm' }],
+        indexType: 'gin',
+      },
+      {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
@@ -792,14 +791,30 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
-      { name: 'isSynonym', type: 'BOOLEAN' },
+      { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
+      { name: 'synonymOf', type: 'BIGINT' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
-      // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
-      // It should have a special parser
-      { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
+      {
+        columns: ['system', 'code'],
+        indexType: 'btree',
+        unique: true,
+        include: ['id'],
+        where: `"synonymOf" IS NULL`,
+        indexNameSuffix: 'primary_idx',
+      },
+      {
+        columns: [
+          'system',
+          'code',
+          'display',
+          { expression: `COALESCE("synonymOf", ('-1'::integer)::bigint)`, name: 'synonymOf' },
+        ],
+        indexType: 'btree',
+        unique: true,
+      },
+      { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],
   });
 }
@@ -811,12 +826,40 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'coding', type: 'BIGINT', notNull: true },
       { name: 'property', type: 'BIGINT', notNull: true },
       { name: 'target', type: 'BIGINT' },
-      { name: 'value', type: 'TEXT' },
+      { name: 'value', type: 'TEXT', notNull: true },
     ],
     indexes: [
-      { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
-      { columns: ['coding'], indexType: 'btree', unique: false },
+      { columns: ['coding', 'property'], indexType: 'btree', unique: false, indexNameSuffix: '_idx' },
+      {
+        columns: ['property', 'value', 'coding', 'target'],
+        indexType: 'btree',
+        unique: true,
+        indexNameSuffix: 'full_idx',
+      },
+    ],
+  });
+}
+
+function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodeSystem_Property',
+    columns: [
+      {
+        name: 'id',
+        type: 'BIGINT',
+        notNull: true,
+        defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
+      },
+      { name: 'system', type: 'UUID', notNull: true },
+      { name: 'code', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'uri', type: 'TEXT' },
+      { name: 'description', type: 'TEXT' },
+    ],
+    indexes: [
+      { columns: ['id'], indexType: 'btree', unique: true },
+      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
     ],
   });
 }
@@ -853,6 +896,11 @@ export async function executeMigrationActions(
         for (const query of queries) {
           await fns.query(client, results, query);
         }
+        break;
+      }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        await fns.query(client, results, query);
         break;
       }
       case 'ADD_COLUMN': {
@@ -905,63 +953,68 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
-  b.append('const actions: { name: string; durationMs: number }[] = []');
+  b.append('const results: { name: string; durationMs: number }[] = []');
 
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
-        b.appendNoWrap(`await fns.analyzeTable(client, actions, '${action.tableName}');`);
+        b.appendNoWrap(`await fns.analyzeTable(client, results, '${action.tableName}');`);
         break;
       case 'CREATE_FUNCTION': {
-        b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(action.createQuery)}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${escapeUnicode(action.createQuery)}\`);`);
         break;
       }
       case 'CREATE_TABLE': {
         const queries = getCreateTableQueries(action.definition);
         for (const query of queries) {
-          b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
+        break;
+      }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'DROP_COLUMN': {
         const query = getDropColumnQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_SET_DEFAULT': {
         const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_DROP_DEFAULT': {
         const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
         const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
         const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'CREATE_INDEX': {
         b.appendNoWrap(
-          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
+          `await fns.idempotentCreateIndex(client, results, '${action.indexName}', \`${action.createIndexSql}\`);`
         );
         break;
       }
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       default: {
@@ -991,7 +1044,9 @@ function generateColumnsActions(
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      ctx.postDeployAction(() => {
+        actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
     }
   }
   return actions;
@@ -1084,6 +1139,10 @@ function getCreateTableQueries(tableDef: TableDefinition): string[] {
   return queries;
 }
 
+function getDropTableQuery(tableName: string): string {
+  return `DROP TABLE IF EXISTS "${tableName}"`;
+}
+
 function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {
   const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
   return `ALTER TABLE IF EXISTS "${tableName}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}`;
@@ -1166,7 +1225,7 @@ function generateIndexesActions(
 function getIndexName(tableName: string, index: IndexDefinition): string {
   let indexName = tableName;
 
-  indexName = applyAbbreviations(indexName, TableAbbrieviations) + '_';
+  indexName = applyAbbreviations(indexName, TableNameAbbreviations) + '_';
 
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
@@ -1278,7 +1337,7 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   return deepEquals(a, b);
 }
 
-const TableAbbrieviations: Record<string, string | undefined> = {
+const TableNameAbbreviations: Record<string, string | undefined> = {
   MedicinalProductAuthorization: 'MPA',
   MedicinalProductContraindication: 'MPC',
   MedicinalProductPharmaceutical: 'MPP',
@@ -1288,6 +1347,9 @@ const TableAbbrieviations: Record<string, string | undefined> = {
 const ColumnNameAbbreviations: Record<string, string | undefined> = {
   participatingOrganization: 'partOrg',
   primaryOrganization: 'primOrg',
+  immunizationEvent: 'immEvent',
+  identifier: 'idnt',
+  Identifier: 'Idnt',
 };
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {

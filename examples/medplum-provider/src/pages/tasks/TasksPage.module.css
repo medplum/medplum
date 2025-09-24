@@ -1,0 +1,45 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.borderRight {
+  border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+}
+
+.segmentedControl {
+  border-radius: var(--mantine-radius-md);
+}
+
+[data-mantine-color-scheme='light'] .segmentedControl {
+  background-color: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme='dark'] .segmentedControl {
+  background-color: var(--mantine-color-dark-6);
+}
+
+.segmentedControl .mantine-SegmentedControl-indicator {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-4));
+}
+
+.segmentedControl .mantine-SegmentedControl-label {
+  font-weight: 500;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));
+}
+
+.button {
+  height: 32px;
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-8));
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-4));
+  font-weight: 500;
+}
+
+.selected {
+  background-color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-6));
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
+}

@@ -14,7 +14,7 @@ import Benefits from './\_benefits.mdx';
 
 ## About the Role
 
-The mission of a Forward Deployed Engineer is to do whatever it takes to help Medplum's customers get the most value out of the Medplum platform, as quickly as possible. As a founding member of the Forward Deployed Engineering team, you will set the tone for the team and develop its culture and processes.
+The mission of a Forward Deployed Engineer is to do whatever it takes to help Medplum's customers get the most value out of the Medplum platform, as quickly as possible. As a member of the Forward Deployed Engineering team, you will set the tone for the team and develop its culture and processes.
 
 ### What You Will Do
 
@@ -23,7 +23,7 @@ The mission of a Forward Deployed Engineer is to do whatever it takes to help Me
 - 🌱 **Grow Existing Customer Value**: Gather intel, secure executive buy-in, and manage new implementation work streams to identify and implement new use cases at existing customers by educating them on the “art of the possible.” Your ability to uncover new opportunities and expand our footprint within existing accounts will be a significant driver of Medplum's long-term success.
 - 🔌 **Develop Enterprise Features and Integrations**: Write code for core healthcare workflows, such as e-prescribe, labs, health networks, billing, benefits check, etc. By unlocking the full potential of the healthcare ecosystem, you'll unlock new capabilities for our customers and enhance Medplum’s value proposition to the market.
 - 🎯 **Provide Feedback to Product and Engineering**: As a team member with the most direct customer contact, you’ll be the voice of our customers and integral for identifying new features and use cases for the platform. An important part of the Forward Deployed Engineering role is to capture these customer issues and prioritize them to shape the product and engineering roadmap.
-- 🎙️ **Set the Tone for the Forward Deployed Engineering Team**: As the founding member of the Forward Deployed Engineering team, you'll be starting a world-class team that serves as a critical driver of Medplum's revenue growth and market expansion. You’ll help develop tools and benchmarks for how the team measures success, and constantly be seeking ways to optimize how we serve customers.
+- 🎙️ **Set the Tone for the Forward Deployed Engineering Team**: As a member of the Forward Deployed Engineering team, you'll be starting a world-class team that serves as a critical driver of Medplum's revenue growth and market expansion. You’ll help develop tools and benchmarks for how the team measures success, and constantly be seeking ways to optimize how we serve customers.
 
 ## About You
 

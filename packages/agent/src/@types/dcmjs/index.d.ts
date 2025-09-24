@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* eslint-disable @typescript-eslint/no-extraneous-class */
 
 // Draft TypeScript definitions from https://github.com/dcmjs-org/dcmjs/pull/165/files

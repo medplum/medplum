@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -110,6 +112,12 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
       currConfig = config.redis = config.redis ?? {};
+    } else if (key.startsWith('SMTP_')) {
+      key = key.substring('SMTP_'.length);
+      currConfig = config.smtp = config.smtp ?? {};
+    } else if (key.startsWith('FISSION_')) {
+      key = key.substring('FISSION_'.length);
+      currConfig = config.fission = config.fission ?? {};
     }
 
     // Convert key from CAPITAL_CASE to camelCase

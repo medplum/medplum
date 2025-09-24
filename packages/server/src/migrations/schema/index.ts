@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -96,3 +98,8 @@ export * as v88 from './v88';
 export * as v89 from './v89';
 export * as v90 from './v90';
 export * as v91 from './v91';
+export * as v92 from './v92';
+export * as v93 from './v93';
+export * as v94 from './v94';
+export * as v95 from './v95';
+export * as v96 from './v96';

@@ -16,9 +16,9 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
         const startTime = Date.now();
         const timer = window.setInterval(() => {
           setValue(() => {
-            // Interpolate from 0 to props.value over 5 seconds
+            // Interpolate from 0 to props.value over 3 seconds
             const elapsedTime = Date.now() - startTime;
-            let percentComplete = elapsedTime / (0.8 * 5000);
+            let percentComplete = elapsedTime / 3000;
             if (percentComplete > 1) {
               percentComplete = 1;
               window.clearInterval(timer);

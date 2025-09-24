@@ -98,12 +98,12 @@ export interface JsonWebKey {
   /**
    * The specific cryptographic algorithm used with the key.
    */
-  alg?: string;
+  alg: string;
 
   /**
    * The family of cryptographic algorithms used with the key.
    */
-  kty?: string;
+  kty: string;
 
   /**
    * How the key was meant to be used; sig represents the signature.
@@ -171,4 +171,19 @@ export interface JsonWebKey {
    * The first CRT coefficient.
    */
   qi?: string;
+
+  /**
+   * The x coordinate of the elliptic curve point (base64url encoded).
+   */
+  x?: string;
+
+  /**
+   * The y coordinate of the elliptic curve point (base64url encoded).
+   */
+  y?: string;
+
+  /**
+   * The cryptographic curve identifier (e.g., 'P-256', 'P-384', 'P-521').
+   */
+  crv?: string;
 }

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Dynamically creates a script tag for the specified JavaScript file.
  * @param src - The JavaScript file URL.

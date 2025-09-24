@@ -1,15 +1,26 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
+
+jest.mock('signature_pad', () => {
+  return jest.fn().mockImplementation(() => ({
+    fromDataURL: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    toDataURL: jest.fn(() => 'data:image/png;base64,signature-data'),
+  }));
+});
 
 const pageExtension: Extension[] = [
   {
@@ -79,6 +90,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Groups', async () => {
+    const onChange = jest.fn();
     const onSubmit = jest.fn();
 
     await setup({
@@ -127,6 +139,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
+      onChange,
       onSubmit,
     });
 
@@ -134,9 +147,11 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Group 1')).toBeDefined();
     expect(screen.getByText('Group 2')).toBeDefined();
 
+    onChange.mockClear();
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a1' } });
     });
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a2' } });
@@ -2465,7 +2480,7 @@ describe('QuestionnaireForm', () => {
     const response3 = onSubmit.mock.calls[2][0];
     const answers3 = getQuestionnaireAnswers(response3);
 
-    expect(answers3['q1']).toMatchObject({ valueString: undefined });
+    expect(answers3['q1']).toBeUndefined();
     expect(answers3['q2']).toMatchObject({ valueBoolean: false });
   });
 
@@ -2690,5 +2705,331 @@ describe('QuestionnaireForm', () => {
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
     expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+  });
+
+  test('Required radio button choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-radio',
+            text: 'Required Radio Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioGroup = screen.getByRole('radiogroup');
+    expect(radioGroup).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    const radioOption = screen.getByLabelText('Option 1');
+    await act(async () => {
+      fireEvent.click(radioOption);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option 1');
+  });
+
+  test('Required dropdown choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-dropdown',
+            text: 'Required Dropdown Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option A' }, { valueString: 'Option B' }, { valueString: 'Option C' }],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const dropdown = screen.getByLabelText('Required Dropdown Choice *');
+    expect(dropdown).toBeInTheDocument();
+    expect(dropdown).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.change(dropdown, { target: { value: 'Option A' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option A');
+  });
+
+  test('Required value set dropdown validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-dropdown',
+            text: 'Required Value Set Dropdown',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const autocomplete = screen.getByRole('searchbox');
+    expect(autocomplete).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    await act(async () => {
+      fireEvent.change(autocomplete, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required value set radio button validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-radio',
+            text: 'Required Value Set Radio',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'radio-button',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      jest.runAllTimers();
+    });
+
+    const radioButtons = screen.getAllByRole('radio');
+    expect(radioButtons.length).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(radioButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required boolean field validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-boolean',
+            text: 'Required Boolean Field',
+            type: QuestionnaireItemType.boolean,
+            required: true,
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+
+    expect(checkbox).toBeChecked();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueBoolean).toBe(true);
+  });
+
+  describe('Signature validation', () => {
+    const signatureRequiredQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      extension: [
+        {
+          url: QUESTIONNAIRE_SIGNATURE_REQUIRED_URL,
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'urn:iso-astm:E1762-95:2013',
+                code: '1.2.840.10065.1.12.1.1',
+                display: "Author's Signature",
+              },
+            ],
+          },
+        },
+      ],
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+      ],
+    };
+
+    test('Renders signature input when signature is required', async () => {
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.getByLabelText('Signature input area')).toBeInTheDocument();
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+    });
+
+    test('Does not render signature input when signature is not required', async () => {
+      await setup({
+        questionnaire: {
+          resourceType: 'Questionnaire',
+          status: 'active',
+          item: [
+            {
+              linkId: 'question1',
+              text: 'Question 1',
+              type: 'string',
+            },
+          ],
+        },
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.queryByLabelText('Signature input area')).not.toBeInTheDocument();
+    });
+
+    test('Shows error message when submit is attempted without signature', async () => {
+      const onSubmit = jest.fn();
+
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit,
+      });
+
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Submit'));
+      });
+
+      expect(screen.getByText('Signature is required.')).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
   });
 });

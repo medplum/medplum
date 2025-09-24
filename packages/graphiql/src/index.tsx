@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
@@ -9,7 +11,6 @@ import { GraphiQL } from 'graphiql';
 import 'graphiql/style.css';
 import { JSX, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'regenerator-runtime/runtime.js';
 import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL

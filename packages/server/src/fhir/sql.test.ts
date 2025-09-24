@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Client } from 'pg';
 import {
   Column,
@@ -6,6 +8,7 @@ import {
   Operator,
   SelectQuery,
   SqlBuilder,
+  UnionAllBuilder,
   ValuesQuery,
   periodToRangeString,
 } from './sql';
@@ -49,13 +52,13 @@ describe('SqlBuilder', () => {
     describe('array contains', () => {
       test('single value', () => {
         const sql = new SqlBuilder();
-        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x', 'TEXT[]').buildSql(sql);
-        expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1]::TEXT[]');
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', 'x', 'TEXT[]').buildSql(sql);
+        expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" @> ARRAY[$1]::TEXT[]');
       });
 
       test('multiple values', () => {
         const sql = new SqlBuilder();
-        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', ['x', 'y'], 'TEXT[]').buildSql(sql);
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', ['x', 'y'], 'TEXT[]').buildSql(sql);
         expect(sql.toString()).toBe(
           'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1,$2]::TEXT[]'
         );
@@ -64,8 +67,8 @@ describe('SqlBuilder', () => {
       test('missing param type', () => {
         const sql = new SqlBuilder();
         expect(() =>
-          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x').buildSql(sql)
-        ).toThrow('ARRAY_CONTAINS requires paramType');
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', 'x').buildSql(sql)
+        ).toThrow('ARRAY_OVERLAPS requires paramType');
       });
     });
 
@@ -74,10 +77,10 @@ describe('SqlBuilder', () => {
         const sql = new SqlBuilder();
         new SelectQuery('MyTable')
           .column('id')
-          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x', 'TEXT[]')
+          .where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', 'x', 'TEXT[]')
           .buildSql(sql);
         expect(sql.toString()).toBe(
-          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1]::TEXT[])'
+          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" @> ARRAY[$1]::TEXT[])'
         );
       });
 
@@ -85,7 +88,7 @@ describe('SqlBuilder', () => {
         const sql = new SqlBuilder();
         new SelectQuery('MyTable')
           .column('id')
-          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', ['x', 'y'], 'TEXT[]')
+          .where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', new Set(['x', 'y']), 'TEXT[]')
           .buildSql(sql);
         expect(sql.toString()).toBe(
           'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1,$2]::TEXT[])'
@@ -95,8 +98,8 @@ describe('SqlBuilder', () => {
       test('missing param type', () => {
         const sql = new SqlBuilder();
         expect(() =>
-          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x').buildSql(sql)
-        ).toThrow('ARRAY_CONTAINS_AND_IS_NOT_NULL requires paramType');
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', 'x').buildSql(sql)
+        ).toThrow('ARRAY_OVERLAPS_AND_IS_NOT_NULL requires paramType');
       });
     });
 
@@ -174,16 +177,16 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
-    test('Select where like', () => {
+    test('Select where lower like', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'LIKE', 'x').buildSql(sql);
+      new SelectQuery('MyTable').column('id').where('name', 'LOWER_LIKE', 'x').buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") LIKE $1');
     });
 
-    test('Select where not like', () => {
+    test('Select where ilike', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
-      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+      new SelectQuery('MyTable').column('id').where('name', 'ILIKE', 'x').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" ILIKE $1');
     });
 
     test('Select missing columns', () => {
@@ -247,6 +250,24 @@ describe('SqlBuilder', () => {
       ).buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT * FROM (VALUES($1,$2,$3),($4,$5,$6)) AS "MyValues"("firstCol","secondCol","thirdCol")'
+      );
+    });
+  });
+
+  describe('UnionAllBuilder', () => {
+    test('multiple queries', () => {
+      const unionAllBuilder = new UnionAllBuilder();
+      unionAllBuilder.add(new SelectQuery('MyTable').column('id').column('my_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe('(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable")');
+
+      unionAllBuilder.add(new SelectQuery('MyOtherTable').column('id').column('my_other_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable")'
+      );
+
+      unionAllBuilder.add(new SelectQuery('MyThirdTable').column('id').column('my_third_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable") UNION ALL (SELECT "MyThirdTable"."id", "MyThirdTable"."my_third_table_col" FROM "MyThirdTable")'
       );
     });
   });

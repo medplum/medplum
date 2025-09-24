@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import {
   CodeSystem,
@@ -649,39 +651,130 @@ describe('Expand', () => {
     expect(res3.body.issue[0].details.text).toMatch(/invalid filter/i);
   });
 
-  test('Includes ancestor code in is-a filter', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/care-team-category')}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toStrictEqual(200);
-    const expansion = res.body.expansion as ValueSetExpansion;
+  describe('Hierarchy filters', () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'draft',
+      content: 'example',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent',
+          concept: [
+            {
+              code: 'CHD',
+              display: 'child',
+            },
+            {
+              code: 'PET',
+              display: 'pet',
+            },
+          ],
+        },
+      ],
+    };
+    const isaValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'draft',
+      compose: {
+        include: [{ system: codeSystem.url, filter: [{ property: 'code', op: 'is-a', value: 'PAR' }] }],
+      },
+    };
+    const descendentValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'draft',
+      compose: {
+        include: [{ system: codeSystem.url, filter: [{ property: 'code', op: 'descendent-of', value: 'PAR' }] }],
+      },
+    };
 
-    expect(expansion.contains).toHaveLength(1);
-    expect(expansion.contains?.[0]).toEqual<ValueSetExpansionContains>({
-      system: LOINC,
-      code: 'LA28865-6',
-      display: expect.stringMatching(/care team/i),
+    beforeAll(async () => {
+      const csRes = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(codeSystem);
+      expect(csRes.status).toBe(201);
+
+      const vsRes1 = await request(app)
+        .post(`/fhir/R4/ValueSet`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(isaValueSet);
+      expect(vsRes1.status).toBe(201);
+
+      const vsRes2 = await request(app)
+        .post(`/fhir/R4/ValueSet`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(descendentValueSet);
+      expect(vsRes2.status).toBe(201);
     });
-  });
 
-  test('Excludes ancestor code in descendent-of filter', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/inactive')}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toStrictEqual(200);
-    const expansion = res.body.expansion as ValueSetExpansion;
-    const system = 'http://terminology.hl7.org/CodeSystem/v3-ActMood';
+    test('Includes ancestor code in is-a filter', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${isaValueSet.url}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toStrictEqual(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toHaveLength(5);
-    expect(expansion.contains).toStrictEqual(
-      expect.arrayContaining([
-        { system, code: 'CRT', display: 'criterion' },
-        { system, code: 'GOL', display: 'goal' },
-        { system, code: 'RSK', display: 'risk' },
-        { system, code: 'EXPEC', display: 'expectation' },
-        { system, code: 'OPT', display: 'option' },
-      ])
-    );
+      const system = codeSystem.url;
+      expect(expansion.contains).toHaveLength(3);
+      expect(expansion.contains).toStrictEqual(
+        expect.arrayContaining<ValueSetExpansionContains>([
+          { system, code: 'PAR', display: 'parent' },
+          { system, code: 'CHD', display: 'child' },
+          { system, code: 'PET', display: 'pet' },
+        ])
+      );
+    });
+
+    test('Text filter with is-a', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${isaValueSet.url}&filter=chi`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toStrictEqual(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+
+      const system = codeSystem.url;
+      expect(expansion.contains).toHaveLength(1);
+      expect(expansion.contains).toStrictEqual(
+        expect.arrayContaining<ValueSetExpansionContains>([{ system, code: 'CHD', display: 'child' }])
+      );
+    });
+
+    test('Excludes ancestor code in descendent-of filter', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${descendentValueSet.url}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toStrictEqual(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+
+      const system = codeSystem.url;
+      expect(expansion.contains).toHaveLength(2);
+      expect(expansion.contains).toStrictEqual(
+        expect.arrayContaining([
+          { system, code: 'CHD', display: 'child' },
+          { system, code: 'PET', display: 'pet' },
+        ])
+      );
+    });
+
+    test('Text filter with descendent-of', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${descendentValueSet.url}&filter=pet`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toStrictEqual(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+
+      const system = codeSystem.url;
+      expect(expansion.contains).toHaveLength(1);
+      expect(expansion.contains).toStrictEqual(expect.arrayContaining([{ system, code: 'PET', display: 'pet' }]));
+    });
   });
 
   test('Recursive subsumption', async () => {
@@ -1051,5 +1144,59 @@ describe('Expand', () => {
         },
       ])
     );
+  });
+
+  test('Resolve synonyms', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      property: [
+        {
+          code: 'SY',
+          uri: 'http://hl7.org/fhir/concept-properties#synonym',
+          type: 'string',
+        },
+      ],
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'UTIC',
+          display: 'Uticarial rash',
+          property: [
+            {
+              code: 'SY',
+              valueString: 'Hives',
+            },
+          ],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=hives`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'UTIC', display: 'Hives', system: codeSystem.url },
+    ]);
   });
 });

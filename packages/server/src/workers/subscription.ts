@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
   BackgroundJobContext,
@@ -24,9 +26,10 @@ import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Sub
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
+import { executeBot } from '../bots/execute';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
-import { executeBot } from '../fhir/operations/execute';
+import { isPreCommitSubscription } from '../fhir/precommit';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
@@ -245,6 +248,11 @@ export async function addSubscriptionJobs(
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
   for (const subscription of subscriptions) {
+    if (isPreCommitSubscription(subscription)) {
+      // Ignore pre-commit subscriptions
+      continue;
+    }
+
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
       logFn('Subscription does not match options.subscription');
       continue;

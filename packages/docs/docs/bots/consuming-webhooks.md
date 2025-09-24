@@ -79,28 +79,40 @@ Many SaaS applications support signature verification. Their webhook configurati
 
 ## Unauthenticated Webhooks
 
-Medplum supports unauthenticated webhooks for integrating with third-party services. This allows you to receive webhook notifications without requiring authentication credentials in the URL. The webhook endpoint format is:
+Medplum supports unauthenticated webhooks for integrating with third-party services. This allows you to receive webhook notifications without requiring traditional authentication credentials in the URL. The webhook endpoint format is:
 
 ```
 GET/POST /webhook/{ProjectMembership.id}
 ```
 
-When using unauthenticated webhooks, it's important to implement proper security measures:
+**Important Security Considerations:**
 
-1. **Signature Verification**: Always verify the webhook signature using the secret provided by the third-party service. Store this secret in your bot's secrets and use it to validate incoming requests.
+Using unauthenticated webhooks inherently carries security risks. Medplum provides mechanisms to help you secure these endpoints, but **it is critical to implement strong security measures within your Bot and its configuration.**
 
-2. **IP Whitelisting**: If supported by the third-party service, configure IP whitelisting to only accept requests from known IP addresses.
+1.  **Bot `publicWebhook` Property (Required Opt-in):** Only Bots explicitly configured with `Bot.publicWebhook: true` can be executed via this endpoint. This prevents unintended exposure of Bots designed for internal use.
+2.  **Required Access Policy:** All Bots enabled for unauthenticated webhooks **must** have an associated `AccessPolicy`. This policy strictly defines the permissions and resources the Bot can access, minimizing its potential impact if compromised.
+3.  **Signature Verification (Crucial):** Always implement robust webhook signature verification within your Bot's code. Use the secret provided by the third-party service (e.g., Twilio's Auth Token) and store it securely in your Bot's secrets. Validate incoming requests against this signature to ensure they originate from the legitimate source.
+4.  **IP Whitelisting (Recommended):** If supported by the third-party service, configure IP whitelisting to only accept requests from known and trusted IP addresses.
+5.  **Rate Limiting (Recommended):** Implement rate limiting to prevent abuse or denial-of-service attacks against your webhook endpoint. Medplum offers platform-level rate limiting, but consider additional application-specific rate limiting within your Bot if appropriate.
+6.  **Payload Validation (Essential):** Always validate the structure and content of incoming webhook payloads before processing them. Do not trust external input.
 
-3. **Rate Limiting**: Implement rate limiting to prevent abuse of your webhook endpoint.
+### How to Set Up an Unauthenticated Webhook
 
-4. **Payload Validation**: Validate the structure and content of incoming webhook payloads before processing them.
+To set up an unauthenticated webhook, follow these steps:
 
-To set up an unauthenticated webhook:
+1.  **Create/Update your Bot:**
+    - Create a new Bot or identify an existing Bot you wish to use.
+    - **Crucially, set the `publicWebhook` property on your Bot resource to `true`**.
+    - Ensure your Bot has an **appropriate `AccessPolicy`** linked. This policy should grant only the minimum necessary permissions for the Bot to perform its intended function.
 
-1. Create a Bot for the third party service and ensure that the ProjectMembership for the bot has the appropriate AccessPolicy
-2. Configure the webhook URL in the third-party service using the format above
-3. Implement signature verification in your bot
-4. Test the webhook integration using the third-party service's test tools
+2.  **Implement Signature Verification in your Bot:**
+    Your Bot's code should include logic to verify the incoming signature from the third-party service. This typically involves using a shared secret (stored as a Bot secret) and a hashing algorithm.
+
+3.  **Configure the Webhook URL in the Third-Party Service:**
+    Use the Medplum webhook endpoint format (`https://api.medplum.com/webhook/{ProjectMembership.id}`) in your third-party service's webhook configuration.
+
+4.  **Test the Webhook Integration:**
+    Use the third-party service's test tools to send a sample webhook notification and verify that your Medplum Bot executes correctly and processes the payload as expected. Check your Bot's logs for any errors related to signature verification or Access Policy.
 
 ## Monitoring your integration
 

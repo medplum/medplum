@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Resource } from '@medplum/fhirtypes';
 
 export function getVersionUrl(resource: Resource, versionId: string): string {

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   aws_certificatemanager as acm,
@@ -13,7 +15,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -111,10 +113,14 @@ export class FrontEnd extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'FrontEndWAF',
-        buildWafConfig(`${config.stackName}-FrontEndWAF`, 'CLOUDFRONT', config.appWafIpSetArn)
+        `${config.stackName}-FrontEndWAF`,
+        'CLOUDFRONT',
+        config.appWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // API Origin Cache Policy
@@ -145,7 +151,7 @@ export class FrontEnd extends Construct {
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(this.appBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.appBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

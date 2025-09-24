@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Flex } from '@mantine/core';
 import { JSX } from 'react';
 import { IntegrationCard } from '../components/IntegrationCard';
@@ -202,7 +204,7 @@ export function IntegrationsPage(): JSX.Element {
   }
 
   return (
-    <Flex mih={50} gap="md" justify="flex-start" align="flex-start" direction="row" wrap="wrap" m="xl">
+    <Flex mih={50} gap="md" justify="center" align="flex-end" direction="row" wrap="wrap" m="xl">
       {integrations.map((i) => (
         <IntegrationCard
           key={i.name}

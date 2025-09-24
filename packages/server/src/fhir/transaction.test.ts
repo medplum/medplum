@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, Operator, WithId, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
@@ -5,6 +7,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
+import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
@@ -47,8 +50,8 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       let patient: WithId<Patient> | undefined;
 
-      try {
-        await repo.withTransaction(async () => {
+      await expect(
+        repo.withTransaction(async () => {
           // Create one patient
           // This will initially succeed, but should then be rolled back
           patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -70,11 +73,9 @@ describe('FHIR Repo Transactions', () => {
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
           await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
-        });
-
-        throw new Error('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject({
+        })
+      ).rejects.toMatchObject(
+        new OperationOutcomeError({
           resourceType: 'OperationOutcome',
           issue: [
             {
@@ -86,17 +87,12 @@ describe('FHIR Repo Transactions', () => {
               expression: ['Patient.foo'],
             },
           ],
-        });
-      }
+        })
+      );
 
       // Read the patient by ID
       // This should fail, because the transaction was rolled back
-      try {
-        await repo.readResource('Patient', patient?.id as string);
-        throw new Error('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-      }
+      await expect(repo.readResource('Patient', patient?.id as string)).rejects.toThrow('Not found');
 
       // Search for patient by ID
       // This should return zero results because the transaction was rolled back
@@ -163,9 +159,9 @@ describe('FHIR Repo Transactions', () => {
         patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient1).toBeDefined();
 
-        try {
-          // Start an inner transaction - this will be rolled back
-          await repo.withTransaction(async () => {
+        // Start an inner transaction - this will be rolled back
+        await expect(
+          repo.withTransaction(async () => {
             patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
@@ -200,11 +196,9 @@ describe('FHIR Repo Transactions', () => {
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
             await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
-          });
-
-          throw new Error('Expected error');
-        } catch (err) {
-          expect((err as OperationOutcomeError).outcome).toMatchObject({
+          })
+        ).rejects.toMatchObject(
+          new OperationOutcomeError({
             resourceType: 'OperationOutcome',
             issue: [
               {
@@ -216,8 +210,8 @@ describe('FHIR Repo Transactions', () => {
                 expression: ['Patient.foo'],
               },
             ],
-          });
-        }
+          })
+        );
 
         // Read the patient by ID
         // This should succeed within the transaction
@@ -235,12 +229,7 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        try {
-          await repo.readResource('Patient', patient2?.id as string);
-          throw new Error('Expected error');
-        } catch (err) {
-          expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-        }
+        await expect(repo.readResource('Patient', patient2?.id as string)).rejects.toThrow('Not found');
 
         // Search for patient by ID
         // This should succeed within the transaction
@@ -519,7 +508,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', '40001'));
+          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
 
@@ -553,7 +542,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit combined errors
-          const outcome = conflict('transaction conflict', '40001');
+          const outcome = conflict('transaction conflict', PostgresError.SerializationFailure);
           outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
           throw new OperationOutcomeError(outcome);
         }
@@ -567,7 +556,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
 
       await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict');
@@ -583,7 +572,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', '40001'));
+          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
       const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
@@ -597,7 +586,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
       const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
 
@@ -610,7 +599,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
       const outerTx = jest.fn(async (): Promise<boolean> => {
         try {

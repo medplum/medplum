@@ -327,6 +327,22 @@
       "inherited": false
     },
     {
+      "name": "publicWebhook",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.publicWebhook",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "auditEventTrigger",
       "depth": 1,
       "types": [

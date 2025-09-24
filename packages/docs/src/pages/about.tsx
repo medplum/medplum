@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { Card } from '../components/Card';
@@ -29,10 +31,10 @@ export default function AboutPage(): JSX.Element {
         <Section>
           <CardContainer>
             <Card>
-              <h3>So that’s what we built.</h3>
+              <h3>So that's what we built.</h3>
               <p>
                 We believe that a clean, secure, and compliant data infrastructure layer will elevate the entire field
-                of healthcare innovation and make it possible for the top technical talent to focus on what’s next. We
+                of healthcare innovation and make it possible for the top technical talent to focus on what's next. We
                 believe that interoperability is vital to the future of healthcare technology. And we believe that
                 starting with a future-ready foundation will propel every healthcare innovator closer to better
                 clinical, operational, and financial outcomes.
@@ -50,7 +52,7 @@ export default function AboutPage(): JSX.Element {
               going slow enough to move forward with speed.
             </Feature>
             <Feature title="Practice uncompromising consistency." imgSrc="/img/icons/code.svg">
-              We’re reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
+              We're reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
               taken for granted.
             </Feature>
             <Feature title="Convene a catalytic force." imgSrc="/img/icons/automation.svg">
@@ -147,6 +149,20 @@ export default function AboutPage(): JSX.Element {
               imgUrl="/img/people/maddyli.jpg"
               linkedInUrl="https://www.linkedin.com/in/maddy-li/"
               githubUrl="https://github.com/maddyli"
+            />
+            <ProfileCard
+              name="Kevin Shaw"
+              title="Product Designer"
+              imgUrl="/img/people/kevinwadeshaw.jpeg"
+              linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
+              githubUrl="https://github.com/kevinwadeshaw"
+            />
+            <ProfileCard
+              name="Karl Pietrzak"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/karlpietrzak.jpg"
+              linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
+              githubUrl="https://github.com/The-Alchemist"
             />
           </CardContainer>
         </Section>

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import { Agent, Bot, Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -5,9 +7,10 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
+import * as executeBotModule from '../bots/execute';
+import { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
-import * as executeBotModule from '../fhir/operations/execute';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 import { AgentConnectionState, AgentInfo } from './utils';
@@ -653,7 +656,7 @@ describe('Agent WebSockets', () => {
                 '    at async exports.handler (/var/task/index.js:24:18)',
               ],
             },
-          }) satisfies executeBotModule.BotExecutionResult
+          }) satisfies BotExecutionResult
       );
 
       await request(server)

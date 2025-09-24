@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   Bot,
   Bundle,
@@ -531,6 +533,46 @@ describe('Client', () => {
     expect(result).toBeUndefined();
     expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
     expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
+  });
+
+  test('Sign in with external auth -- no crypto.subtle', async () => {
+    const originalAssign = window.location.assign;
+    const assign = jest.fn();
+    Object.defineProperty(window, 'location', {
+      value: { assign },
+      writable: true,
+    });
+
+    const originalSubtle = crypto.subtle;
+    Object.defineProperty(crypto, 'subtle', {
+      value: undefined,
+      writable: true,
+    });
+
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.signInWithExternalAuth(
+      'https://auth.example.com/authorize',
+      'external-client-123',
+      'https://me.example.com',
+      {
+        clientId: 'medplum-client-123',
+      },
+      false
+    );
+    expect(result).toBeUndefined();
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
+
+    Object.defineProperty(crypto, 'subtle', {
+      value: originalSubtle,
+      writable: true,
+    });
+
+    Object.defineProperty(window, 'location', {
+      value: { assign: originalAssign },
+      writable: true,
+    });
   });
 
   test('External auth token exchange', async () => {
@@ -1310,19 +1352,12 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
 
-    try {
-      await client.readResource('Patient', '');
-      throw new Error('Test failed: Expected an error when calling readResource with an empty string id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
-
-    try {
-      await client.readResource('Patient', undefined as unknown as string);
-      throw new Error('Test failed: Expected an error when calling readResource with an undefined id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
+    expect(() => client.readResource('Patient', '')).toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
+    expect(() => client.readResource('Patient', undefined as unknown as string)).toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
   });
 
   test('Read reference', async () => {
@@ -2640,6 +2675,34 @@ describe('Client', () => {
     );
   });
 
+  test('Push to agent -- waitForResponse, waitTimeout configured', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.pushToAgent(
+      { resourceType: 'Agent', id: '123' },
+      { resourceType: 'Device', id: '456' },
+      'XYZ',
+      ContentType.HL7_V2,
+      true,
+      { waitTimeout: 20000 }
+    );
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Agent/123/$push',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
+          'X-Medplum': 'extended',
+        },
+        body: expect.stringMatching(
+          /.+"destination":".+"body":"XYZ".+"contentType":"x-application\/hl7-v2\+er7".+"waitForResponse":true.+"waitTimeout":20000.+/
+        ),
+      })
+    );
+  });
+
   test('Storage events', async () => {
     // Make window.location writeable
     Object.defineProperty(window, 'location', {
@@ -2937,15 +3000,13 @@ describe('Client', () => {
       }),
       autoBatchTime: 100,
     });
-    try {
+
+    await expect(async () => {
       // Start multiple requests to force a batch
       const patientPromise = medplum.readResource('Patient', '123');
       await medplum.readResource('Patient', '9999999-does-not-exist');
       await patientPromise;
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-    }
+    }).rejects.toThrow('Not found');
   });
 
   test('Retry on 500', async () => {
@@ -3386,6 +3447,48 @@ describe('Client', () => {
           url: 'Binary/456',
           title: 'hello.txt',
         },
+      });
+    });
+  });
+
+  describe('DocumentReference', () => {
+    test('Create DocumentReference', async () => {
+      const fetch = mockFetch(200, {});
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'DocumentReference', id: '123' })
+      );
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'Binary', id: '456', url: 'Binary/456' })
+      );
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(200, { resourceType: 'DocumentReference', id: '123' })
+      );
+
+      const client = new MedplumClient({ fetch });
+      const documentReference = await client.createDocumentReference({
+        data: 'Hello world',
+        contentType: 'text/plain',
+        filename: 'hello.txt',
+      });
+      expect(documentReference).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(3);
+
+      const calls = fetch.mock.calls;
+      expect(calls).toHaveLength(3);
+      expect(calls[0][0]).toStrictEqual('https://api.medplum.com/fhir/R4/DocumentReference');
+      expect(calls[1][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toStrictEqual('https://api.medplum.com/fhir/R4/DocumentReference/123');
+      expect(JSON.parse(calls[2][1].body)).toMatchObject({
+        resourceType: 'DocumentReference',
+        content: [
+          {
+            attachment: {
+              contentType: 'text/plain',
+              url: 'Binary/456',
+              title: 'hello.txt',
+            },
+          },
+        ],
       });
     });
   });

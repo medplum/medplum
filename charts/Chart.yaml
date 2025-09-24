@@ -3,16 +3,9 @@ name: medplum
 description: |
   Helm chart for deploying Medplum Server - an open source healthcare development platform.
   Provides FHIR server, auth, workflows, and APIs for building healthcare applications.
-
 type: application
-
-# Chart version - follows SemVer
-version: 0.1.0
-
-# Medplum application version
-appVersion: '3.2.27'
-
-# Keywords help users find your chart
+version: 4.3.11
+appVersion: '4.3.11'
 keywords:
   - healthcare
   - fhir
@@ -20,19 +13,18 @@ keywords:
   - ehr
   - api
   - server
-
-# Useful links
 home: https://www.medplum.com
 sources:
   - https://github.com/medplum/medplum
-documentation: https://docs.medplum.com
+documentation: https://www.medplum.com/docs
 icon: https://www.medplum.com/img/logo.svg
-
 maintainers:
   - name: Medplum Team
     url: https://www.medplum.com
     email: support@medplum.com
-
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/prerelease: 'true'
 # Optional dependencies would go here
 # dependencies:
 #   - name: cert-manager
@@ -41,7 +33,3 @@ maintainers:
 #     condition: certificates.useCertManager
 #     tags:
 #       - optional
-
-annotations:
-  artifacthub.io/license: Apache-2.0
-  artifacthub.io/prerelease: 'true'

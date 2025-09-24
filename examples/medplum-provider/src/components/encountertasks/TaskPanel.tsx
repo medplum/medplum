@@ -1,15 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Card, Stack } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { JSX, useRef } from 'react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';
+import { TaskServiceRequest } from './TaskServiceRequest';
 
 interface TaskPanelProps {
   task: Task;
@@ -20,30 +24,22 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const author = useMedplumProfile();
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const onActionButtonClicked = async (): Promise<void> => {
-    if (task.status === 'ready' || task.status === 'requested') {
-      // Task status is Ready or Requested. Action will mark as complete.
-      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
-    } else {
-      // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`)?.catch(console.error);
-    }
+    navigate(`Task/${task.id}`)?.catch(console.error);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
     saveQuestionnaireResponse(task, response);
   };
 
-  const saveQuestionnaireResponse = (task: Task, response: QuestionnaireResponse): void => {
-    try {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+  const onSaveDiagnosticReport = (diagnosticReport: DiagnosticReport): void => {
+    saveDiagnosticReport(task, diagnosticReport);
+  };
 
-      saveTimeoutRef.current = setTimeout(async () => {
+  const saveQuestionnaireResponse = useDebouncedCallback(
+    async (task: Task, response: QuestionnaireResponse): Promise<void> => {
+      try {
         if (response.id) {
           await medplum.updateResource<QuestionnaireResponse>(response);
         } else {
@@ -59,24 +55,28 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           });
           onUpdateTask(updatedTask);
         }
-      }, SAVE_TIMEOUT_MS);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    SAVE_TIMEOUT_MS
+  );
 
-  const onAddNote = async (note: string): Promise<void> => {
-    const newNote: Annotation = {
-      text: note,
-      authorReference: author && createReference(author),
-      time: new Date().toISOString(),
-    };
-
-    const taskNotes = task?.note || [];
-    taskNotes.push(newNote);
-    const updatedTask: Task = { ...task, note: taskNotes };
-    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
-  };
+  const saveDiagnosticReport = useDebouncedCallback(
+    async (task: Task, diagnosticReport: DiagnosticReport): Promise<void> => {
+      const updatedTask = await medplum.updateResource<Task>({
+        ...task,
+        output: [
+          {
+            type: { text: 'DiagnosticReport' },
+            valueReference: { reference: getReferenceString(diagnosticReport) },
+          },
+        ],
+      });
+      onUpdateTask(updatedTask);
+    },
+    SAVE_TIMEOUT_MS
+  );
 
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
@@ -86,17 +86,18 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
-        {task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
-        ) : (
-          <SimpleTask key={task.id} task={task} />
-        )}
-        <TaskStatusPanel
-          task={task}
-          onActionButtonClicked={onActionButtonClicked}
-          onAddNote={onAddNote}
-          onChangeStatus={onChangeStatus}
-        />
+        <Stack p="md">
+          {task.focus?.reference?.startsWith('Questionnaire/') && (
+            <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
+          )}
+          {task.focus?.reference?.startsWith('ServiceRequest/') && (
+            <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
+          )}
+
+          {!task.focus?.reference?.startsWith('ServiceRequest/') &&
+            !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
+        </Stack>
+        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
   );

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Operator } from '../search/search';
 import { parseFilterParameter } from './parse';
 import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
@@ -227,11 +229,6 @@ describe('_filter Parameter parser', () => {
   });
 
   test('Unsupported search operator', () => {
-    try {
-      parseFilterParameter('name ew ali');
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Invalid operator: ew');
-    }
+    expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
   });
 });

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
@@ -24,7 +26,7 @@ describe('Cron Worker', () => {
     botProject = botProjectDetails.project;
     botRepo = new Repository({
       extendedMode: true,
-      projects: [botProjectDetails.project.id],
+      projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
     });
   });
@@ -172,7 +174,7 @@ describe('Cron Worker', () => {
 
       const repo = new Repository({
         extendedMode: true,
-        projects: [testProject.id],
+        projects: [testProject],
         author: {
           reference: 'ClientApplication/' + randomUUID(),
         },
