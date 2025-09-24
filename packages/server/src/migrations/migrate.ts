@@ -940,6 +940,11 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
         columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
         unique: true,
       },
+      {
+        indexNameOverride: 'ConceptMapping_map_reverse_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'targetSystem', 'targetCode', 'sourceSystem'],
+      },
     ],
   });
 }

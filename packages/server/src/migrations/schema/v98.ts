@@ -24,6 +24,7 @@ export async function run(client: PoolClient): Promise<void> {
     "comment" TEXT
   )`);
   await fns.query(client, results, `CREATE UNIQUE INDEX IF NOT EXISTS "ConceptMapping_map_source_target_idx" ON "ConceptMapping" ("conceptMap", "sourceSystem", "sourceCode", "targetSystem", "targetCode")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "ConceptMapping_map_reverse_idx" ON "ConceptMapping" ("conceptMap", "targetSystem", "targetCode", "sourceSystem")`);
   await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "ConceptMapping_Attribute" (
     "mapping" BIGINT NOT NULL,
     "uri" TEXT NOT NULL,
