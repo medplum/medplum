@@ -59,10 +59,10 @@ The [User](/docs/api/fhir/medplum/user) resource is the main resource that repre
 
 [Users](/docs/api/fhir/medplum/user) can have two different scopes, `server` or `project`:
 
-- [Server scoped users](/docs/auth/project-vs-server-scoped-users#server-scoped-users) tend to be administrators and developers that need to access multiple projects.
-- [Project scoped users](/docs/auth/project-vs-server-scoped-users#project-scoped-users) tend to be clinicians and patients that only need access to a single project.
+- [Server scoped users](/docs/user-management/project-vs-server-scoped-users#server-scoped-users) tend to be administrators and developers that need to access multiple projects.
+- [Project scoped users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) tend to be clinicians and patients that only need access to a single project.
 
-See our guide on [Project vs Server Scoped Users](/docs/auth/project-vs-server-scoped-users) for more details.
+See our guide on [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users) for more details.
 
 
 ### Profiles
