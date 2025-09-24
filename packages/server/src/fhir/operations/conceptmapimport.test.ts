@@ -1,54 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, SNOMED, WithId } from '@medplum/core';
-import { ConceptMap, Parameters } from '@medplum/fhirtypes';
+import { ConceptMap, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { Pool } from 'pg';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject } from '../../test.setup';
+import { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
 import { importConceptMapResource } from './conceptmapimport';
 
 const app = express();
 const ICD10 = 'http://hl7.org/fhir/sid/icd-10-us';
 
-describe('importConceptMapReosurce()', () => {
-  const resource: WithId<ConceptMap> = {
-    resourceType: 'ConceptMap',
-    id: randomUUID(),
-    version: '4.0.1',
-    status: 'draft',
-    experimental: true,
-    group: [
-      {
-        source: SNOMED,
-        target: ICD10,
-        element: [
-          {
-            code: '263204007',
-            target: [
-              {
-                code: 'S52.209A',
-                equivalence: 'narrower',
-                comment:
-                  'The target mapping to ICD-10-CM is narrower, since additional patient data on the encounter (initial vs. subsequent) and fracture type is required for a valid ICD-10-CM mapping.',
-              },
-              {
-                code: 'S52.209D',
-                equivalence: 'narrower',
-                comment:
-                  'The target mapping to ICD-10-CM is narrower, since additional patient data on the encounter (initial vs. subsequent), fracture type and healing (for subsequent encounter) is required for a valid ICD-10-CM mapping.',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-
+describe('importConceptMapResource()', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -59,25 +28,49 @@ describe('importConceptMapReosurce()', () => {
   });
 
   test('Imports basic mappings from resource', async () => {
+    const resource: WithId<ConceptMap> = {
+      resourceType: 'ConceptMap',
+      id: randomUUID(),
+      version: '4.0.1',
+      status: 'draft',
+      experimental: true,
+      group: [
+        {
+          source: SNOMED,
+          target: ICD10,
+          element: [
+            {
+              code: '263204007',
+              target: [
+                {
+                  code: 'S52.209A',
+                  equivalence: 'narrower',
+                  comment:
+                    'The target mapping to ICD-10-CM is narrower, since additional patient data on the encounter (initial vs. subsequent) and fracture type is required for a valid ICD-10-CM mapping.',
+                },
+                {
+                  code: 'S52.209D',
+                  equivalence: 'narrower',
+                  comment:
+                    'The target mapping to ICD-10-CM is narrower, since additional patient data on the encounter (initial vs. subsequent), fracture type and healing (for subsequent encounter) is required for a valid ICD-10-CM mapping.',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const db = await pool.connect();
     await importConceptMapResource(db, resource);
-
-    const query = new SelectQuery('ConceptMapping')
-      .column('conceptMap')
-      .column('sourceSystem')
-      .column('sourceCode')
-      .column('targetSystem')
-      .column('targetCode')
-      .column('relationship')
-      .column('comment')
-      .where('conceptMap', '=', resource.id);
-    const results = await query.execute(db);
     db.release();
+
+    const results = await getMappingRows(pool, resource);
     expect(results).toHaveLength(2);
     expect(results).toStrictEqual(
       expect.arrayContaining([
-        {
+        expect.objectContaining({
           conceptMap: resource.id,
           sourceSystem: SNOMED,
           sourceCode: '263204007',
@@ -85,8 +78,8 @@ describe('importConceptMapReosurce()', () => {
           targetCode: 'S52.209A',
           relationship: 'narrower',
           comment: expect.stringContaining('subsequent'),
-        },
-        {
+        }),
+        expect.objectContaining({
           conceptMap: resource.id,
           sourceSystem: SNOMED,
           sourceCode: '263204007',
@@ -94,16 +87,123 @@ describe('importConceptMapReosurce()', () => {
           targetCode: 'S52.209D',
           relationship: 'narrower',
           comment: expect.stringContaining('subsequent'),
+        }),
+      ])
+    );
+  });
+
+  test('Imports mapping metadata', async () => {
+    const resource: WithId<ConceptMap> = {
+      resourceType: 'ConceptMap',
+      id: randomUUID(),
+      version: '4.0.1',
+      status: 'draft',
+      experimental: true,
+      group: [
+        {
+          source: SNOMED,
+          target: ICD10,
+          element: [
+            {
+              code: '1003470004',
+              target: [
+                {
+                  code: 'Z12.9',
+                  equivalence: 'equivalent',
+                },
+                {
+                  code: 'Z12.11',
+                  equivalence: 'equivalent',
+                  dependsOn: [{ property: 'context', system: SNOMED, value: '460591000124101' }],
+                },
+                {
+                  code: 'Z12.72',
+                  equivalence: 'equivalent',
+                  dependsOn: [{ property: 'context', system: SNOMED, value: '146861000119102' }],
+                  product: [{ property: 'http://hl7.org/fhir/StructureDefinition/Patient#gender', value: 'female' }],
+                },
+              ],
+            },
+          ],
         },
+      ],
+    };
+
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const db = await pool.connect();
+    await importConceptMapResource(db, resource);
+    db.release();
+
+    const results = await getMappingRows(pool, resource);
+    expect(results).toHaveLength(4);
+    expect(results).toStrictEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          conceptMap: resource.id,
+          sourceSystem: SNOMED,
+          sourceCode: '1003470004',
+          targetSystem: ICD10,
+          targetCode: 'Z12.9',
+          relationship: null,
+          uri: null,
+          type: null,
+          value: null,
+          kind: null,
+        }),
+        expect.objectContaining({
+          conceptMap: resource.id,
+          sourceSystem: SNOMED,
+          sourceCode: '1003470004',
+          targetSystem: ICD10,
+          targetCode: 'Z12.11',
+          relationship: null,
+          kind: 'dependsOn',
+          uri: 'context',
+          type: 'Coding',
+          value: `{"system":"${SNOMED}","code":"460591000124101"}`,
+        }),
+        expect.objectContaining({
+          conceptMap: resource.id,
+          sourceSystem: SNOMED,
+          sourceCode: '1003470004',
+          targetSystem: ICD10,
+          targetCode: 'Z12.72',
+          relationship: null,
+          kind: 'dependsOn',
+          uri: 'context',
+          type: 'Coding',
+          value: `{"system":"${SNOMED}","code":"146861000119102"}`,
+        }),
+        expect.objectContaining({
+          conceptMap: resource.id,
+          sourceSystem: SNOMED,
+          sourceCode: '1003470004',
+          targetSystem: ICD10,
+          targetCode: 'Z12.72',
+          relationship: null,
+          kind: 'product',
+          uri: 'http://hl7.org/fhir/StructureDefinition/Patient#gender',
+          type: 'code',
+          value: `"female"`,
+        }),
       ])
     );
   });
 });
 
 describe('ConceptMap/$import', () => {
+  let accessToken: string;
+  let repo: Repository;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+
+    ({ accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    }));
   });
 
   afterAll(async () => {
@@ -111,12 +211,6 @@ describe('ConceptMap/$import', () => {
   });
 
   test('Imports concept mappings and attributes', async () => {
-    const { accessToken, repo } = await createTestProject({
-      withAccessToken: true,
-      withRepo: true,
-      membership: { admin: true },
-    });
-
     const conceptMap = await repo.createResource<ConceptMap>({
       resourceType: 'ConceptMap',
       status: 'draft',
@@ -165,31 +259,8 @@ describe('ConceptMap/$import', () => {
     expect(res.status).toBe(200);
 
     const pool = getDatabasePool(DatabaseMode.READER);
-    const db = await pool.connect();
 
-    const query = new SelectQuery('ConceptMapping')
-      .column('conceptMap')
-      .column('sourceSystem')
-      .column('sourceCode')
-      .column('sourceDisplay')
-      .column('targetSystem')
-      .column('targetCode')
-      .column('targetDisplay')
-      .column('relationship')
-      .column('comment')
-      .join(
-        'LEFT JOIN',
-        'ConceptMapping_Attribute',
-        'attr',
-        new Condition(new Column('ConceptMapping', 'id'), '=', new Column('attr', 'mapping'))
-      )
-      .column(new Column('attr', 'kind'))
-      .column(new Column('attr', 'uri'))
-      .column(new Column('attr', 'type'))
-      .column(new Column('attr', 'value'))
-      .where('conceptMap', '=', conceptMap.id);
-    const results = await query.execute(db);
-    db.release();
+    const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
     expect(results[0]).toStrictEqual({
       conceptMap: conceptMap.id,
@@ -207,4 +278,145 @@ describe('ConceptMap/$import', () => {
       value: `{"system":"http://snomed.info/sct","code":"403625006"}`,
     });
   });
+
+  test('Requires admin privileges', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: false },
+    });
+
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      name: 'Test Imported ConceptMap',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct', code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(403);
+  });
+
+  test('Allows selecting ConceptMap by URL', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      url: 'http://example.com/ConceptMap/' + randomUUID(),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: conceptMap.url },
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct', code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+  });
+
+  test('Requires ConceptMap to be specified', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct', code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [expect.objectContaining({ details: { text: 'ConceptMap to import into must be specified' } })],
+    });
+  });
+
+  test('Requires source code to be specified', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      url: 'http://example.com/ConceptMap/' + randomUUID(),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct' } }, // Must specify code
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [expect.objectContaining({ details: { text: 'Source code for mapping is required' } })],
+    });
+  });
 });
+
+async function getMappingRows(pool: Pool, conceptMap: ConceptMap): Promise<any[]> {
+  const db = await pool.connect();
+  const query = new SelectQuery('ConceptMapping')
+    .column('conceptMap')
+    .column('sourceSystem')
+    .column('sourceCode')
+    .column('sourceDisplay')
+    .column('targetSystem')
+    .column('targetCode')
+    .column('targetDisplay')
+    .column('relationship')
+    .column('comment')
+    .join(
+      'LEFT JOIN',
+      'ConceptMapping_Attribute',
+      'attr',
+      new Condition(new Column('ConceptMapping', 'id'), '=', new Column('attr', 'mapping'))
+    )
+    .column(new Column('attr', 'kind'))
+    .column(new Column('attr', 'uri'))
+    .column(new Column('attr', 'type'))
+    .column(new Column('attr', 'value'))
+    .where('conceptMap', '=', conceptMap.id);
+  const results = await query.execute(db);
+  db.release();
+  return results;
+}
