@@ -115,7 +115,7 @@
     },
     {
       "source": "/docs/auth/methods/external-ids",
-      "destination": "/docs/auth/external-ids"
+      "destination": "/docs/user-management/external-ids"
     },
     {
       "source": "/docs/auth/methods/on-behalf-of",
@@ -124,6 +124,18 @@
     {
       "source": "/docs/auth/methods/token-exchange",
       "destination": "/docs/auth/token-exchange"
+    },
+    {
+      "source": "/docs/auth/project-vs-server-scoped-users",
+      "destination": "/docs/user-management/project-vs-server-scoped-users"
+    },
+    {
+      "source": "/docs/auth/custom-emails",
+      "destination": "/docs/user-management/custom-emails"
+    },
+    {
+      "source": "/docs/auth/open-patient-registration",
+      "destination": "/docs/user-management/open-patient-registration"
     }
   ]
 }
