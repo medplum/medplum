@@ -20,6 +20,12 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
 
+/**
+ * Custom function to search for available slots within a given time period
+ * @param period - The time period to search within
+ * @returns Promise resolving to an array of available slots
+ */
+
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
   readonly schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
