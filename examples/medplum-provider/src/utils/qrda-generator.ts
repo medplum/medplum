@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatHl7DateTime, getExtensionValue, MedplumClient, resolveId, SNOMED } from '@medplum/core';
+import { CPT, formatHl7DateTime, getExtensionValue, MedplumClient, resolveId, SNOMED } from '@medplum/core';
 import { Patient, Encounter, Coding, Procedure, Condition, Coverage } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { XMLBuilder } from 'fast-xml-parser';
 import { extensionURLMapping } from './intake-utils';
+
+const HCPCS = 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets';
 
 export interface QRDAGenerationParams {
   patientId: string;
@@ -550,6 +552,31 @@ function buildEncounterEntry(
 ): Record<string, any> {
   const periodStart = encounter.period?.start;
   const periodEnd = encounter.period?.end;
+  const encounterCodeAttributes = (() => {
+    const code = encounter.type?.[0]?.coding?.[0]?.code ?? '';
+    const system = encounter.type?.[0]?.coding?.[0]?.system;
+    let codeSystem = '';
+    let codeSystemName = '';
+
+    switch (system) {
+      case SNOMED:
+        codeSystem = '2.16.840.1.113883.6.96';
+        codeSystemName = 'SNOMEDCT';
+        break;
+      case CPT:
+        codeSystem = '2.16.840.1.113883.6.12';
+        codeSystemName = 'CPT';
+        break;
+      case HCPCS:
+        codeSystem = '2.16.840.1.113883.6.285';
+        codeSystemName = 'HCPCS';
+        break;
+      default:
+        break;
+    }
+
+    return { code, codeSystem, codeSystemName };
+  })();
 
   return {
     encounter: {
@@ -564,9 +591,9 @@ function buildEncounterEntry(
       id: { '@_extension': encounter.id, '@_root': '1.3.6.1.4.1.115' },
       // QDM Attribute: Code
       code: {
-        '@_code': encounter.type?.[0]?.coding?.[0]?.code ?? '',
-        '@_codeSystem': '2.16.840.1.113883.6.12',
-        '@_codeSystemName': 'CPT',
+        '@_code': encounterCodeAttributes.code,
+        '@_codeSystem': encounterCodeAttributes.codeSystem,
+        '@_codeSystemName': encounterCodeAttributes.codeSystemName,
       },
       text: getExtensionValue(encounter, extensionURLMapping.encounterDescription) ?? '',
       statusCode: { '@_code': 'completed' },
