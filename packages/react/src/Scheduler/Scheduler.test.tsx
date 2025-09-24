@@ -10,41 +10,6 @@ import { Scheduler, SlotSearchFunction } from './Scheduler';
 
 const medplum = new MockClient();
 
-// Create a second schedule for testing arrays
-const DrBobSchedule: WithId<Schedule> = {
-  ...DrAliceSmithSchedule,
-  id: 'dr-bob-schedule',
-  actor: [{ reference: 'Practitioner/dr-bob', display: 'Dr. Bob Jones' }],
-};
-
-// Create mock slots for Dr. Bob's schedule
-function makeDrBobSlots(): WithId<Slot>[] {
-  const schedule = createReference(DrBobSchedule);
-  const result: WithId<Slot>[] = [];
-  // Use a consistent base date for slot generation
-  const slotDate = new Date();
-  for (let day = 0; day < 60; day++) {
-    for (const hour of [8, 12, 16, 17]) {
-      // Different hours than Alice
-      slotDate.setUTCHours(hour, 0, 0, 0);
-      result.push({
-        resourceType: 'Slot',
-        id: `bob-slot-${day}-${hour}`,
-        status: 'free',
-        start: slotDate.toISOString(),
-        end: new Date(slotDate.getTime() + 60 * 60 * 1000).toISOString(),
-        schedule,
-      });
-    }
-    slotDate.setUTCDate(slotDate.getUTCDate() + 1);
-  }
-  return result;
-}
-
-// Add Bob's slots to the mock client after time is mocked
-const DrBobSlots = makeDrBobSlots();
-DrBobSlots.forEach((slot) => medplum.createResource(slot));
-
 function setup(
   schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction,
   questionnaire = ExampleQuestionnaire
@@ -59,6 +24,49 @@ function setup(
 }
 
 describe('Scheduler', () => {
+  // Create a second schedule for testing arrays
+  const DrBobSchedule: WithId<Schedule> = {
+    ...DrAliceSmithSchedule,
+    id: 'dr-bob-schedule',
+    actor: [{ reference: 'Practitioner/dr-bob', display: 'Dr. Bob Jones' }],
+  };
+
+  beforeAll(async () => {
+    // Use a consistent base date for slot generation
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2023-11-03T00:00:00Z'));
+    const slotDate = new Date();
+
+    // Create mock slots for Dr. Bob's schedule
+    for (let day = 0; day < 60; day++) {
+      for (const hour of [8, 12, 16, 17]) {
+        // Different hours than Alice
+        slotDate.setHours(hour, 0, 0, 0);
+        const slot = {
+          resourceType: 'Slot',
+          id: `bob-slot-${day}-${hour}`,
+          status: 'free',
+          start: slotDate.toISOString(),
+          end: new Date(slotDate.getTime() + 60 * 60 * 1000).toISOString(),
+          schedule: createReference(DrBobSchedule),
+        } satisfies WithId<Slot>;
+        await medplum.createResource(slot);
+      }
+      slotDate.setDate(slotDate.getDate() + 1);
+    }
+
+    jest.useRealTimers();
+  });
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2023-11-03T00:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('Renders by reference', async () => {
     await act(async () => {
       setup(createReference(DrAliceSmithSchedule));
@@ -253,16 +261,16 @@ describe('Scheduler', () => {
         id: 'slot-1',
         schedule: { reference: 'Schedule/dr-alice' },
         status: 'free',
-        start: '2023-11-15T09:00:00.000Z',
-        end: '2023-11-15T10:00:00.000Z',
+        start: new Date('2023-11-15T19:00:00.000').toISOString(),
+        end: new Date('2023-11-15T20:00:00.000').toISOString(),
       },
       {
         resourceType: 'Slot',
         id: 'slot-2',
         schedule: { reference: 'Schedule/dr-alice' },
         status: 'free',
-        start: '2023-11-15T10:00:00.000Z',
-        end: '2023-11-15T11:00:00.000Z',
+        start: new Date('2023-11-15T20:00:00.000').toISOString(),
+        end: new Date('2023-11-15T21:00:00.000').toISOString(),
       },
     ];
 
@@ -282,14 +290,14 @@ describe('Scheduler', () => {
 
     // Should show time selection
     expect(screen.getByText('Select time')).toBeInTheDocument();
-    expect(screen.getByText('9:00 AM')).toBeInTheDocument();
+    expect(screen.getByText('8:00 PM')).toBeInTheDocument();
 
     // Select the time slot
     await act(async () => {
-      fireEvent.click(screen.getByText('9:00 AM'));
+      fireEvent.click(screen.getByText('8:00 PM'));
     });
 
     // Should show the selected time in the info panel
-    expect(screen.getByText('9:00 AM')).toBeInTheDocument();
+    expect(screen.getByText('8:00 PM')).toBeInTheDocument();
   });
 });
