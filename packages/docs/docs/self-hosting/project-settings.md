@@ -32,7 +32,7 @@ are:
 | `bots`                    | Project is allowed to create and run [Bots](/docs/bots/bot-basics)                                                               |
 | `cron`                    | Can run Bots periodically on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)                                       |
 | `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                   |
-| `google-auth-required`    | [Google authentication](/docs/auth/idp/google-auth) is the only method allowed                                               |
+| `google-auth-required`    | [Google authentication](/docs/auth/google-auth) is the only method allowed                                               |
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql/basic-queries#overview) queries                        |
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |

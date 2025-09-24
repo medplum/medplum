@@ -59,7 +59,7 @@
     },
     {
       "source": "/docs/auth/okta-auth",
-      "destination": "/docs/auth/idp/domain-level-identity-providers"
+      "destination": "/docs/auth/domain-level-identity-providers"
     },
     {
       "source": "/docs/sdk/modules",
@@ -95,7 +95,7 @@
     },
     {
       "source": "/docs/auth/methods/oauth-auth-code",
-      "destination": "/docs/auth/idp/medplum-as-idp"
+      "destination": "/docs/auth/medplum-as-idp"
     },
     {
       "source": "/docs/auth/methods/client-credentials",
@@ -103,15 +103,15 @@
     },
     {
       "source": "/docs/auth/methods/google-auth",
-      "destination": "/docs/auth/idp/google-auth"
+      "destination": "/docs/auth/google-auth"
     },
     {
       "source": "/docs/auth/methods/domain-level-identity-providers",
-      "destination": "/docs/auth/idp/domain-level-identity-providers"
+      "destination": "/docs/auth/domain-level-identity-providers"
     },
     {
       "source": "/docs/auth/methods/external-identity-providers",
-      "destination": "/docs/auth/idp/external-identity-providers"
+      "destination": "/docs/auth/external-identity-providers"
     },
     {
       "source": "/docs/auth/methods/external-ids",

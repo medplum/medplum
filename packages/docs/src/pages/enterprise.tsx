@@ -113,7 +113,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Okta"
               title="Identity, security"
               imgUrl="/img/blog/okta-logo.png"
-              webUrl="/docs/auth/idp/domain-level-identity-providers"
+              webUrl="/docs/auth/domain-level-identity-providers"
             />
             <ProfileCard
               name="Azure SSO"
@@ -125,7 +125,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Google SSO"
               title="Identity, security"
               imgUrl="/img/blog/google-logo.jpeg"
-              webUrl="/docs/auth/idp/google-auth"
+              webUrl="/docs/auth/google-auth"
             />
           </CardContainer>
         </Section>
