@@ -1,11 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, HTTP_HL7_ORG, MedplumClient, SNOMED } from '@medplum/core';
+import {
+  addProfileToResource,
+  createReference,
+  getReferenceString,
+  HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  LOINC,
+  MedplumClient,
+  SNOMED,
+} from '@medplum/core';
 import {
   Address,
+  CodeableConcept,
   Coding,
   Condition,
   HumanName,
+  Observation,
   Patient,
   Questionnaire,
   QuestionnaireItem,
@@ -27,15 +38,90 @@ export const PROFILE_URLS: Record<string, string> = {
   ObservationSmokingStatus: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-smokingstatus`,
 };
 
+export const observationCodeMapping: Record<string, CodeableConcept> = {
+  administrativeSex: {
+    coding: [{ code: '46098-0', system: LOINC, display: 'Administrative Sex' }],
+    text: 'Administrative Sex',
+  },
+};
+
+export const observationCategoryMapping: Record<string, CodeableConcept> = {
+  socialHistory: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
+        code: 'social-history',
+        display: 'Social History',
+      },
+    ],
+    text: 'Social History',
+  },
+};
+
 export const extensionURLMapping: Record<string, string> = {
-  race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
-  ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
+  race: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.836',
+  ethnicity: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.114222.4.11.837',
   veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
   patientBirthTime: HTTP_HL7_ORG + '/fhir/StructureDefinition/patient-birthTime',
   // Custom
   encounterDescription: 'https://medplum.com/fhir/StructureDefinition/encounter-description',
   procedureRank: 'https://medplum.com/fhir/StructureDefinition/procedure-rank',
 };
+
+type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';
+
+/**
+ * This function takes data about an Observation and creates or updates an existing
+ * resource with the same patient and code.
+ *
+ * @param medplum - A Medplum client
+ * @param patient - A Patient resource that will be stored as the subject
+ * @param code - A code for the observation
+ * @param category - A category for the observation
+ * @param answerType - The value[x] field where the answer should be stored
+ * @param value - The value to be stored in the observation
+ * @param profileUrl - An optional profile URL to be added to the resource
+ */
+export async function upsertObservation(
+  medplum: MedplumClient,
+  patient: Patient,
+  code: CodeableConcept,
+  category: CodeableConcept,
+  answerType: ObservationQuestionnaireItemType,
+  value: QuestionnaireResponseItemAnswer | undefined,
+  profileUrl?: string
+): Promise<void> {
+  if (!value || !code) {
+    return;
+  }
+
+  let observation: Observation = {
+    resourceType: 'Observation',
+    status: 'final',
+    subject: createReference(patient),
+    code: code,
+    category: [category],
+    effectiveDateTime: new Date().toISOString(),
+  };
+
+  if (profileUrl) {
+    observation = addProfileToResource(observation, profileUrl);
+  }
+
+  if (answerType === 'valueCodeableConcept') {
+    observation.valueCodeableConcept = {
+      coding: [value],
+    };
+  } else if (answerType === 'valueDateTime') {
+    observation.valueDateTime = value.valueDateTime;
+  }
+
+  const coding = code.coding?.[0] as Coding;
+  await medplum.upsertResource(observation, {
+    code: `${coding.system}|${coding.code}`,
+    subject: getReferenceString(patient),
+  });
+}
 
 type ExtensionQuestionnaireItemType = 'valueCoding' | 'valueBoolean';
 
@@ -409,4 +495,36 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
 
   // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+export function getPatientGender(code: string | undefined): Patient['gender'] {
+  if (!code) {
+    return undefined;
+  }
+  const map: { [key: string]: Patient['gender'] } = {
+    F: 'female',
+    M: 'male',
+    OTH: 'other',
+    UNK: 'unknown',
+  };
+  return map[code];
+}
+
+export function getPatientAdministrativeSex(code: string | undefined): Coding | undefined {
+  if (!code) {
+    return undefined;
+  }
+  const map: { [key: string]: Coding } = {
+    F: {
+      system: SNOMED,
+      code: '248152002',
+      display: 'Female',
+    },
+    M: {
+      system: SNOMED,
+      code: '248153007',
+      display: 'Male',
+    },
+  };
+  return map[code];
 }

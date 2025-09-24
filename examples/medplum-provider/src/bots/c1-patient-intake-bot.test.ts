@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString, SNOMED } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, LOINC, SNOMED } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { extensionURLMapping } from '../utils/intake-utils';
+import { extensionURLMapping, observationCategoryMapping, observationCodeMapping } from '../utils/intake-utils';
 import {
   patientIdentifier,
   patientIntakeQuestionnaire,
@@ -68,7 +68,7 @@ describe('C1 Patient Intake Bot', () => {
         ],
       });
       // Gender
-      expect(patient.gender).toStrictEqual('M');
+      expect(patient.gender).toStrictEqual('male');
       // Rance and Ethnicity
       expect(patient.extension).toStrictEqual([
         {
@@ -118,6 +118,32 @@ describe('C1 Patient Intake Bot', () => {
         { system: 'phone', value: '502-248-7743', use: 'home' },
         { system: 'email', value: 'cstrickland7064@example.com', use: 'home' },
       ]);
+    });
+  });
+
+  describe('Observation', () => {
+    test('creates an Observation for administrative sex', async () => {
+      const patient = await handler(medplum, { bot, input, contentType, secrets });
+
+      expect(patient.gender).toStrictEqual('male');
+
+      const observations = await medplum.searchResources('Observation', {
+        subject: getReferenceString(patient),
+        code: `${LOINC}|46098-0`,
+      });
+
+      expect(observations).toHaveLength(1);
+      const observation = observations[0];
+      expect(observation).toMatchObject({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        code: observationCodeMapping.administrativeSex,
+        category: [observationCategoryMapping.socialHistory],
+        valueCodeableConcept: {
+          coding: [{ system: SNOMED, code: '248153007', display: 'Male' }],
+        },
+      });
     });
   });
 
