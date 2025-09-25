@@ -10,7 +10,6 @@
       },
       "resource": {
         "resourceType": "Questionnaire",
-        "id": "sick-note-questionnaire",
         "status": "active",
         "title": "Sick Note Questionnaire",
         "url": "https://medplum.com/Questionnaire/sick-note-questionnaire",

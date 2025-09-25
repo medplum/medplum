@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Patient, QuestionnaireResponse, Practitioner } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { handler } from './sick-note-questionnaire-bot';
@@ -353,7 +353,7 @@ test('Uses correct patient name from resource', async () => {
   const medplum = new MockClient();
 
   // Create a patient with specific name
-  const patient: Patient = {
+  const patient: Patient & { id: string } = {
     resourceType: 'Patient',
     id: 'patient-123',
     name: [
@@ -420,7 +420,7 @@ test('Uses correct practitioner name in healthcare provider section', async () =
   const medplum = new MockClient();
 
   // Create a practitioner with specific name
-  const practitioner = {
+  const practitioner: Practitioner & { id: string } = {
     resourceType: 'Practitioner',
     id: 'practitioner-123',
     name: [
