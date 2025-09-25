@@ -115,7 +115,8 @@ if [ -z "$SKIP_SIGNING" ]; then
 fi
 
 # Build the installer
-if [ -z "$SKIP_SIGNING" ]; then
+# If SKIP_SIGNING is not empty, then define SKIP_SIGNING symbol
+if [ -n "$SKIP_SIGNING" ]; then
   makensis -DSKIP_SIGNING installer.nsi # globally defines the SKIP_SIGNING symbol
 else
   makensis installer.nsi

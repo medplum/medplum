@@ -45,6 +45,7 @@ export abstract class BaseChannel implements Channel {
 export const ChannelType = {
   HL7_V2: 'HL7_V2',
   DICOM: 'DICOM',
+  BYTE_STREAM: 'BYTE_STREAM',
 } as const;
 export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
@@ -55,16 +56,27 @@ export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('mllp')) {
     return ChannelType.HL7_V2;
   }
+  if (endpoint.address.startsWith('tcp')) {
+    return ChannelType.BYTE_STREAM;
+  }
   throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
 }
 
 export function getChannelTypeShortName(endpoint: Endpoint): string {
-  switch (getChannelType(endpoint)) {
-    case ChannelType.HL7_V2:
-      return 'HL7';
-    case ChannelType.DICOM:
-      return 'DICOM';
-    default:
-      throw new Error(`Invalid endpoint type with address '${endpoint.address}'`);
+  try {
+    const channelType = getChannelType(endpoint);
+    switch (channelType) {
+      case ChannelType.HL7_V2:
+        return 'HL7';
+      case ChannelType.DICOM:
+        return 'DICOM';
+      case ChannelType.BYTE_STREAM:
+        return 'Byte Stream';
+      default:
+        channelType satisfies never;
+        throw new Error('Unreachable');
+    }
+  } catch (err) {
+    throw new Error(`Invalid endpoint type with address '${endpoint.address}'`, { cause: err });
   }
 }

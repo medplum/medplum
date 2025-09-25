@@ -4,6 +4,7 @@ import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma, WithId 
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
+import { LookupTableSearchParameterImplementation } from '../searchparameter';
 import {
   Column,
   Condition,
@@ -190,15 +191,20 @@ export abstract class LookupTable {
   /**
    * Adds "order by" clause to the select query builder.
    * @param selectQuery - The select query builder.
+   * @param impl - The lookup table implementation.
    * @param resourceType - The FHIR resource type.
    * @param sortRule - The sort rule details.
    */
-  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    // PENDING{v4.4.0} Add this if statement since the sort columns will have been populated
-    // if (impl.sortColumnName) {
-    //   selectQuery.orderBy(impl.sortColumnName, sortRule.descending);
-    //   return;
-    // }
+  addOrderBy(
+    selectQuery: SelectQuery,
+    impl: LookupTableSearchParameterImplementation,
+    resourceType: ResourceType,
+    sortRule: SortRule
+  ): void {
+    if (impl.sortColumnName) {
+      selectQuery.orderBy(impl.sortColumnName, sortRule.descending);
+      return;
+    }
 
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();

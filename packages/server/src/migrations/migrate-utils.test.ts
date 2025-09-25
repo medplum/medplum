@@ -15,7 +15,8 @@ describe('migration-utils', () => {
   });
 
   test('tsVectorExpression', () => {
-    expect(tsVectorExpression('simple', 'column')).toEqual('to_tsvector(\'simple\'::regconfig, "column")');
+    expect(tsVectorExpression('simple', 'all_lower')).toEqual("to_tsvector('simple'::regconfig, all_lower)");
+    expect(tsVectorExpression('simple', 'someUpper')).toEqual('to_tsvector(\'simple\'::regconfig, "someUpper")');
   });
 
   test('splitIndexColumnNames', () => {
