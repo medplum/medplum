@@ -38,7 +38,7 @@
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
     "@metriport/api-sdk": "18.0.5",
-    "@types/node": "20.19.17",
+    "@types/node": "22.15.4",
     "@types/node-fetch": "2.6.13",
     "@types/ssh2-sftp-client": "9.0.5",
     "@vitest/coverage-v8": "3.2.4",
