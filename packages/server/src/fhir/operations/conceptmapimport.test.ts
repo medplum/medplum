@@ -12,12 +12,12 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject } from '../../test.setup';
 import { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
-import { importConceptMapResource } from './conceptmapimport';
+import { importConceptMap } from './conceptmapimport';
 
 const app = express();
 const ICD10 = 'http://hl7.org/fhir/sid/icd-10-us';
 
-describe('importConceptMapResource()', () => {
+describe('importConceptMap()', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -63,7 +63,7 @@ describe('importConceptMapResource()', () => {
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const db = await pool.connect();
-    await importConceptMapResource(db, resource);
+    await importConceptMap(db, resource);
     db.release();
 
     const results = await getMappingRows(pool, resource);
@@ -131,7 +131,7 @@ describe('importConceptMapResource()', () => {
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const db = await pool.connect();
-    await importConceptMapResource(db, resource);
+    await importConceptMap(db, resource);
     db.release();
 
     const results = await getMappingRows(pool, resource);

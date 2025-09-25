@@ -106,7 +106,7 @@ export type ConceptMapping = {
 };
 
 export type MappingAttribute = {
-  code: 'string';
+  code: string;
   value?: TypedValue;
 };
 
@@ -139,53 +139,19 @@ export async function importConceptMap(
   conceptMap: WithId<ConceptMap>,
   mappings: readonly ConceptMapping[] = EMPTY_ARRAY
 ): Promise<void> {
-  await importConceptMapResource(db, conceptMap);
-
   const mappingRows: MappingRow[] = [];
   const attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[] = [];
+
+  const resourceMappings = gatherResourceMappings(conceptMap);
+  for (const mapping of resourceMappings) {
+    // Resource rows already validated
+    addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
+  }
   for (const mapping of mappings) {
     if (!mapping.source.code) {
       throw new OperationOutcomeError(badRequest('Source code for mapping is required'));
     }
-
-    mappingRows.push({
-      conceptMap: conceptMap.id,
-      sourceSystem: mapping.source.system ?? '',
-      sourceCode: mapping.source.code,
-      sourceDisplay: mapping.source.display,
-      targetSystem: mapping.target.system ?? '',
-      targetCode: mapping.target.code ?? '',
-      targetDisplay: mapping.target.display,
-      relationship: mapping.relationship === 'equivalent' ? undefined : mapping.relationship,
-      comment: mapping.comment,
-    });
-
-    let mappingAttributes: Omit<AttributeRow, 'mapping'>[] | undefined;
-    for (const property of mapping.property ?? EMPTY_ARRAY) {
-      mappingAttributes = append(mappingAttributes, {
-        kind: 'property',
-        uri: property.code,
-        type: property.value?.type,
-        value: JSON.stringify(property.value?.value),
-      });
-    }
-    for (const dependency of mapping.dependsOn ?? EMPTY_ARRAY) {
-      mappingAttributes = append(mappingAttributes, {
-        kind: 'dependsOn',
-        uri: dependency.code,
-        type: dependency.value?.type,
-        value: JSON.stringify(dependency.value?.value),
-      });
-    }
-    for (const product of mapping.product ?? EMPTY_ARRAY) {
-      mappingAttributes = append(mappingAttributes, {
-        kind: 'product',
-        uri: product.code,
-        type: product.value?.type,
-        value: JSON.stringify(product.value?.value),
-      });
-    }
-    attributeRows.push(mappingAttributes);
+    addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
   const uniqueMappings = uniqueOn(
@@ -195,9 +161,8 @@ export async function importConceptMap(
   await writeMappingRows(db, uniqueMappings, attributeRows);
 }
 
-export async function importConceptMapResource(db: PoolClient, conceptMap: WithId<ConceptMap>): Promise<void> {
-  const mappingRows: MappingRow[] = [];
-  const attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[] = [];
+function gatherResourceMappings(conceptMap: WithId<ConceptMap>): ConceptMapping[] {
+  const mappings: ConceptMapping[] = [];
 
   for (const group of conceptMap.group ?? EMPTY_ARRAY) {
     for (const mapping of group.element ?? EMPTY_ARRAY) {
@@ -205,42 +170,28 @@ export async function importConceptMapResource(db: PoolClient, conceptMap: WithI
         throw new OperationOutcomeError(badRequest('Source code for mapping is required'));
       }
       for (const target of mapping.target ?? EMPTY_ARRAY) {
-        mappingRows.push({
-          conceptMap: conceptMap.id,
-          sourceSystem: group.source ?? '',
-          sourceCode: mapping.code,
-          sourceDisplay: mapping.display,
-          targetSystem: group.target ?? '',
-          targetCode: target.code ?? '',
-          targetDisplay: target.display,
-          relationship: target.equivalence === 'equivalent' ? undefined : target.equivalence,
+        const entry: ConceptMapping = {
+          source: { system: group.source, code: mapping.code, display: mapping.display },
+          target: { system: group.target, code: target.code, display: target.display },
+          relationship: target.equivalence,
           comment: target.comment,
-        });
+        };
 
-        let mappingAttributes: Omit<AttributeRow, 'mapping'>[] | undefined;
         for (const dependency of target.dependsOn ?? EMPTY_ARRAY) {
           const value = getAttributeValue(dependency);
-          mappingAttributes = append(mappingAttributes, {
-            kind: 'dependsOn',
-            uri: dependency.property,
-            type: value.type,
-            value: JSON.stringify(value.value),
-          });
+          entry.dependsOn = append(entry.dependsOn, { code: dependency.property, value });
         }
         for (const product of target.product ?? EMPTY_ARRAY) {
           const value = getAttributeValue(product);
-          mappingAttributes = append(mappingAttributes, {
-            kind: 'product',
-            uri: product.property,
-            type: value.type,
-            value: JSON.stringify(value.value),
-          });
+          entry.product = append(entry.product, { code: product.property, value });
         }
-        attributeRows.push(mappingAttributes);
+
+        mappings.push(entry);
       }
     }
   }
-  await writeMappingRows(db, mappingRows, attributeRows);
+
+  return mappings;
 }
 
 function getAttributeValue(attr: ConceptMapGroupElementTargetDependsOn): TypedValue {
@@ -277,6 +228,56 @@ type AttributeRow = {
   type?: string;
   value?: string;
 };
+
+function addRowsForMapping(
+  mapping: ConceptMapping,
+  conceptMap: WithId<ConceptMap>,
+  mappingRows: MappingRow[],
+  attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
+): void {
+  if (!mapping.source.code) {
+    throw new OperationOutcomeError(badRequest('Source code for mapping is required'));
+  }
+
+  mappingRows.push({
+    conceptMap: conceptMap.id,
+    sourceSystem: mapping.source.system ?? '',
+    sourceCode: mapping.source.code,
+    sourceDisplay: mapping.source.display,
+    targetSystem: mapping.target.system ?? '',
+    targetCode: mapping.target.code ?? '',
+    targetDisplay: mapping.target.display,
+    relationship: mapping.relationship === 'equivalent' ? undefined : mapping.relationship,
+    comment: mapping.comment,
+  });
+
+  let mappingAttributes: Omit<AttributeRow, 'mapping'>[] | undefined;
+  for (const property of mapping.property ?? EMPTY_ARRAY) {
+    mappingAttributes = append(mappingAttributes, {
+      kind: 'property',
+      uri: property.code,
+      type: property.value?.type,
+      value: JSON.stringify(property.value?.value),
+    });
+  }
+  for (const dependency of mapping.dependsOn ?? EMPTY_ARRAY) {
+    mappingAttributes = append(mappingAttributes, {
+      kind: 'dependsOn',
+      uri: dependency.code,
+      type: dependency.value?.type,
+      value: JSON.stringify(dependency.value?.value),
+    });
+  }
+  for (const product of mapping.product ?? EMPTY_ARRAY) {
+    mappingAttributes = append(mappingAttributes, {
+      kind: 'product',
+      uri: product.code,
+      type: product.value?.type,
+      value: JSON.stringify(product.value?.value),
+    });
+  }
+  attributeRows.push(mappingAttributes);
+}
 
 async function writeMappingRows(
   db: PoolClient,
