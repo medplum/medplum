@@ -90,6 +90,7 @@ const integerKeys = new Set([
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -132,6 +133,7 @@ const booleanKeys = new Set([
   'registerEnabled',
   'require',
   'rejectUnauthorized',
+  'fhirSearchDiscourageSeqScan',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
