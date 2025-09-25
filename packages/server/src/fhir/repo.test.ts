@@ -1477,6 +1477,10 @@ describe('FHIR Repo', () => {
       // This is invalid in a similar way to some of the legacy UUIDs imported from other systems which we must continue to support
       // This test fails using the version of the validator.js isUUID (13.15.0) that caused the regression this PR fixed: https://github.com/medplum/medplum/pull/6289
       const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
+
+      // cleanup if it exists so the test can run again successfully
+      await systemRepo.expungeResource('Patient', nonconformantUuid);
+
       const patient = await repo.createResource<Patient>(
         {
           id: nonconformantUuid,
