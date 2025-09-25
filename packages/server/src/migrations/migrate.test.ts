@@ -204,7 +204,7 @@ describe('Generator', () => {
       const expected = toSorted(expectedColumns, sortFn);
       expect(actual.map((c) => c.name)).toStrictEqual(expected.map((c) => c.name));
       for (let i = 0; i < actual.length; i++) {
-        expect(columnDefinitionsEqual(actual[i], expected[i])).toBe(true);
+        expect(columnDefinitionsEqual(table, actual[i], expected[i])).toBe(true);
       }
     });
   });
