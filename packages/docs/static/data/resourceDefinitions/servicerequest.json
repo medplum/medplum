@@ -1024,6 +1024,12 @@
       "type": "number",
       "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
       "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+    },
+    {
+      "name": "reason-code",
+      "type": "token",
+      "description": "Coded value representing the reason for this ServiceRequest.  NOTE: The underlying field will change in FHIR R6 to ServiceRequest.reason.concept",
+      "expression": "ServiceRequest.reasonCode"
     }
   ]
 }
