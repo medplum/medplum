@@ -451,12 +451,23 @@ export function isResource<T extends Resource>(value: unknown, resourceType?: T[
 /**
  * Type guard to validate that an object is a FHIR reference
  * @param value - The object to check
+ * @param resourceType - Checks that the reference is of the given type
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
+
 export function isReference<T extends Resource = Resource>(
-  value: unknown
+  value: unknown,
+  resourceType?: T['resourceType']
 ): value is Reference<T> & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
+  // if the value is an object with a reference property and the reference is a string, then it is a reference
+  if (value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string') {
+    // if resourceType is provided, check if the reference matches the resource type
+    if (resourceType) {
+      return value.reference.match(new RegExp(`^${resourceType}(/|\\?)`)) !== null;
+    }
+    return true;
+  }
+  return false;
 }
 
 /**
