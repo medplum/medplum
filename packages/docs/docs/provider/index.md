@@ -63,7 +63,6 @@ The following sections outline the primary functionality of the Medplum Provider
 
 #### Documentation Coming Soon:
 
-- Tasks
 - Messages
 - Labs
 - Medications
