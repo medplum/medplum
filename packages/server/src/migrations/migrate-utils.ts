@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, Pool, PoolClient } from 'pg';
-import { ColumnDefinition } from './types';
+import { ColumnDefinition, DbClient } from './types';
 
 /**
  * When comparing introspective SQL statements, column names are often only wrapped in double quotes when they are mixed case.
  * @param name - a column name
  * @returns The name, possibly wrapped in double quotes if it is mixed case
  */
-function escapeMixedCaseIdentifier(name: string): string {
+export function escapeMixedCaseIdentifier(name: string): string {
   return name === name.toLocaleLowerCase() ? name : '"' + name + '"';
 }
 
@@ -148,7 +147,6 @@ export function parseIndexColumns(expression: string): string[] {
 export function escapeUnicode(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replaceAll(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
-    // const code = char.charCodeAt(0);
     const code = char.codePointAt(0);
     if (code === undefined) {
       throw new Error('Unhandled character: ' + char);
@@ -161,11 +159,11 @@ export function escapeUnicode(str: string): string {
 
     // For ASCII control characters (0x00-0x1F) and DEL (0x7F), use \x format
     if (code < 0x20 || code === 0x7f) {
-      return '\\x' + code.toString(16).padStart(2, '0');
+      return String.raw`\x${code.toString(16).padStart(2, '0')}`;
     }
 
     // For other Unicode characters, use \u format
-    return '\\u' + code.toString(16).padStart(4, '0');
+    return String.raw`\u${code.toString(16).padStart(4, '0')}`;
   });
 }
 
@@ -174,7 +172,7 @@ export function normalizeColumnType(colType: string): string {
 }
 
 export async function getColumns(
-  db: Client | Pool | PoolClient,
+  db: DbClient,
   tableName: string
 ): Promise<(ColumnDefinition & { primaryKey: boolean; notNull: boolean })[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
