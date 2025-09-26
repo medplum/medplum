@@ -14,6 +14,7 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentBulkStatusHandler } from './operations/agentbulkstatus';
+import { agentFetchLogsHandler } from './operations/agentfetchlogs';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
@@ -28,6 +29,8 @@ import { codeSystemValidateCodeHandler } from './operations/codesystemvalidateco
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
+import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
+import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
@@ -38,6 +41,7 @@ import { expandOperator } from './operations/expand';
 import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { extractHandler } from './operations/extract';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
@@ -257,6 +261,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
   router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
 
+  // Agent $fetch-logs operation
+  router.add('GET', '/Agent/$fetch-logs', agentFetchLogsHandler);
+  router.add('GET', '/Agent/:id/$fetch-logs', agentFetchLogsHandler);
+
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
 
@@ -299,6 +307,11 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
+  // QuestionnaireResponse $extract operation
+  router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
+  router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
+  router.add('POST', '/QuestionnaireResponse/$extract', extractHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
@@ -346,6 +359,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('POST', '/$explain', dbExplainHandler);
+  router.add('GET', '/$db-indexes', dbIndexesHandler);
+  router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

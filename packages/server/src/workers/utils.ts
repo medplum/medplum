@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getExtension, isResource, Operator, WithId } from '@medplum/core';
+import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator, WithId } from '@medplum/core';
 import {
   AsyncJob,
   AuditEvent,
@@ -23,7 +23,10 @@ import { getLogger, globalLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
-export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+export function findProjectMembership(
+  project: string,
+  profile: Reference
+): Promise<WithId<ProjectMembership> | undefined> {
   const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
@@ -85,8 +88,6 @@ export async function createAuditEvent(
       },
     ],
     source: {
-      // Observer cannot be a resource
-      // observer: createReference(auditedEvent)
       observer: createReference(auditedEvent) as Reference as Reference<Practitioner>,
     },
     entity: createAuditEventEntities(resource, subscription, bot),
@@ -97,7 +98,7 @@ export async function createAuditEvent(
 }
 
 export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
-  return resources.filter((v) => isResource(v)).map(createAuditEventEntity);
+  return flatMapFilter(resources, (v) => (isResourceWithId(v) ? createAuditEventEntity(v) : undefined));
 }
 
 export function createAuditEventEntity(resource: Resource): AuditEventEntity {

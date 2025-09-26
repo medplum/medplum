@@ -7,12 +7,14 @@ import { Resource } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 
-export function startAsyncJobAsync(
+type StartAsyncJobBody = Record<string, string[] | string | number | boolean>;
+
+export function startAsyncJobAsync<T extends Resource>(
   medplum: MedplumClient,
   title: string,
   url: string,
-  body?: Record<string, string | number>
-): Promise<Resource> {
+  body?: StartAsyncJobBody
+): Promise<T> {
   // Use a random ID rather than just `url` to facilitate multiple requests of the same type
   const notificationId = Date.now().toString();
 
@@ -31,7 +33,7 @@ export function startAsyncJobAsync(
   }
 
   return medplum
-    .startAsyncRequest<Resource>(url, options)
+    .startAsyncRequest<T>(url, options)
     .then((resource) => {
       let message: React.ReactNode = 'Done';
       if (resource.resourceType === 'AsyncJob') {
@@ -69,12 +71,7 @@ export function startAsyncJobAsync(
     });
 }
 
-export function startAsyncJob(
-  medplum: MedplumClient,
-  title: string,
-  url: string,
-  body?: Record<string, string | number>
-): void {
+export function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: StartAsyncJobBody): void {
   // intentionally ignore errors
   startAsyncJobAsync(medplum, title, url, body).catch(() => {});
 }

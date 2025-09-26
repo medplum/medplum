@@ -1,11 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { WithId } from '@medplum/core';
-import { Agent, Bot, Device, ProjectMembership, ProjectSetting, Subscription } from '@medplum/fhirtypes';
+import {
+  Agent,
+  Bot,
+  ClientApplication,
+  Device,
+  Patient,
+  Practitioner,
+  ProjectMembership,
+  ProjectSetting,
+  Reference,
+  RelatedPerson,
+  Subscription,
+} from '@medplum/fhirtypes';
 
 export interface BotExecutionRequest {
   readonly bot: WithId<Bot>;
-  readonly runAs: ProjectMembership;
+  readonly runAs: WithId<ProjectMembership>;
+  readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   readonly input: any;
   readonly contentType: string;
   readonly subscription?: Subscription;

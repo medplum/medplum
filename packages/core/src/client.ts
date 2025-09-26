@@ -10,6 +10,7 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
+  ClientApplication,
   Communication,
   Device,
   DocumentReference,
@@ -19,11 +20,13 @@ import {
   Media,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   ProjectSetting,
   Reference,
+  RelatedPerson,
   Resource,
   ResourceType,
   SearchParameter,
@@ -463,7 +466,9 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
+  readonly enrollQrCode?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -501,6 +506,7 @@ export interface BotEvent<T = unknown> {
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
 }
@@ -517,6 +523,7 @@ export interface InviteRequest {
   membership?: Partial<ProjectMembership>;
   upsert?: boolean;
   forceNewMembership?: boolean;
+  mfaRequired?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
@@ -608,6 +615,11 @@ export interface CreatePdfOptions extends Omit<CreateBinaryOptions, 'data' | 'co
    * Optional pdfmake custom font dictionary.
    */
   readonly fonts?: TFontDictionary;
+}
+
+export interface ReadHistoryOptions {
+  readonly count?: number;
+  readonly offset?: number;
 }
 
 /**
@@ -1947,15 +1959,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Read
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param options - Optional fetch options.
+   * @param options - Optional history options.
+   * @param requestOptions - Optional fetch options.
    * @returns Promise to the resource history.
    */
   readHistory<RT extends ResourceType>(
     resourceType: RT,
     id: string,
-    options?: MedplumRequestOptions
+    options?: ReadHistoryOptions,
+    requestOptions?: MedplumRequestOptions
   ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history'), options);
+    const url = this.fhirUrl(resourceType, id, '_history');
+    if (options?.count) {
+      url.searchParams.set('_count', options.count.toString());
+    }
+    if (options?.offset) {
+      url.searchParams.set('_offset', options.offset.toString());
+    }
+    return this.get(url.toString(), requestOptions);
   }
 
   /**

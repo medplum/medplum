@@ -20,6 +20,7 @@ import {
   EncounterDiagnosis,
   Extension,
   Goal,
+  GoalTarget,
   HumanName,
   Identifier,
   Immunization,
@@ -35,6 +36,7 @@ import {
   PractitionerRole,
   Procedure,
   Reference,
+  RelatedPerson,
   Resource,
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
@@ -78,6 +80,7 @@ import {
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
+  mapCcdaCodeToCodeableConcept,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
@@ -107,6 +110,7 @@ import {
   CcdaObservation,
   CcdaOrganizer,
   CcdaOrganizerComponent,
+  CcdaParticipant,
   CcdaPatientRole,
   CcdaPerformer,
   CcdaProcedure,
@@ -168,6 +172,7 @@ class CcdaToFhirConverter {
     const patientRole = this.ccda.recordTarget?.[0]?.patientRole;
     if (patientRole) {
       this.patient = this.createPatient(patientRole);
+      this.createRelatedPersons();
     }
   }
 
@@ -204,6 +209,45 @@ class CcdaToFhirConverter {
       address: this.mapAddresses(patientRole.addr),
       telecom: this.mapTelecom(patientRole.telecom),
       extension: extensions.length > 0 ? extensions : undefined,
+    };
+  }
+
+  private createRelatedPersons(): void {
+    const participants = this.ccda.participant;
+    if (!participants) {
+      return;
+    }
+
+    for (const participant of participants) {
+      const relatedPerson = this.mapParticipantToRelatedPerson(participant);
+      if (relatedPerson) {
+        this.resources.push(relatedPerson);
+      }
+    }
+  }
+
+  private mapParticipantToRelatedPerson(participant: CcdaParticipant): RelatedPerson | undefined {
+    const patient = this.patient;
+    if (!patient) {
+      return undefined;
+    }
+
+    const associatedEntity = participant.associatedEntity;
+    if (!associatedEntity) {
+      return undefined;
+    }
+
+    const relationship = mapCcdaCodeToCodeableConcept(associatedEntity.code);
+
+    return {
+      resourceType: 'RelatedPerson',
+      id: this.mapId(associatedEntity.id),
+      patient: createReference(patient),
+      relationship: relationship ? [relationship] : undefined,
+      identifier: this.mapIdentifiers(associatedEntity.id),
+      name: this.mapCcdaNameArrayFhirHumanNameArray(associatedEntity.associatedPerson?.name),
+      address: this.mapAddresses(associatedEntity.addr),
+      telecom: this.mapTelecom(associatedEntity.telecom),
     };
   }
 
@@ -276,7 +320,7 @@ class CcdaToFhirConverter {
       return undefined;
     }
     return addresses?.map((addr) => ({
-      '@_use': addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
+      use: addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
       line: addr.streetAddressLine,
       city: addr.city,
       state: addr.state,
@@ -290,7 +334,7 @@ class CcdaToFhirConverter {
       return undefined;
     }
     return telecoms?.map((tel) => ({
-      '@_use': tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
+      use: tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
       system: this.getTelecomSystem(tel['@_value']),
       value: this.getTelecomValue(tel['@_value']),
     }));
@@ -1079,26 +1123,46 @@ class CcdaToFhirConverter {
   }
 
   private processGoalObservation(observation: CcdaObservation): Goal {
+    const category: CodeableConcept[] = [];
+    if (observation.code) {
+      category.push(this.mapCode(observation.code) as CodeableConcept);
+    }
+
+    const target: GoalTarget[] = [];
+
+    let description: CodeableConcept | undefined = undefined;
+    const ccdaValue = observation.value;
+    if (ccdaValue) {
+      const type = ccdaValue['@_xsi:type'];
+      if (type === 'CD') {
+        description = mapCcdaCodeToCodeableConcept(ccdaValue);
+      } else if (type === 'ST') {
+        description = { text: ccdaValue['#text'] ?? '' };
+      }
+    }
+
+    if (observation.entryRelationship) {
+      for (const entryRelationship of observation.entryRelationship) {
+        target.push({
+          measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+          detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+          dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
+        });
+      }
+    }
+
     const result: Goal = {
       resourceType: 'Goal',
       id: this.mapId(observation.id),
+      extension: this.mapTextReference(observation.text),
       identifier: this.mapIdentifiers(observation.id),
       lifecycleStatus: this.mapGoalLifecycleStatus(observation),
-      description: this.mapCode(observation.code) as CodeableConcept,
+      category,
+      description: description ?? { text: 'Unknown goal' },
       subject: createReference(this.patient as Patient),
       startDate: mapCcdaToFhirDate(observation.effectiveTime?.[0]?.['@_value']),
-      // note: this.mapNote(observation.text),
+      target,
     };
-
-    result.target = observation.entryRelationship?.map((entryRelationship) => {
-      return {
-        measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-        dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
-      };
-    });
-
-    result.extension = this.mapTextReference(observation.text);
 
     return result;
   }
@@ -1156,6 +1220,10 @@ class CcdaToFhirConverter {
           result.valueString = observation.value['#text'] ?? '';
           break;
 
+        case 'INT': // Integer
+          result.valueInteger = observation.value['@_value'] ? parseInt(observation.value['@_value'], 10) : undefined;
+          break;
+
         default:
           console.warn(`Unhandled observation value type: ${observation.value['@_xsi:type']}`);
       }
@@ -1166,6 +1234,24 @@ class CcdaToFhirConverter {
     }
 
     result.extension = this.mapTextReference(observation.text);
+
+    // Look for child observations
+    const relationships = observation.entryRelationship;
+    if (relationships) {
+      for (const relationship of relationships) {
+        const childObservation = relationship.observation;
+        if (childObservation) {
+          for (const child of childObservation) {
+            const childResource = this.processVitalsObservation(child);
+            this.resources.push(childResource);
+            if (!result.hasMember) {
+              result.hasMember = [];
+            }
+            result.hasMember.push(createReference(childResource));
+          }
+        }
+      }
+    }
 
     return result;
   }
@@ -1322,7 +1408,10 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
-      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
+        procedure.statusCode?.['@_code'],
+        'completed'
+      ) as Procedure['status'],
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),

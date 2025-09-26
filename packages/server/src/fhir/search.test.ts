@@ -5058,7 +5058,7 @@ describe('systemRepo', () => {
       expect(ids).toContain(patient1.id);
       expect(ids).toContain(patient2.id);
 
-      // with maxResourceVersion: OLDER_VERSION, exepct only the outdated patient1
+      // with maxResourceVersion: OLDER_VERSION, expect only the outdated patient1
       const bundle2 = await systemRepo.search(
         {
           resourceType: 'Patient',
@@ -5074,26 +5074,6 @@ describe('systemRepo', () => {
       );
       expect(bundle2.entry?.length).toStrictEqual(1);
       expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
-
-      // with maxResourceVersion: 0, expect only patients with __version === NULL
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [null, patient1.id]);
-      expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(null);
-
-      const bundle3 = await systemRepo.search(
-        {
-          resourceType: 'Patient',
-          filters: [
-            {
-              code: '_project',
-              operator: Operator.EQUALS,
-              value: project,
-            },
-          ],
-        },
-        { maxResourceVersion: 0 }
-      );
-      expect(bundle3.entry?.length).toStrictEqual(1);
-      expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
     }));
 
   test('Search for deleted resources', () =>
@@ -5123,5 +5103,37 @@ describe('systemRepo', () => {
         ],
       });
       expect(searchResult2.entry?.length).toBe(1);
+    }));
+
+  test('Reverse chained search with _filter', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      const obs = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+        valueDateTime: '2020-01-02T03:04:05Z',
+      });
+      expect(obs).toBeDefined();
+
+      const result1 = await repo.search(
+        parseSearchRequest(
+          `Patient?_has:Observation:subject:_filter=${encodeURIComponent('code eq "3141-9" and value-date eq "2020-01-02T03:04:05Z"')}`
+        )
+      );
+      expect(result1.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+
+      const result2 = await repo.search(
+        parseSearchRequest(`Patient?_has:Observation:subject:_filter=${encodeURIComponent('code eq "xyz"')}`)
+      );
+      expect(result2.entry?.length).toStrictEqual(0);
     }));
 });

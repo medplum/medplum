@@ -21,7 +21,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
-import { act, render, screen } from '../test-utils/render';
+import { act, render, screen, userEvent } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();
@@ -458,5 +458,212 @@ describe('ResourcePropertyDisplay', () => {
     await expect(
       setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
     ).rejects.toThrow('Displaying property of type BackboneElement requires element schema');
+  });
+
+  describe('Secret field functionality', () => {
+    test('Renders secret field with masked value by default', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="my-secret-value"
+        />
+      );
+
+      // The secret value should be masked by default
+      expect(screen.queryByText('my-secret-value')).not.toBeInTheDocument();
+
+      // The masked bullets should be visible
+      const maskedElement = screen.getByText('••••••••');
+      expect(maskedElement).toBeInTheDocument();
+
+      // The secret field should be rendered with the SecretFieldDisplay component
+      // Check if the parent element has the Mantine Flex component classes and flex-related styles
+      const parentElement = maskedElement.parentElement;
+      expect(parentElement).toHaveClass('mantine-Flex-root');
+      expect(parentElement).toHaveStyle({ 'align-items': 'center' });
+      expect(parentElement?.style.gap).toBeTruthy();
+    });
+
+    test('Shows copy and show/hide buttons for secret field', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="my-secret-value"
+        />
+      );
+
+      // Should have copy button
+      const copyButton = screen.getByRole('button', { name: /copy secret/i });
+      expect(copyButton).toBeInTheDocument();
+
+      // Should have show/hide button
+      const showHideButton = screen.getByRole('button', { name: /show secret/i });
+      expect(showHideButton).toBeInTheDocument();
+    });
+
+    test('Toggles secret visibility when show/hide button is clicked', async () => {
+      const user = userEvent.setup();
+
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="my-secret-value"
+        />
+      );
+
+      const showHideButton = screen.getByRole('button', { name: /show secret/i });
+
+      // Initially should show the eye icon (hidden state)
+      expect(showHideButton).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show secret/i })).toBeInTheDocument();
+
+      // Click to show
+      await user.click(showHideButton);
+      expect(screen.getByRole('button', { name: /hide secret/i })).toBeInTheDocument();
+
+      // Click to hide again
+      await user.click(screen.getByRole('button', { name: /hide secret/i }));
+      expect(screen.getByRole('button', { name: /show secret/i })).toBeInTheDocument();
+    });
+
+    test('Copy button copies secret value to clipboard', async () => {
+      const user = userEvent.setup();
+
+      // Mock clipboard API
+      const mockClipboard = {
+        writeText: jest.fn().mockResolvedValue(undefined),
+      };
+      Object.defineProperty(navigator, 'clipboard', {
+        value: mockClipboard,
+        writable: true,
+      });
+
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="my-secret-value"
+        />
+      );
+
+      const copyButton = screen.getByRole('button', { name: /copy secret/i });
+      await user.click(copyButton);
+
+      expect(mockClipboard.writeText).toHaveBeenCalledWith('my-secret-value');
+    });
+
+    test('Shows success state when copy button is clicked', async () => {
+      const user = userEvent.setup();
+
+      // Mock clipboard API
+      const mockClipboard = {
+        writeText: jest.fn().mockResolvedValue(undefined),
+      };
+      Object.defineProperty(navigator, 'clipboard', {
+        value: mockClipboard,
+        writable: true,
+      });
+
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="my-secret-value"
+        />
+      );
+
+      const copyButton = screen.getByRole('button', { name: /copy secret/i });
+      await user.click(copyButton);
+
+      // Should show copied state
+      expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument();
+    });
+
+    test('Does not show action buttons for empty secret value', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value=""
+        />
+      );
+
+      // Should not have copy or show/hide buttons
+      expect(screen.queryByRole('button', { name: /copy secret/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /show secret/i })).not.toBeInTheDocument();
+    });
+
+    test('Does not show action buttons for null secret value', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value={null}
+        />
+      );
+
+      // Should not have copy or show/hide buttons
+      expect(screen.queryByRole('button', { name: /copy secret/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /show secret/i })).not.toBeInTheDocument();
+    });
+
+    test('Recognizes secret field path with clientSecret', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="test-secret"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /copy secret/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show secret/i })).toBeInTheDocument();
+    });
+
+    test('Recognizes secret field path with credentials.secret', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'Device.credentials.secret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="test-secret"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /copy secret/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show secret/i })).toBeInTheDocument();
+    });
+
+    test('Recognizes secret field path with just secret', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'secret', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="test-secret"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /copy secret/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show secret/i })).toBeInTheDocument();
+    });
+
+    test('Regular string fields do not have secret functionality', async () => {
+      await setup(
+        <ResourcePropertyDisplay
+          property={{ ...baseProperty, path: 'Patient.name', type: [{ code: 'string' }] }}
+          propertyType={PropertyType.string}
+          value="John Doe"
+        />
+      );
+
+      // Should not have secret functionality for regular strings
+      expect(screen.queryByRole('button', { name: /copy secret/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /show secret/i })).not.toBeInTheDocument();
+
+      // Should display normally
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
   });
 });

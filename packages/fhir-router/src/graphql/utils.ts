@@ -221,6 +221,10 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
       description:
         ' The _filter parameter provides a syntax for expressing a set of query expressions on the underlying resources.',
     },
+    _cursor: {
+      type: GraphQLString,
+      description: 'The _cursor parameter is used to retrieve the next page of results from a previous search.',
+    },
   };
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {

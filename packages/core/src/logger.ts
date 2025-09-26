@@ -22,22 +22,41 @@ export const LogLevel = {
 };
 export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 
-export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
+export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'] as const;
+
+export interface LogMessage {
+  level: (typeof LogLevelNames)[number];
+  msg: string;
+  timestamp: string;
+  [key: string]: string | boolean | number;
+}
 
 export interface LoggerOptions {
   prefix?: string;
 }
 
-export interface LoggerConfig {
-  write: (msg: string) => void;
-  metadata: Record<string, any>;
+export interface ILoggerConfig {
   level: LogLevel;
   options?: LoggerOptions;
+  metadata: Record<string, any>;
+}
+
+export interface LoggerConfig extends ILoggerConfig {
+  write: (msg: string) => void;
 }
 
 export type LoggerConfigOverride = Partial<LoggerConfig>;
 
-export class Logger {
+export interface ILogger {
+  level: LogLevel;
+  error(msg: string, data?: Record<string, any> | Error): void;
+  warn(msg: string, data?: Record<string, any> | Error): void;
+  info(msg: string, data?: Record<string, any> | Error): void;
+  debug(msg: string, data?: Record<string, any> | Error): void;
+  clone(overrides?: Partial<ILoggerConfig>): ILogger;
+}
+
+export class Logger implements ILogger {
   readonly write: (msg: string) => void;
   readonly metadata: Record<string, any>;
   readonly options?: LoggerOptions;
@@ -99,18 +118,25 @@ export class Logger {
     if (level > this.level) {
       return;
     }
+
+    let processedData: Record<string, any> | undefined;
     if (data instanceof Error) {
-      data = {
-        error: data.toString(),
-        stack: data.stack?.split('\n'),
-      };
+      processedData = serializeError(data);
+    } else if (data) {
+      processedData = { ...data };
+      for (const [key, value] of Object.entries(processedData)) {
+        if (value instanceof Error) {
+          processedData[key] = serializeError(value);
+        }
+      }
     }
+
     this.write(
       JSON.stringify({
         level: LogLevelNames[level],
         timestamp: new Date().toISOString(),
         msg: this.prefix ? `${this.prefix}${msg}` : msg,
-        ...data,
+        ...processedData,
         ...this.metadata,
       })
     );
@@ -124,4 +150,64 @@ export function parseLogLevel(level: string): LogLevel {
   }
 
   return value;
+}
+
+/**
+ * Serializes an Error object into a plain object, including nested causes and custom properties.
+ * @param error - The error to serialize.
+ * @param depth - The current depth of recursion.
+ * @param maxDepth - The maximum depth of recursion.
+ * @returns A serialized representation of the error.
+ */
+export function serializeError(error: Error, depth = 0, maxDepth = 10): Record<string, any> {
+  // Prevent infinite recursion
+  if (depth >= maxDepth) {
+    return { error: 'Max error depth reached' };
+  }
+
+  const serialized: Record<string, any> = {
+    error: error.toString(),
+    stack: error.stack?.split('\n'),
+  };
+
+  // Include error name if it's not the default "Error"
+  if (error.name && error.name !== 'Error') {
+    serialized.name = error.name;
+  }
+
+  // Include message explicitly for clarity
+  if (error.message) {
+    serialized.message = error.message;
+  }
+
+  // Handle Error.cause recursively
+  if ('cause' in error && error.cause !== undefined) {
+    if (error.cause instanceof Error) {
+      serialized.cause = serializeError(error.cause, depth + 1, maxDepth);
+    } else {
+      // cause might not be an Error object
+      serialized.cause = error.cause;
+    }
+  }
+
+  // Include any custom properties on the error
+  const customProps = Object.getOwnPropertyNames(error).filter(
+    (prop) => !['name', 'message', 'stack', 'cause'].includes(prop)
+  );
+
+  for (const prop of customProps) {
+    try {
+      const value = (error as any)[prop];
+      // Recursively handle nested errors in custom properties
+      if (value instanceof Error) {
+        serialized[prop] = serializeError(value, depth + 1, maxDepth);
+      } else {
+        serialized[prop] = value;
+      }
+    } catch {
+      // Skip properties that can't be accessed
+    }
+  }
+
+  return serialized;
 }

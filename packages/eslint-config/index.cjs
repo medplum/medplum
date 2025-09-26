@@ -153,6 +153,8 @@ module.exports = {
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/tag-lines': 'off',
+    'jsdoc/require-yields-type': 'off',
+    'jsdoc/require-throws-type': 'off',
 
     // Header
     'header/header': [

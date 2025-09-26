@@ -7,6 +7,7 @@ import {
   flatMapFilter,
   isEmpty,
   isResource,
+  isResourceType,
   isTypedValue,
   validateResource,
 } from '@medplum/core';
@@ -170,7 +171,7 @@ function parseParams(
     } else {
       value = inParams?.map((v) => {
         const paramType = param.type ?? 'string';
-        if (paramType === 'Resource') {
+        if (paramType === 'Resource' || isResourceType(paramType)) {
           return v.resource;
         } else {
           return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
@@ -206,13 +207,8 @@ export function buildOutputParameters(operation: OperationDefinition, output: ob
   for (const param of outputParameters) {
     const key = param.name ?? '';
     const value = (output as Record<string, unknown> | undefined)?.[key];
-    const count = Array.isArray(value) ? value.length : +(value !== undefined);
-
-    if (param.min && param.min > 0 && count < param.min) {
-      throw new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`);
-    } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
-      throw new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`);
-    } else if (isEmpty(value)) {
+    checkMinMax(param, value);
+    if (isEmpty(value)) {
       continue;
     }
 
@@ -234,13 +230,32 @@ export function buildOutputParameters(operation: OperationDefinition, output: ob
   return response;
 }
 
+function checkMinMax(param: OperationDefinitionParameter, value: unknown): void {
+  const count = Array.isArray(value) ? value.length : +(value !== undefined);
+  if (param.min && param.min > 0 && count < param.min) {
+    throw new Error(`Expected ${param.min} or more values for output parameter '${param.name}', got ${count}`);
+  } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
+    throw new Error(`Expected at most ${param.max} values for output parameter '${param.name}', got ${count}`);
+  }
+}
+
 function makeParameter(param: OperationDefinitionParameter, value: unknown): ParametersParameter | undefined {
   if (param.part && value && typeof value === 'object') {
     // Handle nested parameters by flattening dictionary object value
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
       const nestedValue = (value as Record<string, unknown>)[part.name ?? ''];
-      if (nestedValue !== undefined) {
+      checkMinMax(part, nestedValue);
+      if (nestedValue === undefined) {
+        continue;
+      }
+      if (Array.isArray(nestedValue)) {
+        for (const val of nestedValue.map((v) => makeParameter(part, v))) {
+          if (val) {
+            parts.push(val);
+          }
+        }
+      } else {
         const nestedParam = makeParameter(part, nestedValue);
         if (nestedParam) {
           parts.push(nestedParam);

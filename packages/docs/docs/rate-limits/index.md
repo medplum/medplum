@@ -22,11 +22,6 @@ Rate limits can be increased for paid plans. Please [contact us](mailto:info+rat
 
 In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore are weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
 
-:::warning
-
-FHIR interaction quotas are currently in draft, and are not yet finalized. Specific details about how
-the limits are calculated and enforced are subject to change.
-
 The quota is calculated as the sum of each user's interactions in a given minute, where each interaction is weighted by its impact on the data store. Here are the weights used to calculate the quota:
 
 | FHIR Operation | Points Cost | Description |
@@ -38,8 +33,6 @@ The quota is calculated as the sum of each user's interactions in a given minute
 | Patch | 100 points | Partial resource update |
 | Search | 20 points | Searching resources |
 | History | 10 points | Retrieving resource version history |
-
-:::
 
 FHIR uses [specific terminology](http://hl7.org/fhir/restful-interaction) to categorize different interactions with
 the data store, e.g. `search` and `update`. These interactions are weighted by complexity and impact to the data store,

@@ -136,6 +136,10 @@
     {
       "source": "/docs/auth/open-patient-registration",
       "destination": "/docs/user-management/open-patient-registration"
+    },
+    {
+      "source": "/docs/graphql/basic-queries",
+      "destination": "/docs/graphql"
     }
   ]
 }
