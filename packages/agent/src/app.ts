@@ -680,9 +680,10 @@ export class App {
 
       const { stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
         timeout: DEFAULT_PING_TIMEOUT,
+        encoding: 'utf8',
       });
 
-      if (stderr) {
+      if (stderr && stderr.trim() !== '') {
         throw new Error(`Received on stderr:\n\n${stderr.trim()}`);
       }
 
