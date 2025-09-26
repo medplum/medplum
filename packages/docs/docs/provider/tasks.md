@@ -61,7 +61,7 @@ Notes can be added within the main Task content area to communicate updates or o
 --- 
 
 ## **Deleting a Task**
-Occasionally, notes are created accidentally or become irrelevant, in which case they can be removed from the Tasks section completely.
+Occasionally, tasks are created accidentally or become irrelevant, in which case they can be removed from Medplum Provider completely.
 
 1. **Navigate to a Task**  
    * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
