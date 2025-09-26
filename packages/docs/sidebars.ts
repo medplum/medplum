@@ -195,7 +195,7 @@ const sidebars: SidebarsConfig = {
         { type: 'html', value: '<strong class="menu__link">Server-side Auth</strong>' },
         { type: 'doc', id: 'auth/client-credentials' },
         { type: 'doc', id: 'auth/on-behalf-of' },
-        { type: 'html', value: '<strong class="menu__link">Topics</strong>' },
+        { type: 'html', value: '<strong class="menu__link">Miscellaneous</strong>' },
         { type: 'doc', id: 'auth/logout' },
         { type: 'doc', id: 'auth/token-exchange' },
         { type: 'doc', id: 'auth/session-management' },
