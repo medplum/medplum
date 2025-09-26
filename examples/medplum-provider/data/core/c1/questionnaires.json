@@ -40,7 +40,7 @@
               {
                 "linkId": "dob",
                 "text": "Date of Birth",
-                "type": "dateTime"
+                "type": "string"
               },
               {
                 "linkId": "street",
@@ -127,13 +127,13 @@
               {
                 "linkId": "encounter-period-start",
                 "text": "Relevant Period Start",
-                "type": "dateTime",
+                "type": "string",
                 "required": true
               },
               {
                 "linkId": "encounter-period-end",
                 "text": "Relevant Period End",
-                "type": "dateTime",
+                "type": "string",
                 "required": true
               },
               {
@@ -229,12 +229,12 @@
               {
                 "linkId": "procedure-period-start",
                 "text": "Relevant Date/Time",
-                "type": "dateTime"
+                "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
                 "text": "Author Date/Time",
-                "type": "dateTime"
+                "type": "string"
               },
               {
                 "linkId": "procedure-medical-reason",
@@ -282,12 +282,12 @@
               {
                 "linkId": "procedure-period-start",
                 "text": "Relevant Date/Time",
-                "type": "dateTime"
+                "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
                 "text": "Author Date/Time",
-                "type": "dateTime"
+                "type": "string"
               },
               {
                 "linkId": "procedure-medical-reason",
@@ -317,7 +317,7 @@
               {
                 "linkId": "payer-period-start",
                 "text": "Relevant Period Start",
-                "type": "dateTime"
+                "type": "string"
               }
             ]
           }
@@ -362,22 +362,22 @@
           {
             "linkId": "measure-period-start",
             "text": "Measure Period Start",
-            "type": "dateTime",
+            "type": "string",
             "required": true,
             "initial": [
               {
-                "valueDateTime": "2023-01-01T00:00:00"
+                "valueString": "2023-01-01T00:00:00.000Z"
               }
             ]
           },
           {
             "linkId": "measure-period-end",
             "text": "Measure Period End",
-            "type": "dateTime",
+            "type": "string",
             "required": true,
             "initial": [
               {
-                "valueDateTime": "2023-12-31T23:59:59"
+                "valueString": "2023-12-31T23:59:59.000Z"
               }
             ]
           }

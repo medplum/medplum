@@ -26,7 +26,7 @@
           "linkId": "dob",
           "answer": [
             {
-              "valueDateTime": "1975-05-27T15:25:00"
+              "valueString": "1975-05-27T15:25:00+00:00"
             }
           ]
         },
@@ -159,7 +159,7 @@
           "linkId": "encounter-period-start",
           "answer": [
             {
-              "valueDateTime": "2023-03-21T08:00:00"
+              "valueString": "2023-03-21T08:00:00.000Z"
             }
           ]
         },
@@ -167,7 +167,7 @@
           "linkId": "encounter-period-end",
           "answer": [
             {
-              "valueDateTime": "2023-03-21T08:30:00"
+              "valueString": "2023-03-21T08:30:00.000Z"
             }
           ]
         }
@@ -192,7 +192,7 @@
           "linkId": "payer-period-start",
           "answer": [
             {
-              "valueDateTime": "2022-12-25T00:00:00"
+              "valueString": "2022-12-25T00:00:00.000Z"
             }
           ]
         }
