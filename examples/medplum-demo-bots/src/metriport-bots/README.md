@@ -29,7 +29,7 @@ This folder contains a set of bots that integrate Medplum with Metriport. The in
    }
    ```
 
-2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above. This ClientApplication will be used by Metriport to authenticate when sending webhooks.
+2. Create a [ClientApplication](https://www.medplum.com/docs/auth/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above. This ClientApplication will be used by Metriport to authenticate when sending webhooks.
 
 3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code of both [Bots](https://www.medplum.com/docs/bots/bot-basics) using the samples in this repository as a base.
 
