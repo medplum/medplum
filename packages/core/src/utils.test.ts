@@ -70,6 +70,7 @@ import {
   sortStringArray,
   splitN,
   stringify,
+  trimTrailingEmptyElements,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -266,6 +267,16 @@ describe('Core Utils', () => {
 
     expect(isEmpty(input)).toBe(emptyExpected);
     expect(isPopulated(input)).toBe(populatedExpected);
+  });
+
+  test('trimTrailingEmptyElements', () => {
+    expect(trimTrailingEmptyElements(undefined)).toBeUndefined();
+    expect(trimTrailingEmptyElements([])).toBeUndefined();
+    expect(trimTrailingEmptyElements([null, undefined, ''])).toBeUndefined();
+    expect(trimTrailingEmptyElements([1, 2, 3])).toStrictEqual([1, 2, 3]);
+    expect(trimTrailingEmptyElements([1, 2, 3, null, undefined, ''])).toStrictEqual([1, 2, 3]);
+    expect(trimTrailingEmptyElements([1, 2, 3, 0])).toStrictEqual([1, 2, 3, 0]);
+    expect(trimTrailingEmptyElements([1, null, 2, null])).toStrictEqual([1, null, 2]);
   });
 
   test('getImageSrc', () => {
