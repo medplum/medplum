@@ -6,6 +6,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      skip_latest:
+        description: 'Skip tagging Docker images with latest (default: false)'
+        type: boolean
+        default: false
 jobs:
   build:
     name: Deploy
@@ -68,3 +73,4 @@ jobs:
           MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SKIP_LATEST: ${{ inputs.skip_latest }}

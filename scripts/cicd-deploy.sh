@@ -19,6 +19,11 @@ for arg in "$@"; do
   fi
 done
 
+if [[ -z "${GITHUB_REF}" ]]; then
+  echo "GITHUB_REF is missing"
+  exit 1
+fi
+
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 echo "$COMMIT_MESSAGE"
 
@@ -28,6 +33,13 @@ echo "$FILES_CHANGED"
 DEPLOY_APP=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
+
+# If this is not the main branch, only build and push Docker images; do not deploy services
+ONLY_BUILD_DOCKER=false
+[[ "$GITHUB_REF" != "refs/heads/main" ]] && ONLY_BUILD_DOCKER=true
+
+SKIP_LATEST_FLAG=""
+[[ "$SKIP_LATEST" == "true" ]] && SKIP_LATEST_FLAG="--skip-latest"
 
 #
 # Inspect files changed
@@ -138,19 +150,23 @@ if [[ "$DEPLOY_APP" = true ]]; then
     npm run build -- --force --filter=@medplum/app
   )
 
-  source ./scripts/build-docker-app.sh
-  source ./scripts/deploy-app.sh
+  echo "WOULD RUN: source ./scripts/build-docker-app.sh $SKIP_LATEST_FLAG"
+  if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
+    echo "WOULD RUN: source ./scripts/deploy-app.sh"
+  fi
 fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
   npm run build -- --force --filter=@medplum/graphiql
-  source ./scripts/deploy-graphiql.sh
+  echo "WOULD RUN: source ./scripts/deploy-graphiql.sh"
 fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
-  source ./scripts/build-docker-server.sh
-  source ./scripts/deploy-server.sh
+  echo "WOULD RUN: source ./scripts/build-docker-server.sh $SKIP_LATEST_FLAG"
+  if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
+    echo "WOULD RUN: source ./scripts/deploy-server.sh"
+  fi
 fi

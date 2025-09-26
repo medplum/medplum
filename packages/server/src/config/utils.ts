@@ -71,7 +71,14 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
+const integerKeys = [
+  'port',
+  'accurateCountThreshold',
+  'defaultRateLimit',
+  'defaultAuthRateLimit',
+  'defaultFhirQuota',
+  'fhirSearchMinLimit',
+];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
@@ -97,6 +104,7 @@ const booleanKeys = [
   'registerEnabled',
   'require',
   'rejectUnauthorized',
+  'fhirSearchDiscourageSeqScan',
 ];
 
 export function isBooleanConfig(key: string): boolean {
