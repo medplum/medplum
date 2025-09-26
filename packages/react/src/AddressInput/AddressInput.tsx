@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
+import { trimTrailingEmptyElements } from '@medplum/core';
 import { Address } from '@medplum/fhirtypes';
 import { JSX, useContext, useMemo, useRef, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -16,7 +17,7 @@ function setLine(address: Address, index: number, str: string): Address {
     line.push('');
   }
   line[index] = str;
-  return { ...address, line };
+  return { ...address, line: trimTrailingEmptyElements(line) };
 }
 
 export type AddressInputProps = ComplexTypeInputProps<Address>;
