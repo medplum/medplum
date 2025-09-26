@@ -89,10 +89,6 @@ export class ConceptMappingTable extends LookupTable {
       .execute(client);
 
     // Delete ConceptMapping entries
-    await new DeleteQuery('ConceptMapping')
-      .using('ConceptMap')
-      .where(new Column('ConceptMapping', 'conceptMap'), '=', new Column('ConceptMap', 'id'))
-      .where(new Column('ConceptMap', 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(client, 'ConceptMapping', 'ConceptMap', before);
   }
 }

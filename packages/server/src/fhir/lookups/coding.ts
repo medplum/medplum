@@ -96,12 +96,7 @@ export class CodingTable extends LookupTable {
       return;
     }
 
-    // Delete CodeSystem_Property entries
-    await new DeleteQuery('CodeSystem_Property')
-      .using('CodeSystem')
-      .where(new Column('CodeSystem_Property', 'system'), '=', new Column('CodeSystem', 'id'))
-      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(client, 'CodeSystem_Property', 'CodeSystem', before);
 
     // Delete Coding_Property entries with a join
     await new DeleteQuery('Coding_Property')
@@ -111,12 +106,7 @@ export class CodingTable extends LookupTable {
       .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
       .execute(client);
 
-    // Delete Coding entries
-    await new DeleteQuery('Coding')
-      .using('CodeSystem')
-      .where(new Column('Coding', 'system'), '=', new Column('CodeSystem', 'id'))
-      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(client, 'Coding', 'CodeSystem', before);
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
