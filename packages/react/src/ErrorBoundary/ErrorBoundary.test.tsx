@@ -1,27 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { locationUtils } from '@medplum/core';
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { render, screen } from '../test-utils/render';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function ErrorComponent(): JSX.Element {
   throw new Error('Error');
-}
-
-class MockLocation {
-  #href: string;
-  constructor() {
-    this.#href = 'http://localhost/';
-  }
-  get href(): string {
-    return this.#href;
-  }
-  set href(val: string) {
-    this.#href = new URL(val, this.#href).toString();
-  }
-  toString(): string {
-    return this.#href;
-  }
 }
 
 interface TestAppProps {
@@ -40,7 +25,7 @@ function TestApp(props: TestAppProps): JSX.Element {
 
   useEffect(() => {
     if (shouldNavigate) {
-      window.location.href = '/another_url';
+      locationUtils.getLocation = () => '/another_url';
       rerender();
     }
   }, [shouldNavigate, rerender]);
@@ -57,28 +42,6 @@ function TestApp(props: TestAppProps): JSX.Element {
 }
 
 describe('ErrorBoundary', () => {
-  let originalLocation: Location;
-
-  beforeAll(() => {
-    originalLocation = window.location;
-  });
-
-  beforeEach(() => {
-    Object.defineProperty(window, 'location', {
-      value: new MockLocation(),
-      enumerable: true,
-      configurable: true,
-    });
-  });
-
-  afterAll(() => {
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-      enumerable: true,
-      configurable: true,
-    });
-  });
-
   test('Renders children', () => {
     render(
       <div>

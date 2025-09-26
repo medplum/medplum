@@ -10,7 +10,7 @@ import {
   Text,
   useMantineColorScheme,
 } from '@mantine/core';
-import { ProfileResource, getReferenceString } from '@medplum/core';
+import { ProfileResource, getReferenceString, locationUtils } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
@@ -46,7 +46,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
               onClick={() => {
                 medplum
                   .setActiveLogin(login)
-                  .then(() => window.location.reload())
+                  .then(() => locationUtils.reload())
                   .catch(console.log);
               }}
             >

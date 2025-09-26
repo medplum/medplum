@@ -555,8 +555,6 @@ describe('ToolsPage', () => {
       return [serverError(new Error('Something is broken'))];
     });
 
-    const medplumGetSpy = jest.spyOn(medplum, 'get');
-
     agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Agente - Upgrade error',
@@ -584,14 +582,16 @@ describe('ToolsPage', () => {
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
 
+    const medplumGetSpy = jest.spyOn(medplum, 'get');
+
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
     });
 
-    expect(medplumGetSpy).toHaveBeenCalledWith(
-      medplum.fhirUrl('Agent', agent.id as string, '$upgrade'),
-      expect.objectContaining({ cache: 'reload' })
-    );
+    const upgradeUrl = medplum.fhirUrl('Agent', agent.id as string, '$upgrade');
+    upgradeUrl.searchParams.set('force', 'false');
+
+    expect(medplumGetSpy).toHaveBeenCalledWith(upgradeUrl, expect.objectContaining({ cache: 'reload' }));
 
     await act(async () => {
       await sleep(500);

@@ -51,11 +51,16 @@ export function mockFetchResponse(status: number, body: any, headers?: Record<st
     streamRead = true;
     return body;
   };
+  const blobReader = async (): Promise<Blob> => {
+    return {
+      text: streamReader,
+    } as Blob;
+  };
   return {
     ok: status < 400,
     status,
     headers: headersMap,
-    blob: streamReader,
+    blob: blobReader,
     json: streamReader,
     text: streamReader,
   } as unknown as Response;
