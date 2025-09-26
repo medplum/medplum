@@ -662,7 +662,7 @@ export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefi
   while (i >= 0 && isEmpty(arr[i])) {
     i--;
   }
-  return i > 0 ? arr.slice(0, i + 1) : undefined;
+  return i >= 0 ? arr.slice(0, i + 1) : undefined;
 }
 
 /**
