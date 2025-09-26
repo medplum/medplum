@@ -278,11 +278,12 @@ export abstract class LookupTable {
     client: Pool | PoolClient,
     lookupTableName: string,
     resourceType: ResourceType,
-    before: string
+    before: string,
+    idColumnName = 'resourceId'
   ): Promise<void> {
     await new DeleteQuery(lookupTableName)
       .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(lookupTableName, idColumnName), '=', new Column(resourceType, 'id'))
       .where(new Column(resourceType, 'lastUpdated'), '<', before)
       .execute(client);
   }

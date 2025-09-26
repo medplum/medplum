@@ -96,7 +96,7 @@ export class CodingTable extends LookupTable {
       return;
     }
 
-    await LookupTable.purge(client, 'CodeSystem_Property', 'CodeSystem', before);
+    await LookupTable.purge(client, 'CodeSystem_Property', 'CodeSystem', before, 'system');
 
     // Delete Coding_Property entries with a join
     await new DeleteQuery('Coding_Property')
@@ -106,7 +106,7 @@ export class CodingTable extends LookupTable {
       .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
       .execute(client);
 
-    await LookupTable.purge(client, 'Coding', 'CodeSystem', before);
+    await LookupTable.purge(client, 'Coding', 'CodeSystem', before, 'system');
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {

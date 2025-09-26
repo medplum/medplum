@@ -89,6 +89,6 @@ export class ConceptMappingTable extends LookupTable {
       .execute(client);
 
     // Delete ConceptMapping entries
-    await LookupTable.purge(client, 'ConceptMapping', 'ConceptMap', before);
+    await LookupTable.purge(client, 'ConceptMapping', 'ConceptMap', before, 'conceptMap');
   }
 }
