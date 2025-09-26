@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
-import ws from 'ws';
+import { RawData, Server, WebSocket, WebSocketServer } from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config/loader';
 import { RequestContext } from './context';
@@ -14,19 +14,19 @@ import { getRedis, getRedisSubscriber } from './redis';
 import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
-const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
+const handlerMap = new Map<string, (socket: WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);
 handlerMap.set('agent', handleAgentConnection);
 handlerMap.set('fhircast', handleFhircastConnection);
 handlerMap.set('subscriptions-r4', handleR4SubscriptionConnection);
 
 type WebSocketState = {
-  readonly sockets: Set<ws>;
+  readonly sockets: Set<WebSocket>;
   readonly socketsClosedPromise: Promise<void>;
   readonly socketsClosedResolve: () => void;
 };
 
-let wsServer: ws.Server | undefined = undefined;
+let wsServer: Server | undefined = undefined;
 let wsState: WebSocketState | undefined = undefined;
 
 /**
@@ -34,7 +34,7 @@ let wsState: WebSocketState | undefined = undefined;
  * @param server - The HTTP server.
  */
 export function initWebSockets(server: http.Server): void {
-  wsServer = new ws.Server({
+  wsServer = new WebSocketServer({
     noServer: true,
     maxPayload: bytes(getConfig().maxJsonSize) as number,
   });
@@ -104,7 +104,7 @@ function getWebSocketPath(path: string): string {
  * The echo service simply echoes back whatever it receives.
  * @param socket - The WebSocket connection.
  */
-async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
+async function handleEchoConnection(socket: WebSocket): Promise<void> {
   // Create a redis client for this connection.
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
@@ -121,7 +121,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
 
   socket.on(
     'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+    AsyncLocalStorage.bind(async (data: RawData) => {
       await getRedis().publish(channel, data as Buffer);
     })
   );

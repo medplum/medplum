@@ -7,6 +7,7 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  isMain,
   isPopulated,
   SearchParameterType,
 } from '@medplum/core';
@@ -40,7 +41,10 @@ import {
   TableDefinition,
 } from './types';
 
-const SCHEMA_DIR = resolve(__dirname, 'schema');
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+// const SCHEMA_DIR = resolve(__dirname, 'schema');
+const SCHEMA_DIR = resolve('./src/migrations/schema');
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -1648,7 +1652,7 @@ function ensureEndsWithSemicolon(query: string): string {
   return query + ';';
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   main().catch((reason) => {
     console.error(reason);
     process.exit(1);

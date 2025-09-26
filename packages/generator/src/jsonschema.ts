@@ -6,6 +6,7 @@ import {
   indexStructureDefinitionBundle,
   InternalSchemaElement,
   InternalTypeSchema,
+  isMain,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
@@ -202,6 +203,6 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   return undefined;
 }
 
-if (require.main === module) {
+if (isMain(import.meta)) {
   main();
 }

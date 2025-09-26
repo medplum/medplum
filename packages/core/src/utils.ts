@@ -1447,3 +1447,16 @@ export function escapeHtml(unsafe: string): string {
     .replace(/’/g, '&rsquo;')
     .replace(/…/g, '&hellip;');
 }
+
+/**
+ * Returns true if the current module is the main module.
+ * @param importMeta - The import.meta object from the current module.
+ * @returns True if the current module is the main module, false otherwise.
+ */
+export function isMain(importMeta: ImportMeta): boolean {
+  // The right way to check this is with `import.meta.main`.
+  // The `import.meta.main` property has been available since `"node": "^22.18.0 || >=24.2.0"`
+  // However, the ImportMeta TypeScript definition does not include `main` yet.
+  // So we need to use `any` for now.
+  return !!(importMeta as any).main;
+}
