@@ -21,7 +21,6 @@ The Tasks section serves as a centralized management system for coordinating pat
    * If a Patient was added to the Task, this Task will appear within the Patient’s Tasks on their Profile Page
    * If a specific Practitioner was assigned to the Task, this Task will appear within the Practitioner’s Task list under the “My Task” tab
 
-
 <br />
 
 ***Note: Tasks may also be created directly from the Tasks section of a Patient Profile page by clicking “New…” from the action buttons at the top of the page.***
@@ -42,20 +41,6 @@ The Tasks section serves as a centralized management system for coordinating pat
 
 ***Note: edits are made immediately and auto-saved (but can always be undone).***
 
-
-<br />
-
---- 
-
-## **Adding a Task Note**
-Notes can be added within the main Task content area to communicate updates or other information about a Task for others.
-
-1. **Navigate to a Task**  
-   * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
-   * Select a Task from the Tasks list
-2. **Draft and Submit a Note**  
-   * In the main Task content area, find the “Notes” section, add the note content as necessary, and then click the “Submit” button to add your Note
-
 <br />
 
 --- 
@@ -71,6 +56,18 @@ Occasionally, tasks are created accidentally or become irrelevant, in which case
 2. **When Prompted, Click “Delete”**  
    * In the confirmation modal, click "Delete" to permanently remove the Task from your Tasks section
 
+<br />
+
+--- 
+
+## **Adding a Task Note**
+Notes can be added within the main Task content area to communicate updates or other information about a Task for others.
+
+1. **Navigate to a Task**  
+   * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
+   * Select a Task from the Tasks list
+2. **Draft and Submit a Note**  
+   * In the main Task content area, find the “Notes” section, add the note content as necessary, and then click the “Submit” button to add your Note
 
 <br />
 
