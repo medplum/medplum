@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, ContentType, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import {
+  BotEvent,
+  ContentType,
+  createReference,
+  getQuestionnaireAnswers,
+  isDateTimeString,
+  MedplumClient,
+} from '@medplum/core';
 import { Media, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { generateQRDACategoryI } from '../utils/qrda-generator';
 import JSZip from 'jszip';
@@ -22,8 +29,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   const answers = getQuestionnaireAnswers(questionnaireResponse);
   const measure = answers['measure']?.valueCoding?.code;
-  const periodStart = answers['measure-period-start']?.valueDateTime;
-  const periodEnd = answers['measure-period-end']?.valueDateTime;
+  const periodStart = answers['measure-period-start']?.valueString;
+  const periodEnd = answers['measure-period-end']?.valueString;
   const patientIds = answers['patient-ids']?.valueString?.split(',');
 
   if (measure !== 'cms68v14') {
@@ -32,6 +39,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   if (!periodStart || !periodEnd || !patientIds) {
     throw new Error('Missing required fields');
+  }
+
+  if (!isDateTimeString(periodStart) || !isDateTimeString(periodEnd)) {
+    throw new Error('Period start and end must be date time strings');
   }
 
   const zip = new JSZip();

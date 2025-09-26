@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, BotEvent, getQuestionnaireAnswers, addProfileToResource, createReference } from '@medplum/core';
+import {
+  addProfileToResource,
+  BotEvent,
+  createReference,
+  getQuestionnaireAnswers,
+  isDateTimeString,
+  MedplumClient,
+} from '@medplum/core';
 import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
 import {
   addCoverage,
@@ -46,13 +53,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient.name = [patientName];
   }
 
-  if (answers['dob']?.valueDateTime) {
-    patient.birthDate = answers['dob'].valueDateTime.split('T')[0];
+  const dob = answers['dob']?.valueString;
+  if (dob?.length && !isDateTimeString(dob)) {
+    throw new Error('dob must be a date time string');
+  }
+  if (dob) {
+    patient.birthDate = dob.split('T')[0];
     (patient as any)._birthDate = {
       extension: [
         {
           url: extensionURLMapping.patientBirthTime,
-          valueDateTime: answers['dob'].valueDateTime,
+          valueString: dob,
         },
       ],
     };

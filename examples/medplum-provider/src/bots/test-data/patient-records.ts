@@ -17,7 +17,7 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
       item: [
         { linkId: 'first-name', answer: [{ valueString: 'Curtis' }] },
         { linkId: 'last-name', answer: [{ valueString: 'Strickland' }] },
-        { linkId: 'dob', answer: [{ valueDateTime: '1997-11-21T19:45:00' }] },
+        { linkId: 'dob', answer: [{ valueString: '1997-11-21T19:45:00+00:00' }] },
         { linkId: 'street', answer: [{ valueString: '3504 Turner Gateway Station' }] },
         { linkId: 'city', answer: [{ valueString: 'Hillborough' }] },
         { linkId: 'state', answer: [{ valueCoding: { code: 'CO' } }] },
@@ -76,11 +76,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'encounter-period-start',
-          answer: [{ valueDateTime: '2023-02-23T08:00:00' }],
+          answer: [{ valueString: '2023-02-23T08:00:00.000Z' }],
         },
         {
           linkId: 'encounter-period-end',
-          answer: [{ valueDateTime: '2023-02-23T08:30:00' }],
+          answer: [{ valueString: '2023-02-23T08:30:00.000Z' }],
         },
       ],
     },
@@ -106,11 +106,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'encounter-period-start',
-          answer: [{ valueDateTime: '2023-10-12T08:00:00' }],
+          answer: [{ valueString: '2023-10-12T08:00:00.000Z' }],
         },
         {
           linkId: 'encounter-period-end',
-          answer: [{ valueDateTime: '2023-10-12T08:30:00' }],
+          answer: [{ valueString: '2023-10-12T08:30:00.000Z' }],
         },
         {
           linkId: 'encounter-class',
@@ -149,11 +149,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'encounter-period-start',
-          answer: [{ valueDateTime: '2023-11-02T17:00:00' }],
+          answer: [{ valueString: '2023-11-02T17:00:00.000Z' }],
         },
         {
           linkId: 'encounter-period-end',
-          answer: [{ valueDateTime: '2023-11-02T18:00:00' }],
+          answer: [{ valueString: '2023-11-02T18:00:00.000Z' }],
         },
         {
           linkId: 'encounter-diagnosis',
@@ -195,11 +195,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'encounter-period-start',
-          answer: [{ valueDateTime: '2023-11-11T08:30:00' }],
+          answer: [{ valueString: '2023-11-11T08:30:00.000Z' }],
         },
         {
           linkId: 'encounter-period-end',
-          answer: [{ valueDateTime: '2023-11-11T09:30:00' }],
+          answer: [{ valueString: '2023-11-11T09:30:00.000Z' }],
         },
         {
           linkId: 'encounter-discharge-disposition',
@@ -233,7 +233,7 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'procedure-performed-datetime',
-          answer: [{ valueDateTime: '2023-11-11T08:30:00' }],
+          answer: [{ valueString: '2023-11-11T08:30:00.000Z' }],
         },
         {
           linkId: 'procedure-medical-reason',
@@ -267,11 +267,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'procedure-period-start',
-          answer: [{ valueDateTime: '2023-12-04T08:30:00' }],
+          answer: [{ valueString: '2023-12-04T08:30:00.000Z' }],
         },
         {
           linkId: 'procedure-performed-datetime',
-          answer: [{ valueDateTime: '2023-12-04T15:00:00' }],
+          answer: [{ valueString: '2023-12-04T15:00:00.000Z' }],
         },
       ],
     },
@@ -293,11 +293,11 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
         },
         {
           linkId: 'procedure-period-start',
-          answer: [{ valueDateTime: '2023-04-01T16:00:00' }],
+          answer: [{ valueString: '2023-04-01T16:00:00.000Z' }],
         },
         {
           linkId: 'procedure-performed-datetime',
-          answer: [{ valueDateTime: '2023-04-01T17:00:00' }],
+          answer: [{ valueString: '2023-04-01T17:00:00.000Z' }],
         },
         {
           linkId: 'procedure-medical-reason',
@@ -333,7 +333,7 @@ export const patientIntakeQuestionnaireResponse: QuestionnaireResponse = {
             },
           ],
         },
-        { linkId: 'payer-period-start', answer: [{ valueDateTime: '2022-12-21T00:00:00' }] },
+        { linkId: 'payer-period-start', answer: [{ valueString: '2022-12-21T00:00:00.000Z' }] },
       ],
     },
   ],
@@ -351,7 +351,7 @@ export const patientCurtisStrickland = {
     extension: [
       {
         url: extensionURLMapping.patientBirthTime,
-        valueDateTime: '1997-11-21T19:45:00',
+        valueString: '1997-11-21T19:45:00+00:00',
       },
     ],
   },
@@ -365,7 +365,7 @@ export const patientJulianJohnston = {
     extension: [
       {
         url: extensionURLMapping.patientBirthTime,
-        valueDateTime: '1983-10-09T15:00:00',
+        valueString: '1983-10-09T15:00:00+00:00',
       },
     ],
   },

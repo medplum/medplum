@@ -26,7 +26,7 @@
           "linkId": "dob",
           "answer": [
             {
-              "valueDateTime": "1983-10-09T15:00:00"
+              "valueString": "1983-10-09T15:00:00+00:00"
             }
           ]
         },
@@ -159,7 +159,7 @@
           "linkId": "encounter-period-start",
           "answer": [
             {
-              "valueDateTime": "2023-04-01T15:00:00"
+              "valueString": "2023-04-01T15:00:00.000Z"
             }
           ]
         },
@@ -167,7 +167,7 @@
           "linkId": "encounter-period-end",
           "answer": [
             {
-              "valueDateTime": "2023-04-01T16:00:00"
+              "valueString": "2023-04-01T16:00:00.000Z"
             }
           ]
         },
@@ -220,7 +220,7 @@
           "linkId": "encounter-period-start",
           "answer": [
             {
-              "valueDateTime": "2023-06-04T08:00:00"
+              "valueString": "2023-06-04T08:00:00.000Z"
             }
           ]
         },
@@ -228,7 +228,7 @@
           "linkId": "encounter-period-end",
           "answer": [
             {
-              "valueDateTime": "2023-06-04T09:00:00"
+              "valueString": "2023-06-04T09:00:00.000Z"
             }
           ]
         }
@@ -261,7 +261,7 @@
           "linkId": "encounter-period-start",
           "answer": [
             {
-              "valueDateTime": "2023-09-02T08:00:00"
+              "valueString": "2023-09-02T08:00:00.000Z"
             }
           ]
         },
@@ -269,7 +269,7 @@
           "linkId": "encounter-period-end",
           "answer": [
             {
-              "valueDateTime": "2023-09-07T09:00:00"
+              "valueString": "2023-09-07T09:00:00.000Z"
             }
           ]
         },
@@ -306,7 +306,7 @@
           "linkId": "procedure-period-start",
           "answer": [
             {
-              "valueDateTime": "2023-04-01T16:00:00"
+              "valueString": "2023-04-01T16:00:00.000Z"
             }
           ]
         },
@@ -314,7 +314,7 @@
           "linkId": "procedure-performed-datetime",
           "answer": [
             {
-              "valueDateTime": "2023-04-01T16:00:00"
+              "valueString": "2023-04-01T16:00:00.000Z"
             }
           ]
         },
@@ -351,7 +351,7 @@
           "linkId": "payer-period-start",
           "answer": [
             {
-              "valueDateTime": "2022-12-12T00:00:00"
+              "valueString": "2022-12-12T00:00:00.000Z"
             }
           ]
         }

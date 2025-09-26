@@ -39,8 +39,8 @@
               },
               {
                 "linkId": "dob",
-                "text": "Date of Birth",
-                "type": "dateTime"
+                "text": "Date of Birth (YYYY-MM-DDTHH:MM:SS+00:00)",
+                "type": "string"
               },
               {
                 "linkId": "street",
@@ -126,14 +126,14 @@
               },
               {
                 "linkId": "encounter-period-start",
-                "text": "Relevant Period Start",
-                "type": "dateTime",
+                "text": "Relevant Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string",
                 "required": true
               },
               {
                 "linkId": "encounter-period-end",
-                "text": "Relevant Period End",
-                "type": "dateTime",
+                "text": "Relevant Period End (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string",
                 "required": true
               },
               {
@@ -228,13 +228,13 @@
               },
               {
                 "linkId": "procedure-period-start",
-                "text": "Relevant Date/Time",
-                "type": "dateTime"
+                "text": "Relevant Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
-                "text": "Author Date/Time",
-                "type": "dateTime"
+                "text": "Author Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string"
               },
               {
                 "linkId": "procedure-medical-reason",
@@ -281,13 +281,13 @@
               },
               {
                 "linkId": "procedure-period-start",
-                "text": "Relevant Date/Time",
-                "type": "dateTime"
+                "text": "Relevant Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
-                "text": "Author Date/Time",
-                "type": "dateTime"
+                "text": "Author Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string"
               },
               {
                 "linkId": "procedure-medical-reason",
@@ -316,8 +316,8 @@
               },
               {
                 "linkId": "payer-period-start",
-                "text": "Relevant Period Start",
-                "type": "dateTime"
+                "text": "Relevant Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
+                "type": "string"
               }
             ]
           }
@@ -361,23 +361,23 @@
           },
           {
             "linkId": "measure-period-start",
-            "text": "Measure Period Start",
-            "type": "dateTime",
+            "text": "Measure Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
+            "type": "string",
             "required": true,
             "initial": [
               {
-                "valueDateTime": "2023-01-01T00:00:00"
+                "valueString": "2023-01-01T00:00:00.000Z"
               }
             ]
           },
           {
             "linkId": "measure-period-end",
-            "text": "Measure Period End",
-            "type": "dateTime",
+            "text": "Measure Period End (YYYY-MM-DDTHH:MM:SS.000Z)",
+            "type": "string",
             "required": true,
             "initial": [
               {
-                "valueDateTime": "2023-12-31T23:59:59"
+                "valueString": "2023-12-31T23:59:59.000Z"
               }
             ]
           }

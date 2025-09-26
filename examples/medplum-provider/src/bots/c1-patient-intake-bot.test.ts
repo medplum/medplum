@@ -63,7 +63,7 @@ describe('C1 Patient Intake Bot', () => {
         extension: [
           {
             url: extensionURLMapping.patientBirthTime,
-            valueDateTime: '1997-11-21T19:45:00',
+            valueString: '1997-11-21T19:45:00+00:00',
           },
         ],
       });
@@ -186,8 +186,8 @@ describe('C1 Patient Intake Bot', () => {
       ]);
       expect(encounter.subject).toStrictEqual(createReference(patient));
       expect(encounter.period).toStrictEqual({
-        start: '2023-02-23T08:00:00',
-        end: '2023-02-23T08:30:00',
+        start: '2023-02-23T08:00:00.000Z',
+        end: '2023-02-23T08:30:00.000Z',
       });
       expect(encounter.length).toStrictEqual({ value: 0, unit: 'd' });
       expect(encounter.extension).toStrictEqual([
@@ -228,8 +228,8 @@ describe('C1 Patient Intake Bot', () => {
       ]);
       expect(encounter.subject).toStrictEqual(createReference(patient));
       expect(encounter.period).toStrictEqual({
-        start: '2023-10-12T08:00:00',
-        end: '2023-10-12T08:30:00',
+        start: '2023-10-12T08:00:00.000Z',
+        end: '2023-10-12T08:30:00.000Z',
       });
       expect(encounter.length).toStrictEqual({ value: 0, unit: 'd' });
       expect(encounter.extension).toStrictEqual([
@@ -272,8 +272,8 @@ describe('C1 Patient Intake Bot', () => {
     ]);
     expect(encounter.subject).toStrictEqual(createReference(patient));
     expect(encounter.period).toStrictEqual({
-      start: '2023-11-02T17:00:00',
-      end: '2023-11-02T18:00:00',
+      start: '2023-11-02T17:00:00.000Z',
+      end: '2023-11-02T18:00:00.000Z',
     });
     expect(encounter.length).toStrictEqual({ value: 0, unit: 'd' });
     expect(encounter.extension).toStrictEqual([
@@ -331,8 +331,8 @@ describe('C1 Patient Intake Bot', () => {
     ]);
     expect(encounter.subject).toStrictEqual(createReference(patient));
     expect(encounter.period).toStrictEqual({
-      start: '2023-11-11T08:30:00',
-      end: '2023-11-11T09:30:00',
+      start: '2023-11-11T08:30:00.000Z',
+      end: '2023-11-11T09:30:00.000Z',
     });
     expect(encounter.length).toStrictEqual({ value: 0, unit: 'd' });
     expect(encounter.extension).toStrictEqual([
@@ -390,7 +390,7 @@ describe('C1 Patient Intake Bot', () => {
           },
         ],
       });
-      expect(intervention.performedDateTime).toStrictEqual('2023-11-11T08:30:00');
+      expect(intervention.performedDateTime).toStrictEqual('2023-11-11T08:30:00.000Z');
       expect(intervention.statusReason?.coding?.[0]).toStrictEqual({
         system: 'http://snomed.info/sct',
         code: '183932001',
@@ -421,10 +421,10 @@ describe('C1 Patient Intake Bot', () => {
         ],
       });
       expect(intervention.performedPeriod).toStrictEqual({
-        start: '2023-12-04T08:30:00',
-        end: '2023-12-04T08:30:00',
+        start: '2023-12-04T08:30:00.000Z',
+        end: '2023-12-04T08:30:00.000Z',
       });
-      expect(intervention.performedDateTime).toStrictEqual('2023-12-04T15:00:00');
+      expect(intervention.performedDateTime).toStrictEqual('2023-12-04T15:00:00.000Z');
       expect(intervention.statusReason).toBeUndefined();
     });
 
@@ -450,10 +450,10 @@ describe('C1 Patient Intake Bot', () => {
         ],
       });
       expect(procedure.performedPeriod).toStrictEqual({
-        start: '2023-04-01T16:00:00',
-        end: '2023-04-01T16:00:00',
+        start: '2023-04-01T16:00:00.000Z',
+        end: '2023-04-01T16:00:00.000Z',
       });
-      expect(procedure.performedDateTime).toStrictEqual('2023-04-01T17:00:00');
+      expect(procedure.performedDateTime).toStrictEqual('2023-04-01T17:00:00.000Z');
       expect(procedure.statusReason?.coding?.[0]).toStrictEqual({
         system: 'http://snomed.info/sct',
         code: '183932001',
@@ -499,7 +499,7 @@ describe('C1 Patient Intake Bot', () => {
           },
         ],
       });
-      expect(coverage.period).toStrictEqual({ start: '2022-12-21T00:00:00' });
+      expect(coverage.period).toStrictEqual({ start: '2022-12-21T00:00:00.000Z' });
     });
   });
 });

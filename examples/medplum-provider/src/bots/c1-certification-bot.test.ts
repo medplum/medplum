@@ -13,8 +13,8 @@ describe('C1 Certification Bot', () => {
   const contentType = ContentType.FHIR_JSON;
   const secrets = {};
   const measure = 'cms68v14';
-  const periodStart = '2023-01-01T00:00:00';
-  const periodEnd = '2023-12-31T23:59:59';
+  const periodStart = '2023-01-01T00:00:00.000Z';
+  const periodEnd = '2023-12-31T23:59:59.000Z';
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -30,11 +30,11 @@ describe('C1 Certification Bot', () => {
         },
         {
           linkId: 'measure-period-start',
-          answer: [{ valueDateTime: periodStart }],
+          answer: [{ valueString: periodStart }],
         },
         {
           linkId: 'measure-period-end',
-          answer: [{ valueDateTime: periodEnd }],
+          answer: [{ valueString: periodEnd }],
         },
         {
           linkId: 'patient-ids',
@@ -94,7 +94,7 @@ describe('C1 Certification Bot', () => {
       status: 'finished',
       class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
       subject: createReference(patient1),
-      period: { start: '2023-02-15T08:00:00', end: '2023-02-15T09:00:00' },
+      period: { start: '2023-02-15T08:00:00.000Z', end: '2023-02-15T09:00:00.000Z' },
     });
     let patient2Media = await medplum.searchResources('Media', {
       subject: getReferenceString(patient2),

@@ -6,6 +6,7 @@ import {
   getReferenceString,
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
+  isDateTimeString,
   LOINC,
   MedplumClient,
   SNOMED,
@@ -191,10 +192,14 @@ export async function addCoverage(
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
   const payerType = answers['payer-type']?.valueCoding;
-  const start = answers['payer-period-start']?.valueDateTime;
+  const start = answers['payer-period-start']?.valueString;
 
   if (!payerType || !start) {
     return;
+  }
+
+  if (!isDateTimeString(start)) {
+    throw new Error('payer-period-start must be a date time string');
   }
 
   await medplum.upsertResource(
@@ -229,11 +234,15 @@ export async function addEncounter(
 ): Promise<void> {
   const description = answers['encounter-description']?.valueString;
   const type = answers['encounter-code']?.valueCoding;
-  const start = answers['encounter-period-start']?.valueDateTime;
-  const end = answers['encounter-period-end']?.valueDateTime;
+  const start = answers['encounter-period-start']?.valueString;
+  const end = answers['encounter-period-end']?.valueString;
 
   if (!description || !type || !start || !end) {
     return;
+  }
+
+  if (!isDateTimeString(start) || !isDateTimeString(end)) {
+    throw new Error('encounter-period-start and encounter-period-end must be date time strings');
   }
 
   const duration = new Date(end).getTime() - new Date(start).getTime();
@@ -309,12 +318,17 @@ export async function addProcedure(
         display: 'Diagnostic procedure',
       };
   const code = answers['procedure-code']?.valueCoding;
-  const performedDateTime = answers['procedure-performed-datetime']?.valueDateTime;
-  const periodStart = answers['procedure-period-start']?.valueDateTime;
+  const performedDateTime = answers['procedure-performed-datetime']?.valueString;
+  const periodStart = answers['procedure-period-start']?.valueString;
   const medicalReason = answers['procedure-medical-reason']?.valueCoding;
   const rank = answers['procedure-rank']?.valueInteger;
+
   if (!code || !performedDateTime) {
     return;
+  }
+
+  if (!isDateTimeString(performedDateTime) || !isDateTimeString(periodStart)) {
+    throw new Error('procedure-performed-datetime and procedure-period-start must be date time strings');
   }
 
   await medplum.createResource({
@@ -436,13 +450,6 @@ export function getGroupRepeatedAnswers(
   });
 
   return groupAnswers;
-}
-
-export function convertDateToDateTime(date: string | undefined): string | undefined {
-  if (!date) {
-    return undefined;
-  }
-  return new Date(date).toISOString();
 }
 
 export function getHumanName(
