@@ -271,9 +271,19 @@ export abstract class LookupTable {
    */
   async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
     const lookupTableName = this.getTableName(resourceType);
+    await LookupTable.purge(client, lookupTableName, resourceType, before);
+  }
+
+  protected static async purge(
+    client: Pool | PoolClient,
+    lookupTableName: string,
+    resourceType: ResourceType,
+    before: string,
+    idColumnName = 'resourceId'
+  ): Promise<void> {
     await new DeleteQuery(lookupTableName)
       .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(lookupTableName, idColumnName), '=', new Column(resourceType, 'id'))
       .where(new Column(resourceType, 'lastUpdated'), '<', before)
       .execute(client);
   }

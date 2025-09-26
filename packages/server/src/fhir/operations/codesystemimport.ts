@@ -7,7 +7,7 @@ import { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, parentProperty, selectCoding } from './utils/terminology';
+import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -112,15 +112,6 @@ export async function importCodeSystem(
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
   }
-}
-
-function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
-  const seen = Object.create(null);
-  for (const el of arr) {
-    const key = keyFn(el);
-    seen[key] = el;
-  }
-  return Object.values(seen);
 }
 
 async function processProperties(
