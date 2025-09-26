@@ -4,7 +4,7 @@ toc_max_heading_level: 2
 tags: [auth]
 ---
 
-# OAuth2 Authorization Code
+# Using Medplum as IDP
 
 ## Introduction
 
@@ -52,7 +52,7 @@ The last step of this flow is for your application to trade in the `AUTHORIZATIO
    - `grant_type=authorization_code`
    - `client_id=YOUR_CLIENT_ID`
    - `code=AUTHORIZATION_CODE`
-3. Use the `access_token` received in the [response](/docs/api/oauth/token#sample-response) to make future API calls (See the [**Client Credentials tutorial**](./client-credentials) for more details)
+3. Use the `access_token` received in the [response](/docs/api/oauth/token#sample-response) to make future API calls (See the [**Client Credentials tutorial**](/docs/auth/client-credentials) for more details)
 
 :::note Using the Medplum Client
 You can also use the Medplum SDK to initiate this process, using either the [`startLogin`](/docs/sdk/core.medplumclient.startlogin) or [`signInWithRedirect`](/docs/sdk/core.medplumclient.signinwithredirect) convenience method.

@@ -8,19 +8,19 @@ At the top of the page, there is an array of tabs as shown below. In this guide,
 
 ## Details
 
-The Details tab displays all of the populated elements of the current [`Project`](/docs/api/fhir/medplum/project) resource. For more details on the [`Project`](/docs/api/fhir/medplum/project) resource, see the [User Management Guide](/docs/auth/user-management-guide).
+The Details tab displays all of the populated elements of the current [`Project`](/docs/api/fhir/medplum/project) resource. For more details on the [`Project`](/docs/api/fhir/medplum/project) resource, see the [User Management Guide](/docs/user-management).
 
 ## Users
 
-The Users tab displays all of the [`Practitioner`](/docs/api/fhir/resources/practitioner) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new users. For more details on the [`User`](/docs/api/fhir/medplum/user) resource, see the [User Management Guide](/docs/auth/user-management-guide).
+The Users tab displays all of the [`Practitioner`](/docs/api/fhir/resources/practitioner) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new users. For more details on the [`User`](/docs/api/fhir/medplum/user) resource, see the [User Management Guide](/docs/user-management).
 
 ## Patients
 
-The Patients tab displays all of the [`Patient`](/docs/api/fhir/resources/patient) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new patients. For more details on the [`User`](/docs/api/fhir/medplum/user) and [`Patient`](/docs/api/fhir/resources/patient) resources see the [User Management Guide](/docs/auth/user-management-guide).
+The Patients tab displays all of the [`Patient`](/docs/api/fhir/resources/patient) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new patients. For more details on the [`User`](/docs/api/fhir/medplum/user) and [`Patient`](/docs/api/fhir/resources/patient) resources see the [User Management Guide](/docs/user-management).
 
 ## Clients
 
-The Clients tab displays all of the [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resources that are associated with your project. It also allows you to create new [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). For more details, see the [Authentication Method docs](/docs/auth/methods/token-exchange#set-up-your-clientapplication).
+The Clients tab displays all of the [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resources that are associated with your project. It also allows you to create new [`ClientApplication`](/docs/api/fhir/medplum/clientapplication). For more details, see the [Authentication Method docs](/docs/auth/token-exchange#set-up-your-clientapplication).
 
 ## Bots
 
