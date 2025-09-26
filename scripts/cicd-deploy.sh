@@ -19,6 +19,11 @@ for arg in "$@"; do
   fi
 done
 
+if [[ -z "${GITHUB_REF}" ]]; then
+  echo "GITHUB_REF is missing"
+  exit 1
+fi
+
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 echo "$COMMIT_MESSAGE"
 
@@ -28,6 +33,10 @@ echo "$FILES_CHANGED"
 DEPLOY_APP=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
+ONLY_BUILD_DOCKER=false
+
+# If this is not the main branch, only build and push Docker images; do not deploy services
+[[ "$GITHUB_REF" != "refs/heads/main" ]] && ONLY_BUILD_DOCKER=true
 
 #
 # Inspect files changed
@@ -138,7 +147,9 @@ if [[ "$DEPLOY_APP" = true ]]; then
     npm run build -- --force --filter=@medplum/app
   )
 
-  source ./scripts/build-docker-app.sh
+  if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
+    source ./scripts/build-docker-app.sh
+  fi
   source ./scripts/deploy-app.sh
 fi
 
@@ -152,5 +163,7 @@ if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
   source ./scripts/build-docker-server.sh
-  source ./scripts/deploy-server.sh
+  if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
+    source ./scripts/deploy-server.sh
+  fi
 fi

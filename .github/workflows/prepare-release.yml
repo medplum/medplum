@@ -6,7 +6,10 @@ on:
       version:
         description: 'New version (leave blank for automatic)'
         type: string
-
+      skip_latest:
+        description: 'Skip tagging this release as the latest version (default: false)'
+        type: boolean
+        default: false
 jobs:
   prepare-release:
     name: Prepare release
@@ -29,3 +32,4 @@ jobs:
         run: ./scripts/prepare-release.sh ${{ inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
+          SKIP_LATEST: ${{ inputs.skip_latest }}
