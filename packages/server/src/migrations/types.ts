@@ -23,6 +23,7 @@ export interface ColumnDefinition {
   notNull?: boolean;
   defaultValue?: string;
   primaryKey?: boolean;
+  identity?: 'ALWAYS' | 'BY DEFAULT';
 }
 
 export const IndexTypes = ['btree', 'gin', 'gist'] as const;
