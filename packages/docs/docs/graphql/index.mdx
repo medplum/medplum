@@ -1,17 +1,13 @@
----
-sidebar_position: 1
----
-
 import ExampleCode from '!!raw-loader!@site/../examples/src/graphql/basic-query.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Basic Queries
+# GraphQL
 
-## Overview
+Medplum supports the [FHIR GraphQL API](https://hl7.org/fhir/r4/graphql.html) for creating, updating and searching FHIR resources.
 
-This guide will walk you through how to use the [FHIR GraphQL API](https://hl7.org/fhir/r4/graphql.html) with Medplum. Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
+Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
 
 The GraphQL API also allows you to request specific elements, rather than full resources, which can be more efficient in bandwidth constrained settings.
 
@@ -300,6 +296,6 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
   </MedplumCodeBlock>
 </details>
 
-## Conclusion
+## Summary
 
 With a deeper understanding of the FHIR GraphQL syntax, you can now leverage build efficient and flexible FHIR queries for your applications. Remember to experiment with the API at [graphiql.medplum.com](https://graphiql.medplum.com/) as you develop your application.
