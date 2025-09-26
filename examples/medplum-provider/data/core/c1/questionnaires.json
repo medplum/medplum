@@ -39,7 +39,7 @@
               },
               {
                 "linkId": "dob",
-                "text": "Date of Birth",
+                "text": "Date of Birth (YYYY-MM-DDTHH:MM:SS+00:00)",
                 "type": "string"
               },
               {
@@ -126,13 +126,13 @@
               },
               {
                 "linkId": "encounter-period-start",
-                "text": "Relevant Period Start",
+                "text": "Relevant Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string",
                 "required": true
               },
               {
                 "linkId": "encounter-period-end",
-                "text": "Relevant Period End",
+                "text": "Relevant Period End (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string",
                 "required": true
               },
@@ -228,12 +228,12 @@
               },
               {
                 "linkId": "procedure-period-start",
-                "text": "Relevant Date/Time",
+                "text": "Relevant Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
-                "text": "Author Date/Time",
+                "text": "Author Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string"
               },
               {
@@ -281,12 +281,12 @@
               },
               {
                 "linkId": "procedure-period-start",
-                "text": "Relevant Date/Time",
+                "text": "Relevant Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string"
               },
               {
                 "linkId": "procedure-performed-datetime",
-                "text": "Author Date/Time",
+                "text": "Author Date/Time (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string"
               },
               {
@@ -316,7 +316,7 @@
               },
               {
                 "linkId": "payer-period-start",
-                "text": "Relevant Period Start",
+                "text": "Relevant Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
                 "type": "string"
               }
             ]
@@ -361,7 +361,7 @@
           },
           {
             "linkId": "measure-period-start",
-            "text": "Measure Period Start",
+            "text": "Measure Period Start (YYYY-MM-DDTHH:MM:SS.000Z)",
             "type": "string",
             "required": true,
             "initial": [
@@ -372,7 +372,7 @@
           },
           {
             "linkId": "measure-period-end",
-            "text": "Measure Period End",
+            "text": "Measure Period End (YYYY-MM-DDTHH:MM:SS.000Z)",
             "type": "string",
             "required": true,
             "initial": [
