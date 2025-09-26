@@ -1,14 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { basename, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 export function readJson(filename: string): any {
-  // TODO: Figure out how to reconcile "src" vs "dist"
-  // When running from src, the data directory is "../fhir"
-  // When running from dist/cjs or dist/esm, the data directory is "../../fhir"
-  return JSON.parse(readFileSync(resolve(getDirName(), '..', filename), 'utf8'));
+  return JSON.parse(readFileSync(resolve(getDataDir(), filename), 'utf8'));
+}
+
+let dataDir: string | undefined = undefined;
+function getDataDir(): string {
+  if (!dataDir) {
+    // When running from src, the data directory is "../dist"
+    // When running from dist/cjs or dist/esm, the data directory is ".."
+    const currDir = getDirName();
+    const relativePath = basename(currDir) === 'src' ? '../dist' : '..';
+    dataDir = resolve(currDir, relativePath);
+  }
+  return dataDir;
 }
 
 /**
