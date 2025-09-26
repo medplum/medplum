@@ -8,19 +8,19 @@ Medplum distinguishes between two different types of admin user: **project admin
 
 A project (or tenant) level user. This is the most common type of admin user at an organization.
 
-See our [User Management Guide](/docs/auth/user-management-guide#promote-existing-user-to-admin) for more information on how to grant project admin privileges.
+See our [User Management Guide](/docs/user-management#promote-existing-user-to-admin) for more information on how to grant project admin privileges.
 
 Project Admins have the following privileges:
 
-- **Invite / remove users** - See our [User Management Guide](/docs/auth/user-management-guide) for mor information
+- **Invite / remove users** - See our [User Management Guide](/docs/user-management) for mor information
 - **Create Bots** - See our guide on [Bots](/docs/bots/bot-basics) to learn how to create and write Bots
 - **Write the `meta.account` element** - Every resource has a `meta.account` property that can be used for advanced access control scenarios. See our guide on [access policies](/docs/access/access-policies) for more information.
 - **View Administrative Resources** - The following Medplum resource types are only accessible to project admin [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication):
   - [`Project`](/docs/api/fhir/medplum/project) - used to adjust [Project settings](/docs/access/projects#settings)
-  - [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) - used to manage user registration and privileges (see: [User Management Guide](/docs/auth/user-management-guide))
-  - [`UserSecurityRequest`](/docs/api/fhir/medplum/usersecurityrequest) - used to [send custom emails](/docs/auth/custom-emails#password-change-request-bot)
-  - [`User`](/docs/api/fhir/medplum/user) - only for [project scoped users](/docs/auth/project-vs-server-scoped-users#project-scoped-users)
-- **Impersonate users** - Project Admins are allowed to make API calls [on behalf of other users](/docs/auth/methods/on-behalf-of)
+  - [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) - used to manage user registration and privileges (see: [User Management Guide](/docs/user-management))
+  - [`UserSecurityRequest`](/docs/api/fhir/medplum/usersecurityrequest) - used to [send custom emails](/docs/user-management/custom-emails#password-change-request-bot)
+  - [`User`](/docs/api/fhir/medplum/user) - only for [project scoped users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users)
+- **Impersonate users** - Project Admins are allowed to make API calls [on behalf of other users](/docs/auth/on-behalf-of)
 
 :::note Applying Access Policies to Admins
 
