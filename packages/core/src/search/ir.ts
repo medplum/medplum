@@ -58,18 +58,18 @@ export function convertToSearchableDates(typedValues: TypedValue[]): Period[] {
 }
 
 export function convertToSearchableStrings(typedValues: TypedValue[]): string[] {
-  const result: string[] = [];
+  const result = new Set<string>();
   for (const typedValue of typedValues) {
     const str = typedValueToString(typedValue);
     if (str) {
-      result.push(str);
+      result.add(str);
     }
   }
-  return result;
+  return Array.from(result);
 }
 
 export function convertToSearchableReferences(typedValues: TypedValue[]): string[] {
-  const result: string[] = [];
+  const result = new Set<string>();
   for (const typedValue of typedValues) {
     const { value } = typedValue;
     if (!value) {
@@ -78,21 +78,21 @@ export function convertToSearchableReferences(typedValues: TypedValue[]): string
     if (isString(value)) {
       // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
       // This is a reference string that is not a FHIR reference
-      result.push(value);
+      result.add(value);
     } else if (isReference(value)) {
       // Handle normal "reference" properties
-      result.push(value.reference);
+      result.add(value.reference);
     } else if (isResourceWithId(value)) {
       // Handle inline references
-      result.push(getReferenceString(value));
+      result.add(getReferenceString(value));
     } else if (typeof value.identifier === 'object') {
       // Handle logical (identifier-only) references by putting a placeholder in the column
       // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
       // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
-      result.push(`identifier:${value.identifier.system}|${value.identifier.value}`);
+      result.add(`identifier:${value.identifier.system}|${value.identifier.value}`);
     }
   }
-  return result;
+  return Array.from(result);
 }
 
 export function convertToSearchableQuantities(typedValues: TypedValue[]): Quantity[] {
@@ -109,13 +109,13 @@ export function convertToSearchableQuantities(typedValues: TypedValue[]): Quanti
 }
 
 export function convertToSearchableUris(typedValues: TypedValue[]): string[] {
-  const result: string[] = [];
+  const result = new Set<string>();
   for (const typedValue of typedValues) {
     if (isString(typedValue.value)) {
-      result.push(typedValue.value);
+      result.add(typedValue.value);
     }
   }
-  return result;
+  return Array.from(result);
 }
 
 export interface TokensContext {
