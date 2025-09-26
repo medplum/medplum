@@ -293,22 +293,18 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexdef = indexdef.substring(0, includeMatch.index);
   }
 
-  const indexTypeMatch = /USING (\w+)/.exec(indexdef);
-  if (!indexTypeMatch) {
-    throw new Error('Could not parse index type from ' + indexdef);
+  const typeAndExpressionsMatch = /USING (\w+) \((.+)\)$/.exec(indexdef);
+  if (!typeAndExpressionsMatch) {
+    throw new Error('Could not parse index type and expressions from ' + indexdef);
   }
 
-  const indexType = indexTypeMatch[1] as IndexType;
+  const indexType = typeAndExpressionsMatch[1] as IndexType;
   if (!IndexTypes.includes(indexType)) {
     throw new Error('Invalid index type: ' + indexType);
   }
 
-  const expressionsMatch = /\((.+)\)$/.exec(indexdef);
-  if (!expressionsMatch) {
-    throw new Error('Invalid index definition: ' + indexdef);
-  }
-
-  const parsedExpressions = parseIndexColumns(expressionsMatch[1]);
+  const expressionString = typeAndExpressionsMatch[2];
+  const parsedExpressions = parseIndexColumns(expressionString);
   const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
     if (expression.match(/^[ \w"]+$/)) {
       return expression.trim().replaceAll('"', '');
