@@ -922,7 +922,7 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'ConceptMapping',
     columns: [
-      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
       { name: 'conceptMap', type: 'UUID', notNull: true },
       { name: 'sourceSystem', type: 'TEXT', notNull: true },
       { name: 'sourceCode', type: 'TEXT', notNull: true },
