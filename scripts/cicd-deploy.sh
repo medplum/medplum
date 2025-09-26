@@ -148,22 +148,22 @@ if [[ "$DEPLOY_APP" = true ]]; then
   )
 
   if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
-    source ./scripts/build-docker-app.sh
+    echo "WOULD RUN: source ./scripts/build-docker-app.sh"
   fi
-  source ./scripts/deploy-app.sh
+  echo "WOULD RUN: source ./scripts/deploy-app.sh"
 fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
   npm run build -- --force --filter=@medplum/graphiql
-  source ./scripts/deploy-graphiql.sh
+  echo "WOULD RUN: source ./scripts/deploy-graphiql.sh"
 fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
-  source ./scripts/build-docker-server.sh
+  echo "WOULD RUN: source ./scripts/build-docker-server.sh"
   if [[ "$ONLY_BUILD_DOCKER" = false ]]; then
-    source ./scripts/deploy-server.sh
+    echo "WOULD RUN: source ./scripts/deploy-server.sh"
   fi
 fi
