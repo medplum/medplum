@@ -30,7 +30,7 @@ This category is for back-end services. These applications do not directly authe
 - build a proxy API 
 - connect to a CI/CD pipeline 
 
-Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow your application to use its own credentials to obtain a token. You can also use [on-behalf-of enable](/docs/auth/on-behalf-of) client credentials to enact on behalf of a user. 
+Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow your application to use its own client key and secret to obtain a token. When working through proxy API layers, you can [enable on-behalf-of authentication](/docs/auth/on-behalf-of) with client credentials to act on behalf of other entities.
 
 -----
 
