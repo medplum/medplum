@@ -767,12 +767,13 @@ function buildProcedureEntry(procedure: Procedure): Record<string, any> {
   const rank = getExtensionValue(procedure, extensionURLMapping.procedureRank) as number | undefined;
   const performedDateTime = procedure.performedDateTime;
   const performedPeriodStart = procedure.performedPeriod?.start;
+  const negationReasonCode = procedure.statusReason?.coding?.[0]?.code;
 
   return {
     procedure: {
       '@_classCode': 'PROC',
       '@_moodCode': 'EVN',
-      '@_negationInd': 'true',
+      ...(negationReasonCode && { '@_negationInd': 'true' }),
       templateId: [
         // Procedure performed template
         { '@_root': '2.16.840.1.113883.10.20.24.3.64', '@_extension': '2021-08-01' },
@@ -815,7 +816,7 @@ function buildProcedureEntry(procedure: Procedure): Record<string, any> {
         },
       }),
       // QDM Attribute: Negation Rationale
-      ...(procedure.statusReason?.coding?.[0] && {
+      ...(negationReasonCode && {
         entryRelationship: {
           '@_typeCode': 'RSON',
           observation: {
@@ -830,7 +831,7 @@ function buildProcedureEntry(procedure: Procedure): Record<string, any> {
               '@_codeSystemName': 'LOINC',
             },
             value: {
-              '@_code': procedure.statusReason?.coding?.[0]?.code ?? '',
+              '@_code': negationReasonCode,
               '@_codeSystem': '2.16.840.1.113883.6.96',
               '@_codeSystemName': 'SNOMEDCT',
               '@_xsi:type': 'CD',
