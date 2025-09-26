@@ -17,7 +17,7 @@ In this post, we'll discuss these tradeoffs and provide some guidance on how you
 
 GraphQL has [surged in popularity](https://devops.com/key-findings-from-the-2022-state-of-graphql-report/#:~:text=GraphQL%2C%20the%20open%20source%20query,the%20specific%20client%20at%20hand.) in recent years. You can try out FHIR graphql queries on your medplum project using our [graphiql sandbox](https://graphiql.medplum.com/).
 
-In the context of FHIR, one of GraphQL's strongest features is the ability to quickly retrieve [multiple linked resources](/docs/graphql/basic-queries#resolving-nested-resources-with-the-resource-element). While the REST API allows similar functionality using the [`_include`](/docs/search/includes) and [`_revinclude`](/docs/search/includes) search parameters, GraphQL offers a more natural syntax for querying bundles of resources that reference each other.
+In the context of FHIR, one of GraphQL's strongest features is the ability to quickly retrieve [multiple linked resources](/docs/graphql#resolving-nested-resources-with-the-resource-element). While the REST API allows similar functionality using the [`_include`](/docs/search/includes) and [`_revinclude`](/docs/search/includes) search parameters, GraphQL offers a more natural syntax for querying bundles of resources that reference each other.
 
 ```graphql
 {
@@ -65,7 +65,7 @@ In the context of FHIR, one of GraphQL's strongest features is the ability to qu
 }
 ```
 
-In addition, GraphQL also offers very fine grained control for developers to select the exact fields returned in a query, which can reduce your app's network traffic. Unlike the REST API, GraphQL lets you select specific fields, even in deeply nested elements, and provides additional filtering functionality through [FHIR Path list filters](/docs/graphql/basic-queries#filtering-lists-with-field-arguments). This is helpful in applications where bandwidth is at a premium, such as in mobile applications.
+In addition, GraphQL also offers very fine grained control for developers to select the exact fields returned in a query, which can reduce your app's network traffic. Unlike the REST API, GraphQL lets you select specific fields, even in deeply nested elements, and provides additional filtering functionality through [FHIR Path list filters](/docs/graphql#filtering-lists-with-field-arguments). This is helpful in applications where bandwidth is at a premium, such as in mobile applications.
 
 ```graphql
 {
