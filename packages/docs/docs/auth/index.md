@@ -23,7 +23,12 @@ This category is for user-facing applications that connect directly to Medplum. 
 
 ## Server-side Authentication
 
-This category is for back-end services, used to **integrate with a legacy system**, **build a proxy API**, or **connect to a medical device or CI/CD pipeline**. These applications do not directly authenticate a user but operate on behalf of an application or device.
+This category is for back-end services. These applications do not directly authenticate a user but operate on behalf of an application or device. They can be used to: 
+
+- integrate with legacy systems 
+- connect to a medical device 
+- build a proxy API 
+- connect to a CI/CD pipeline 
 
 Use the [**Client Credentials Flow**](/docs/auth/client-credentials) to allow your application to use its own credentials to obtain a token. You can also use [on-behalf-of enable](/docs/auth/on-behalf-of) client credentials to enact on behalf of a user. 
 
