@@ -1,14 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { loadTestConfig } from '../config/loader';
+import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import {
   doubleEscapeSingleQuotes,
+  escapeMixedCaseIdentifier,
   escapeUnicode,
+  getColumns,
   parseIndexColumns,
   splitIndexColumnNames,
   tsVectorExpression,
 } from './migrate-utils';
 
 describe('migration-utils', () => {
+  afterEach(async () => {});
+
+  test('escapeMixedCaseIdentifier', () => {
+    expect(escapeMixedCaseIdentifier('system')).toEqual('system');
+    expect(escapeMixedCaseIdentifier('System')).toEqual('"System"');
+    expect(escapeMixedCaseIdentifier('system__display')).toEqual('system__display');
+    expect(escapeMixedCaseIdentifier('system__Display')).toEqual('"system__Display"');
+  });
+
   test('doubleEscapeSingleQuotes', () => {
     expect(doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)")).toEqual(
       "to_tsvector(\\'simple\\'::regconfig, value)"
@@ -39,5 +52,47 @@ describe('migration-utils', () => {
     expect(escapeUnicode('🦄')).toEqual('\\ud83e\\udd84');
     expect(escapeUnicode('\u{1F984}')).toEqual('\\ud83e\\udd84');
     expect(escapeUnicode('\ud83e\udd84')).toEqual('\\ud83e\\udd84');
+  });
+
+  test('getColumns', async () => {
+    const config = await loadTestConfig();
+    config.database.runMigrations = false;
+    config.database.disableRunPostDeployMigrations = true;
+    await initDatabase(config);
+
+    const client = await getDatabasePool(DatabaseMode.WRITER);
+    const result = await getColumns(client, 'DatabaseMigration');
+    expect(result).toEqual([
+      {
+        defaultValue: null,
+        name: 'id',
+        notNull: true,
+        primaryKey: true,
+        type: 'INTEGER',
+      },
+      {
+        defaultValue: null,
+        name: 'version',
+        notNull: true,
+        primaryKey: false,
+        type: 'INTEGER',
+      },
+      {
+        defaultValue: null,
+        name: 'dataVersion',
+        notNull: true,
+        primaryKey: false,
+        type: 'INTEGER',
+      },
+      {
+        defaultValue: 'false',
+        name: 'firstBoot',
+        notNull: true,
+        primaryKey: false,
+        type: 'BOOLEAN',
+      },
+    ]);
+
+    await closeDatabase();
   });
 });
