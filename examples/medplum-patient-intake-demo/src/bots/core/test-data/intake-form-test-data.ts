@@ -130,6 +130,26 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-44-1',
+          linkId: 'phone-sms',
+          text: 'Phone (SMS)',
+          answer: [
+            {
+              valueString: '555-555-5555',
+            },
+          ],
+        },
+        {
+          id: 'id-44-2',
+          linkId: 'email',
+          text: 'Email',
+          answer: [
+            {
+              valueString: 'marge@simpson.com',
+            },
+          ],
+        },
+        {
           id: 'id-45',
           linkId: 'ssn',
           text: 'Social Security Number',
@@ -1003,6 +1023,43 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueDate: '2024-07-08',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      linkId: 'patient-contact-preference',
+      text: 'Contact Preferences',
+      item: [
+        {
+          linkId: 'patient-contact-preference-email',
+          text: 'Ok to send email appointment reminders',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'patient-contact-preference-call-or-text',
+          text: 'Ok to call/text',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'patient-contact-preference-preferred-method-for-phone-reminders',
+          text: 'Preferred method for phone reminders',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/contact-point-system',
+                code: 'phone',
+                display: 'Phone Call',
+              },
             },
           ],
         },
