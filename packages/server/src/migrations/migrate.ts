@@ -14,18 +14,20 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { Client, escapeIdentifier, QueryResult } from 'pg';
+import { Client, escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
+  ColumnNameAbbreviations,
   escapeMixedCaseIdentifier,
   escapeUnicode,
   getColumns,
-  parseIndexColumns,
-  splitIndexColumnNames,
+  getFunctionDefinition,
+  parseIndexDefinition,
+  TableNameAbbreviations,
   tsVectorExpression,
 } from './migrate-utils';
 import {
@@ -34,7 +36,6 @@ import {
   DbClient,
   IndexDefinition,
   IndexType,
-  IndexTypes,
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
@@ -240,109 +241,9 @@ async function getTableDefinition(db: DbClient, name: string): Promise<TableDefi
   };
 }
 
-async function getFunctionDefinition(db: DbClient, name: string): Promise<SqlFunctionDefinition | undefined> {
-  let result: QueryResult<{ pg_get_functiondef: string }>;
-  try {
-    result = await db.query(`SELECT pg_catalog.pg_get_functiondef($1::regproc::oid);`, [name]);
-  } catch (err) {
-    if (err instanceof Error && err.message.includes('does not exist')) {
-      return undefined;
-    }
-    throw err;
-  }
-
-  if (result.rows.length === 1) {
-    return {
-      name,
-      createQuery: result.rows[0].pg_get_functiondef,
-    };
-  }
-
-  if (result.rows.length > 1) {
-    throw new Error('Multiple functiondefs found for ' + name);
-  }
-
-  return undefined;
-}
-
 async function getIndexes(db: DbClient, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
-}
-
-export function parseIndexDefinition(indexdef: string): IndexDefinition {
-  const fullIndexDef = indexdef;
-
-  let where: string | undefined;
-  const whereMatch = / WHERE \((.+)\)$/.exec(indexdef);
-  if (whereMatch) {
-    where = whereMatch[1];
-    indexdef = indexdef.substring(0, whereMatch.index);
-  }
-
-  // parse but ignore WITH clause since we don't want to consider any index settings in the official schema
-  const withMatch = / WITH \((.+)\)$/.exec(indexdef);
-  if (withMatch) {
-    indexdef = indexdef.substring(0, withMatch.index);
-  }
-
-  let include: string[] | undefined;
-  const includeMatch = / INCLUDE \((.+)\)$/.exec(indexdef);
-  if (includeMatch) {
-    include = includeMatch[1].split(',').map((s) => s.trim().replaceAll('"', ''));
-    indexdef = indexdef.substring(0, includeMatch.index);
-  }
-
-  const typeAndExpressionsMatch = /USING (\w+) \((.+)\)$/.exec(indexdef);
-  if (!typeAndExpressionsMatch) {
-    throw new Error('Could not parse index type and expressions from ' + indexdef);
-  }
-
-  const indexType = typeAndExpressionsMatch[1] as IndexType;
-  if (!IndexTypes.includes(indexType)) {
-    throw new Error('Invalid index type: ' + indexType);
-  }
-
-  const expressionString = typeAndExpressionsMatch[2];
-  const parsedExpressions = parseIndexColumns(expressionString);
-  const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
-    if (expression.match(/^[ \w"]+$/)) {
-      return expression.trim().replaceAll('"', '');
-    }
-
-    const idxNameMatch = /INDEX "([a-zA-Z]+)_(\w+)_(idx|idx_tsv)"/.exec(indexdef); // ResourceName_column1_column2_idx
-    if (!idxNameMatch) {
-      throw new Error('Could not parse index name from ' + indexdef);
-    }
-
-    let name = splitIndexColumnNames(idxNameMatch[2])[i];
-    if (!name) {
-      // column names aren't considered when determining index equality, so it is fine to use a placeholder
-      // name here. If we want to be stricter and match on index name as well, throw an error here instead
-      // of using a placeholder name among other changes
-      name = 'placeholder';
-    }
-    name = expandAbbreviations(name, ColumnNameAbbreviations);
-
-    return { expression, name };
-  });
-
-  const indexDef: IndexDefinition = {
-    columns,
-    indexType: indexType,
-    unique: indexdef.includes('CREATE UNIQUE INDEX'),
-    indexdef: fullIndexDef,
-  };
-
-  if (where) {
-    indexDef.where = where;
-  }
-
-  if (include) {
-    indexDef.include = include;
-  }
-
-  return indexDef;
 }
 
 export function parseIndexName(indexdef: string): string | undefined {
@@ -1579,21 +1480,6 @@ export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: Chec
   return deepEquals({ ...a, valid: undefined }, { ...b, valid: undefined });
 }
 
-const TableNameAbbreviations: Record<string, string | undefined> = {
-  MedicinalProductAuthorization: 'MPA',
-  MedicinalProductContraindication: 'MPC',
-  MedicinalProductPharmaceutical: 'MPP',
-  MedicinalProductUndesirableEffect: 'MPUE',
-};
-
-const ColumnNameAbbreviations: Record<string, string | undefined> = {
-  participatingOrganization: 'partOrg',
-  primaryOrganization: 'primOrg',
-  immunizationEvent: 'immEvent',
-  identifier: 'idnt',
-  Identifier: 'Idnt',
-};
-
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
 
@@ -1605,20 +1491,6 @@ function applyAbbreviations(name: string, abbreviations: Record<string, string |
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
     result = result.replace(original, abbrev);
   }
-  return result;
-}
-
-function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
-  let result = name;
-  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
-    result = result.replace(abbrev, original);
-  }
-
-  // Expand _Refs suffix back to _References
-  if (result.endsWith('_Refs')) {
-    result = result.slice(0, -'Refs'.length) + 'References';
-  }
-
   return result;
 }
 

@@ -2,18 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { indexDefinitionsEqual } from './migrate';
 import {
   doubleEscapeSingleQuotes,
   escapeMixedCaseIdentifier,
   escapeUnicode,
   getColumns,
+  getFunctionDefinition,
   parseIndexColumns,
+  parseIndexDefinition,
   splitIndexColumnNames,
   tsVectorExpression,
 } from './migrate-utils';
+import { IndexDefinition } from './types';
 
 describe('migration-utils', () => {
-  afterEach(async () => {});
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    config.database.runMigrations = false;
+    config.database.disableRunPostDeployMigrations = true;
+    await initDatabase(config);
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
   test('escapeMixedCaseIdentifier', () => {
     expect(escapeMixedCaseIdentifier('system')).toEqual('system');
@@ -55,11 +68,6 @@ describe('migration-utils', () => {
   });
 
   test('getColumns', async () => {
-    const config = await loadTestConfig();
-    config.database.runMigrations = false;
-    config.database.disableRunPostDeployMigrations = true;
-    await initDatabase(config);
-
     const client = await getDatabasePool(DatabaseMode.WRITER);
     const result = await getColumns(client, 'DatabaseMigration');
     expect(result).toEqual([
@@ -92,7 +100,120 @@ describe('migration-utils', () => {
         type: 'BOOLEAN',
       },
     ]);
+  });
 
-    await closeDatabase();
+  describe('getFunctionDefinition', () => {
+    test('getFunctionDefinition', async () => {
+      const client = await getDatabasePool(DatabaseMode.WRITER);
+      const result = await getFunctionDefinition(client, 'token_array_to_text');
+      expect(result).toEqual({
+        name: 'token_array_to_text',
+        createQuery: expect.stringContaining('CREATE OR REPLACE FUNCTION public.token_array_to_text'),
+      });
+    });
+
+    test('getFunctionDefinition', async () => {
+      const client = await getDatabasePool(DatabaseMode.WRITER);
+      const result = await getFunctionDefinition(client, 'non_existent_function');
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('parseIndexDefinition', () => {
+    test('parse index', () => {
+      const indexdef =
+        'CREATE INDEX "DomainConfiguration_compartments_idx" ON public."DomainConfiguration" USING gin (compartments)';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['compartments'],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
+
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse UNIQUE index', () => {
+      const indexdef = 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['id'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+      };
+
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse expressions', () => {
+      const indexdef =
+        'CREATE INDEX "Address_address_idx_tsv" ON public."Address" USING gin (to_tsvector(\'simple\'::regconfig, address))';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, address)", name: 'address' }],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse INCLUDE', () => {
+      const indexdef =
+        'CREATE INDEX "Patient_Token_code_system_value_idx" ON public."Patient_Token" USING btree (code, system, value) INCLUDE ("resourceId")';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        indexType: 'btree',
+        columns: ['code', 'system', 'value'],
+        include: ['resourceId'],
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse WHERE', () => {
+      const indexdef =
+        'CREATE INDEX "Coding_Property_target_property_coding_idx" ON public."Coding_Property" USING btree (target, property, coding) WHERE (target IS NOT NULL)';
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['target', 'property', 'coding'],
+        indexType: 'btree',
+        where: 'target IS NOT NULL',
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('missing index type and columns', () => {
+      const indexdef = 'CREATE INDEX "DomainConfiguration_compartments_idx" ON "DomainConfiguration"';
+
+      expect(() => parseIndexDefinition(indexdef)).toThrow('Could not parse index type and expressions from');
+    });
+
+    test('missing index name', () => {
+      const indexdef = 'CREATE INDEX ON "DomainConfiguration" USING gin ((some_column > 5))';
+
+      expect(() => parseIndexDefinition(indexdef)).toThrow('Could not parse index name from');
+    });
+
+    test('parse unsupported index type', () => {
+      const indexdef =
+        'CREATE INDEX "DomainConfiguration_compartments_idx" ON "DomainConfiguration" USING bad_type (compartments)';
+
+      expect(() => parseIndexDefinition(indexdef)).toThrow('Invalid index type: bad_type');
+    });
   });
 });
