@@ -59,8 +59,8 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         const scheduleArray: string[] = [];
         if (!Array.isArray(props.schedule)) {
           scheduleArray.push(
-            isReference(props.schedule)
-              ? (props.schedule.reference as string)
+            isReference<Schedule>(props.schedule, 'Schedule')
+              ? props.schedule.reference
               : getReferenceString(props.schedule as WithId<Schedule>)
           );
         } else {
