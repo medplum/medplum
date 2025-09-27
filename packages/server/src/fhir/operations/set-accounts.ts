@@ -141,7 +141,10 @@ export async function setResourceAccounts(
     accounts: accounts,
     account: accounts?.[0],
   };
-  await repo.updateResource(target);
+  if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  await systemRepo.updateResource(target);
   let count = 1; // Target resource is updated already
 
   if (params.propagate && target.resourceType === 'Patient') {
