@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Client, Pool, PoolClient } from 'pg';
 import { SqlFunctionDefinition } from '../fhir/sql';
+
+export type DbClient = Client | Pool | PoolClient;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -15,12 +18,15 @@ export interface TableDefinition {
   constraints?: CheckConstraintDefinition[];
 }
 
+export const SerialColumnTypes = new Set(['BIGSERIAL', 'SERIAL', 'SMALLSERIAL']);
+
 export interface ColumnDefinition {
   name: string;
   type: string;
   notNull?: boolean;
   defaultValue?: string;
   primaryKey?: boolean;
+  identity?: 'ALWAYS' | 'BY DEFAULT';
 }
 
 export const IndexTypes = ['btree', 'gin', 'gist'] as const;
@@ -35,6 +41,7 @@ export interface IndexDefinition {
   columns: (string | IndexColumn)[];
   indexType: IndexType;
   unique?: boolean;
+  primaryKey?: boolean;
   include?: string[];
   where?: string;
   indexNameSuffix?: string;

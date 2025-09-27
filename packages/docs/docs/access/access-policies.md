@@ -448,7 +448,7 @@ If you are building a patient-facing application (such as [FooMedical](https://g
 
 :::caution Open Patient Registration
 
-Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/auth/open-patient-registration) for instructions on enabling this functionality.
+Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/user-management/open-patient-registration) for instructions on enabling this functionality.
 
 :::
 

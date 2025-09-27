@@ -647,6 +647,25 @@ export function isPopulated<T extends { length: number } | object>(arg: CanBePop
 }
 
 /**
+ * Returns an array with trailing empty elements removed.
+ * For example, [1, 2, 3, null, undefined, ''] becomes [1, 2, 3].
+ * This is useful for FHIR arrays, which by default must maintain the same length,
+ * but while editing we may want to trim trailing empty elements.
+ * @param arr - The input array.
+ * @returns The array with trailing empty elements removed.
+ */
+export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefined {
+  if (!arr) {
+    return undefined;
+  }
+  let i = arr.length - 1;
+  while (i >= 0 && isEmpty(arr[i])) {
+    i--;
+  }
+  return i >= 0 ? arr.slice(0, i + 1) : undefined;
+}
+
+/**
  * Resource equality.
  * Ignores meta.versionId and meta.lastUpdated.
  * @param object1 - The first object.

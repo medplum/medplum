@@ -207,7 +207,7 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 #### `ACCESS_TOKEN`
 
-This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/methods/client-credentials#connecting-to-the-service) for more information.
+This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/client-credentials#connecting-to-the-service) for more information.
 
 #### `INPUT_DATA`
 
