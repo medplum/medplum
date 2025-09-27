@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Client, Pool, PoolClient } from 'pg';
 import { SqlFunctionDefinition } from '../fhir/sql';
+
+export type DbClient = Client | Pool | PoolClient;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
