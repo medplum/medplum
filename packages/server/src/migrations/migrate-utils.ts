@@ -166,7 +166,7 @@ export function escapeUnicode(str: string): string {
   return str.replaceAll(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
     const code = char.codePointAt(0);
     if (code === undefined) {
-      throw new Error('Unhandled character: ' + char);
+      return char;
     }
 
     // tab, carriage return, line feed are okay
@@ -237,18 +237,10 @@ export async function getFunctionDefinition(db: DbClient, name: string): Promise
     throw err;
   }
 
-  if (result.rows.length === 1) {
-    return {
-      name,
-      createQuery: result.rows[0].pg_get_functiondef,
-    };
-  }
-
-  if (result.rows.length > 1) {
-    throw new Error('Multiple functiondefs found for ' + name);
-  }
-
-  return undefined;
+  return {
+    name,
+    createQuery: result.rows[0].pg_get_functiondef,
+  };
 }
 
 export function parseIndexDefinition(indexdef: string): IndexDefinition {
