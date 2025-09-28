@@ -232,10 +232,10 @@ class ResourceValidator implements CrawlerVisitor {
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
-      for (const v of values) {
-        this.constraintsCheck(v, element);
-        this.referenceTypeCheck(v, element);
-        this.checkPropertyValue(v);
+      for (const value of values) {
+        this.constraintsCheck(value, element);
+        this.referenceTypeCheck(value, element);
+        this.checkPropertyValue(value);
 
         const sliceName = checkSliceElement(v, element.slicing);
         if (sliceName && sliceCounts) {
