@@ -237,7 +237,7 @@ class ResourceValidator implements CrawlerVisitor {
         this.referenceTypeCheck(value, element);
         this.checkPropertyValue(value);
 
-        const sliceName = checkSliceElement(v, element.slicing);
+        const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }
