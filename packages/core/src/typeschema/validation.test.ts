@@ -1080,9 +1080,7 @@ describe('FHIR resource validation', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.JSON };
     // Intentionally invalid: data should be base64 string, not object
     binary.data = { foo: 'bar' } as unknown as string;
-    expect(() => validateResource(binary)).toThrow(
-      'Invalid JSON type: expected string, but got object (Binary.data)'
-    );
+    expect(() => validateResource(binary)).toThrow('Invalid additional property "foo" (Binary.data.foo)');
   });
 
   test('boolean', () => {

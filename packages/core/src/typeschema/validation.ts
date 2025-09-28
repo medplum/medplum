@@ -194,14 +194,6 @@ class ResourceValidator implements CrawlerVisitor {
       throw new Error(`Missing element validation schema for ${key}`);
     }
 
-    // Special handling for Binary.data
-    // - Treat as opaque base64; do not recurse or apply generic string constraints (1 MB cap, trim, etc.)
-    // - This prevents excessive work and potential stack overflow on very large payloads
-    const isBinaryData =
-      this.currentResource.length > 0 &&
-      this.currentResource[this.currentResource.length - 1]?.resourceType === 'Binary' &&
-      key === 'data';
-
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
         return;
@@ -243,34 +235,7 @@ class ResourceValidator implements CrawlerVisitor {
       for (const v of values) {
         this.constraintsCheck(v, element);
         this.referenceTypeCheck(v, element);
-
-        if (isBinaryData) {
-          // Fast-path validation for Binary.data
-          const pathForIssues = v.path;
-          if (typeof v.value !== 'string') {
-            this.issues.push(createStructureIssue(pathForIssues, 'Invalid JSON type: expected string, but got ' + typeof v.value));
-          } else {
-            // Validate base64 shape with a permissive regex; avoid expensive ops like trim on very large strings
-            const base64Re = validationRegexes.base64Binary;
-            if (!base64Re.exec(v.value)) {
-              this.issues.push(createStructureIssue(pathForIssues, 'Invalid base64Binary format'));
-            }
-            // Optional upper bound to avoid pathological payloads; allow large binaries (50MB decoded)
-            let padding = 0;
-            if (v.value.endsWith('==')) {
-              padding = 2;
-            } else if (v.value.endsWith('=')) {
-              padding = 1;
-            }
-            const approxBytes = Math.max(0, Math.floor((v.value.length * 3) / 4) - padding);
-            const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
-            if (approxBytes > MAX_BYTES) {
-              this.issues.push(createStructureIssue(pathForIssues, `base64Binary exceeds ${MAX_BYTES} bytes`));
-            }
-          }
-        } else {
-          this.checkPropertyValue(v);
-        }
+        this.checkPropertyValue(v);
 
         const sliceName = checkSliceElement(v, element.slicing);
         if (sliceName && sliceCounts) {
@@ -535,13 +500,52 @@ class ResourceValidator implements CrawlerVisitor {
       }
       // Then, perform additional checks for specialty types
       if (expectedType === 'string') {
-        this.validateString(value as string, type, path);
+        if (type === 'base64Binary') {
+          this.validateBase64Binary(value as string, path);
+        } else {
+          this.validateString(value as string, type, path);
+        }
       } else if (expectedType === 'number') {
         this.validateNumber(value as number, type, path);
       }
     }
     if (extensionElement) {
       crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
+    }
+  }
+
+  /**
+   * Validate FHIR base64Binary primitive.
+   * - No generic string checks (whitespace trimming or 1MB limit) apply.
+   * - Validate base64 alphabet and padding.
+   * - Apply an approximate decoded-size limit to guard against pathological payloads.
+   * @param str - The base64-encoded string.
+   * @param path - The FHIR element path for issue reporting.
+   */
+  private validateBase64Binary(str: string, path: string): void {
+    // Must be a non-empty string; allow empty only if schema constraints permit it (handled elsewhere)
+    if (typeof str !== 'string') {
+      this.issues.push(createStructureIssue(path, 'Invalid JSON type: expected string, but got ' + typeof str));
+      return;
+    }
+
+    const regex = validationRegexes.base64Binary;
+    if (regex && !regex.exec(str)) {
+      this.issues.push(createStructureIssue(path, 'Invalid base64Binary format'));
+      return;
+    }
+
+    // Approximate decoded size: 3/4 of length minus padding
+    let padding = 0;
+    if (str.endsWith('==')) {
+      padding = 2;
+    } else if (str.endsWith('=')) {
+      padding = 1;
+    }
+    const approxBytes = Math.max(0, Math.floor((str.length * 3) / 4) - padding);
+    const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+    if (approxBytes > MAX_BYTES) {
+      this.issues.push(createStructureIssue(path, `base64Binary exceeds ${MAX_BYTES} bytes`));
     }
   }
 
