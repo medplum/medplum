@@ -4,7 +4,7 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 
-
+const PATIENT_APP_URL =  'https://example.com';
 export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>): Promise<void>{  
   const encounter = event.input as Encounter;
   if (encounter.status !== 'finished') {
@@ -102,8 +102,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
     html:`
       <p>Hello ${patientName},</p>
       <p>Following up from your appointment with ${providerName} today.</p>
-      <p><a href="example.com/Appointment/${appointmentId}">View your visit summary</a></p>
-      <p>Remember to <a href="example.com/get-care">schedule a follow up</a></p>
+      <p><a href="${PATIENT_APP_URL}/Appointment/${appointmentId}">View your visit summary</a></p>
+      <p>Remember to <a href="${PATIENT_APP_URL}/get-care">schedule a follow up</a></p>
     `,
   });
 }
