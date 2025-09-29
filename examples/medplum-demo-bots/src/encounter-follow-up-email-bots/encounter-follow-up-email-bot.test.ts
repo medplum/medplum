@@ -452,7 +452,7 @@ describe('Encounter Follow-up Email Bot', () => {
 
     expect(sendEmailSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        html: expect.stringContaining('href="example.com/Appointment/12345"'),
+        html: expect.stringContaining('href="https://example.com/Appointment/12345"'),
       })
     );
     sendEmailSpy.mockRestore();
@@ -486,7 +486,7 @@ describe('Encounter Follow-up Email Bot', () => {
 
     expect(sendEmailSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        html: expect.stringContaining('href="example.com/Appointment/"'),
+        html: expect.stringContaining('href="https://example.com/Appointment/"'),
       })
     );
     sendEmailSpy.mockRestore();
