@@ -23,7 +23,7 @@ done
 # If called with "--update", then use npm i
 if [ "$1" == "--update" ]; then
   rm -rf package-lock.json
-  npm i --strict-peer-deps
+  npm i --strict-peer-deps --prefer-dedupe
 else
   npm ci --strict-peer-deps
 fi
