@@ -28,6 +28,7 @@ import {
   deepEquals,
   deepIncludes,
   escapeHtml,
+  findCodeBySystem,
   findObservationInterval,
   findObservationReferenceRange,
   findObservationReferenceRanges,
@@ -69,6 +70,7 @@ import {
   sortStringArray,
   splitN,
   stringify,
+  trimTrailingEmptyElements,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -265,6 +267,16 @@ describe('Core Utils', () => {
 
     expect(isEmpty(input)).toBe(emptyExpected);
     expect(isPopulated(input)).toBe(populatedExpected);
+  });
+
+  test('trimTrailingEmptyElements', () => {
+    expect(trimTrailingEmptyElements(undefined)).toBeUndefined();
+    expect(trimTrailingEmptyElements([])).toBeUndefined();
+    expect(trimTrailingEmptyElements([null, undefined, ''])).toBeUndefined();
+    expect(trimTrailingEmptyElements([1, 2, 3])).toStrictEqual([1, 2, 3]);
+    expect(trimTrailingEmptyElements([1, 2, 3, null, undefined, ''])).toStrictEqual([1, 2, 3]);
+    expect(trimTrailingEmptyElements([1, 2, 3, 0])).toStrictEqual([1, 2, 3, 0]);
+    expect(trimTrailingEmptyElements([1, null, 2, null])).toStrictEqual([1, null, 2]);
   });
 
   test('getImageSrc', () => {
@@ -823,6 +835,21 @@ describe('Core Utils', () => {
     expect(output).not.toBe(input);
 
     expect(deepClone(undefined)).toBeUndefined();
+  });
+
+  test('findCodeBySystem', () => {
+    const categories: CodeableConcept[] = [
+      {},
+      { text: 'test' },
+      { coding: [{ system: 'x', code: '1' }] },
+      { coding: [{ system: 'y', code: '2' }] },
+      { coding: [{ system: 'x', code: '3' }] },
+    ];
+    expect(findCodeBySystem(undefined, 'x')).toBeUndefined();
+    expect(findCodeBySystem([], 'x')).toBeUndefined();
+    expect(findCodeBySystem(categories, 'x')).toStrictEqual('1');
+    expect(findCodeBySystem(categories, 'y')).toStrictEqual('2');
+    expect(findCodeBySystem(categories, 'z')).toStrictEqual(undefined);
   });
 
   test('Capitalize', () => {
@@ -1602,7 +1629,7 @@ describe('flatMapFilter', () => {
 
   test('flattens nested arrays', () => {
     const input = [1, 2, 3];
-    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toStrictEqual([2, 2, 2]);
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, x] : x))).toStrictEqual([1, 2, 2, 3]);
   });
 });
 

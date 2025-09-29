@@ -81,4 +81,25 @@ describe('AddressInput', () => {
       postalCode: '97403',
     });
   });
+
+  test('Remove 2nd line', async () => {
+    let lastValue: Address | undefined = undefined;
+
+    render(
+      <AddressInput
+        {...defaultProps}
+        defaultValue={{ line: ['line 1', 'line 2'] }}
+        onChange={(value) => (lastValue = value)}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Line 2'), {
+        target: { value: '' },
+      });
+    });
+
+    expect(lastValue).toBeDefined();
+    expect(lastValue).toMatchObject({ line: ['line 1'] });
+  });
 });

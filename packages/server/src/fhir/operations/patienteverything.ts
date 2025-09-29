@@ -99,6 +99,7 @@ export async function getPatientEverything(
   // Recursively resolve references to resources not in the official compartment, but
   // which should be included for completeness
   await addResolvedReferences(repo, bundle.entry);
+  bundle.entry = removeDuplicateEntries(bundle.entry);
   return bundle;
 }
 
@@ -194,4 +195,26 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
     }
   }
   return foundReferences;
+}
+
+/**
+ * Removes duplicate entries from the given list of bundle entries.
+ * @param entries - The bundle entries.
+ * @returns The deduplicated bundle entries.
+ */
+function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
+  if (!entries) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const resource = entry.resource as WithId<Resource>;
+    const ref = getReferenceString(resource);
+    if (seen.has(ref)) {
+      return false;
+    } else {
+      seen.add(ref);
+      return true;
+    }
+  });
 }
