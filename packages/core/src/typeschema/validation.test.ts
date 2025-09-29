@@ -1083,6 +1083,32 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(binary)).toThrow('Invalid additional property "foo" (Binary.data.foo)');
   });
 
+  test('base64Binary exceeds configured byte cap fails', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const bytes = Buffer.alloc(2 * 1024, 7); // 2 KB decoded
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: 1024 })).toThrow(
+      'base64Binary exceeds 1024 bytes'
+    );
+  });
+
+  test('base64Binary decoded size equal to cap passes', () => {
+    const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
+    const cap = 1024;
+    const bytes = Buffer.alloc(cap, 1);
+    binary.data = bytes.toString('base64');
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
+  test('Attachment.data respects base64Binary cap (fail > cap; pass == cap)', () => {
+    const cap = 1536; // 1.5 KB
+    const p1: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap + 1).toString('base64') }] };
+    expect(() => validateResource(p1, { base64BinaryMaxBytes: cap })).toThrow('base64Binary exceeds 1536 bytes');
+
+    const p2: Patient = { resourceType: 'Patient', photo: [{ data: Buffer.alloc(cap).toString('base64') }] };
+    expect(() => validateResource(p2, { base64BinaryMaxBytes: cap })).not.toThrow();
+  });
+
   test('boolean', () => {
     const patient: Patient = { resourceType: 'Patient' };
 

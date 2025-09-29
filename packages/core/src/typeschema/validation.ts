@@ -108,6 +108,7 @@ const skippedConstraintKeys: Record<string, boolean> = {
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
+  base64BinaryMaxBytes?: number;
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
@@ -126,6 +127,7 @@ class ResourceValidator implements CrawlerVisitor {
   private readonly root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
+  private readonly base64BinaryMaxBytes: number;
 
   constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
@@ -139,6 +141,7 @@ class ResourceValidator implements CrawlerVisitor {
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
+    this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 50 * 1024 * 1024;
   }
 
   validate(): OperationOutcomeIssue[] {
@@ -498,13 +501,12 @@ class ResourceValidator implements CrawlerVisitor {
         }
         return;
       }
+      
       // Then, perform additional checks for specialty types
-      if (expectedType === 'string') {
-        if (type === 'base64Binary') {
-          this.validateBase64Binary(value as string, path);
-        } else {
-          this.validateString(value as string, type, path);
-        }
+      if (type === 'base64Binary') {
+        this.validateBase64Binary(value as string, path);
+      } else if (expectedType === 'string') {
+        this.validateString(value as string, type, path);
       } else if (expectedType === 'number') {
         this.validateNumber(value as number, type, path);
       }
@@ -523,18 +525,10 @@ class ResourceValidator implements CrawlerVisitor {
    * @param path - The FHIR element path for issue reporting.
    */
   private validateBase64Binary(str: string, path: string): void {
-    // Must be a non-empty string; allow empty only if schema constraints permit it (handled elsewhere)
-    if (typeof str !== 'string') {
-      this.issues.push(createStructureIssue(path, 'Invalid JSON type: expected string, but got ' + typeof str));
-      return;
-    }
-
-    const regex = validationRegexes.base64Binary;
-    if (regex && !regex.exec(str)) {
+    if (!validationRegexes.base64Binary.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid base64Binary format'));
       return;
     }
-
     // Approximate decoded size: 3/4 of length minus padding
     let padding = 0;
     if (str.endsWith('==')) {
@@ -543,9 +537,8 @@ class ResourceValidator implements CrawlerVisitor {
       padding = 1;
     }
     const approxBytes = Math.max(0, Math.floor((str.length * 3) / 4) - padding);
-    const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
-    if (approxBytes > MAX_BYTES) {
-      this.issues.push(createStructureIssue(path, `base64Binary exceeds ${MAX_BYTES} bytes`));
+    if (approxBytes > this.base64BinaryMaxBytes) {
+      this.issues.push(createStructureIssue(path, `base64Binary exceeds ${this.base64BinaryMaxBytes} bytes`));
     }
   }
 
