@@ -893,11 +893,6 @@ export class App {
         limit = command.limit;
       } else if (this.isAgentPushMessage(command)) {
         limit = this.parseLogCommandFromTransmitBody(command);
-      } else {
-        // This should only happen when type is `agent:transmit:request`, but might as well be defensive
-        throw new Error(
-          `Invalid message type for logs fetch request: ${(command as AgentTransmitRequest).type}, use 'agent:logs:request' or 'push'`
-        );
       }
 
       const logs = await this.log.fetchLogs({ limit });
@@ -934,7 +929,7 @@ export class App {
   }
 
   private isAgentPushMessage(message: AgentRequestMessage): message is AgentTransmitRequest {
-    if ((message as any).type === 'push') {
+    if (['push', 'agent:transmit:request'].includes((message as any).type)) {
       return true;
     }
     return false;

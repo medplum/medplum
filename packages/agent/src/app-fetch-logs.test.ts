@@ -967,11 +967,11 @@ describe('Fetch Logs', () => {
     });
   });
 
-  test('should throw error for agent:transmit:request message type', async () => {
+  test('should also allow agent:transmit:request message type', async () => {
     const state = {
       mySocket: undefined as Client | undefined,
-      gotAgentError: false,
-      agentError: undefined as unknown as AgentError,
+      gotAgentResponse: false,
+      agentResponse: undefined as unknown as AgentTransmitResponse,
     };
 
     function mockConnectionHandler(socket: Client): void {
@@ -988,12 +988,13 @@ describe('Fetch Logs', () => {
             break;
 
           case 'agent:transmit:response':
-            // We don't expect valid responses in this test
+            state.gotAgentResponse = true;
+            state.agentResponse = command;
             break;
 
           case 'agent:error':
-            state.gotAgentError = true;
-            state.agentError = command;
+            // We don't expect valid responses in this test
+
             break;
 
           default:
@@ -1048,7 +1049,7 @@ describe('Fetch Logs', () => {
       shouldThrow = true;
     }, 2500);
 
-    while (!state.gotAgentError) {
+    while (!state.gotAgentResponse) {
       if (shouldThrow) {
         throw new Error('Timeout waiting for transmit response');
       }
@@ -1056,10 +1057,21 @@ describe('Fetch Logs', () => {
     }
     clearTimeout(timeout);
 
-    expect(state.gotAgentError).toBe(true);
-    expect(state.agentError.body).toBe(
-      "Invalid message type for logs fetch request: agent:transmit:request, use 'agent:logs:request' or 'push'"
-    );
+    expect(state.gotAgentResponse).toStrictEqual(true);
+    expect(state.agentResponse.contentType).toStrictEqual(ContentType.TEXT);
+    expect(state.agentResponse.body).toBeDefined();
+    expect(typeof state.agentResponse.body).toBe('string');
+
+    // Verify logs are newline-delimited JSON strings
+    const logLines = state.agentResponse.body.split('\n');
+    expect(logLines.length).toBeGreaterThan(0);
+
+    // Verify each line is valid JSON
+    for (const line of logLines) {
+      if (line.trim()) {
+        expect(() => JSON.parse(line)).not.toThrow();
+      }
+    }
 
     await app.stop();
     await new Promise<void>((resolve) => {
