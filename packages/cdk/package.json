@@ -25,7 +25,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "3.896.0",
+    "@aws-sdk/client-ssm": "3.899.0",
     "@aws-sdk/types": "3.893.0",
     "@medplum/core": "4.4.1",
     "aws-cdk-lib": "2.217.0",
