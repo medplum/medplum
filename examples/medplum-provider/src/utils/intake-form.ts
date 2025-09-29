@@ -1,271 +1,74 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addProfileToResource, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import {
-  addAllergy,
-  addCondition,
-  addConsent,
-  addCoverage,
-  addExtension,
-  addFamilyMemberHistory,
-  addImmunization,
-  addLanguage,
-  addMedication,
-  addPharmacy,
-  consentCategoryMapping,
-  consentPolicyRuleMapping,
-  consentScopeMapping,
-  convertDateToDateTime,
-  extensionURLMapping,
-  getGroupRepeatedAnswers,
-  getHumanName,
-  getPatientAddress,
-  observationCategoryMapping,
-  observationCodeMapping,
-  PROFILE_URLS,
-  upsertObservation,
-} from './intake-utils';
+import { MedplumClient, WithId } from '@medplum/core';
+import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
 
-export async function onboardPatient(
-  medplum: MedplumClient,
-  questionnaire: Questionnaire,
-  response: QuestionnaireResponse
-): Promise<Patient> {
-  const answers = getQuestionnaireAnswers(response);
+/**
+ * Onboards a patient using questionnaire response data.
+ *
+ * This function uses the new QuestionnaireResponse/$extract operation (from Medplum PR #7412)
+ * which automatically extracts FHIR resources from questionnaire responses using SDC IG extensions.
+ * The questionnaire should contain template resources and extraction rules defined by the
+ * Structured Data Capture Implementation Guide.
+ *
+ * @param medplum - The Medplum client
+ * @param questionnaire - The questionnaire with extraction rules and template resources
+ * @param response - The questionnaire response containing the patient data
+ * @returns The created Patient resource
+ */
+export async function onboardPatient(medplum: MedplumClient, response: QuestionnaireResponse): Promise<Patient> {
+  // Use the QuestionnaireResponse/$extract operation to automatically extract resources
+  console.log('Using QuestionnaireResponse/$extract operation for automatic resource extraction');
 
-  let patient: Patient = {
-    resourceType: 'Patient',
-  };
+  const questionnaireResponse: WithId<QuestionnaireResponse> = await medplum.createResource(response);
 
-  patient = addProfileToResource(patient, PROFILE_URLS.Patient);
+  const extractResult = await medplum.get(
+    medplum.fhirUrl('QuestionnaireResponse', questionnaireResponse.id as string, '$extract')
+  );
 
-  // Handle demographic information
+  // The extract operation returns a Bundle with the extracted resources
+  const extractedBundle = extractResult as any;
+  console.log('Extract operation result:', JSON.stringify(extractedBundle, null, 2));
+  console.log('Extract operation entries:', extractedBundle.entry?.length || 0);
 
-  const patientName = getHumanName(answers);
-  if (patientName) {
-    patient.name = [patientName];
-  }
+  if (extractedBundle.resourceType === 'Bundle' && extractedBundle.entry && extractedBundle.entry.length > 0) {
+    console.log('Processing extracted resources from Bundle...');
 
-  if (answers['dob']?.valueDate) {
-    patient.birthDate = answers['dob'].valueDate;
-  }
+    // Find the Patient resource from the extracted bundle
+    const patientEntry = extractedBundle.entry.find((entry: any) => entry.resource?.resourceType === 'Patient');
 
-  const patientAddress = getPatientAddress(answers);
-  if (patientAddress) {
-    patient.address = [patientAddress];
-  }
+    if (patientEntry?.resource) {
+      console.log('Found Patient resource in extracted Bundle');
 
-  if (answers['gender-identity']?.valueCoding?.code) {
-    patient.gender = answers['gender-identity'].valueCoding.code as Patient['gender'];
-  }
+      // Execute the Bundle as a transaction to create all resources at once
+      try {
+        const transactionResult = await medplum.executeBatch(extractedBundle);
+        console.log('Successfully executed Bundle transaction:', transactionResult);
 
-  if (answers['phone']?.valueString) {
-    patient.telecom = [{ system: 'phone', value: answers['phone'].valueString }];
-  }
+        // Find the created Patient resource in the transaction result
+        const createdPatientEntry = transactionResult.entry?.find(
+          (entry: any) => entry.resource?.resourceType === 'Patient'
+        );
 
-  if (answers['ssn']?.valueString) {
-    patient.identifier = [
-      {
-        type: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-              code: 'SS',
-            },
-          ],
-        },
-        system: 'http://hl7.org/fhir/sid/us-ssn',
-        value: answers['ssn'].valueString,
-      },
-    ];
-  }
-
-  const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
-  if (emergencyContacts) {
-    patient.contact = [];
-    for (const contact of emergencyContacts) {
-      patient.contact.push({
-        relationship: [
-          {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'EP',
-                display: 'Emergency contact person',
-              },
-            ],
-          },
-        ],
-        name: getHumanName(contact, 'emergency-contact-'),
-        telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
-      });
+        if (createdPatientEntry?.resource) {
+          console.log('Successfully created Patient resource via Bundle transaction');
+          return createdPatientEntry.resource as Patient;
+        } else {
+          console.warn('Patient resource not found in transaction result');
+        }
+      } catch (error) {
+        console.error('Error executing Bundle transaction:', error);
+        throw error;
+      }
+    } else {
+      console.warn('No Patient resource found in extracted Bundle');
     }
+  } else {
+    console.warn('Extract operation returned empty Bundle - no resources to extract');
   }
 
-  addExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race'], 'ombCategory');
-  addExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity'], 'ombCategory');
-  addExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
-
-  addLanguage(patient, answers['languages-spoken']?.valueCoding);
-  addLanguage(patient, answers['preferred-language']?.valueCoding, true);
-
-  // Create the patient resource
-
-  patient = await medplum.createResource(patient);
-
-  // NOTE: Updating the questionnaire response does not trigger a loop because the bot subscription
-  // is configured for "create"-only event.
-  response.subject = createReference(patient);
-  await medplum.createResource(response);
-
-  // Handle observations
-
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.sexualOrientation,
-    observationCategoryMapping.socialHistory,
-    'valueCodeableConcept',
-    answers['sexual-orientation']?.valueCoding,
-    PROFILE_URLS.ObservationSexualOrientation
+  // If we get here, the extract operation didn't work as expected
+  throw new Error(
+    'QuestionnaireResponse/$extract operation did not return a valid Patient resource. Please ensure the questionnaire has proper SDC IG extensions configured.'
   );
-
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.housingStatus,
-    observationCategoryMapping.sdoh,
-    'valueCodeableConcept',
-    answers['housing-status']?.valueCoding
-  );
-
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.educationLevel,
-    observationCategoryMapping.sdoh,
-    'valueCodeableConcept',
-    answers['education-level']?.valueCoding
-  );
-
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.smokingStatus,
-    observationCategoryMapping.socialHistory,
-    'valueCodeableConcept',
-    answers['smoking-status']?.valueCoding,
-    PROFILE_URLS.ObservationSmokingStatus
-  );
-
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.pregnancyStatus,
-    observationCategoryMapping.socialHistory,
-    'valueCodeableConcept',
-    answers['pregnancy-status']?.valueCoding
-  );
-
-  const estimatedDeliveryDate = convertDateToDateTime(answers['estimated-delivery-date']?.valueDate);
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.estimatedDeliveryDate,
-    observationCategoryMapping.socialHistory,
-    'valueDateTime',
-    estimatedDeliveryDate ? { valueDateTime: estimatedDeliveryDate } : undefined
-  );
-
-  // Handle allergies
-
-  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
-  for (const allergy of allergies) {
-    await addAllergy(medplum, patient, allergy);
-  }
-
-  // Handle medications
-
-  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
-  for (const medication of medications) {
-    await addMedication(medplum, patient, medication);
-  }
-
-  // Handle medical history
-
-  const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
-  for (const history of medicalHistory) {
-    await addCondition(medplum, patient, history);
-  }
-
-  const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
-  for (const history of familyMemberHistory) {
-    await addFamilyMemberHistory(medplum, patient, history);
-  }
-
-  // Handle vaccination history (immunizations)
-
-  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
-  for (const vaccine of vaccinationHistory) {
-    await addImmunization(medplum, patient, vaccine);
-  }
-
-  // Handle coverage
-
-  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
-  for (const provider of insuranceProviders) {
-    await addCoverage(medplum, patient, provider);
-  }
-
-  // Handle preferred pharmacy
-
-  const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
-  if (preferredPharmacyReference) {
-    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
-  }
-
-  // Handle consents
-
-  await addConsent(
-    medplum,
-    patient,
-    !!answers['consent-for-treatment-signature']?.valueBoolean,
-    consentScopeMapping.treatment,
-    consentCategoryMapping.med,
-    consentPolicyRuleMapping.cric,
-    convertDateToDateTime(answers['consent-for-treatment-date']?.valueDate)
-  );
-
-  await addConsent(
-    medplum,
-    patient,
-    !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
-    consentScopeMapping.treatment,
-    consentCategoryMapping.pay,
-    consentPolicyRuleMapping.hipaaSelfPay,
-    convertDateToDateTime(answers['agreement-to-pay-for-treatment-date']?.valueDate)
-  );
-
-  await addConsent(
-    medplum,
-    patient,
-    !!answers['notice-of-privacy-practices-signature']?.valueBoolean,
-    consentScopeMapping.patientPrivacy,
-    consentCategoryMapping.nopp,
-    consentPolicyRuleMapping.hipaaNpp,
-    convertDateToDateTime(answers['notice-of-privacy-practices-date']?.valueDate)
-  );
-
-  await addConsent(
-    medplum,
-    patient,
-    !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
-    consentScopeMapping.adr,
-    consentCategoryMapping.acd,
-    consentPolicyRuleMapping.adr,
-    convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
-  );
-
-  return patient;
 }
