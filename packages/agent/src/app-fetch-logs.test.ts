@@ -1,7 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { AgentError, AgentLogsRequest, AgentLogsResponse, AgentTransmitRequest, AgentTransmitResponse, allOk, ContentType, LogLevel, sleep } from '@medplum/core';
+import {
+  AgentError,
+  AgentLogsRequest,
+  AgentLogsResponse,
+  AgentTransmitRequest,
+  AgentTransmitResponse,
+  allOk,
+  ContentType,
+  LogLevel,
+  sleep,
+} from '@medplum/core';
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
@@ -637,11 +647,11 @@ describe('Fetch Logs', () => {
     expect(state.transmitResponse.remote).toBe('test-remote');
     expect(state.transmitResponse.body).toBeDefined();
     expect(typeof state.transmitResponse.body).toBe('string');
-    
+
     // Verify logs are newline-delimited JSON strings
     const logLines = state.transmitResponse.body.split('\n');
     expect(logLines.length).toBeGreaterThan(0);
-    
+
     // Verify each line is valid JSON
     for (const line of logLines) {
       if (line.trim()) {
@@ -749,11 +759,11 @@ describe('Fetch Logs', () => {
     expect(state.transmitResponse.contentType).toBe(ContentType.TEXT);
     expect(state.transmitResponse.body).toBeDefined();
     expect(typeof state.transmitResponse.body).toBe('string');
-    
+
     // Verify logs are newline-delimited JSON strings
     const logLines = state.transmitResponse.body.split('\n');
     expect(logLines.length).toBeGreaterThan(0);
-    
+
     // Verify each line is valid JSON
     for (const line of logLines) {
       if (line.trim()) {
@@ -855,7 +865,6 @@ describe('Fetch Logs', () => {
     expect(state.gotAgentError).toBe(true);
     expect(state.agentError.body).toBe('Invalid body for logs fetch request - must start with: LOGS');
 
-
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
@@ -948,7 +957,9 @@ describe('Fetch Logs', () => {
     clearTimeout(timeout);
 
     expect(state.gotAgentError).toBe(true);
-    expect(state.agentError.body).toBe('Invalid second arg to logs fetch request - Body must be empty or of format: LOGS [limit]');
+    expect(state.agentError.body).toBe(
+      'Invalid second arg to logs fetch request - Body must be empty or of format: LOGS [limit]'
+    );
 
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -1046,7 +1057,9 @@ describe('Fetch Logs', () => {
     clearTimeout(timeout);
 
     expect(state.gotAgentError).toBe(true);
-    expect(state.agentError.body).toBe('Invalid message type for logs fetch request: agent:transmit:request, use \'agent:logs:request\' or \'push\'');
+    expect(state.agentError.body).toBe(
+      "Invalid message type for logs fetch request: agent:transmit:request, use 'agent:logs:request' or 'push'"
+    );
 
     await app.stop();
     await new Promise<void>((resolve) => {
