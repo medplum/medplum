@@ -32,10 +32,10 @@
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
     "eslint": "^8",
-    "eslint-plugin-jsdoc": "^50",
+    "eslint-plugin-jsdoc": "^60",
     "eslint-plugin-header": "^3",
     "eslint-plugin-no-only-tests": "^3.3.0",
-    "eslint-plugin-react-hooks": "^4",
+    "eslint-plugin-react-hooks": "^5",
     "eslint-plugin-react-refresh": "^0"
   },
   "engines": {
