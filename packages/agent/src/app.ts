@@ -899,7 +899,7 @@ export class App {
           `Invalid message type for logs fetch request: ${(command as AgentTransmitRequest).type}, use 'agent:logs:request' or 'push'`
         );
       }
-      
+
       const logs = await this.log.fetchLogs({ limit });
       if (this.isAgentPushMessage(command)) {
         await this.sendToWebSocket({
