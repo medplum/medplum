@@ -886,18 +886,20 @@ export class App {
       });
       return;
     }
-    let limit: number | undefined;
-    if (command.type === 'agent:logs:request') {
-      limit = command.limit;
-    } else if (this.isAgentPushMessage(command)) {
-      limit = this.parseLogCommandFromTransmitBody(command);
-    } else {
-      // This should only happen when type is `agent:transmit:request`, but might as well be defensive
-      throw new Error(
-        `Invalid message type for logs fetch request: ${(command as AgentTransmitRequest).type}, use 'agent:logs:request' or 'push'`
-      );
-    }
+
     try {
+      let limit: number | undefined;
+      if (command.type === 'agent:logs:request') {
+        limit = command.limit;
+      } else if (this.isAgentPushMessage(command)) {
+        limit = this.parseLogCommandFromTransmitBody(command);
+      } else {
+        // This should only happen when type is `agent:transmit:request`, but might as well be defensive
+        throw new Error(
+          `Invalid message type for logs fetch request: ${(command as AgentTransmitRequest).type}, use 'agent:logs:request' or 'push'`
+        );
+      }
+      
       const logs = await this.log.fetchLogs({ limit });
       if (this.isAgentPushMessage(command)) {
         await this.sendToWebSocket({

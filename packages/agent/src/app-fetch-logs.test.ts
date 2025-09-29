@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { AgentError, AgentLogsRequest, AgentLogsResponse, allOk, LogLevel, sleep } from '@medplum/core';
+import { AgentError, AgentLogsRequest, AgentLogsResponse, AgentTransmitRequest, AgentTransmitResponse, allOk, ContentType, LogLevel, sleep } from '@medplum/core';
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
@@ -535,6 +535,519 @@ describe('Fetch Logs', () => {
     expect(typeof state.errorMessage).toBe('string');
 
     fetchLogsSpy.mockRestore();
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should successfully fetch logs via push message with WinstonWrapperLogger', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotTransmitResponse: false,
+      transmitResponse: undefined as unknown as AgentTransmitResponse,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:transmit:response':
+            state.gotTransmitResponse = true;
+            state.transmitResponse = command;
+            break;
+
+          case 'agent:error':
+            // We don't expect errors in this test
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 5);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a push message with FETCH_LOGS_REQUEST content type
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'push',
+          contentType: ContentType.FETCH_LOGS_REQUEST,
+          body: 'LOGS 10',
+          channel: 'test-channel',
+          remote: 'test-remote',
+          callback: randomUUID(),
+        } as unknown as AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the transmit response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotTransmitResponse) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for transmit response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotTransmitResponse).toBe(true);
+    expect(state.transmitResponse.statusCode).toBe(200);
+    expect(state.transmitResponse.contentType).toBe(ContentType.TEXT);
+    expect(state.transmitResponse.channel).toBe('test-channel');
+    expect(state.transmitResponse.remote).toBe('test-remote');
+    expect(state.transmitResponse.body).toBeDefined();
+    expect(typeof state.transmitResponse.body).toBe('string');
+    
+    // Verify logs are newline-delimited JSON strings
+    const logLines = state.transmitResponse.body.split('\n');
+    expect(logLines.length).toBeGreaterThan(0);
+    
+    // Verify each line is valid JSON
+    for (const line of logLines) {
+      if (line.trim()) {
+        expect(() => JSON.parse(line)).not.toThrow();
+      }
+    }
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should fetch logs with empty body (no limit) via push message', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotTransmitResponse: false,
+      transmitResponse: undefined as unknown as AgentTransmitResponse,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:transmit:response':
+            state.gotTransmitResponse = true;
+            state.transmitResponse = command;
+            break;
+
+          case 'agent:error':
+            // We don't expect errors in this test
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 15);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a push message with empty body (should use default limit)
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'push',
+          contentType: ContentType.FETCH_LOGS_REQUEST,
+          body: '',
+          channel: 'test-channel',
+          remote: 'test-remote',
+          callback: randomUUID(),
+        } as unknown as AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the transmit response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotTransmitResponse) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for transmit response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotTransmitResponse).toBe(true);
+    expect(state.transmitResponse.statusCode).toBe(200);
+    expect(state.transmitResponse.contentType).toBe(ContentType.TEXT);
+    expect(state.transmitResponse.body).toBeDefined();
+    expect(typeof state.transmitResponse.body).toBe('string');
+    
+    // Verify logs are newline-delimited JSON strings
+    const logLines = state.transmitResponse.body.split('\n');
+    expect(logLines.length).toBeGreaterThan(0);
+    
+    // Verify each line is valid JSON
+    for (const line of logLines) {
+      if (line.trim()) {
+        expect(() => JSON.parse(line)).not.toThrow();
+      }
+    }
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should return error for invalid body format in push message', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentError: false,
+      agentError: undefined as unknown as AgentError,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            state.agentError = command;
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 5);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a push message with invalid body format (not starting with "LOGS")
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'push',
+          contentType: ContentType.FETCH_LOGS_REQUEST,
+          body: 'INVALID 10',
+          channel: 'test-channel',
+          remote: 'test-remote',
+          callback: randomUUID(),
+        } as unknown as AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the transmit response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for transmit response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentError).toBe(true);
+    expect(state.agentError.body).toBe('Invalid body for logs fetch request - must start with: LOGS');
+
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should return error for non-integer limit in push message', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentError: false,
+      agentError: undefined as unknown as AgentError,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            state.agentError = command;
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 5);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send a push message with non-integer limit
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'push',
+          contentType: ContentType.FETCH_LOGS_REQUEST,
+          body: 'LOGS abc',
+          channel: 'test-channel',
+          remote: 'test-remote',
+          callback: randomUUID(),
+        } as unknown as AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the error response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for error response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentError).toBe(true);
+    expect(state.agentError.body).toBe('Invalid second arg to logs fetch request - Body must be empty or of format: LOGS [limit]');
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should throw error for agent:transmit:request message type', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentError: false,
+      agentError: undefined as unknown as AgentError,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:transmit:response':
+            // We don't expect valid responses in this test
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            state.agentError = command;
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // Create a Winston logger with some test logs
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 5);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Send an agent:transmit:request message (should throw error as mentioned in app.ts)
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.FETCH_LOGS_REQUEST,
+          body: 'LOGS 10',
+          channel: 'test-channel',
+          remote: 'test-remote',
+          callback: randomUUID(),
+        } as AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the transmit response
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for transmit response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.gotAgentError).toBe(true);
+    expect(state.agentError.body).toBe('Invalid message type for logs fetch request: agent:transmit:request, use \'agent:logs:request\' or \'push\'');
+
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
