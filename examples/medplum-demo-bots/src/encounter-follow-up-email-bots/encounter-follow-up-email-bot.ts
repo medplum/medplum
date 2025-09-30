@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient, formatHumanName, formatDate } from '@medplum/core';
 import { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 
 const PATIENT_APP_URL =  'https://example.com';
@@ -20,8 +20,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
     console.log('Encounter has no subject reference, skipping email');
     return;
   }
-
   const subjectReference = encounter.subject as Reference<Patient>;
+  
   let patient: Patient;
   try {
     patient = await medplum.readReference(subjectReference);
@@ -36,7 +36,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
     return;
   }
 
-  let providerName = '';
   let providerParticipant = encounter.participant
     ?.find((participant) =>
       participant.type?.some((type) =>
@@ -47,63 +46,47 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
         )
       )
     );
-
   if (!providerParticipant) {
     providerParticipant = encounter.participant?.find((participant) => 
       participant.individual?.reference?.includes('Practitioner')
     );
   }
 
+  let providerName: string = '';
+  let practitioner: Practitioner;    
   if (providerParticipant?.individual?.display) {
     providerName = providerParticipant.individual.display;
-  } else if (providerParticipant?.individual?.reference) {
+  } else if (providerParticipant?.individual) {
     try {
-      const practitioner = await medplum.readReference(providerParticipant.individual as Reference<Practitioner>);
-      if (practitioner.name?.[0]?.text) {
-        providerName = practitioner.name[0].text;
-      } else if (practitioner.name?.[0]?.family) {
-        const prefix = practitioner.name[0].prefix?.join(' ') || '';
-        const given = practitioner.name[0].given?.join(' ') || '';
-        const family = practitioner.name[0].family || '';
-        const parts = [prefix, given, family].filter(part => part.trim() !== '');
-        providerName = parts.join(' ') || 'Provider';
-      }
+      practitioner = await medplum.readReference(providerParticipant.individual as Reference<Practitioner>);
+      providerName = formatHumanName(practitioner.name?.[0]);
     } catch (error) {
       console.log(`Failed to read provider reference:`, error);
     }
   }
 
-  let encounterDate = '';
+
+
+  let encounterDate: string = '';
   if (encounter.period?.start) {
-    const date = new Date(encounter.period.start);
-    if (!isNaN(date.getTime())) {
-      encounterDate = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-      });
-    }
+    encounterDate = formatDate(encounter.period.start, 'en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 
-  let patientName = patient.name?.[0]?.text;
-  if (!patientName) {
-    const given = patient.name?.[0]?.given?.join(' ') || '';
-    const family = patient.name?.[0]?.family || '';
-    patientName = (given + ' ' + family).trim();
-  }
-  if (!patientName) {
-    patientName = encounter.subject?.display || 'Patient';
-  }
-
+  const patientName = formatHumanName(patient.name?.[0]) || 'Patient';
   const appointmentId = encounter.appointment?.[0]?.reference?.split('/').pop() || '';
   await medplum.sendEmail({
     to: patientEmail,
     subject: `Follow up from your appointment with ${providerName} - ${encounterDate}`,
-    html:`
-      <p>Hello ${patientName},</p>
-      <p>Following up from your appointment with ${providerName} today.</p>
-      <p><a href="${PATIENT_APP_URL}/Appointment/${appointmentId}">View your visit summary</a></p>
-      <p>Remember to <a href="${PATIENT_APP_URL}/get-care">schedule a follow up</a></p>
-    `,
+    html: `
+    <p>Hello ${patientName},</p>
+    <p>Following up from your appointment with ${providerName} today.</p>
+    <p><a href="${PATIENT_APP_URL}/Appointment/${appointmentId}">View your visit summary</a></p>
+    <p>Remember to <a href="${PATIENT_APP_URL}/get-care">schedule a follow up</a></p>
+  `,
   });
+
 }
