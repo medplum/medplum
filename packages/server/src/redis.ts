@@ -8,7 +8,18 @@ let redis: Redis | undefined = undefined;
 let redisSubscribers: Set<Redis> | undefined = undefined;
 
 export function initRedis(config: MedplumRedisConfig): void {
-  redis = new Redis(config);
+  redis = new Redis({
+    ...config,
+    reconnectOnError: (err) => {
+      if (err.message.includes('READONLY')) {
+        // Reconnect and retry if the connected instance got marked as read-only;
+        // this happens during Redis service updates when the cluster fails over
+        // between primary and replica instances
+        return 2;
+      }
+      return false; // Do not reconnect on other errors
+    },
+  });
 }
 
 export async function closeRedis(): Promise<void> {
