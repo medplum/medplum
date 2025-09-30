@@ -87,12 +87,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
 
   let patientName = patient.name?.[0]?.text;
   if (!patientName) {
-    patientName = encounter.subject?.display || 'Patient';
-  }
-  if (!patientName) {
     const given = patient.name?.[0]?.given?.join(' ') || '';
     const family = patient.name?.[0]?.family || '';
     patientName = (given + ' ' + family).trim();
+  }
+  if (!patientName) {
+    patientName = encounter.subject?.display || 'Patient';
   }
 
   const appointmentId = encounter.appointment?.[0]?.reference?.split('/').pop() || '';
