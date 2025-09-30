@@ -22,24 +22,24 @@ export const SignLockDialog = (props: SignLockDialogProps): JSX.Element => {
     ? formatHumanName(practitionerResource.name[0] as HumanName)
     : 'Unknown Provider';
 
-    const handleConfirm = (): void => {
-      if (!selectedPractitioner && !practitionerResource) {
-        showErrorNotification('Please select a provider');
-        return;
-      }
-  
-      if (selectedPractitioner) {
-        onConfirm(selectedPractitioner);
-        return;
-      }
+  const handleConfirm = (): void => {
+    if (!selectedPractitioner && !practitionerResource) {
+      showErrorNotification('Please select a provider');
+      return;
+    }
 
-      if (!practitionerResource) {
-        showErrorNotification('Invalid provider selection');
-        return;
-      }
-    
-      onConfirm(createReference(practitionerResource));
-    };
+    if (selectedPractitioner) {
+      onConfirm(selectedPractitioner);
+      return;
+    }
+
+    if (!practitionerResource) {
+      showErrorNotification('Invalid provider selection');
+      return;
+    }
+
+    onConfirm(createReference(practitionerResource));
+  };
 
   return (
     <Stack gap="md">
