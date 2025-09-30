@@ -113,5 +113,8 @@
   },
   "v29": {
     "serverVersion": "4.4.3"
+  },
+  "v30": {
+    "serverVersion": "5.0.0"
   }
 }

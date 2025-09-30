@@ -196,7 +196,12 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+      ctx.postDeployAction(
+        () => {
+          actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+        },
+        `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
+      );
     }
   }
 
