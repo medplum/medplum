@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
 
@@ -88,6 +91,7 @@ function generateCsvReport(project: Project | undefined, counts: Record<string, 
  * Uses a batch request to efficiently query all resource types at once.
  *
  * @param medplum - The Medplum client instance
+ * @param projectId - The project ID to get counts for
  * @returns A map of resource type to count
  */
 async function getCountsByResourceType(
