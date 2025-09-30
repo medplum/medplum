@@ -16,7 +16,7 @@ export function IntakeFormPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadOrCreateQuestionnaire() {
+    async function loadOrCreateQuestionnaire(): void {
       try {
         // First, try to find the existing questionnaire by URL
         const searchResult = await medplum.searchOne('Questionnaire', {

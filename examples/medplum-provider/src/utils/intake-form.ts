@@ -12,7 +12,6 @@ import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
  * Structured Data Capture Implementation Guide.
  *
  * @param medplum - The Medplum client
- * @param questionnaire - The questionnaire with extraction rules and template resources
  * @param response - The questionnaire response containing the patient data
  * @returns The created Patient resource
  */
