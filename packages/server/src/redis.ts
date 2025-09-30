@@ -3,6 +3,7 @@
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import { MedplumRedisConfig } from './config/types';
+import { getLogger } from './logger';
 
 let redis: Redis | undefined = undefined;
 let redisSubscribers: Set<Redis> | undefined = undefined;
@@ -17,6 +18,7 @@ export function initRedis(config: MedplumRedisConfig): void {
         // between primary and replica instances
         return 2;
       }
+      getLogger().warn('Unhandled Redis error', err);
       return false; // Do not reconnect on other errors
     },
   });
