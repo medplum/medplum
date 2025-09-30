@@ -726,11 +726,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Add default profiles before validating resource
-    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+    if (!resource.meta?.profile) {
       const defaultProfiles = this.currentProject()?.defaultProfile?.find(
         (o) => o.resourceType === resourceType
       )?.profile;
-      resource.meta = { ...resource.meta, profile: defaultProfiles };
+      if (defaultProfiles?.length) {
+        resource.meta = { ...resource.meta, profile: defaultProfiles };
+      }
     }
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);

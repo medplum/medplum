@@ -14,7 +14,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
@@ -405,5 +405,52 @@ describe('Patient Set Accounts Operation', () => {
     expect(resBody.output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
+  });
+
+  test('Accounts applied to resource with no default profile', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      project: {
+        defaultProfile: [
+          { resourceType: 'Patient', profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'] },
+        ],
+      },
+      membership: { admin: true },
+    });
+
+    const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+    const orgRef = createReference(organization);
+
+    const patientRes = await await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Patient',
+        meta: { accounts: [orgRef] },
+      } satisfies Patient);
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as Patient;
+    const patientRef = createReference(patient);
+    expect(patient.meta?.accounts).toStrictEqual([orgRef]);
+    expect(patient.meta?.compartment).toContainEqual(orgRef);
+
+    const reportRes = await await request(app)
+      .post(`/fhir/R4/DiagnosticReport`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Lab report' },
+        subject: patientRef,
+      } satisfies DiagnosticReport);
+    expect(reportRes.status).toBe(201);
+    const diagnosticReport = reportRes.body as DiagnosticReport;
+    expect(diagnosticReport.subject).toStrictEqual(patientRef);
+    expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));
   });
 });
