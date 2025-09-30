@@ -16,6 +16,18 @@ import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResour
 import { BillingTab } from './BillingTab';
 import { createReference, getReferenceString } from '@medplum/core';
 
+const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
+const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
+const FHIR_DOCUMENT_COMPLETION_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-DocumentCompletion';
+
+const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
+  'completed',
+  'cancelled',
+  'failed',
+  'rejected',
+  'entered-in-error',
+]);
+
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
@@ -43,10 +55,12 @@ export const EncounterChart = (): JSX.Element => {
     if (!encounter) {
       return;
     }
+
     const fetchProvenance = async (): Promise<void> => {
       const provenance = await medplum.searchResources('Provenance', `target=${getReferenceString(encounter)}`);
       setProvenance(provenance[0]);
     };
+
     fetchProvenance().catch((err) => showErrorNotification(err));
   }, [encounter, medplum]);
 
@@ -62,6 +76,7 @@ export const EncounterChart = (): JSX.Element => {
       if (!encounter) {
         return;
       }
+
       try {
         const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, newStatus);
         setEncounter(updatedEncounter);
@@ -105,10 +120,8 @@ export const EncounterChart = (): JSX.Element => {
       return;
     }
 
-    const eligibleStatuses = new Set(['completed', 'cancelled', 'failed', 'rejected', 'entered-in-error']);
-
-    const tasksToUpdate = tasks.filter((task) => !eligibleStatuses.has(task.status));
-
+    // Complete all incomplete tasks
+    const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
     const updatedTasks = await Promise.all(
       tasksToUpdate.map((task) =>
         medplum.updateResource({
@@ -125,7 +138,8 @@ export const EncounterChart = (): JSX.Element => {
       })
     );
 
-    const newProvenance = await medplum.createResource({
+    // Create provenance record with signature
+    const newProvenance = await medplum.createResource<Provenance>({
       resourceType: 'Provenance',
       target: [createReference(encounter)],
       recorded: new Date().toISOString(),
@@ -133,7 +147,7 @@ export const EncounterChart = (): JSX.Element => {
         {
           coding: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-ActReason',
+              system: FHIR_ACT_REASON_SYSTEM,
               code: 'SIGN',
               display: 'Signed',
             },
@@ -145,7 +159,7 @@ export const EncounterChart = (): JSX.Element => {
           type: {
             coding: [
               {
-                system: 'http://terminology.hl7.org/CodeSystem/provenance-participant-type',
+                system: FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM,
                 code: 'author',
               },
             ],
@@ -157,7 +171,7 @@ export const EncounterChart = (): JSX.Element => {
         {
           type: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-DocumentCompletion',
+              system: FHIR_DOCUMENT_COMPLETION_SYSTEM,
               code: 'LA',
               display: 'legally authenticated',
             },
@@ -186,7 +200,6 @@ export const EncounterChart = (): JSX.Element => {
           onTabChange={handleTabChange}
           onSign={handleSign}
         />
-
         <Box p="md">
           {activeTab === 'notes' && (
             <Stack gap="md">
@@ -204,13 +217,11 @@ export const EncounterChart = (): JSX.Element => {
                   />
                 </Card>
               )}
-
               {tasks.map((task: Task) => (
                 <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} enabled={provenance === undefined} />
               ))}
             </Stack>
           )}
-
           {activeTab === 'details' && (
             <BillingTab
               encounter={encounter}
