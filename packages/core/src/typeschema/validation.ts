@@ -501,7 +501,7 @@ class ResourceValidator implements CrawlerVisitor {
         }
         return;
       }
-      
+
       // Then, perform additional checks for specialty types
       if (type === 'base64Binary') {
         this.validateBase64Binary(value as string, path);

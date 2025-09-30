@@ -1087,9 +1087,7 @@ describe('FHIR resource validation', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
     const bytes = Buffer.alloc(2 * 1024, 7); // 2 KB decoded
     binary.data = bytes.toString('base64');
-    expect(() => validateResource(binary, { base64BinaryMaxBytes: 1024 })).toThrow(
-      'base64Binary exceeds 1024 bytes'
-    );
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: 1024 })).toThrow('base64Binary exceeds 1024 bytes');
   });
 
   test('base64Binary decoded size equal to cap passes', () => {
