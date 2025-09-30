@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
-import { ClinicalImpression, Encounter, Task } from '@medplum/fhirtypes';
+import { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
@@ -14,6 +14,7 @@ import { EncounterHeader } from '../../components/encounter/EncounterHeader';
 import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { BillingTab } from './BillingTab';
+import { createReference, getReferenceString } from '@medplum/core';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -36,6 +37,18 @@ export const EncounterChart = (): JSX.Element => {
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
+  const [provenance, setProvenance] = useState<Provenance | undefined>(undefined);
+
+  useEffect(() => {
+    if (!encounter) {
+      return;
+    }
+    const fetchProvenance = async (): Promise<void> => {
+      const provenance = await medplum.searchResources('Provenance', `target=${getReferenceString(encounter)}`);
+      setProvenance(provenance[0]);
+    };
+    fetchProvenance().catch((err) => showErrorNotification(err));
+  }, [encounter, medplum]);
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -87,6 +100,77 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
+  const handleSign = async (practitioner: Reference<Practitioner>): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+
+    const eligibleStatuses = new Set(['completed', 'cancelled', 'failed', 'rejected', 'entered-in-error']);
+
+    const tasksToUpdate = tasks.filter((task) => !eligibleStatuses.has(task.status));
+
+    const updatedTasks = await Promise.all(
+      tasksToUpdate.map((task) =>
+        medplum.updateResource({
+          ...task,
+          status: 'completed',
+        })
+      )
+    );
+
+    setTasks(
+      tasks.map((task) => {
+        const updated = updatedTasks.find((t) => t.id === task.id);
+        return updated || task;
+      })
+    );
+
+    const newProvenance = await medplum.createResource({
+      resourceType: 'Provenance',
+      target: [createReference(encounter)],
+      recorded: new Date().toISOString(),
+      reason: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActReason',
+              code: 'SIGN',
+              display: 'Signed',
+            },
+          ],
+        },
+      ],
+      agent: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/provenance-participant-type',
+                code: 'author',
+              },
+            ],
+          },
+          who: practitioner,
+        },
+      ],
+      signature: [
+        {
+          type: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-DocumentCompletion',
+              code: 'LA',
+              display: 'legally authenticated',
+            },
+          ],
+          when: new Date().toISOString(),
+          who: practitioner,
+        },
+      ],
+    });
+
+    setProvenance(newProvenance);
+  };
+
   if (!patient || !encounter) {
     return <Loading />;
   }
@@ -96,9 +180,11 @@ export const EncounterChart = (): JSX.Element => {
       <Stack justify="space-between" gap={0}>
         <EncounterHeader
           encounter={encounter}
+          signed={provenance !== undefined}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
+          onSign={handleSign}
         />
 
         <Box p="md">
@@ -114,12 +200,13 @@ export const EncounterChart = (): JSX.Element => {
                     autosize
                     minRows={4}
                     maxRows={8}
+                    disabled={provenance !== undefined}
                   />
                 </Card>
               )}
 
               {tasks.map((task: Task) => (
-                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} enabled={provenance === undefined} />
               ))}
             </Stack>
           )}
