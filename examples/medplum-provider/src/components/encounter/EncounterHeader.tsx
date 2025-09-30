@@ -3,7 +3,7 @@
 import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import { Encounter, HumanName, Practitioner } from '@medplum/fhirtypes';
-import { IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown, IconLock } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
 import { useDisclosure } from '@mantine/hooks';
 
@@ -97,9 +97,15 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
           </Stack>
           <Group>
             {status === 'cancelled' || status === 'finished' ? (
-              <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
-                {getStatusDisplay(status)}
-              </Button>
+              <>
+                {status === 'finished' && ( 
+                  <IconLock size={16} style={{ marginRight: 8 }} />
+                )}
+
+                <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
+                  {getStatusDisplay(status)}
+                </Button>
+              </>
             ) : (
               <Menu position="bottom-end" shadow="md">
                 <Menu.Target>
