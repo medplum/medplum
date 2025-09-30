@@ -959,14 +959,8 @@ function buildConceptMappingAttributeTable(result: SchemaDefinition): void {
       { name: 'value', type: 'TEXT', notNull: true },
       { name: 'kind', type: 'TEXT', notNull: true },
     ],
-    indexes: [
-      {
-        indexNameOverride: 'ConceptMapping_Attribute_pkey_idx',
-        indexType: 'btree',
-        columns: ['mapping', 'uri', 'type', 'value', 'kind'],
-        unique: true,
-      },
-    ],
+    compositePrimaryKey: ['mapping', 'uri', 'type', 'value', 'kind'],
+    indexes: [],
   });
 }
 

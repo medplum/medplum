@@ -6,7 +6,7 @@ import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '.
 
 // Repository.VERSION was bumped to 11 for the ConceptMapping lookup table,
 // so reindex all resources with a lower version.
-const maxResourceVersion = 1;
+const maxResourceVersion = 10;
 
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
