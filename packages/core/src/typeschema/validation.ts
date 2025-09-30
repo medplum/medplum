@@ -141,7 +141,7 @@ class ResourceValidator implements CrawlerVisitor {
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
-    this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 50 * 1024 * 1024;
+    this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 1 * 1024 * 1024;
   }
 
   validate(): OperationOutcomeIssue[] {
