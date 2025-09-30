@@ -115,7 +115,12 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             {status === 'cancelled' || status === 'finished' ? (
               <>
                 {status === 'finished' && (
-                  <ActionIcon radius="50%" variant={signed ? 'filled' : 'outline'} color={signed ? 'blue' : 'gray'} onClick={handleSign} >
+                  <ActionIcon
+                    radius="50%"
+                    variant={signed ? 'filled' : 'outline'}
+                    color={signed ? 'blue' : 'gray'}
+                    onClick={handleSign}
+                  >
                     <IconLock size={16} />
                   </ActionIcon>
                 )}
@@ -191,12 +196,8 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
         </Group>
       </Modal>
 
-
       <Modal opened={signOpened} onClose={closeSign} title="Signing As">
-        <SignLockDialog
-          practitioner={practitioner}
-          onConfirm={onConfirmSign}
-        />
+        <SignLockDialog practitioner={practitioner} onConfirm={onConfirmSign} />
       </Modal>
     </>
   );
