@@ -412,7 +412,9 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     pathname: '',
     params: req.params,
     query: Object.create(null), // Defer query param parsing to router for consistency
-    body: req.body,
+    // Express v5 changed the default value of `req.body` from {} to undefined. A decent number of FHIR handlers
+    // rely on the previous behavior, so we defer handling undefined for now
+    body: req.body ?? {},
     headers: req.headers,
     config: {
       graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
