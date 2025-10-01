@@ -125,7 +125,7 @@ protectedCommonRoutes.post(
     }
 
     // If there is an ID, this is a context change request
-    if (req.body?.id) {
+    if (req.body.id) {
       await handleContextChangeRequest(req, res);
       return;
     }
@@ -238,7 +238,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
 }
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
-  const { event } = (req.body ?? {}) as FhircastMessagePayload;
+  const { event } = req.body as FhircastMessagePayload;
   // Check if this an open event
   if (event['hub.event'].endsWith('-open')) {
     await handleOpenContextChangeRequest(req, res);
@@ -255,7 +255,7 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
 
 async function handleOpenContextChangeRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const { event } = (req.body ?? {}) as FhircastMessagePayload<
+  const { event } = req.body as FhircastMessagePayload<
     'DiagnosticReport-open' | 'Patient-open' | 'Encounter-open' | 'ImagingStudy-open'
   >;
   const projectId = ctx.project.id as string;
@@ -321,7 +321,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
 
 async function handleCloseContextChangeRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const { event } = (req.body ?? {}) as FhircastMessagePayload;
+  const { event } = req.body as FhircastMessagePayload;
   const projectId = ctx.project.id as string;
 
   const report = (event.context as FhircastDiagnosticReportCloseContext[]).find(
@@ -339,7 +339,7 @@ async function handleCloseContextChangeRequest(req: Request, res: Response): Pro
 // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html
 async function handleUpdateContextChangeRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const { event } = (req.body ?? {}) as FhircastMessagePayload;
+  const { event } = req.body as FhircastMessagePayload;
   const projectId = ctx.project.id as string;
 
   const currentContext = await getCurrentContext<'DiagnosticReport'>(projectId, event['hub.topic']);
@@ -505,27 +505,33 @@ async function closeCurrentContext(projectId: string, topic: string): Promise<vo
 }
 
 // Get the current subscription status
-protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
-  const ctx = getAuthenticatedContext();
-  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-  // Non-standard FHIRcast extension to support Nuance PowerCast Hub
-  if (!currentContext) {
-    res.status(200).json([]);
-    return;
+protectedSTU2Routes.get(
+  '/:topic',
+  async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
+    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
+    if (!currentContext) {
+      res.status(200).json([]);
+      return;
+    }
+    res.status(200).json(currentContext.context);
   }
-  res.status(200).json(currentContext.context);
-});
+);
 
-protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
-  const ctx = getAuthenticatedContext();
-  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-  if (!currentContext) {
-    // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
-    res.status(200).json({
-      'context.type': '',
-      context: [],
-    });
-    return;
+protectedSTU3Routes.get(
+  '/:topic',
+  async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
+    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+    if (!currentContext) {
+      // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
+      res.status(200).json({
+        'context.type': '',
+        context: [],
+      });
+      return;
+    }
+    res.status(200).json(currentContext);
   }
-  res.status(200).json(currentContext);
-});
+);

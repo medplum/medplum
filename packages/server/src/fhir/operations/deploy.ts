@@ -34,8 +34,8 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
 
   // Validate that the request body has a code property
   // Or that the Bot already has executable code attached
-  const code = (req.body as any).code as string | undefined;
-  const filename = (req.body as any).filename ?? 'index.js';
+  const code = req.body.code as string | undefined;
+  const filename = req.body.filename ?? 'index.js';
 
   try {
     await deployBot(ctx.repo, bot, code, filename);

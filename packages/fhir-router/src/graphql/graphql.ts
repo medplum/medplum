@@ -105,7 +105,7 @@ export async function graphqlHandler(
   router: FhirRouter,
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
-  const { query, operationName, variables } = (req.body ?? {}) as any;
+  const { query, operationName, variables } = req.body;
   if (!query) {
     return [badRequest('Must provide query.')];
   }

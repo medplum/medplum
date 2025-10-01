@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
+import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -22,10 +22,7 @@ export async function projectCloneHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   const { id } = req.params;
-  if (!req.body) {
-    return [badRequest('No request body')];
-  }
-  const { name, resourceTypes, includeIds, excludeIds } = req.body as any;
+  const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
   return [created, result];

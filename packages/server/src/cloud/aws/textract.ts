@@ -109,7 +109,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     mediaProps
   );
 
-  const options = req.body as { comprehend?: boolean } | undefined;
+  const options = req.body as undefined | { comprehend?: boolean };
   if (options?.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.map((b) => b.Text ?? '');
     const text = lines.join('\n');
