@@ -143,7 +143,6 @@ export * from './Organization';
 export * from './OrganizationAffiliation';
 export * from './ParameterDefinition';
 export * from './Parameters';
-export * from './PasswordChangeRequest';
 export * from './Patient';
 export * from './PaymentNotice';
 export * from './PaymentReconciliation';
