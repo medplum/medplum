@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CodeableConcept, Coding, ConceptMap, ConceptMapGroup, OperationOutcome } from '@medplum/fhirtypes';
 import { OperationOutcomeError, badRequest, isOperationOutcome } from '../outcomes';
+import { TypedValue } from '../types';
 
 export interface ConceptMapTranslateParameters {
   url?: string;
@@ -16,6 +17,14 @@ export interface ConceptMapTranslateParameters {
 export interface ConceptMapTranslateMatch {
   equivalence?: string;
   concept?: Coding;
+  property?: ConceptMapTranslateMatchAttribute[];
+  dependsOn?: ConceptMapTranslateMatchAttribute[];
+  product?: ConceptMapTranslateMatchAttribute[];
+}
+
+export interface ConceptMapTranslateMatchAttribute {
+  key: string;
+  value: TypedValue;
 }
 
 export interface ConceptMapTranslateOutput {

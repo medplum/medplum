@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  ConceptMapTranslateMatch,
   ConceptMapTranslateOutput,
   ConceptMapTranslateParameters,
   OperationOutcomeError,
@@ -14,6 +15,7 @@ import {
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ConceptMap } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -59,7 +61,11 @@ export async function translateConcept(
   }
 }
 
-async function findConceptMappings(conceptMap: WithId<ConceptMap>, system: string, codes: string[]): void {
+async function findConceptMappings(
+  conceptMap: WithId<ConceptMap>,
+  system: string,
+  codes: string[]
+): Promise<ConceptMapTranslateMatch[]> {
   const query = new SelectQuery('ConceptMapping')
     .column('conceptMap')
     .column('sourceSystem')
@@ -83,6 +89,9 @@ async function findConceptMappings(conceptMap: WithId<ConceptMap>, system: strin
     .where('conceptMap', '=', conceptMap.id)
     .where('sourceSystem', '=', system)
     .where('sourceCode', 'IN', codes);
+
+  const db = getDatabasePool(DatabaseMode.READER);
+  const results = await query.execute(db);
 }
 
 async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<ConceptMap> {
