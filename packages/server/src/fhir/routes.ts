@@ -141,7 +141,7 @@ publicRoutes.get('/metadata', (_req: Request, res: Response) => {
 });
 
 // FHIR Versions
-publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
+publicRoutes.get(['/$versions', '/%24versions'], (_req: Request, res: Response) => {
   res.status(200).json({ versions: ['4.0'], default: '4.0' });
 });
 
@@ -156,19 +156,23 @@ const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
 // CSV Export (cannot use FhirRouter due to CSV output)
-protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
+protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], asyncWrap(csvHandler));
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
-protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
-protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
+protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
+protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandler);
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
 const botPaths = [
-  '/Bot/([$]|%24)execute',
-  '/Bot/:id/([$]|%24)execute',
-  '/Bot/([$]|%24)execute/*',
-  '/Bot/:id/([$]|%24)execute/*',
+  '/Bot/$execute',
+  '/Bot/%24execute',
+  '/Bot/:id/$execute',
+  '/Bot/:id/%24execute',
+  '/Bot/$execute/*splat',
+  '/Bot/%24execute/*splat',
+  '/Bot/:id/$execute/*splat',
+  '/Bot/:id/%24execute/*splat',
 ];
 protectedRoutes.get(botPaths, executeHandler);
 protectedRoutes.post(botPaths, executeHandler);
@@ -401,7 +405,7 @@ function initInternalFhirRouter(): FhirRouter {
 
 // Default route
 protectedRoutes.use(
-  '*',
+  '{*splat}',
   asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
     const ctx = getAuthenticatedContext();
 
