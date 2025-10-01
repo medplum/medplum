@@ -75,7 +75,7 @@
     "cron-validator": "1.4.0",
     "dataloader": "2.2.3",
     "dotenv": "17.2.3",
-    "express": "^5.1.0",
+    "express": "5.1.0",
     "express-validator": "7.2.1",
     "graphql": "16.11.0",
     "hibp": "14.1.3",
