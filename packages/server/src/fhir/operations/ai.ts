@@ -61,11 +61,76 @@ const operation: OperationDefinition = {
   ],
 };
 
+const fhirTools = [
+  {
+    type: 'function',
+    function: {
+      name: 'fhir_request',
+      description:
+        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
+      parameters: {
+        type: 'object',
+        properties: {
+          method: {
+            type: 'string',
+            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+            description: 'HTTP method for the FHIR request',
+          },
+          path: {
+            type: 'string',
+            description: 'FHIR path (e.g., "Patient?phone=718-564-9483" or "Patient/123")',
+          },
+          body: {
+            type: 'object',
+            description: 'Request body for POST, PUT, PATCH requests (optional for GET)',
+          },
+        },
+        required: ['method', 'path'],
+      },
+    },
+  },
+];
+
 type AIOperationParameters = {
   messages?: string;
   apiKey?: string;
   model?: string;
 };
+
+export async function callAI(
+  messages: any[],
+  apiKey: string,
+  model: string
+): Promise<{ content: string | null; tool_calls: any[] }> {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      tools: fhirTools,
+      tool_choice: 'auto',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
+    );
+  }
+
+  const completion = await response.json();
+  const message = completion.choices[0].message;
+
+  return {
+    content: message.content,
+    tool_calls: message.tool_calls || [],
+  };
+}
 
 /**
  * Implements FHIR AI operation.
@@ -108,69 +173,4 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
   } catch (error) {
     return [badRequest(`AI operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)];
   }
-}
-
-const fhirTools = [
-  {
-    type: 'function',
-    function: {
-      name: 'fhir_request',
-      description:
-        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
-      parameters: {
-        type: 'object',
-        properties: {
-          method: {
-            type: 'string',
-            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-            description: 'HTTP method for the FHIR request',
-          },
-          path: {
-            type: 'string',
-            description: 'FHIR path (e.g., "Patient?phone=718-564-9483" or "Patient/123")',
-          },
-          body: {
-            type: 'object',
-            description: 'Request body for POST, PUT, PATCH requests (optional for GET)',
-          },
-        },
-        required: ['method', 'path'],
-      },
-    },
-  },
-];
-
-export async function callAI(
-  messages: any[],
-  apiKey: string,
-  model: string
-): Promise<{ content: string | null; tool_calls: any[] }> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: messages,
-      tools: fhirTools,
-      tool_choice: 'auto',
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`
-    );
-  }
-
-  const completion = await response.json();
-  const message = completion.choices[0].message;
-
-  return {
-    content: message.content,
-    tool_calls: message.tool_calls || [],
-  };
 }
