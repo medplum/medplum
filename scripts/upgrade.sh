@@ -93,7 +93,6 @@ fi
 # @mantine/* - Holding back Mantine 8 until Medplum 5
 # @storybook/* - Holding back Storybook 9 until Medplum 5
 # storybook-mantine-addon - Holding back until Mantine 8 is released
-# @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
@@ -101,11 +100,10 @@ fi
 # jest - version 30+ conflicts with jest-expo, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-# express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
 # graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql uuid"
+MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/jest @types/node babel-jest commander eslint hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
