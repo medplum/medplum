@@ -10,6 +10,7 @@ import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
+import { aiRouter } from './ai/routes';
 import { asyncWrap } from './async';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
