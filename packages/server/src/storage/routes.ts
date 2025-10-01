@@ -5,7 +5,6 @@ import { createPrivateKey, createPublicKey, createVerify, KeyObject } from 'cryp
 import { Request, Response, Router } from 'express';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
-import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from './loader';
@@ -18,7 +17,7 @@ let cachedPublicKey: KeyObject | undefined = undefined;
 
 storageRouter.get(
   '/:id{/:versionId}',
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
     const signature = originalUrl.searchParams.get('Signature');
     if (!signature) {
@@ -56,7 +55,7 @@ storageRouter.get(
     } catch (_err) {
       res.sendStatus(404);
     }
-  })
+  }
 );
 
 function getPublicKey(): KeyObject {

@@ -4,7 +4,6 @@ import { accepted, allOk, isOk } from '@medplum/core';
 import { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
-import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
@@ -21,7 +20,7 @@ const finalJobStatusCodes = ['completed', 'error'];
 
 jobRouter.get(
   '/:id/status',
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
@@ -35,12 +34,12 @@ jobRouter.get(
     }
 
     return sendFhirResponse(req, res, outcome, asyncJob);
-  })
+  }
 );
 
 jobRouter.delete(
   '/:id/status',
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     let normalizedOutcome: OperationOutcome;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
@@ -77,5 +76,5 @@ jobRouter.delete(
       normalizedOutcome = outcome;
     }
     sendOutcome(res, normalizedOutcome);
-  })
+  }
 );

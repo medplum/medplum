@@ -5,7 +5,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { Request, Response, Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { IncomingMessage } from 'http';
-import { asyncWrap } from '../async';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -18,7 +17,7 @@ export const mcpRouter = Router().use(authenticateRequest);
 // Handles all HTTP methods (GET, POST, etc.)
 mcpRouter.all(
   '/stream',
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const server = getMcpServer();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', async () => {
@@ -27,7 +26,7 @@ mcpRouter.all(
     });
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
-  })
+  }
 );
 
 // MCP SSE GET endpoint (/mcp/sse)

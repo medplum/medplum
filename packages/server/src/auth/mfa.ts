@@ -6,7 +6,6 @@ import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
@@ -23,7 +22,7 @@ export const mfaRouter = Router();
 mfaRouter.get(
   '/status',
   authenticateRequest,
-  asyncWrap(async (_req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
     let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
@@ -49,13 +48,13 @@ mfaRouter.get(
       enrollUri: otp,
       enrollQrCode: await toDataURL(otp),
     });
-  })
+  }
 );
 
 mfaRouter.post(
   '/login-enroll',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
@@ -78,14 +77,14 @@ mfaRouter.post(
     });
 
     await sendLoginResult(res, result);
-  })
+  }
 );
 
 mfaRouter.post(
   '/enroll',
   authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
     const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
@@ -112,13 +111,13 @@ mfaRouter.post(
       mfaEnrolled: true,
     });
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 mfaRouter.post(
   '/verify',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
@@ -129,13 +128,13 @@ mfaRouter.post(
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
     return sendLoginResult(res, result);
-  })
+  }
 );
 
 mfaRouter.post(
   '/disable',
   [body('token').notEmpty().withMessage('Missing token')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
     const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
@@ -171,5 +170,5 @@ mfaRouter.post(
       mfaSecret: authenticator.generateSecret(),
     });
     sendOutcome(res, allOk);
-  })
+  }
 );

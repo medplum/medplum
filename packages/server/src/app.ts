@@ -10,7 +10,6 @@ import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
-import { asyncWrap } from './async';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig } from './config/loader';
@@ -176,7 +175,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
-  app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
+  app.post('/fhir/R4', authenticateRequest, asyncBatchHandler(config));
 
   app.use(urlencoded({ extended: false }));
   app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
@@ -190,7 +189,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
   apiRouter.get('/robots.txt', (_req, res) => res.type(ContentType.TEXT).send('User-agent: *\nDisallow: /'));
-  apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
+  apiRouter.get('/healthcheck', healthcheckHandler);
   apiRouter.get('/openapi.json', openApiHandler);
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);

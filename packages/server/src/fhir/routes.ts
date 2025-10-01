@@ -4,7 +4,6 @@ import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify 
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
-import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
@@ -152,7 +151,7 @@ const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
 // CSV Export (cannot use FhirRouter due to CSV output)
-protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], asyncWrap(csvHandler));
+protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
@@ -395,7 +394,7 @@ function initInternalFhirRouter(): FhirRouter {
 // Default route
 protectedRoutes.use(
   '{*splat}',
-  asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
+  async function routeFhirRequest(req: Request, res: Response) {
     const ctx = getAuthenticatedContext();
 
     const request: FhirRequest = {
@@ -434,7 +433,7 @@ protectedRoutes.use(
     }
 
     await sendFhirResponse(req, res, result[0], result[1], result[2]);
-  })
+  }
 );
 
 function stripPrefix(str: string, prefix: string): string {

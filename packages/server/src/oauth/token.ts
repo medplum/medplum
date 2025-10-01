@@ -20,7 +20,6 @@ import { ClientApplication, Login, Project, ProjectMembership, Reference, User }
 import { randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
-import { asyncWrap } from '../async';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -53,8 +52,10 @@ type FhircastProps = { 'hub.topic': string; 'hub.url': string };
  *  3) Refresh - for "remember me" long term access
  *
  * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+ * @param req - The request object
+ * @param res - The response object
  */
-export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const tokenHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   if (!req.is(ContentType.FORM_URL_ENCODED)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -82,7 +83,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
     default:
       sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
   }
-});
+};
 
 /**
  * Handles the "Client Credentials" OAuth flow.

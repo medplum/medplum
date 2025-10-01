@@ -3,7 +3,6 @@
 import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError } from '@medplum/core';
 import { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
@@ -33,7 +32,7 @@ async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport>
 
 bulkDataRouter.get(
   '/export/:id',
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const bulkDataExport = await getExportResource(id);
@@ -55,7 +54,7 @@ bulkDataRouter.get(
       deleted: extractOutputParameters(bulkDataExport, 'deleted'),
     });
     res.status(200).type(ContentType.JSON).json(json);
-  })
+  }
 );
 
 bulkDataRouter.delete('/export/:id', async (req: Request, res: Response) => {
