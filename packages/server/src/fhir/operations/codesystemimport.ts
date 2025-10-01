@@ -212,6 +212,6 @@ async function resolveProperty(
     ])
       .returnColumn('id')
       .execute(db)
-  ).rows[0];
+  )[0];
   return [newProp.id, prop];
 }

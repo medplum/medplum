@@ -14,7 +14,7 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn, OperationDefinition } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
-import { InsertQuery } from '../sql';
+import { InsertQuery, SelectQuery, Union } from '../sql';
 import { parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, uniqueOn } from './utils/terminology';
 
@@ -154,10 +154,7 @@ export async function importConceptMap(
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
-  const uniqueMappings = uniqueOn(
-    mappingRows,
-    (r) => `${r.sourceSystem}|${r.sourceCode} : ${r.targetSystem}|${r.targetCode}`
-  );
+  const uniqueMappings = await prepareMappingRows(db, mappingRows);
   await writeMappingRows(db, uniqueMappings, attributeRows);
 }
 
@@ -212,10 +209,10 @@ function getAttributeValue(attr: ConceptMapGroupElementTargetDependsOn): TypedVa
 
 type MappingRow = {
   conceptMap: string;
-  sourceSystem: string;
+  sourceSystem: string | number; // System string normalized by reference to CodingSystem.id
   sourceCode: string;
   sourceDisplay?: string;
-  targetSystem: string;
+  targetSystem: string | number; // System string normalized by reference to CodingSystem.id
   targetCode: string;
   targetDisplay?: string;
   relationship?: string;
@@ -279,6 +276,50 @@ function addRowsForMapping(
   attributeRows.push(mappingAttributes);
 }
 
+async function prepareMappingRows(
+  db: PoolClient,
+  rows: MappingRow[]
+): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
+  const systems = new Set<string>();
+  const uniqueMappings = uniqueOn(rows, (r) => {
+    systems.add(r.sourceSystem as string);
+    systems.add(r.targetSystem as string);
+    return `${r.sourceSystem}|${r.sourceCode} : ${r.targetSystem}|${r.targetCode}`;
+  });
+
+  const systemStrings = Array.from(systems.values());
+  const insertCTE = new InsertQuery(
+    'CodingSystem',
+    systemStrings.map((system) => ({ system }))
+  )
+    .ignoreOnConflict()
+    .returnColumn('id')
+    .returnColumn('system');
+
+  const insertedQuery = new SelectQuery('i').column('id').column('system').withCte('i', insertCTE);
+  const existingQuery = new SelectQuery('CodingSystem')
+    .column('id')
+    .column('system')
+    .where('system', 'IN', systemStrings);
+  const systemResults = await new Union(insertedQuery, existingQuery).execute(db);
+
+  if (systemResults.length !== systemStrings.length) {
+    throw new Error('Failed to resolve IDs for system strings');
+  }
+
+  const systemIds: Record<string, number> = Object.create(null);
+  for (let i = 0; i < systemStrings.length; i++) {
+    const { id, system } = systemResults[i];
+    systemIds[system] = id;
+  }
+
+  for (const mapping of uniqueMappings) {
+    mapping.sourceSystem = systemIds[mapping.sourceSystem];
+    mapping.targetSystem = systemIds[mapping.targetSystem];
+  }
+  return uniqueMappings as (MappingRow & { sourceSystem: number; targetSystem: number })[];
+}
+
 async function writeMappingRows(
   db: PoolClient,
   mappings: MappingRow[],
@@ -288,7 +329,7 @@ async function writeMappingRows(
     const insertMappings = new InsertQuery('ConceptMapping', mappings)
       .mergeOnConflict(['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'])
       .returnColumn('id');
-    const mappingIds = (await insertMappings.execute(db)).rows;
+    const mappingIds = await insertMappings.execute(db);
 
     const attributeRows = flatMapFilter(attributes, (attrs, i) =>
       attrs?.map((a) => ({ ...a, mapping: mappingIds[i].id }))

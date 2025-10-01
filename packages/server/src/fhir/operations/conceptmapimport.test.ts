@@ -397,10 +397,8 @@ async function getMappingRows(pool: Pool, conceptMap: ConceptMap): Promise<any[]
   const db = await pool.connect();
   const query = new SelectQuery('ConceptMapping')
     .column('conceptMap')
-    .column('sourceSystem')
     .column('sourceCode')
     .column('sourceDisplay')
-    .column('targetSystem')
     .column('targetCode')
     .column('targetDisplay')
     .column('relationship')
@@ -415,7 +413,22 @@ async function getMappingRows(pool: Pool, conceptMap: ConceptMap): Promise<any[]
     .column(new Column('attr', 'uri'))
     .column(new Column('attr', 'type'))
     .column(new Column('attr', 'value'))
+    .join(
+      'INNER JOIN',
+      'CodingSystem',
+      'source',
+      new Condition(new Column('source', 'id'), '=', new Column('ConceptMapping', 'sourceSystem'))
+    )
+    .column(new Column('source', 'system', false, 'sourceSystem'))
+    .join(
+      'INNER JOIN',
+      'CodingSystem',
+      'target',
+      new Condition(new Column('target', 'id'), '=', new Column('ConceptMapping', 'targetSystem'))
+    )
+    .column(new Column('target', 'system', false, 'targetSystem'))
     .where('conceptMap', '=', conceptMap.id);
+
   const results = await query.execute(db);
   db.release();
   return results;

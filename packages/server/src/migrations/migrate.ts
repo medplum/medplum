@@ -300,6 +300,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
   buildConceptMappingTable(result);
+  buildCodingSystemTable(result);
   buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
 
@@ -794,9 +795,9 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
     columns: [
       { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
       { name: 'conceptMap', type: 'UUID', notNull: true },
-      { name: 'sourceSystem', type: 'TEXT', notNull: true },
+      { name: 'sourceSystem', type: 'BIGINT', notNull: true },
       { name: 'sourceCode', type: 'TEXT', notNull: true },
-      { name: 'targetSystem', type: 'TEXT', notNull: true },
+      { name: 'targetSystem', type: 'BIGINT', notNull: true },
       { name: 'targetCode', type: 'TEXT', notNull: true },
       { name: 'relationship', type: 'TEXT' },
       { name: 'sourceDisplay', type: 'TEXT' },
@@ -816,6 +817,17 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
         columns: ['conceptMap', 'targetSystem', 'targetCode', 'sourceSystem'],
       },
     ],
+  });
+}
+
+function buildCodingSystemTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodingSystem',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'system', type: 'TEXT', notNull: true },
+    ],
+    indexes: [{ columns: ['system'], indexType: 'btree', unique: true, include: ['id'] }],
   });
 }
 
@@ -1190,7 +1202,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
 
   queries.push(
     [
-      `CREATE TABLE ${options.includeIfExists ? ' IF NOT EXISTS' : ''}${escapeIdentifier(tableDef.name)} (`,
+      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS ' : ''}${escapeIdentifier(tableDef.name)} (`,
       createTableLines.join(',\n'),
       ')',
     ].join('\n')

@@ -57,12 +57,13 @@ describe('ConceptMapping lookup table', () => {
 
       const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query(
-        'SELECT "sourceSystem", "sourceCode", "targetSystem", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
+        'SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
         [systemResource.id]
       );
-      expect(
-        results.rows.map((r) => `${r.sourceSystem}|${r.sourceCode} => ${r.targetSystem}|${r.targetCode}`).sort()
-      ).toStrictEqual([`${SNOMED}|271649006 => ${LOINC}|8480-6`, `${SNOMED}|271650006 => ${LOINC}|8462-4`]);
+      expect(results.rows.map((r) => `${r.sourceCode} => ${r.targetCode}`).sort()).toStrictEqual([
+        `271649006 => 8480-6`,
+        `271650006 => 8462-4`,
+      ]);
     }));
 
   test('Retains existing mappings when none in resource', () =>
@@ -72,11 +73,12 @@ describe('ConceptMapping lookup table', () => {
 
       const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query(
-        'SELECT "sourceSystem", "sourceCode", "targetSystem", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
+        'SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
         [systemResource.id]
       );
-      expect(
-        results.rows.map((r) => `${r.sourceSystem}|${r.sourceCode} => ${r.targetSystem}|${r.targetCode}`).sort()
-      ).toStrictEqual([`${SNOMED}|271649006 => ${LOINC}|8480-6`, `${SNOMED}|271650006 => ${LOINC}|8462-4`]);
+      expect(results.rows.map((r) => `${r.sourceCode} => ${r.targetCode}`).sort()).toStrictEqual([
+        `271649006 => 8480-6`,
+        `271650006 => 8462-4`,
+      ]);
     }));
 });
