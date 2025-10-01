@@ -24,7 +24,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'JSON string containing the conversation messages array'
+      documentation: 'JSON string containing the conversation messages array',
     },
     {
       name: 'apiKey',
@@ -32,7 +32,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'OpenAI API key'
+      documentation: 'OpenAI API key',
     },
     {
       name: 'model',
@@ -40,7 +40,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)'
+      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
     },
     {
       name: 'content',
@@ -48,7 +48,7 @@ const operation: OperationDefinition = {
       min: 0,
       max: '1',
       type: 'string',
-      documentation: 'AI response content'
+      documentation: 'AI response content',
     },
     {
       name: 'tool_calls',
@@ -56,9 +56,9 @@ const operation: OperationDefinition = {
       min: 0,
       max: '1',
       type: 'string',
-      documentation: 'JSON string containing tool calls array'
-    }
-  ]
+      documentation: 'JSON string containing tool calls array',
+    },
+  ],
 };
 
 type AIOperationParameters = {
@@ -89,14 +89,13 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
 
   const messages = JSON.parse(params.messages);
 
-
   if (!Array.isArray(messages)) {
     return [badRequest('Messages must be an array')];
   }
 
   try {
     const result = await callAI(messages, params.apiKey, params.model);
-    
+
     const output: Record<string, any> = {
       tool_calls: result.tool_calls ? JSON.stringify(result.tool_calls) : '[]',
     };
@@ -116,28 +115,29 @@ const fhirTools = [
     type: 'function',
     function: {
       name: 'fhir_request',
-      description: 'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
+      description:
+        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
       parameters: {
         type: 'object',
         properties: {
           method: {
             type: 'string',
             enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-            description: 'HTTP method for the FHIR request'
+            description: 'HTTP method for the FHIR request',
           },
           path: {
             type: 'string',
-            description: 'FHIR path (e.g., "Patient?phone=718-564-9483" or "Patient/123")'
+            description: 'FHIR path (e.g., "Patient?phone=718-564-9483" or "Patient/123")',
           },
           body: {
             type: 'object',
-            description: 'Request body for POST, PUT, PATCH requests (optional for GET)'
-          }
+            description: 'Request body for POST, PUT, PATCH requests (optional for GET)',
+          },
         },
-        required: ['method', 'path']
-      }
-    }
-  }
+        required: ['method', 'path'],
+      },
+    },
+  },
 ];
 
 export async function callAI(
@@ -148,7 +148,7 @@ export async function callAI(
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -161,7 +161,9 @@ export async function callAI(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`
+    );
   }
 
   const completion = await response.json();
@@ -169,6 +171,6 @@ export async function callAI(
 
   return {
     content: message.content,
-    tool_calls: message.tool_calls || []
+    tool_calls: message.tool_calls || [],
   };
 }

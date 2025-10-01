@@ -95,7 +95,7 @@ describe('AI Operation', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-test-key',
+          Authorization: 'Bearer sk-test-key',
           'Content-Type': 'application/json',
         },
       })
@@ -125,12 +125,12 @@ describe('AI Operation', () => {
                         name: [
                           {
                             family: 'Smith',
-                            given: ['John']
-                          }
+                            given: ['John'],
+                          },
                         ],
                         gender: 'male',
-                        birthDate: '1990-01-01'
-                      }
+                        birthDate: '1990-01-01',
+                      },
                     }),
                   },
                 },
@@ -153,7 +153,7 @@ describe('AI Operation', () => {
           {
             name: 'messages',
             valueString: JSON.stringify([
-              { role: 'user', content: 'Create a new patient named John Smith, male, born 1990-01-01' }
+              { role: 'user', content: 'Create a new patient named John Smith, male, born 1990-01-01' },
             ]),
           },
           {
@@ -169,20 +169,20 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('Parameters');
-    
+
     const params = res.body as Parameters;
-    const contentParam = params.parameter?.find(p => p.name === 'content');
-    const toolCallsParam = params.parameter?.find(p => p.name === 'tool_calls');
-    
+    const contentParam = params.parameter?.find((p) => p.name === 'content');
+    const toolCallsParam = params.parameter?.find((p) => p.name === 'tool_calls');
+
     expect(contentParam).toBeDefined();
     expect(contentParam?.valueString).toBe('I will create a new patient for you.');
-    
+
     expect(toolCallsParam).toBeDefined();
     const toolCalls = JSON.parse(toolCallsParam?.valueString as string);
     expect(toolCalls).toHaveLength(1);
     expect(toolCalls[0].id).toBe('call_patient_create');
     expect(toolCalls[0].function.name).toBe('fhir_request');
-    
+
     const functionArgs = JSON.parse(toolCalls[0].function.arguments);
     expect(functionArgs.method).toBe('POST');
     expect(functionArgs.path).toBe('Patient');
@@ -197,7 +197,7 @@ describe('AI Operation', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-test-key',
+          Authorization: 'Bearer sk-test-key',
           'Content-Type': 'application/json',
         },
         body: expect.stringContaining('"model":"gpt-4"'),
@@ -271,7 +271,9 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Expected 1 value(s) for input parameter apiKey, but 0 provided');
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
+      'Expected 1 value(s) for input parameter apiKey, but 0 provided'
+    );
   });
 
   test('Missing model', async () => {
@@ -294,7 +296,9 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Expected 1 value(s) for input parameter model, but 0 provided');
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
+      'Expected 1 value(s) for input parameter model, but 0 provided'
+    );
   });
 
   test('Missing messages', async () => {
@@ -317,7 +321,9 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Expected 1 value(s) for input parameter messages, but 0 provided');
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
+      'Expected 1 value(s) for input parameter messages, but 0 provided'
+    );
   });
 
   test('Invalid messages format - not an array', async () => {
@@ -344,7 +350,7 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe("Messages must be an array");
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Messages must be an array');
   });
 
   test('Invalid messages JSON', async () => {
@@ -383,7 +389,7 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
-      "Expected at least 1 value(s) for required input parameter"
+      'Expected at least 1 value(s) for required input parameter'
     );
   });
 
@@ -398,7 +404,7 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
-      "Expected at least 1 value(s) for required input parameter"
+      'Expected at least 1 value(s) for required input parameter'
     );
   });
 
@@ -439,7 +445,9 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('AI operation failed: OpenAI API error: 401 Unauthorized - Incorrect API key provided');
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
+      'AI operation failed: OpenAI API error: 401 Unauthorized - Incorrect API key provided'
+    );
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('401');
   });
 
@@ -490,7 +498,7 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(200);
-    
+
     const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.messages).toEqual(messages);
@@ -548,10 +556,10 @@ describe('AI Operation', () => {
     console.log(JSON.stringify(res.body, null, 2));
     expect(res.status).toBe(200);
     const params = res.body as Parameters;
-    
-    const contentParam = params.parameter?.find(p => p.name === 'content');
-    const toolCallsParam = params.parameter?.find(p => p.name === 'tool_calls');
-    
+
+    const contentParam = params.parameter?.find((p) => p.name === 'content');
+    const toolCallsParam = params.parameter?.find((p) => p.name === 'tool_calls');
+
     expect(contentParam).toBeUndefined();
     expect(toolCallsParam).toBeDefined();
     expect(toolCallsParam?.valueString).toBeDefined();
@@ -598,10 +606,9 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(200);
-    
+
     const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.model).toBe('gpt-3.5-turbo');
   });
-
 });
