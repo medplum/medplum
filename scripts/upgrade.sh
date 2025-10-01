@@ -13,14 +13,10 @@ ADDITIONAL_EXCLUDES=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --cooldown=*)
-            if [[ -n "${1#*=}" ]]; then
-                COOLDOWN="${1#*=}"
-            fi
+            COOLDOWN="${1#*=}"
             ;;
         --exclude=*)
-            if [[ -n "${1#*=}" ]]; then
-                ADDITIONAL_EXCLUDES="${1#*=}"
-            fi
+            ADDITIONAL_EXCLUDES="${1#*=}"
             ;;
         *)
             echo "Error: Unknown argument '$1'"
