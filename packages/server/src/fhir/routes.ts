@@ -3,7 +3,7 @@
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import type { BatchEvent, FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
@@ -347,7 +347,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResourceStrictly(req.body);
+    await ctx.repo.validateResourceStrictly((req.body ?? {}) as Resource);
     return [allOk];
   });
 

@@ -32,7 +32,7 @@ export type FhirRequest = {
   method: HttpMethod;
   url: string;
   pathname: string;
-  body: any;
+  body: unknown;
   params: Record<string, string>;
   query: Record<string, string | string[] | undefined>;
   headers?: IncomingHttpHeaders;
@@ -74,8 +74,11 @@ export interface FhirOptions {
 
 // Execute batch
 async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter): Promise<FhirResponse> {
+  if (!req.body) {
+    return [badRequest('No resource specified')];
+  }
   const bundle = req.body as Resource;
-  if (bundle.resourceType !== 'Bundle') {
+  if (bundle?.resourceType !== 'Bundle') {
     return [badRequest('Not a bundle')];
   }
 
@@ -124,7 +127,7 @@ async function searchByPost(
   setSearchRepositoryMode(req, repo, options);
 
   const { resourceType } = req.params;
-  const query = req.body as Record<string, string[] | string | undefined>;
+  const query = (req.body ?? {}) as Record<string, string[] | string | undefined>;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
   return [allOk, bundle];
 }
@@ -143,6 +146,12 @@ async function createResource(
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
+  if (!resourceType) {
+    return [badRequest('No resource type specified')];
+  }
+  if (!req.body) {
+    return [badRequest('No resource specified')];
+  }
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
 
@@ -206,8 +215,17 @@ async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<Fhir
 // Update resource
 async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const resource = req.body;
-  return updateResourceImpl(resourceType, id, resource, repo, {
+  if (!resourceType) {
+    return [badRequest('No resource type specified')];
+  }
+  if (!id) {
+    return [badRequest('No resource ID specified')];
+  }
+  if (!req.body) {
+    return [badRequest('No resource specified')];
+  }
+  const resource = req.body as Resource;
+  return updateResourceImpl(resourceType as ResourceType, id, resource, repo, {
     ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
   });
 }
@@ -237,7 +255,13 @@ async function conditionalUpdate(
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const resource = req.body;
+  if (!resourceType) {
+    return [badRequest('No resource type specified')];
+  }
+  if (!req.body) {
+    return [badRequest('No resource specified')];
+  }
+  const resource = req.body as Resource;
 
   const search = parseSearchRequest(resourceType as ResourceType, req.query);
   const result = await repo.conditionalUpdate(resource, search, { assignedId: options?.batch });
@@ -263,7 +287,7 @@ async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promis
 // Patch resource
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const patch = req.body as Operation[];
+  const patch = req.body as Operation[] | undefined;
   if (!patch) {
     return [badRequest('Empty patch body')];
   }
@@ -277,7 +301,7 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
 // Conditional PATCH
 async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const patch = req.body as Operation[];
+  const patch = req.body as Operation[] | undefined;
   if (!patch) {
     return [badRequest('Empty patch body')];
   }

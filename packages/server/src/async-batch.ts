@@ -23,7 +23,7 @@ export function asyncBatchHandler(
     }
 
     await runMiddleware(req, res, json({ type: JSON_TYPE, limit: config.maxBatchSize }));
-    if (req.body.resourceType !== 'Bundle') {
+    if (req.body?.resourceType !== 'Bundle') {
       throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));
     }
     const bundle = req.body as Bundle;
