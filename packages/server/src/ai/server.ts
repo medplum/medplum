@@ -3,7 +3,6 @@
 import OpenAI from 'openai';
 import { ChatCompletionTool } from 'openai/resources/chat/completions/completions.js';
 
-// Define FHIR tools for AI models
 export const fhirTools: ChatCompletionTool[] = [
   {
     type: 'function',
