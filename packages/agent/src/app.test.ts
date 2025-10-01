@@ -1216,12 +1216,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1346,12 +1341,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();

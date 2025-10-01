@@ -541,12 +541,7 @@ describe('HL7', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57001);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(20);
-    }
+    await hl7Server.start(57001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -638,12 +633,7 @@ describe('HL7', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57001);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(20);
-    }
+    await hl7Server.start(57001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -907,12 +897,7 @@ describe('HL7', () => {
         conn.socket.destroy();
       });
     });
-    hl7Server.start(57001);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(20);
-    }
+    await hl7Server.start(57001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -1035,12 +1020,7 @@ describe('HL7', () => {
         });
       }
     });
-    hl7Server.start(57001);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(20);
-    }
+    await hl7Server.start(57001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
