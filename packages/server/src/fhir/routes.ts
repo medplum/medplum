@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { ResourceType } from '@medplum/fhirtypes';
+import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
@@ -336,7 +336,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResourceStrictly(req.body);
+    await ctx.repo.validateResourceStrictly((req.body ?? {}) as Resource);
     return [allOk];
   });
 
@@ -392,49 +392,46 @@ function initInternalFhirRouter(): FhirRouter {
 }
 
 // Default route
-protectedRoutes.use(
-  '{*splat}',
-  async function routeFhirRequest(req: Request, res: Response) {
-    const ctx = getAuthenticatedContext();
+protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, res: Response) {
+  const ctx = getAuthenticatedContext();
 
-    const request: FhirRequest = {
-      method: req.method as HttpMethod,
-      url: stripPrefix(req.originalUrl, '/fhir/R4'),
-      pathname: '',
-      params: req.params,
-      query: Object.create(null), // Defer query param parsing to router for consistency
-      body: req.body,
-      headers: req.headers,
-      config: {
-        graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
-          ?.valueInteger,
-        graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
-        graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
-        searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
-        transactions: ctx.project.features?.includes('transaction-bundles'),
-      },
-    };
+  const request: FhirRequest = {
+    method: req.method as HttpMethod,
+    url: stripPrefix(req.originalUrl, '/fhir/R4'),
+    pathname: '',
+    params: req.params,
+    query: Object.create(null), // Defer query param parsing to router for consistency
+    body: req.body,
+    headers: req.headers,
+    config: {
+      graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
+        ?.valueInteger,
+      graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+      graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
+      transactions: ctx.project.features?.includes('transaction-bundles'),
+    },
+  };
 
-    let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+  let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
-    if (isNotFound(result[0])) {
-      const customOperationResponse = await tryCustomOperation(request, ctx.repo);
-      if (customOperationResponse) {
-        result = customOperationResponse;
-      }
+  if (isNotFound(result[0])) {
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    if (customOperationResponse) {
+      result = customOperationResponse;
     }
-
-    if (result.length === 1) {
-      if (!isOk(result[0])) {
-        throw new OperationOutcomeError(result[0]);
-      }
-      sendOutcome(res, result[0]);
-      return;
-    }
-
-    await sendFhirResponse(req, res, result[0], result[1], result[2]);
   }
-);
+
+  if (result.length === 1) {
+    if (!isOk(result[0])) {
+      throw new OperationOutcomeError(result[0]);
+    }
+    sendOutcome(res, result[0]);
+    return;
+  }
+
+  await sendFhirResponse(req, res, result[0], result[1], result[2]);
+});
 
 function stripPrefix(str: string, prefix: string): string {
   return str.substring(str.indexOf(prefix) + prefix.length);
