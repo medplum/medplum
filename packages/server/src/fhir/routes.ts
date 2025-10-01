@@ -57,6 +57,7 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
+import { aiOperation } from './operations/ai';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
@@ -245,6 +246,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperation);
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
+
+  // AI $ai operation
+  router.add('POST', '/$ai', aiOperation);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
