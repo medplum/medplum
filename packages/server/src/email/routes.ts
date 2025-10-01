@@ -4,7 +4,6 @@ import { allOk, ContentType, forbidden } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, check } from 'express-validator';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
@@ -23,7 +22,7 @@ const sendEmailValidator = makeValidationMiddleware([
 emailRouter.post(
   '/send',
   sendEmailValidator,
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
 
     // Make sure the user project has the email feature enabled
@@ -35,5 +34,5 @@ emailRouter.post(
     // Use the user repository to enforce permission checks on email attachments
     await sendEmail(ctx.repo, req.body);
     sendOutcome(res, allOk);
-  })
+  }
 );
