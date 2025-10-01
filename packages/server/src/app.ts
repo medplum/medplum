@@ -49,6 +49,7 @@ import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { aiRouter } from './ai/routes';
 
 let server: http.Server | undefined = undefined;
 
@@ -194,6 +195,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.get('/openapi.json', openApiHandler);
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
+  apiRouter.use('/ai/', aiRouter);
   apiRouter.use('/auth/', authRouter);
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
