@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId } from '@medplum/core';
+import { createReference, WithId } from '@medplum/core';
 import { Period, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
+import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import { JSX } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { withMockedDate } from '../stories/decorators';
 import { Scheduler, SlotSearchFunction } from './Scheduler';
@@ -25,15 +26,62 @@ export const Basic = (): JSX.Element => {
 
 export const MultipleSchedules = (): JSX.Element => {
   // Create a second schedule for the array story
-  const DrBobSchedule: WithId<Schedule> = {
-    ...DrAliceSmithSchedule,
-    id: 'dr-bob-schedule',
-    actor: [{ reference: 'Practitioner/dr-bob', display: 'Dr. Bob Jones' }],
-  };
+  const medplum = useMedplum();
+
+  const [drBobSchedule, setDrBobSchedule] = useState<WithId<Schedule> | undefined>();
+  useEffect(() => {
+    medplum.createResource({
+      resourceType: 'Practitioner',
+      id: 'dr-bob',
+      name: [
+        {
+          given: ['Bob'],
+          family: 'Smith',
+        },
+      ],
+    });
+
+    const drBobSchedule: WithId<Schedule> = {
+      resourceType: 'Schedule',
+      id: 'dr-bob-schedule',
+      actor: [
+        {
+          reference: 'Practitioner/dr-bob',
+          display: 'Dr. Bob Smith',
+        },
+      ],
+    };
+
+    const schedule = createReference(drBobSchedule);
+    const slotDate = new Date();
+    for (let day = 0; day < 60; day++) {
+      for (const hour of [9, 10, 11, 13, 14, 15]) {
+        slotDate.setHours(hour, 0, 0, 0);
+        medplum.createResource({
+          resourceType: 'Slot',
+          id: `slot-${day}-${hour}-bob`,
+          status: 'free',
+          start: slotDate.toISOString(),
+          end: new Date(slotDate.getTime() + 60 * 60 * 1000).toISOString(),
+          schedule,
+        });
+      }
+      slotDate.setDate(slotDate.getDate() + 1);
+    }
+
+    setDrBobSchedule(drBobSchedule);
+
+    // Optionally, you could also create slots for Dr. Bob here if needed
+    // For now, just set the schedule as in alice.ts
+  }, []);
+
+  if (!drBobSchedule) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Document>
-      <Scheduler schedule={[DrAliceSmithSchedule, DrBobSchedule]} questionnaire={ExampleQuestionnaire} />
+      <Scheduler schedule={[DrAliceSmithSchedule, drBobSchedule]} questionnaire={ExampleQuestionnaire} />
     </Document>
   );
 };
