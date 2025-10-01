@@ -5,10 +5,12 @@ import {
   buildCreateTables,
   columnDefinitionsEqual,
   getCreateTableQueries,
+  indexDefinitionsEqual,
   indexStructureDefinitionsAndSearchParameters,
+  parseIndexDefinition,
   parseIndexName,
 } from './migrate';
-import { ColumnDefinition, SchemaDefinition, TableDefinition } from './types';
+import { ColumnDefinition, IndexDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
   describe('buildCreateTables', () => {
@@ -257,6 +259,85 @@ describe('Generator', () => {
           'Cannot set default value on identity column IdentityColumns.id'
         );
       });
+    });
+  });
+
+  describe('parseIndexDefinition', () => {
+    test('parse index', () => {
+      const indexdef =
+        'CREATE INDEX "DomainConfiguration_compartments_idx" ON public."DomainConfiguration" USING gin (compartments)';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['compartments'],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
+
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse UNIQUE index', () => {
+      const indexdef = 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['id'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+      };
+
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse expressions', () => {
+      const indexdef =
+        'CREATE INDEX "Address_address_idx_tsv" ON public."Address" USING gin (to_tsvector(\'simple\'::regconfig, address))';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, address)", name: 'address' }],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse INCLUDE', () => {
+      const indexdef =
+        'CREATE INDEX "Patient_Token_code_system_value_idx" ON public."Patient_Token" USING btree (code, system, value) INCLUDE ("resourceId")';
+
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        indexType: 'btree',
+        columns: ['code', 'system', 'value'],
+        include: ['resourceId'],
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse WHERE', () => {
+      const indexdef =
+        'CREATE INDEX "Coding_Property_target_property_coding_idx" ON public."Coding_Property" USING btree (target, property, coding) WHERE (target IS NOT NULL)';
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['target', 'property', 'coding'],
+        indexType: 'btree',
+        where: 'target IS NOT NULL',
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
     });
   });
 
