@@ -17,7 +17,7 @@ const pump = promisify(pipeline);
 let cachedPublicKey: KeyObject | undefined = undefined;
 
 storageRouter.get(
-  '/:id/:versionId?',
+  '/:id{/:versionId}',
   asyncWrap(async (req: Request, res: Response) => {
     const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
     const signature = originalUrl.searchParams.get('Signature');
