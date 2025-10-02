@@ -37,13 +37,13 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "3.896.0",
     "@aws-sdk/types": "3.893.0",
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     "@medplum/core": "4.4.1",
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     "@medplum/core": "4.3.14",
@@ -57,16 +57,21 @@
 =======
     "@medplum/core": "4.4.1",
 >>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
+=======
+>>>>>>> 943c322f2 (Revert "Dependency upgrades 2025-09-29 (#7495)" (#7503))
     "aws-cdk-lib": "2.215.0",
     "cdk": "2.1029.2",
     "cdk-nag": "2.37.33",
     "cdk-serverless-clamscan": "2.13.25",
+<<<<<<< HEAD
 =======
     "aws-cdk-lib": "2.217.0",
     "cdk": "2.1029.3",
     "cdk-nag": "2.37.38",
     "cdk-serverless-clamscan": "2.13.30",
 >>>>>>> 29c17e9ad (Dependency upgrades 2025-09-29 (#7495))
+=======
+>>>>>>> 943c322f2 (Revert "Dependency upgrades 2025-09-29 (#7495)" (#7503))
     "constructs": "10.4.2",
     "object-hash": "3.0.0"
   },

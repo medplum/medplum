@@ -43,6 +43,7 @@
     "@medplum/core": "4.4.1",
     "@medplum/hl7": "4.4.1",
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     "@medplum/core": "4.3.15",
     "@medplum/hl7": "4.3.15",
@@ -59,6 +60,9 @@
 =======
     "dcmjs-dimse": "0.3.1",
 >>>>>>> 29c17e9ad (Dependency upgrades 2025-09-29 (#7495))
+=======
+    "dcmjs-dimse": "0.3.0",
+>>>>>>> 943c322f2 (Revert "Dependency upgrades 2025-09-29 (#7495)" (#7503))
     "iconv-lite": "0.7.0",
     "semver": "7.7.2",
     "winston": "3.17.0",
