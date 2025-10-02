@@ -36,8 +36,11 @@
     "root": true
   },
   "overrides": {
+    "@jest/types": "30.2.0",
     "esbuild": "0.25.10",
     "jest-diff": "30.1.2",
+    "jest-message-util": "30.2.0",
+    "jest-util": "30.2.0",
     "jest-worker": "30.1.0",
     "react": "19.1.1",
     "react-compiler-runtime": "latest",
@@ -54,6 +57,7 @@
     "@babel/preset-typescript": "7.27.1",
     "@fast-check/jest": "2.1.1",
     "@jest/globals": "30.2.0",
+    "@jest/types": "30.2.0",
     "@microsoft/api-documenter": "7.26.34",
     "@microsoft/api-extractor": "7.52.13",
     "@types/jest": "30.0.0",
@@ -67,6 +71,8 @@
     "jest": "30.1.3",
     "jest-diff": "30.1.2",
     "jest-environment-jsdom": "30.1.2",
+    "jest-message-util": "30.2.0",
+    "jest-util": "30.2.0",
     "jest-worker": "30.1.0",
     "jsdom": "27.0.0",
     "npm-check-updates": "18.3.0",
