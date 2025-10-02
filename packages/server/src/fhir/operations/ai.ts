@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
+import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -24,7 +24,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'JSON string containing the conversation messages array',
+      documentation: 'JSON string containing the conversation messages array'
     },
     {
       name: 'apiKey',
@@ -32,7 +32,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'OpenAI API key',
+      documentation: 'OpenAI API key'
     },
     {
       name: 'model',
@@ -40,7 +40,7 @@ const operation: OperationDefinition = {
       min: 1,
       max: '1',
       type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
+      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)'
     },
     {
       name: 'content',
@@ -48,7 +48,7 @@ const operation: OperationDefinition = {
       min: 0,
       max: '1',
       type: 'string',
-      documentation: 'AI response content',
+      documentation: 'AI response content'
     },
     {
       name: 'tool_calls',
@@ -56,81 +56,16 @@ const operation: OperationDefinition = {
       min: 0,
       max: '1',
       type: 'string',
-      documentation: 'JSON string containing tool calls array',
-    },
-  ],
+      documentation: 'JSON string containing tool calls array'
+    }
+  ]
 };
-
-const fhirTools = [
-  {
-    type: 'function',
-    function: {
-      name: 'fhir_request',
-      description:
-        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
-      parameters: {
-        type: 'object',
-        properties: {
-          method: {
-            type: 'string',
-            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-            description: 'HTTP method for the FHIR request',
-          },
-          path: {
-            type: 'string',
-            description: 'FHIR path (e.g., "Patient?phone=718-564-9483" or "Patient/123")',
-          },
-          body: {
-            type: 'object',
-            description: 'Request body for POST, PUT, PATCH requests (optional for GET)',
-          },
-        },
-        required: ['method', 'path'],
-      },
-    },
-  },
-];
 
 type AIOperationParameters = {
   messages?: string;
   apiKey?: string;
   model?: string;
 };
-
-export async function callAI(
-  messages: any[],
-  apiKey: string,
-  model: string
-): Promise<{ content: string | null; tool_calls: any[] }> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: messages,
-      tools: fhirTools,
-      tool_choice: 'auto',
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
-    );
-  }
-
-  const completion = await response.json();
-  const message = completion.choices[0].message;
-
-  return {
-    content: message.content,
-    tool_calls: message.tool_calls || [],
-  };
-}
 
 /**
  * Implements FHIR AI operation.
@@ -160,17 +95,100 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
 
   try {
     const result = await callAI(messages, params.apiKey, params.model);
-
-    const output: Record<string, any> = {
-      tool_calls: result.tool_calls ? JSON.stringify(result.tool_calls) : '[]',
-    };
-
-    if (result.content !== null) {
-      output.content = result.content;
+    
+    const parameters: ParametersParameter[] = [];
+  
+    if (result.content) {
+      parameters.push({
+        name: 'content',
+        valueString: result.content,
+      });
     }
-
-    return [allOk, buildOutputParameters(operation, output)];
+  
+    if (result.tool_calls && result.tool_calls.length > 0) {
+      const toolCallsWithParsedArgs = result.tool_calls.map(tc => ({
+        id: tc.id,
+        type: tc.type,
+        function: {
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments)
+        }
+      }));
+  
+      parameters.push({
+        name: 'tool_calls',
+        valueString: JSON.stringify(toolCallsWithParsedArgs),
+      });
+    }
+  
+    return [allOk, {
+      resourceType: 'Parameters',
+      parameter: parameters
+    }];
   } catch (error) {
     return [badRequest(`AI operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)];
   }
+}
+
+const fhirTools = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'fhir_request',
+      description: 'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources. For POST/PUT/PATCH requests, include the resource data in the "body" parameter.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          method: {
+            type: 'string' as const,
+            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+            description: 'HTTP method for the FHIR request'
+          },
+          path: {
+            type: 'string' as const,
+            description: 'FHIR resource path (e.g., "Patient?phone=718-564-9483" or "Patient/123" or "Task")'
+          },
+          body: {
+            type: 'object' as const,
+            description: 'FHIR resource to create or update. Required for POST, PUT, and PATCH requests. Example: {"resourceType": "Task", "status": "requested", "intent": "order", "description": "Fill up chart note"}'
+          }
+        },
+        required: ['method', 'path'],
+        additionalProperties: false
+      }
+    }
+  }
+];
+
+export async function callAI(
+  messages: any[],
+  apiKey: string,
+  model: string
+): Promise<{ content: string | null; tool_calls: any[] }> {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      tools: fhirTools,
+      tool_choice: 'auto',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+  }
+
+  const completion = await response.json();
+  const message = completion.choices[0].message;
+
+  return {
+    content: message.content,
+    tool_calls: message.tool_calls || []
+  };
 }
