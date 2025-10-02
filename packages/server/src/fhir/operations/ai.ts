@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, forbidden } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
 import { parseInputParameters } from './utils/parameters';
+import { getAuthenticatedContext } from '../../context';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -82,6 +83,12 @@ type AIOperationParameters = {
  * @returns The server response.
  */
 export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
+
+  const ctx = getAuthenticatedContext();
+  if (!ctx.project.features?.includes('ai')) {
+    return [forbidden];
+  }
+
   const params = parseInputParameters<AIOperationParameters>(operation, req);
 
   if (!params.apiKey || !params.model || !params.messages) {
