@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     restart: always
     environment:
       - POSTGRES_USER=medplum
@@ -15,7 +17,7 @@ services:
       - "-c"
       - "default_transaction_isolation=REPEATABLE READ"
       - "-c"
-      - "shared_preload_libraries=pg_stat_statements,auto_explain"
+      - "shared_preload_libraries=pg_stat_statements,auto_explain,pg_partman"
     ports:
       - "5432:5432"
     healthcheck:
