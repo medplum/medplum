@@ -47,6 +47,7 @@
     "@medplum/core": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/react": "4.4.1",
+<<<<<<< HEAD
 =======
     "@medplum/core": "4.3.15",
     "@medplum/fhirtypes": "4.3.15",
@@ -63,6 +64,9 @@
     "@medplum/react": "4.4.1",
 >>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@types/react": "19.1.13",
+=======
+    "@types/react": "19.1.15",
+>>>>>>> 29c17e9ad (Dependency upgrades 2025-09-29 (#7495))
     "@types/react-dom": "19.1.9",
     "graphiql": "4.1.2",
     "graphql": "16.11.0",

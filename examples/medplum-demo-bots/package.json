@@ -98,7 +98,7 @@
     "rimraf": "6.0.1",
     "ssh2-sftp-client": "12.0.1",
     "stripe": "18.5.0",
-    "twilio": "^5.9.0",
+    "twilio": "^5.10.1",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   },

@@ -42,6 +42,7 @@
 <<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/hl7": "4.4.1",
+<<<<<<< HEAD
 =======
     "@medplum/core": "4.3.15",
     "@medplum/hl7": "4.3.15",
@@ -55,6 +56,9 @@
     "@medplum/hl7": "4.4.1",
 >>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "dcmjs-dimse": "0.3.0",
+=======
+    "dcmjs-dimse": "0.3.1",
+>>>>>>> 29c17e9ad (Dependency upgrades 2025-09-29 (#7495))
     "iconv-lite": "0.7.0",
     "semver": "7.7.2",
     "winston": "3.17.0",
