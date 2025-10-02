@@ -163,7 +163,7 @@ export async function callAI(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`
+      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
     );
   }
 
