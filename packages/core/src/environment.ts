@@ -41,34 +41,34 @@ export function getBuffer(): typeof Buffer | undefined {
 
 /**
  * Location utilities that can be mocked in tests.
- * These functions wrap window.location calls to avoid JSDOM 23+ restrictions.
+ * These functions wrap location calls to avoid JSDOM 23+ restrictions.
  */
 export const locationUtils = {
   assign(url: string): void {
     if (isBrowserEnvironment()) {
-      window.location.assign(url);
+      globalThis.location.assign(url);
     }
   },
 
   reload(): void {
     if (isBrowserEnvironment()) {
-      window.location.reload();
+      globalThis.location.reload();
     }
   },
 
   getSearch(): string {
-    return isBrowserEnvironment() ? window.location.search : '';
+    return isBrowserEnvironment() ? globalThis.location.search : '';
   },
 
   getPathname(): string {
-    return isBrowserEnvironment() ? window.location.pathname : '';
+    return isBrowserEnvironment() ? globalThis.location.pathname : '';
   },
 
   getLocation(): string {
-    return isBrowserEnvironment() ? window.location.toString() : '';
+    return isBrowserEnvironment() ? globalThis.location.toString() : '';
   },
 
   getOrigin(): string {
-    return isBrowserEnvironment() ? window.location.protocol + '//' + window.location.host + '/' : '';
+    return isBrowserEnvironment() ? globalThis.location.protocol + '//' + globalThis.location.host + '/' : '';
   },
 };
