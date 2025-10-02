@@ -94,7 +94,12 @@ export function initOpenTelemetry(): void {
     }),
   ];
 
-  sdk = new NodeSDK({ resource, instrumentations, metricReader, traceExporter });
+  sdk = new NodeSDK({
+    resource,
+    instrumentations,
+    metricReaders: metricReader ? [metricReader] : undefined,
+    traceExporter,
+  });
   sdk.start();
 }
 
