@@ -71,9 +71,9 @@ const operation: OperationDefinition = {
 };
 
 type AIOperationParameters = {
-  messages?: string;
-  apiKey?: string;
-  model?: string;
+  messages: string;
+  apiKey: string;
+  model: string;
   tools?: string;
 };
 
@@ -89,11 +89,6 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
   }
 
   const params = parseInputParameters<AIOperationParameters>(operation, req);
-
-  if (!params.apiKey || !params.model || !params.messages) {
-    return [badRequest('Missing required parameters')];
-  }
-
   const messages = JSON.parse(params.messages);
 
   if (!Array.isArray(messages)) {
