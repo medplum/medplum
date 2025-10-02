@@ -20,11 +20,9 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@jest/globals": "30.2.0",
     "@medplum/core": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
-    "@medplum/mock": "4.4.1",
-    "jest": "30.1.3"
+    "@medplum/mock": "4.4.1"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
