@@ -108,7 +108,7 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
       });
     }
 
-    if (result.tool_calls && result.tool_calls.length > 0) {
+    if (result.tool_calls?.length) {
       const toolCallsWithParsedArgs = result.tool_calls.map((tc) => ({
         id: tc.id,
         type: tc.type,
