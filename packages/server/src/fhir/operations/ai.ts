@@ -3,8 +3,8 @@
 import { allOk, badRequest, forbidden } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
-import { parseInputParameters } from './utils/parameters';
 import { getAuthenticatedContext } from '../../context';
+import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -83,7 +83,6 @@ type AIOperationParameters = {
  * @returns The server response.
  */
 export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
-
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
     return [forbidden];
