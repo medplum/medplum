@@ -210,8 +210,9 @@ export class AgentDicomChannel extends BaseChannel {
       this.server.once('listening', resolve);
 
       this.server.listen(port);
-      this.log.info('Channel started successfully');
     });
+
+    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {

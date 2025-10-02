@@ -43,8 +43,9 @@ export class AgentByteStreamChannel extends BaseChannel {
 
     await new Promise<void>((resolve) => {
       this.server.listen(Number.parseInt(address.port, 10), resolve);
-      this.log.info('Channel started successfully');
     });
+
+    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {
