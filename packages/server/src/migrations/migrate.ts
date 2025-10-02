@@ -1235,15 +1235,27 @@ function generateAlterColumnActions(
   return actions;
 }
 
-function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
+export function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
   const queries: string[] = [];
   const createTableLines = [];
   for (const column of tableDef.columns) {
-    const typePart = column.type;
-    const pkPart = column.primaryKey ? ' PRIMARY KEY' : '';
-    const notNullPart = column.notNull && !column.primaryKey ? ' NOT NULL' : '';
-    const defaultPart = column.defaultValue ? ' DEFAULT ' + column.defaultValue : '';
-    createTableLines.push(`  "${column.name}" ${typePart}${pkPart}${notNullPart}${defaultPart}`);
+    const parts: string[] = [escapeIdentifier(column.name), column.type];
+    if (column.identity) {
+      parts.push(`GENERATED ${column.identity} AS IDENTITY`);
+    }
+    if (column.primaryKey) {
+      parts.push('PRIMARY KEY');
+    }
+    if (column.notNull && !column.primaryKey && !column.identity) {
+      parts.push('NOT NULL');
+    }
+    if (column.defaultValue) {
+      if (column.identity) {
+        throw new Error(`Cannot set default value on identity column ${tableDef.name}.${column.name}`);
+      }
+      parts.push(`DEFAULT ${column.defaultValue}`);
+    }
+    createTableLines.push(`  ${parts.join(' ')}`);
   }
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
@@ -1260,7 +1272,7 @@ function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfEx
 
   queries.push(
     [
-      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS' : ''} "${tableDef.name}" (`,
+      `CREATE TABLE ${options.includeIfExists ? ' IF NOT EXISTS' : ''}${escapeIdentifier(tableDef.name)} (`,
       createTableLines.join(',\n'),
       ')',
     ].join('\n')
