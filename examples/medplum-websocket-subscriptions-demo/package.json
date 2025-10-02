@@ -1,18 +1,6 @@
 {
   "name": "medplum-websocket-subscriptions-demo",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   "version": "4.4.1",
-=======
-  "version": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-  "version": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
-  "version": "4.4.1",
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "private": true,
   "type": "module",
   "scripts": {
@@ -37,45 +25,12 @@
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
     "@mantine/notifications": "7.17.8",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@medplum/core": "4.4.1",
     "@medplum/eslint-config": "4.4.1",
     "@medplum/fhir-router": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
     "@medplum/react": "4.4.1",
-<<<<<<< HEAD
-=======
-    "@medplum/core": "4.3.14",
-    "@medplum/eslint-config": "4.3.14",
-    "@medplum/fhir-router": "4.3.14",
-    "@medplum/fhirtypes": "4.3.14",
-    "@medplum/mock": "4.3.14",
-    "@medplum/react": "4.3.14",
->>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
-=======
-    "@medplum/core": "4.3.15",
-    "@medplum/eslint-config": "4.3.15",
-    "@medplum/fhir-router": "4.3.15",
-    "@medplum/fhirtypes": "4.3.15",
-    "@medplum/mock": "4.3.15",
-    "@medplum/react": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-    "@medplum/core": "4.4.0",
-    "@medplum/eslint-config": "4.4.0",
-    "@medplum/fhir-router": "4.4.0",
-    "@medplum/fhirtypes": "4.4.0",
-    "@medplum/mock": "4.4.0",
-    "@medplum/react": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@tabler/icons-react": "3.35.0",
     "@types/node": "20.19.17",
     "@types/react": "19.1.13",

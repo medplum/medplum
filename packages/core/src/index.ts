@@ -14,6 +14,7 @@ export * from './crypto';
 export * from './datasampler';
 export * from './default-values';
 export * from './elements-context';
+export * from './environment';
 export * from './eventtarget';
 export * from './fhircast';
 export * from './fhirlexer/parse';

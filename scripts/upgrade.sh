@@ -13,8 +13,6 @@ ADDITIONAL_EXCLUDES=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --cooldown=*)
-<<<<<<< HEAD
-<<<<<<< HEAD
             if [[ -n "${1#*=}" ]]; then
                 COOLDOWN="${1#*=}"
             fi
@@ -23,22 +21,6 @@ while [[ $# -gt 0 ]]; do
             if [[ -n "${1#*=}" ]]; then
                 ADDITIONAL_EXCLUDES="${1#*=}"
             fi
-=======
-            COOLDOWN="${1#*=}"
-            ;;
-        --exclude=*)
-            ADDITIONAL_EXCLUDES="${1#*=}"
->>>>>>> b9ab555bf (Added npm-check-updates cooldown (#7504))
-=======
-            if [[ -n "${1#*=}" ]]; then
-                COOLDOWN="${1#*=}"
-            fi
-            ;;
-        --exclude=*)
-            if [[ -n "${1#*=}" ]]; then
-                ADDITIONAL_EXCLUDES="${1#*=}"
-            fi
->>>>>>> 7bd6f59d1 (Handle empty args in upgrade.sh (#7506))
             ;;
         *)
             echo "Error: Unknown argument '$1'"
@@ -135,7 +117,7 @@ if [ "$LAST_STEP" -lt 1 ]; then
     # --target - Determines the version to upgrade to
     # "minor" - Upgrade to the highest minor version without bumping the major version
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
 
     # Commit and push before running NPM install
     git add -u .
@@ -176,7 +158,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

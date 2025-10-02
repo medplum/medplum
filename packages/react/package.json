@@ -1,18 +1,6 @@
 {
   "name": "@medplum/react",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   "version": "4.4.1",
-=======
-  "version": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-  "version": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
-  "version": "4.4.1",
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum React Component Library",
   "keywords": [
     "medplum",
@@ -84,33 +72,11 @@
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
     "@mantine/notifications": "7.17.8",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@medplum/core": "4.4.1",
     "@medplum/definitions": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
     "@medplum/react-hooks": "4.4.1",
-<<<<<<< HEAD
-=======
-    "@medplum/core": "4.3.15",
-    "@medplum/definitions": "4.3.15",
-    "@medplum/fhirtypes": "4.3.15",
-    "@medplum/mock": "4.3.15",
-    "@medplum/react-hooks": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-    "@medplum/core": "4.4.0",
-    "@medplum/definitions": "4.4.0",
-    "@medplum/fhirtypes": "4.4.0",
-    "@medplum/mock": "4.4.0",
-    "@medplum/react-hooks": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@storybook/addon-actions": "8.6.14",
     "@storybook/addon-essentials": "8.6.14",
     "@storybook/addon-links": "8.6.14",
@@ -150,23 +116,8 @@
     "@mantine/core": "^7.0.0",
     "@mantine/hooks": "^7.0.0",
     "@mantine/notifications": "^7.0.0",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/react-hooks": "4.4.1",
-=======
-    "@medplum/core": "4.3.15",
-    "@medplum/react-hooks": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-    "@medplum/core": "4.4.0",
-    "@medplum/react-hooks": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
-    "@medplum/core": "4.4.1",
-    "@medplum/react-hooks": "4.4.1",
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "react": "^17.0.2 || ^18.0.0 || ^19.0.0",
     "react-dom": "^17.0.2 || ^18.0.0 || ^19.0.0",
     "rfc6902": "^5.0.1",

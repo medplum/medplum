@@ -1,18 +1,6 @@
 {
   "name": "medplum-demo-bots",
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   "version": "4.4.1",
-=======
-  "version": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-  "version": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
-  "version": "4.4.1",
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -43,45 +31,12 @@
     "root": true
   },
   "devDependencies": {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@medplum/bot-layer": "4.4.1",
     "@medplum/cli": "4.4.1",
     "@medplum/core": "4.4.1",
     "@medplum/eslint-config": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
-<<<<<<< HEAD
-=======
-    "@medplum/bot-layer": "4.3.14",
-    "@medplum/cli": "4.3.14",
-    "@medplum/core": "4.3.14",
-    "@medplum/eslint-config": "4.3.14",
-    "@medplum/fhirtypes": "4.3.14",
-    "@medplum/mock": "4.3.14",
->>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
-=======
-    "@medplum/bot-layer": "4.3.15",
-    "@medplum/cli": "4.3.15",
-    "@medplum/core": "4.3.15",
-    "@medplum/eslint-config": "4.3.15",
-    "@medplum/fhirtypes": "4.3.15",
-    "@medplum/mock": "4.3.15",
->>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
-=======
-    "@medplum/bot-layer": "4.4.0",
-    "@medplum/cli": "4.4.0",
-    "@medplum/core": "4.4.0",
-    "@medplum/eslint-config": "4.4.0",
-    "@medplum/fhirtypes": "4.4.0",
-    "@medplum/mock": "4.4.0",
->>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
-=======
->>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@metriport/api-sdk": "18.0.5",
     "@types/node": "20.19.17",
     "@types/node-fetch": "2.6.13",
