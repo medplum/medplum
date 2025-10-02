@@ -14,6 +14,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --cooldown=*)
 <<<<<<< HEAD
+<<<<<<< HEAD
             if [[ -n "${1#*=}" ]]; then
                 COOLDOWN="${1#*=}"
             fi
@@ -28,6 +29,16 @@ while [[ $# -gt 0 ]]; do
         --exclude=*)
             ADDITIONAL_EXCLUDES="${1#*=}"
 >>>>>>> b9ab555bf (Added npm-check-updates cooldown (#7504))
+=======
+            if [[ -n "${1#*=}" ]]; then
+                COOLDOWN="${1#*=}"
+            fi
+            ;;
+        --exclude=*)
+            if [[ -n "${1#*=}" ]]; then
+                ADDITIONAL_EXCLUDES="${1#*=}"
+            fi
+>>>>>>> 7bd6f59d1 (Handle empty args in upgrade.sh (#7506))
             ;;
         *)
             echo "Error: Unknown argument '$1'"
