@@ -10,6 +10,9 @@ rather than globally. Only Super Admin users are allowed to edit Project setting
 Additional details are available in the full [`Project` resource schema](/docs/api/fhir/medplum/project).
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 894d7d7e9 ([Docs] Authn Landing Page Rewrite (#7328))
 | Setting                      | Description                                                                                                                                                                                                                                                                                                 | Default |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `superAdmin`                 | Users belonging to a Project with this flag are granted [Super Admin](/docs/access/projects#superadmin) access to the server. Multiple Projects can have this set.                                                                                                                                          | `false` |
@@ -22,6 +25,7 @@ Additional details are available in the full [`Project` resource schema](/docs/a
 | `secret`                     | Key-value pairs similar to `setting`, that can only be read by Project Admins. These can be used to [pass secrets to Bots](/docs/bots/bot-secrets)                                                                                                                                                          |         |
 | `systemSetting`              | Server settings related to the Project: visible to anyone, but can only be set by Super Admins.                                                                                                                                                                                                             |         |
 | `systemSecret`               | Key-value pairs that can only be accessed by Super Admins.                                                                                                                                                                                                                                                  |         |
+<<<<<<< HEAD
 =======
 | Setting                      | Description                                                                                                                                                                                                                                                                                                          | Default |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -36,6 +40,8 @@ Additional details are available in the full [`Project` resource schema](/docs/a
 | `systemSetting`              | Server settings related to the Project: visible to anyone, but can only be set by Super Admins.                                                                                                                                                                                                                      |         |
 | `systemSecret`               | Key-value pairs that can only be accessed by Super Admins.                                                                                                                                                                                                                                                           |         |
 >>>>>>> d94738ce6 (Fixes #5150 - graphql docs cleanup (#7483))
+=======
+>>>>>>> 894d7d7e9 ([Docs] Authn Landing Page Rewrite (#7328))
 
 ## Project feature flags
 
@@ -48,12 +54,17 @@ are:
 | `cron`                    | Can run Bots periodically on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)                                       |
 | `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                   |
 <<<<<<< HEAD
+<<<<<<< HEAD
 | `google-auth-required`    | [Google authentication](/docs/auth/google-auth) is the only method allowed                                               |
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                        |
 =======
 | `google-auth-required`    | [Google authentication](/docs/auth/methods/google-auth) is the only method allowed                                               |
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                               |
 >>>>>>> d94738ce6 (Fixes #5150 - graphql docs cleanup (#7483))
+=======
+| `google-auth-required`    | [Google authentication](/docs/auth/google-auth) is the only method allowed                                               |
+| `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                        |
+>>>>>>> 894d7d7e9 ([Docs] Authn Landing Page Rewrite (#7328))
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
 | `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |
