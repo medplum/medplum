@@ -1,6 +1,10 @@
 {
   "name": "@medplum/e2e",
+<<<<<<< HEAD
   "version": "4.4.1",
+=======
+  "version": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
   "description": "End-to-end tests for Medplum",
   "keywords": [
     "e2e",

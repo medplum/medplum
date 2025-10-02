@@ -1,6 +1,10 @@
 {
   "name": "@medplum/mock",
+<<<<<<< HEAD
   "version": "4.4.1",
+=======
+  "version": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -55,10 +59,17 @@
     "test": "jest"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/definitions": "4.4.1",
     "@medplum/fhir-router": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
+=======
+    "@medplum/core": "4.3.15",
+    "@medplum/definitions": "4.3.15",
+    "@medplum/fhir-router": "4.3.15",
+    "@medplum/fhirtypes": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
     "dataloader": "2.2.3",
     "jest-websocket-mock": "2.5.0",
     "rfc6902": "5.1.2"

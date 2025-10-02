@@ -1,6 +1,10 @@
 {
   "name": "@medplum/agent",
+<<<<<<< HEAD
   "version": "4.4.1",
+=======
+  "version": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -25,8 +29,13 @@
     "test": "jest"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/hl7": "4.4.1",
+=======
+    "@medplum/core": "4.3.15",
+    "@medplum/hl7": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
     "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.7.0",
     "semver": "7.7.2",
@@ -35,8 +44,13 @@
     "ws": "8.18.3"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
+=======
+    "@medplum/fhirtypes": "4.3.15",
+    "@medplum/mock": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",

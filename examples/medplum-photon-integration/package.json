@@ -1,6 +1,10 @@
 {
   "name": "medplum-photon-integration",
+<<<<<<< HEAD
   "version": "4.4.1",
+=======
+  "version": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,11 +32,19 @@
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
     "@mantine/notifications": "7.17.8",
+<<<<<<< HEAD
     "@medplum/bot-layer": "4.4.1",
     "@medplum/core": "4.4.1",
     "@medplum/eslint-config": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/react": "4.4.1",
+=======
+    "@medplum/bot-layer": "4.3.15",
+    "@medplum/core": "4.3.15",
+    "@medplum/eslint-config": "4.3.15",
+    "@medplum/fhirtypes": "4.3.15",
+    "@medplum/react": "4.3.15",
+>>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
     "@photonhealth/elements": "0.16.12",
     "@tabler/icons-react": "3.35.0",
     "@types/node": "20.19.17",
