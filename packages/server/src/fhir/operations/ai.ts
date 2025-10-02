@@ -75,17 +75,9 @@ type AIOperationParameters = {
 export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<AIOperationParameters>(operation, req);
 
-  if (!params.apiKey) {
-    return [badRequest('API key is required')];
-  }
-
-  if (!params.model) {
-    return [badRequest('Model is required')];
-  }
-
-  if (!params.messages) {
-    return [badRequest('Messages are required')];
-  }
+  if (!params.apiKey || !params.model || !params.messages) {
+    return [badRequest('Missing required parameters')];
+  }  
 
   const messages = JSON.parse(params.messages);
 
