@@ -11,6 +11,38 @@ import { initTestAuth } from '../../test.setup';
 const app = express();
 let accessToken: string;
 
+const fhirTools = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'fhir_request',
+      description:
+        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources. For POST/PUT/PATCH requests, include the resource data in the "body" parameter.',
+      parameters: {
+        type: 'object' as const,
+        properties: {
+          method: {
+            type: 'string' as const,
+            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+            description: 'HTTP method for the FHIR request',
+          },
+          path: {
+            type: 'string' as const,
+            description: 'FHIR resource path (e.g., "Patient?phone=718-564-9483" or "Patient/123" or "Task")',
+          },
+          body: {
+            type: 'object' as const,
+            description:
+              'FHIR resource to create or update. Required for POST, PUT, and PATCH requests. Example: {"resourceType": "Task", "status": "requested", "intent": "order", "description": "Fill up chart note"}',
+          },
+        },
+        required: ['method', 'path'],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
 describe('AI Operation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -75,6 +107,10 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
+          },
         ],
       });
 
@@ -98,6 +134,7 @@ describe('AI Operation', () => {
           Authorization: 'Bearer sk-test-key',
           'Content-Type': 'application/json',
         },
+        body: expect.stringContaining('"tools":'),
       })
     );
   });
@@ -164,6 +201,10 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
+          },
         ],
       });
 
@@ -200,7 +241,7 @@ describe('AI Operation', () => {
           Authorization: 'Bearer sk-test-key',
           'Content-Type': 'application/json',
         },
-        body: expect.stringContaining('"model":"gpt-4"'),
+        body: expect.stringContaining('"tools":'),
       })
     );
   });
@@ -241,6 +282,10 @@ describe('AI Operation', () => {
           {
             name: 'model',
             valueString: 'gpt-4',
+          },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
           },
         ],
       });
@@ -380,6 +425,87 @@ describe('AI Operation', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
   });
 
+  test('Invalid tools JSON', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test message' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+          {
+            name: 'tools',
+            valueString: 'invalid json',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
+  });
+
+  test('Works without tools parameter (optional)', async () => {
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [
+          {
+            message: {
+              content: 'I can help you with general questions.',
+              tool_calls: null,
+            },
+          },
+        ],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'What can you do?' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Parameters');
+    expect((res.body as Parameters).parameter?.[0]?.valueString).toBe('I can help you with general questions.');
+
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const bodyParam = JSON.parse(fetchCall[1].body);
+    expect(bodyParam.tools).toBeUndefined();
+    expect(bodyParam.tool_choice).toBeUndefined();
+  });
+
   test('Unsupported content type', async () => {
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -494,6 +620,10 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
+          },
         ],
       });
 
@@ -550,6 +680,10 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
+          },
         ],
       });
 
@@ -601,6 +735,10 @@ describe('AI Operation', () => {
           {
             name: 'model',
             valueString: 'gpt-3.5-turbo',
+          },
+          {
+            name: 'tools',
+            valueString: JSON.stringify(fhirTools),
           },
         ],
       });
