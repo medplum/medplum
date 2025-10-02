@@ -2,6 +2,7 @@
   "name": "medplum-nextjs-demo",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
@@ -9,6 +10,9 @@
 =======
   "version": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+  "version": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "private": true,
   "type": "module",
   "scripts": {
@@ -33,6 +37,7 @@
     "@mantine/notifications": "7.17.8",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/react": "4.4.1",
 =======
@@ -43,6 +48,10 @@
     "@medplum/core": "4.4.0",
     "@medplum/react": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/core": "4.4.1",
+    "@medplum/react": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@next/bundle-analyzer": "15.5.3",
     "next": "15.5.3",
     "react": "19.1.1",
@@ -50,6 +59,7 @@
     "rfc6902": "5.1.2"
   },
   "devDependencies": {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -63,6 +73,9 @@
 =======
     "@medplum/fhirtypes": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/fhirtypes": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@types/node": "20.19.17",
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",

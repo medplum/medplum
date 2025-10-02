@@ -2,6 +2,7 @@
   "name": "@medplum/graphiql",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
@@ -9,6 +10,9 @@
 =======
   "version": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+  "version": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -39,6 +43,7 @@
     "@mantine/hooks": "7.17.8",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/react": "4.4.1",
@@ -52,6 +57,11 @@
     "@medplum/fhirtypes": "4.4.0",
     "@medplum/react": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/core": "4.4.1",
+    "@medplum/fhirtypes": "4.4.1",
+    "@medplum/react": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",
     "graphiql": "4.1.2",

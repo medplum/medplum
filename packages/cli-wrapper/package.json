@@ -2,6 +2,7 @@
   "name": "medplum",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
@@ -9,6 +10,9 @@
 =======
   "version": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+  "version": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -52,6 +56,7 @@
   "dependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/cli": "4.4.1",
     "@medplum/core": "4.4.1"
 =======
@@ -62,6 +67,10 @@
     "@medplum/cli": "4.4.0",
     "@medplum/core": "4.4.0"
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/cli": "4.4.1",
+    "@medplum/core": "4.4.1"
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

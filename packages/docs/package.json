@@ -2,6 +2,7 @@
   "name": "@medplum/docs",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
@@ -9,6 +10,9 @@
 =======
   "version": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+  "version": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -58,6 +62,7 @@
     "@mdx-js/react": "3.1.1",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
@@ -71,6 +76,11 @@
     "@medplum/fhirtypes": "4.4.0",
     "@medplum/mock": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/core": "4.4.1",
+    "@medplum/fhirtypes": "4.4.1",
+    "@medplum/mock": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "@svgr/webpack": "8.1.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",

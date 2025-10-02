@@ -2,6 +2,7 @@
   "name": "@medplum/core",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
@@ -9,6 +10,9 @@
 =======
   "version": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+  "version": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
@@ -67,6 +71,7 @@
   "devDependencies": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/definitions": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
 =======
@@ -77,6 +82,10 @@
     "@medplum/definitions": "4.4.0",
     "@medplum/fhirtypes": "4.4.0",
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+    "@medplum/definitions": "4.4.1",
+    "@medplum/fhirtypes": "4.4.1",
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
     "jest-websocket-mock": "2.5.0"
   },
   "peerDependencies": {

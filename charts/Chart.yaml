@@ -6,6 +6,7 @@ description: |
 type: application
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 version: 4.4.1
 appVersion: '4.4.1'
 =======
@@ -16,6 +17,10 @@ appVersion: '4.3.15'
 version: 4.4.0
 appVersion: '4.4.0'
 >>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
+=======
+version: 4.4.1
+appVersion: '4.4.1'
+>>>>>>> 0900190f6 (Release Version 4.4.1 (#7471))
 keywords:
   - healthcare
   - fhir
