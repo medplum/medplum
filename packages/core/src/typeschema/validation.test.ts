@@ -1069,11 +1069,12 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(binary)).not.toThrow();
   });
 
-  test('Binary.data allows large base64 and skips 1MB string cap', () => {
+  test('Binary.data can exceed default when cap override is provided', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
-    const buf = Buffer.alloc(2 * 1024 * 1024, 1); // 2 MB decoded
+    const cap = 2 * 1024 * 1024; // 2 MB cap
+    const buf = Buffer.alloc(cap, 1); // 2 MB decoded
     binary.data = buf.toString('base64');
-    expect(() => validateResource(binary)).not.toThrow();
+    expect(() => validateResource(binary, { base64BinaryMaxBytes: cap })).not.toThrow();
   });
 
   test('Binary.data invalid object does not recurse', () => {

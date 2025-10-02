@@ -529,6 +529,7 @@ class ResourceValidator implements CrawlerVisitor {
       this.issues.push(createStructureIssue(path, 'Invalid base64Binary format'));
       return;
     }
+
     // Approximate decoded size: 3/4 of length minus padding
     let padding = 0;
     if (str.endsWith('==')) {

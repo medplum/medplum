@@ -858,6 +858,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // Parse result.data as a base64 string
     const buffer = Buffer.from(resource.data as string, 'base64');
 
+    // base64 data should be limited in size
+    const maxBase64Bytes = getConfig().base64BinaryMaxBytes;
+    if (maxBase64Bytes && buffer.length > maxBase64Bytes) {
+      throw new OperationOutcomeError(
+        badRequest(`base64Binary exceeds ${maxBase64Bytes} bytes`)
+      );
+    }
     // Convert buffer to a Readable stream
     const stream = new Readable({
       read() {
@@ -931,7 +938,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
-    const issues = validateResource(resource);
+    const issues = validateResource(resource, { base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes });
+
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
@@ -965,6 +973,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
         continue;
       }
+      
       const validateStart = process.hrtime.bigint();
       validateResource(resource, { profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
