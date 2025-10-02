@@ -95,7 +95,6 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
 
   try {
     const result = await callAI(messages, params.apiKey, params.model);
-    
     const parameters: ParametersParameter[] = [];
   
     if (result.content) {
