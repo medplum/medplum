@@ -122,12 +122,14 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
   const params = parseInputParameters<ConceptMapImportParameters>(operation, req);
 
   let conceptMap: WithId<ConceptMap>;
-  if (req.params.id) {
+  if (req.params.id && params.url) {
+    return [badRequest('Parameter `url` not permitted for instance operation', 'Parameters.parameter')];
+  } else if (req.params.id) {
     conceptMap = await repo.readResource('ConceptMap', req.params.id);
   } else if (params.url) {
     conceptMap = await findTerminologyResource('ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
   } else {
-    return [badRequest('ConceptMap to import into must be specified')];
+    return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
   }
 
   await repo.withTransaction((db) => importConceptMap(db, conceptMap, params.mapping));

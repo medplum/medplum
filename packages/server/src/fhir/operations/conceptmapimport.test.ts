@@ -362,6 +362,39 @@ describe('ConceptMap/$import', () => {
     });
   });
 
+  test('Cannot overspecify ConceptMap', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      url: 'http://example.com/ConceptMap/' + randomUUID(),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: conceptMap.url },
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct', code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining({ details: { text: expect.stringContaining('not permitted for instance operation') } }),
+      ],
+    });
+  });
+
   test('Requires source code to be specified', async () => {
     const conceptMap = await repo.createResource<ConceptMap>({
       resourceType: 'ConceptMap',
