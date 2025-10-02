@@ -6,7 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, createTestProject } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -47,7 +47,7 @@ describe('AI Operation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ project: { features: ['ai'] } });
   });
 
   afterAll(async () => {
@@ -294,6 +294,41 @@ describe('AI Operation', () => {
     expect(res.body.resourceType).toBe('Parameters');
     expect((res.body as Parameters).parameter?.[0]?.valueString).toBe('I can help you with FHIR queries.');
     // When there are no tool calls, the implementation doesn't return a tool_calls parameter
+  });
+
+  test('AI feature not enabled', async () => {
+    // Create a project without AI feature
+    const noAiProject = await createTestProject({
+      withRepo: true,
+      project: {
+        name: 'No AI Project',
+        features: ['bots'], // AI feature not included
+      },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + noAiProject.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test message' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(401);
   });
 
   test('Missing API key', async () => {
