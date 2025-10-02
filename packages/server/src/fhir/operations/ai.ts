@@ -86,7 +86,7 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
 
   if (!params.apiKey || !params.model || !params.messages) {
     return [badRequest('Missing required parameters')];
-  }  
+  }
 
   const messages = JSON.parse(params.messages);
 
