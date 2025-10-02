@@ -86,6 +86,7 @@
       "destination": "/careers/forward-deployed-engineer"
     },
     {
+<<<<<<< HEAD
       "source": "/docs/auth/user-management-guide",
       "destination": "/docs/user-management"
     },
@@ -138,6 +139,8 @@
       "destination": "/docs/user-management/open-patient-registration"
     },
     {
+=======
+>>>>>>> d94738ce6 (Fixes #5150 - graphql docs cleanup (#7483))
       "source": "/docs/graphql/basic-queries",
       "destination": "/docs/graphql"
     }
