@@ -1,10 +1,14 @@
 {
   "name": "@medplum/ccda",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+  "version": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   "description": "Medplum C-CDA Library",
   "keywords": [
     "medplum",
@@ -60,6 +64,7 @@
   },
   "dependencies": {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "fast-xml-parser": "5.2.5"
   },
@@ -74,6 +79,14 @@
     "@medplum/definitions": "4.3.15",
     "@medplum/fhirtypes": "4.3.15"
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+    "@medplum/core": "4.4.0",
+    "fast-xml-parser": "5.2.5"
+  },
+  "devDependencies": {
+    "@medplum/definitions": "4.4.0",
+    "@medplum/fhirtypes": "4.4.0"
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

@@ -1,10 +1,14 @@
 {
   "name": "medplum-fsh-profiles",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+  "version": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   "private": true,
   "description": "Medplum FSH Profiles Example",
   "scripts": {

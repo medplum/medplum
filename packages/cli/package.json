@@ -1,10 +1,14 @@
 {
   "name": "@medplum/cli",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+  "version": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -73,6 +77,7 @@
     "@aws-sdk/types": "3.893.0",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/hl7": "4.4.1",
 =======
@@ -83,6 +88,10 @@
     "@medplum/core": "4.3.15",
     "@medplum/hl7": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+    "@medplum/core": "4.4.0",
+    "@medplum/hl7": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
     "commander": "12.1.0",
     "dotenv": "17.2.2",
     "fast-glob": "3.3.3",
@@ -93,12 +102,17 @@
   },
   "devDependencies": {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
 =======
     "@medplum/fhirtypes": "4.3.15",
     "@medplum/mock": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+    "@medplum/fhirtypes": "4.4.0",
+    "@medplum/mock": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
     "@types/node-fetch": "2.6.13",
     "@types/semver": "7.7.1",
     "aws-sdk-client-mock": "4.1.0"

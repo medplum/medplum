@@ -1,10 +1,14 @@
 {
   "name": "@medplum/cdk",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+  "version": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   "description": "Medplum CDK Infra as Code",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -32,6 +36,7 @@
     "@aws-sdk/types": "3.893.0",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
 =======
     "@medplum/core": "4.3.14",
@@ -39,6 +44,9 @@
 =======
     "@medplum/core": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+    "@medplum/core": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
     "aws-cdk-lib": "2.215.0",
     "cdk": "2.1029.2",
     "cdk-nag": "2.37.33",

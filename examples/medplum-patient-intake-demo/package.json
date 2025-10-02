@@ -1,10 +1,14 @@
 {
   "name": "medplum-patient-intake-demo",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "4.4.1",
 =======
   "version": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+  "version": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
   "private": true,
   "type": "module",
   "scripts": {
@@ -35,6 +39,7 @@
     "@mantine/notifications": "7.17.8",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@medplum/bot-layer": "4.4.1",
     "@medplum/core": "4.4.1",
     "@medplum/definitions": "4.4.1",
@@ -60,6 +65,15 @@
     "@medplum/mock": "4.3.15",
     "@medplum/react": "4.3.15",
 >>>>>>> eb4780adc (Release Version 4.3.15 (#7447))
+=======
+    "@medplum/bot-layer": "4.4.0",
+    "@medplum/core": "4.4.0",
+    "@medplum/definitions": "4.4.0",
+    "@medplum/eslint-config": "4.4.0",
+    "@medplum/fhirtypes": "4.4.0",
+    "@medplum/mock": "4.4.0",
+    "@medplum/react": "4.4.0",
+>>>>>>> 1ce85f8ea (Release Version 4.4.0 (#7455))
     "@tabler/icons-react": "3.35.0",
     "@types/node": "20.19.17",
     "@types/react": "19.1.13",
