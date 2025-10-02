@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { Request, Response, Router } from 'express';
+import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { deleteValue, getValue, setValue } from './store';
 
@@ -14,7 +15,7 @@ keyValueRouter.get('/:key', async (req: Request, res: Response) => {
     res.status(200).send(value);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    res.status(getStatus(outcome)).send(normalizeErrorString(outcome));
+    sendOutcome(res, outcome);
   }
 });
 
@@ -24,7 +25,7 @@ keyValueRouter.put('/:key', async (req: Request, res: Response) => {
     res.sendStatus(204);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    res.status(getStatus(outcome)).send(normalizeErrorString(outcome));
+    sendOutcome(res, outcome);
   }
 });
 
@@ -34,6 +35,6 @@ keyValueRouter.delete('/:key', async (req: Request, res: Response) => {
     res.sendStatus(204);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    res.status(getStatus(outcome)).send(normalizeErrorString(outcome));
+    sendOutcome(res, outcome);
   }
 });
