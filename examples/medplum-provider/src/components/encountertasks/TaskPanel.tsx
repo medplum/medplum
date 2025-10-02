@@ -17,11 +17,12 @@ import { TaskServiceRequest } from './TaskServiceRequest';
 
 interface TaskPanelProps {
   task: Task;
+  enabled?: boolean;
   onUpdateTask: (task: Task) => void;
 }
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
-  const { task, onUpdateTask } = props;
+  const { task, enabled = true, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
 
@@ -97,7 +98,12 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           {!task.focus?.reference?.startsWith('ServiceRequest/') &&
             !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
         </Stack>
-        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
+        <TaskStatusPanel
+          task={task}
+          enabled={enabled}
+          onActionButtonClicked={onActionButtonClicked}
+          onChangeStatus={onChangeStatus}
+        />
       </Stack>
     </Card>
   );
