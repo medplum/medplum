@@ -12,30 +12,27 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Client, escapeIdentifier } from 'pg';
+import { readdirSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
+import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
-  ColumnNameAbbreviations,
-  escapeMixedCaseIdentifier,
   escapeUnicode,
   getColumns,
-  getFunctionDefinition,
-  parseIndexDefinition,
-  TableNameAbbreviations,
+  parseIndexColumns,
+  splitIndexColumnNames,
   tsVectorExpression,
 } from './migrate-utils';
 import {
   CheckConstraintDefinition,
   ColumnDefinition,
-  DbClient,
   IndexDefinition,
   IndexType,
+  IndexTypes,
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
@@ -114,7 +111,7 @@ export async function main(): Promise<void> {
 }
 
 export type BuildMigrationOptions = {
-  dbClient: DbClient;
+  dbClient: Client | Pool | PoolClient;
   dropUnmatchedIndexes?: boolean;
   skipPostDeployActions?: boolean;
   allowPostDeployActions?: boolean;
@@ -180,15 +177,13 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   const matchedStartTables = new Set<TableDefinition>();
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
-    if (startTable) {
-      matchedStartTables.add(startTable);
-      actions.push(
-        ...generateColumnsActions(ctx, startTable, targetTable),
-        ...generateIndexesActions(ctx, startTable, targetTable, options),
-        ...generateConstraintsActions(ctx, startTable, targetTable)
-      );
-    } else {
+    if (!startTable) {
       actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+    } else {
+      matchedStartTables.add(startTable);
+      actions.push(...generateColumnsActions(ctx, startTable, targetTable));
+      actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+      actions.push(...generateConstraintsActions(ctx, startTable, targetTable));
     }
   }
 
@@ -224,15 +219,20 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
     tables.push(await getTableDefinition(db, tableName));
   }
 
+  const unusedParsers = SpecialIndexParsers.filter((p) => !p.usageCount);
+  if (unusedParsers.length) {
+    throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
+  }
+
   return { tables, functions };
 }
 
-async function getTableNames(db: DbClient): Promise<string[]> {
+async function getTableNames(db: Client | Pool | PoolClient): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: DbClient, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: Client | Pool | PoolClient, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -241,17 +241,154 @@ async function getTableDefinition(db: DbClient, name: string): Promise<TableDefi
   };
 }
 
-async function getIndexes(db: DbClient, tableName: string): Promise<IndexDefinition[]> {
-  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
+async function getFunctionDefinition(
+  db: Client | Pool | PoolClient,
+  name: string
+): Promise<SqlFunctionDefinition | undefined> {
+  let result: QueryResult<{ pg_get_functiondef: string }>;
+  try {
+    result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
+  } catch (_err) {
+    return undefined;
+  }
+
+  if (result.rows.length === 1) {
+    return {
+      name,
+      createQuery: result.rows[0].pg_get_functiondef,
+    };
+  }
+
+  if (result.rows.length > 1) {
+    throw new Error('Multiple functiondefs found for ' + name);
+  }
+
+  return undefined;
+}
+
+async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Promise<IndexDefinition[]> {
+  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
+// If the index definition is beyond the ability of the parser, define a special-handler function here
+type SpecialIndexParser = ((indexdef: string) => IndexDefinition | undefined) & { usageCount?: number };
+const SpecialIndexParsers: SpecialIndexParser[] = [
+  // example special parser that is no longer needed
+  // (indexdef: string) => {
+  //   // CREATE INDEX "Coding_display_idx" ON public."Coding" USING gin (system, to_tsvector('english'::regconfig, display)) WHERE (display IS NOT NULL)
+  //   const tsVectorExpr = tsVectorExpression('english', 'display');
+  //   const match = indexdef.endsWith(`USING gin (system, ${tsVectorExpr}) WHERE (display IS NOT NULL)`);
+  //   if (!match) {
+  //     return undefined;
+  //   }
+  //   return {
+  //     columns: ['system', { expression: tsVectorExpr, name: 'display' }],
+  //     indexType: 'gin',
+  //     where: 'display IS NOT NULL',
+  //   };
+  // },
+];
+
+export function parseIndexDefinition(indexdef: string): IndexDefinition {
+  const fullIndexDef = indexdef;
+
+  const specialMatches = SpecialIndexParsers.map((p) => {
+    const result = p(indexdef);
+    if (result) {
+      p.usageCount = (p.usageCount ?? 0) + 1;
+    }
+    return p(indexdef);
+  }).filter((d): d is IndexDefinition => !!d);
+  if (specialMatches.length > 1) {
+    throw new Error('Multiple special index parsers matched: ' + indexdef);
+  } else if (specialMatches.length === 1) {
+    specialMatches[0].indexdef = fullIndexDef;
+    return specialMatches[0];
+  }
+
+  let where: string | undefined;
+  const whereMatch = indexdef.match(/ WHERE \((.+)\)$/);
+  if (whereMatch) {
+    where = whereMatch[1];
+    indexdef = indexdef.substring(0, whereMatch.index);
+  }
+
+  // parse but ignore WITH clause since we don't want to consider any index settings in the official schema
+  const withMatch = indexdef.match(/ WITH \((.+)\)$/);
+  if (withMatch) {
+    indexdef = indexdef.substring(0, withMatch.index);
+  }
+
+  let include: string[] | undefined;
+  const includeMatch = indexdef.match(/ INCLUDE \((.+)\)$/);
+  if (includeMatch) {
+    include = includeMatch[1].split(',').map((s) => s.trim().replaceAll('"', ''));
+    indexdef = indexdef.substring(0, includeMatch.index);
+  }
+
+  const indexTypeMatch = indexdef.match(/USING (\w+)/);
+  if (!indexTypeMatch) {
+    throw new Error('Could not parse index type from ' + indexdef);
+  }
+
+  const indexType = indexTypeMatch[1] as IndexType;
+  if (!IndexTypes.includes(indexType)) {
+    throw new Error('Invalid index type: ' + indexType);
+  }
+
+  const expressionsMatch = indexdef.match(/\((.+)\)$/);
+  if (!expressionsMatch) {
+    throw new Error('Invalid index definition: ' + indexdef);
+  }
+
+  const parsedExpressions = parseIndexColumns(expressionsMatch[1]);
+  const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
+    if (expression.match(/^[ \w"]+$/)) {
+      return expression.trim().replaceAll('"', '');
+    }
+
+    const idxNameMatch = indexdef.match(/INDEX "([a-zA-Z]+)_(\w+)_(idx|idx_tsv)"/); // ResourceName_column1_column2_idx
+    if (!idxNameMatch) {
+      throw new Error('Could not parse index name from ' + indexdef);
+    }
+
+    let name = splitIndexColumnNames(idxNameMatch[2])[i];
+    if (!name) {
+      // column names aren't considered when determining index equality, so it is fine to use a placeholder
+      // name here. If we want to be stricter and match on index name as well, throw an error here instead
+      // of using a placeholder name among other changes
+      name = 'placeholder';
+    }
+    name = expandAbbreviations(name, ColumnNameAbbreviations);
+
+    return { expression, name };
+  });
+
+  const indexDef: IndexDefinition = {
+    columns,
+    indexType: indexType,
+    unique: indexdef.includes('CREATE UNIQUE INDEX'),
+    indexdef: fullIndexDef,
+  };
+
+  if (where) {
+    indexDef.where = where;
+  }
+
+  if (include) {
+    indexDef.include = include;
+  }
+
+  return indexDef;
+}
+
 export function parseIndexName(indexdef: string): string | undefined {
-  return /INDEX "?([^"]+)"? ON/i.exec(indexdef)?.[1];
+  return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
 }
 
 export async function getCheckConstraints(
-  db: DbClient,
+  db: Client | Pool | PoolClient,
   tableName: string
 ): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
   const rs = await db.query<{
@@ -260,12 +397,9 @@ export async function getCheckConstraints(
     contype: string;
     convalidated: boolean;
     condef: string;
-  }>(
-    `SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
+  }>(`SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
 FROM pg_catalog.pg_constraint
-WHERE connamespace = 'public'::regnamespace AND conrelid IN($1::regclass) AND contype = 'c'`,
-    [escapeIdentifier(tableName)]
-  );
+WHERE connamespace = 'public'::regnamespace AND conrelid IN('"${tableName}"'::regclass) AND contype = 'c'`);
 
   const cds: (CheckConstraintDefinition & { valid: boolean })[] = [];
   for (const row of rs.rows) {
@@ -350,32 +484,32 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
 
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
-  result.tables.push(
-    tableDefinition,
-    {
-      name: resourceType + '_History',
-      columns: [
-        { name: 'versionId', type: 'UUID', primaryKey: true, notNull: true },
-        { name: 'id', type: 'UUID', notNull: true },
-        { name: 'content', type: 'TEXT', notNull: true },
-        { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
-      ],
-      indexes: [
-        { columns: ['id'], indexType: 'btree' },
-        { columns: ['lastUpdated'], indexType: 'btree' },
-      ],
-    },
-    {
-      name: resourceType + '_References',
-      columns: [
-        { name: 'resourceId', type: 'UUID', notNull: true },
-        { name: 'targetId', type: 'UUID', notNull: true },
-        { name: 'code', type: 'TEXT', notNull: true },
-      ],
-      compositePrimaryKey: ['resourceId', 'targetId', 'code'],
-      indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
-    }
-  );
+  result.tables.push(tableDefinition);
+
+  result.tables.push({
+    name: resourceType + '_History',
+    columns: [
+      { name: 'versionId', type: 'UUID', primaryKey: true, notNull: true },
+      { name: 'id', type: 'UUID', notNull: true },
+      { name: 'content', type: 'TEXT', notNull: true },
+      { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
+    ],
+    indexes: [
+      { columns: ['id'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree' },
+    ],
+  });
+
+  result.tables.push({
+    name: resourceType + '_References',
+    columns: [
+      { name: 'resourceId', type: 'UUID', notNull: true },
+      { name: 'targetId', type: 'UUID', notNull: true },
+      { name: 'code', type: 'TEXT', notNull: true },
+    ],
+    compositePrimaryKey: ['resourceId', 'targetId', 'code'],
+    indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
+  });
 }
 
 const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source']);
@@ -544,10 +678,8 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
-    result.indexes.push(
-      { columns: ['project', 'email'], indexType: 'btree', unique: true },
-      { columns: ['project', 'externalId'], indexType: 'btree', unique: true }
-    );
+    result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
+    result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
   }
 
   if (resourceType === 'Encounter') {
@@ -582,14 +714,12 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
     }
     profileCol.defaultValue = "''::text";
 
-    result.indexes.push(
-      {
-        columns: ['project', 'externalId'],
-        indexType: 'btree',
-        unique: true,
-      },
-      { columns: ['project', 'userName'], indexType: 'btree', unique: true }
-    );
+    result.indexes.push({
+      columns: ['project', 'externalId'],
+      indexType: 'btree',
+      unique: true,
+    });
+    result.indexes.push({ columns: ['project', 'userName'], indexType: 'btree', unique: true });
   }
 }
 
@@ -800,7 +930,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 }
 
 export async function executeMigrationActions(
-  client: DbClient,
+  client: Client | Pool | PoolClient,
   results: MigrationActionResult[],
   actions: MigrationAction[]
 ): Promise<void> {
@@ -882,15 +1012,15 @@ export async function executeMigrationActions(
 }
 
 function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
-  b.append(String.raw`\set ON_ERROR_STOP true`);
-  b.append(String.raw`\set QUIET on`);
+  b.append('\\set ON_ERROR_STOP true');
+  b.append('\\set QUIET on');
   b.newLine();
 
-  b.appendNoWrap(String.raw`DROP DATABASE IF EXISTS medplum;`);
-  b.appendNoWrap(String.raw`CREATE DATABASE medplum;`);
+  b.appendNoWrap('DROP DATABASE IF EXISTS medplum;');
+  b.appendNoWrap('CREATE DATABASE medplum;');
   b.newLine();
 
-  b.appendNoWrap(String.raw`\c medplum`);
+  b.appendNoWrap('\\c medplum');
   b.newLine();
 
   b.append('DO $$');
@@ -1105,31 +1235,19 @@ function generateAlterColumnActions(
   return actions;
 }
 
-export function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
+function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
   const queries: string[] = [];
   const createTableLines = [];
   for (const column of tableDef.columns) {
-    const parts: string[] = [escapeIdentifier(column.name), column.type];
-    if (column.identity) {
-      parts.push(`GENERATED ${column.identity} AS IDENTITY`);
-    }
-    if (column.primaryKey) {
-      parts.push('PRIMARY KEY');
-    }
-    if (column.notNull && !column.primaryKey && !column.identity) {
-      parts.push('NOT NULL');
-    }
-    if (column.defaultValue) {
-      if (column.identity) {
-        throw new Error(`Cannot set default value on identity column ${tableDef.name}.${column.name}`);
-      }
-      parts.push(`DEFAULT ${column.defaultValue}`);
-    }
-    createTableLines.push(`  ${parts.join(' ')}`);
+    const typePart = column.type;
+    const pkPart = column.primaryKey ? ' PRIMARY KEY' : '';
+    const notNullPart = column.notNull && !column.primaryKey ? ' NOT NULL' : '';
+    const defaultPart = column.defaultValue ? ' DEFAULT ' + column.defaultValue : '';
+    createTableLines.push(`  "${column.name}" ${typePart}${pkPart}${notNullPart}${defaultPart}`);
   }
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
-    createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
+    createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`);
   }
 
   for (const constraint of tableDef.constraints ?? []) {
@@ -1142,7 +1260,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
 
   queries.push(
     [
-      `CREATE TABLE ${options.includeIfExists ? ' IF NOT EXISTS' : ''}${escapeIdentifier(tableDef.name)} (`,
+      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS' : ''} "${tableDef.name}" (`,
       createTableLines.join(',\n'),
       ')',
     ].join('\n')
@@ -1238,9 +1356,7 @@ function generateIndexesActions(
     seenIndexNames.add(indexName);
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
-    if (startIndex) {
-      matchedIndexes.add(startIndex);
-    } else {
+    if (!startIndex) {
       ctx.postDeployAction(
         () => {
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
@@ -1251,6 +1367,8 @@ function generateIndexesActions(
         },
         `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
+    } else {
+      matchedIndexes.add(startIndex);
     }
   }
 
@@ -1289,9 +1407,7 @@ function generateConstraintsActions(
     seenConstraintNames.add(targetConstraint.name);
 
     const startConstraint = startTable.constraints?.find((c) => constraintDefinitionsEqual(c, targetConstraint));
-    if (startConstraint) {
-      matchedConstraints.add(startConstraint);
-    } else {
+    if (!startConstraint) {
       ctx.postDeployAction(
         () => {
           actions.push({
@@ -1303,6 +1419,8 @@ function generateConstraintsActions(
         },
         `ADD CONSTRAINT ${escapeIdentifier(targetConstraint.name)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
+    } else {
+      matchedConstraints.add(startConstraint);
     }
   }
 
@@ -1397,7 +1515,7 @@ function getMigrationFilenames(): string[] {
 }
 
 function getVersionFromFilename(filename: string): number {
-  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
+  return parseInt(filename.replace('v', '').replace('.ts', ''), 10);
 }
 
 function getNextSchemaVersion(): number {
@@ -1480,6 +1598,21 @@ export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: Chec
   return deepEquals({ ...a, valid: undefined }, { ...b, valid: undefined });
 }
 
+const TableNameAbbreviations: Record<string, string | undefined> = {
+  MedicinalProductAuthorization: 'MPA',
+  MedicinalProductContraindication: 'MPC',
+  MedicinalProductPharmaceutical: 'MPP',
+  MedicinalProductUndesirableEffect: 'MPUE',
+};
+
+const ColumnNameAbbreviations: Record<string, string | undefined> = {
+  participatingOrganization: 'partOrg',
+  primaryOrganization: 'primOrg',
+  immunizationEvent: 'immEvent',
+  identifier: 'idnt',
+  Identifier: 'Idnt',
+};
+
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
 
@@ -1494,6 +1627,20 @@ function applyAbbreviations(name: string, abbreviations: Record<string, string |
   return result;
 }
 
+function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
+  let result = name;
+  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
+    result = result.replace(abbrev, original);
+  }
+
+  // Expand _Refs suffix back to _References
+  if (result.endsWith('_Refs')) {
+    result = result.slice(0, -'Refs'.length) + 'References';
+  }
+
+  return result;
+}
+
 function ensureEndsWithSemicolon(query: string): string {
   if (query.endsWith(';')) {
     return query;
@@ -1502,8 +1649,8 @@ function ensureEndsWithSemicolon(query: string): string {
 }
 
 if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
+  main().catch((reason) => {
+    console.error(reason);
     process.exit(1);
   });
 }
