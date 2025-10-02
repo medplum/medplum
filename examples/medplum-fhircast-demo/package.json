@@ -19,10 +19,17 @@
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
     "@mantine/notifications": "7.17.8",
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/eslint-config": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/react": "4.4.1",
+=======
+    "@medplum/core": "4.3.14",
+    "@medplum/eslint-config": "4.3.14",
+    "@medplum/fhirtypes": "4.3.14",
+    "@medplum/react": "4.3.14",
+>>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
     "@tabler/icons-react": "3.35.0",
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",

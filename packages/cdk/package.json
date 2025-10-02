@@ -26,7 +26,11 @@
   },
   "dependencies": {
     "@aws-sdk/types": "3.893.0",
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
+=======
+    "@medplum/core": "4.3.14",
+>>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
     "aws-cdk-lib": "2.215.0",
     "cdk": "2.1029.2",
     "cdk-nag": "2.37.33",

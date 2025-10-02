@@ -67,8 +67,13 @@
     "@aws-sdk/client-ssm": "3.893.0",
     "@aws-sdk/client-sts": "3.893.0",
     "@aws-sdk/types": "3.893.0",
+<<<<<<< HEAD
     "@medplum/core": "4.4.1",
     "@medplum/hl7": "4.4.1",
+=======
+    "@medplum/core": "4.3.14",
+    "@medplum/hl7": "4.3.14",
+>>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
     "commander": "12.1.0",
     "dotenv": "17.2.2",
     "fast-glob": "3.3.3",

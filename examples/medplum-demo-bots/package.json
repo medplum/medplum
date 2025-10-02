@@ -31,12 +31,21 @@
     "root": true
   },
   "devDependencies": {
+<<<<<<< HEAD
     "@medplum/bot-layer": "4.4.1",
     "@medplum/cli": "4.4.1",
     "@medplum/core": "4.4.1",
     "@medplum/eslint-config": "4.4.1",
     "@medplum/fhirtypes": "4.4.1",
     "@medplum/mock": "4.4.1",
+=======
+    "@medplum/bot-layer": "4.3.14",
+    "@medplum/cli": "4.3.14",
+    "@medplum/core": "4.3.14",
+    "@medplum/eslint-config": "4.3.14",
+    "@medplum/fhirtypes": "4.3.14",
+    "@medplum/mock": "4.3.14",
+>>>>>>> 3e8eb1e89 (Dependency upgrades 2025-09-22 (#7440))
     "@metriport/api-sdk": "18.0.5",
     "@types/node": "20.19.17",
     "@types/node-fetch": "2.6.13",
