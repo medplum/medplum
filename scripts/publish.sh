@@ -26,6 +26,8 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
+  cp ../../LICENSE.txt .
+  cp ../../NOTICE .
   npm publish --provenance --access public
   popd
 done
