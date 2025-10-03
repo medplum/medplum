@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
+import { allOk, badRequest, GoogleCredentialResponse, locationUtils, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
@@ -719,12 +719,7 @@ describe('SignInForm', () => {
   });
 
   test('Redirect to external auth', async () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        assign: jest.fn(),
-      },
-      writable: true,
-    });
+    const assignSpy = jest.spyOn(locationUtils, 'assign').mockImplementation(() => {});
 
     await setup({});
 
@@ -738,8 +733,8 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Next'));
     });
 
-    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
-    expect(window.location.assign).toHaveBeenCalled();
+    await waitFor(() => expect(assignSpy).toHaveBeenCalled());
+    expect(assignSpy).toHaveBeenCalled();
   });
 
   test('MFA -- Success', async () => {

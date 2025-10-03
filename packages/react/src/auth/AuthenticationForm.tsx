@@ -5,6 +5,7 @@ import {
   BaseLoginRequest,
   GoogleCredentialResponse,
   GoogleLoginRequest,
+  locationUtils,
   LoginAuthenticationResponse,
   normalizeOperationOutcome,
 } from '@medplum/core';
@@ -65,7 +66,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       });
       const url = new URL(authMethod.authorizeUrl);
       url.searchParams.set('state', state);
-      window.location.assign(url.toString());
+      locationUtils.assign(url.toString());
       return true;
     },
     [medplum, baseLoginRequest]

@@ -59501,6 +59501,7 @@
           "description": "A list of optional features that are enabled for the project.",
           "items": {
             "enum": [
+              "ai",
               "aws-comprehend",
               "aws-textract",
               "bots",
