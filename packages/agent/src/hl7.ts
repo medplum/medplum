@@ -28,7 +28,7 @@ export class AgentHl7Channel extends BaseChannel {
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
   }
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.started) {
       return;
     }
@@ -37,7 +37,7 @@ export class AgentHl7Channel extends BaseChannel {
     const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}...`);
     this.configureHl7ServerAndConnections();
-    this.server.start(Number.parseInt(address.port, 10));
+    await this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
   }
 
@@ -71,7 +71,7 @@ export class AgentHl7Channel extends BaseChannel {
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
-      this.start();
+      await this.start();
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else if (previousEndpoint.address !== endpoint.address) {
       this.log.info(
