@@ -29,7 +29,7 @@ export interface ColumnDefinition {
   identity?: 'ALWAYS' | 'BY DEFAULT';
 }
 
-export const IndexTypes = ['btree', 'gin', 'gist'] as const;
+export const IndexTypes = ['btree', 'gin', 'gist', 'brin'] as const;
 export type IndexType = (typeof IndexTypes)[number];
 
 export type IndexColumn = {
