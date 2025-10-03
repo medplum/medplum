@@ -90,8 +90,8 @@ export async function agentMain(argv: string[]): Promise<App> {
 }
 
 function readCommandLineArgs(argv: string[]): AgentArgs {
-  const [_node, _script, baseUrl, clientId, clientSecret, agentId, logLevel] = argv;
-  return { baseUrl, clientId, clientSecret, agentId, logLevel };
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
+  return { baseUrl, clientId, clientSecret, agentId };
 }
 
 function readPropertiesFile(fileName: string): AgentArgs {
