@@ -2,10 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import  { type Bundle, type Composition, type Medication, type MedicationRequest, type Patient } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type Composition,
+  type Medication,
+  type MedicationRequest,
+  type Patient,
+} from '@medplum/fhirtypes';
 import { OID_LOINC_CODE_SYSTEM, OID_MEDICATION_ACTIVITY, OID_MEDICATION_FREE_TEXT_SIG } from '../../oids';
 import { LOINC_MEDICATION_INSTRUCTIONS } from '../../systems';
-import  { type CcdaText } from '../../types';
+import { type CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createMedicationEntry } from './medication';
 

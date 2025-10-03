@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest, type SearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateThread } from '../components/actions/CreateThread';
 import { getPopulatedSearch } from '../utils';

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import  { type DeviceUseStatement } from '@medplum/fhirtypes';
+import { type DeviceUseStatement } from '@medplum/fhirtypes';
 import {
   OID_FDA_CODE_SYSTEM,
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
@@ -8,8 +8,8 @@ import {
   OID_SNOMED_CT_CODE_SYSTEM,
 } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import  { type CcdaCode, type CcdaEntry, type CcdaId } from '../../types';
-import  { type FhirToCcdaConverter } from '../convert';
+import { type CcdaCode, type CcdaEntry, type CcdaId } from '../../types';
+import { type FhirToCcdaConverter } from '../convert';
 import { mapIdentifiers } from '../utils';
 
 export function createDeviceUseStatementEntry(

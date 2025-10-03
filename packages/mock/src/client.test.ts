@@ -1,10 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import  {
-  type LoginState,
-  type NewPatientRequest,
-  type NewProjectRequest,
-  type NewUserRequest} from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -18,10 +13,14 @@ import {
   OperationOutcomeError,
   sleep,
   SubscriptionEmitter,
+  type LoginState,
+  type NewPatientRequest,
+  type NewProjectRequest,
+  type NewUserRequest,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
-import  {
+import {
   type Agent,
   type Bot,
   type Bundle,

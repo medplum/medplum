@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
-import  { type CodeableConcept, type Coding, type Immunization, type MedicationRequest } from '@medplum/fhirtypes';
+import { type CodeableConcept, type Coding, type Immunization, type MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ASSESSMENT_SCALE_OBSERVATION,
@@ -67,7 +67,7 @@ import {
   OID_WOUND_MEASURMENTS_OBSERVATION,
   OID_WOUND_OBSERVATION,
 } from './oids';
-import  { type CcdaCode, type CcdaValue } from './types';
+import { type CcdaCode, type CcdaValue } from './types';
 
 export interface EnumEntry<TFhirValue extends string = string, TCcdaValue extends string = string> {
   fhirValue: TFhirValue;

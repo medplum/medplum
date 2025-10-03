@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import  { type Encounter, type EncounterDiagnosis } from '@medplum/fhirtypes';
+import { type Encounter, type EncounterDiagnosis } from '@medplum/fhirtypes';
 import {
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
@@ -9,8 +9,8 @@ import {
   OID_SNOMED_CT_CODE_SYSTEM,
 } from '../../oids';
 import { mapCodeableConceptToCcdaCode, mapCodeableConceptToCcdaValue } from '../../systems';
-import  { type CcdaEntry, type CcdaEntryRelationship, type CcdaId } from '../../types';
-import  { type FhirToCcdaConverter } from '../convert';
+import { type CcdaEntry, type CcdaEntryRelationship, type CcdaId } from '../../types';
+import { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectivePeriod, mapEffectiveTime, mapIdentifiers } from '../utils';
 
 export function createEncounterEntry(converter: FhirToCcdaConverter, encounter: Encounter): CcdaEntry {
