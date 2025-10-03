@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import  { type CodeableConcept, type DosageDoseAndRate, type MedicationRequest } from '@medplum/fhirtypes';
+import { type CodeableConcept, type DosageDoseAndRate, type MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_LOINC_CODE_SYSTEM,
   OID_MEDICATION_ACTIVITY,
@@ -8,8 +8,8 @@ import {
   OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
 } from '../../oids';
 import { LOINC_MEDICATION_INSTRUCTIONS, mapCodeableConceptToCcdaCode, MEDICATION_STATUS_MAPPER } from '../../systems';
-import  { type CcdaCode, type CcdaEffectiveTime, type CcdaEntry, type CcdaQuantity } from '../../types';
-import  { type FhirToCcdaConverter } from '../convert';
+import { type CcdaCode, type CcdaEffectiveTime, type CcdaEntry, type CcdaQuantity } from '../../types';
+import { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectiveDate, mapIdentifiers } from '../utils';
 
 /**

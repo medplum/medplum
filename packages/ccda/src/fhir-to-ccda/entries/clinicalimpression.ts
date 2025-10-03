@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import  { type ClinicalImpression } from '@medplum/fhirtypes';
+import { type ClinicalImpression } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate } from '../../datetime';
 import { OID_LOINC_CODE_SYSTEM, OID_NOTE_ACTIVITY } from '../../oids';
 import { LOINC_NOTES_SECTION, mapCodeableConceptToCcdaCode } from '../../systems';
-import  { type CcdaEntry } from '../../types';
-import  { type FhirToCcdaConverter } from '../convert';
+import { type CcdaEntry } from '../../types';
+import { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapIdentifiers } from '../utils';
 
 export function createClinicalImpressionEntry(

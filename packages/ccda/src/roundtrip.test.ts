@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import  { type Bundle, type Resource } from '@medplum/fhirtypes';
+import { type Bundle, type Resource } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
 import { convertFhirToCcda } from './fhir-to-ccda/convert';
-import  { type Ccda } from './types';
+import { type Ccda } from './types';
 import { convertCcdaToXml, convertXmlToCcda } from './xml';
 
 const testDataFolder = resolve(__dirname, '../testdata');

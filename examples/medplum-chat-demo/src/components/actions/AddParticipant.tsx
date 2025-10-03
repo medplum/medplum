@@ -3,11 +3,11 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { normalizeErrorString, type PatchOperation } from '@medplum/core';
+import { type Communication, type Questionnaire, type QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { checkForInvalidRecipient, getRecipients } from '../../utils';
 
 interface AddParticipantProps {

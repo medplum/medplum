@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import  { type Location, type Observation, type Procedure, type Reference } from '@medplum/fhirtypes';
+import { type Location, type Observation, type Procedure, type Reference } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_LOCATION, OID_PROCEDURE_ACTIVITY_ACT, OID_PROCEDURE_ACTIVITY_PROCEDURE } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import  { type CcdaCode, type CcdaEntry, type CcdaId, type CcdaParticipant } from '../../types';
-import  { type FhirToCcdaConverter } from '../convert';
+import { type CcdaCode, type CcdaEntry, type CcdaId, type CcdaParticipant } from '../../types';
+import { type FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
   mapEffectiveTime,

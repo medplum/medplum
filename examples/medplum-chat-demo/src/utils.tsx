@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Filter, getReferenceString, Operator, parseReference, SearchRequest } from '@medplum/core';
+import { type Filter, getReferenceString, Operator, parseReference, type SearchRequest } from '@medplum/core';
 import {
-  Communication,
-  Encounter,
-  EncounterParticipant,
-  Practitioner,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Resource,
+  type Communication,
+  type Encounter,
+  type EncounterParticipant,
+  type Practitioner,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type Resource,
 } from '@medplum/fhirtypes';
 
 export function cleanResource(resource: Resource): Resource {

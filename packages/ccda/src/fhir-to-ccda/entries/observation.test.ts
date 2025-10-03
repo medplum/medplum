@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import  { type Bundle, type Composition, type Observation, type Patient } from '@medplum/fhirtypes';
+import { type Bundle, type Composition, type Observation, type Patient } from '@medplum/fhirtypes';
 import {
   OID_ASSESSMENT_SCALE_OBSERVATION,
   OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,

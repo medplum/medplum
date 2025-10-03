@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
-import  {
+import {
   type Address,
   type AllergyIntolerance,
   type AllergyIntoleranceReaction,
@@ -93,7 +93,7 @@ import {
   US_CORE_MEDICATION_REQUEST_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import  {
+import {
   type Ccda,
   type CcdaAct,
   type CcdaAddr,

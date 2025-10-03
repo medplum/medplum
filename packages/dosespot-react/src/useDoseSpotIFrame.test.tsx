@@ -4,10 +4,10 @@ import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { vi } from 'vitest';
 import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
-import { DoseSpotIFrameOptions, useDoseSpotIFrame } from './useDoseSpotIFrame';
+import { type DoseSpotIFrameOptions, useDoseSpotIFrame } from './useDoseSpotIFrame';
 
 function TestComponent({ options }: { options: DoseSpotIFrameOptions }): JSX.Element {
   const iframeUrl = useDoseSpotIFrame(options);

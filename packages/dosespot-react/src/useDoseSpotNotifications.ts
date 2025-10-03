@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DOSESPOT_NOTIFICATION_COUNTS_BOT, DoseSpotNotificationCountsResponse } from './common';
+import { DOSESPOT_NOTIFICATION_COUNTS_BOT, type DoseSpotNotificationCountsResponse } from './common';
 
 export interface DoseSpotNotificationsOptions {
   readonly refreshIntervalMilliseconds?: number;

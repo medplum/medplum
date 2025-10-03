@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Title } from '@mantine/core';
 import { parseReference } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { type Communication } from '@medplum/fhirtypes';
+import { type JSX } from 'react';
 import { AddParticipant } from './AddParticipant';
 import { AddSubject } from './AddSubject';
 import { CloseOpenThread } from './CloseOpenThread';

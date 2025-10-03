@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import  { type CompositionSection, type Goal, type Patient } from '@medplum/fhirtypes';
+import { type CompositionSection, type Goal, type Patient } from '@medplum/fhirtypes';
 import { OID_GOAL_OBSERVATION, OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION, OID_PROCEDURE_ACTIVITY_ACT } from '../../oids';
 import {
   LOINC_GOALS_SECTION,
