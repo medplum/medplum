@@ -16,9 +16,10 @@ import {
   Skeleton,
   Box,
 } from '@mantine/core';
-import { Communication, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
-import { JSX, useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import type { JSX } from 'react';
 import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { getReferenceString } from '@medplum/core';
 import { ChatList } from './ChatList';

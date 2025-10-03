@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Task } from '@medplum/fhirtypes';
-import React, { JSX } from 'react';
+import type { Task } from '@medplum/fhirtypes';
+import React from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import classes from './TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';

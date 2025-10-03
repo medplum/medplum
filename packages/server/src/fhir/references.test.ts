@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, WithId } from '@medplum/core';
-import { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
+import type { ReferenceTableRow } from './lookups/reference';
+import { ReferenceTable } from './lookups/reference';
 import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {

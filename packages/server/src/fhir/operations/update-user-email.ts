@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
 import {
   allOk,
   append,
@@ -9,10 +10,9 @@ import {
   getReferenceString,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';

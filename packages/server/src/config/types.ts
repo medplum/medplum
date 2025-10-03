@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
-import { KeepJobs } from 'bullmq';
+import type { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
+import type { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
   port: number;

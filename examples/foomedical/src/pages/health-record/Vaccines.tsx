@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { formatDate, getReferenceString } from '@medplum/core';
-import { Immunization, Patient } from '@medplum/fhirtypes';
+import type { Immunization, Patient } from '@medplum/fhirtypes';
 import { StatusBadge, useMedplum } from '@medplum/react';
 import { IconCalendar, IconMapPin } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';

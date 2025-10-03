@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, Button, Group, Modal, NumberInput, Stack, Table, Title } from '@mantine/core';
 import { createReference, formatDate, formatDateTime, formatObservationValue, getReferenceString } from '@medplum/core';
-import { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
+import type { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { ChartData, ChartDataset } from 'chart.js';
-import { JSX, useEffect, useState } from 'react';
+import type { ChartData, ChartDataset } from 'chart.js';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { LineChart } from '../../components/LineChart';
 import { measurementsMeta } from './Measurement.data';

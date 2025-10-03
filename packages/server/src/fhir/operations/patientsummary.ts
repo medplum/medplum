@@ -23,6 +23,7 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   createReference,
@@ -34,12 +35,10 @@ import {
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  ProfileResource,
   resolveId,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Account,
   AllergyIntolerance,
   Bundle,
@@ -68,9 +67,11 @@ import {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
+import type { AuthenticatedRequestContext } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
+import type { PatientEverythingParameters } from './patienteverything';
+import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;

@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma, WithId } from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import type { Filter, SortRule, WithId } from '@medplum/core';
+import { Operator as FhirOperator, splitSearchOnComma } from '@medplum/core';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
-import { LookupTableSearchParameterImplementation } from '../searchparameter';
+import type { LookupTableSearchParameterImplementation } from '../searchparameter';
+import type { Expression } from '../sql';
 import {
   Column,
   Condition,
@@ -12,7 +14,6 @@ import {
   DeleteQuery,
   Disjunction,
   escapeLikeString,
-  Expression,
   InsertQuery,
   Negation,
   SelectQuery,

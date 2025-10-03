@@ -1,20 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter, OperationOutcomeError, SearchRequest, WithId } from '@medplum/core';
 import {
   createReference,
-  Filter,
   getReferenceString,
   getSearchParameter,
   LOINC,
   normalizeErrorString,
-  OperationOutcomeError,
   Operator,
   parseSearchRequest,
-  SearchRequest,
   SNOMED,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   ActivityDefinition,
   AllergyIntolerance,
   Appointment,
@@ -54,12 +51,13 @@ import {
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');

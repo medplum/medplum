@@ -3,7 +3,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import type { QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import { QuestionnaireBuilder } from './QuestionnaireBuilder';
 
 const medplum = new MockClient();
 

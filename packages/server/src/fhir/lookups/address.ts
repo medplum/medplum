@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatAddress, WithId } from '@medplum/core';
-import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import type { WithId } from '@medplum/core';
+import { formatAddress } from '@medplum/core';
+import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+import type { LookupTableRow } from './lookuptable';
+import { LookupTable } from './lookuptable';
 
 export interface AddressTableRow extends LookupTableRow {
   address: string | undefined;

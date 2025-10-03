@@ -3,7 +3,7 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getQuestionnaireAnswers, getReferenceString, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   Coding,
   Encounter,
   Patient,
@@ -14,7 +14,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface CreateEncounterProps {

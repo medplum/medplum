@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { handler } from './import-healthie-patients';
 import { HealthieClient } from './healthie/client';
+import { handler } from './import-healthie-patients';
 
 vi.mock('./healthie/client', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./healthie/client')>();
+  const original = (await importOriginal()) as any;
   original.HealthieClient.prototype.query = vi.fn();
   return original;
 });

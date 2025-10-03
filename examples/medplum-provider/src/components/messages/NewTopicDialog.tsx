@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, ProfileResource } from '@medplum/core';
-import {
+import { createReference } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
+import type {
   Communication,
   Patient,
   Practitioner,
@@ -12,7 +13,8 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { JSX, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { JSX } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface NewTopicDialogProps {

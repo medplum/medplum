@@ -8,11 +8,18 @@ import {
   resolveId,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { AllergyIntolerance, Bundle, MedicationRequest, Patient, Resource, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  AllergyIntolerance,
+  Bundle,
+  MedicationRequest,
+  Patient,
+  Resource,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { generateKeyPairSync } from 'crypto';
 import fetch from 'node-fetch';
-import { Mock } from 'vitest';
+import type { Mock } from 'vitest';
 import { handler } from './epic-query-patient';
 import {
   epicAllergyIntolerance,

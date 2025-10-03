@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Logger } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -8,48 +9,50 @@ import {
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
-  Logger,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
-import { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
-import {
+import type {
   ArgumentNode,
   ASTNode,
   ASTVisitor,
   DocumentNode,
-  execute,
   ExecutionResult,
   FieldNode,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
+  GraphQLOutputType,
+  GraphQLResolveInfo,
+  OperationDefinitionNode,
+  ValidationContext,
+} from 'graphql';
+import {
+  execute,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
   Kind,
-  OperationDefinitionNode,
   parse,
   specifiedRules,
   validate,
-  ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
-import { FhirRepository, RepositoryMode } from '../repo';
+import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
+import type { FhirRepository } from '../repo';
+import { RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
+import type { GraphQLContext } from './utils';
 import {
   applyMaxCount,
   buildSearchArgs,
-  GraphQLContext,
   invalidRequest,
   isFieldRequested,
   parseSearchArgs,

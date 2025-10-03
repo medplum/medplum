@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { evalFhirPathTyped, toTypedValue, WithId } from '@medplum/core';
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { evalFhirPathTyped, toTypedValue } from '@medplum/core';
+import type { Bundle, Resource } from '@medplum/fhirtypes';
 
 /**
  * Care date expressions for each resource type.

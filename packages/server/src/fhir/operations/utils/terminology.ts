@@ -1,19 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, WithId, badRequest, createReference, resolveId } from '@medplum/core';
-import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
+import type { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
-import {
-  Column,
-  Condition,
-  Conjunction,
-  Disjunction,
-  SelectQuery,
-  SqlFunction,
-  Operator as SqlOperator,
-  Union,
-} from '../../sql';
+import type { Operator as SqlOperator } from '../../sql';
+import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';

@@ -1,25 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { CurrentContext, FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  CurrentContext,
-  FhircastMessagePayload,
   generateId,
   getReferenceString,
   serializeFhircastSubscriptionRequest,
-  WithId,
 } from '@medplum/core';
-import { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
-import express, { Express } from 'express';
+import type { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
+import type { Express } from 'express';
+import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { Server } from 'node:http';
+import type { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { initTestAuth, withTestContext } from '../test.setup';
 

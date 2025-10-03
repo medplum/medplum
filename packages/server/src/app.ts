@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
+import type { Express, NextFunction, Request, Response } from 'express';
+import { json, Router, text, urlencoded } from 'express';
 import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
@@ -14,7 +15,7 @@ import { asyncWrap } from './async';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
+import type { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';

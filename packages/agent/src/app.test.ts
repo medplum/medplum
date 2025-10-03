@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   AgentError,
   AgentMessage,
   AgentReloadConfigRequest,
   AgentTransmitRequest,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
+} from '@medplum/core';
+import {
   ContentType,
   Hl7Message,
   LogLevel,
@@ -17,18 +19,20 @@ import {
   getReferenceString,
   sleep,
 } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
-import { Client, Server } from 'mock-socket';
-import child_process, { ChildProcess } from 'node:child_process';
+import type { Client } from 'mock-socket';
+import { Server } from 'mock-socket';
+import type { ChildProcess } from 'node:child_process';
+import child_process from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
-import { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 

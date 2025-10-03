@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, Coverage, Questionnaire, ServiceRequest } from '@medplum/fhirtypes';
-import {
+import type { Bundle, Coverage, Questionnaire, ServiceRequest } from '@medplum/fhirtypes';
+import type {
   BillingInformation,
   DiagnosisCodeableConcept,
   LabOrderInputErrors,

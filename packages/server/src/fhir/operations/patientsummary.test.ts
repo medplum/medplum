@@ -18,8 +18,9 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
-import { ContentType, createReference, getReferenceString, LOINC, WithId } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, LOINC } from '@medplum/core';
+import type {
   Bundle,
   CarePlan,
   ClinicalImpression,

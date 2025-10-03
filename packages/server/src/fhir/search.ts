@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -8,16 +9,13 @@ import {
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
-  FhirFilterExpression,
   FhirFilterNegation,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
   getSearchParameter,
-  IncludeTarget,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -27,18 +25,15 @@ import {
   parseParameter,
   PropertyType,
   SearchParameterType,
-  SearchRequest,
   serverError,
-  SortRule,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleLink,
@@ -52,9 +47,11 @@ import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
-import { Repository } from './repo';
+import type { Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
   Column,
@@ -63,11 +60,9 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
   Negation,
   periodToRangeString,
   SelectQuery,
-  Operator as SQL,
   SqlFunction,
   Union,
   UnionAllBuilder,

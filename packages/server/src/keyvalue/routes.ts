@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Request, Response, Router } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
 import { deleteValue, getValue, setValue } from './store';

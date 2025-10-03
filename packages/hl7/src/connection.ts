@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, OperationOutcomeError, sleep, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
-import net from 'node:net';
+import type net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
 import { Hl7CloseEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';

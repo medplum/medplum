@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
-import { Period } from '@medplum/fhirtypes';
-import { Client, Pool, PoolClient } from 'pg';
+import type { Period } from '@medplum/fhirtypes';
+import type { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
 import { getLogger } from '../logger';
 

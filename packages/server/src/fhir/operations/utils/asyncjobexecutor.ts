@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
-import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, accepted } from '@medplum/core';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
@@ -12,7 +13,8 @@ import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
-import { Repository, getSystemRepo } from '../../repo';
+import type { Repository } from '../../repo';
+import { getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;

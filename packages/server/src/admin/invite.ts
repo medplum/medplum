@@ -1,32 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
   conflict,
   createReference,
   getReferenceString,
-  InviteRequest,
   isCreated,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
   resolveId,
-  SearchRequest,
-  WithId,
 } from '@medplum/core';
-import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
-import Mail from 'nodemailer/lib/mailer';
+import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';

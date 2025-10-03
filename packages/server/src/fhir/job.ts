@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, allOk, isOk } from '@medplum/core';
-import { FhirRequest, HttpMethod } from '@medplum/fhir-router';
-import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import type { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';

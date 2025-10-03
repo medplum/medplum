@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -9,13 +10,12 @@ import {
   isResource,
   OperationOutcomeError,
   Operator,
-  WithId,
 } from '@medplum/core';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { executeBot } from '../../bots/execute';
-import { BotExecutionResult } from '../../bots/types';
+import type { BotExecutionResult } from '../../bots/types';
 import {
   getBotDefaultHeaders,
   getBotProjectMembership,

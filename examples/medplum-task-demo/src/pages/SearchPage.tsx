@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
-import { Operator, SearchRequest, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
+import { Operator, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
 import { getPopulatedSearch } from '../utils/search-control';

@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
-  ProfileResource,
-  WithId,
   createReference,
   getStatus,
   isJwt,
@@ -16,10 +15,11 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, RequestHandler, Response } from 'express';
-import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
+import type { Request, RequestHandler, Response } from 'express';
+import type { JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
@@ -27,7 +27,8 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
+import type { MedplumRefreshTokenClaims } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,

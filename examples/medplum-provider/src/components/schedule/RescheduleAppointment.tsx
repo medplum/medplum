@@ -3,10 +3,10 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Appointment, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Appointment, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface RescheduleAppointmentProps {

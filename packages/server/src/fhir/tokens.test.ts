@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED, WithId } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
+import type {
   Bundle,
   Condition,
   Identifier,
@@ -17,10 +18,12 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
-import { buildTokensForSearchParameter, Token } from './tokens';
+import type { Token } from './tokens';
+import { buildTokensForSearchParameter } from './tokens';
 
 const systemRepo = getSystemRepo();
 

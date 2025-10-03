@@ -4,10 +4,11 @@ import { Button, Center, Group, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { NEUTRON_HEALTH_BOTS, NEUTRON_HEALTH_PATIENTS } from '../bots/constants';
 
 interface PatientPrescriptionProps {

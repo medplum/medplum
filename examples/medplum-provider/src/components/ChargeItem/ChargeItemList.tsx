@@ -3,10 +3,11 @@
 import { Box, Button, Card, Flex, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
-import { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptInput, AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { applyChargeItemDefinition, calculateTotalPrice } from '../../utils/chargeitems';
 import { showErrorNotification } from '../../utils/notifications';
 import ChargeItemPanel from './ChargeItemPanel';

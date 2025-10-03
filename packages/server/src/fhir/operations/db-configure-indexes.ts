@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
-import { escapeIdentifier, Pool, PoolClient } from 'pg';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { OperationDefinition } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
+import { escapeIdentifier } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';

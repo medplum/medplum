@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  badRequest,
+import type {
   CurrentContext,
   FhircastAnchorResourceType,
   FhircastDiagnosticReportCloseContext,
   FhircastDiagnosticReportOpenContext,
   FhircastEventPayload,
   FhircastMessagePayload,
+} from '@medplum/core';
+import {
+  badRequest,
   generateId,
   getWebSocketUrl,
   isResource,
@@ -16,8 +18,9 @@ import {
   resolveId,
   serverError,
 } from '@medplum/core';
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';

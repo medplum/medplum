@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Bot,
   Bundle,
   Identifier,
@@ -16,17 +16,16 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
-import {
-  DEFAULT_ACCEPT,
+import type {
   FetchLike,
   InviteRequest,
   LoginState,
-  MedplumClient,
   MedplumClientEventMap,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
 } from './client';
+import { DEFAULT_ACCEPT, MedplumClient } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
 import * as environment from './environment';
@@ -45,7 +44,8 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, WithId, createReference, sleep } from './utils';
+import type { ProfileResource, WithId } from './utils';
+import { createReference, sleep } from './utils';
 
 // Mock the environment module
 jest.mock('./environment');

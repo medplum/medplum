@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ValueSet } from '@medplum/fhirtypes';
+import type { ValueSet } from '@medplum/fhirtypes';
 
 export const exampleValueSet: ValueSet = {
   resourceType: 'ValueSet',

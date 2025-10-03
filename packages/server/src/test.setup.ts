@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId, createReference, getReferenceString, sleep } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { createReference, getReferenceString, sleep } from '@medplum/core';
+import type {
   AccessPolicy,
   AsyncJob,
   Bundle,
@@ -14,12 +15,14 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { setDefaultResultOrder } from 'dns';
-import { Express } from 'express';
-import internal from 'stream';
+import type { Express } from 'express';
+import type internal from 'stream';
 import request from 'supertest';
-import { ServerInviteResponse, inviteUser } from './admin/invite';
+import type { ServerInviteResponse } from './admin/invite';
+import { inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext } from './context';
-import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
+import type { RepositoryContext } from './fhir/repo';
+import { Repository, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
