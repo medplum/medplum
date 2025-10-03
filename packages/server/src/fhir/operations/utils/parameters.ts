@@ -173,6 +173,14 @@ function parseParams(
         const paramType = param.type ?? 'string';
         if (paramType === 'Resource' || isResourceType(paramType)) {
           return v.resource;
+        } else if (paramType === 'Any') {
+          // Parse as TypedValue
+          for (const key of Object.keys(v)) {
+            if (key.startsWith('value')) {
+              return { type: key.substring(5), value: v[key as keyof ParametersParameter] };
+            }
+          }
+          return undefined;
         } else {
           return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
         }
