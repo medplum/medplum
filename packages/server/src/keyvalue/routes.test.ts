@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ContentType } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -103,6 +104,7 @@ describe('Key Value Routes', () => {
       .type('json')
       .send({ foo: 'bar' });
     expect(res1.status).toBe(400);
+    expect(res1.headers['content-type'].startsWith(ContentType.FHIR_JSON)).toBe(true);
   });
 
   test('Body too long', async () => {

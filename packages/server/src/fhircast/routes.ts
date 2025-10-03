@@ -20,7 +20,6 @@ import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
-import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -115,7 +114,7 @@ protectedCommonRoutes.post(
     ],
     { errorType: 'least_errored' }
   ),
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
@@ -129,7 +128,7 @@ protectedCommonRoutes.post(
     }
     // Otherwise it has to be a subscription request
     await handleSubscriptionRequest(req, res);
-  })
+  }
 );
 
 // Publish an event to the hub topic
@@ -143,14 +142,14 @@ protectedCommonRoutes.post(
     body('event["hub.event"]').notEmpty().withMessage('Missing event["hub.event"]'),
     body('event.context').notEmpty().withMessage('Missing event.context'),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
       return;
     }
     await handleContextChangeRequest(req, res);
-  })
+  }
 );
 
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
@@ -503,33 +502,27 @@ async function closeCurrentContext(projectId: string, topic: string): Promise<vo
 }
 
 // Get the current subscription status
-protectedSTU2Routes.get(
-  '/:topic',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
-    if (!currentContext) {
-      res.status(200).json([]);
-      return;
-    }
-    res.status(200).json(currentContext.context);
-  })
-);
+protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+  // Non-standard FHIRcast extension to support Nuance PowerCast Hub
+  if (!currentContext) {
+    res.status(200).json([]);
+    return;
+  }
+  res.status(200).json(currentContext.context);
+});
 
-protectedSTU3Routes.get(
-  '/:topic',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    if (!currentContext) {
-      // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
-      res.status(200).json({
-        'context.type': '',
-        context: [],
-      });
-      return;
-    }
-    res.status(200).json(currentContext);
-  })
-);
+protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+  if (!currentContext) {
+    // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
+    res.status(200).json({
+      'context.type': '',
+      context: [],
+    });
+    return;
+  }
+  res.status(200).json(currentContext);
+});
