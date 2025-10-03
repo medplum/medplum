@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, WithId } from '@medplum/core';
-import { Binary, Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import { capitalize, getReferenceString, isOk, type MedplumClient, type WithId } from '@medplum/core';
+import { type Binary, type Bot, type Bundle, type BundleEntry, type Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { JSX, useCallback, useState } from 'react';
+import { type JSX, useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import exampleBotData from '../../data/example-bots.json';
 import formularyData from '../../data/example-data.json';

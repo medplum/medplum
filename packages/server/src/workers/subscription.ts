@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
-  BackgroundJobContext,
-  BackgroundJobInteraction,
+  type BackgroundJobContext,
+  type BackgroundJobInteraction,
   ContentType,
   OperationOutcomeError,
   Operator,
-  WithId,
+  type WithId,
   createReference,
   deepClone,
   getExtension,
@@ -23,34 +23,40 @@ import {
   stringify,
 } from '@medplum/core';
 import {
-  Bot,
-  ClientApplication,
-  Patient,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  Reference,
-  RelatedPerson,
-  Resource,
-  ResourceType,
-  Subscription,
+  type Bot,
+  type ClientApplication,
+  type Patient,
+  type Practitioner,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type RelatedPerson,
+  type Resource,
+  type ResourceType,
+  type Subscription,
 } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import fetch, { HeadersInit } from 'node-fetch';
+import { type Job, Queue, type QueueBaseOptions, Worker } from 'bullmq';
+import fetch, { type HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
-import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
+import { type Repository, type ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
 import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import { type SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import {
+  type WorkerInitializer,
+  createAuditEvent,
+  findProjectMembership,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.

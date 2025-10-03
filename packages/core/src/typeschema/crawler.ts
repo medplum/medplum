@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getTypedPropertyValue, GetTypedPropertyValueOptions } from '../fhirpath/utils';
-import { isResource, TypedValue } from '../types';
+import { getTypedPropertyValue, type GetTypedPropertyValueOptions } from '../fhirpath/utils';
+import { isResource, type TypedValue } from '../types';
 import { arrayify } from '../utils';
-import { getDataType, InternalTypeSchema } from './types';
+import { getDataType, type InternalTypeSchema } from './types';
 import { isPrimitiveType } from './validation';
 
 export interface CrawlerVisitor {

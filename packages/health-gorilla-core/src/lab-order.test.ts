@@ -5,10 +5,17 @@ import {
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Questionnaire,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -24,11 +31,11 @@ import {
   createLabOrderBundle,
   isValidLabOrderInputs,
   LabOrderValidationError,
-  PartialLabOrderInputs,
+  type PartialLabOrderInputs,
   validateLabOrderInputs,
 } from './lab-order';
 import { expectToBeDefined } from './test-utils';
-import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import { type BillTo, type LabOrderTestMetadata, type LabOrganization, type TestCoding } from './types';
 
 interface TestContext {
   medplum: MedplumClient;

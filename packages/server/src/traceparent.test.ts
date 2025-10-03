@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Traceparent, parseTraceparent } from './traceparent';
+import { type Traceparent, parseTraceparent } from './traceparent';
 
 describe('parseTraceparent', () => {
   const tp: Traceparent = {

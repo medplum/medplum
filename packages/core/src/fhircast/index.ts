@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Bundle,
-  DiagnosticReport,
-  Encounter,
-  ImagingStudy,
-  OperationOutcome,
-  Patient,
-  Reference,
-  Resource,
+  type Bundle,
+  type DiagnosticReport,
+  type Encounter,
+  type ImagingStudy,
+  type OperationOutcome,
+  type Patient,
+  type Reference,
+  type Resource,
 } from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';

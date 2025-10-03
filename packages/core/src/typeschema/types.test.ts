@@ -1,23 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
+import { type Bundle, type Observation, type StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { LOINC } from '../constants';
-import { TypedValue } from '../types';
+import { type TypedValue } from '../types';
 import {
   getDataType,
   indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
   isProfileLoaded,
   loadDataType,
   parseStructureDefinition,
-  SlicingRules,
   subsetResource,
   tryGetDataType,
   tryGetProfile,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
+  type SlicingRules,
 } from './types';
 
 describe('FHIR resource and data type representations', () => {

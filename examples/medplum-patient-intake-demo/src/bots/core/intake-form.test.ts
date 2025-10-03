@@ -8,12 +8,12 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
-  Bundle,
-  Organization,
-  Patient,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  SearchParameter,
+  type Bundle,
+  type Organization,
+  type Patient,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItem,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';

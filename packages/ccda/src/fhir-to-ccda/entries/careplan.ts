@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CarePlan } from '@medplum/fhirtypes';
+import  { type CarePlan } from '@medplum/fhirtypes';
 import { OID_INSTRUCTIONS } from '../../oids';
 import { mapCodeableConceptToCcdaValue } from '../../systems';
-import { CcdaCode, CcdaEntry } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import  { type CcdaCode, type CcdaEntry } from '../../types';
+import  { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapIdentifiers } from '../utils';
 
 export function createPlanOfTreatmentCarePlanEntry(

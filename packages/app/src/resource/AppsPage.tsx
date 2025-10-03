@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Text, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import { Encounter, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
+import { type Encounter, type Patient, type Reference, type ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, SmartAppLaunchLink, useResource, useSearchResources } from '@medplum/react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function AppsPage(): JSX.Element | null {

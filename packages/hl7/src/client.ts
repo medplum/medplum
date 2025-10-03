@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message } from '@medplum/core';
+import { type Hl7Message } from '@medplum/core';
 import assert from 'node:assert';
-import { connect, Socket } from 'node:net';
+import { connect, type Socket } from 'node:net';
 import { Hl7Base } from './base';
-import { Hl7Connection, SendAndWaitOptions } from './connection';
+import { Hl7Connection, type SendAndWaitOptions } from './connection';
 import { Hl7CloseEvent, Hl7ErrorEvent } from './events';
 
 export interface Hl7ClientOptions {

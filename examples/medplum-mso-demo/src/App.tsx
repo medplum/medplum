@@ -13,7 +13,7 @@ import {
   IconUser,
   IconUserPlus,
 } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { type JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { ClinicPage } from './pages/AllClinicsPage';
 import { CommunicationPage } from './pages/CommunicationsListPage';

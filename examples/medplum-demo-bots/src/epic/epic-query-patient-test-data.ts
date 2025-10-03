@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AllergyIntolerance,
-  Medication,
-  MedicationRequest,
-  Organization,
-  Patient,
-  Practitioner,
+  type AllergyIntolerance,
+  type Medication,
+  type MedicationRequest,
+  type Organization,
+  type Patient,
+  type Practitioner,
 } from '@medplum/fhirtypes';
 
 export const medplumPatientWithoutEpicIdentifier: Patient = {

@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
-import { Agent, Bot, Device } from '@medplum/fhirtypes';
+import { type Agent, type Bot, type Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { Server } from 'http';
+import { type Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import * as executeBotModule from '../bots/execute';
-import { BotExecutionResult } from '../bots/types';
+import { type BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
-import { AgentConnectionState, AgentInfo } from './utils';
+import { AgentConnectionState, type AgentInfo } from './utils';
 
 const app = express();
 let config: MedplumServerConfig;

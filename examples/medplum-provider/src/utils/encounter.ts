@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   getReferenceString,
-  MedplumClient,
+  type MedplumClient,
   createReference,
   formatHumanName,
   getExtension,
   HTTP_HL7_ORG,
 } from '@medplum/core';
 import {
-  Appointment,
-  ChargeItem,
-  ClinicalImpression,
-  Coding,
-  Encounter,
-  HumanName,
-  Patient,
-  PlanDefinition,
-  Practitioner,
-  ServiceRequest,
-  Task,
+  type Appointment,
+  type ChargeItem,
+  type ClinicalImpression,
+  type Coding,
+  type Encounter,
+  type HumanName,
+  type Patient,
+  type PlanDefinition,
+  type Practitioner,
+  type ServiceRequest,
+  type Task,
 } from '@medplum/fhirtypes';
 
 export async function createEncounter(

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Text } from '@mantine/core';
 import { notifications, showNotification } from '@mantine/notifications';
-import { MedplumClient, MedplumRequestOptions, normalizeErrorString } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { type MedplumClient, type MedplumRequestOptions, normalizeErrorString } from '@medplum/core';
+import { type Resource } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 

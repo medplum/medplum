@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
 import { act, render, screen } from '../test-utils/render';
-import { ResourceDiffRow, ResourceDiffRowProps } from './ResourceDiffRow';
+import { ResourceDiffRow, type ResourceDiffRowProps } from './ResourceDiffRow';
 
 describe('ResourceDiffRow', () => {
   function setup(props: ResourceDiffRowProps): void {

@@ -3,12 +3,12 @@
 import { Alert, Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Task } from '@medplum/fhirtypes';
+import { type MedplumClient, normalizeErrorString } from '@medplum/core';
+import { type Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { NavigateFunction, useNavigate } from 'react-router';
+import { type JSX } from 'react';
+import { type NavigateFunction, useNavigate } from 'react-router';
 
 interface DeleteTaskProps {
   readonly task: Task;

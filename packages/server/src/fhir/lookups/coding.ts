@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { append, WithId } from '@medplum/core';
+import { append, type WithId } from '@medplum/core';
 import {
-  CodeSystem,
-  CodeSystemConcept,
-  CodeSystemConceptProperty,
-  Coding,
-  Resource,
-  ResourceType,
+  type CodeSystem,
+  type CodeSystemConcept,
+  type CodeSystemConceptProperty,
+  type Coding,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
-import { importCodeSystem, ImportedProperty } from '../operations/codesystemimport';
+import { type Pool, type PoolClient } from 'pg';
+import { importCodeSystem, type ImportedProperty } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
 import { Column, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';

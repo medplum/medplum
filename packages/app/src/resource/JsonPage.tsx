@@ -3,9 +3,9 @@
 import { Button, Group, JsonInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, stringify } from '@medplum/core';
-import { OperationOutcome, ResourceType } from '@medplum/fhirtypes';
+import { type OperationOutcome, type ResourceType } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import { type JSX, useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from './utils';
 

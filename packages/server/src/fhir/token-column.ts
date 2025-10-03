@@ -3,17 +3,17 @@
 import {
   badRequest,
   Operator as FhirOperator,
-  Filter,
+  type Filter,
   OperationOutcomeError,
-  SortRule,
+  type SortRule,
   splitN,
   splitSearchOnComma,
 } from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type Resource, type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
-import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
+import { getSearchParameterImplementation, type TokenColumnSearchParameterImplementation } from './searchparameter';
+import { Column, Disjunction, type Expression, Negation, type SelectQuery, TypedCondition } from './sql';
+import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, type Token } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';

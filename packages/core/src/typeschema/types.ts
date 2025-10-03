@@ -1,19 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Bundle,
-  Coding,
-  ElementDefinition,
-  ElementDefinitionBinding,
-  Resource,
-  ResourceType,
-  StructureDefinition,
+  type Bundle,
+  type Coding,
+  type ElementDefinition,
+  type ElementDefinitionBinding,
+  type Resource,
+  type ResourceType,
+  type StructureDefinition,
 } from '@medplum/fhirtypes';
-import { DataTypesMap, inflateBaseSchema } from '../base-schema';
+import { inflateBaseSchema, type DataTypesMap } from '../base-schema-utils';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
+import {
+  getElementDefinitionTypeName,
+  indexDefaultSearchParameters,
+  isResourceTypeSchema,
+  type TypedValue,
+} from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**

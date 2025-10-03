@@ -1,21 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Address,
-  CodeableConcept,
-  Coding,
-  ContactPoint,
-  ElementDefinition,
-  Extension,
-  HumanName,
-  Identifier,
-  Patient,
-  Quantity,
-  Reference,
+  type Address,
+  type CodeableConcept,
+  type Coding,
+  type ContactPoint,
+  type ElementDefinition,
+  type Extension,
+  type HumanName,
+  type Identifier,
+  type Patient,
+  type Quantity,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
-  TypedValue,
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
@@ -24,6 +23,7 @@ import {
   isResource,
   isTypedValue,
   stringifyTypedValue,
+  type TypedValue,
 } from './types';
 
 describe('Type Utils', () => {

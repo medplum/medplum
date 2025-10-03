@@ -1,25 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentConnectRequest,
-  AgentConnectResponse,
-  AgentHeartbeatResponse,
-  AgentMessage,
-  AgentRequestMessage,
-  AgentResponseMessage,
+  type AgentConnectRequest,
+  type AgentConnectResponse,
+  type AgentHeartbeatResponse,
+  type AgentMessage,
+  type AgentRequestMessage,
+  type AgentResponseMessage,
   MEDPLUM_VERSION,
-  WithId,
+  type WithId,
   getWebSocketUrl,
 } from '@medplum/core';
 import {
-  Agent,
-  Bundle,
-  OperationOutcome,
-  OperationOutcomeIssue,
-  Parameters,
-  ParametersParameter,
+  type Agent,
+  type Bundle,
+  type OperationOutcome,
+  type OperationOutcomeIssue,
+  type Parameters,
+  type ParametersParameter,
 } from '@medplum/fhirtypes';
-import { MessageEvent, WebSocket } from 'ws';
+import { type MessageEvent, WebSocket } from 'ws';
 
 let serverPort: number | undefined;
 const agentWsMap = new Map<string, WebSocket>();

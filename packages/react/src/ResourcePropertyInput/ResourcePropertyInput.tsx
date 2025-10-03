@@ -4,7 +4,7 @@ import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/cor
 import {
   applyDefaultValuesToElement,
   capitalize,
-  ExtendedInternalSchemaElement,
+  type ExtendedInternalSchemaElement,
   getPathDifference,
   HTTP_HL7_ORG,
   isComplexTypeCode,
@@ -12,8 +12,8 @@ import {
   isPopulated,
   PropertyType,
 } from '@medplum/core';
-import { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useState } from 'react';
+import { type ElementDefinitionBinding, type ElementDefinitionType } from '@medplum/fhirtypes';
+import { type JSX, useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -39,7 +39,11 @@ import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
 import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
-import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
+import {
+  type BaseInputProps,
+  type ComplexTypeInputProps,
+  type PrimitiveTypeInputProps,
+} from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;

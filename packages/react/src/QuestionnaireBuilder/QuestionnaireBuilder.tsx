@@ -3,12 +3,12 @@
 import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
 import {
-  Extension,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireItemAnswerOption,
-  Reference,
-  ResourceType,
+  type Extension,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireItemAnswerOption,
+  type Reference,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import {
   getQuestionnaireItemReferenceTargetTypes,
@@ -21,7 +21,7 @@ import {
 } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
-import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { type JSX, type MouseEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';

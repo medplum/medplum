@@ -1,23 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ConceptMap,
-  ExtractResource,
-  ResourceType,
-  StructureMap,
-  StructureMapGroup,
-  StructureMapGroupInput,
-  StructureMapGroupRule,
-  StructureMapGroupRuleDependent,
-  StructureMapGroupRuleSource,
-  StructureMapGroupRuleTarget,
-  StructureMapGroupRuleTargetParameter,
+  type ConceptMap,
+  type ExtractResource,
+  type ResourceType,
+  type StructureMap,
+  type StructureMapGroup,
+  type StructureMapGroupInput,
+  type StructureMapGroupRule,
+  type StructureMapGroupRuleDependent,
+  type StructureMapGroupRuleSource,
+  type StructureMapGroupRuleTarget,
+  type StructureMapGroupRuleTargetParameter,
 } from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
-import { TypedValue } from '../types';
-import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
+import { type TypedValue } from '../types';
+import { tryGetDataType, type InternalSchemaElement } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
 /**

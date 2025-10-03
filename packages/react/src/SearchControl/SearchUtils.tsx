@@ -4,18 +4,18 @@ import {
   capitalize,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
-  Filter,
+  type Filter,
   formatDateTime,
-  InternalSchemaElement,
+  type InternalSchemaElement,
   Operator,
-  SearchRequest,
+  type SearchRequest,
 } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { type Resource, type SearchParameter } from '@medplum/fhirtypes';
+import { type JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { SearchControlField } from './SearchControlField';
+import { type SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],

@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import {
-  Encounter,
-  OperationOutcome,
-  Patient,
-  PlanDefinition,
-  Questionnaire,
-  RequestGroup,
-  Task,
+  type Encounter,
+  type OperationOutcome,
+  type Patient,
+  type PlanDefinition,
+  type Questionnaire,
+  type RequestGroup,
+  type Task,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';

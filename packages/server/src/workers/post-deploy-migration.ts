@@ -6,22 +6,22 @@ import {
   normalizeErrorString,
   PropertyType,
   toTypedValue,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { PoolClient } from 'pg';
+import { type AsyncJob, type Parameters, type ParametersParameter } from '@medplum/fhirtypes';
+import { type Job, type JobsOptions, Queue, type QueueBaseOptions, Worker } from 'bullmq';
+import { type PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import {
-  CustomPostDeployMigrationJobData,
-  DynamicPostDeployJobData,
-  PostDeployJobData,
-  PostDeployJobRunResult,
-  PostDeployMigration,
+  type CustomPostDeployMigrationJobData,
+  type DynamicPostDeployJobData,
+  type PostDeployJobData,
+  type PostDeployJobRunResult,
+  type PostDeployMigration,
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
@@ -31,7 +31,7 @@ import {
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
-import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import { type MigrationAction, type MigrationActionResult } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
 import {
   addVerboseQueueLogging,
@@ -39,7 +39,7 @@ import {
   isJobCompatible,
   moveToDelayedAndThrow,
   queueRegistry,
-  WorkerInitializer,
+  type WorkerInitializer,
 } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';

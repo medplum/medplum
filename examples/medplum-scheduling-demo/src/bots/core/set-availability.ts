@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import { type BotEvent, type MedplumClient } from '@medplum/core';
+import {
+  type Bundle,
+  type BundleEntry,
+  type Reference,
+  type Resource,
+  type Schedule,
+  type Slot,
+} from '@medplum/fhirtypes';
 
 export interface SetAvailabilityEvent {
   schedule: Reference<Schedule>;

@@ -5,18 +5,18 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
 import {
-  Coding,
-  Coverage,
-  CoverageEligibilityRequest,
-  Organization,
-  Patient,
-  Practitioner,
-  Questionnaire,
-  QuestionnaireResponse,
+  type Coding,
+  type Coverage,
+  type CoverageEligibilityRequest,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Questionnaire,
+  type QuestionnaireResponse,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 
 interface InitiateEligibilityRequestProps {
   readonly coverage: Coverage;

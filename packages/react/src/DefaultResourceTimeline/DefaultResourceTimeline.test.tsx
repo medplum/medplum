@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { DiagnosticReport, Patient } from '@medplum/fhirtypes';
+import { type DiagnosticReport, type Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen, waitFor } from '../test-utils/render';
-import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
+import { DefaultResourceTimeline, type DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 
 const medplum = new MockClient();
 

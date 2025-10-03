@@ -2,11 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString, WithId } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import {
+  capitalize,
+  getReferenceString,
+  isOk,
+  type MedplumClient,
+  normalizeErrorString,
+  type WithId,
+} from '@medplum/core';
+import { type Bot, type Bundle, type BundleEntry, type Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useCallback, useState } from 'react';
+import { type JSX, useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import questionnaireBundle from '../../data/core/encounter-note-questionnaires.json';
 import coreData from '../../data/core/encounter-types.json';

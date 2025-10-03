@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, getReferenceString } from '@medplum/core';
-import { Practitioner, Schedule } from '@medplum/fhirtypes';
+import { type Practitioner, type Schedule } from '@medplum/fhirtypes';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconCalendar,
@@ -11,7 +11,7 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense, useEffect, useState } from 'react';
+import { type JSX, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';

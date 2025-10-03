@@ -3,16 +3,16 @@
 import { Group, NativeSelect } from '@mantine/core';
 import {
   LRUCache,
-  MedplumClient,
+  type MedplumClient,
   ReadablePromise,
   createReference,
   isEmpty,
   isPopulated,
   tryGetProfile,
 } from '@medplum/core';
-import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import { type Reference, type Resource, type ResourceType, type StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 

@@ -5,7 +5,7 @@ import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
+import { EncounterTimeline, type EncounterTimelineProps } from './EncounterTimeline';
 
 const medplum = new MockClient();
 

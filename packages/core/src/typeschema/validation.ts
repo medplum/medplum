@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { type OperationOutcomeIssue, type Resource, type StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
-import { FhirPathAtom } from '../fhirpath/atoms';
+import { type FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
@@ -14,18 +14,18 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isReference, isResource } from '../types';
+import { PropertyType, isReference, isResource, type TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
-import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
+import { crawlTypedValue, getNestedProperty, type CrawlerVisitor, type TypedValueWithPath } from './crawler';
 import {
-  Constraint,
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SliceDiscriminator,
-  SlicingRules,
   getDataType,
   parseStructureDefinition,
+  type Constraint,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
+  type SliceDefinition,
+  type SliceDiscriminator,
+  type SlicingRules,
 } from './types';
 
 /*

@@ -3,7 +3,7 @@
 
 // start-block imports
 import { LOINC, MedplumClient, UCUM, createReference, findObservationInterval } from '@medplum/core';
-import { Observation, ObservationDefinition, Patient } from '@medplum/fhirtypes';
+import { type Observation, type ObservationDefinition, type Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 

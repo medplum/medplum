@@ -5,9 +5,9 @@ import {
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   paginateListStacks,
-  Stack,
-  StackResource,
-  StackSummary,
+  type Stack,
+  type StackResource,
+  type StackSummary,
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';

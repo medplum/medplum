@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  ClinicalImpression,
-  CodeableConcept,
-  Condition,
-  Encounter,
-  Observation,
-  ObservationComponent,
-  Patient,
-  Practitioner,
-  Quantity,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
-  Resource,
+  type Bundle,
+  type BundleEntry,
+  type ClinicalImpression,
+  type CodeableConcept,
+  type Condition,
+  type Encounter,
+  type Observation,
+  type ObservationComponent,
+  type Patient,
+  type Practitioner,
+  type Quantity,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
+  type Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 

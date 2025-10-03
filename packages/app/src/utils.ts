@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, resolveId } from '@medplum/core';
-import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
+import { type MedplumClient, resolveId } from '@medplum/core';
+import { type Patient, type Reference, type Resource, type Specimen } from '@medplum/fhirtypes';
 
 /**
  * Tries to return the patient for the given the resource.

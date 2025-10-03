@@ -3,9 +3,9 @@
 import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
-import { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
+import { type AllergyIntolerance, type Encounter, type Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useMemo, useState } from 'react';
+import { type JSX, useCallback, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { AllergyDialog } from './AllergyDialog';
 import { CollapsibleSection } from './CollapsibleSection';

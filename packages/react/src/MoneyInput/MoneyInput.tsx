@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { NativeSelect, TextInput } from '@mantine/core';
-import { Money } from '@medplum/fhirtypes';
+import { type Money } from '@medplum/fhirtypes';
 import { IconCurrencyDollar } from '@tabler/icons-react';
-import { ChangeEvent, JSX, useCallback, useContext, useMemo, useState } from 'react';
+import { type ChangeEvent, type JSX, useCallback, useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { type ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 /*
  * Based on: https://github.com/mantinedev/ui.mantine.dev/blob/master/components/CurrencyInput/CurrencyInput.tsx

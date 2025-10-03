@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Collapse, Group, Text } from '@mantine/core';
 import { IconChevronDown, IconPlus } from '@tabler/icons-react';
-import { JSX, ReactNode, useState } from 'react';
+import { type JSX, type ReactNode, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import classes from './CollapsibleSection.module.css';
 

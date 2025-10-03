@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Address,
-  Bundle,
-  CareTeam,
-  ClinicalImpression,
-  CodeableConcept,
-  Composition,
-  CompositionSection,
-  ContactPoint,
-  Device,
-  ExtractResource,
-  HumanName,
-  Organization,
-  Patient,
-  Practitioner,
-  PractitionerRole,
-  Reference,
-  RelatedPerson,
-  Resource,
-  ResourceType,
-  ServiceRequest,
+import  {
+  type Address,
+  type Bundle,
+  type CareTeam,
+  type ClinicalImpression,
+  type CodeableConcept,
+  type Composition,
+  type CompositionSection,
+  type ContactPoint,
+  type Device,
+  type ExtractResource,
+  type HumanName,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type PractitionerRole,
+  type Reference,
+  type RelatedPerson,
+  type Resource,
+  type ResourceType,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDateTime } from '../datetime';
 import {
@@ -41,17 +41,17 @@ import {
   mapCodeableConceptToCcdaCode,
 } from '../systems';
 import { CCDA_TEMPLATE_IDS, LOINC_TO_TEMPLATE_IDS, REFERRAL_TEMPLATE_IDS } from '../templates';
-import {
-  Ccda,
-  CcdaAuthor,
-  CcdaCode,
-  CcdaCustodian,
-  CcdaEntry,
-  CcdaInformationRecipient,
-  CcdaParticipant,
-  CcdaRecordTarget,
-  CcdaSection,
-  CcdaTemplateId,
+import  {
+  type Ccda,
+  type CcdaAuthor,
+  type CcdaCode,
+  type CcdaCustodian,
+  type CcdaEntry,
+  type CcdaInformationRecipient,
+  type CcdaParticipant,
+  type CcdaRecordTarget,
+  type CcdaSection,
+  type CcdaTemplateId,
 } from '../types';
 import { createAllergyEntry } from './entries/allergy';
 import { createPlanOfTreatmentCarePlanEntry } from './entries/careplan';

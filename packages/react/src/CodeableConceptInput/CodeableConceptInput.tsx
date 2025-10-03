@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { JSX, useState } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { type CodeableConcept, type ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { type JSX, useState } from 'react';
+import { type ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ValueSetAutocomplete, type ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
   extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Combobox, InputBase, InputBaseProps, PolymorphicComponentProps, useCombobox } from '@mantine/core';
-import { JSX, useMemo, useState } from 'react';
+import { Combobox, InputBase, type InputBaseProps, type PolymorphicComponentProps, useCombobox } from '@mantine/core';
+import { type JSX, useMemo, useState } from 'react';
 
 const MAX_DISPLAYED_OPTIONS = 8;
 

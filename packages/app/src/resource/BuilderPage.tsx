@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
+import { type Resource, type ResourceType } from '@medplum/fhirtypes';
 import { Document, PlanDefinitionBuilder, QuestionnaireBuilder, useMedplum } from '@medplum/react';
-import { JSX, useCallback } from 'react';
+import { type JSX, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { cleanResource } from './utils';
 

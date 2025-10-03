@@ -6,21 +6,21 @@ import {
   getAllDataTypes,
   getSearchParameters,
   HTTP_TERMINOLOGY_HL7_ORG,
-  InternalTypeSchema,
+  type InternalTypeSchema,
   isResourceType,
   MEDPLUM_VERSION,
 } from '@medplum/core';
 import {
-  CapabilityStatement,
-  CapabilityStatementRest,
-  CapabilityStatementRestResource,
-  CapabilityStatementRestResourceOperation,
-  CapabilityStatementRestResourceSearchParam,
-  CapabilityStatementRestSecurity,
-  ResourceType,
+  type CapabilityStatement,
+  type CapabilityStatementRest,
+  type CapabilityStatementRestResource,
+  type CapabilityStatementRestResourceOperation,
+  type CapabilityStatementRestResourceSearchParam,
+  type CapabilityStatementRestSecurity,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.

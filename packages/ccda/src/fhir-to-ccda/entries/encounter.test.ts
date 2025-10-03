@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import { Bundle, Composition, Condition, Encounter, EncounterParticipant, Patient } from '@medplum/fhirtypes';
+import  { type Bundle, type Composition, type Condition, type Encounter, type EncounterParticipant, type Patient } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_ACTIVITIES, OID_ENCOUNTER_LOCATION, OID_PROBLEM_OBSERVATION } from '../../oids';
 import { FhirToCcdaConverter } from '../convert';
 import { createEncounterEntry } from './encounter';

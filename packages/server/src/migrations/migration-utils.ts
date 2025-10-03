@@ -1,23 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, type WithId } from '@medplum/core';
+import { type AsyncJob } from '@medplum/fhirtypes';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { Pool, PoolClient } from 'pg';
+import { type Pool, type PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
-import { PostDeployMigration } from './data/types';
+import { type PostDeployMigration } from './data/types';
 import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
-import { PreDeployMigration } from './schema/types';
+import { type PreDeployMigration } from './schema/types';
 
 /**
  * Gets the next post-deploy migration that needs to be run.

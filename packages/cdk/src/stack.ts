@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumInfraConfig } from '@medplum/core';
-import { App, Stack, Tags } from 'aws-cdk-lib';
+import { type MedplumInfraConfig } from '@medplum/core';
+import { Stack, Tags, type App } from 'aws-cdk-lib';
 import { BackEnd } from './backend';
 import { CloudTrailAlarms } from './cloudtrail';
 import { FrontEnd } from './frontend';

@@ -1,19 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Bundle,
-  CodeableConcept,
-  Coding,
-  ElementDefinition,
-  Reference,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  StructureDefinition,
+  type Bundle,
+  type CodeableConcept,
+  type Coding,
+  type ElementDefinition,
+  type Reference,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
+  type StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
-import { SearchParameterDetails } from './search/details';
-import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
+import { type SearchParameterDetails } from './search/details';
+import {
+  getAllDataTypes,
+  tryGetDataType,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
+} from './typeschema/types';
 import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string

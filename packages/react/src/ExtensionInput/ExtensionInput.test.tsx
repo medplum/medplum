@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Identifier } from '@medplum/fhirtypes';
+import { type Identifier } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ExtensionInput, ExtensionInputProps } from './ExtensionInput';
+import { ExtensionInput, type ExtensionInputProps } from './ExtensionInput';
 
 const medplum = new MockClient();
 

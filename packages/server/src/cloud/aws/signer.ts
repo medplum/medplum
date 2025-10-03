@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
+import { type Binary } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 
 /**

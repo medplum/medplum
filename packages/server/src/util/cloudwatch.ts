@@ -4,7 +4,7 @@ import {
   CloudWatchLogsClient,
   CreateLogGroupCommand,
   CreateLogStreamCommand,
-  InputLogEvent,
+  type InputLogEvent,
   PutLogEventsCommand,
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';

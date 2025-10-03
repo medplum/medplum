@@ -5,11 +5,11 @@ import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import { type Binary } from '@medplum/fhirtypes';
+import { type Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { BaseBinaryStorage } from '../../storage/base';
-import { BinarySource } from '../../storage/types';
+import { type BinarySource } from '../../storage/types';
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.

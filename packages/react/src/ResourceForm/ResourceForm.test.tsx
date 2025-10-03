@@ -3,20 +3,20 @@
 import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
-  Bot,
-  Bundle,
-  Condition,
-  Observation,
-  OperationOutcome,
-  Patient,
-  Specimen,
-  StructureDefinition,
+  type Bot,
+  type Bundle,
+  type Condition,
+  type Observation,
+  type OperationOutcome,
+  type Patient,
+  type Specimen,
+  type StructureDefinition,
 } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { ResourceForm, ResourceFormProps } from './ResourceForm';
+import { ResourceForm, type ResourceFormProps } from './ResourceForm';
 
 const medplum = new MockClient();
 

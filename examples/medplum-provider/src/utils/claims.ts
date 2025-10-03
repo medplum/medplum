@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, getReferenceString, MedplumClient } from '@medplum/core';
-import { ChargeItem, Claim, ClaimItem, Coverage, Encounter, Reference } from '@medplum/fhirtypes';
+import { CPT, getReferenceString, type MedplumClient } from '@medplum/core';
+import {
+  type ChargeItem,
+  type Claim,
+  type ClaimItem,
+  type Coverage,
+  type Encounter,
+  type Reference,
+} from '@medplum/fhirtypes';
 import { calculateTotalPrice } from './chargeitems';
 import { createSelfPayCoverage } from './coverage';
 

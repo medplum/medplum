@@ -1,12 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, WithId, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import {
+  OperationOutcomeError,
+  Operator,
+  type WithId,
+  conflict,
+  notFound,
+  parseSearchRequest,
+  sleep,
+} from '@medplum/core';
+import { type Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
-import { Repository, getSystemRepo } from './repo';
+import { type Repository, getSystemRepo } from './repo';
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {

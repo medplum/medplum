@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { escapeIdentifier, QueryResult, QueryResultRow } from 'pg';
-import { SqlBuilder, UpdateQuery } from '../fhir/sql';
+import { escapeIdentifier, type QueryResult, type QueryResultRow } from 'pg';
+import { SqlBuilder, type UpdateQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
-import { CheckConstraintDefinition, DbClient, MigrationActionResult } from './types';
+import { type CheckConstraintDefinition, type DbClient, type MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
   client: DbClient,

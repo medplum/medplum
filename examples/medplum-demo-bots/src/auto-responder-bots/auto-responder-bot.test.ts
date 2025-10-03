@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { expect, test, vi, beforeEach, afterEach, describe } from 'vitest';
 import { handler } from './auto-responder-bot';
 import { ContentType, createReference } from '@medplum/core';
-import { Communication, Practitioner, Patient, Bot } from '@medplum/fhirtypes';
+import { type Communication, type Practitioner, type Patient, type Bot } from '@medplum/fhirtypes';
 
 describe('Auto Responder Bot', () => {
   let medplum: MockClient;

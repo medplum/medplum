@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Checkbox, TextInput } from '@mantine/core';
 import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
-import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { type Quantity, type Reference, type SearchParameter } from '@medplum/fhirtypes';
+import { type JSX } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';

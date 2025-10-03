@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { getReferenceString, OperationOutcomeError } from '@medplum/core';
-import { Bot, Practitioner, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import { getReferenceString, type OperationOutcomeError } from '@medplum/core';
+import { type Bot, type Practitioner, type Questionnaire, type Subscription } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';

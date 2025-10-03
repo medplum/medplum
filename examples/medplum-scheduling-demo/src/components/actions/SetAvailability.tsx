@@ -4,16 +4,16 @@ import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getAllQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import {
-  Coding,
-  Questionnaire,
-  QuestionnaireItemAnswerOption,
-  QuestionnaireResponse,
-  Schedule,
+  type Coding,
+  type Questionnaire,
+  type QuestionnaireItemAnswerOption,
+  type QuestionnaireResponse,
+  type Schedule,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useContext } from 'react';
-import { SetAvailabilityEvent } from '../../bots/core/set-availability';
+import { type JSX, useContext } from 'react';
+import { type SetAvailabilityEvent } from '../../bots/core/set-availability';
 import { ScheduleContext } from '../../Schedule.context';
 
 interface SetAvailabilityProps {

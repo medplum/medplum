@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "SubscriptionStatus" ADD COLUMN IF NOT EXISTS "projectId" UUID');

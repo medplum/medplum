@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text, TextProps } from '@mantine/core';
+import { Text, type TextProps } from '@mantine/core';
 import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
-import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { type OperationOutcome, type Reference, type Resource } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ResourceNameProps extends TextProps {

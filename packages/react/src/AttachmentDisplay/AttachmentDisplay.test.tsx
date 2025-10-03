@@ -3,7 +3,7 @@
 import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
-import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
+import { AttachmentDisplay, type AttachmentDisplayProps } from './AttachmentDisplay';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};

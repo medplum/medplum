@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ChartData, ChartOptions } from 'chart.js';
-import { ComponentType, JSX, lazy, Suspense } from 'react';
+import { type ChartData, type ChartOptions } from 'chart.js';
+import { type ComponentType, type JSX, lazy, Suspense } from 'react';
 
 const lineChartOptions = {
   responsive: true,

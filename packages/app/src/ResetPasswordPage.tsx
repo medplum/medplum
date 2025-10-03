@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { type OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
   Form,
@@ -14,7 +14,7 @@ import {
   OperationOutcomeAlert,
   useMedplum,
 } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getConfig } from './config';
 

@@ -2,30 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   CloudFormationClient,
-  CloudFormationClientResolvedConfig,
-  ServiceInputTypes as CloudFormationServiceInputTypes,
-  ServiceOutputTypes as CloudFormationServiceOutputTypes,
+  type CloudFormationClientResolvedConfig,
+  type ServiceInputTypes as CloudFormationServiceInputTypes,
+  type ServiceOutputTypes as CloudFormationServiceOutputTypes,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
-  StackResource,
+  type StackResource,
 } from '@aws-sdk/client-cloudformation';
 import {
   CloudFrontClient,
-  CloudFrontClientResolvedConfig,
-  ServiceInputTypes as CloudFrontServiceInputTypes,
-  ServiceOutputTypes as CloudFrontServiceOutputTypes,
+  type CloudFrontClientResolvedConfig,
+  type ServiceInputTypes as CloudFrontServiceInputTypes,
+  type ServiceOutputTypes as CloudFrontServiceOutputTypes,
   CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
 import {
   GetBucketPolicyCommand,
   PutBucketPolicyCommand,
   S3Client,
-  S3ClientResolvedConfig,
-  ServiceInputTypes as S3ServiceInputTypes,
-  ServiceOutputTypes as S3ServiceOutputTypes,
+  type S3ClientResolvedConfig,
+  type ServiceInputTypes as S3ServiceInputTypes,
+  type ServiceOutputTypes as S3ServiceOutputTypes,
 } from '@aws-sdk/client-s3';
-import { AwsStub, mockClient } from 'aws-sdk-client-mock';
+import { type AwsStub, mockClient } from 'aws-sdk-client-mock';
 import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';

@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Operator } from '@medplum/core';
-import { JsonWebKey } from '@medplum/fhirtypes';
+import { type JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
 import {
   exportJWK,
   generateKeyPair,
   importJWK,
-  JWK,
-  JWSHeaderParameters,
-  JWTPayload,
+  type JWK,
+  type JWSHeaderParameters,
+  type JWTPayload,
   jwtVerify,
-  JWTVerifyOptions,
-  KeyLike,
+  type JWTVerifyOptions,
+  type KeyLike,
   SignJWT,
 } from 'jose';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 

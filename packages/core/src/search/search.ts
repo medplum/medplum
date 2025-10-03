@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type Resource, type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
+import { globalSchema, stringifyTypedValue, type TypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;

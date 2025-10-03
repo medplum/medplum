@@ -48,7 +48,7 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from './systems';
-import { CcdaTemplateId } from './types';
+import  { type CcdaTemplateId } from './types';
 
 export const CCDA_TEMPLATE_IDS = [
   {

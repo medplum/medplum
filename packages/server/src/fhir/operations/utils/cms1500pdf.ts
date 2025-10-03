@@ -8,9 +8,9 @@ import {
   getDisplayString,
   HTTP_HL7_ORG,
 } from '@medplum/core';
-import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import { type Address, type Claim, type HumanName, type Practitioner, type RelatedPerson } from '@medplum/fhirtypes';
 import path from 'path';
-import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
+import { type Content, type TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
 
 const PAGE_WIDTH = 612;

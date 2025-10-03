@@ -8,14 +8,14 @@ import {
   preconditionFailed,
 } from '@medplum/core';
 import {
-  AsyncJob,
-  ImmunizationEvaluation,
-  Parameters,
-  Patient,
-  Practitioner,
-  Project,
-  ResourceType,
-  User,
+  type AsyncJob,
+  type ImmunizationEvaluation,
+  type Parameters,
+  type Patient,
+  type Practitioner,
+  type Project,
+  type ResourceType,
+  type User,
 } from '@medplum/fhirtypes';
 import { DelayedError, Job } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -33,7 +33,7 @@ import {
   prepareReindexJobData,
   REINDEX_WORKER_VERSION,
   ReindexJob,
-  ReindexJobData,
+  type ReindexJobData,
 } from './reindex';
 import { queueRegistry } from './utils';
 

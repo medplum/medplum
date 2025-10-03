@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, SNOMED } from '@medplum/core';
-import { Condition, Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
+import { type BotEvent, type MedplumClient, SNOMED } from '@medplum/core';
+import {
+  type Condition,
+  type Patient,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItem,
+  type Reference,
+} from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   // Get all of the answers from the questionnaire response

@@ -1,26 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ResourceArray, createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
 import {
-  Bundle,
-  Coverage,
-  Location,
-  Organization,
-  Patient,
-  Practitioner,
-  Questionnaire,
-  Reference,
-  ServiceRequest,
+  type ResourceArray,
+  createReference,
+  deepClone,
+  getExtensionValue,
+  getIdentifier,
+  isResource,
+} from '@medplum/core';
+import {
+  type Bundle,
+  type Coverage,
+  type Location,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Questionnaire,
+  type Reference,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
-  BillingInformation,
-  DiagnosisCodeableConcept,
+  type BillingInformation,
+  type DiagnosisCodeableConcept,
   HEALTH_GORILLA_SYSTEM,
-  LabOrderServiceRequest,
-  LabOrderTestMetadata,
-  LabOrganization,
+  type LabOrderServiceRequest,
+  type LabOrderTestMetadata,
+  type LabOrganization,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
-  TestCoding,
+  type TestCoding,
   createLabOrderBundle,
   isReferenceOfType,
   normalizeAoeQuestionnaire,
@@ -29,11 +36,16 @@ import {
 } from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { AOESearch, LabSearch, TestSearch, getAutocompleteSearchFunction } from './autocomplete-endpoint';
 import {
-  HealthGorillaLabOrderState,
-  TestMetadata,
-  UseHealthGorillaLabOrderReturn,
+  type AOESearch,
+  type LabSearch,
+  type TestSearch,
+  getAutocompleteSearchFunction,
+} from './autocomplete-endpoint';
+import {
+  type HealthGorillaLabOrderState,
+  type TestMetadata,
+  type UseHealthGorillaLabOrderReturn,
 } from './HealthGorillaLabOrderContext';
 
 export type UseHealthGorillaLabOrderOptions = {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getTypedPropertyValueWithoutSchema, isPopulated, toTypedValue } from '@medplum/core';
-import { Observation, ObservationComponent, ObservationReferenceRange } from '@medplum/fhirtypes';
+import  { type Observation, type ObservationComponent, type ObservationReferenceRange } from '@medplum/fhirtypes';
 import { mapFhirPeriodOrDateTimeToCcda, mapFhirToCcdaDateTime } from '../../datetime';
 import {
   OID_ASSESSMENT_SCALE_OBSERVATION,
@@ -37,19 +37,19 @@ import {
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
 } from '../../systems';
-import {
-  CcdaCode,
-  CcdaEntry,
-  CcdaEntryRelationship,
-  CcdaId,
-  CcdaObservation,
-  CcdaOrganizer,
-  CcdaOrganizerComponent,
-  CcdaReferenceRange,
-  CcdaTemplateId,
-  CcdaValue,
+import  {
+  type CcdaCode,
+  type CcdaEntry,
+  type CcdaEntryRelationship,
+  type CcdaId,
+  type CcdaObservation,
+  type CcdaOrganizer,
+  type CcdaOrganizerComponent,
+  type CcdaReferenceRange,
+  type CcdaTemplateId,
+  type CcdaValue,
 } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import  { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, getNarrativeReference, mapIdentifiers } from '../utils';
 
 export function createObservationEntry(converter: FhirToCcdaConverter, observation: Observation): CcdaEntry {

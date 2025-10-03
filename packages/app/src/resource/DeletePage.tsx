@@ -3,9 +3,9 @@
 import { Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import { type ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function DeletePage(): JSX.Element {

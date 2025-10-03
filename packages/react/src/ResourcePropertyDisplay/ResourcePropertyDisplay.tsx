@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import {
-  InternalSchemaElement,
+  type InternalSchemaElement,
   PropertyType,
   formatDateTime,
   formatPeriod,
   formatTiming,
   isEmpty,
 } from '@medplum/core';
-import { ElementDefinitionType } from '@medplum/fhirtypes';
+import { type ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';

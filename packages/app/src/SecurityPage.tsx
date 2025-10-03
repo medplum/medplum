@@ -7,11 +7,11 @@ import {
   formatHumanName,
   getReferenceString,
   normalizeErrorString,
-  ProfileResource,
+  type ProfileResource,
 } from '@medplum/core';
-import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
+import { type HumanName, type UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 interface UserSession {

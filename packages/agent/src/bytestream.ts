@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ContentType, ILogger, normalizeErrorString } from '@medplum/core';
-import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import { ContentType, normalizeErrorString, type AgentTransmitResponse, type ILogger } from '@medplum/core';
+import { type AgentChannel, type Endpoint } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import net from 'node:net';
-import { App } from './app';
+import { type App } from './app';
 import { BaseChannel } from './channel';
 
 export class AgentByteStreamChannel extends BaseChannel {

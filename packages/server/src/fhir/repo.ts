@@ -5,7 +5,7 @@ import {
   accessPolicySupportsInteraction,
   allOk,
   arrayify,
-  BackgroundJobInteraction,
+  type BackgroundJobInteraction,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -19,7 +19,7 @@ import {
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
-  Filter,
+  type Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
@@ -46,44 +46,44 @@ import {
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
-  SearchParameterDetails,
+  type SearchParameterDetails,
   SearchParameterType,
-  SearchRequest,
+  type SearchRequest,
   serverError,
   sleep,
   stringify,
   toPeriod,
   toTypedValue,
-  TypedValue,
+  type TypedValue,
   validateResource,
   validateResourceType,
-  WithId,
+  type WithId,
 } from '@medplum/core';
 import {
-  CreateResourceOptions,
+  type CreateResourceOptions,
   FhirRepository,
-  ReadHistoryOptions,
+  type ReadHistoryOptions,
   RepositoryMode,
-  UpdateResourceOptions,
+  type UpdateResourceOptions,
 } from '@medplum/fhir-router';
 import {
-  AccessPolicy,
-  AccessPolicyResource,
-  Binary,
-  Bundle,
-  BundleEntry,
-  Meta,
-  OperationOutcome,
-  Project,
-  Reference,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  StructureDefinition,
+  type AccessPolicy,
+  type AccessPolicyResource,
+  type Binary,
+  type Bundle,
+  type BundleEntry,
+  type Meta,
+  type OperationOutcome,
+  type Project,
+  type Reference,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
+  type StructureDefinition,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { Pool, PoolClient } from 'pg';
-import { Operation } from 'rfc6902';
+import { type Pool, type PoolClient } from 'pg';
+import { type Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -95,7 +95,7 @@ import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
-  AuditEventSubtype,
+  type AuditEventSubtype,
   createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
@@ -111,30 +111,34 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
-import { FhirRateLimiter } from './fhirquota';
+import { type FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
+import { getHumanNameSortValue, type HumanNameResource } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
-import { ResourceCap } from './resource-cap';
+import { type ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl, type SearchOptions } from './search';
+import {
+  type ColumnSearchParameterImplementation,
+  getSearchParameterImplementation,
+  lookupTables,
+} from './searchparameter';
 import {
   Condition,
   DeleteQuery,
   Disjunction,
-  Expression,
+  type Expression,
   InsertQuery,
   normalizeDatabaseError,
   periodToRangeString,
   PostgresError,
   SelectQuery,
-  TransactionIsolationLevel,
+  type TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 

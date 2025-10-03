@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import { ChatModal, ChatModalProps } from './ChatModal';
+import { ChatModal, type ChatModalProps } from './ChatModal';
 
 describe('ChatModal', () => {
   let defaultMedplum: MockClient;

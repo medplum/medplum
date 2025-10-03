@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
-  MedplumClient,
-  WithId,
+  type BotEvent,
+  type MedplumClient,
+  type WithId,
   createReference,
   deepClone,
   getQuestionnaireAnswers,
@@ -11,13 +11,13 @@ import {
   resolveId,
 } from '@medplum/core';
 import {
-  Identifier,
-  Patient,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
-  ResourceType,
-  RiskAssessment,
+  type Identifier,
+  type Patient,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
+  type ResourceType,
+  type RiskAssessment,
 } from '@medplum/fhirtypes';
 
 /**

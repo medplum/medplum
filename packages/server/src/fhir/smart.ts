@@ -7,11 +7,11 @@
  */
 
 import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
-import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { type AccessPolicy, type AccessPolicyResource } from '@medplum/fhirtypes';
+import { type Request, type Response } from 'express';
 import qs from 'node:querystring';
 import { getConfig } from '../config/loader';
-import { PopulatedAccessPolicy } from './accesspolicy';
+import { type PopulatedAccessPolicy } from './accesspolicy';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 

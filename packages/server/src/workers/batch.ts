@@ -7,11 +7,11 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
-import { AsyncJob, Bundle } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { type FhirRequest, FhirRouter } from '@medplum/fhir-router';
+import { type AsyncJob, type Bundle } from '@medplum/fhirtypes';
+import { type Job, Queue, type QueueBaseOptions, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
@@ -19,8 +19,8 @@ import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
-import { queueRegistry, WorkerInitializer } from './utils';
+import { type AuthState } from '../oauth/middleware';
+import { queueRegistry, type WorkerInitializer } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,

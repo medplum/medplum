@@ -1,21 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentError,
-  AgentLogsRequest,
-  AgentMessage,
-  AgentReloadConfigResponse,
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  AgentUpgradeRequest,
-  AgentUpgradeResponse,
   ContentType,
   Hl7Message,
-  ILogger,
-  LogLevel,
   Logger,
   MEDPLUM_VERSION,
-  MedplumClient,
   OperationOutcomeError,
   ReconnectingWebSocket,
   checkIfValidMedplumVersion,
@@ -23,10 +12,33 @@ import {
   isValidHostname,
   normalizeErrorString,
   sleep,
+  type AgentError,
+  type AgentLogsRequest,
+  type AgentMessage,
+  type AgentReloadConfigResponse,
+  type AgentTransmitRequest,
+  type AgentTransmitResponse,
+  type AgentUpgradeRequest,
+  type AgentUpgradeResponse,
+  type ILogger,
+  type LogLevel,
+  type MedplumClient,
 } from '@medplum/core';
-import { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
+import {
+  type Agent,
+  type AgentChannel,
+  type Endpoint,
+  type OperationOutcomeIssue,
+  type Reference,
+} from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
+import {
+  exec,
+  spawn,
+  type ChildProcess,
+  type ExecException,
+  type ExecOptionsWithStringEncoding,
+} from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
@@ -34,7 +46,7 @@ import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
-import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import { ChannelType, getChannelType, getChannelTypeShortName, type Channel } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';

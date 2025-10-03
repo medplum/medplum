@@ -3,11 +3,11 @@
 import { Button, Group, Title } from '@mantine/core';
 import { useDisclosure, usePrevious } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
-import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { type Appointment, type Practitioner, type Schedule, type Slot } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import dayjs from 'dayjs';
-import { JSX, useCallback, useContext, useEffect, useState } from 'react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import { type JSX, useCallback, useContext, useEffect, useState } from 'react';
+import { Calendar, dayjsLocalizer, type Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router';
 import { BlockAvailability } from '../components/actions/BlockAvailability';

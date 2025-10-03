@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type Bundle, type BundleEntry, type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { SearchParameterType, getSearchParameterDetails } from './details';

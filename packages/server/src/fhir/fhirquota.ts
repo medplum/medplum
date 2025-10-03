@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, Logger, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
-import { Response } from 'express';
-import Redis from 'ioredis';
+import { deepClone, type Logger, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
+import { type Response } from 'express';
+import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { AuthState } from '../oauth/middleware';
+import { type AuthState } from '../oauth/middleware';
 
 export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;

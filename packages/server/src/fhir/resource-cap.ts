@@ -3,15 +3,15 @@
 import {
   businessRule,
   getResourceTypes,
-  Logger,
+  type Logger,
   OperationOutcomeError,
   projectAdminResourceTypes,
   protectedResourceTypes,
 } from '@medplum/core';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { AuthState } from '../oauth/middleware';
+import { type AuthState } from '../oauth/middleware';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;

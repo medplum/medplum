@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { capitalize } from '@medplum/core';
-import { AllergyIntolerance } from '@medplum/fhirtypes';
+import  { type AllergyIntolerance } from '@medplum/fhirtypes';
 import {
   OID_ACT_CLASS_CODE_SYSTEM,
   OID_ACT_CODE_CODE_SYSTEM,
@@ -19,8 +19,8 @@ import {
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
 } from '../../systems';
-import { CcdaEntry, CcdaValue } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import  { type CcdaEntry, type CcdaValue } from '../../types';
+import  { type FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
   getNarrativeReference,

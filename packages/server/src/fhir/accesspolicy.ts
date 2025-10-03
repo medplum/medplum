@@ -1,24 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ProfileResource,
-  WithId,
+  type ProfileResource,
+  type WithId,
   createReference,
   isResource,
   projectAdminResourceTypes,
   resolveId,
 } from '@medplum/core';
 import {
-  AccessPolicy,
-  AccessPolicyIpAccessRule,
-  AccessPolicyResource,
-  Project,
-  ProjectMembership,
-  ProjectMembershipAccess,
-  Reference,
+  type AccessPolicy,
+  type AccessPolicyIpAccessRule,
+  type AccessPolicyResource,
+  type Project,
+  type ProjectMembership,
+  type ProjectMembershipAccess,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
+import { type AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 

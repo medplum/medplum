@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM, WithId } from '@medplum/core';
-import { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
+import  { type WithId } from '@medplum/core';
+import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM } from '@medplum/core';
+import  { type AllergyIntolerance, type Bundle, type Composition, type MedicationRequest, type Patient, type Resource } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -44,7 +45,7 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import { CcdaCode, CcdaNarrative, CcdaQuantity, CcdaText } from './types';
+import  { type CcdaCode, type CcdaNarrative, type CcdaQuantity, type CcdaText } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {

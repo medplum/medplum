@@ -1,16 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
-  MedplumClient,
+  type BotEvent,
+  type MedplumClient,
   Hl7Message,
   streamToBuffer,
   normalizeErrorString,
   createReference,
 } from '@medplum/core';
 import { default as SftpClient } from 'ssh2-sftp-client';
-import { ReadStream } from 'ssh2';
-import { MessageHeader, Patient, Encounter, AllergyIntolerance, Practitioner } from '@medplum/fhirtypes';
+import { type ReadStream } from 'ssh2';
+import {
+  type MessageHeader,
+  type Patient,
+  type Encounter,
+  type AllergyIntolerance,
+  type Practitioner,
+} from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<any> {
   // Read SFTP connection data from project secrets

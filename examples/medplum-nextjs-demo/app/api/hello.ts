@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { type NextApiRequest, type NextApiResponse } from 'next';
 
 type Data = {
   name: string;

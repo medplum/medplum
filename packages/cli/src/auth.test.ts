@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, MedplumClient } from '@medplum/core';
+import { ContentType, type MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
 import fs from 'node:fs';

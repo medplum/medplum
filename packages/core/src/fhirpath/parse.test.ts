@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Encounter, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type BundleEntry,
+  type Encounter,
+  type Observation,
+  type Patient,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';

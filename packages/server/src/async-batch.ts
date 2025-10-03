@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, OperationOutcomeError } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
-import { json, NextFunction, Request, Response } from 'express';
+import { type Bundle } from '@medplum/fhirtypes';
+import { json, type NextFunction, type Request, type Response } from 'express';
 import { JSON_TYPE, runMiddleware } from './app';
 import { getConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
+import { type MedplumServerConfig } from './config/types';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';

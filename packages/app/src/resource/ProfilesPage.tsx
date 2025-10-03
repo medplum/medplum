@@ -9,9 +9,9 @@ import {
   normalizeOperationOutcome,
   removeProfileFromResource,
 } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceForm, SupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
-import { FC, JSX, useCallback, useEffect, useState } from 'react';
+import { type OperationOutcome, type Resource, type ResourceType } from '@medplum/fhirtypes';
+import { Document, ResourceForm, type SupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
+import { type FC, type JSX, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { ProfileTabs } from './ProfileTabs';
 import { cleanResource } from './utils';

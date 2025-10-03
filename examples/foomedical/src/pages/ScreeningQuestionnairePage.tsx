@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { type Questionnaire, type QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm } from '@medplum/react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 
 export function ScreeningQuestionnairePage(): JSX.Element {
   const [isSubmitted, setIsSubmitted] = useState(false);

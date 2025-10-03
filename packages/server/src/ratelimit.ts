@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, tooManyRequests } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { Handler, Request, Response } from 'express';
-import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { MedplumServerConfig } from './config/types';
+import { type OperationOutcome } from '@medplum/fhirtypes';
+import { type Handler, type Request, type Response } from 'express';
+import { RateLimiterRedis, type RateLimiterRes } from 'rate-limiter-flexible';
+import { type MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
 

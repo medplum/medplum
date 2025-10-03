@@ -8,7 +8,7 @@ import {
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
 } from './migrate';
-import { ColumnDefinition, SchemaDefinition, TableDefinition } from './types';
+import { type ColumnDefinition, type SchemaDefinition, type TableDefinition } from './types';
 
 describe('Generator', () => {
   describe('buildCreateTables', () => {

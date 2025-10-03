@@ -3,17 +3,17 @@
 import { Group, List, Stack, Text, Title } from '@mantine/core';
 import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
-  Annotation,
-  DiagnosticReport,
-  Observation,
-  ObservationComponent,
-  ObservationReferenceRange,
-  Reference,
-  Specimen,
+  type Annotation,
+  type DiagnosticReport,
+  type Observation,
+  type ObservationComponent,
+  type ObservationReferenceRange,
+  type Reference,
+  type Specimen,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';

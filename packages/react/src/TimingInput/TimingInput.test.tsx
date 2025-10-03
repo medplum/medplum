@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { TimingInput, TimingInputProps } from './TimingInput';
+import { TimingInput, type TimingInputProps } from './TimingInput';
 
 describe('TimingInput', () => {
   const defaultProps: Pick<TimingInputProps, 'path' | 'name'> = { name: 'example', path: 'Extension.value[x]' };
