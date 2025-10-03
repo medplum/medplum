@@ -1,29 +1,29 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
-# Agent Configuration
+# Agent-Side Configuration
 
-This guide covers all configuration options for the Medplum Agent, including how to configure the agent via command line arguments and the `agent.properties` file.
+This guide covers all local configuration options for the Medplum Agent, including how to configure the agent via command line arguments and the `agent.properties` file.
 
 ## Configuration Parameters
 
 The Medplum Agent requires four essential parameters to connect to your Medplum server:
 
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `baseUrl` | The Medplum server base URL (e.g., `https://api.medplum.com`) | Yes |
-| `clientId` | The OAuth client ID from your ClientApplication | Yes |
-| `clientSecret` | The OAuth client secret from your ClientApplication | Yes |
-| `agentId` | The UUID of your Agent resource | Yes |
+| Parameter      | Description                                                   | Required |
+| -------------- | ------------------------------------------------------------- | -------- |
+| `baseUrl`      | The Medplum server base URL (e.g., `https://api.medplum.com`) | Yes      |
+| `clientId`     | The OAuth client ID from your ClientApplication               | Yes      |
+| `clientSecret` | The OAuth client secret from your ClientApplication           | Yes      |
+| `agentId`      | The UUID of your Agent resource                               | Yes      |
 
 ### Optional Parameters
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `logLevel` | Global log level for both main and channel loggers | `INFO` |
-| `logger.main.*` | Configuration for the main logger (see [Logger Configuration](#logger-configuration)) | - |
-| `logger.channel.*` | Configuration for the channel logger (see [Logger Configuration](#logger-configuration)) | - |
+| Parameter          | Description                                                                              | Default |
+| ------------------ | ---------------------------------------------------------------------------------------- | ------- |
+| `logLevel`         | Global log level for both main and channel loggers                                       | `INFO`  |
+| `logger.main.*`    | Configuration for the main logger (see [Logger Configuration](#logger-configuration))    | -       |
+| `logger.channel.*` | Configuration for the channel logger (see [Logger Configuration](#logger-configuration)) | -       |
 
 ## Configuration Methods
 
@@ -38,16 +38,19 @@ npm run agent <baseUrl> <clientId> <clientSecret> <agentId> [logLevel]
 ```
 
 **Example:**
+
 ```bash
 npm run agent https://api.medplum.com my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000
 ```
 
 **Example with log level:**
+
 ```bash
 npm run agent https://api.medplum.com my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000 DEBUG
 ```
 
 **Limitations:**
+
 - Command line arguments only support the four required parameters plus an optional global `logLevel`
 - The command-line `logLevel` sets the same log level for both main and channel loggers
 - Advanced logger configuration (separate log directories, file rotation, etc.) is only available via the `agent.properties` file
@@ -98,6 +101,7 @@ logLevel=DEBUG
 This is equivalent to setting both `logger.main.logLevel=DEBUG` and `logger.channel.logLevel=DEBUG`.
 
 **Note:** The `logLevel` parameter in `agent.properties` works the same way as:
+
 - The optional 5th command-line argument when running the agent directly
 - The `MEDPLUM_LOG_LEVEL` environment variable when running in Docker
 
@@ -144,7 +148,7 @@ The **channel logger** records activity specific to individual communication cha
 
 The separation between main and channel loggers serves an important security purpose: it enables **remote log fetching without unnecessarily exposing PHI**.
 
-When troubleshooting connection issues or agent configuration problems, administrators can fetch main logger entries to diagnose the issue via the [Fetch Logs FHIR operation](./fetch-logs.md), without accessing any patient data. 
+When troubleshooting connection issues or agent configuration problems, administrators can fetch main logger entries to diagnose the issue via the [Fetch Logs FHIR operation](./fetch-logs.md), without accessing any patient data.
 
 Channel logs, which may contain PHI, can be kept with stricter access controls and only accessed when specifically needed for message-level debugging.
 
@@ -152,12 +156,12 @@ Channel logs, which may contain PHI, can be kept with stricter access controls a
 
 Each logger (main and channel) supports the following configuration properties:
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `logLevel` | string | `INFO` | Log verbosity level: `NONE`, `ERROR`, `WARN`, `INFO`, or `DEBUG` |
-| `logDir` | string | Agent directory | Directory path where log files are stored |
-| `maxFileSizeMb` | integer | `10` | Maximum log file size in megabytes before rotation |
-| `filesToKeep` | integer | `10` | Number of rotated log files to retain |
+| Property        | Type    | Default         | Description                                                      |
+| --------------- | ------- | --------------- | ---------------------------------------------------------------- |
+| `logLevel`      | string  | `INFO`          | Log verbosity level: `NONE`, `ERROR`, `WARN`, `INFO`, or `DEBUG` |
+| `logDir`        | string  | Agent directory | Directory path where log files are stored                        |
+| `maxFileSizeMb` | integer | `10`            | Maximum log file size in megabytes before rotation               |
+| `filesToKeep`   | integer | `10`            | Number of rotated log files to retain                            |
 
 ### Configuration Syntax
 
@@ -168,6 +172,7 @@ logger.<type>.<property>=<value>
 ```
 
 Where:
+
 - `<type>` is either `main` or `channel`
 - `<property>` is one of: `logLevel`, `logDir`, `maxFileSizeMb`, `filesToKeep`
 - `<value>` is the desired setting
@@ -188,12 +193,14 @@ logger.channel.logLevel=DEBUG
 Store main and channel logs in separate directories for easier management and access control:
 
 **Linux/macOS:**
+
 ```properties
 logger.main.logDir=/var/log/medplum-agent
 logger.channel.logDir=/var/log/medplum-agent/channels
 ```
 
 **Windows:**
+
 ```properties
 logger.main.logDir=C:\Logs\MedplumAgent
 logger.channel.logDir=C:\Logs\MedplumAgent\Channels
@@ -212,7 +219,7 @@ logger.channel.filesToKeep=30
 
 #### Example 4: Production Configuration
 
-A typical production configuration that separates PHI-containing logs to a separate directory:
+A production configuration that separates PHI-containing logs to a separate directory:
 
 ```properties
 baseUrl=https://api.medplum.com
@@ -226,10 +233,10 @@ logger.main.logDir=/var/log/medplum/main
 logger.main.maxFileSizeMb=10
 logger.main.filesToKeep=10
 
-# Channel logger: WARN level (only warnings and errors), extended retention for compliance
+# Channel logger: WARN level (only warnings and errors), extended retention
 logger.channel.logLevel=INFO
 logger.channel.logDir=/var/log/medplum/channels
-logger.channel.maxFileSizeMb=10
+logger.channel.maxFileSizeMb=20
 logger.channel.filesToKeep=60
 ```
 
@@ -243,6 +250,7 @@ Logs are written to daily-rotated files with the following naming conventions:
 Where `YYYY-MM-DD` is the date the log file was created.
 
 **Example file names:**
+
 ```
 medplum-agent-main-2024-10-02.log
 medplum-agent-main-2024-10-03.log
@@ -255,12 +263,13 @@ medplum-agent-channels-2024-10-03.log
 After restarting the agent, you can verify the log level is set correctly by examining the log output. Each log entry includes a `level` field in the JSON structure:
 
 ```json
-{"level":"INFO","msg":"Successfully connected to Medplum server","timestamp":"2024-10-02T16:52:56.789Z"}
+{ "level": "INFO", "msg": "Successfully connected to Medplum server", "timestamp": "2024-10-02T16:52:56.789Z" }
 ```
 
 For `DEBUG` level logging, you'll see more verbose output:
+
 ```json
-{"level":"DEBUG","msg":"Received from WebSocket: ...","timestamp":"2025-10-02T22:43:40.760Z"}
+{ "level": "DEBUG", "msg": "Received from WebSocket: ...", "timestamp": "2025-10-02T22:43:40.760Z" }
 ```
 
 ### Resetting to Defaults
@@ -268,6 +277,7 @@ For `DEBUG` level logging, you'll see more verbose output:
 To reset logger configuration to defaults, remove the corresponding properties from `agent.properties` and restart the agent service.
 
 **Default values:**
+
 - `logLevel`: `INFO`
 - `logDir`: Agent installation directory
 - `maxFileSizeMb`: `10`
