@@ -108,6 +108,7 @@ const skippedConstraintKeys: Record<string, boolean> = {
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
+  base64BinaryMaxBytes?: number;
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
@@ -126,6 +127,7 @@ class ResourceValidator implements CrawlerVisitor {
   private readonly root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
+  private readonly base64BinaryMaxBytes: number;
 
   constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
@@ -139,6 +141,7 @@ class ResourceValidator implements CrawlerVisitor {
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
+    this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 1 * 1024 * 1024;
   }
 
   validate(): OperationOutcomeIssue[] {
@@ -498,8 +501,11 @@ class ResourceValidator implements CrawlerVisitor {
         }
         return;
       }
+
       // Then, perform additional checks for specialty types
-      if (expectedType === 'string') {
+      if (type === 'base64Binary') {
+        this.validateBase64Binary(value as string, path);
+      } else if (expectedType === 'string') {
         this.validateString(value as string, type, path);
       } else if (expectedType === 'number') {
         this.validateNumber(value as number, type, path);
@@ -507,6 +513,32 @@ class ResourceValidator implements CrawlerVisitor {
     }
     if (extensionElement) {
       crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
+    }
+  }
+
+  /**
+   * Validate FHIR base64Binary primitive.
+   * - No generic string checks (whitespace trimming or 1MB limit) apply.
+   * - Validate base64 alphabet and padding.
+   * - Apply an approximate decoded-size limit to guard against pathological payloads.
+   * @param str - The base64-encoded string.
+   * @param path - The FHIR element path for issue reporting.
+   */
+  private validateBase64Binary(str: string, path: string): void {
+    if (!validationRegexes.base64Binary.exec(str)) {
+      this.issues.push(createStructureIssue(path, 'Invalid base64Binary format'));
+      return;
+    }
+    // Approximate decoded size: 3/4 of length minus padding
+    let padding = 0;
+    if (str.endsWith('==')) {
+      padding = 2;
+    } else if (str.endsWith('=')) {
+      padding = 1;
+    }
+    const approxBytes = Math.max(0, Math.floor((str.length * 3) / 4) - padding);
+    if (approxBytes > this.base64BinaryMaxBytes) {
+      this.issues.push(createStructureIssue(path, `base64Binary exceeds ${this.base64BinaryMaxBytes} bytes`));
     }
   }
 
