@@ -1,0 +1,7 @@
+FROM postgres:16
+
+# Install pg_partman extension
+RUN apt-get update && \
+    apt-get install -y postgresql-16-partman && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
