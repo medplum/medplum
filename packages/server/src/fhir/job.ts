@@ -42,7 +42,7 @@ jobRouter.delete(
     let normalizedOutcome: OperationOutcome;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      url: req.originalUrl.replace('/fhir/R4', ''),
+      url: req.originalUrl.replace('/fhir-server/fhir/R4', ''),
       pathname: '',
       params: req.params,
       query: {},

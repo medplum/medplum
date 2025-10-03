@@ -13,7 +13,7 @@ export function isFhirJsonContentType(req: Request): boolean {
 }
 
 export function getFullUrl(resourceType: string, id: string): string {
-  return concatUrls(getConfig().baseUrl, `/fhir/R4/${resourceType}/${id}`);
+  return concatUrls(getConfig().baseUrl, `/fhir-server/fhir/R4/${resourceType}/${id}`);
 }
 
 export function sendResponseHeaders(_req: Request, res: Response, outcome: OperationOutcome, body: Resource): void {
