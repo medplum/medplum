@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { act, render, screen, userEvent, UserEvent } from './test-utils/render';
+import { act, render, screen, userEvent, type UserEvent } from './test-utils/render';
 
 const medplum = new MockClient();
 

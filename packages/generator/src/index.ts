@@ -7,14 +7,14 @@ import {
   FileBuilder,
   getAllDataTypes,
   indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
   isLowerCase,
   isResourceTypeSchema,
   wordWrap,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinitionType } from '@medplum/fhirtypes';
+import { type Bundle, type ElementDefinitionType } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { getValueSetValues } from './valuesets';

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Request, RequestHandler, Response } from 'express';
+import { type Request, type RequestHandler, type Response } from 'express';
 import { asyncWrap } from '../async';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';

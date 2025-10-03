@@ -3,18 +3,18 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { getQuestionnaireAnswers, normalizeErrorString, type PatchOperation } from '@medplum/core';
 import {
-  Coding,
-  CoverageEligibilityRequest,
-  CoverageEligibilityResponse,
-  Questionnaire,
-  QuestionnaireResponse,
-  Resource,
+  type Coding,
+  type CoverageEligibilityRequest,
+  type CoverageEligibilityResponse,
+  type Questionnaire,
+  type QuestionnaireResponse,
+  type Resource,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 
 interface UpdateCoverageEligibilityStatus {
   readonly coverageEligibility: CoverageEligibilityRequest;

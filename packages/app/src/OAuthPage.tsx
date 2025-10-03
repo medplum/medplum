@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CodeChallengeMethod, locationUtils, normalizeErrorString } from '@medplum/core';
-import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
+import { type CodeChallengeMethod, locationUtils, normalizeErrorString } from '@medplum/core';
+import { type ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
 

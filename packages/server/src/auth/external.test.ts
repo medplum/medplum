@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OAuthTokenAuthMethod, WithId } from '@medplum/core';
-import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { OAuthTokenAuthMethod, type WithId } from '@medplum/core';
+import {
+  type ClientApplication,
+  type DomainConfiguration,
+  type Project,
+  type ProjectMembership,
+  type User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';

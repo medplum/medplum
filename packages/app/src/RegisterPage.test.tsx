@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
+import { type MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
@@ -8,7 +8,7 @@ import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
-import { act, render, screen, userEvent, UserEvent } from './test-utils/render';
+import { act, render, screen, userEvent, type UserEvent } from './test-utils/render';
 
 async function setup(medplum: MedplumClient): Promise<UserEvent> {
   const user = userEvent.setup();

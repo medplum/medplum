@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, deepClone, formatCoding, generateId, isReference, SNOMED } from '@medplum/core';
 import {
-  Bundle,
-  Coverage,
-  Extension,
-  Location,
-  Organization,
-  Patient,
-  Practitioner,
-  QuestionnaireResponse,
-  Reference,
-  Resource,
-  ResourceType,
-  ServiceRequest,
-  Specimen,
+  type Bundle,
+  type Coverage,
+  type Extension,
+  type Location,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type QuestionnaireResponse,
+  type Reference,
+  type Resource,
+  type ResourceType,
+  type ServiceRequest,
+  type Specimen,
 } from '@medplum/fhirtypes';
 import { getMissingRequiredQuestionnaireItems } from './aoe';
 import {
@@ -24,16 +24,16 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
 import {
-  BillingInformation,
+  type BillingInformation,
   BillToOptions,
-  DiagnosisCodeableConcept,
+  type DiagnosisCodeableConcept,
   isBillTo,
   isPriority,
-  LabOrderServiceRequest,
-  LabOrderTestMetadata,
-  LabOrganization,
+  type LabOrderServiceRequest,
+  type LabOrderTestMetadata,
+  type LabOrganization,
   PRIORITY_VALUES,
-  TestCoding,
+  type TestCoding,
 } from './types';
 
 export type LabOrderInputs = {

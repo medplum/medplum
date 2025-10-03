@@ -6,30 +6,30 @@ import {
   evalFhirPathTyped,
   getExtension,
   getReferenceString,
-  ProfileResource,
+  type ProfileResource,
   toTypedValue,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  ActivityDefinition,
-  Bot,
-  ClientApplication,
-  CodeableConcept,
-  Encounter,
-  Organization,
-  Patient,
-  PlanDefinition,
-  PlanDefinitionAction,
-  Practitioner,
-  Reference,
-  RequestGroup,
-  RequestGroupAction,
-  ServiceRequest,
-  Task,
-  TaskInput,
+  type ActivityDefinition,
+  type Bot,
+  type ClientApplication,
+  type CodeableConcept,
+  type Encounter,
+  type Organization,
+  type Patient,
+  type PlanDefinition,
+  type PlanDefinitionAction,
+  type Practitioner,
+  type Reference,
+  type RequestGroup,
+  type RequestGroupAction,
+  type ServiceRequest,
+  type Task,
+  type TaskInput,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../repo';
+import { type Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 

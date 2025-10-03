@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { capitalize, getExtension } from '@medplum/core';
-import {
-  Address,
-  ContactPoint,
-  Extension,
-  HumanName,
-  Identifier,
-  Narrative,
-  Patient,
-  Period,
+import  {
+  type Address,
+  type ContactPoint,
+  type Extension,
+  type HumanName,
+  type Identifier,
+  type Narrative,
+  type Patient,
+  type Period,
 } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from '../datetime';
 import { OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM, OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM } from '../oids';
@@ -23,19 +23,19 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from '../systems';
-import {
-  CcdaAddr,
-  CcdaCode,
-  CcdaEffectiveTime,
-  CcdaId,
-  CcdaLanguageCommunication,
-  CcdaName,
-  CcdaNarrative,
-  CcdaPatient,
-  CcdaReference,
-  CcdaTelecom,
-  CcdaText,
-  CcdaTimeStamp,
+import  {
+  type CcdaAddr,
+  type CcdaCode,
+  type CcdaEffectiveTime,
+  type CcdaId,
+  type CcdaLanguageCommunication,
+  type CcdaName,
+  type CcdaNarrative,
+  type CcdaPatient,
+  type CcdaReference,
+  type CcdaTelecom,
+  type CcdaText,
+  type CcdaTimeStamp,
 } from '../types';
 import { parseXml } from '../xml';
 

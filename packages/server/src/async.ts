@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { type NextFunction, type Request, type RequestHandler, type Response } from 'express';
 
 /**
  * Wraps an express handler with an async handler.

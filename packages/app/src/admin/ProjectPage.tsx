@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, ScrollArea, Tabs } from '@mantine/core';
 import { Document, InfoBar, useMedplum } from '@medplum/react';
-import { JSX, useMemo } from 'react';
+import { type JSX, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 

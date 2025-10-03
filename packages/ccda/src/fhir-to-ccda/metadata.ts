@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CompositionEvent } from '@medplum/fhirtypes';
+import  { type CompositionEvent } from '@medplum/fhirtypes';
 import { mapCodeableConceptToCcdaCode } from '../systems';
-import { CcdaDocumentationOf } from '../types';
+import  { type CcdaDocumentationOf } from '../types';
 import { mapEffectiveDate } from './utils';
 
 export function mapDocumentationOf(events: CompositionEvent[] | undefined): CcdaDocumentationOf | undefined {

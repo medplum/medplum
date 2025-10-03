@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Appointment, Bundle, Schedule, SearchParameter, Slot } from '@medplum/fhirtypes';
+import { type Appointment, type Bundle, type Schedule, type SearchParameter, type Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './book-appointment';
 

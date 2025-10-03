@@ -1,21 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Attachment,
-  Bundle,
-  CodeableConcept,
-  DeviceDeviceName,
-  Observation,
-  ObservationDefinition,
-  Patient,
-  Resource,
-  User,
+  type Attachment,
+  type Bundle,
+  type CodeableConcept,
+  type DeviceDeviceName,
+  type Observation,
+  type ObservationDefinition,
+  type Patient,
+  type Resource,
+  type User,
 } from '@medplum/fhirtypes';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
 import {
-  ResourceWithCode,
   addProfileToResource,
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -71,6 +70,7 @@ import {
   splitN,
   stringify,
   trimTrailingEmptyElements,
+  type ResourceWithCode,
 } from './utils';
 
 if (typeof btoa === 'undefined') {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Request, Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { authenticateRequest } from '../oauth/middleware';
 
 export const dicomRouter = Router().use(authenticateRequest);

@@ -4,7 +4,7 @@ import { Button, AppShell as MantineAppShell, ScrollArea, Space, Text } from '@m
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import { Fragment, JSX, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
+import { Fragment, type JSX, type MouseEventHandler, type ReactNode, type SyntheticEvent, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';

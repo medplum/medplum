@@ -6,13 +6,13 @@ import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { generateId } from './crypto';
 import {
-  CurrentContext,
   FhircastConnection,
-  FhircastEventName,
-  FhircastPatientOpenContext,
-  PendingSubscriptionRequest,
-  SubscriptionRequest,
   serializeFhircastSubscriptionRequest,
+  type CurrentContext,
+  type FhircastEventName,
+  type FhircastPatientOpenContext,
+  type PendingSubscriptionRequest,
+  type SubscriptionRequest,
 } from './fhircast';
 import { OperationOutcomeError } from './outcomes';
 

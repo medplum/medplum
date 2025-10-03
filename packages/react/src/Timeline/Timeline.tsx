@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Menu, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { type Reference, type Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
 import cx from 'clsx';
-import { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode } from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { Panel, PanelProps } from '../Panel/Panel';
+import { Panel, type PanelProps } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Timeline.module.css';

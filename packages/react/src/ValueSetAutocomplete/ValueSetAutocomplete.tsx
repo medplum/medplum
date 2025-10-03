@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import { ValueSetExpandParams } from '@medplum/core';
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { type ValueSetExpandParams } from '@medplum/core';
+import { type ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck } from '@tabler/icons-react';
-import { forwardRef, JSX, useCallback } from 'react';
+import { forwardRef, type JSX, useCallback } from 'react';
 import {
   AsyncAutocomplete,
-  AsyncAutocompleteOption,
-  AsyncAutocompleteProps,
+  type AsyncAutocompleteOption,
+  type AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
 
 export interface ValueSetAutocompleteProps

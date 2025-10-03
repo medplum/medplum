@@ -3,8 +3,8 @@
 import {
   getTypedPropertyValue,
   getTypedPropertyValueWithSchema,
-  InternalSchemaElement,
-  TypedValue,
+  type InternalSchemaElement,
+  type TypedValue,
 } from '@medplum/core';
 
 /**

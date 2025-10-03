@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AccessPolicy } from '@medplum/fhirtypes';
+import { type AccessPolicy } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { PopulatedAccessPolicy } from './accesspolicy';
+import { type PopulatedAccessPolicy } from './accesspolicy';
 import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {

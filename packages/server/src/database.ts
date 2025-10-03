@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import { Pool, PoolClient } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 import * as semver from 'semver';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
+import { type MedplumDatabaseConfig, type MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {

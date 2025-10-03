@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 
 export async function run(_client: PoolClient): Promise<void> {
   // This migration is now a no-op; it removed expensive indexes that were added temporarily in v74

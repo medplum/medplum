@@ -5,7 +5,7 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
-import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
+import { ResourceBadge, type ResourceBadgeProps } from './ResourceBadge';
 
 const medplum = new MockClient();
 

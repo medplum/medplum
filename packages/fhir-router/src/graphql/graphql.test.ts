@@ -11,17 +11,17 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
-  Binary,
-  Bundle,
-  Encounter,
-  ExplanationOfBenefit,
-  Extension,
-  HumanName,
-  Observation,
-  OperationOutcome,
-  Patient,
-  SearchParameter,
-  ServiceRequest,
+  type Binary,
+  type Bundle,
+  type Encounter,
+  type ExplanationOfBenefit,
+  type Extension,
+  type HumanName,
+  type Observation,
+  type OperationOutcome,
+  type Patient,
+  type SearchParameter,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRouter, makeSimpleRequest } from '../fhirrouter';

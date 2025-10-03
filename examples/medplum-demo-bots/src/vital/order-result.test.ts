@@ -1,15 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  MedplumClient,
+  type MedplumClient,
   createReference,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Observation, Patient, ProjectSetting, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type BundleEntry,
+  type Observation,
+  type Patient,
+  type ProjectSetting,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { type MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createDiagnoticReport, fetchFhirResults } from './order-result';
 
 global.fetch = vi.fn();

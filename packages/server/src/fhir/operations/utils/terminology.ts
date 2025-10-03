@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, WithId, badRequest, createReference, resolveId } from '@medplum/core';
-import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
+import { OperationOutcomeError, Operator, type WithId, badRequest, createReference, resolveId } from '@medplum/core';
+import {
+  type CodeSystem,
+  type CodeSystemProperty,
+  type ConceptMap,
+  type Reference,
+  type ValueSet,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
 import {
@@ -11,7 +17,7 @@ import {
   Disjunction,
   SelectQuery,
   SqlFunction,
-  Operator as SqlOperator,
+  type Operator as SqlOperator,
   Union,
 } from '../../sql';
 

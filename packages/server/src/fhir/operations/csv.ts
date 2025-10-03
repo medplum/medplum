@@ -11,15 +11,15 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import {
-  Address,
-  CodeableConcept,
-  ContactPoint,
-  HumanName,
-  Reference,
-  Resource,
-  ResourceType,
+  type Address,
+  type CodeableConcept,
+  type ContactPoint,
+  type HumanName,
+  type Reference,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 

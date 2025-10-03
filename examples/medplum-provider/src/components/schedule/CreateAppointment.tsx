@@ -5,20 +5,20 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import {
-  Appointment,
-  Coding,
-  Patient,
-  Practitioner,
-  Questionnaire,
-  QuestionnaireResponse,
-  Reference,
-  Schedule,
-  Slot,
+  type Appointment,
+  type Coding,
+  type Patient,
+  type Practitioner,
+  type Questionnaire,
+  type QuestionnaireResponse,
+  type Reference,
+  type Schedule,
+  type Slot,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { Event } from 'react-big-calendar';
+import { type JSX } from 'react';
+import { type Event } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 

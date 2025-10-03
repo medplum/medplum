@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, createReference, normalizeErrorString, WithId } from '@medplum/core';
-import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
-import { Redis } from 'ioredis';
-import { JWTPayload } from 'jose';
+import { badRequest, createReference, normalizeErrorString, type WithId } from '@medplum/core';
+import { type Bundle, type Resource, type Subscription } from '@medplum/fhirtypes';
+import { type Redis } from 'ioredis';
+import { type JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import os from 'node:os';
-import ws from 'ws';
+import type ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
-import { CacheEntry } from '../fhir/repo';
+import { type AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
+import { type CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
-import { MedplumBaseClaims, verifyJwt } from '../oauth/keys';
+import { type MedplumBaseClaims, verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';

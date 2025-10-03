@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
-import { ContentType, MedplumClient } from '@medplum/core';
-import { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import { ContentType, type MedplumClient } from '@medplum/core';
+import { type Patient, type Practitioner, type ServiceRequest } from '@medplum/fhirtypes';
 import {
-  BillingInformation,
-  DiagnosisCodeableConcept,
-  LabOrderInputErrors,
+  type BillingInformation,
+  type DiagnosisCodeableConcept,
+  type LabOrderInputErrors,
   NPI_SYSTEM,
-  TestCoding,
+  type TestCoding,
 } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import {
   AsyncAutocomplete,
-  AsyncAutocompleteOption,
+  type AsyncAutocompleteOption,
   DateTimeInput,
   Panel,
   ResourceInput,
@@ -23,7 +23,7 @@ import {
 import { PerformingLabInput } from '../components/PerformingLabInput';
 import { TestMetadataCardInput } from '../components/TestMetadataCardInput';
 import { CoverageInput } from '../components/CoverageInput';
-import { useState, JSX, useEffect } from 'react';
+import { useState, type JSX, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { showErrorNotification } from '../utils/notifications';
 import { showNotification } from '@mantine/notifications';

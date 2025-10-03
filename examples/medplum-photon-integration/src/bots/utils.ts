@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { type MedplumClient, normalizeErrorString } from '@medplum/core';
 import {
-  Address,
-  CodeableConcept,
-  Coding,
-  ContactPoint,
-  MedicationKnowledge,
-  MedicationRequest,
-  Patient,
+  type Address,
+  type CodeableConcept,
+  type Coding,
+  type ContactPoint,
+  type MedicationKnowledge,
+  type MedicationRequest,
+  type Patient,
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
-import { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
+import { type OrderData, type PhotonAddress, type PhotonEvent, type PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {

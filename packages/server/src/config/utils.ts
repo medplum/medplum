@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
-import { MedplumServerConfig } from './types';
+import { type MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { QueryResult } from 'pg';
-import { SqlFunctionDefinition } from '../fhir/sql';
-import { ColumnDefinition, DbClient, IndexDefinition, IndexType, IndexTypes } from './types';
+import { type QueryResult } from 'pg';
+import { type SqlFunctionDefinition } from '../fhir/sql';
+import { type ColumnDefinition, type DbClient, type IndexDefinition, type IndexType, IndexTypes } from './types';
 
 export const TableNameAbbreviations: Record<string, string | undefined> = {
   MedicinalProductAuthorization: 'MPA',

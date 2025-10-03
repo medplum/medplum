@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
-import { Filter, Operator, SearchRequest, globalSchema } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type Filter, Operator, type SearchRequest, globalSchema } from '@medplum/core';
+import { type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
-import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
+import { SearchPopupMenu, type SearchPopupMenuProps } from './SearchPopupMenu';
 
 const medplum = new MockClient();
 

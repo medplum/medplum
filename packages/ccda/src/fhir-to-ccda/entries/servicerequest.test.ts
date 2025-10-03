@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference, SNOMED } from '@medplum/core';
-import { Bundle, Composition, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import  { type Bundle, type Composition, type Patient, type ServiceRequest } from '@medplum/fhirtypes';
 import { OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION, OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE } from '../../oids';
 import { FhirToCcdaConverter } from '../convert';
 import { createPlanOfTreatmentServiceRequestEntry, mapPlanOfTreatmentStatus } from './servicerequest';

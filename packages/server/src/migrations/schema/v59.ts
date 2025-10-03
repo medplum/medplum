@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
   // Add tstzrange column to "MeasureReport" named "period_range"

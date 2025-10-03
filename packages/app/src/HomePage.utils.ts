@@ -3,13 +3,13 @@
 import {
   convertToTransactionBundle,
   DEFAULT_SEARCH_COUNT,
-  Filter,
+  type Filter,
   formatSearchQuery,
-  MedplumClient,
-  SearchRequest,
-  SortRule,
+  type MedplumClient,
+  type SearchRequest,
+  type SortRule,
 } from '@medplum/core';
-import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+import { type Bundle, type ResourceType, type UserConfiguration } from '@medplum/fhirtypes';
 
 /** Custom navigation paths when the user clicks New... */
 export const RESOURCE_TYPE_CREATION_PATHS: Partial<Record<ResourceType, string>> = {

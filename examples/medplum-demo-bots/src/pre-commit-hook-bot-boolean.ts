@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, OperationOutcomeError } from '@medplum/core';
-import { Patient, OperationOutcome, Identifier } from '@medplum/fhirtypes';
+import { type BotEvent, type MedplumClient, OperationOutcomeError } from '@medplum/core';
+import { type Patient, type OperationOutcome, type Identifier } from '@medplum/fhirtypes';
 
 /**
  * HAPI FHIR Server Sync Bot

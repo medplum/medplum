@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BackgroundJobContext, WithId } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { type BackgroundJobContext, type WithId } from '@medplum/core';
+import { type Patient } from '@medplum/fhirtypes';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, initDatabase } from '../database';

@@ -4,14 +4,14 @@ import {
   ContentType,
   getDisplayString,
   MEDPLUM_CLI_CLIENT_ID,
-  MedplumClient,
+  type MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
 import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
-import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, Profile, saveProfile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, type Profile, saveProfile } from './utils';
 
 const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';

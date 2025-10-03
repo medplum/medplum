@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   PropertyType,
-  WithId,
+  type WithId,
   evalFhirPathTyped,
   getSearchParameters,
   isResource,
@@ -10,10 +10,10 @@ import {
   resolveId,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import { type Resource, type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
+import { type Pool, type PoolClient } from 'pg';
 import { InsertQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+import { LookupTable, type LookupTableRow } from './lookuptable';
 
 export interface ReferenceTableRow extends LookupTableRow {
   resourceId: string;

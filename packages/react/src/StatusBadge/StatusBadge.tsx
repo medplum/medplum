@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, BadgeProps, DefaultMantineColor } from '@mantine/core';
-import { JSX } from 'react';
+import { Badge, type BadgeProps, type DefaultMantineColor } from '@mantine/core';
+import { type JSX } from 'react';
 
 /*
  * Request status: https://hl7.org/fhir/valueset-request-status.html

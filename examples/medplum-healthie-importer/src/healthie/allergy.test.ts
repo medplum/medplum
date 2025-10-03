@@ -6,7 +6,7 @@ import { HEALTHIE_ALLERGY_CODE_SYSTEM, HEALTHIE_ALLERGY_ID_SYSTEM, HEALTHIE_REAC
 import {
   convertHealthieAllergyToFhir,
   fetchAllergySensitivities,
-  HealthieAllergySensitivity,
+  type HealthieAllergySensitivity,
   mapHealthieStatusToClinicalStatus,
   mapHealthieCategoryToType,
   mapHealthieCategoryTypeToCategory,

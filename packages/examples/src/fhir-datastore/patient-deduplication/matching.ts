@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { List, RiskAssessment } from '@medplum/fhirtypes';
+import { type List, type RiskAssessment } from '@medplum/fhirtypes';
 // end-block imports
 
 const dedupeAssessment: RiskAssessment =

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, evalFhirPathTyped, toJsBoolean, toTypedValue } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { ChargeItem, ChargeItemDefinition, Money, Reference } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type ChargeItem, type ChargeItemDefinition, type Money, type Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';

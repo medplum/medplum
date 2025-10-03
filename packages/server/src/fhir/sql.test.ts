@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client } from 'pg';
+import { type Client } from 'pg';
 import {
-  CTE,
+  type CTE,
   Column,
   Condition,
   Negation,
-  Operator,
+  type Operator,
   SelectQuery,
   SqlBuilder,
   UnionAllBuilder,

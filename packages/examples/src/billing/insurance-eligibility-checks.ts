@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
+import { type CoverageEligibilityRequest, type CoverageEligibilityResponse } from '@medplum/fhirtypes';
 
 const eligibilityCheck: CoverageEligibilityRequest =
   // start-block eligibilityRequest

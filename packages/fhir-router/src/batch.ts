@@ -3,7 +3,6 @@
 import {
   append,
   badRequest,
-  Event,
   getReferenceString,
   getStatus,
   isOk,
@@ -11,20 +10,27 @@ import {
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
-  WithId,
+  type Event,
+  type WithId,
 } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  BundleEntryRequest,
-  OperationOutcome,
-  ParametersParameter,
-  Resource,
+  type Bundle,
+  type BundleEntry,
+  type BundleEntryRequest,
+  type OperationOutcome,
+  type ParametersParameter,
+  type Resource,
 } from '@medplum/fhirtypes';
-import { IncomingHttpHeaders } from 'node:http';
-import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
-import { FhirRepository } from './repo';
-import { HttpMethod, RouteResult } from './urlrouter';
+import { type IncomingHttpHeaders } from 'node:http';
+import {
+  type FhirRequest,
+  type FhirRouteHandler,
+  type FhirRouteMetadata,
+  type FhirRouter,
+  type RestInteraction,
+} from './fhirrouter';
+import { type FhirRepository } from './repo';
+import { type HttpMethod, type RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;

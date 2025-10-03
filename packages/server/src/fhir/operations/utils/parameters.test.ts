@@ -3,14 +3,14 @@
 import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
-  Observation,
-  OperationDefinition,
-  Parameters,
-  ParametersParameter,
-  Patient,
-  Reference,
+  type Observation,
+  type OperationDefinition,
+  type Parameters,
+  type ParametersParameter,
+  type Patient,
+  type Reference,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import { type Request } from 'express';
 import { parse } from 'qs';
 import { buildOutputParameters, parseInputParameters, parseParameters } from './parameters';
 

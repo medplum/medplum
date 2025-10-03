@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, MedplumClient, isCoding, isResource } from '@medplum/core';
-import { Identifier, Questionnaire } from '@medplum/fhirtypes';
-import { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import { ContentType, type MedplumClient, isCoding, isResource } from '@medplum/core';
+import { type Identifier, type Questionnaire } from '@medplum/fhirtypes';
+import { type HGAutocompleteBotResponse, type LabOrganization, type TestCoding } from '@medplum/health-gorilla-core';
 
 export type LabSearchParams = { type: 'lab'; query: string };
 export type TestSearchParams = { type: 'test'; query: string; labId: string };

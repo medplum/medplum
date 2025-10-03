@@ -3,18 +3,18 @@
 import { Button, Card, Flex, Group, Menu, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
-  ChargeItem,
-  Claim,
-  ClaimDiagnosis,
-  Condition,
-  Coverage,
-  Encounter,
-  EncounterDiagnosis,
-  Patient,
-  Practitioner,
+  type ChargeItem,
+  type Claim,
+  type ClaimDiagnosis,
+  type Condition,
+  type Coverage,
+  type Encounter,
+  type EncounterDiagnosis,
+  type Patient,
+  type Practitioner,
 } from '@medplum/fhirtypes';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { type JSX, useCallback, useEffect, useState } from 'react';
 import { VisitDetailsPanel } from '../../components/encounter/VisitDetailsPanel';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';

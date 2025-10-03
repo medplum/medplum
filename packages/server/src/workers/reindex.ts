@@ -7,19 +7,26 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
-  SearchRequest,
-  WithId,
+  type SearchRequest,
+  type WithId,
 } from '@medplum/core';
-import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import {
+  type AsyncJob,
+  type Bundle,
+  type Parameters,
+  type ParametersParameter,
+  type Resource,
+  type ResourceType,
+} from '@medplum/fhirtypes';
+import { type Job, Queue, type QueueBaseOptions, Worker } from 'bullmq';
 import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
-import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
+import { type PostDeployJobData, type PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
 import {
   addVerboseQueueLogging,
@@ -28,7 +35,7 @@ import {
   moveToDelayedAndThrow,
   queueRegistry,
   updateAsyncJobOutput,
-  WorkerInitializer,
+  type WorkerInitializer,
 } from './utils';
 
 /*

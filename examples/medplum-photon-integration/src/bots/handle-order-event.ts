@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { MedicationDispense, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
-import { Fill, OrderCreatedData, OrderData, PhotonEvent } from '../photon-types';
+import { type BotEvent, createReference, type MedplumClient, normalizeErrorString } from '@medplum/core';
+import { type MedicationDispense, type MedicationRequest, type Patient, type Reference } from '@medplum/fhirtypes';
+import { type Fill, type OrderCreatedData, type OrderData, type PhotonEvent } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 

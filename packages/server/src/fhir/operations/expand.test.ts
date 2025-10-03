@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import {
-  CodeSystem,
-  OperationOutcome,
-  ValueSet,
-  ValueSetExpansion,
-  ValueSetExpansionContains,
+  type CodeSystem,
+  type OperationOutcome,
+  type ValueSet,
+  type ValueSetExpansion,
+  type ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';

@@ -1,43 +1,43 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AccessPolicy,
-  Agent,
-  Attachment,
-  Binary,
-  Bot,
-  BulkDataExport,
-  Bundle,
-  BundleEntry,
-  BundleLink,
-  ClientApplication,
-  Communication,
-  Device,
-  DocumentReference,
-  Encounter,
-  ExtractResource,
-  Identifier,
-  Media,
-  OperationOutcome,
-  Patient,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  ProjectMembershipAccess,
-  ProjectSetting,
-  Reference,
-  RelatedPerson,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  StructureDefinition,
-  Subscription,
-  UserConfiguration,
-  ValueSet,
+  type AccessPolicy,
+  type Agent,
+  type Attachment,
+  type Binary,
+  type Bot,
+  type BulkDataExport,
+  type Bundle,
+  type BundleEntry,
+  type BundleLink,
+  type ClientApplication,
+  type Communication,
+  type Device,
+  type DocumentReference,
+  type Encounter,
+  type ExtractResource,
+  type Identifier,
+  type Media,
+  type OperationOutcome,
+  type Patient,
+  type Practitioner,
+  type Project,
+  type ProjectMembership,
+  type ProjectMembershipAccess,
+  type ProjectSetting,
+  type Reference,
+  type RelatedPerson,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
+  type StructureDefinition,
+  type Subscription,
+  type UserConfiguration,
+  type ValueSet,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
-import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { type CustomTableLayout, type TDocumentDefinitions, type TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
@@ -45,19 +45,19 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
 import {
-  CurrentContext,
   FhircastConnection,
-  FhircastEventContext,
-  FhircastEventName,
-  FhircastEventVersionOptional,
-  FhircastEventVersionRequired,
-  PendingSubscriptionRequest,
-  SubscriptionRequest,
   assertContextVersionOptional,
   createFhircastMessagePayload,
   isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
+  type CurrentContext,
+  type FhircastEventContext,
+  type FhircastEventName,
+  type FhircastEventVersionOptional,
+  type FhircastEventVersionRequired,
+  type PendingSubscriptionRequest,
+  type SubscriptionRequest,
 } from './fhircast';
 import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 import { MedplumKeyValueClient } from './keyvalue';
@@ -74,15 +74,11 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage, IClientStorage } from './storage';
-import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import { ClientStorage, type IClientStorage } from './storage';
+import { SubscriptionManager, type SubscriptionEmitter } from './subscriptions';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
 import {
-  CodeChallengeMethod,
-  ProfileResource,
-  QueryTypes,
-  WithId,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -94,6 +90,10 @@ import {
   resolveId,
   sleep,
   sortStringArray,
+  type CodeChallengeMethod,
+  type ProfileResource,
+  type QueryTypes,
+  type WithId,
 } from './utils';
 
 export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';

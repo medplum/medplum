@@ -1,10 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, WithId } from '@medplum/core';
-import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
+import { getReferenceString, type WithId } from '@medplum/core';
+import {
+  type AsyncJob,
+  type Binary,
+  type Bundle,
+  type Parameters,
+  type Project,
+  type Resource,
+} from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
-import { getSystemRepo, Repository } from '../../repo';
+import { getSystemRepo, type Repository } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 

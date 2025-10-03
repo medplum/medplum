@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId } from '@medplum/core';
-import { AsyncJob, ResourceType } from '@medplum/fhirtypes';
-import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '../../workers/reindex';
+import { type WithId } from '@medplum/core';
+import { type AsyncJob, type ResourceType } from '@medplum/fhirtypes';
+import { prepareReindexJobData, ReindexJob, type ReindexPostDeployMigration } from '../../workers/reindex';
 
 // Repository.VERSION was bumped to 9 for the ServiceRequest.reason-code search parameter,
 // so reindex all resources with a lower version.

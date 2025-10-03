@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
+import { type Coding, type Extension, type Period, type Quantity } from '@medplum/fhirtypes';
+import { PropertyType, getElementDefinition, isResource, type TypedValue } from '../types';
+import { type InternalSchemaElement } from '../typeschema/types';
 import { validationRegexes } from '../typeschema/validation';
 import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 

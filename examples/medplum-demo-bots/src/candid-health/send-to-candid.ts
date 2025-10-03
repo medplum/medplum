@@ -1,15 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10, MedplumClient } from '@medplum/core';
 import {
-  Address,
-  Coverage,
-  CoverageClass,
-  Encounter,
-  Organization,
-  Patient,
-  Practitioner,
-  Reference,
+  type BotEvent,
+  CPT,
+  getCodeBySystem,
+  getIdentifier,
+  getReferenceString,
+  ICD10,
+  type MedplumClient,
+} from '@medplum/core';
+import {
+  type Address,
+  type Coverage,
+  type CoverageClass,
+  type Encounter,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Reference,
 } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 

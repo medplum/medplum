@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { LogLevel, LogLevelNames, parseLogLevel, sleep } from '@medplum/core';
+import { LogLevel, parseLogLevel, sleep, type LogLevelNames } from '@medplum/core';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -13,7 +13,7 @@ import {
   parseLoggerConfigFromArgs,
   WinstonWrapperLogger,
 } from './logger';
-import type { AgentArgs } from './types';
+import { type AgentArgs } from './types';
 
 describe('Agent Logger', () => {
   describe('parseLoggerConfigFromArgs', () => {

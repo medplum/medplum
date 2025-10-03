@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import { type AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { getConfig, loadConfig } from '../../config/loader';
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedicationRequest } from '@medplum/fhirtypes';
+import { type MedicationRequest } from '@medplum/fhirtypes';
 
 // end-block imports
 

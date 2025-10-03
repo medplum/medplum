@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ElementsContextType, buildElementsContext } from './elements-context';
-import { SliceDefinitionWithTypes, isSliceDefinitionWithTypes } from './typeschema/slices';
+import { buildElementsContext, type ElementsContextType } from './elements-context';
+import { isSliceDefinitionWithTypes, type SliceDefinitionWithTypes } from './typeschema/slices';
 import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SlicingRules,
   tryGetProfile,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
+  type SliceDefinition,
+  type SlicingRules,
 } from './typeschema/types';
 import { isPopulated } from './utils';
 

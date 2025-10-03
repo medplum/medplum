@@ -5,5 +5,5 @@ export * from './datetime';
 export * from './fhir-to-ccda/convert';
 export * from './systems';
 export * from './templates';
-export * from './types';
+export type * from './types';
 export * from './xml';

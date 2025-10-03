@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Ratio } from '@medplum/fhirtypes';
+import { type Ratio } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { RatioInput } from './RatioInput';
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { generateId } from '@medplum/core';
-import { CompositionSection, Condition } from '@medplum/fhirtypes';
+import  { type CompositionSection, type Condition } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from '../../datetime';
 import {
   OID_ACT_CLASS_CODE_SYSTEM,
@@ -20,8 +20,8 @@ import {
   mapCodeableConceptToCcdaValue,
   PROBLEM_STATUS_MAPPER,
 } from '../../systems';
-import { CcdaEntry, CcdaEntryRelationship, CcdaId } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import  { type CcdaEntry, type CcdaEntryRelationship, type CcdaId } from '../../types';
+import  { type FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectivePeriod, mapIdentifiers } from '../utils';
 
 export function createConditionEntry(

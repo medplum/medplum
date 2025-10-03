@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 import { RETRY_WAIT_DURATION_MS } from './constants';
 import { LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
-import { AgentArgs } from './types';
+import { type AgentArgs } from './types';
 
 export async function agentMain(argv: string[]): Promise<App> {
   let args: AgentArgs;

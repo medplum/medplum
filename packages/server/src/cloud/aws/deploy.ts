@@ -4,7 +4,7 @@ import {
   CreateFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
-  GetFunctionConfigurationCommandOutput,
+  type GetFunctionConfigurationCommandOutput,
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
@@ -14,7 +14,7 @@ import {
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
 import { sleep } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { type Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config/loader';

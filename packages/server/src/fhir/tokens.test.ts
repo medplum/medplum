@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED, WithId } from '@medplum/core';
+import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED, type WithId } from '@medplum/core';
 import {
-  Bundle,
-  Condition,
-  Identifier,
-  MedicationRequest,
-  Patient,
-  Reference,
-  SearchParameter,
-  ServiceRequest,
-  SpecimenDefinition,
+  type Bundle,
+  type Condition,
+  type Identifier,
+  type MedicationRequest,
+  type Patient,
+  type Reference,
+  type SearchParameter,
+  type ServiceRequest,
+  type SpecimenDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, type TokenColumnSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
-import { buildTokensForSearchParameter, Token } from './tokens';
+import { buildTokensForSearchParameter, type Token } from './tokens';
 
 const systemRepo = getSystemRepo();
 

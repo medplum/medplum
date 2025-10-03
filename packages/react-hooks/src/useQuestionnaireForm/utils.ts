@@ -3,7 +3,7 @@
 import {
   HTTP_HL7_ORG,
   PropertyType,
-  TypedValue,
+  type TypedValue,
   capitalize,
   deepClone,
   evalFhirPathTyped,
@@ -17,17 +17,17 @@ import {
   typedValueToString,
 } from '@medplum/core';
 import {
-  Encounter,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireItemAnswerOption,
-  QuestionnaireItemEnableWhen,
-  QuestionnaireItemInitial,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
-  Reference,
-  ResourceType,
+  type Encounter,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireItemAnswerOption,
+  type QuestionnaireItemEnableWhen,
+  type QuestionnaireItemInitial,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItem,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 
 export const QuestionnaireItemType = {

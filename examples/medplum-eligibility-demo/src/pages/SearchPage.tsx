@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useDisclosure } from '@mantine/hooks';
 import {
-  Filter,
+  type Filter,
   formatSearchQuery,
   getReferenceString,
   Operator,
   parseSearchRequest,
-  SearchRequest,
+  type SearchRequest,
 } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateCoverageModal } from '../components/CreateCoverageModal';
 

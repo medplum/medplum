@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, isString, isUUID, Operator } from '@medplum/core';
-import { Project, ResourceType, User } from '@medplum/fhirtypes';
+import { type Project, type ResourceType, type User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { body } from 'express-validator';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify, type JWTVerifyOptions } from 'jose';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
-import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { getUserByEmail, type GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Token, Tokenizer } from '../fhirlexer/tokenize';
+import { Tokenizer, type Token } from '../fhirlexer/tokenize';
 
 export const FHIRPATH_KEYWORDS = ['true', 'false'];
 export const FHIRPATH_OPERATORS = ['!=', '!~', '<=', '>=', '{}', '->'];

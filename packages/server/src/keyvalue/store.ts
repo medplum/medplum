@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, badRequest, notFound } from '@medplum/core';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
+import { type AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 import { getRedis } from '../redis';
 
 export const MAX_KEY_LENGTH = 255;

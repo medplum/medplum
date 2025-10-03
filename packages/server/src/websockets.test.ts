@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import express, { Express } from 'express';
-import { Server } from 'http';
-import { AddressInfo } from 'net';
+import express, { type Express } from 'express';
+import { type Server } from 'http';
+import { type AddressInfo } from 'net';
 import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
+import { type MedplumServerConfig } from './config/types';
 import { withTestContext } from './test.setup';
 
 describe('WebSockets', () => {

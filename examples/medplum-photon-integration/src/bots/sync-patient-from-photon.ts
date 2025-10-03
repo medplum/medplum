@@ -1,31 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
+  type BotEvent,
   createReference,
   getDisplayString,
-  MedplumClient,
+  type MedplumClient,
   normalizeErrorString,
   RXNORM,
 } from '@medplum/core';
 import {
-  Address,
-  AllergyIntolerance,
-  Bundle,
-  BundleEntry,
-  ContactPoint,
-  MedicationRequest,
-  Patient,
-  Practitioner,
-  Reference,
+  type Address,
+  type AllergyIntolerance,
+  type Bundle,
+  type BundleEntry,
+  type ContactPoint,
+  type MedicationRequest,
+  type Patient,
+  type Practitioner,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import {
-  PhotonAddress,
-  PhotonPatient,
-  PhotonPatientAllergy,
-  PhotonPrescription,
-  PhotonProvider,
+  type PhotonAddress,
+  type PhotonPatient,
+  type PhotonPatientAllergy,
+  type PhotonPrescription,
+  type PhotonProvider,
 } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import { getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';

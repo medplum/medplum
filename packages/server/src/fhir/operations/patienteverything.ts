@@ -8,23 +8,23 @@ import {
   isReference,
   isResource,
   Operator,
-  SearchRequest,
+  type SearchRequest,
   sortStringArray,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  Bundle,
-  BundleEntry,
-  CompartmentDefinitionResource,
-  Patient,
-  Reference,
-  Resource,
-  ResourceType,
+  type Bundle,
+  type BundleEntry,
+  type CompartmentDefinitionResource,
+  type Patient,
+  type Reference,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
-import { Repository } from '../repo';
+import { type Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';

@@ -11,10 +11,16 @@ import {
   preconditionFailed,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type BundleEntry,
+  type OperationOutcome,
+  type Patient,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRouter, makeSimpleRequest } from './fhirrouter';
-import { FhirRepository, MemoryRepository } from './repo';
+import { MemoryRepository, type FhirRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();

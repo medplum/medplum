@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal, ActionIcon } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { Encounter, HumanName, Practitioner, Reference } from '@medplum/fhirtypes';
+import { type Encounter, type HumanName, type Practitioner, type Reference } from '@medplum/fhirtypes';
 import { IconChevronDown, IconLock } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { useDisclosure } from '@mantine/hooks';
 import { SignLockDialog } from './SignLockDialog';
 

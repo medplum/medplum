@@ -3,7 +3,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { AttachmentArrayInput, AttachmentArrayInputProps } from './AttachmentArrayInput';
+import { AttachmentArrayInput, type AttachmentArrayInputProps } from './AttachmentArrayInput';
 
 const medplum = new MockClient();
 

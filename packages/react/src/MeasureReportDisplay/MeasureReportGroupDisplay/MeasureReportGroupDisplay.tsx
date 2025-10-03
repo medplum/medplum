@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Group, Paper, RingProgress, Text, Title } from '@mantine/core';
 import { formatCodeableConcept } from '@medplum/core';
-import { Measure, MeasureReportGroup } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { type Measure, type MeasureReportGroup } from '@medplum/fhirtypes';
+import { type JSX } from 'react';
 import { QuantityDisplay } from '../../QuantityDisplay/QuantityDisplay';
 
 interface MeasureReportGroupDisplayProps {

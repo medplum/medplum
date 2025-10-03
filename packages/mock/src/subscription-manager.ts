@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import  {
+  type IReconnectingWebSocket,
+  type MedplumClient,
+  type SubscriptionEventMap,
+  type WebSocketEventMap} from '@medplum/core';
 import {
   deepEquals,
-  IReconnectingWebSocket,
-  MedplumClient,
   SubscriptionEmitter,
-  SubscriptionEventMap,
   SubscriptionManager,
-  TypedEventTarget,
-  WebSocketEventMap,
+  TypedEventTarget
 } from '@medplum/core';
-import { Subscription } from '@medplum/fhirtypes';
+import  { type Subscription } from '@medplum/fhirtypes';
 
 export class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
   readyState: WebSocket['OPEN'] | WebSocket['CLOSED'] = WebSocket.OPEN;

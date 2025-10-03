@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ConceptMap,
-  StructureMap,
-  StructureMapGroup,
-  StructureMapGroupInput,
-  StructureMapGroupRule,
-  StructureMapGroupRuleDependent,
-  StructureMapGroupRuleSource,
-  StructureMapGroupRuleTarget,
-  StructureMapGroupRuleTargetParameter,
-  StructureMapStructure,
+  type ConceptMap,
+  type StructureMap,
+  type StructureMapGroup,
+  type StructureMapGroupInput,
+  type StructureMapGroupRule,
+  type StructureMapGroupRuleDependent,
+  type StructureMapGroupRuleSource,
+  type StructureMapGroupRuleTarget,
+  type StructureMapGroupRuleTargetParameter,
+  type StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Atom, Parser } from '../fhirlexer/parse';
+import { type Atom, type Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';

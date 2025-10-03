@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import { Bundle, CareTeam, CareTeamParticipant, Composition, Patient } from '@medplum/fhirtypes';
+import  { type Bundle, type CareTeam, type CareTeamParticipant, type Composition, type Patient } from '@medplum/fhirtypes';
 import { OID_CARE_TEAM_ORGANIZER_ENTRY } from '../../oids';
 import { FhirToCcdaConverter } from '../convert';
 import { createCareTeamEntry } from './careteam';

@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Immunization, ImmunizationPerformer, Organization, Practitioner } from '@medplum/fhirtypes';
+import  { type Immunization, type ImmunizationPerformer, type Organization, type Practitioner } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate } from '../../datetime';
 import { OID_IMMUNIZATION_ACTIVITY, OID_IMMUNIZATION_MEDICATION_INFORMATION } from '../../oids';
 import { IMMUNIZATION_STATUS_MAPPER, mapCodeableConceptToCcdaCode } from '../../systems';
-import { CcdaCode, CcdaEntry, CcdaId, CcdaPerformer, CcdaSubstanceAdministration } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import  { type CcdaCode, type CcdaEntry, type CcdaId, type CcdaPerformer, type CcdaSubstanceAdministration } from '../../types';
+import  { type FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
   mapFhirAddressArrayToCcdaAddressArray,

@@ -1,22 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ILogger,
-  ILoggerConfig,
   isObject,
-  LoggerOptions,
   LogLevel,
   LogLevelNames,
-  LogMessage,
   normalizeErrorString,
   parseLogLevel,
   splitN,
+  type ILogger,
+  type ILoggerConfig,
+  type LoggerOptions,
+  type LogMessage,
 } from '@medplum/core';
 import { normalize } from 'path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import { DEFAULT_LOG_LIMIT, MAX_LOG_LIMIT } from './constants';
-import { AgentArgs } from './types';
+import { type AgentArgs } from './types';
 
 export const LoggerType = {
   MAIN: 'main',

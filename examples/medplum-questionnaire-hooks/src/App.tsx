@@ -1,9 +1,11 @@
-import { QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { type QuestionnaireResponse, type QuestionnaireResponseItem } from '@medplum/fhirtypes';
 import { useQuestionnaireForm } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { type JSX, useState } from 'react';
 import { PagedQuestionnaire } from './questionnaire';
 
-export function App() {
+export function App(): JSX.Element {
   const [result, setResult] = useState<QuestionnaireResponse>();
 
   const formState = useQuestionnaireForm({

@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, createReference, isResource } from '@medplum/core';
+import { type BotEvent, type MedplumClient, createReference, isResource } from '@medplum/core';
 import {
-  Binary,
-  Bundle,
-  BundleEntry,
-  DiagnosticReport,
-  Media,
-  Observation,
-  Patient,
-  ProjectSetting,
-  Resource,
+  type Binary,
+  type Bundle,
+  type BundleEntry,
+  type DiagnosticReport,
+  type Media,
+  type Observation,
+  type Patient,
+  type ProjectSetting,
+  type Resource,
 } from '@medplum/fhirtypes';
 
 type OrderEvent = {
