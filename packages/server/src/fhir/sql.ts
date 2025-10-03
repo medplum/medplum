@@ -465,7 +465,7 @@ export class SqlBuilder {
   }
 
   appendIdentifier(str: string): this {
-    this.sql.push('"', str, '"');
+    this.sql.push(str);
     return this;
   }
 
