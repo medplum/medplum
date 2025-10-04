@@ -36,7 +36,7 @@ import {
   type ServiceRequest,
   type StructureDefinition,
   type User,
-  type UserConfiguration
+  type UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
