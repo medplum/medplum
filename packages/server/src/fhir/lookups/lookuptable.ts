@@ -11,6 +11,7 @@ import {
   Column,
   Condition,
   Conjunction,
+  Constant,
   DeleteQuery,
   Disjunction,
   escapeLikeString,
@@ -215,14 +216,21 @@ export abstract class LookupTable {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const joinOnExpression = new Condition(
-      new Column(selectQuery.effectiveTableName, 'id'),
+    const whereExpression = new Condition(
+      new Column(selectQuery.actualTableName, 'id'),
       '=',
-      new Column(joinName, 'resourceId')
+      new Column(lookupTableName, 'resourceId')
     );
+    const joinOnExpression = new Constant('true');
+
     selectQuery.join(
-      'LEFT JOIN',
-      new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
+      'LEFT JOIN LATERAL',
+      new SelectQuery(lookupTableName)
+        .column('resourceId')
+        .column(columnName)
+        .whereExpr(whereExpression)
+        .orderBy('resourceId', false)
+        .limit(1),
       joinName,
       joinOnExpression
     );

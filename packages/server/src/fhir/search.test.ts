@@ -675,13 +675,58 @@ describe('project-scoped Repository', () => {
 
   test('Search sort by Patient.address', async () =>
     withTestContext(async () => {
+      const identifier = '13438374-1515-4da7-ab0d-6992a39bfed1';
+
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system: 'https://www.example.com', value: identifier }],
+        address: [{ line: ['1234 Fake Street'], city: 'Fake City', state: 'OK', postalCode: '99999', country: 'US' }],
+      });
+
       const bundle = await repo.search({
         resourceType: 'Patient',
         sortRules: [{ code: 'address' }],
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: identifier,
+          },
+        ],
       });
 
-      expect(bundle).toBeDefined();
+      const identifiers = bundle.entry?.map((e) => (e.resource as Patient).identifier?.[0]?.value);
+      expect(identifiers).toStrictEqual([identifier]);
     }));
+
+  
+    test('Search sort by Patient.postalCode', async () =>
+      withTestContext(async () => {
+        const identifier = '137f8a2f-4dff-4bb0-b971-f9f34d50a97c';
+  
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Hopper' }],
+          identifier: [{ system: 'https://www.example.com', value: identifier }],
+          address: [{ line: ['1234 Fake Street'], city: 'Fake City', state: 'OK', postalCode: '123456789', country: 'US' }],
+        });
+  
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'address-postalcode' }],
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: identifier,
+            },
+          ],
+        });
+  
+        const identifiers = bundle.entry?.map((e) => (e.resource as Patient).identifier?.[0]?.value);
+        expect(identifiers).toStrictEqual([identifier]);
+      }));
 
   test('Search sort by Patient.telecom', async () =>
     withTestContext(async () => {
