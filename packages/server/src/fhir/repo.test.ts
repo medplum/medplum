@@ -27,7 +27,6 @@ import {
   OperationOutcome,
   Organization,
   Patient,
-  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -1416,16 +1415,22 @@ describe('FHIR Repo', () => {
         link: [],
       };
 
-      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
-
       // Postgres uses a 16-bit counter for placeholder formats internally,
-      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
-      for (let i = 0; i < 64 * 1024 + 1; i++) {
-        link.other.reference = 'Patient/' + randomUUID();
-        patient.link?.push(link);
+      // so (2^16 + 1) / 3 = (64k + 1) / 3 will definitely overflow it if not sent in smaller batches
+      // the division by three since there are 3 column placeholders per inserted row
+      for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 3); i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
-      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await repo.withTransaction(async (client) => {
+        const querySpy = jest.spyOn(client, 'query');
+        await repo.createResource<Patient>(patient);
+        const calls = querySpy.mock.calls;
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
+        querySpy.mockRestore();
+      });
     }));
 
   test('__version column', async () => {
