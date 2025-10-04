@@ -5,6 +5,7 @@ import {
   CTE,
   Column,
   Condition,
+  Constant,
   Negation,
   Operator,
   SelectQuery,
@@ -156,6 +157,65 @@ describe('SqlBuilder', () => {
         .buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT DISTINCT ON ("MyTable"."id", "MyTable"."name") "MyTable"."id", "MyTable"."name" FROM "MyTable"'
+      );
+    });
+
+    test('Select with subquery', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Condition(new Column(joinName, 'id'), '=', new Column('MyJoinTable', 'id'));
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('INNER JOIN', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" INNER JOIN (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON "T1"."id" = "MyJoinTable"."id"'
+      );
+    });
+
+    test('Select with simple lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('LEFT JOIN LATERAL', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" LEFT JOIN LATERAL (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON true'
+      );
+    });
+
+    test('Select with realistic lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('Patient')
+        .column('id')
+        .join(
+          'LEFT JOIN LATERAL',
+          new SelectQuery('HumanName')
+            .column('resourceId')
+            .column('name')
+            .where(new Column('HumanName', 'resourceId'), '=', new Column('Patient', 'id'))
+            .orderBy(new Column('HumanName', 'resourceId'), false)
+            .limit(1),
+          joinName,
+          joinOnExpression
+        )
+        .orderBy(new Column('T1', 'name'), false)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "Patient"."id" FROM "Patient" LEFT JOIN LATERAL (SELECT "HumanName"."resourceId", "HumanName"."name" FROM "HumanName" WHERE "HumanName"."resourceId" = "Patient"."id" ORDER BY "HumanName"."resourceId" LIMIT 1) AS "T1" ON true ORDER BY "T1"."name"'
       );
     });
 
