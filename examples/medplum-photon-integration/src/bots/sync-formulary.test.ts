@@ -8,15 +8,15 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
-  Bot,
-  Bundle,
-  BundleEntry,
-  List,
-  ListEntry,
-  MedicationKnowledge,
-  Patient,
-  Reference,
-  SearchParameter,
+  type Bot,
+  type Bundle,
+  type BundleEntry,
+  type List,
+  type ListEntry,
+  type MedicationKnowledge,
+  type Patient,
+  type Reference,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';

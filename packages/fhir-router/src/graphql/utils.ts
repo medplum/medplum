@@ -3,29 +3,29 @@
 import {
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  Filter,
   getReferenceString,
   getSearchParameters,
   Operator,
   parseSearchRequest,
-  SearchRequest,
+  type Filter,
+  type SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type OperationOutcome, type Reference, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
 import {
   GraphQLBoolean,
-  GraphQLError,
-  GraphQLFieldConfigArgumentMap,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
-  GraphQLResolveInfo,
-  GraphQLScalarType,
   GraphQLString,
   Kind,
+  type GraphQLError,
+  type GraphQLFieldConfigArgumentMap,
+  type GraphQLResolveInfo,
+  type GraphQLScalarType,
 } from 'graphql';
-import { FhirRequestConfig } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import { type FhirRequestConfig } from '../fhirrouter';
+import { type FhirRepository } from '../repo';
 
 export interface GraphQLContext {
   repo: FhirRepository;

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type AccessPolicy, type AccessPolicyResource, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import { matchesSearchRequest } from './search/match';
 import { parseSearchRequest } from './search/search';
 

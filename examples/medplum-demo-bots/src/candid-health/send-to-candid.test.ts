@@ -7,11 +7,11 @@ import {
   ICD10,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
+  type MedplumClient,
   SNOMED,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Coverage, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { type Bundle, type Coverage, type Encounter, type Patient, type SearchParameter } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import fetch from 'node-fetch';
 import { handler } from './send-to-candid';

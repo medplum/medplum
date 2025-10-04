@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Meta } from '@storybook/react';
-import { JSX } from 'react';
+import { type Meta } from '@storybook/react';
+import { type JSX } from 'react';
 import { Document } from '../Document/Document';
 import { CodeInput } from './CodeInput';
 

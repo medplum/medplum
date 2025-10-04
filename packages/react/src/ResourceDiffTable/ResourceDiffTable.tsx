@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
 import {
-  InternalSchemaElement,
-  TypedValue,
+  type InternalSchemaElement,
+  type TypedValue,
   arrayify,
   capitalize,
   evalFhirPathTyped,
   getSearchParameterDetails,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { type Resource, type SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useEffect, useMemo, useState } from 'react';
-import { Operation, createPatch } from 'rfc6902';
+import { type JSX, useEffect, useMemo, useState } from 'react';
+import { type Operation, createPatch } from 'rfc6902';
 import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
 import classes from './ResourceDiffTable.module.css';
 

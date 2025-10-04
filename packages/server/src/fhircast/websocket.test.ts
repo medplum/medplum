@@ -4,22 +4,22 @@ import {
   badRequest,
   ContentType,
   createReference,
-  CurrentContext,
-  FhircastMessagePayload,
+  type CurrentContext,
+  type FhircastMessagePayload,
   generateId,
   getReferenceString,
   serializeFhircastSubscriptionRequest,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
-import express, { Express } from 'express';
+import { type DiagnosticReport, type Observation, type OperationOutcome, type Patient } from '@medplum/fhirtypes';
+import express, { type Express } from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { Server } from 'node:http';
+import { type Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { initTestAuth, withTestContext } from '../test.setup';
 

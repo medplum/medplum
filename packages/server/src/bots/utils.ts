@@ -9,34 +9,34 @@ import {
   isOperationOutcome,
   normalizeErrorString,
   OperationOutcomeError,
-  ProfileResource,
+  type ProfileResource,
   resolveId,
   serverError,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
+import { type FhirRequest } from '@medplum/fhir-router';
 import {
-  AuditEvent,
-  Bot,
-  Login,
-  OperationOutcome,
-  Parameters,
-  Project,
-  ProjectMembership,
-  ProjectSetting,
-  Reference,
+  type AuditEvent,
+  type Bot,
+  type Login,
+  type OperationOutcome,
+  type Parameters,
+  type Project,
+  type ProjectMembership,
+  type ProjectSetting,
+  type Reference,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import { type Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, buildTracingExtension } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { type AuthenticatedRequestContext, buildTracingExtension } from '../context';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { AuditEventOutcome, logAuditEvent } from '../util/auditevent';
 import { createAuditEventEntities, findProjectMembership } from '../workers/utils';
-import { BotExecutionRequest, BotExecutionResult } from './types';
+import { type BotExecutionRequest, type BotExecutionResult } from './types';
 
 const defaultOutputLength = 10 * 1024; // 10 KiB
 

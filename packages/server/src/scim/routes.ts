@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Reference, User } from '@medplum/fhirtypes';
-import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
+import { type Reference, type User } from '@medplum/fhirtypes';
+import { type NextFunction, type Request, type RequestHandler, type Response, Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';

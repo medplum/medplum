@@ -3,7 +3,7 @@
 import { Alert } from '@mantine/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
   readonly children: ReactNode;

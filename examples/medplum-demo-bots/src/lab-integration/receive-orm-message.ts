@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
-  Hl7Field,
-  Hl7Message,
-  Hl7Segment,
-  MedplumClient,
+  type BotEvent,
+  type Hl7Field,
+  type Hl7Message,
+  type Hl7Segment,
+  type MedplumClient,
   createReference,
   getIdentifier,
   parseHl7DateTime,
   setIdentifier,
 } from '@medplum/core';
 import {
-  Annotation,
-  CodeableConcept,
-  ContactPoint,
-  Encounter,
-  HumanName,
-  Patient,
-  Practitioner,
-  Resource,
-  ServiceRequest,
+  type Annotation,
+  type CodeableConcept,
+  type ContactPoint,
+  type Encounter,
+  type HumanName,
+  type Patient,
+  type Practitioner,
+  type Resource,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 
 export const FACILITY_URL = 'https://lab.acme.org';

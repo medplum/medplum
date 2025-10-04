@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
-  ActivityDefinition,
-  Bundle,
-  DiagnosticReport,
-  Location,
-  Observation,
-  Patient,
-  Practitioner,
-  QuestionnaireResponse,
-  SearchParameter,
-  ServiceRequest,
-  Task,
+  type ActivityDefinition,
+  type Bundle,
+  type DiagnosticReport,
+  type Location,
+  type Observation,
+  type Patient,
+  type Practitioner,
+  type QuestionnaireResponse,
+  type SearchParameter,
+  type ServiceRequest,
+  type Task,
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchRequest } from './search';
+import { Operator, parseSearchRequest, type SearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type

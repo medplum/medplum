@@ -7,10 +7,10 @@ import {
   formatHumanName,
   getDateProperty,
   getReferenceString,
-  ProfileResource,
+  type ProfileResource,
 } from '@medplum/core';
-import { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
-import { Request, RequestHandler, Response } from 'express';
+import { type Bot, type ClientApplication, type Reference, type User } from '@medplum/fhirtypes';
+import { type Request, type RequestHandler, type Response } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';

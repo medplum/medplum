@@ -1,16 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, MedplumClient, normalizeErrorString, resolveId } from '@medplum/core';
 import {
-  AccessPolicy,
-  Organization,
-  Parameters,
-  ParametersParameter,
-  Patient,
-  Practitioner,
-  ProjectMembership,
-  ProjectMembershipAccessParameter,
-  Reference,
+  createReference,
+  getReferenceString,
+  type MedplumClient,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
+import {
+  type AccessPolicy,
+  type Organization,
+  type Parameters,
+  type ParametersParameter,
+  type Patient,
+  type Practitioner,
+  type ProjectMembership,
+  type ProjectMembershipAccessParameter,
+  type Reference,
 } from '@medplum/fhirtypes';
 
 /**

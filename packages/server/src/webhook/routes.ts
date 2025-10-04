@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
-import { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { type Binary, type Bot, type ProjectMembership, type Reference } from '@medplum/fhirtypes';
+import { type Request, type Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { executeBot } from '../bots/execute';
 import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';

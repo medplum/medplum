@@ -1,16 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
+  type BotEvent,
   getIdentifier,
   getReferenceString,
   Hl7Context,
   Hl7Field,
   Hl7Message,
   Hl7Segment,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
-import { HumanName, Patient, QuestionnaireResponse, Reference, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import {
+  type HumanName,
+  type Patient,
+  type QuestionnaireResponse,
+  type Reference,
+  type ServiceRequest,
+  type Specimen,
+} from '@medplum/fhirtypes';
 
 import Client from 'ssh2-sftp-client';
 

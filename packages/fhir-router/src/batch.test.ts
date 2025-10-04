@@ -8,28 +8,28 @@ import {
   indexStructureDefinitionBundle,
   isOk,
   LOINC,
-  OperationOutcomeError,
+  type OperationOutcomeError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
-  AllergyIntolerance,
-  Binary,
-  Bundle,
-  BundleEntry,
-  BundleEntryRequest,
-  DiagnosticReport,
-  Observation,
-  OperationOutcome,
-  Patient,
-  Practitioner,
-  SearchParameter,
-  ServiceRequest,
-  Subscription,
+  type AllergyIntolerance,
+  type Binary,
+  type Bundle,
+  type BundleEntry,
+  type BundleEntryRequest,
+  type DiagnosticReport,
+  type Observation,
+  type OperationOutcome,
+  type Patient,
+  type Practitioner,
+  type SearchParameter,
+  type ServiceRequest,
+  type Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { processBatch } from './batch';
-import { FhirRequest, FhirRouter } from './fhirrouter';
-import { FhirRepository, MemoryRepository } from './repo';
+import { FhirRouter, type FhirRequest } from './fhirrouter';
+import { MemoryRepository, type FhirRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();

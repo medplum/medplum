@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentUpgradeResponse, WithId } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import { type AgentUpgradeResponse, type WithId } from '@medplum/core';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type Agent, type OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 

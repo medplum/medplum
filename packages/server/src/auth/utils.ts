@@ -5,19 +5,27 @@ import {
   createReference,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
+  type ProfileResource,
   resolveId,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  type ContactPoint,
+  type Login,
+  type OperationOutcome,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { Handler, NextFunction, Request, Response } from 'express';
+import { type Handler, type NextFunction, type Request, type Response } from 'express';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';

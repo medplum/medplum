@@ -7,12 +7,12 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Media, Resource } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type Binary, type Media, type Resource } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../../fhir/repo';
+import { type Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { S3Storage } from './storage';

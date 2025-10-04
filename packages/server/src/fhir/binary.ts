@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, allOk, badRequest, created, isResource } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
-import { Readable } from 'stream';
+import { type Binary } from '@medplum/fhirtypes';
+import { type Request, type Response, Router } from 'express';
+import { type Readable } from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getBinaryStorage, getPresignedUrl } from '../storage/loader';
-import { BinarySource } from '../storage/types';
+import { type BinarySource } from '../storage/types';
 import { sendOutcome } from './outcomes';
-import { Repository } from './repo';
+import { type Repository } from './repo';
 import { sendFhirResponse } from './response';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';

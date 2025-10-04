@@ -16,33 +16,33 @@ import {
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
-  WithId,
+  type WithId,
 } from '@medplum/core';
 import {
-  Binary,
-  BundleEntry,
-  ElementDefinition,
-  Login,
-  Observation,
-  OperationOutcome,
-  Organization,
-  Patient,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  Questionnaire,
-  ResearchDefinition,
-  ResourceType,
-  ServiceRequest,
-  StructureDefinition,
-  User,
-  UserConfiguration,
+  type Binary,
+  type BundleEntry,
+  type ElementDefinition,
+  type Login,
+  type Observation,
+  type OperationOutcome,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Project,
+  type ProjectMembership,
+  type Questionnaire,
+  type ResearchDefinition,
+  type ResourceType,
+  type ServiceRequest,
+  type StructureDefinition,
+  type User,
+  type UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew, RegisterRequest } from '../auth/register';
+import { registerNew, type RegisterRequest } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';

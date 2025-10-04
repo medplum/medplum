@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
+  type BotEvent,
   formatHl7DateTime,
   getReferenceString,
   getIdentifier,
@@ -9,18 +9,18 @@ import {
   Hl7Field,
   Hl7Message,
   Hl7Segment,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
 import {
-  DiagnosticReport,
-  Observation,
-  Patient,
-  Practitioner,
-  Reference,
-  ServiceRequest,
-  Specimen,
-  Attachment,
-  HumanName,
+  type DiagnosticReport,
+  type Observation,
+  type Patient,
+  type Practitioner,
+  type Reference,
+  type ServiceRequest,
+  type Specimen,
+  type Attachment,
+  type HumanName,
 } from '@medplum/fhirtypes';
 
 // Constants

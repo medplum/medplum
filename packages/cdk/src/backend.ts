@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumInfraConfig } from '@medplum/core';
+import { type MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,

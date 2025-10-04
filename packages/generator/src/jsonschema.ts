@@ -4,13 +4,13 @@ import {
   capitalize,
   getAllDataTypes,
   indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
+  type InternalSchemaElement,
+  type InternalTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
+import { type Bundle, type ElementDefinitionType, type StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
-import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
+import { type JSONSchema6, type JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
 import { getValueSetValues } from './valuesets';
 

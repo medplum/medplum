@@ -3,16 +3,16 @@
 import { Paper } from '@mantine/core';
 import {
   DEFAULT_SEARCH_COUNT,
-  Filter,
+  type Filter,
   formatSearchQuery,
   isReference,
   parseSearchRequest,
-  SearchRequest,
-  SortRule,
+  type SearchRequest,
+  type SortRule,
 } from '@medplum/core';
-import { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
+import { type Patient, type Reference, type Resource, type UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';

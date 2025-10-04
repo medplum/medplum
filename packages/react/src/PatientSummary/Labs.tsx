@@ -3,8 +3,14 @@
 import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
-import { CodeableConcept, DiagnosticReport, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
-import { JSX, useState } from 'react';
+import {
+  type CodeableConcept,
+  type DiagnosticReport,
+  type Patient,
+  type Resource,
+  type ServiceRequest,
+} from '@medplum/fhirtypes';
+import { type JSX, useState } from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';

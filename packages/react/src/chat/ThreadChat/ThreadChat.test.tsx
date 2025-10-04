@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ProfileResource, TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
-import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import { type ProfileResource, type TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
+import { type Bundle, type Communication, type Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
+// eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import { ThreadChat, ThreadChatProps } from './ThreadChat';
+import { ThreadChat, type ThreadChatProps } from './ThreadChat';
 
 type SubscriptionControllerEvents = {
   subscription: { type: 'subscription'; criteria: string; bundle: Bundle };

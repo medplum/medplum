@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { TypedValue } from '@medplum/core';
+import { type TypedValue } from '@medplum/core';
 import {
-  Encounter,
-  Patient,
-  QuestionnaireItem,
-  QuestionnaireItemEnableWhen,
-  Reference,
-  ResourceType,
+  type Encounter,
+  type Patient,
+  type QuestionnaireItem,
+  type QuestionnaireItemEnableWhen,
+  type Reference,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import {
   buildInitialResponse,

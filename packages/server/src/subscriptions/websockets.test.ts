@@ -1,24 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, OperationOutcomeError, WithId, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, OperationOutcomeError, type WithId, getReferenceString, sleep } from '@medplum/core';
 import {
-  Binary,
-  Bundle,
-  BundleEntry,
-  DocumentReference,
-  Parameters,
-  Patient,
-  Project,
-  Subscription,
-  SubscriptionStatus,
+  type Binary,
+  type Bundle,
+  type BundleEntry,
+  type DocumentReference,
+  type Parameters,
+  type Patient,
+  type Project,
+  type Subscription,
+  type SubscriptionStatus,
 } from '@medplum/fhirtypes';
-import express, { Express } from 'express';
+import express, { type Express } from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
+import { type Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
 import * as rewriteModule from '../fhir/rewrite';
 import { RewriteMode } from '../fhir/rewrite';

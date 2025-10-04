@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, parseSearchRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type OperationDefinition, type Project, type Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';

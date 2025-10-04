@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, WithId, allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { OperationOutcomeError, type WithId, allOk, badRequest } from '@medplum/core';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  CodeSystem,
-  CodeableConcept,
-  Coding,
-  ValueSet,
-  ValueSetComposeInclude,
-  ValueSetComposeIncludeFilter,
+  type CodeSystem,
+  type CodeableConcept,
+  type Coding,
+  type ValueSet,
+  type ValueSetComposeInclude,
+  type ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';

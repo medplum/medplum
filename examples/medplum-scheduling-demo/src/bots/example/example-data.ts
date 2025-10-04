@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, getReferenceString, MedplumClient } from '@medplum/core';
+import { type BotEvent, createReference, getReferenceString, type MedplumClient } from '@medplum/core';
 import {
-  Appointment,
-  Bundle,
-  BundleEntry,
-  CodeableConcept,
-  Encounter,
-  Patient,
-  Practitioner,
-  Reference,
-  Schedule,
-  Slot,
+  type Appointment,
+  type Bundle,
+  type BundleEntry,
+  type CodeableConcept,
+  type Encounter,
+  type Patient,
+  type Practitioner,
+  type Reference,
+  type Schedule,
+  type Slot,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 

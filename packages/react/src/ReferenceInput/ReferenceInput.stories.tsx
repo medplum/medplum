@@ -3,8 +3,8 @@
 import { loadDataType } from '@medplum/core';
 import { FishPatientResources } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
-import { JSX, useEffect, useState } from 'react';
+import { type Meta } from '@storybook/react';
+import { type JSX, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { ReferenceInput } from './ReferenceInput';
 

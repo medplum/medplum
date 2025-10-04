@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
 import {
-  Address,
-  Communication,
-  DiagnosticReport,
-  Encounter,
-  Group,
-  Media,
-  Observation,
-  Patient,
-  RelatedPerson,
-  ServiceRequest,
-  Specimen,
+  type Address,
+  type Communication,
+  type DiagnosticReport,
+  type Encounter,
+  type Group,
+  type Media,
+  type Observation,
+  type Patient,
+  type RelatedPerson,
+  type ServiceRequest,
+  type Specimen,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith } from './alice';
 

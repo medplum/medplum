@@ -3,7 +3,7 @@
 import { ActionIcon } from '@mantine/core';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
-import { JSX, ReactNode, useEffect, useState } from 'react';
+import { type JSX, type ReactNode, useEffect, useState } from 'react';
 import classes from './ChatModal.module.css';
 
 export interface ChatModalProps {

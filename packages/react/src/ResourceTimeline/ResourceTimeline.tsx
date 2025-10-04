@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Center, Group, Loader, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { MedplumClient, ProfileResource, createReference, normalizeErrorString } from '@medplum/core';
+import { type MedplumClient, type ProfileResource, createReference, normalizeErrorString } from '@medplum/core';
 import {
-  Attachment,
-  AuditEvent,
-  Bundle,
-  Communication,
-  DiagnosticReport,
-  Media,
-  OperationOutcome,
-  Reference,
-  Resource,
-  ResourceType,
+  type Attachment,
+  type AuditEvent,
+  type Bundle,
+  type Communication,
+  type DiagnosticReport,
+  type Media,
+  type OperationOutcome,
+  type Reference,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
-import { JSX, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type JSX, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
@@ -26,7 +26,7 @@ import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
-import { Timeline, TimelineItem, TimelineItemProps } from '../Timeline/Timeline';
+import { Timeline, TimelineItem, type TimelineItemProps } from '../Timeline/Timeline';
 import { sortByDateAndPriority } from '../utils/date';
 import classes from './ResourceTimeline.module.css';
 

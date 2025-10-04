@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import { formatDate, getReferenceString } from '@medplum/core';
-import { Coding, Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
+import { type Coding, type Observation, type ObservationComponent, type Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { ChartData, ChartDataset } from 'chart.js';
-import { JSX, useEffect, useState } from 'react';
+import { type ChartData, type ChartDataset } from 'chart.js';
+import { type JSX, useEffect, useState } from 'react';
 import { LineChart } from './LineChart';
-import { measurementStyles, ObservationType } from './measurement-constants';
+import { measurementStyles, type ObservationType } from './measurement-constants';
 
 interface ObservationGraphProps {
   code: Coding;

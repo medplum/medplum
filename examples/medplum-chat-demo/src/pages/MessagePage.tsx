@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Grid, GridCol } from '@mantine/core';
 import { parseReference, resolveId } from '@medplum/core';
-import { Communication, Patient } from '@medplum/fhirtypes';
+import { type Communication, type Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { CommunicationDetails } from '../components/CommunicationDetails';
 
 interface MessagePageProps {

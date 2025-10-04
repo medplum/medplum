@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AccessPolicyInteraction, satisfiedAccessPolicy, tryGetProfile } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { type Reference, type Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { JSX, useEffect, useMemo, useState } from 'react';
+import { type JSX, useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
 
 export interface ResourceTableProps {

@@ -9,17 +9,17 @@ import {
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
-  SearchRequest,
+  type SearchRequest,
   validateResourceType,
 } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import { type ResourceType } from '@medplum/fhirtypes';
 import { assert } from 'console';
-import { Request, Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
+import { type AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';

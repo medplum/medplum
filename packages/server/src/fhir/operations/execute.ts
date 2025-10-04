@@ -9,13 +9,13 @@ import {
   isResource,
   OperationOutcomeError,
   Operator,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { type Bot, type OperationOutcome } from '@medplum/fhirtypes';
+import { type Request, type Response } from 'express';
 import { asyncWrap } from '../../async';
 import { executeBot } from '../../bots/execute';
-import { BotExecutionResult } from '../../bots/types';
+import { type BotExecutionResult } from '../../bots/types';
 import {
   getBotDefaultHeaders,
   getBotProjectMembership,

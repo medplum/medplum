@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { type LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
+import { type OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, ReactNode, useEffect, useState } from 'react';
+import { type JSX, type ReactNode, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';

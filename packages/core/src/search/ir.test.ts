@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodeableConcept, Coding, ContactPoint, Identifier } from '@medplum/fhirtypes';
+import { type CodeableConcept, type Coding, type ContactPoint, type Identifier } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
 import {
   convertToSearchableDates,

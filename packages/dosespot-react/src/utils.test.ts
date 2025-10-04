@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedicationKnowledge } from '@medplum/fhirtypes';
+import { type MedicationKnowledge } from '@medplum/fhirtypes';
 import { getMedicationName } from './utils';
 
 describe('utils', () => {

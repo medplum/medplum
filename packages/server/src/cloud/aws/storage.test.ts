@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
+import { type Binary } from '@medplum/fhirtypes';
 import { sdkStreamMixin } from '@smithy/util-stream';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import { type AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { Request } from 'express';
-import internal, { Readable } from 'stream';
+import { type Request } from 'express';
+import type internal from 'stream';
+import { Readable } from 'stream';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 

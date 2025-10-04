@@ -3,6 +3,7 @@ module.exports = {
   plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
     'eslint:recommended',
+    'plugin:import/recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/strict',
     'plugin:jsdoc/recommended-typescript-error',
@@ -16,7 +17,6 @@ module.exports = {
     eqeqeq: ['error', 'always'],
     'no-constant-binary-expression': 'error',
     'no-constructor-return': 'error',
-    'no-duplicate-imports': 'error',
     'no-new-native-nonconstructor': 'error',
     'no-promise-executor-return': 'error',
     'no-self-compare': 'error',
@@ -126,6 +126,20 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
+
+    // imports rules for isolatedModules and verbatimModuleSyntax
+    'no-duplicate-imports': 'off', // Disable base rule
+    'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
+    'import/no-duplicates': 'error',
+    'import/no-unresolved': 'off', // Handled by TypeScript
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      {
+        prefer: 'type-imports',
+        fixStyle: 'inline-type-imports',
+      },
+    ],
+    '@typescript-eslint/consistent-type-exports': 'error',
 
     // React Hooks
     'react-hooks/exhaustive-deps': 'error',

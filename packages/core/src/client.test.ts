@@ -1,31 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Bot,
-  Bundle,
-  Identifier,
-  OperationOutcome,
-  Patient,
-  Practitioner,
-  Reference,
-  SearchParameter,
-  StructureDefinition,
+  type Bot,
+  type Bundle,
+  type Identifier,
+  type OperationOutcome,
+  type Patient,
+  type Practitioner,
+  type Reference,
+  type SearchParameter,
+  type StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
-import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { type CustomTableLayout, type TDocumentDefinitions, type TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import {
   DEFAULT_ACCEPT,
-  FetchLike,
-  InviteRequest,
-  LoginState,
   MedplumClient,
-  MedplumClientEventMap,
-  NewPatientRequest,
-  NewProjectRequest,
-  NewUserRequest,
+  type FetchLike,
+  type InviteRequest,
+  type LoginState,
+  type MedplumClientEventMap,
+  type NewPatientRequest,
+  type NewProjectRequest,
+  type NewUserRequest,
 } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
@@ -45,7 +45,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, WithId, createReference, sleep } from './utils';
+import { createReference, sleep, type ProfileResource, type WithId } from './utils';
 
 // Mock the environment module
 jest.mock('./environment');

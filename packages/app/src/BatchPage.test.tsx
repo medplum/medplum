@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { BatchPage } from './BatchPage';
-import { act, fireEvent, render, RenderResult, screen, UserEvent, userEvent } from './test-utils/render';
+import { act, fireEvent, render, type RenderResult, screen, type UserEvent, userEvent } from './test-utils/render';
 
 const exampleBundle = `{
   "resourceType": "Bundle",

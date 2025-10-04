@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Bundle, Encounter, ResourceType } from '@medplum/fhirtypes';
+import { createReference, type MedplumClient, type ProfileResource } from '@medplum/core';
+import { type Attachment, type Bundle, type Encounter, type ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter } from '@medplum/mock';
-import { Meta } from '@storybook/react';
-import { JSX } from 'react';
+import { type Meta } from '@storybook/react';
+import { type JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ResourceTimeline } from './ResourceTimeline';
 

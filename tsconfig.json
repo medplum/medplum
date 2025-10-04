@@ -26,7 +26,8 @@
     "strictPropertyInitialization": true,
     "allowJs": true,
     "resolveJsonModule": true,
-    "noEmit": true
+    "noEmit": true,
+    "isolatedModules": true
   },
   "exclude": ["node_modules", "**/dist/*"]
 }

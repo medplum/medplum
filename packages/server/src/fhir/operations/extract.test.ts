@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  Expression,
-  OperationOutcome,
-  OperationOutcomeIssue,
-  Organization,
-  Parameters,
-  Patient,
-  Questionnaire,
-  QuestionnaireResponse,
+  type Bundle,
+  type BundleEntry,
+  type Expression,
+  type OperationOutcome,
+  type OperationOutcomeIssue,
+  type Organization,
+  type Parameters,
+  type Patient,
+  type Questionnaire,
+  type QuestionnaireResponse,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
-import { Repository } from '../repo';
+import { type Repository } from '../repo';
 
 const extractExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract';
 const allocIdExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId';

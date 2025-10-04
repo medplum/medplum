@@ -8,52 +8,52 @@ import {
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
-  Logger,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  type Logger,
 } from '@medplum/core';
-import { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type Bundle, type Reference, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
 import {
-  ArgumentNode,
-  ASTNode,
-  ASTVisitor,
-  DocumentNode,
   execute,
-  ExecutionResult,
-  FieldNode,
-  GraphQLFieldConfigArgumentMap,
-  GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
   Kind,
-  OperationDefinitionNode,
   parse,
   specifiedRules,
   validate,
-  ValidationContext,
+  type ArgumentNode,
+  type ASTNode,
+  type ASTVisitor,
+  type DocumentNode,
+  type ExecutionResult,
+  type FieldNode,
+  type GraphQLFieldConfigArgumentMap,
+  type GraphQLFieldConfigMap,
+  type GraphQLOutputType,
+  type GraphQLResolveInfo,
+  type OperationDefinitionNode,
+  type ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
-import { FhirRepository, RepositoryMode } from '../repo';
+import { type FhirRequest, type FhirResponse, type FhirRouteOptions, type FhirRouter } from '../fhirrouter';
+import { RepositoryMode, type FhirRepository } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
   applyMaxCount,
   buildSearchArgs,
-  GraphQLContext,
   invalidRequest,
   isFieldRequested,
   parseSearchArgs,
   resolveBySearch,
+  type GraphQLContext,
 } from './utils';
 
 /**

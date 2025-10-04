@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Parameters, Patient } from '@medplum/fhirtypes';
+import { type Parameters, type Patient } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { FetchLike, MedplumClient } from './client';
+import { MedplumClient, type FetchLike } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
-import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
+import { SubscriptionEmitter, SubscriptionManager, type SubscriptionEventMap } from './subscriptions';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
 import { sleep } from './utils';
 

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  Condition,
-  Observation,
-  Organization,
-  Patient,
-  Practitioner,
-  Resource,
+  type Bundle,
+  type BundleEntry,
+  type Condition,
+  type Observation,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Resource,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';

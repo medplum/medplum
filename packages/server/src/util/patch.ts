@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, normalizeOperationOutcome, OperationOutcomeError } from '@medplum/core';
-import { applyPatch, Operation } from 'rfc6902';
+import { applyPatch, type Operation } from 'rfc6902';
 
 /**
  * Applies a JSON patch to an object in-place.

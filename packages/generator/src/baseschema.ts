@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BaseSchema,
+  type BaseSchema,
   compressElement,
   getAllDataTypes,
   indexStructureDefinitionBundle,
-  InternalTypeSchema,
+  type InternalTypeSchema,
   isLowerCase,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import { type Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 

@@ -5,10 +5,10 @@ import {
   getSearchParameter,
   getSearchParameterDetails,
   getSearchParameters,
-  InternalSchemaElement,
-  SearchRequest,
+  type InternalSchemaElement,
+  type SearchRequest,
 } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.

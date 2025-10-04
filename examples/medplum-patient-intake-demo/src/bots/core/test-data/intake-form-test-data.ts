@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { type Organization, type Questionnaire, type QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
 
 export const payorOrganization1: Organization = {

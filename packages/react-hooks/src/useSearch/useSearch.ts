@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, normalizeOperationOutcome, QueryTypes, ResourceArray } from '@medplum/core';
-import { Bundle, ExtractResource, OperationOutcome, ResourceType } from '@medplum/fhirtypes';
+import { allOk, normalizeOperationOutcome, type QueryTypes, type ResourceArray } from '@medplum/core';
+import { type Bundle, type ExtractResource, type OperationOutcome, type ResourceType } from '@medplum/fhirtypes';
 import { useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';

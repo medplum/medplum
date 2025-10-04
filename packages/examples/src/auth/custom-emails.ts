@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block customEmails
-import { BotEvent, getDisplayString, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import {
+  getDisplayString,
+  getReferenceString,
+  type BotEvent,
+  type MedplumClient,
+  type ProfileResource,
+} from '@medplum/core';
+import { type ProjectMembership, type Reference, type User, type UserSecurityRequest } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {
   // This Bot executes on every new UserSecurityRequest resource.

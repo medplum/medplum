@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Menu, ActionIcon, Text, Flex } from '@mantine/core';
 import { IconFilter, IconChevronRight, IconUserCheck, IconStethoscope, IconCheck } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
-import { TaskFilterType, TaskFilterValue, TASK_STATUSES } from './TaskFilterMenu.utils';
+import { type JSX } from 'react';
+import { type Patient, type Task, type CodeableConcept } from '@medplum/fhirtypes';
+import { TaskFilterType, type TaskFilterValue, TASK_STATUSES } from './TaskFilterMenu.utils';
 
 interface TaskFilterMenuProps {
   status?: Task['status'];

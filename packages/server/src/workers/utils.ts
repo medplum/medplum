@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator, WithId } from '@medplum/core';
+import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator, type WithId } from '@medplum/core';
 import {
-  AsyncJob,
-  AuditEvent,
-  AuditEventEntity,
-  Bot,
-  Coding,
-  Parameters,
-  Practitioner,
-  ProjectMembership,
-  Reference,
-  Resource,
-  Subscription,
+  type AsyncJob,
+  type AuditEvent,
+  type AuditEventEntity,
+  type Bot,
+  type Coding,
+  type Parameters,
+  type Practitioner,
+  type ProjectMembership,
+  type Reference,
+  type Resource,
+  type Subscription,
 } from '@medplum/fhirtypes';
-import { DelayedError, Job, Queue, Worker } from 'bullmq';
+import { DelayedError, type Job, type Queue, type Worker } from 'bullmq';
 import * as semver from 'semver';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { AuditEventOutcome } from '../util/auditevent';
+import { type AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(

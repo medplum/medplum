@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, resolveId, WithId } from '@medplum/core';
-import { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import { createReference, resolveId, type WithId } from '@medplum/core';
+import { type User, type UserSecurityRequest } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyEmail } from './verifyemail';

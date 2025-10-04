@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { globalSchema, InternalSchemaElement, loadDataType, TypeInfo } from '@medplum/core';
+import { globalSchema, type InternalSchemaElement, loadDataType, type TypeInfo } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen, within } from '../test-utils/render';
-import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
+import { BackboneElementInput, type BackboneElementInputProps } from './BackboneElementInput';
 
 const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',

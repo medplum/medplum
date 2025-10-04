@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Resource } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type Resource } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResendSubscriptionsModal, ResendSubscriptionsModalProps } from './ResendSubscriptionsModal';
+import { ResendSubscriptionsModal, type ResendSubscriptionsModalProps } from './ResendSubscriptionsModal';
 
 describe('ResendSubscriptionsModal', () => {
   let medplum: MockClient;

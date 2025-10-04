@@ -14,15 +14,15 @@ import {
   Box,
   SegmentedControl,
 } from '@mantine/core';
-import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { type JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import cx from 'clsx';
 import classes from './TaskBoard.module.css';
-import { CodeableConcept, ResourceType, Task } from '@medplum/fhirtypes';
-import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
+import { type CodeableConcept, type ResourceType, type Task } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, type MedplumClient, type ProfileResource } from '@medplum/core';
 import { useNavigate } from 'react-router';
 import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
-import { TaskFilterType, TaskFilterValue } from './TaskFilterMenu.utils';
+import { TaskFilterType, type TaskFilterValue } from './TaskFilterMenu.utils';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import { IconClipboardList, IconPlus } from '@tabler/icons-react';
 import { TaskListItem } from './TaskListItem';

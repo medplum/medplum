@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Group, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
-import { Coverage, Organization, Reference } from '@medplum/fhirtypes';
+import { type Coverage, type Organization, type Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './PatientSummary.module.css';

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   HTTP_HL7_ORG,
-  InternalTypeSchema,
+  type InternalTypeSchema,
   buildElementsContext,
   isProfileLoaded,
   loadDataType,
   tryGetProfile,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import { type StructureDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 

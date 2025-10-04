@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { capitalize, getSearchParameterDetails, type SearchParameterDetails } from '@medplum/core';
+import { type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
 import { HumanNameSearchParameterIds, HumanNameTable } from './lookups/humanname';
-import { LookupTable } from './lookups/lookuptable';
+import { type LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { getTokenIndexType, TokenIndexTypes } from './tokens';
 

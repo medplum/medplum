@@ -1,17 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BinarySource,
   ContentType,
-  CreateBinaryOptions,
-  LoginState,
   MedplumClient,
-  MedplumClientOptions,
-  MedplumRequestOptions,
   OperationOutcomeError,
-  ProfileResource,
-  SubscriptionEmitter,
-  WithId,
   allOk,
   badRequest,
   generateId,
@@ -20,23 +12,31 @@ import {
   indexSearchParameter,
   loadDataType,
   normalizeCreateBinaryOptions,
+  type BinarySource,
+  type CreateBinaryOptions,
+  type LoginState,
+  type MedplumClientOptions,
+  type MedplumRequestOptions,
+  type ProfileResource,
+  type SubscriptionEmitter,
+  type WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
+import { FhirRouter, MemoryRepository, type FhirRequest, type HttpMethod } from '@medplum/fhir-router';
 import {
-  Agent,
-  Binary,
-  Bot,
-  Device,
-  Reference,
-  Resource,
-  SearchParameter,
-  StructureDefinition,
-  Subscription,
-  UserConfiguration,
+  type Agent,
+  type Binary,
+  type Bot,
+  type Device,
+  type Reference,
+  type Resource,
+  type SearchParameter,
+  type StructureDefinition,
+  type Subscription,
+  type UserConfiguration,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
-import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { type CustomTableLayout, type TDocumentDefinitions, type TFontDictionary } from 'pdfmake/interfaces';
 import {
   BartSimpson,
   DifferentOrganization,

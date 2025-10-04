@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentError,
-  AgentRequestMessage,
-  AgentResponseMessage,
+  type AgentError,
+  type AgentRequestMessage,
+  type AgentResponseMessage,
   ContentType,
   OperationOutcomeError,
   Operator,
-  WithId,
+  type WithId,
   allOk,
   badRequest,
   getReferenceString,
@@ -17,15 +17,22 @@ import {
   serverError,
   singularize,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import {
+  type Agent,
+  type Bundle,
+  type BundleEntry,
+  type Device,
+  type OperationOutcome,
+  type Parameters,
+} from '@medplum/fhirtypes';
+import { type Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { getRedis, getRedisSubscriber } from '../../../redis';
-import { Repository } from '../../repo';
-import { AgentPushParameters } from '../agentpush';
+import { type Repository } from '../../repo';
+import { type AgentPushParameters } from '../agentpush';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 

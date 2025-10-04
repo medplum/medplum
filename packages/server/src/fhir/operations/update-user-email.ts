@@ -9,10 +9,16 @@ import {
   getReferenceString,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
+  type ProfileResource,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import {
+  type OperationDefinition,
+  type Project,
+  type ProjectMembership,
+  type ResourceType,
+  type User,
+} from '@medplum/fhirtypes';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';

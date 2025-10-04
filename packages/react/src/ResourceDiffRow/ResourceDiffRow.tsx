@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Table } from '@mantine/core';
-import { InternalSchemaElement, TypedValue } from '@medplum/core';
-import { JSX, useState } from 'react';
+import { type InternalSchemaElement, type TypedValue } from '@medplum/core';
+import { type JSX, useState } from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import classes from './ResourceDiffRow.module.css';
 

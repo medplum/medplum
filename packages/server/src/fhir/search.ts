@@ -8,16 +8,16 @@ import {
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
-  FhirFilterExpression,
+  type FhirFilterExpression,
   FhirFilterNegation,
-  Filter,
+  type Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
   getSearchParameter,
-  IncludeTarget,
+  type IncludeTarget,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -27,34 +27,34 @@ import {
   parseParameter,
   PropertyType,
   SearchParameterType,
-  SearchRequest,
+  type SearchRequest,
   serverError,
-  SortRule,
+  type SortRule,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
   validateResourceType,
-  WithId,
+  type WithId,
 } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  BundleLink,
-  Reference,
-  Resource,
-  ResourceType,
-  SearchParameter,
+  type Bundle,
+  type BundleEntry,
+  type BundleLink,
+  type Reference,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
-import { Repository } from './repo';
+import { type Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import { type ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
 import {
   ArraySubquery,
   Column,
@@ -63,11 +63,11 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
+  type Expression,
   Negation,
   periodToRangeString,
   SelectQuery,
-  Operator as SQL,
+  type Operator as SQL,
   SqlFunction,
   Union,
   UnionAllBuilder,

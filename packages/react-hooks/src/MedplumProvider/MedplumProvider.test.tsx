@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ClientStorage,
-  MedplumClientEventMap,
+  type MedplumClientEventMap,
   MemoryStorage,
   MockAsyncClientStorage,
-  ProfileResource,
+  type ProfileResource,
   getDisplayString,
   sleep,
 } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 

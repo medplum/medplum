@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
+  type BotEvent,
   getReferenceString,
   Hl7Message,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
-  Bundle,
-  Patient,
-  Encounter,
-  AllergyIntolerance,
-  MessageHeader,
-  SearchParameter,
-  Practitioner,
+  type Bundle,
+  type Patient,
+  type Encounter,
+  type AllergyIntolerance,
+  type MessageHeader,
+  type SearchParameter,
+  type Practitioner,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
-import { ReadStream } from 'ssh2';
+import { type ReadStream } from 'ssh2';
 import { default as SftpClient } from 'ssh2-sftp-client';
 import { Readable } from 'stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';

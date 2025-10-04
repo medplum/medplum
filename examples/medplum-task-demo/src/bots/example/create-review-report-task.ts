@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, getReferenceString, MedplumClient } from '@medplum/core';
-import { DiagnosticReport, Task } from '@medplum/fhirtypes';
+import { type BotEvent, getReferenceString, type MedplumClient } from '@medplum/core';
+import { type DiagnosticReport, type Task } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<boolean> {
   const report = event.input as DiagnosticReport;

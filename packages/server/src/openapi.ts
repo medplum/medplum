@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { isResourceWithId } from '@medplum/core';
-import { Request, Response } from 'express';
-import { JSONSchema4 } from 'json-schema';
-import type {
-  ComponentsObject,
-  OpenAPIObject,
-  PathsObject,
-  ReferenceObject,
-  SchemaObject,
-  TagObject,
+import { type Request, type Response } from 'express';
+import { type JSONSchema4 } from 'json-schema';
+import {
+  type ComponentsObject,
+  type OpenAPIObject,
+  type PathsObject,
+  type ReferenceObject,
+  type SchemaObject,
+  type TagObject,
 } from 'openapi3-ts/oas31';
 import { getConfig } from './config/loader';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';

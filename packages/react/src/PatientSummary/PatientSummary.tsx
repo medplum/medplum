@@ -3,23 +3,23 @@
 import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { calculateAgeString, formatAddress, formatHumanName, resolveId } from '@medplum/core';
 import {
-  AllergyIntolerance,
-  Appointment,
-  Condition,
-  Coverage,
-  Device,
-  DiagnosticReport,
-  Encounter,
-  Goal,
-  HumanName,
-  Immunization,
-  MedicationRequest,
-  Observation,
-  Patient,
-  Procedure,
-  Reference,
-  Resource,
-  ServiceRequest,
+  type AllergyIntolerance,
+  type Appointment,
+  type Condition,
+  type Coverage,
+  type Device,
+  type DiagnosticReport,
+  type Encounter,
+  type Goal,
+  type HumanName,
+  type Immunization,
+  type MedicationRequest,
+  type Observation,
+  type Patient,
+  type Procedure,
+  type Reference,
+  type Resource,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import {
@@ -30,7 +30,7 @@ import {
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';

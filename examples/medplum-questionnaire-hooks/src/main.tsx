@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { StrictMode } from 'react';
@@ -6,7 +8,7 @@ import { App } from './App';
 
 const medplum = new MedplumClient();
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root') as HTMLDivElement).render(
   <StrictMode>
     <MedplumProvider medplum={medplum}>
       <App />

@@ -11,31 +11,31 @@ import {
   stringify,
 } from '@medplum/core';
 import {
-  AccessPolicy,
-  AuditEvent,
-  Binary,
-  Bot,
-  DocumentReference,
-  Observation,
-  Patient,
-  ProjectMembership,
-  Resource,
-  Subscription,
+  type AccessPolicy,
+  type AuditEvent,
+  type Binary,
+  type Bot,
+  type DocumentReference,
+  type Observation,
+  type Patient,
+  type ProjectMembership,
+  type Resource,
+  type Subscription,
 } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import { type AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import * as bullmqModule from 'bullmq';
-import bullmq, { Job } from 'bullmq';
-import { Redis } from 'ioredis';
+import { type Job, type Worker } from 'bullmq';
+import { type Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import { type SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
@@ -2107,7 +2107,7 @@ describe('Subscription Worker Event Handling', () => {
         return mockWorker;
       }),
     };
-    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as bullmq.Worker);
+    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
     // Now import the subscription worker init function
 
     // Mock the logger and metrics functions

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LOINC, SNOMED, UCUM, WithId, createReference, getReferenceString } from '@medplum/core';
+import { LOINC, SNOMED, UCUM, type WithId, createReference, getReferenceString } from '@medplum/core';
 import {
-  ActivityDefinition,
-  ObservationDefinition,
-  PlanDefinition,
-  Questionnaire,
-  RequestGroup,
-  ServiceRequest,
-  SpecimenDefinition,
-  Task,
+  type ActivityDefinition,
+  type ObservationDefinition,
+  type PlanDefinition,
+  type Questionnaire,
+  type RequestGroup,
+  type ServiceRequest,
+  type SpecimenDefinition,
+  type Task,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
 

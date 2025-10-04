@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, isObject, MedplumClient } from '@medplum/core';
-import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
+import { type BotEvent, isObject, type MedplumClient } from '@medplum/core';
+import {
+  type ProjectSetting,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireItemAnswerOption,
+} from '@medplum/fhirtypes';
 
 type GetLabTestEvent = {
   endpoint: 'get_lab_tests';

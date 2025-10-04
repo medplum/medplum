@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
+import { formatFamilyName, formatGivenName, formatHumanName, type WithId } from '@medplum/core';
 import {
-  HumanName,
-  Patient,
-  Person,
-  Practitioner,
-  RelatedPerson,
-  Resource,
-  ResourceType,
-  SearchParameter,
+  type HumanName,
+  type Patient,
+  type Person,
+  type Practitioner,
+  type RelatedPerson,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import { type Pool, type PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+import { LookupTable, type LookupTableRow } from './lookuptable';
 
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 const resourceTypeSet = new Set(resourceTypes);

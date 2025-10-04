@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 import * as fns from '../migrate-functions';
 
 // prettier-ignore

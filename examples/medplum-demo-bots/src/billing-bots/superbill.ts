@@ -1,25 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
-  CreatePdfOptions,
+  type BotEvent,
+  type CreatePdfOptions,
   formatAddress,
   formatDate,
   formatHumanName,
   getQuestionnaireAnswers,
   getReferenceString,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
 import {
-  ChargeItemDefinition,
-  Coding,
-  DocumentReference,
-  Encounter,
-  Organization,
-  Patient,
-  Practitioner,
-  QuestionnaireResponse,
-  Reference,
+  type ChargeItemDefinition,
+  type Coding,
+  type DocumentReference,
+  type Encounter,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type QuestionnaireResponse,
+  type Reference,
 } from '@medplum/fhirtypes';
 
 type DocDefinition = CreatePdfOptions['docDefinition'];

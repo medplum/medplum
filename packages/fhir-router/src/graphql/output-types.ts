@@ -6,7 +6,6 @@ import {
   getDataType,
   getResourceTypes,
   getSearchParameters,
-  InternalSchemaElement,
   isLowerCase,
   isReference,
   isResourceTypeSchema,
@@ -15,24 +14,25 @@ import {
   toJsBoolean,
   toTypedValue,
   tryGetDataType,
+  type InternalSchemaElement,
 } from '@medplum/core';
-import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type ElementDefinitionType, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLEnumType,
-  GraphQLEnumValueConfigMap,
-  GraphQLFieldConfig,
-  GraphQLFieldConfigArgumentMap,
-  GraphQLFieldConfigMap,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLString,
   GraphQLUnionType,
+  type GraphQLEnumValueConfigMap,
+  type GraphQLFieldConfig,
+  type GraphQLFieldConfigArgumentMap,
+  type GraphQLFieldConfigMap,
+  type GraphQLOutputType,
+  type GraphQLResolveInfo,
 } from 'graphql';
-import { buildSearchArgs, fhirParamToGraphQLField, GraphQLContext, resolveBySearch, typeCache } from './utils';
+import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache, type GraphQLContext } from './utils';
 
 export const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   ...typeCache,

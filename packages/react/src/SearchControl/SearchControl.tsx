@@ -14,14 +14,20 @@ import {
 } from '@mantine/core';
 import {
   DEFAULT_SEARCH_COUNT,
-  Filter,
-  SearchRequest,
+  type Filter,
+  type SearchRequest,
   deepEquals,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type OperationOutcome,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -33,7 +39,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, JSX, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type ChangeEvent, type JSX, type MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';

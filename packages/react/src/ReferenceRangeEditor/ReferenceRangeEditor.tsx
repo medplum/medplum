@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { formatRange, getCodeBySystem } from '@medplum/core';
-import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
+import {
+  type CodeableConcept,
+  type ObservationDefinition,
+  type ObservationDefinitionQualifiedInterval,
+} from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { JSX, MouseEvent, useEffect, useState } from 'react';
+import { type JSX, type MouseEvent, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';

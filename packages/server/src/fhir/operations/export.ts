@@ -7,11 +7,11 @@ import {
   getResourceTypes,
   Operator,
   protectedResourceTypes,
-  SearchRequest,
+  type SearchRequest,
   singularize,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type Project, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';

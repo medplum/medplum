@@ -3,18 +3,18 @@
 import {
   Avatar,
   Group,
-  MantineColorScheme,
+  type MantineColorScheme,
   Menu,
   SegmentedControl,
   Stack,
   Text,
   useMantineColorScheme,
 } from '@mantine/core';
-import { ProfileResource, getReferenceString, locationUtils } from '@medplum/core';
-import { HumanName } from '@medplum/fhirtypes';
+import { type ProfileResource, getReferenceString, locationUtils } from '@medplum/core';
+import { type HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 

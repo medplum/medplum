@@ -10,9 +10,15 @@ import {
   OAuthTokenType,
   parseJWTPayload,
   parseSearchRequest,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import {
+  type AccessPolicy,
+  type ClientApplication,
+  type Login,
+  type Project,
+  type SmartAppLaunch,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
@@ -23,7 +29,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';

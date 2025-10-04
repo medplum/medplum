@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContainerProps, Container as MantineContainer } from '@mantine/core';
-import { JSX } from 'react';
+import { type ContainerProps, Container as MantineContainer } from '@mantine/core';
+import { type JSX } from 'react';
 import classes from './Container.module.css';
 
 export function Container(props: ContainerProps): JSX.Element {

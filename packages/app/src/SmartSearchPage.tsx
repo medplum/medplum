@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { FhirPathTableField, MemoizedFhirPathTable } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type FhirPathTableField, MemoizedFhirPathTable } from '@medplum/react';
+import { type JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function SmartSearchPage(): JSX.Element | null {

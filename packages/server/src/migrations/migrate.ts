@@ -11,14 +11,14 @@ import {
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { type Bundle, type ResourceType, type SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client, escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
-import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParameterImplementation, type SearchParameterImplementation } from '../fhir/searchparameter';
+import { type SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -31,16 +31,16 @@ import {
   tsVectorExpression,
 } from './migrate-utils';
 import {
-  CheckConstraintDefinition,
-  ColumnDefinition,
-  DbClient,
-  IndexDefinition,
-  IndexType,
-  MigrationAction,
-  MigrationActionResult,
-  SchemaDefinition,
+  type CheckConstraintDefinition,
+  type ColumnDefinition,
+  type DbClient,
+  type IndexDefinition,
+  type IndexType,
+  type MigrationAction,
+  type MigrationActionResult,
+  type SchemaDefinition,
   SerialColumnTypes,
-  TableDefinition,
+  type TableDefinition,
 } from './types';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');

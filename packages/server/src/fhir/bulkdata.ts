@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError } from '@medplum/core';
-import { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { type AsyncJob, type BulkDataExport } from '@medplum/fhirtypes';
+import { type Request, type Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { rewriteAttachments, RewriteMode } from './rewrite';

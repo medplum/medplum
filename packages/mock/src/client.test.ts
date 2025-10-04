@@ -8,28 +8,28 @@ import {
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  LoginState,
   MemoryStorage,
   MockAsyncClientStorage,
-  NewPatientRequest,
-  NewProjectRequest,
-  NewUserRequest,
   OperationOutcomeError,
   sleep,
   SubscriptionEmitter,
+  type LoginState,
+  type NewPatientRequest,
+  type NewProjectRequest,
+  type NewUserRequest,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import {
-  Agent,
-  Bot,
-  Bundle,
-  CodeableConcept,
-  Patient,
-  ProjectMembership,
-  SearchParameter,
-  ServiceRequest,
-  Task,
+  type Agent,
+  type Bot,
+  type Bundle,
+  type CodeableConcept,
+  type Patient,
+  type ProjectMembership,
+  type SearchParameter,
+  type ServiceRequest,
+  type Task,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder } from 'node:util';

@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 
 const statements = [
   `CREATE EXTENSION IF NOT EXISTS btree_gin`,

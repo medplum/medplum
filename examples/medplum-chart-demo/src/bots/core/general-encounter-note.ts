@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, getQuestionnaireAnswers, LOINC, MedplumClient } from '@medplum/core';
+import { type BotEvent, getQuestionnaireAnswers, LOINC, type MedplumClient } from '@medplum/core';
 import {
-  Bundle,
-  ClinicalImpression,
-  CodeableConcept,
-  Condition,
-  Encounter,
-  Observation,
-  Practitioner,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
+  type Bundle,
+  type ClinicalImpression,
+  type CodeableConcept,
+  type Condition,
+  type Encounter,
+  type Observation,
+  type Practitioner,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { createBundle, createClinicalImpression, createConditions, createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';

@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isResourceType } from '@medplum/core';
 import {
-  Account,
-  CarePlan,
-  Communication,
-  ExplanationOfBenefit,
-  Observation,
-  Patient,
-  Reference,
+  type Account,
+  type CarePlan,
+  type Communication,
+  type ExplanationOfBenefit,
+  type Observation,
+  type Patient,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';

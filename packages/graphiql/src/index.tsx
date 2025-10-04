@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { GraphiQLPlugin } from '@graphiql/react';
-import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
+import { type GraphiQLPlugin } from '@graphiql/react';
+import { type FetcherParams, type SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
-import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
+import { MedplumClient, type ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { GraphiQL } from 'graphiql';
 import 'graphiql/style.css';
-import { JSX, StrictMode } from 'react';
+import { type JSX, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getConfig } from './config';
 

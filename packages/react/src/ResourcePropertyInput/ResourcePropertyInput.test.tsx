@@ -1,25 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
+import { type InternalSchemaElement, PropertyType } from '@medplum/core';
 import {
-  Address,
-  Annotation,
-  Attachment,
-  CodeableConcept,
-  ContactPoint,
-  Extension,
-  HumanName,
-  Identifier,
-  Period,
-  Quantity,
-  Range,
-  Ratio,
+  type Address,
+  type Annotation,
+  type Attachment,
+  type CodeableConcept,
+  type ContactPoint,
+  type Extension,
+  type HumanName,
+  type Identifier,
+  type Period,
+  type Quantity,
+  type Range,
+  type Ratio,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
+import { ResourcePropertyInput, type ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
 

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Modal, NativeSelect } from '@mantine/core';
-import { Filter, Operator, SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { type Filter, Operator, type SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
+import { type SearchParameter } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';

@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   OperationOutcomeError,
-  TypedValue,
-  WithId,
+  type TypedValue,
+  type WithId,
   allOk,
   append,
   badRequest,
   notFound,
   serverError,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type CodeSystem, type CodeSystemProperty, type Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition } from '../sql';

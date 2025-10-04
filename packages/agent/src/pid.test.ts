@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import fs, { PathOrFileDescriptor } from 'node:fs';
+import fs, { type PathOrFileDescriptor } from 'node:fs';
 import os from 'node:os';
 import { dirname, join } from 'node:path';
 import {

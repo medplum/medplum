@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Group, Skeleton, Stack } from '@mantine/core';
 import { createReference, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import {
+  type OperationOutcome,
+  type Questionnaire,
+  type QuestionnaireResponse,
+  type Reference,
+  type Task,
+} from '@medplum/fhirtypes';
 import {
   OperationOutcomeAlert,
   QuestionnaireForm,
@@ -10,7 +16,7 @@ import {
   useMedplum,
   useMedplumProfile,
 } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {

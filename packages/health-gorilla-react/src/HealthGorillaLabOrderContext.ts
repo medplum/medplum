@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, Coverage, Questionnaire, ServiceRequest } from '@medplum/fhirtypes';
+import { type Bundle, type Coverage, type Questionnaire, type ServiceRequest } from '@medplum/fhirtypes';
 import {
-  BillingInformation,
-  DiagnosisCodeableConcept,
-  LabOrderInputErrors,
-  LabOrderTestMetadata,
-  LabOrganization,
-  TestCoding,
+  type BillingInformation,
+  type DiagnosisCodeableConcept,
+  type LabOrderInputErrors,
+  type LabOrderTestMetadata,
+  type LabOrganization,
+  type TestCoding,
 } from '@medplum/health-gorilla-core';
 import { createContext } from 'react';
 

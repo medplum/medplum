@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
-  MedplumClient,
+  type MedplumClient,
   createReference,
   getReferenceString,
   indexSearchParameterBundle,
@@ -10,7 +10,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { type Bundle, type List, type Patient, type SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './find-matching-patients';
 // start-block importPatientData

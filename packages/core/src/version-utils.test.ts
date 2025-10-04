@@ -9,8 +9,8 @@ import {
   fetchVersionManifest,
   isValidMedplumSemver,
   MEDPLUM_RELEASES_URL,
-  ReleaseManifest,
   warnIfNewerVersionAvailable,
+  type ReleaseManifest,
 } from './version-utils';
 
 test('isValidMedplumSemver', () => {

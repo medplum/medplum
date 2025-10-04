@@ -6,27 +6,27 @@ import {
   conflict,
   createReference,
   getReferenceString,
-  InviteRequest,
+  type InviteRequest,
   isCreated,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
+  type ProfileResource,
   resolveId,
-  SearchRequest,
-  WithId,
+  type SearchRequest,
+  type WithId,
 } from '@medplum/core';
-import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { type Project, type ProjectMembership, type Reference, type User } from '@medplum/fhirtypes';
+import { type Request, type Response } from 'express';
 import { body, oneOf } from 'express-validator';
-import Mail from 'nodemailer/lib/mailer';
+import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';

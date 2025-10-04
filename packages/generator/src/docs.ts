@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type BundleEntry,
+  type ElementDefinition,
+  type SearchParameter,
+  type StructureDefinition,
+} from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { DOMWindow, JSDOM } from 'jsdom';
+import { type DOMWindow, JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
@@ -12,10 +18,10 @@ import { resolve } from 'path/posix';
 import * as unzipper from 'unzipper';
 
 import {
-  DocumentationLocation,
-  PropertyDocInfo,
-  PropertyTypeDocInfo,
-  ResourceDocsProps,
+  type DocumentationLocation,
+  type PropertyDocInfo,
+  type PropertyTypeDocInfo,
+  type ResourceDocsProps,
 } from '../../docs/src/types/documentationTypes';
 
 const searchParams: SearchParameter[] = [];

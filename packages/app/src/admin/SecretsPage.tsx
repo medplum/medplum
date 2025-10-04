@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
-import { ProjectSetting } from '@medplum/fhirtypes';
+import { type InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
+import { type ProjectSetting } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import { FormEvent, JSX, useEffect, useState } from 'react';
+import { type FormEvent, type JSX, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {

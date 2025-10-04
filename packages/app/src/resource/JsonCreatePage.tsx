@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, JsonInput } from '@mantine/core';
 import { stringify } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { type OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import { type JSX, useCallback, useState } from 'react';
 import { useParams } from 'react-router';
 import { useCreateResource } from './useCreateResource';
 

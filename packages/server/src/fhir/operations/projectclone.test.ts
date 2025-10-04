@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, getReferenceString, isUUID, LOINC, Operator, streamToBuffer } from '@medplum/core';
 import {
-  Binary,
-  Bot,
-  BundleEntry,
-  ClientApplication,
-  Login,
-  Observation,
-  Patient,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
+  type Binary,
+  type Bot,
+  type BundleEntry,
+  type ClientApplication,
+  type Login,
+  type Observation,
+  type Patient,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';

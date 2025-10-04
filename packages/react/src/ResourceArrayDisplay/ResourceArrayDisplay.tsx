@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
+import {
+  type InternalSchemaElement,
+  type SliceDefinitionWithTypes,
+  getPathDisplayName,
+  isPopulated,
+} from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useContext, useEffect, useMemo, useState } from 'react';
+import { type JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';

@@ -3,20 +3,20 @@
 import {
   ContentType,
   Operator,
-  WithId,
+  type WithId,
   badRequest,
   createReference,
   getReferenceString,
   parseJWTPayload,
 } from '@medplum/core';
 import {
-  AsyncJob,
-  AuditEvent,
-  Bot,
-  Parameters,
-  ParametersParameter,
-  Project,
-  ProjectMembership,
+  type AsyncJob,
+  type AuditEvent,
+  type Bot,
+  type Parameters,
+  type ParametersParameter,
+  type Project,
+  type ProjectMembership,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';

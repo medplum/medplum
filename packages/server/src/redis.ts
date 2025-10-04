@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
-import { MedplumRedisConfig } from './config/types';
+import { type MedplumRedisConfig } from './config/types';
 import { getLogger } from './logger';
 
 let redis: Redis | undefined = undefined;

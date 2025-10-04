@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, AnchorProps } from '@mantine/core';
+import { Anchor, type AnchorProps } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ensureTrailingSlash, locationUtils, normalizeErrorString } from '@medplum/core';
-import { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
+import {
+  type ClientApplication,
+  type Encounter,
+  type Patient,
+  type Reference,
+  type SmartAppLaunch,
+} from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode } from 'react';
 
 export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;

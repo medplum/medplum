@@ -3,7 +3,8 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
-import http, { IncomingMessage } from 'http';
+import type http from 'http';
+import { type IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config/loader';

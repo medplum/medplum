@@ -10,11 +10,11 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
+  type TypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
+import { type OperationOutcomeIssue, type Reference, type Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo, Repository } from './repo';
+import { getSystemRepo, type Repository } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation

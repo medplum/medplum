@@ -12,13 +12,13 @@ import {
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
-  SearchRequest,
+  type SearchRequest,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
+import { type OperationDefinition, type Reference, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo, Repository } from '../repo';
+import { getSystemRepo, type Repository } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';

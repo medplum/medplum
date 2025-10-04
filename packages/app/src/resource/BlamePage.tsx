@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Container } from '@mantine/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import { type ResourceType } from '@medplum/fhirtypes';
 import { Panel, ResourceBlame, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function BlamePage(): JSX.Element | null {

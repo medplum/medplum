@@ -12,21 +12,21 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
-  WithId,
+  type TypedValue,
+  type WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  GraphDefinition,
-  GraphDefinitionLink,
-  GraphDefinitionLinkTarget,
-  Reference,
-  Resource,
-  ResourceType,
+  type GraphDefinition,
+  type GraphDefinitionLink,
+  type GraphDefinitionLinkTarget,
+  type Reference,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { Repository } from '../repo';
+import { type Repository } from '../repo';
 
 type ResourceCache = Record<string, WithId<Resource>>;
 

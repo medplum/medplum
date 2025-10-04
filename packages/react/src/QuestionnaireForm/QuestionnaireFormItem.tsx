@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Checkbox,
-  ComboboxItem,
+  type ComboboxItem,
   Group,
   MultiSelect,
   NativeSelect,
@@ -19,18 +19,18 @@ import {
   getExtension,
   HTTP_HL7_ORG,
   stringify,
-  TypedValue,
+  type TypedValue,
   typedValueToString,
 } from '@medplum/core';
 import {
-  Coding,
-  QuestionnaireItem,
-  QuestionnaireItemAnswerOption,
-  QuestionnaireItemInitial,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
-  ValueSet,
-  ValueSetExpansionContains,
+  type Coding,
+  type QuestionnaireItem,
+  type QuestionnaireItemAnswerOption,
+  type QuestionnaireItemInitial,
+  type QuestionnaireResponseItem,
+  type QuestionnaireResponseItemAnswer,
+  type ValueSet,
+  type ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import {
   getItemAnswerOptionValue,
@@ -39,11 +39,11 @@ import {
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
-  QuestionnaireFormLoadedState,
+  type QuestionnaireFormLoadedState,
   QuestionnaireItemType,
   useMedplum,
 } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, useEffect, useState } from 'react';
+import { type ChangeEvent, type JSX, useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';

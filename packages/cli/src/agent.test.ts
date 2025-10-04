@@ -8,7 +8,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Agent, Bundle, Parameters, Reference, SearchParameter } from '@medplum/fhirtypes';
+import { type Agent, type Bundle, type Parameters, type Reference, type SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import { main } from '.';

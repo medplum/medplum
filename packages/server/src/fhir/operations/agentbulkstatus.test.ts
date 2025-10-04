@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import {
-  Agent,
-  Bundle,
-  BundleEntry,
-  OperationOutcome,
-  OperationOutcomeIssue,
-  Parameters,
-  ParametersParameter,
+  type Agent,
+  type Bundle,
+  type BundleEntry,
+  type OperationOutcome,
+  type OperationOutcomeIssue,
+  type Parameters,
+  type ParametersParameter,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import request, { Response } from 'supertest';
-import { AgentConnectionState, AgentInfo } from '../../agent/utils';
+import request, { type Response } from 'supertest';
+import { AgentConnectionState, type AgentInfo } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';

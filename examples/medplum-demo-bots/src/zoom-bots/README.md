@@ -19,6 +19,7 @@ This bot is responsible for creating and updating Zoom meetings. It can be trigg
 ## Setup
 
 1. Add the following secrets to your Project
+
    ```json
    {
      "ZOOM_ACCOUNT_ID": "your_account_id",
@@ -33,6 +34,7 @@ This bot is responsible for creating and updating Zoom meetings. It can be trigg
 ## Usage
 
 ### Example Appointment Resource as Input
+
 ```
 {
   "resourceType": "Appointment",
@@ -91,6 +93,5 @@ The bot returns the updated Appointment resource with the following extensions:
     }
   ]
 }
-  
-```
 
+```

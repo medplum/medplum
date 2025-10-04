@@ -3,7 +3,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { AnnotationInput, AnnotationInputProps } from './AnnotationInput';
+import { AnnotationInput, type AnnotationInputProps } from './AnnotationInput';
 
 const medplum = new MockClient();
 

@@ -3,11 +3,11 @@
 import { Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
-import { Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { type Practitioner, type Schedule, type Slot } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum, useMedplumProfile, usePrevious } from '@medplum/react';
 import dayjs from 'dayjs';
-import { JSX, useCallback, useContext, useEffect, useState } from 'react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import { type JSX, useCallback, useContext, useEffect, useState } from 'react';
+import { Calendar, dayjsLocalizer, type Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useParams } from 'react-router';
 import { CreateAppointment } from '../components/actions/CreateAppointment';

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ElementsContextType,
-  InternalSchemaElement,
-  SliceDefinitionWithTypes,
+  type ElementsContextType,
+  type InternalSchemaElement,
+  type SliceDefinitionWithTypes,
   buildElementsContext,
   isPopulated,
 } from '@medplum/core';
-import { JSX, useContext, useMemo } from 'react';
+import { type JSX, useContext, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';

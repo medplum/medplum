@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
-import { Account, Invoice, Money } from '@medplum/fhirtypes';
+import { type BotEvent, createReference, type MedplumClient } from '@medplum/core';
+import { type Account, type Invoice, type Money } from '@medplum/fhirtypes';
 import type Stripe from 'stripe';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {

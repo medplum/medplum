@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ACMClient,
-  CertificateSummary,
+  type CertificateSummary,
   ListCertificatesCommand,
   RequestCertificateCommand,
-  ValidationMethod,
+  type ValidationMethod,
 } from '@aws-sdk/client-acm';
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
+import { type MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { getConfigFileName, writeConfig } from '../utils';

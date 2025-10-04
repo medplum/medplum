@@ -4,7 +4,7 @@ import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { PlanDefinitionBuilder, PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
+import { PlanDefinitionBuilder, type PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 
 const medplum = new MockClient();
 

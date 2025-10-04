@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ElementType,
-  InternalTypeSchema,
+  type ElementType,
+  type InternalTypeSchema,
   getDataType,
   isPopulated,
   isProfileLoaded,
   tryGetProfile,
 } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useContext, useEffect, useMemo, useState } from 'react';
+import { type JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';

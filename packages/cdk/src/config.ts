@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import {
-  ExternalSecret,
-  ExternalSecretPrimitive,
-  ExternalSecretPrimitiveType,
-  MedplumInfraConfig,
-  MedplumSourceInfraConfig,
   OperationOutcomeError,
   badRequest,
   validationError,
+  type ExternalSecret,
+  type ExternalSecretPrimitive,
+  type ExternalSecretPrimitiveType,
+  type MedplumInfraConfig,
+  type MedplumSourceInfraConfig,
 } from '@medplum/core';
 
 const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];

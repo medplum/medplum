@@ -3,14 +3,14 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
-  Bundle,
-  CodeableConcept,
-  Encounter,
-  Practitioner,
-  Quantity,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  SearchParameter,
+  type Bundle,
+  type CodeableConcept,
+  type Encounter,
+  type Practitioner,
+  type Quantity,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { createObservations } from './charting-utils';

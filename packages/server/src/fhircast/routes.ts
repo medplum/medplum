@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
-  CurrentContext,
-  FhircastAnchorResourceType,
-  FhircastDiagnosticReportCloseContext,
-  FhircastDiagnosticReportOpenContext,
-  FhircastEventPayload,
-  FhircastMessagePayload,
+  type CurrentContext,
+  type FhircastAnchorResourceType,
+  type FhircastDiagnosticReportCloseContext,
+  type FhircastDiagnosticReportOpenContext,
+  type FhircastEventPayload,
+  type FhircastMessagePayload,
   generateId,
   getWebSocketUrl,
   isResource,
@@ -16,8 +16,8 @@ import {
   resolveId,
   serverError,
 } from '@medplum/core';
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { type Bundle, type BundleEntry, type Resource } from '@medplum/fhirtypes';
+import { type Request, type Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';

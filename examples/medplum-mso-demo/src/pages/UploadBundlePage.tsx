@@ -6,7 +6,7 @@ import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCheck, IconCopy } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { RESOURCES_BUNDLE } from '../data/core/sample-bundle';
 import { useAdminStatus } from '../utils/admin';
 

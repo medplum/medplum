@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getExtension } from '@medplum/core';
 import {
-  Encounter,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
-  Reference,
-  Signature,
+  type Encounter,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItem,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
+  type Signature,
 } from '@medplum/fhirtypes';
 import { useReducer, useRef } from 'react';
 import { useResource } from '../useResource/useResource';

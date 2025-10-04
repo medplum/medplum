@@ -4,12 +4,12 @@ import { Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import { type Communication, type Resource, type ResourceType } from '@medplum/fhirtypes';
 import {
   DefaultResourceTimeline,
   EncounterTimeline,
   PatientTimeline,
-  ResourceTimelineMenuItemContext,
+  type ResourceTimelineMenuItemContext,
   ServiceRequestTimeline,
   useMedplum,
   useMedplumNavigate,
@@ -25,7 +25,7 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { JSX, ReactNode, useState } from 'react';
+import { type JSX, type ReactNode, useState } from 'react';
 import { useParams } from 'react-router';
 import { isAwsTextractEnabled } from '../config';
 import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';

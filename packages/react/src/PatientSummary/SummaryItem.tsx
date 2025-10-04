@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
-import { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode } from 'react';
 import styles from './SummaryItem.module.css';
 
 interface SummaryItemProps {

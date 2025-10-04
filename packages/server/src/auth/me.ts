@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
+import { getReferenceString, Operator, type ProfileResource, type WithId } from '@medplum/core';
 import {
-  Login,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-  UserConfiguration,
-  UserConfigurationMenu,
+  type Login,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type User,
+  type UserConfiguration,
+  type UserConfigurationMenu,
 } from '@medplum/fhirtypes';
 import Bowser from 'bowser';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getSystemRepo, type Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {

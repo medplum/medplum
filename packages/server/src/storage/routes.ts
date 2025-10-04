@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Binary } from '@medplum/fhirtypes';
-import { createPrivateKey, createPublicKey, createVerify, KeyObject } from 'crypto';
-import { Request, Response, Router } from 'express';
+import { type Binary } from '@medplum/fhirtypes';
+import { createPrivateKey, createPublicKey, createVerify, type KeyObject } from 'crypto';
+import { type Request, type Response, Router } from 'express';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { asyncWrap } from '../async';

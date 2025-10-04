@@ -3,9 +3,9 @@
 import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
-import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import { type Condition, type Encounter, type Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useState } from 'react';
+import { type JSX, useCallback, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ConditionDialog } from './ConditionDialog';

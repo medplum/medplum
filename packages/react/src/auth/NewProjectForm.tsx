@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
-import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { type LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
+import { type OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';

@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, normalizeErrorString } from '@medplum/core';
 import {
-  ActivityDefinition,
-  Bundle,
-  DiagnosticReport,
-  GraphDefinition,
-  GraphDefinitionLink,
-  Observation,
-  ObservationDefinition,
-  Organization,
-  Patient,
-  PlanDefinition,
-  Questionnaire,
-  Resource,
-  ServiceRequest,
-  SpecimenDefinition,
+  type ActivityDefinition,
+  type Bundle,
+  type DiagnosticReport,
+  type GraphDefinition,
+  type GraphDefinitionLink,
+  type Observation,
+  type ObservationDefinition,
+  type Organization,
+  type Patient,
+  type PlanDefinition,
+  type Questionnaire,
+  type Resource,
+  type ServiceRequest,
+  type SpecimenDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';

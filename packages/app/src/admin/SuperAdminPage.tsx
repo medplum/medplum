@@ -19,7 +19,14 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  type Parameters,
+  type Patient,
+  type Practitioner,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+} from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
   DateTimeInput,
@@ -31,7 +38,7 @@ import {
   ReferenceInput,
   useMedplum,
 } from '@medplum/react';
-import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
+import { type JSX, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
 
 export function SuperAdminPage(): JSX.Element {

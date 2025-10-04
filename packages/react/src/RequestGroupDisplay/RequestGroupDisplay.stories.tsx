@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ExampleWorkflowRequestGroup } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
-import { JSX, useEffect, useState } from 'react';
+import { type Meta } from '@storybook/react';
+import { type JSX, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19AssessmentTask,

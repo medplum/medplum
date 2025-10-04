@@ -3,7 +3,7 @@
 import {
   ContentType,
   Hl7Message,
-  MedplumClient,
+  type MedplumClient,
   formatHumanName,
   getCodeBySystem,
   getIdentifier,
@@ -12,13 +12,13 @@ import {
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
-  Bundle,
-  CodeableConcept,
-  Encounter,
-  Patient,
-  Practitioner,
-  Reference,
-  SearchParameter,
+  type Bundle,
+  type CodeableConcept,
+  type Encounter,
+  type Patient,
+  type Practitioner,
+  type Reference,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';

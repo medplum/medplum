@@ -10,26 +10,26 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
-  Bundle,
-  Coverage,
-  Location,
-  Organization,
-  Patient,
-  Practitioner,
-  Reference,
-  SearchParameter,
+  type Bundle,
+  type Coverage,
+  type Location,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Reference,
+  type SearchParameter,
 } from '@medplum/fhirtypes';
 import {
-  DiagnosisCodeableConcept,
+  type DiagnosisCodeableConcept,
   HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
-  LabOrganization,
-  TestCoding,
+  type LabOrganization,
+  type TestCoding,
 } from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook } from '@testing-library/react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 import {
@@ -38,10 +38,10 @@ import {
   REQUIRED_AOE_TEST,
   RWS_AOE_TEST,
 } from './autocomplete-endpoint.test';
-import { HealthGorillaLabOrderState, UseHealthGorillaLabOrderReturn } from './HealthGorillaLabOrderContext';
+import { type HealthGorillaLabOrderState, type UseHealthGorillaLabOrderReturn } from './HealthGorillaLabOrderContext';
 import { HealthGorillaLabOrderProvider } from './HealthGorillaLabOrderProvider';
 import { expectToBeDefined } from './test-utils';
-import { useHealthGorillaLabOrder, UseHealthGorillaLabOrderOptions } from './useHealthGorillaLabOrder';
+import { useHealthGorillaLabOrder, type UseHealthGorillaLabOrderOptions } from './useHealthGorillaLabOrder';
 import { useHealthGorillaLabOrderContext } from './useHealthGorillaLabOrderContext';
 
 const DIAGNOSES = [

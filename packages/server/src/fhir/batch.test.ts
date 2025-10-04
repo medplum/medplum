@@ -1,31 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString, WithId } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, type WithId } from '@medplum/core';
 import {
-  Bundle,
-  BundleEntry,
-  BundleEntryResponse,
-  CareTeam,
-  Observation,
-  OperationOutcome,
-  OperationOutcomeIssue,
-  Parameters,
-  Patient,
-  Practitioner,
-  RelatedPerson,
-  Task,
-  UserConfiguration,
+  type Bundle,
+  type BundleEntry,
+  type BundleEntryResponse,
+  type CareTeam,
+  type Observation,
+  type OperationOutcome,
+  type OperationOutcomeIssue,
+  type Parameters,
+  type Patient,
+  type Practitioner,
+  type RelatedPerson,
+  type Task,
+  type UserConfiguration,
 } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
+import { type Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
+import { RateLimiterRedis, type RateLimiterRes } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAsyncContext } from '../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
-import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
+import { type BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 
 describe('Batch and Transaction processing', () => {
   const app = express();

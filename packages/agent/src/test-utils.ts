@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { AgentLoggerConfig, DEFAULT_LOGGER_CONFIG, LoggerType, WinstonWrapperLogger } from './logger';
+import { DEFAULT_LOGGER_CONFIG, LoggerType, WinstonWrapperLogger, type AgentLoggerConfig } from './logger';
 
 /**
  * Creates a Winston logger for testing purposes similar to how it's done in agent-main.ts

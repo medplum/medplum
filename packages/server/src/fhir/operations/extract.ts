@@ -4,34 +4,34 @@
 import {
   allOk,
   badRequest,
-  CrawlerVisitor,
+  type CrawlerVisitor,
   crawlTypedValue,
   deepClone,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
-  InternalTypeSchema,
+  type InternalTypeSchema,
   OperationOutcomeError,
   Operator,
   singleton,
   toTypedValue,
-  TypedValue,
-  TypedValueWithPath,
+  type TypedValue,
+  type TypedValueWithPath,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  Bundle,
-  BundleEntry,
-  Extension,
-  OperationDefinition,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  Resource,
+  type Bundle,
+  type BundleEntry,
+  type Extension,
+  type OperationDefinition,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItem,
+  type Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { applyPatch, Operation } from 'rfc6902';
+import { applyPatch, type Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 

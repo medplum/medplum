@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { arrayify, getAllQuestionnaireAnswers, getExtensionValue, getTypedPropertyValue } from '@medplum/core';
 import {
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
+  type Questionnaire,
+  type QuestionnaireItem,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
 
 /**

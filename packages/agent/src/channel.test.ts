@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Endpoint } from '@medplum/fhirtypes';
+import { type Endpoint } from '@medplum/fhirtypes';
 import { getChannelTypeShortName } from './channel';
 
 describe('Channel', () => {

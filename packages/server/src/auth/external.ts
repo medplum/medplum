@@ -9,15 +9,15 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
+import { type ClientApplication, type IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
-import { CodeChallengeMethod, getClientApplication, tryLogin } from '../oauth/utils';
+import { type CodeChallengeMethod, getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*

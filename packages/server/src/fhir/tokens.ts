@@ -8,10 +8,10 @@ import {
   OperationOutcomeError,
   Operator,
   PropertyType,
-  TokensContext,
+  type TokensContext,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { type Resource, type SearchParameter } from '@medplum/fhirtypes';
 
 export interface Token {
   readonly code: string;

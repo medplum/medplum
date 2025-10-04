@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { type DiagnosticReport, type Reference, type ServiceRequest, type Task } from '@medplum/fhirtypes';
 import { StatusBadge, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';

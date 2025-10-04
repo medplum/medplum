@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Quantity } from '@medplum/fhirtypes';
-import { LRUCache } from '../cache';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
-import { PropertyType, TypedValue } from '../types';
+import { type Quantity } from '@medplum/fhirtypes';
+import { type LRUCache } from '../cache';
+import { ParserBuilder, type Atom, type InfixParselet, type Parser, type PrefixParselet } from '../fhirlexer/parse';
+import { PropertyType, type TypedValue } from '../types';
 import {
   AndAtom,
   ArithemticOperatorAtom,

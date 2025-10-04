@@ -12,18 +12,18 @@ import {
   singularize,
 } from '@medplum/core';
 import {
-  CapabilityStatementRestInteraction,
-  CapabilityStatementRestResourceInteraction,
-  OperationOutcome,
-  Resource,
-  ResourceType,
+  type CapabilityStatementRestInteraction,
+  type CapabilityStatementRestResourceInteraction,
+  type OperationOutcome,
+  type Resource,
+  type ResourceType,
 } from '@medplum/fhirtypes';
-import type { IncomingHttpHeaders } from 'node:http';
-import { Operation } from 'rfc6902';
-import { LogEvent, processBatch } from './batch';
+import { type IncomingHttpHeaders } from 'node:http';
+import { type Operation } from 'rfc6902';
+import { type LogEvent, processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from './repo';
-import { HttpMethod, RouteResult, Router } from './urlrouter';
+import { type CreateResourceOptions, type FhirRepository, RepositoryMode, type UpdateResourceOptions } from './repo';
+import { type HttpMethod, type RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;

@@ -4,7 +4,7 @@
 // See: https://mantine.dev/guides/jest/
 import { MantineProvider } from '@mantine/core';
 import {
-  RenderResult,
+  type RenderResult,
   act,
   fireEvent,
   screen,
@@ -13,7 +13,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode } from 'react';
 
 export { act, fireEvent, screen, userEvent, waitFor, within };
 

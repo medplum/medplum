@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Organization, Patient } from '@medplum/fhirtypes';
-import { Demographics, MetriportMedicalApi, PatientCreate, PatientDTO, USState } from '@metriport/api-sdk';
+import { type BotEvent, type MedplumClient, normalizeErrorString } from '@medplum/core';
+import { type Organization, type Patient } from '@medplum/fhirtypes';
+import {
+  type Demographics,
+  MetriportMedicalApi,
+  type PatientCreate,
+  type PatientDTO,
+  USState,
+} from '@metriport/api-sdk';
 
 /**
  * This bot is used to request medical records from the Metriport Medical API for a given Medplum

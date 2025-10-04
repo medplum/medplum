@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { convertToTransactionBundle, MedplumClient } from '@medplum/core';
+import { convertToTransactionBundle, type MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
 import { MedplumCommand, prettyPrint } from './utils';
 

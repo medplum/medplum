@@ -6,8 +6,8 @@ import {
   OAuthGrantType,
   OAuthTokenType,
   Operator,
-  ProfileResource,
-  WithId,
+  type ProfileResource,
+  type WithId,
   createReference,
   getStatus,
   isJwt,
@@ -16,10 +16,17 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  type ClientApplication,
+  type Login,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, RequestHandler, Response } from 'express';
-import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
+import { type Request, type RequestHandler, type Response } from 'express';
+import { type JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
@@ -27,7 +34,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
+import { type MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,

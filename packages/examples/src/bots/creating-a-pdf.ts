@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block coreImports
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { type BotEvent, type MedplumClient } from '@medplum/core';
 // end-block coreImports
 
 // start-block pdfBot

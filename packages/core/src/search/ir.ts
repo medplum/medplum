@@ -22,10 +22,17 @@
 // To make our lives easier, we will use a simple Immediate Representation (IR) format to represent the search parameters.
 // All underlying element types will be mapped to the IR format for the corresponding search parameter type.
 
-import { CodeableConcept, Coding, ContactPoint, Identifier, Period, Quantity } from '@medplum/fhirtypes';
+import {
+  type CodeableConcept,
+  type Coding,
+  type ContactPoint,
+  type Identifier,
+  type Period,
+  type Quantity,
+} from '@medplum/fhirtypes';
 import { isQuantity, toPeriod } from '../fhirpath/utils';
 import { typedValueToString } from '../format';
-import { isReference, PropertyType, TypedValue } from '../types';
+import { isReference, PropertyType, type TypedValue } from '../types';
 import { getReferenceString, isResourceWithId, isString } from '../utils';
 
 export interface SearchableToken {

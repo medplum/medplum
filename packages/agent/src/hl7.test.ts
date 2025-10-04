@@ -1,22 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentReloadConfigRequest,
-  AgentReloadConfigResponse,
-  AgentTransmitRequest,
-  AgentTransmitResponse,
   allOk,
   ContentType,
   createReference,
   Hl7Message,
   LogLevel,
   sleep,
+  type AgentReloadConfigRequest,
+  type AgentReloadConfigResponse,
+  type AgentTransmitRequest,
+  type AgentTransmitResponse,
 } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { type Agent, type Bot, type Endpoint, type Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
-import { Client, Server } from 'mock-socket';
+import { Server, type Client } from 'mock-socket';
 import { App } from './app';
 
 const medplum = new MockClient();

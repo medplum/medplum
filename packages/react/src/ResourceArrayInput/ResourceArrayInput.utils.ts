@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  InternalSchemaElement,
-  MedplumClient,
-  SliceDefinitionWithTypes,
-  SlicingRules,
+  type InternalSchemaElement,
+  type MedplumClient,
+  type SliceDefinitionWithTypes,
+  type SlicingRules,
   getValueSliceName,
   isPopulated,
   isSliceDefinitionWithTypes,

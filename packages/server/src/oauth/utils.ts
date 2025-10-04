@@ -4,7 +4,7 @@ import {
   badRequest,
   ContentType,
   createReference,
-  Filter,
+  type Filter,
   forbidden,
   getDateProperty,
   getReferenceString,
@@ -14,39 +14,39 @@ import {
   Operator,
   parseJWTPayload,
   parseSearchRequest,
-  ProfileResource,
+  type ProfileResource,
   resolveId,
-  SearchRequest,
+  type SearchRequest,
   tooManyRequests,
-  WithId,
+  type WithId,
 } from '@medplum/core';
 import {
-  AccessPolicy,
-  ClientApplication,
-  IdentityProvider,
-  Login,
-  Project,
-  ProjectMembership,
-  Reference,
-  ResourceType,
-  SmartAppLaunch,
-  User,
+  type AccessPolicy,
+  type ClientApplication,
+  type IdentityProvider,
+  type Login,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type ResourceType,
+  type SmartAppLaunch,
+  type User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
-import { Request } from 'express';
-import { IncomingMessage } from 'http';
-import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
+import { type Request } from 'express';
+import { type IncomingMessage } from 'http';
+import { type JWTPayload, jwtVerify, type VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
-import { MedplumExternalAuthConfig } from '../config/types';
+import { type MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
-import { parseSmartScopes, SmartScope } from '../fhir/smart';
+import { parseSmartScopes, type SmartScope } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getRedis } from '../redis';
 import {
@@ -62,10 +62,10 @@ import {
   generateIdToken,
   generateRefreshToken,
   generateSecret,
-  MedplumAccessTokenClaims,
+  type MedplumAccessTokenClaims,
   verifyJwt,
 } from './keys';
-import { AuthState } from './middleware';
+import { type AuthState } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 

@@ -2,15 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bot, Bundle, MedicationRequest, Practitioner, Reference, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bot,
+  type Bundle,
+  type MedicationRequest,
+  type Practitioner,
+  type Reference,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import {
-  PhotonEvent,
-  PhotonWebhook,
-  PrescriptionCreatedEvent,
-  PrescriptionData,
-  PrescriptionDepletedEvent,
+  type PhotonEvent,
+  type PhotonWebhook,
+  type PrescriptionCreatedEvent,
+  type PrescriptionData,
+  type PrescriptionDepletedEvent,
 } from '../photon-types';
 import { handleCreatePrescription, handler, handleUpdatePrescription } from './handle-prescription-event';
 import { getExistingMedicationRequest } from './utils';

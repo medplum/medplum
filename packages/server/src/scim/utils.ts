@@ -6,16 +6,16 @@ import {
   getReferenceString,
   OperationOutcomeError,
   Operator,
-  SearchRequest,
-  WithId,
+  type SearchRequest,
+  type WithId,
 } from '@medplum/core';
-import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Operation } from 'rfc6902';
+import { type Project, type ProjectMembership, type Reference, type User } from '@medplum/fhirtypes';
+import { type Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { patchObject } from '../util/patch';
-import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
+import { type ScimListResponse, type ScimPatchRequest, type ScimUser } from './types';
 
 /**
  * Searches for users in the project.

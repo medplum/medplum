@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ProfileResource, WithId, badRequest, createReference, created } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { type ProfileResource, type WithId, badRequest, createReference, created } from '@medplum/core';
+import { type FhirRequest, type FhirResponse } from '@medplum/fhir-router';
 import {
-  ClientApplication,
-  OperationDefinition,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
+  type ClientApplication,
+  type OperationDefinition,
+  type Project,
+  type ProjectMembership,
+  type Reference,
+  type User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { createClient } from '../../admin/client';

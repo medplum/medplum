@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import { type MedplumClient, type RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
+import { type StructureDefinition } from '@medplum/fhirtypes';
 import {
   HomerObservation1,
   HomerSimpson,
@@ -9,8 +9,8 @@ import {
   USCoreStructureDefinitionList,
 } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
-import { JSX, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { type Meta } from '@storybook/react';
+import { type JSX, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19NasalSpecimen,

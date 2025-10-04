@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isReference } from '@medplum/core';
 import {
-  CodeableConcept,
-  Coding,
-  Coverage,
-  ExtractResource,
-  OperationOutcome,
-  Organization,
-  Questionnaire,
-  QuestionnaireResponse,
-  Reference,
-  ResourceType,
-  ServiceRequest,
+  type CodeableConcept,
+  type Coding,
+  type Coverage,
+  type ExtractResource,
+  type OperationOutcome,
+  type Organization,
+  type Questionnaire,
+  type QuestionnaireResponse,
+  type Reference,
+  type ResourceType,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 
 export type LabOrderServiceRequest = ServiceRequest & {

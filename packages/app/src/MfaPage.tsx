@@ -3,10 +3,10 @@
 import { Button, Group, Modal, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, MfaForm, MfaFormFields, useMedplum } from '@medplum/react';
+import { type OperationOutcome } from '@medplum/fhirtypes';
+import { Document, MfaForm, type MfaFormFields, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { type JSX, useCallback, useEffect, useState } from 'react';
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();

@@ -3,7 +3,7 @@
 import { Box, Button, Divider, Grid, Modal, Stack, Text, TextInput, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { CodeableConcept, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import { type CodeableConcept, type Patient, type Practitioner, type Reference, type Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptInput,
   CodeInput,
@@ -14,7 +14,7 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 
 export interface NewTaskModalProps {
   opened: boolean;

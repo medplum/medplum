@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { type ProjectMembership } from '@medplum/fhirtypes';
+import { type Request, type Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';

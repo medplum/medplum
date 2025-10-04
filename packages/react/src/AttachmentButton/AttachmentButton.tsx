@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { normalizeOperationOutcome } from '@medplum/core';
-import { Attachment, OperationOutcome, Reference } from '@medplum/fhirtypes';
+import { type Attachment, type OperationOutcome, type Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, MouseEvent, ReactNode, useRef } from 'react';
+import { type ChangeEvent, type JSX, type MouseEvent, type ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentButtonProps {

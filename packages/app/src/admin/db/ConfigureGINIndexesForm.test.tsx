@@ -4,7 +4,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { type Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { within } from '@testing-library/react';

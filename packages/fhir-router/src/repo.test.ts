@@ -7,12 +7,19 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
-  OperationOutcomeError,
   parseSearchRequest,
-  WithId,
+  type OperationOutcomeError,
+  type WithId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  type Bundle,
+  type Observation,
+  type Patient,
+  type Resource,
+  type ResourceType,
+  type SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 

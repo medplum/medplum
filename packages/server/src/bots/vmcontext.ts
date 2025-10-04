@@ -8,7 +8,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Binary, Reference } from '@medplum/fhirtypes';
+import { type Binary, type Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
@@ -16,7 +16,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
-import { BotExecutionContext, BotExecutionResult } from './types';
+import { type BotExecutionContext, type BotExecutionResult } from './types';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 

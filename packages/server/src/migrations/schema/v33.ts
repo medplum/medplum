@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import { type PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
   await client.query('CREATE INDEX CONCURRENTLY ON "AuditEvent" USING GIN("entity")');

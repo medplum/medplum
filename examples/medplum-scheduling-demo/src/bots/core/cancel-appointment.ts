@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, resolveId } from '@medplum/core';
-import { Appointment, Bundle, BundleEntry, Slot } from '@medplum/fhirtypes';
+import { type BotEvent, type MedplumClient, resolveId } from '@medplum/core';
+import { type Appointment, type Bundle, type BundleEntry, type Slot } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Bundle> {
   const appointment = event.input;

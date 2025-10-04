@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
-import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { type OperationOutcome, type Patient, type Reference, type Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, JSX, ReactNode, useCallback, useState } from 'react';
+import { forwardRef, type JSX, type ReactNode, useCallback, useState } from 'react';
 import {
   AsyncAutocomplete,
-  AsyncAutocompleteOption,
-  AsyncAutocompleteProps,
+  type AsyncAutocompleteOption,
+  type AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 

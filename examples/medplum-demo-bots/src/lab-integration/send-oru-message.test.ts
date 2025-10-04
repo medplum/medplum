@@ -7,18 +7,18 @@ import {
   createReference,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
+  type MedplumClient,
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
-  Bundle,
-  DiagnosticReport,
-  Observation,
-  Patient,
-  Practitioner,
-  SearchParameter,
-  ServiceRequest,
-  Specimen,
+  type Bundle,
+  type DiagnosticReport,
+  type Observation,
+  type Patient,
+  type Practitioner,
+  type SearchParameter,
+  type ServiceRequest,
+  type Specimen,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';

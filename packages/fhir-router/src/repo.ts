@@ -3,9 +3,6 @@
 import {
   OperationOutcomeError,
   Operator,
-  SearchRequest,
-  SortRule,
-  WithId,
   allOk,
   badRequest,
   created,
@@ -19,9 +16,12 @@ import {
   notFound,
   preconditionFailed,
   stringify,
+  type SearchRequest,
+  type SortRule,
+  type WithId,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
-import { Operation, applyPatch } from 'rfc6902';
+import { type Bundle, type OperationOutcome, type Reference, type Resource } from '@medplum/fhirtypes';
+import { applyPatch, type Operation } from 'rfc6902';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;

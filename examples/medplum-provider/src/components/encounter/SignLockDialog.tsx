@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { createReference, formatHumanName } from '@medplum/core';
-import { HumanName, Practitioner, Reference } from '@medplum/fhirtypes';
+import { type HumanName, type Practitioner, type Reference } from '@medplum/fhirtypes';
 import { ResourceAvatar, ResourceInput, useResource } from '@medplum/react';
 import { IconLock } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface SignLockDialogProps {

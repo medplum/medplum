@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, encodeBase64, MedplumClient, WithId } from '@medplum/core';
-import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+import { ContentType, encodeBase64, type MedplumClient, type WithId } from '@medplum/core';
+import { type Bot, type Extension, type OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';

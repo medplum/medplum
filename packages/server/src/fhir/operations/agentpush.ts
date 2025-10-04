@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  AgentTransmitRequest,
-  AgentTransmitResponse,
+  type AgentTransmitRequest,
+  type AgentTransmitResponse,
   ContentType,
   OperationOutcomeError,
   badRequest,
 } from '@medplum/core';
-import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { type OperationOutcome, type Parameters } from '@medplum/fhirtypes';
+import { type Request, type Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';

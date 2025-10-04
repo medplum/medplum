@@ -3,7 +3,7 @@
 import { clearReleaseCache } from '@medplum/core';
 import child_process from 'node:child_process';
 import fs from 'node:fs';
-import os, { platform } from 'node:os';
+import os, { type platform } from 'node:os';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { upgraderMain } from './upgrader';

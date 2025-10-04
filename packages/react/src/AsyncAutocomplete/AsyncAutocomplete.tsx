@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Combobox,
-  ComboboxItem,
-  ComboboxProps,
+  type ComboboxItem,
+  type ComboboxProps,
   Group,
   Loader,
   Pill,
@@ -15,10 +15,10 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
 import {
-  JSX,
-  KeyboardEvent,
-  ReactNode,
-  SyntheticEvent,
+  type JSX,
+  type KeyboardEvent,
+  type ReactNode,
+  type SyntheticEvent,
   useCallback,
   useEffect,
   useMemo,

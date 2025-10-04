@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { compressElement, inflateElement } from './base-schema';
-import { InternalSchemaElement } from './typeschema/types';
+import { compressElement, inflateElement } from './base-schema-utils';
+import { type InternalSchemaElement } from './typeschema/types';
 
 describe('BaseSchema', () => {
   test('Simple element', () => {

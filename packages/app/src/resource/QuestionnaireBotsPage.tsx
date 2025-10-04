@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Divider, Group, InputLabel, NativeSelect, Stack, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
-import { Bot, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import { getReferenceString, normalizeErrorString, type WithId } from '@medplum/core';
+import { type Bot, type Questionnaire, type Subscription } from '@medplum/fhirtypes';
 import { Document, ResourceInput, ResourceName, useMedplum, useResource } from '@medplum/react';
-import { JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
 import { useParams } from 'react-router';
 
 const SUBSCRIPTION_INTERACTION_MAP = {

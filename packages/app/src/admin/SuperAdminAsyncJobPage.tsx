@@ -2,11 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, LoadingOverlay, Stack, Table, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { forbidden, formatSearchQuery, normalizeErrorString, Operator, SearchRequest, WithId } from '@medplum/core';
-import { AsyncJob, Resource } from '@medplum/fhirtypes';
+import {
+  forbidden,
+  formatSearchQuery,
+  normalizeErrorString,
+  Operator,
+  type SearchRequest,
+  type WithId,
+} from '@medplum/core';
+import { type AsyncJob, type Resource } from '@medplum/fhirtypes';
 import { Container, MedplumLink, OperationOutcomeAlert, Panel, SearchControl, useMedplum } from '@medplum/react';
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { startAsyncJobAsync } from './SuperAdminStartAsyncJob';
 

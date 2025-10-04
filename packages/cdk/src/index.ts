@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumSourceInfraConfig } from '@medplum/core';
+import { type MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';

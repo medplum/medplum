@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Address,
-  CodeableConcept,
-  Coding,
-  HumanName,
-  Money,
-  Observation,
-  ObservationComponent,
-  Period,
-  Quantity,
-  Range,
-  Reference,
-  Timing,
-  TimingRepeat,
+  type Address,
+  type CodeableConcept,
+  type Coding,
+  type HumanName,
+  type Money,
+  type Observation,
+  type ObservationComponent,
+  type Period,
+  type Quantity,
+  type Range,
+  type Reference,
+  type Timing,
+  type TimingRepeat,
 } from '@medplum/fhirtypes';
-import { TypedValue } from './types';
+import { type TypedValue } from './types';
 import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {

@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
+import { type BotEvent, createReference, type MedplumClient } from '@medplum/core';
 import {
-  Coverage,
-  CoverageEligibilityRequest,
-  CoverageEligibilityResponse,
-  Organization,
-  Patient,
-  Practitioner,
-  Reference,
+  type Coverage,
+  type CoverageEligibilityRequest,
+  type CoverageEligibilityResponse,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Reference,
 } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InternalSchemaElement, capitalize, getDataType, isResourceType } from '@medplum/core';
-import { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
+import { capitalize, getDataType, isResourceType, type InternalSchemaElement } from '@medplum/core';
+import { type ElementDefinitionType, type ResourceType } from '@medplum/fhirtypes';
 import {
-  GraphQLInputFieldConfig,
-  GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
-  GraphQLInputType,
   GraphQLList,
   GraphQLNonNull,
   GraphQLString,
+  type GraphQLInputFieldConfig,
+  type GraphQLInputFieldConfigMap,
+  type GraphQLInputType,
 } from 'graphql';
 import { typeCache } from './utils';
 

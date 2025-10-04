@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { RequestGroupDisplay } from './RequestGroupDisplay';

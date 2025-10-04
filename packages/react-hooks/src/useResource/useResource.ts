@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepEquals, isReference, isResource, MedplumClient, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { deepEquals, isReference, isResource, type MedplumClient, normalizeOperationOutcome } from '@medplum/core';
+import { type OperationOutcome, type Reference, type Resource } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 

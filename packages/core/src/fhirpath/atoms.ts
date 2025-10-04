@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ResourceType } from '@medplum/fhirtypes';
-import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
-import { PropertyType, TypedValue, isResource } from '../types';
+import { type ResourceType } from '@medplum/fhirtypes';
+import { InfixOperatorAtom, PrefixOperatorAtom, type Atom, type AtomContext } from '../fhirlexer/parse';
+import { PropertyType, isResource, type TypedValue } from '../types';
 import { functions } from './functions';
 import {
   booleanToTypedValue,

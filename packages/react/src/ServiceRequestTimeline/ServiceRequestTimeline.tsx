@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { JSX } from 'react';
-import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
+import { createReference, type MedplumClient, type ProfileResource } from '@medplum/core';
+import {
+  type Attachment,
+  type Group,
+  type Patient,
+  type Reference,
+  type ResourceType,
+  type ServiceRequest,
+} from '@medplum/fhirtypes';
+import { type JSX } from 'react';
+import { ResourceTimeline, type ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps extends Pick<ResourceTimelineProps<ServiceRequest>, 'getMenu'> {
   readonly serviceRequest: ServiceRequest | Reference<ServiceRequest>;

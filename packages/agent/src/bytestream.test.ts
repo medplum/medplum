@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, allOk, ContentType, createReference, LogLevel, sleep } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { allOk, ContentType, createReference, LogLevel, sleep, type AgentTransmitResponse } from '@medplum/core';
+import { type Agent, type Bot, type Endpoint, type Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';

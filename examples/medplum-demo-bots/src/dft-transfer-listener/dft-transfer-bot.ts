@@ -12,8 +12,8 @@
  * More information about the sections of DFT messages can be found here: https://rhapsody.health/resources/hl7-dft-message/
  */
 
-import { BotEvent, createReference, Hl7Message, Hl7Segment, MedplumClient } from '@medplum/core';
-import { Claim, Coverage, Organization, Patient } from '@medplum/fhirtypes';
+import { type BotEvent, createReference, type Hl7Message, type Hl7Segment, type MedplumClient } from '@medplum/core';
+import { type Claim, type Coverage, type Organization, type Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
   const input = event.input;

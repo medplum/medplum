@@ -3,10 +3,10 @@
 import { Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
+import { type Resource, type ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from '../utils';
 

@@ -3,22 +3,22 @@
 import {
   ContentType,
   createFhircastMessagePayload,
-  CurrentContext,
-  FhircastEventContext,
-  FhircastEventPayload,
+  type CurrentContext,
+  type FhircastEventContext,
+  type FhircastEventPayload,
   generateId,
   isOperationOutcome,
-  WithId,
+  type WithId,
 } from '@medplum/core';
-import { DiagnosticReport, Project } from '@medplum/fhirtypes';
+import { type DiagnosticReport, type Project } from '@medplum/fhirtypes';
 import express from 'express';
-import { ChainableCommander } from 'ioredis';
+import { type ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
+import { type Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';

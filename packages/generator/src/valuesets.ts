@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import {
-  Bundle,
-  BundleEntry,
-  CodeSystem,
-  CodeSystemConcept,
-  Resource,
-  ValueSet,
-  ValueSetCompose,
+  type Bundle,
+  type BundleEntry,
+  type CodeSystem,
+  type CodeSystemConcept,
+  type Resource,
+  type ValueSet,
+  type ValueSetCompose,
 } from '@medplum/fhirtypes';
 import csv from 'csv-parser';
 import { createReadStream, writeFileSync } from 'node:fs';

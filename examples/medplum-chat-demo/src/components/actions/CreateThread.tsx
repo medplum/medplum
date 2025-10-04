@@ -4,17 +4,17 @@ import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString, parseReference } from '@medplum/core';
 import {
-  Communication,
-  Patient,
-  Practitioner,
-  Questionnaire,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
+  type Communication,
+  type Patient,
+  type Practitioner,
+  type Questionnaire,
+  type QuestionnaireResponse,
+  type QuestionnaireResponseItemAnswer,
+  type Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { type JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { checkForInvalidRecipient, getRecipients } from '../../utils';
 

@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { type Patient, type StructureDefinition } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';

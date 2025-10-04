@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
+import { type WithId } from '@medplum/core';
+import { type Project } from '@medplum/fhirtypes';
 
 /**
  * The hardcoded ID for the base FHIR R4 Project.

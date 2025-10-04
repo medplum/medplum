@@ -4,10 +4,10 @@ import { Badge, Button, Group, Modal, MultiSelect, Stack, Table, Text, TextInput
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { Organization, Patient } from '@medplum/fhirtypes';
+import { type Organization, type Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { type JSX, useCallback, useEffect, useState } from 'react';
 import { enrollPatient, getEnrolledPatients, unEnrollPatient } from '../utils/enrollment';
 
 interface PatientListProps {

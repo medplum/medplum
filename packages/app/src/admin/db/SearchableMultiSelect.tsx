@@ -6,11 +6,11 @@ import {
   Group,
   Pill,
   PillsInput,
-  PillsInputFieldProps,
-  PillsInputProps,
+  type PillsInputFieldProps,
+  type PillsInputProps,
   useCombobox,
 } from '@mantine/core';
-import { JSX, useMemo, useState } from 'react';
+import { type JSX, useMemo, useState } from 'react';
 
 const MAX_DISPLAYED_OPTIONS = 8;
 

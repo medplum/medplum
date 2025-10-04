@@ -3,7 +3,7 @@
 import { CustomObjectsApi, KubeConfig, PatchStrategy, setHeaderOptions } from '@kubernetes/client-node';
 import fetch from 'node-fetch';
 import { getConfig } from '../../config/loader';
-import { MedplumFissionConfig } from '../../config/types';
+import { type MedplumFissionConfig } from '../../config/types';
 import { getLogger } from '../../logger';
 
 const FISSION_GROUP = 'fission.io';

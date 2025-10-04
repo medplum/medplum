@@ -18,21 +18,21 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
-import { ContentType, createReference, getReferenceString, LOINC, WithId } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, LOINC, type WithId } from '@medplum/core';
 import {
-  Bundle,
-  CarePlan,
-  ClinicalImpression,
-  Composition,
-  Condition,
-  DiagnosticReport,
-  Encounter,
-  Observation,
-  Organization,
-  Patient,
-  Practitioner,
-  Resource,
-  ServiceRequest,
+  type Bundle,
+  type CarePlan,
+  type ClinicalImpression,
+  type Composition,
+  type Condition,
+  type DiagnosticReport,
+  type Encounter,
+  type Observation,
+  type Organization,
+  type Patient,
+  type Practitioner,
+  type Resource,
+  type ServiceRequest,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';

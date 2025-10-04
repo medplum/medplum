@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { append, createReference, isResource } from '@medplum/core';
 import {
-  AuditEvent,
-  AuditEventAgentNetwork,
-  AuditEventEntity,
-  Coding,
-  Extension,
-  Practitioner,
-  Reference,
-  Resource,
+  type AuditEvent,
+  type AuditEventAgentNetwork,
+  type AuditEventEntity,
+  type Coding,
+  type Extension,
+  type Practitioner,
+  type Reference,
+  type Resource,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import { type MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import { CloudWatchLogger } from './cloudwatch';
 

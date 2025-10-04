@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Paper, PaperProps } from '@mantine/core';
-import { createReference, HTTP_HL7_ORG, ProfileResource } from '@medplum/core';
-import { Reference, Signature } from '@medplum/fhirtypes';
+import { Button, Paper, type PaperProps } from '@mantine/core';
+import { createReference, HTTP_HL7_ORG, type ProfileResource } from '@medplum/core';
+import { type Reference, type Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconTrash } from '@tabler/icons-react';
-import { JSX, useEffect, useRef } from 'react';
+import { type JSX, useEffect, useRef } from 'react';
 import SignaturePad from 'signature_pad';
 
 export interface SignatureInputProps extends PaperProps {

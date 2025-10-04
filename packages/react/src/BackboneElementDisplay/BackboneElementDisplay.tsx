@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   buildElementsContext,
-  ElementsContextType,
+  type ElementsContextType,
   getPathDisplayName,
   isEmpty,
   tryGetDataType,
-  TypedValue,
+  type TypedValue,
 } from '@medplum/core';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo } from 'react';
+import { type AccessPolicyResource } from '@medplum/fhirtypes';
+import { type JSX, useContext, useMemo } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';

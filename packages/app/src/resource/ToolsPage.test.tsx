@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, cleanNotifications } from '@mantine/notifications';
 import {
   ContentType,
-  LogMessage,
+  type LogMessage,
   MEDPLUM_RELEASES_URL,
   MEDPLUM_VERSION,
   allOk,
@@ -15,11 +15,11 @@ import {
   serverError,
   sleep,
 } from '@medplum/core';
-import { Agent } from '@medplum/fhirtypes';
+import { type Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render } from '@testing-library/react';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, screen } from '../test-utils/render';
