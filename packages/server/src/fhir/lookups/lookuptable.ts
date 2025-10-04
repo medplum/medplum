@@ -8,6 +8,7 @@ import { LookupTableSearchParameterImplementation } from '../searchparameter';
 import {
   Column,
   Condition,
+  Constant,
   Conjunction,
   DeleteQuery,
   Disjunction,
@@ -209,14 +210,21 @@ export abstract class LookupTable {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const joinOnExpression = new Condition(
+    const whereExpression = new Condition(
       new Column(selectQuery.effectiveTableName, 'id'),
       '=',
       new Column(joinName, 'resourceId')
     );
+    const joinOnExpression = new Constant('true');
+
     selectQuery.join(
-      'LEFT JOIN',
-      new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
+      'LEFT JOIN LATERAL',
+      new SelectQuery(lookupTableName)
+        .column('resourceId')
+        .column(columnName)
+        .whereExpr(whereExpression)
+        .orderBy('resourceId', false)
+        .limit(1),
       joinName,
       joinOnExpression
     );

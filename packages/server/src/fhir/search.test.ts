@@ -62,7 +62,7 @@ import { clampEstimateCount } from './search';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 
-jest.mock('hibp');
+vitest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
@@ -2314,6 +2314,34 @@ describe('project-scoped Repository', () => {
         search: { mode: 'include' },
       });
     }));
+
+  
+    test('Practitioner name lookup table', () =>
+      withTestContext(async () => {
+        const practitioner1 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          name: [{ given: ['Alice'], family: 'Hopper' }],
+        });
+
+        const practitioner2 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          name: [{ given: ['Bobby'], family: 'Fisher' }],
+        });
+
+        const searchRequest: SearchRequest = {
+          resourceType: 'Practitioner',
+          sortRules: [{ code: 'family', descending: false }],
+        };
+        const searchResult = await repo.search(searchRequest);
+        expect(searchResult.entry).toHaveLength(2);
+
+        const ids = new Set(searchResult.entry?.map((e) => e.resource?.id));
+        expect(ids).toEqual(new Set([practitioner1.id, practitioner2.id]));
+
+        // expect that Bobby comes first because of the sort rule
+        expect(searchResult.entry?.[0]?.resource?.id).toEqual(practitioner2.id);
+        expect(searchResult.entry?.[1]?.resource?.id).toEqual(practitioner1.id);
+      }));
 
   test('Reverse include canonical', () =>
     withTestContext(async () => {
