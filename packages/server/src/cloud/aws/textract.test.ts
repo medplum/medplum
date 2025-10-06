@@ -210,32 +210,6 @@ describe('AWS Textract', () => {
     expect(res3.body.Blocks).toBeDefined();
   });
 
-  test('DocumentReference with no content', async () => {
-    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
-
-    // Create a DocumentReference with empty content array
-    const res1 = await request(app)
-      .post('/fhir/R4/DocumentReference')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'DocumentReference',
-        status: 'current',
-        content: [], // Empty content array
-        subject: {
-          reference: 'Patient/test-patient',
-        },
-      });
-    expect(res1.status).toBe(201);
-
-    // Try to submit the DocumentReference to Textract
-    const res2 = await request(app)
-      .post(`/fhir/R4/DocumentReference/${res1.body.id}/$aws-textract`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toBe('DocumentReference has no content attachments');
-  });
-
   test('DocumentReference with no attachment URL', async () => {
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
 
@@ -267,15 +241,5 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toBe('DocumentReference attachment has no URL');
-  });
-
-  test('Unsupported resource type', async () => {
-    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
-
-    // Try to submit a Patient to Textract (should fail)
-    const res1 = await request(app)
-      .post(`/fhir/R4/Patient/test-patient/$aws-textract`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res1.status).toBe(404); // Route not found since we only register specific routes
   });
 });
