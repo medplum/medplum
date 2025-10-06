@@ -213,7 +213,7 @@ describe('AWS Textract', () => {
   test('DocumentReference with no content', async () => {
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
 
-    // Create a DocumentReference with no content
+    // Create a DocumentReference with empty content array
     const res1 = await request(app)
       .post('/fhir/R4/DocumentReference')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -221,6 +221,7 @@ describe('AWS Textract', () => {
       .send({
         resourceType: 'DocumentReference',
         status: 'current',
+        content: [], // Empty content array
         subject: {
           reference: 'Patient/test-patient',
         },

@@ -328,8 +328,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   // AWS operations
-  router.add('POST', '/Media/:id/$aws-textract', awsTextractHandler);
-  router.add('POST', '/DocumentReference/:id/$aws-textract', awsTextractHandler);
+  router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
