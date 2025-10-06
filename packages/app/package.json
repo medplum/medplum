@@ -42,18 +42,18 @@
     "@medplum/mock": "4.4.1",
     "@medplum/react": "4.4.1",
     "@tabler/icons-react": "3.35.0",
-    "@testing-library/jest-dom": "6.8.0",
+    "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
-    "@types/react": "19.1.13",
-    "@types/react-dom": "19.1.9",
-    "@vitejs/plugin-react": "5.0.3",
+    "@types/react": "19.2.0",
+    "@types/react-dom": "19.2.0",
+    "@vitejs/plugin-react": "5.0.4",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "react-router": "7.9.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-router": "7.9.3",
     "rfc6902": "5.1.2",
-    "vite": "7.1.7"
+    "vite": "7.1.9"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
