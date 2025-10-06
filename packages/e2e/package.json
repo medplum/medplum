@@ -25,7 +25,7 @@
     "test:smoke": "npx playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.0"
+    "@playwright/test": "1.55.1"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
