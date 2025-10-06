@@ -48,7 +48,7 @@ COMMON TASKS:
 - "Create a task" → POST Task with body
 - "Find all observations for patient X" → GET Observation?subject=Patient/{id}
 
-Always maintain conversation context and reference previous searches or data when relevant.`
+Always maintain conversation context and reference previous searches or data when relevant.`,
 };
 
 export function SpacesPage(): JSX.Element {
@@ -132,7 +132,8 @@ export function SpacesPage(): JSX.Element {
           type: tc.type,
           function: {
             name: tc.function.name,
-            arguments: typeof tc.function.arguments === 'string' ? tc.function.arguments : JSON.stringify(tc.function.arguments),
+            arguments:
+              typeof tc.function.arguments === 'string' ? tc.function.arguments : JSON.stringify(tc.function.arguments),
           },
         }));
 
@@ -245,9 +246,7 @@ export function SpacesPage(): JSX.Element {
           ))}
           {loading && (
             <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-              <Text c="dimmed">
-                {messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}
-              </Text>
+              <Text c="dimmed">{messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}</Text>
             </Paper>
           )}
         </Stack>
