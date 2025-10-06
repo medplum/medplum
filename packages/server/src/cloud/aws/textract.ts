@@ -29,7 +29,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   }
 
   const { resourceType, id } = req.params;
-  
+
   // Validate that the resource type is supported
   if (resourceType !== 'Media' && resourceType !== 'DocumentReference') {
     return [badRequest(`AWS Textract operation is not supported for resource type: ${resourceType}`)];
@@ -48,12 +48,12 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     if (!inputDocRef.content || inputDocRef.content.length === 0) {
       return [badRequest('DocumentReference has no content attachments')];
     }
-    
+
     const attachment = inputDocRef.content[0].attachment;
     if (!attachment?.url) {
       return [badRequest('DocumentReference attachment has no URL')];
     }
-    
+
     inputBinary = await repo.readReference<Binary>({ reference: attachment.url });
     subject = inputDocRef.subject;
   }
