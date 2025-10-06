@@ -63,7 +63,6 @@ describe('Send to Partner Lab', () => {
     });
 
     expect(checkServiceRequests).toHaveLength(2);
-    console.debug(JSON.stringify(checkServiceRequests, null, 2));
     const glucoseOrder = checkServiceRequests.find(
       (order) => getCodeBySystem(order.code as CodeableConcept, FACILITY_ORDER_CODE_SYSTEM) === '1032'
     );
