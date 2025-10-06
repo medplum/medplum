@@ -31,7 +31,7 @@ export class S3Storage extends BaseBinaryStorage {
    * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
    * However, PutObjectCommand does not support streaming.
    *
-   * We now use the @aws-sdk/lib-storage package.
+   * We now use the `@aws-sdk/lib-storage` package.
    *
    * Learn more:
    * https://github.com/aws/aws-sdk-js-v3/blob/main/UPGRADING.md#s3-multipart-upload
