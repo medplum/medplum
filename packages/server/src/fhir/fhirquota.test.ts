@@ -11,7 +11,8 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
-import { createTestProject, deleteRedisKeys, TestRedisConfig } from '../test.setup';
+import type { TestRedisConfig } from '../test.setup';
+import { createTestProject, deleteRedisKeys } from '../test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;

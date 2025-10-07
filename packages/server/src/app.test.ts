@@ -10,7 +10,8 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
-import { createTestProject, deleteRedisKeys, initTestAuth, TestRedisConfig } from './test.setup';
+import type { TestRedisConfig } from './test.setup';
+import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
