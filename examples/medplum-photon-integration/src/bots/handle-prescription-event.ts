@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { CodeableConcept, Coding, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
-import {
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { BotEvent, MedplumClient, PatchOperation } from '@medplum/core';
+import type { CodeableConcept, Coding, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import type {
   PhotonEvent,
   PrescriptionCreatedData,
   PrescriptionDepletedEvent,

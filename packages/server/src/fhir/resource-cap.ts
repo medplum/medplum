@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Logger } from '@medplum/core';
 import {
   businessRule,
   getResourceTypes,
-  Logger,
   OperationOutcomeError,
   projectAdminResourceTypes,
   protectedResourceTypes,
 } from '@medplum/core';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;

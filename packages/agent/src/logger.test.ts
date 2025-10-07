@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { LogLevel, LogLevelNames, parseLogLevel, sleep } from '@medplum/core';
+import type { LogLevelNames } from '@medplum/core';
+import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';

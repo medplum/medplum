@@ -1,15 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  InternalSchemaElement,
-  MedplumClient,
-  SliceDefinitionWithTypes,
-  SlicingRules,
-  getValueSliceName,
-  isPopulated,
-  isSliceDefinitionWithTypes,
-  tryGetProfile,
-} from '@medplum/core';
+import type { InternalSchemaElement, MedplumClient, SliceDefinitionWithTypes, SlicingRules } from '@medplum/core';
+import { getValueSliceName, isPopulated, isSliceDefinitionWithTypes, tryGetProfile } from '@medplum/core';
 
 export function assignValuesIntoSlices<T>(
   values: T[],

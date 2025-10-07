@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ConceptMap } from '@medplum/fhirtypes';
-import { ConceptMapTranslateMatch, ConceptMapTranslateParameters, conceptMapTranslate } from './conceptmaptranslate';
+import type { ConceptMap } from '@medplum/fhirtypes';
+import type { ConceptMapTranslateMatch, ConceptMapTranslateParameters } from './conceptmaptranslate';
+import { conceptMapTranslate } from './conceptmaptranslate';
 
 const system = 'http://example.com/private-codes';
 const code = 'FSH';

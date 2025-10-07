@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getDateProperty, Operator } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { getClientRedirectUri } from './clients';
-import { generateSecret, MedplumIdTokenClaims, verifyJwt } from './keys';
+import type { MedplumIdTokenClaims } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
 /*

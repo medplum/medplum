@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Attachment,
   Bundle,
   CodeableConcept,
@@ -14,8 +14,8 @@ import {
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
+import type { ResourceWithCode } from './utils';
 import {
-  ResourceWithCode,
   addProfileToResource,
   arrayBufferToBase64,
   arrayBufferToHex,

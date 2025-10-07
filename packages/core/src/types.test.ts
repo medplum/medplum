@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -14,8 +14,8 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
+import type { TypedValue } from './types';
 import {
-  TypedValue,
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,

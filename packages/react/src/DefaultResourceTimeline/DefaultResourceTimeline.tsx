@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
-import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import { JSX } from 'react';
-import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
+import type { MedplumClient } from '@medplum/core';
+import type { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import type { ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
+import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface DefaultResourceTimelineProps extends Pick<ResourceTimelineProps<Resource>, 'getMenu'> {
   readonly resource: Resource | Reference;

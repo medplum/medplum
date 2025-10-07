@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
 import {
   formatAddress,
   formatFamilyName,
@@ -7,10 +8,9 @@ import {
   formatHumanName,
   getDateProperty,
   getReferenceString,
-  ProfileResource,
 } from '@medplum/core';
-import { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
-import { Request, RequestHandler, Response } from 'express';
+import type { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
+import type { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';

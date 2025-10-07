@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -9,13 +10,11 @@ import {
   isOperationOutcome,
   normalizeErrorString,
   OperationOutcomeError,
-  ProfileResource,
   resolveId,
   serverError,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import {
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
   AuditEvent,
   Bot,
   Login,
@@ -26,17 +25,19 @@ import {
   ProjectSetting,
   Reference,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, buildTracingExtension } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { AuthenticatedRequestContext } from '../context';
+import { buildTracingExtension } from '../context';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { AuditEventOutcome, logAuditEvent } from '../util/auditevent';
 import { createAuditEventEntities, findProjectMembership } from '../workers/utils';
-import { BotExecutionRequest, BotExecutionResult } from './types';
+import type { BotExecutionRequest, BotExecutionResult } from './types';
 
 const defaultOutputLength = 10 * 1024; // 10 KiB
 

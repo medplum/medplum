@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
+import { Divider, Flex, Paper, Stack, Text } from '@mantine/core';
+import type { PaperProps } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import type { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 

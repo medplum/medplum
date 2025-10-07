@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Project } from '@medplum/fhirtypes';
+import type { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import { getSystemRepo, Repository } from './fhir/repo';
+import type { Repository } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {

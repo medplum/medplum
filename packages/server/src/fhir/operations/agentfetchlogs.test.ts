@@ -1,21 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentLogsRequest, AgentLogsResponse, badRequest, ContentType, LogMessage, WithId } from '@medplum/core';
-import { Agent, Bundle, BundleEntry, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { AgentLogsRequest, AgentLogsResponse, LogMessage, WithId } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
+import type { Agent, Bundle, BundleEntry, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
-import request, { Response } from 'supertest';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import type { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import {
-  cleanupMockAgents,
-  configMockAgents,
-  mockAgentResponse,
-  MockAgentResponseHandle,
-} from './utils/agenttestutils';
+import type { MockAgentResponseHandle } from './utils/agenttestutils';
+import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 

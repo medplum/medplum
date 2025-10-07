@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import type {
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook } from '@testing-library/react';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import {
-  QuestionnaireFormLoadedState,
-  QuestionnaireFormPaginationState,
-  useQuestionnaireForm,
-} from './useQuestionnaireForm';
+import type { QuestionnaireFormLoadedState, QuestionnaireFormPaginationState } from './useQuestionnaireForm';
+import { useQuestionnaireForm } from './useQuestionnaireForm';
 
 describe('useQuestionnaireForm', () => {
   const medplum = new MockClient();

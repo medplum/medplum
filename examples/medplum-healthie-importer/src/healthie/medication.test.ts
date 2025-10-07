@@ -7,7 +7,8 @@ import {
   HEALTHIE_MEDICATION_ID_SYSTEM,
   HEALTHIE_MEDICATION_ROUTE_CODE_SYSTEM,
 } from './constants';
-import { convertHealthieMedicationToFhir, fetchMedications, HealthieMedicationType, parseDosage } from './medication';
+import { convertHealthieMedicationToFhir, fetchMedications, parseDosage } from './medication';
+import type { HealthieMedicationType } from './medication';
 
 type MockResponse = {
   json: () => Promise<any>;

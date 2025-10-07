@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { LogMessage } from './logger';
+import type { LogMessage } from './logger';
 
 export interface BaseAgentMessage {
   type: string;

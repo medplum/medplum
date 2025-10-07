@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Title } from '@mantine/core';
-import { Encounter } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Encounter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { EditType } from './actions/EditType';
 
 interface EncounterActionsProps {

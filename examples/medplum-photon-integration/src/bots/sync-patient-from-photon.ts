@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  BotEvent,
-  createReference,
-  getDisplayString,
-  MedplumClient,
-  normalizeErrorString,
-  RXNORM,
-} from '@medplum/core';
-import {
+import { createReference, getDisplayString, normalizeErrorString, RXNORM } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
   Address,
   AllergyIntolerance,
   Bundle,
@@ -20,7 +14,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import {
+import type {
   PhotonAddress,
   PhotonPatient,
   PhotonPatientAllergy,

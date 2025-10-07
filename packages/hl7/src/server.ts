@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import net from 'node:net';
-import { Hl7Connection, Hl7ConnectionOptions } from './connection';
+import type { Hl7ConnectionOptions } from './connection';
+import { Hl7Connection } from './connection';
 
 export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;

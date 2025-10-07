@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  CurrentContext,
-  FhircastAnchorResourceType,
-  OperationOutcomeError,
-  badRequest,
-  generateId,
-  serverError,
-} from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
+import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 import { getRedis } from '../redis';
 
 const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {

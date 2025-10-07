@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Table, Title } from '@mantine/core';
 import { formatDate, formatObservationValue, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 export function Vitals(): JSX.Element {
   const medplum = useMedplum();

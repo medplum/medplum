@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { JSX } from 'react';
+import type { JSX } from 'react';
 export interface LogoProps {
   readonly size: number;
   readonly fill?: string;

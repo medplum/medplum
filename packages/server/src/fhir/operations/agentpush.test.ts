@@ -1,15 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  ContentType,
-  getReferenceString,
-  sleep,
-  WithId,
-} from '@medplum/core';
-import {
+import type { AgentTransmitRequest, AgentTransmitResponse, WithId } from '@medplum/core';
+import { allOk, ContentType, getReferenceString, sleep } from '@medplum/core';
+import type {
   Agent,
   AsyncJob,
   Device,
@@ -20,14 +13,14 @@ import {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
-import { AgentPushParameters } from './agentpush';
+import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 describe('Agent Push', () => {
