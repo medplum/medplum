@@ -7,6 +7,7 @@ import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'stream';
+import { PassThrough } from 'stream';
 import { getConfig } from '../../config/loader';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
@@ -58,7 +59,8 @@ export class S3Storage extends BaseBinaryStorage {
         Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
-        Body: stream,
+        // Not wrapping in test env so we can know when PassThrough is not necessary anymore
+        Body: process.env.NODE_ENV === 'test' ? stream : PassThrough.from(stream),
       },
       client: this.client,
       queueSize: 3,
