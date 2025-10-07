@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
-import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { ResourceType } from '@medplum/fhirtypes';
-import { NextFunction, Request, Response, Router } from 'express';
+import type { BatchEvent, FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
@@ -19,6 +21,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
+import { aiOperation } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
@@ -26,6 +29,7 @@ import { claimExportGetHandler, claimExportPostHandler } from './operations/clai
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
+import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
@@ -58,7 +62,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
-import { ResendSubscriptionsOptions } from './repo';
+import type { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -214,6 +218,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
 
+  // ConceptMap $import
+  router.add('POST', '/ConceptMap/$import', conceptMapImportHandler);
+  router.add('POST', '/ConceptMap/:id/$import', conceptMapImportHandler);
+
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
   router.add('POST', '/ValueSet/$expand', expandOperator);
@@ -245,6 +253,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperation);
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
+
+  // AI $ai operation
+  router.add('POST', '/$ai', aiOperation);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);

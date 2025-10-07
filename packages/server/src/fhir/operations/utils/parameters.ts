@@ -11,15 +11,15 @@ import {
   isTypedValue,
   validateResource,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import {
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
   OperationDefinition,
   OperationDefinitionParameter,
   Parameters,
   ParametersParameter,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -173,6 +173,14 @@ function parseParams(
         const paramType = param.type ?? 'string';
         if (paramType === 'Resource' || isResourceType(paramType)) {
           return v.resource;
+        } else if (paramType === 'Any') {
+          // Parse as TypedValue
+          for (const key of Object.keys(v)) {
+            if (key.startsWith('value')) {
+              return { type: key.substring(5), value: v[key as keyof ParametersParameter] };
+            }
+          }
+          return undefined;
         } else {
           return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
         }

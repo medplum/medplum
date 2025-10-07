@@ -1,19 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   ConceptMapTranslateMatch,
   ConceptMapTranslateOutput,
   ConceptMapTranslateParameters,
-  OperationOutcomeError,
-  Operator,
   WithId,
-  allOk,
-  append,
-  badRequest,
-  conceptMapTranslate,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { ConceptMap } from '@medplum/fhirtypes';
+import { OperationOutcomeError, Operator, allOk, append, badRequest, conceptMapTranslate } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { ConceptMap } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';

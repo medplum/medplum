@@ -7,7 +7,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bot, Bundle, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { createAllergyInputs, createMedHistoryInputs, handler } from './sync-patient';
 

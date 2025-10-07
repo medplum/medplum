@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { JSX, useCallback, useEffect, useState } from 'react';
-import { Location, Outlet, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import type { Location } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import { PatientPageTabInfo, PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
+import { PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
+import type { PatientPageTabInfo } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
 import { OrderLabsPage } from '../OrderLabsPage';
 

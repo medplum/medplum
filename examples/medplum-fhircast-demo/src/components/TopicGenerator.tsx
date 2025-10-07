@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, TextInput } from '@mantine/core';
 import { usePrevious } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TopicGeneratorProps {
   readonly onTopicChange?: (topic: string | undefined) => void;

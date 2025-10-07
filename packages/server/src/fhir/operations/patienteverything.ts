@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   append,
@@ -8,12 +9,10 @@ import {
   isReference,
   isResource,
   Operator,
-  SearchRequest,
   sortStringArray,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
@@ -24,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';

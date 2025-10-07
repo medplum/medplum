@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Flex, Menu, Text, Box, Badge, ActionIcon, Tooltip } from '@mantine/core';
-import { Task } from '@medplum/fhirtypes';
+import type { Task } from '@medplum/fhirtypes';
 import { IconChevronDown, IconPencil, IconCheck } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface TaskStatusPanelProps {
   task: Task;
+  enabled?: boolean;
   onActionButtonClicked: () => void;
-  onChangeStatus: (status: Task[`status`]) => void;
+  onChangeStatus: (status: Task['status']) => void;
 }
 
-export const TaskStatusPanel = ({ task, onActionButtonClicked, onChangeStatus }: TaskStatusPanelProps): JSX.Element => {
+export const TaskStatusPanel = (props: TaskStatusPanelProps): JSX.Element => {
+  const { task, enabled = true, onActionButtonClicked, onChangeStatus } = props;
   const badgeColor = getBadgeColor(task.status);
 
   return (
@@ -19,42 +21,50 @@ export const TaskStatusPanel = ({ task, onActionButtonClicked, onChangeStatus }:
       <Flex justify="space-between" align="center" w="100%" m={0}>
         <Flex align="center" gap={8}>
           <Text>Task Status:</Text>
-          <Menu position="bottom-start">
-            <Menu.Target>
-              <Badge
-                variant="light"
-                color={badgeColor}
-                size="lg"
-                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0 }}
-                rightSection={<IconChevronDown size={16} />}
-              >
-                {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
-              </Badge>
-            </Menu.Target>
-            <Menu.Dropdown style={{ width: 140 }}>
-              {statuses.map((status) => (
-                <Menu.Item
-                  key={status.value}
-                  rightSection={
-                    task.status === status.value ? (
-                      <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
-                        <IconCheck size={16} color="gray" />
-                      </div>
-                    ) : null
-                  }
-                  onClick={() => onChangeStatus(status.value as Task['status'])}
+          {enabled ? (
+            <Menu position="bottom-start">
+              <Menu.Target>
+                <Badge
+                  variant="light"
+                  color={badgeColor}
+                  size="lg"
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0 }}
+                  rightSection={<IconChevronDown size={16} />}
                 >
-                  {status.label}
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
+                  {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                </Badge>
+              </Menu.Target>
+              <Menu.Dropdown style={{ width: 140 }}>
+                {statuses.map((status) => (
+                  <Menu.Item
+                    key={status.value}
+                    rightSection={
+                      task.status === status.value ? (
+                        <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
+                          <IconCheck size={16} color="gray" />
+                        </div>
+                      ) : null
+                    }
+                    onClick={() => onChangeStatus(status.value as Task['status'])}
+                  >
+                    {status.label}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          ) : (
+            <Badge variant="light" color={badgeColor} size="lg">
+              {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+            </Badge>
+          )}
         </Flex>
-        <Tooltip label="Edit Task" openDelay={500}>
-          <ActionIcon onClick={onActionButtonClicked} color="gray" variant="subtle" aria-label="Edit Task" size="lg">
-            <IconPencil size={20} />
-          </ActionIcon>
-        </Tooltip>
+        {enabled && (
+          <Tooltip label="Edit Task" openDelay={500}>
+            <ActionIcon onClick={onActionButtonClicked} color="gray" variant="subtle" aria-label="Edit Task" size="lg">
+              <IconPencil size={20} />
+            </ActionIcon>
+          </Tooltip>
+        )}
       </Flex>
     </Box>
   );

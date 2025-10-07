@@ -1,21 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
   createReference,
   findResourceByCode,
   getReferenceString,
   Hl7Message,
-  Hl7Segment,
   LOINC,
-  MedplumClient,
   normalizeErrorString,
   parseHl7DateTime,
   SNOMED,
   streamToBuffer,
   UCUM,
 } from '@medplum/core';
-import {
+import type { BotEvent, Hl7Segment, MedplumClient } from '@medplum/core';
+import type {
   Attachment,
   CodeableConcept,
   DiagnosticReport,
@@ -28,7 +26,7 @@ import {
   ServiceRequest,
   Specimen,
 } from '@medplum/fhirtypes';
-import { ReadStream } from 'ssh2';
+import type { ReadStream } from 'ssh2';
 import { default as SftpClient } from 'ssh2-sftp-client';
 
 // Timezone offset of partner lab

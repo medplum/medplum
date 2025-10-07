@@ -130,6 +130,11 @@
         "content": "complete",
         "concept": [
           {
+            "code": "ai",
+            "display": "AI",
+            "definition": "AI"
+          },
+          {
             "code": "aws-comprehend",
             "display": "AWS Comprehend",
             "definition": "AWS Comprehend"

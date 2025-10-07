@@ -5,11 +5,12 @@ import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import type { Binary } from '@medplum/fhirtypes';
+import type { Readable } from 'node:stream';
+import { PassThrough } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { BaseBinaryStorage } from '../../storage/base';
-import { BinarySource } from '../../storage/types';
+import type { BinarySource } from '../../storage/types';
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.
@@ -31,7 +32,7 @@ export class S3Storage extends BaseBinaryStorage {
    * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
    * However, PutObjectCommand does not support streaming.
    *
-   * We now use the @aws-sdk/lib-storage package.
+   * We now use the `@aws-sdk/lib-storage` package.
    *
    * Learn more:
    * https://github.com/aws/aws-sdk-js-v3/blob/main/UPGRADING.md#s3-multipart-upload
@@ -58,7 +59,10 @@ export class S3Storage extends BaseBinaryStorage {
         Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
-        Body: stream,
+        // TODO: Remove after `@aws-sdk/lib-storage` bug is fixed
+        // See: https://github.com/aws/aws-sdk-js-v3/issues/7408
+        // Not wrapping in test env so we can know when PassThrough is not necessary anymore
+        Body: process.env.NODE_ENV === 'test' ? stream : PassThrough.from(stream),
       },
       client: this.client,
       queueSize: 3,

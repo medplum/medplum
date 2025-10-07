@@ -4,7 +4,7 @@ import { Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   Appointment,
   Coding,
   Patient,
@@ -17,8 +17,8 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { Event } from 'react-big-calendar';
+import type { JSX } from 'react';
+import type { Event } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 

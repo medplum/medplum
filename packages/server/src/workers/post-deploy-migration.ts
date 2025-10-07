@@ -1,22 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  capitalize,
-  getReferenceString,
-  normalizeErrorString,
-  PropertyType,
-  toTypedValue,
-  WithId,
-} from '@medplum/core';
-import { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { PoolClient } from 'pg';
+import type { WithId } from '@medplum/core';
+import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
+import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import {
+import type {
   CustomPostDeployMigrationJobData,
   DynamicPostDeployJobData,
   PostDeployJobData,
@@ -31,16 +27,10 @@ import {
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
-import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import type { MigrationAction, MigrationActionResult } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import {
-  addVerboseQueueLogging,
-  isJobActive,
-  isJobCompatible,
-  moveToDelayedAndThrow,
-  queueRegistry,
-  WorkerInitializer,
-} from './utils';
+import type { WorkerInitializer } from './utils';
+import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 

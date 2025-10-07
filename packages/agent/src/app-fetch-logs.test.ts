@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { AgentError, AgentLogsRequest, AgentLogsResponse, allOk, LogLevel, sleep } from '@medplum/core';
-import { Agent, Resource } from '@medplum/fhirtypes';
+import type { AgentError, AgentLogsRequest, AgentLogsResponse } from '@medplum/core';
+import { allOk, LogLevel, sleep } from '@medplum/core';
+import type { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { Client, Server } from 'mock-socket';
+import type { Client } from 'mock-socket';
+import { Server } from 'mock-socket';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { MAX_LOG_LIMIT } from './constants';

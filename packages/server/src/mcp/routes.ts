@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { Request, Response, Router } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { IncomingMessage } from 'http';
+import type { IncomingMessage } from 'http';
 import { asyncWrap } from '../async';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';

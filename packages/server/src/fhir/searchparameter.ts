@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameterDetails } from '@medplum/core';
+import { capitalize, getSearchParameterDetails } from '@medplum/core';
+import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
+import { ConceptMappingTable } from './lookups/conceptmapping';
 import { HumanNameSearchParameterIds, HumanNameTable } from './lookups/humanname';
-import { LookupTable } from './lookups/lookuptable';
+import type { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { getTokenIndexType, TokenIndexTypes } from './tokens';
 
@@ -160,6 +162,7 @@ export const lookupTables: LookupTable[] = [
   new HumanNameTable(),
   new ReferenceTable(),
   new CodingTable(),
+  new ConceptMappingTable(),
 ];
 
 function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {

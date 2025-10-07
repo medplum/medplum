@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Avatar, Badge, Button, Group, Paper, Text } from '@mantine/core';
 import { IconWorld } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import classes from './IntegrationCard.module.css';
 
 export interface IntegrationCardProps {

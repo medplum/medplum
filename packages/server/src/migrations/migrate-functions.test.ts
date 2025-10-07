@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, escapeIdentifier, Pool } from 'pg';
+import type { Client, Pool } from 'pg';
+import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
 import {
@@ -13,7 +14,7 @@ import {
   nonBlockingAddCheckConstraint,
   nonBlockingAlterColumnNotNull,
 } from './migrate-functions';
-import { MigrationActionResult } from './types';
+import type { MigrationActionResult } from './types';
 
 interface IndexInfo {
   index_name: string;

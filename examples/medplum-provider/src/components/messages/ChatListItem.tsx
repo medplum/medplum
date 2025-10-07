@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
-import { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
 import { MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { formatDateTime, formatHumanName } from '@medplum/core';
 import classes from './ChatListItem.module.css';
 import cx from 'clsx';

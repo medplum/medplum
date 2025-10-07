@@ -6,22 +6,29 @@ set -e
 # Echo commands
 set -x
 
-# Initialize additional exclusions variable
+COOLDOWN="3"
 ADDITIONAL_EXCLUDES=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --cooldown=*)
+            if [[ -n "${1#*=}" ]]; then
+                COOLDOWN="${1#*=}"
+            fi
+            ;;
         --exclude=*)
-            ADDITIONAL_EXCLUDES="${1#*=}"
-            shift
+            if [[ -n "${1#*=}" ]]; then
+                ADDITIONAL_EXCLUDES="${1#*=}"
+            fi
             ;;
         *)
             echo "Error: Unknown argument '$1'"
-            echo "Usage: $0 [--exclude=\"package1 package2 package3\"]"
+            echo "Usage: $0 [--cooldown=\"3\"] [--exclude=\"package1 package2 package3\"]"
             exit 1
             ;;
     esac
+    shift
 done
 
 # Use the Github gh tool to make sure the user is logged in
@@ -105,11 +112,12 @@ if [ "$LAST_STEP" -lt 1 ]; then
     # --workspaces - Run on all workspaces
     # --root - Runs updates on the root project in addition to specified workspaces
     # --upgrade - Overwrite package file with upgraded versions
+    # --cooldown - Minimum age (in days) for packages to be considered for upgrade
     # --reject - Exclude packages matching the given string
     # --target - Determines the version to upgrade to
     # "minor" - Upgrade to the highest minor version without bumping the major version
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target minor --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
 
     # Commit and push before running NPM install
     git add -u .
@@ -150,7 +158,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

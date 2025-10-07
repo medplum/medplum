@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 import { RETRY_WAIT_DURATION_MS } from './constants';
 import { LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
-import { AgentArgs } from './types';
+import type { AgentArgs } from './types';
 
 export async function agentMain(argv: string[]): Promise<App> {
   let args: AgentArgs;
@@ -90,8 +90,8 @@ export async function agentMain(argv: string[]): Promise<App> {
 }
 
 function readCommandLineArgs(argv: string[]): AgentArgs {
-  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
-  return { baseUrl, clientId, clientSecret, agentId };
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId, logLevel] = argv;
+  return { baseUrl, clientId, clientSecret, agentId, logLevel };
 }
 
 function readPropertiesFile(fileName: string): AgentArgs {

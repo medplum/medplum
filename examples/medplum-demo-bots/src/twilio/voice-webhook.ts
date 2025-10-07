@@ -7,8 +7,9 @@
  * For more information, see https://www.twilio.com/en-us/blog/make-receive-phone-calls-browser-twilio-programmable-voice-python-javascript
  */
 
-import { BotEvent, getReferenceString, MedplumClient, resolveId, unauthorized } from '@medplum/core';
-import { Binary, OperationOutcome } from '@medplum/fhirtypes';
+import { getReferenceString, resolveId, unauthorized } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Binary, OperationOutcome } from '@medplum/fhirtypes';
 import VoiceResponse from 'twilio/lib/twiml/VoiceResponse';
 import { validateRequest } from 'twilio/lib/webhooks/webhooks';
 

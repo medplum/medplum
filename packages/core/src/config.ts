@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { TypeName } from './types';
+import type { TypeName } from './types';
 
 export const ExternalSecretSystems = {
   aws_ssm_parameter_store: 'aws_ssm_parameter_store',

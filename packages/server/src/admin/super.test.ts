@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
-import { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { Queue } from 'bullmq';
+import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -18,8 +18,10 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import { CronJobData, getCronQueue } from '../workers/cron';
-import { getReindexQueue, ReindexJobData } from '../workers/reindex';
+import type { CronJobData } from '../workers/cron';
+import { getCronQueue } from '../workers/cron';
+import type { ReindexJobData } from '../workers/reindex';
+import { getReindexQueue } from '../workers/reindex';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');

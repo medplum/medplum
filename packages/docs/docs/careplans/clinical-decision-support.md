@@ -26,7 +26,7 @@ The following sections describe best practices to prepare for a predictive clini
 
 ### Training Data
 
-Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
+Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/user-management#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
 
 ### Code Systems
 

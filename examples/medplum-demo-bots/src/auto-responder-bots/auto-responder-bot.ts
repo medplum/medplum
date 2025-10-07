@@ -12,8 +12,8 @@
  * @returns A new Communication resource with auto-response, or undefined
  */
 
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { Communication, Patient, Reference } from '@medplum/fhirtypes';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 
 export async function handler(
   medplum: MedplumClient,

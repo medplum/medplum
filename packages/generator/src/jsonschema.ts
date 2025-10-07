@@ -1,16 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  capitalize,
-  getAllDataTypes,
-  indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
-} from '@medplum/core';
+import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
+import { capitalize, getAllDataTypes, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
-import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
+import type { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
 import { getValueSetValues } from './valuesets';
 

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '@medplum/core';
 import {
   badRequest,
   crawlTypedValueAsync,
@@ -10,11 +11,11 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo, Repository } from './repo';
+import type { Repository } from './repo';
+import { getSystemRepo } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation

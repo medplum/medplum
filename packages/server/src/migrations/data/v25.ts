@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getResourceTypes } from '@medplum/core';
-import { PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { systemResourceProjectId } from '../../constants';
 import { Column, SelectQuery, UpdateQuery } from '../../fhir/sql';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
-import { MigrationActionResult } from '../types';
-import { CustomPostDeployMigration } from './types';
+import type { MigrationActionResult } from '../types';
+import type { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',

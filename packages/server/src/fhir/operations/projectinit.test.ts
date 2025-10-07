@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, isUUID, WithId } from '@medplum/core';
-import { Practitioner, Project } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference, isUUID } from '@medplum/core';
+import type { Practitioner, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -10,7 +11,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
-import { MedplumServerConfig } from '../../config/types';
+import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 

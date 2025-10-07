@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface PatientImmunizationsProps {

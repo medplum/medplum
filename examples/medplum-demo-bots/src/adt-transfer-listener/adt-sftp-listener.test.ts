@@ -1,15 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  BotEvent,
   getReferenceString,
   Hl7Message,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
 } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   Patient,
   Encounter,
@@ -20,7 +19,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
-import { ReadStream } from 'ssh2';
+import type { ReadStream } from 'ssh2';
 import { default as SftpClient } from 'ssh2-sftp-client';
 import { Readable } from 'stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';

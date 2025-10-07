@@ -1,20 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import type { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
-import { Logger } from '../logger';
+import type { Logger } from '../logger';
 import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId, WithId } from '../utils';
-import {
-  IReconnectingWebSocket,
-  IReconnectingWebSocketCtor,
-  ReconnectingWebSocket,
-} from '../websockets/reconnecting-websocket';
+import type { ProfileResource, WithId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
+import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
 const DEFAULT_PING_INTERVAL_MS = 5_000;
 

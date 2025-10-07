@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import {
+import type {
   Bundle,
   Composition,
   CompositionSection,

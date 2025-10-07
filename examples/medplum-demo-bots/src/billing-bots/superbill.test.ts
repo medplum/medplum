@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, ChargeItemDefinition, Encounter, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  ChargeItemDefinition,
+  Encounter,
+  QuestionnaireResponse,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import { getServiceDisplayString, getServiceFee, handler } from './superbill';

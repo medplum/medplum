@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, InputWrapper, NumberInput, Radio, Stack } from '@mantine/core';
-import { Parameters } from '@medplum/fhirtypes';
+import type { Parameters } from '@medplum/fhirtypes';
 import { Form, SubmitButton, useMedplum } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { startAsyncJobAsync } from '../SuperAdminStartAsyncJob';
 import { SearchableMultiSelect } from './SearchableMultiSelect';
 
