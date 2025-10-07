@@ -110,5 +110,8 @@
   "v28": {
     "serverVersion": "4.3.14",
     "requiredBefore": "4.4.0"
+  },
+  "v29": {
+    "serverVersion": "4.4.2"
   }
 }

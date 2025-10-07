@@ -242,3 +242,12 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
     .limit(limit)
     .offset(offset);
 }
+
+export function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
+  const seen = Object.create(null);
+  for (const el of arr) {
+    const key = keyFn(el);
+    seen[key] = el;
+  }
+  return Object.values(seen);
+}
