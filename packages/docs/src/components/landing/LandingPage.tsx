@@ -272,13 +272,14 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <TestimonialHeader
-                  name="Jose Rodriguez"
-                  title="Head of Engineering Summer Health"
-                  imgSrc="/img/avatars/jose-rodrigues.webp"
+                  name="Stuart Parmenter"
+                  title="Former CTO, One Medical"
+                  imgSrc="/img/avatars/stuart.png"
+                  twitter="https://twitter.com/stuartparmenter"
                 />
                 <p>
-                  If you don’t want to reinvent everything, and want standards compliant data and well documented
-                  interfaces, Medplum is what you would choose.
+                  I’ve built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum’s
+                  infrastructure so you can ship care, not plumbing.
                 </p>
               </Card>
             </CardContainer>
@@ -329,8 +330,15 @@ export function LandingPage(): JSX.Element {
                 <p>Open source will transform healthcare, and Medplum is a prime example.</p>
               </Card>
               <Card>
-                <TestimonialHeader name="Alan G" imgSrc="/img/avatars/ag.webp" />
-                <p>First off I want to say this is amazing and I love the work you all are doing.</p>
+                <TestimonialHeader
+                  name="Jose Rodriguez"
+                  title="Head of Engineering Summer Health"
+                  imgSrc="/img/avatars/jose-rodrigues.webp"
+                />
+                <p>
+                  If you don’t want to reinvent everything, and want standards compliant data and well documented
+                  interfaces, Medplum is what you would choose.
+                </p>
               </Card>
             </CardContainer>
           </Section>
