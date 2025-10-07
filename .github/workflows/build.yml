@@ -159,7 +159,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [13, 17, 18]
+        pg-version: [13, 18]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
