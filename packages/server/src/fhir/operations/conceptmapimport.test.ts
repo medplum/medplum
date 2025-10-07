@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, SNOMED, WithId } from '@medplum/core';
-import { ConceptMap, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { ContentType, SNOMED } from '@medplum/core';
+import type { ConceptMap, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject } from '../../test.setup';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
 import { importConceptMap } from './conceptmapimport';
 

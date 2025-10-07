@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import type { WithId } from '@medplum/core';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { importConceptMap } from '../operations/conceptmapimport';
 import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';

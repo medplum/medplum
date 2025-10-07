@@ -1,18 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type {
+  TypedValue,
+  WithId} from '@medplum/core';
 import {
   allOk,
   append,
   badRequest,
   flatMapFilter,
   forbidden,
-  OperationOutcomeError,
-  TypedValue,
-  WithId,
+  OperationOutcomeError
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn, OperationDefinition } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn, OperationDefinition } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { parseInputParameters } from './utils/parameters';

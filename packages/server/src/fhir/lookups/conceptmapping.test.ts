@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { LOINC, SNOMED } from '@medplum/core';
-import { ConceptMap } from '@medplum/fhirtypes';
+import type { ConceptMap } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
