@@ -210,7 +210,9 @@ export interface Expression {
 }
 
 abstract class Executable implements Expression {
-  buildSql(_builder: SqlBuilder): void {}
+  buildSql(_builder: SqlBuilder): void {
+    throw new Error('Method not implemented');
+  }
 
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
