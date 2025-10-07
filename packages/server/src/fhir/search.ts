@@ -302,9 +302,34 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
+  const config = getConfig();
+  const originalLimit = builder.limit_;
+
+  if (config.fhirSearchMinLimit !== undefined && config.fhirSearchMinLimit > builder.limit_) {
+    builder.limit(config.fhirSearchMinLimit);
+  }
+
+  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  let rows: any[];
+  try {
+    if (config.fhirSearchDiscourageSeqScan) {
+      // Despite the name, this doesn't truly remove the possibility of a sequential scan,
+      // just massively inflates the cost of a sequential scan to the planner.
+      await client.query('SET enable_seqscan = off');
+    }
+    rows = await builder.execute(client);
+  } finally {
+    if (config.fhirSearchDiscourageSeqScan) {
+      await client.query('RESET enable_seqscan');
+    }
+  }
+
+  const rowCount = Math.min(rows.length, originalLimit);
+  const resources = [];
+  for (let i = 0; i < rowCount; i++) {
+    const row = rows[i];
+    resources.push(JSON.parse(row.content));
+  }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
