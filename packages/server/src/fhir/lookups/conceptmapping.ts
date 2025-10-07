@@ -4,7 +4,7 @@ import { WithId } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { importConceptMap } from '../operations/conceptmapimport';
-import { Column, DeleteQuery } from '../sql';
+import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -53,19 +53,34 @@ export class ConceptMappingTable extends LookupTable {
    * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
-    if (resource.resourceType !== 'ConceptMap') {
+    const resourceType = resource.resourceType;
+    if (resourceType !== 'ConceptMap') {
       return;
     }
 
-    // Delete ConceptMapping_Attribute entries with a join
-    await new DeleteQuery('ConceptMapping_Attribute')
-      .using('ConceptMapping')
-      .where(new Column('ConceptMapping_Attribute', 'mapping'), '=', new Column('ConceptMapping', 'id'))
-      .where(new Column('ConceptMapping', 'conceptMap'), '=', resource.id)
-      .execute(client);
+    const linkedToTargetResource = new Conjunction([
+      new Condition(new Column(resourceType, 'id'), '=', new Column('ConceptMapping', 'conceptMap')),
+      new Condition(new Column(resourceType, 'id'), '=', resource.id),
+    ]);
 
-    // Delete ConceptMapping entries
-    await new DeleteQuery('ConceptMapping').where('conceptMap', '=', resource.id).execute(client);
+    await LookupTable.purge(
+      client,
+      'ConceptMapping_Attribute',
+      {
+        tableName: 'ConceptMapping',
+        joinCondition: new Condition(
+          new Column('ConceptMapping_Attribute', 'mapping'),
+          '=',
+          new Column('ConceptMapping', 'id')
+        ),
+      },
+      { tableName: resourceType, joinCondition: linkedToTargetResource }
+    );
+
+    await LookupTable.purge(client, 'ConceptMapping', {
+      tableName: resourceType,
+      joinCondition: linkedToTargetResource,
+    });
   }
 
   /**
@@ -80,15 +95,31 @@ export class ConceptMappingTable extends LookupTable {
       return;
     }
 
-    // Delete ConceptMapping_Attribute entries with a double join
-    await new DeleteQuery('ConceptMapping_Attribute')
-      .using('ConceptMap', 'ConceptMapping')
-      .where(new Column('ConceptMapping_Attribute', 'mapping'), '=', new Column('Coding', 'id'))
-      .where(new Column('ConceptMapping', 'conceptMap'), '=', new Column('ConceptMap', 'id'))
-      .where(new Column('ConceptMap', 'lastUpdated'), '<', before)
-      .execute(client);
+    const resourceOlderThanCutoff = new Conjunction([
+      new Condition(new Column('ConceptMapping', 'conceptMap'), '=', new Column(resourceType, 'id')),
+      new Condition(new Column(resourceType, 'lastUpdated'), '<', before),
+    ]);
 
-    // Delete ConceptMapping entries
-    await LookupTable.purge(client, 'ConceptMapping', 'ConceptMap', before, 'conceptMap');
+    await LookupTable.purge(
+      client,
+      'ConceptMapping_Attribute',
+      {
+        tableName: 'ConceptMapping',
+        joinCondition: new Condition(
+          new Column('ConceptMapping_Attribute', 'mapping'),
+          '=',
+          new Column('ConceptMapping', 'id')
+        ),
+      },
+      {
+        tableName: 'ConceptMap',
+        joinCondition: resourceOlderThanCutoff,
+      }
+    );
+
+    await LookupTable.purge(client, 'ConceptMapping', {
+      tableName: 'ConceptMap',
+      joinCondition: resourceOlderThanCutoff,
+    });
   }
 }

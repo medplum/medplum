@@ -81,4 +81,15 @@ describe('ConceptMapping lookup table', () => {
         `271650006 => 8462-4`,
       ]);
     }));
+
+  test('Deletes lookup table rows with resource', async () => {
+    const resource = await systemRepo.createResource(conceptMap);
+    await systemRepo.deleteResource(resource.resourceType, resource.id);
+
+    const db = getDatabasePool(DatabaseMode.READER);
+    const results = await db.query('SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1', [
+      resource.id,
+    ]);
+    expect(results.rows).toHaveLength(0);
+  });
 });

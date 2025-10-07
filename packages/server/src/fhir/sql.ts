@@ -1124,7 +1124,9 @@ export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
 
   using(...tableNames: string[]): this {
-    this.usingTables = tableNames;
+    for (const table of tableNames) {
+      this.usingTables = append(this.usingTables, table);
+    }
     return this;
   }
 

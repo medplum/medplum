@@ -25,6 +25,11 @@ export interface LookupTableRow {
   resourceId: string;
 }
 
+export type TableJoin = {
+  tableName: string;
+  joinCondition: Expression;
+};
+
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
  * This is necessary for array properties with specific structure.
@@ -271,20 +276,24 @@ export abstract class LookupTable {
    */
   async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
     const lookupTableName = this.getTableName(resourceType);
-    await LookupTable.purge(client, lookupTableName, resourceType, before);
+    await LookupTable.purge(client, lookupTableName, {
+      tableName: resourceType,
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+        new Condition(new Column(resourceType, 'lastUpdated'), '<', before),
+      ]),
+    });
   }
 
   protected static async purge(
     client: Pool | PoolClient,
     lookupTableName: string,
-    resourceType: ResourceType,
-    before: string,
-    idColumnName = 'resourceId'
+    ...joins: TableJoin[]
   ): Promise<void> {
-    await new DeleteQuery(lookupTableName)
-      .using(resourceType)
-      .where(new Column(lookupTableName, idColumnName), '=', new Column(resourceType, 'id'))
-      .where(new Column(resourceType, 'lastUpdated'), '<', before)
-      .execute(client);
+    const deleteLookupRows = new DeleteQuery(lookupTableName);
+    for (const join of joins) {
+      deleteLookupRows.using(join.tableName).whereExpr(join.joinCondition);
+    }
+    await deleteLookupRows.execute(client);
   }
 }
