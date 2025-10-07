@@ -59,6 +59,8 @@ export class S3Storage extends BaseBinaryStorage {
         Key: key,
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType ?? 'application/octet-stream',
+        // TODO: Remove after `@aws-sdk/lib-storage` bug is fixed
+        // See: https://github.com/aws/aws-sdk-js-v3/issues/7408
         // Not wrapping in test env so we can know when PassThrough is not necessary anymore
         Body: process.env.NODE_ENV === 'test' ? stream : PassThrough.from(stream),
       },
