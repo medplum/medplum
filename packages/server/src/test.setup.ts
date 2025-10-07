@@ -16,10 +16,12 @@ import type {
 import { randomUUID } from 'crypto';
 import { setDefaultResultOrder } from 'dns';
 import type { Express } from 'express';
+import type Redis from 'ioredis';
 import type internal from 'stream';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
+import type { MedplumRedisConfig } from './config/types';
 import { AuthenticatedRequestContext } from './context';
 import type { RepositoryContext } from './fhir/repo';
 import { Repository, getSystemRepo } from './fhir/repo';
@@ -313,4 +315,50 @@ export function streamToString(stream: internal.Readable): Promise<string> {
     stream.on('error', (err) => reject(err));
     stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
   });
+}
+
+export type TestRedisConfig = MedplumRedisConfig & {
+  keyPrefix: string;
+};
+
+/**
+ * Deletes all keys from the given Redis instance that match the given prefix. This should be preferred to
+ * `flushdb` when possible.
+ *
+ * @param redisInstance - The Redis instance to delete keys from.
+ * @param prefix - The prefix to match against.
+ * @returns The number of keys deleted.
+ */
+export async function deleteRedisKeys(redisInstance: Redis, prefix: string): Promise<number> {
+  const stream = redisInstance.scanStream({
+    match: prefix + '*',
+    count: 100, // Process 100 keys per batch
+  });
+
+  let totalDeleted = 0;
+  const deletePromises: Promise<number>[] = [];
+
+  stream.on('data', (keys: string[]) => {
+    if (keys.length > 0) {
+      // ioredis does NOT include options.keyPrefix in the keys returned by `scanStream`,
+      // so we need to remove it manually before calling del, where ioredis automatically
+      // includes the keyPrefix in the keys passed to del
+      const keysToDelete = redisInstance.options.keyPrefix
+        ? keys.map((k) => (k.startsWith(prefix) ? k.replace(prefix, '') : k))
+        : keys;
+      if (keysToDelete.length > 0) {
+        deletePromises.push(redisInstance.del(keysToDelete));
+      }
+    }
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    stream.on('end', () => resolve());
+    stream.on('error', (err) => reject(err));
+  });
+
+  const deletedCounts = await Promise.all(deletePromises);
+  totalDeleted = deletedCounts.reduce((sum, count) => sum + count, 0);
+
+  return totalDeleted;
 }
