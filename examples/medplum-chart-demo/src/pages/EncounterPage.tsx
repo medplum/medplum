@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Grid, Paper } from '@mantine/core';
-import { Encounter, Patient, Reference } from '@medplum/fhirtypes';
+import type { Encounter, Patient, Reference } from '@medplum/fhirtypes';
 import { Document, Loading, PatientSummary, useMedplum, useResource } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { EncounterActions } from '../components/EncounterActions';
 import { EncounterDetails } from '../components/EncounterDetails';

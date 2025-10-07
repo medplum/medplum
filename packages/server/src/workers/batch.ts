@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
@@ -7,11 +8,12 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
-import { AsyncJob, Bundle } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import type { FhirRequest } from '@medplum/fhir-router';
+import { FhirRouter } from '@medplum/fhir-router';
+import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
@@ -19,8 +21,9 @@ import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
-import { queueRegistry, WorkerInitializer } from './utils';
+import type { AuthState } from '../oauth/middleware';
+import type { WorkerInitializer } from './utils';
+import { queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,

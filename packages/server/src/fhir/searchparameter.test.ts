@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { globalSchema, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
-import {
+import type {
   ColumnSearchParameterImplementation,
-  getSearchParameterImplementation,
   LookupTableSearchParameterImplementation,
   SearchParameterImplementation,
-  SearchStrategies,
   TokenColumnSearchParameterImplementation,
 } from './searchparameter';
+import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 
 describe('SearchParameterImplementation', () => {
   const indexedSearchParams: SearchParameter[] = [];

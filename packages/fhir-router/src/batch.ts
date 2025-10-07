@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Event, WithId } from '@medplum/core';
 import {
   append,
   badRequest,
-  Event,
   getReferenceString,
   getStatus,
   isOk,
@@ -11,9 +11,8 @@ import {
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
@@ -21,10 +20,10 @@ import {
   ParametersParameter,
   Resource,
 } from '@medplum/fhirtypes';
-import { IncomingHttpHeaders } from 'node:http';
-import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
-import { FhirRepository } from './repo';
-import { HttpMethod, RouteResult } from './urlrouter';
+import type { IncomingHttpHeaders } from 'node:http';
+import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
+import type { FhirRepository } from './repo';
+import type { HttpMethod, RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;

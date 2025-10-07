@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, MedplumClientEventMap } from '@medplum/core';
-import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
-import { MedplumNavigateFunction, reactContext } from './MedplumProvider.context';
+import type { MedplumClient, MedplumClientEventMap } from '@medplum/core';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { MedplumNavigateFunction } from './MedplumProvider.context';
+import { reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
   readonly medplum: MedplumClient;

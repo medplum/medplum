@@ -3,7 +3,8 @@
 import { Tabs, Title } from '@mantine/core';
 import { forbidden } from '@medplum/core';
 import { Container, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { GINIndexes } from './db/GINIndexes';
 
 export function DatabaseToolsPage(): JSX.Element {

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import { MedicationKnowledge } from '@medplum/fhirtypes';
+import type { MedicationKnowledge } from '@medplum/fhirtypes';
 import { Document, Loading, ResourceTable, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function MedicationPage(): JSX.Element {

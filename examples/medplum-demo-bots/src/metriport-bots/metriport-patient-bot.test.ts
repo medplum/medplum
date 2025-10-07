@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MetriportMedicalApi } from '@metriport/api-sdk';
 import {
@@ -11,9 +11,9 @@ import {
   findMatchingMetriportPatient,
   getMetriportFacilityIdFromMedplumPatient,
   handler,
-  ValidatedPatientData,
   validatePatientResource,
 } from './metriport-patient-bot';
+import type { ValidatedPatientData } from './metriport-patient-bot';
 import {
   CareFacilityMedplumOrganization,
   JaneSmithMedplumPatient,

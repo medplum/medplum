@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Space } from '@mantine/core';
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
-import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
+import type { UserConfiguration } from '@medplum/fhirtypes';
+import type { NavbarMenu } from '@medplum/react';
+import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
 import {
   IconBrandAsana,
   IconBuilding,
@@ -19,7 +20,8 @@ import {
   IconStar,
   IconWebhook,
 } from '@tabler/icons-react';
-import { FunctionComponent, JSX, Suspense } from 'react';
+import type { FunctionComponent, JSX } from 'react';
+import { Suspense } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Title } from '@mantine/core';
-import { Patient, Schedule } from '@medplum/fhirtypes';
+import type { Patient, Schedule } from '@medplum/fhirtypes';
 import { Loading } from '@medplum/react';
 import { IconClock } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface PatientActionsProps {

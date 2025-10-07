@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
-  GetFunctionConfigurationCommandOutput,
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
@@ -14,7 +14,7 @@ import {
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
 import { sleep } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config/loader';

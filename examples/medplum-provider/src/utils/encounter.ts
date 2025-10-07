@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  getReferenceString,
-  MedplumClient,
-  createReference,
-  formatHumanName,
-  getExtension,
-  HTTP_HL7_ORG,
-} from '@medplum/core';
-import {
+import { getReferenceString, createReference, formatHumanName, getExtension, HTTP_HL7_ORG } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type {
   Appointment,
   ChargeItem,
   ClinicalImpression,

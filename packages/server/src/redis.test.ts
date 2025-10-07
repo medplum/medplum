@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
+import type { MedplumServerConfig } from './config/types';
 import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
 
 describe('Redis', () => {

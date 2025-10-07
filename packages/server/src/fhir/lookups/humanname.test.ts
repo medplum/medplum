@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatFamilyName, formatGivenName, formatHumanName, Operator, WithId } from '@medplum/core';
-import { HumanName, Patient, Practitioner, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { formatFamilyName, formatGivenName, formatHumanName, Operator } from '@medplum/core';
+import type { HumanName, Patient, Practitioner, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { getHumanNameSortValue, HumanNameTable, HumanNameTableRow } from './humanname';
+import type { HumanNameTableRow } from './humanname';
+import { getHumanNameSortValue, HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();

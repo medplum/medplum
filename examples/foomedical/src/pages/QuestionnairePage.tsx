@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum, useResource } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useCallback } from 'react';
+import { useCallback } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Loading } from '../components/Loading';
 

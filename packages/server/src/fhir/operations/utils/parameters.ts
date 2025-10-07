@@ -11,15 +11,15 @@ import {
   isTypedValue,
   validateResource,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import {
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
   OperationDefinition,
   OperationDefinitionParameter,
   Parameters,
   ParametersParameter,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {

@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, DiagnosticReport, Observation, Patient, Resource, Specimen } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  BundleEntry,
+  DiagnosticReport,
+  Observation,
+  Patient,
+  Resource,
+  Specimen,
+} from '@medplum/fhirtypes';
 import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';

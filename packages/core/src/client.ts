@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   AccessPolicy,
   Agent,
   Attachment,
@@ -44,15 +44,17 @@ import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
-import {
+import type {
   CurrentContext,
-  FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
   FhircastEventVersionOptional,
   FhircastEventVersionRequired,
   PendingSubscriptionRequest,
   SubscriptionRequest,
+} from './fhircast';
+import {
+  FhircastConnection,
   assertContextVersionOptional,
   createFhircastMessagePayload,
   isContextVersionRequired,
@@ -74,15 +76,14 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage, IClientStorage } from './storage';
-import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import type { IClientStorage } from './storage';
+import { ClientStorage } from './storage';
+import type { SubscriptionEmitter } from './subscriptions';
+import { SubscriptionManager } from './subscriptions';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
+import type { CodeChallengeMethod, ProfileResource, QueryTypes, WithId } from './utils';
 import {
-  CodeChallengeMethod,
-  ProfileResource,
-  QueryTypes,
-  WithId,
   arrayBufferToBase64,
   concatUrls,
   createReference,

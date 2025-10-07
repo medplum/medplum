@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CompositionSection, Goal } from '@medplum/fhirtypes';
+import type { CompositionSection, Goal } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDateTime } from '../../datetime';
 import {
   OID_GOAL_OBSERVATION,
@@ -16,7 +16,7 @@ import {
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
 } from '../../systems';
-import { CcdaCode, CcdaEntry, CcdaTemplateId, CcdaValue } from '../../types';
+import type { CcdaCode, CcdaEntry, CcdaTemplateId, CcdaValue } from '../../types';
 import { createTextFromExtensions, mapIdentifiers } from '../utils';
 
 export function createGoalEntry(section: CompositionSection, resource: Goal): CcdaEntry | undefined {

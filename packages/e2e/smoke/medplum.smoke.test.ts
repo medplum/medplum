@@ -1,4 +1,7 @@
-import { expect, Page, test } from '@playwright/test';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import path from 'node:path';
 
 test.describe('Medplum App Smoke Tests', () => {

@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
-import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { ResourceType } from '@medplum/fhirtypes';
-import { NextFunction, Request, Response, Router } from 'express';
+import type { BatchEvent, FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
@@ -59,7 +61,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
-import { ResendSubscriptionsOptions } from './repo';
+import type { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 

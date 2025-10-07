@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { PhotonWebhook } from '../../photon-types';
+import type { PhotonWebhook } from '../../photon-types';
 
 export const createdWebhook: PhotonWebhook = {
   method: 'POST',

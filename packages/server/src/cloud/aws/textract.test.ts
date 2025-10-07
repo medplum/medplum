@@ -8,7 +8,8 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import express from 'express';
 import request from 'supertest';

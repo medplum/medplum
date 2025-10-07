@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
-import { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
+import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
 import { IconPlus } from '@tabler/icons-react';
 import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';

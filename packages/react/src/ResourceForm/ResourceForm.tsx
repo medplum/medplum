@@ -9,11 +9,12 @@ import {
   satisfiedAccessPolicy,
   tryGetProfile,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle, IconChevronDown, IconEdit, IconTrash } from '@tabler/icons-react';
 import cx from 'clsx';
-import { FormEvent, JSX, useEffect, useMemo, useState } from 'react';
+import type { FormEvent, JSX } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
 import classes from './ResourceForm.module.css';
