@@ -105,7 +105,6 @@ describe('Epic Query Patient Bot', () => {
     (fetch as unknown as Mock).mockImplementation(async (url: string, options?: any): Promise<any> => {
       const { Response } = await vi.importActual<{ Response: any }>('node-fetch');
       const urlString = url.toString();
-      console.log(`Mock Fetch: API request to ${urlString} with options: ${JSON.stringify(options)}`);
 
       if (urlString.includes('/oauth2/token')) {
         return new Response(JSON.stringify({ access_token: 'mock-epic-access-token', expires_in: 300 }), {
@@ -225,7 +224,6 @@ describe('Epic Query Patient Bot', () => {
       const { Response } = await vi.importActual<{ Response: any }>('node-fetch');
       const urlString = url.toString();
       const parsedUrl = new URL(urlString);
-      console.log(`Mock Fetch: API request to ${urlString} with options: ${JSON.stringify(options)}`);
 
       if (urlString.includes('/oauth2/token')) {
         return new Response(JSON.stringify({ access_token: 'mock-epic-access-token', expires_in: 300 }), {
