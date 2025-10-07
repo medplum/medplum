@@ -92,7 +92,7 @@ describe('Redis', () => {
   });
 
   // `deleteRedisKeys` is for tests only (i.e. in test.setup.ts), so testing it is a bit meta,
-  // but the function is just complicated enough that it testing is merited
+  // but the function is just complicated enough that testing is merited
   describe('deleteRedisKeys', () => {
     let r1: Redis | undefined;
     let r2: Redis | undefined;
