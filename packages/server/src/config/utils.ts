@@ -90,6 +90,7 @@ const integerKeys = new Set([
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -123,6 +124,7 @@ const booleanKeys = new Set([
   'database.disableConnectionConfiguration',
   'database.disableRunPostDeployMigrations',
   'database.runMigrations',
+  'fhirSearchDiscourageSeqScan',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
