@@ -150,6 +150,7 @@ const booleanKeys = new Set([
   'database.disableConnectionConfiguration',
   'database.disableRunPostDeployMigrations',
   'database.runMigrations',
+  'fhirSearchDiscourageSeqScan',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
