@@ -555,7 +555,7 @@ export async function resourceMatchesSubscriptionCriteria({
 
   // Should eventually remove this once we've seen who is relying on this behavior
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger?.warn('This subscription would have fired for this resource but the account fields do not match', {
+    logger?.warn('Subscription suppressed due to mismatched meta.account', {
       subscriptionId: subscription.id,
       resourceId: resource.id,
     });
