@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, TextInput, Button, Paper, Text, Box, ScrollArea, Group } from '@mantine/core';
-import { useState, JSX, useRef, useEffect } from 'react';
+import type { JSX} from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
 import { IconSend, IconTrash } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
