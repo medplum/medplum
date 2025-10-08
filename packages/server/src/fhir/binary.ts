@@ -26,15 +26,12 @@ binaryRouter.post('/', handleBinaryWriteRequest);
 binaryRouter.put('/:id', handleBinaryWriteRequest);
 
 // Get binary content
-binaryRouter.get(
-  '/:id',
-  async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { id } = req.params;
-    const binary = await ctx.repo.readResource<Binary>('Binary', id);
-    await sendFhirResponse(req, res, allOk, binary);
-  }
-);
+binaryRouter.get('/:id', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { id } = req.params;
+  const binary = await ctx.repo.readResource<Binary>('Binary', id);
+  await sendFhirResponse(req, res, allOk, binary);
+});
 
 async function handleBinaryWriteRequest(req: Request, res: Response): Promise<void> {
   const { repo } = getAuthenticatedContext();

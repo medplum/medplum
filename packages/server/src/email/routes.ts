@@ -19,20 +19,16 @@ const sendEmailValidator = makeValidationMiddleware([
   body('subject').notEmpty().withMessage('Subject is required'),
 ]);
 
-emailRouter.post(
-  '/send',
-  sendEmailValidator,
-  async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
+emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
 
-    // Make sure the user project has the email feature enabled
-    if (!ctx.project.features?.includes('email') || !ctx.membership.admin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
-
-    // Use the user repository to enforce permission checks on email attachments
-    await sendEmail(ctx.repo, req.body);
-    sendOutcome(res, allOk);
+  // Make sure the user project has the email feature enabled
+  if (!ctx.project.features?.includes('email') || !ctx.membership.admin) {
+    sendOutcome(res, forbidden);
+    return;
   }
-);
+
+  // Use the user repository to enforce permission checks on email attachments
+  await sendEmail(ctx.repo, req.body);
+  sendOutcome(res, allOk);
+});

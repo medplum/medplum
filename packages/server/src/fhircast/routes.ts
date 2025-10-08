@@ -505,33 +505,27 @@ async function closeCurrentContext(projectId: string, topic: string): Promise<vo
 }
 
 // Get the current subscription status
-protectedSTU2Routes.get(
-  '/:topic',
-  async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
-    if (!currentContext) {
-      res.status(200).json([]);
-      return;
-    }
-    res.status(200).json(currentContext.context);
+protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+  // Non-standard FHIRcast extension to support Nuance PowerCast Hub
+  if (!currentContext) {
+    res.status(200).json([]);
+    return;
   }
-);
+  res.status(200).json(currentContext.context);
+});
 
-protectedSTU3Routes.get(
-  '/:topic',
-  async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    if (!currentContext) {
-      // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
-      res.status(200).json({
-        'context.type': '',
-        context: [],
-      });
-      return;
-    }
-    res.status(200).json(currentContext);
+protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
+  if (!currentContext) {
+    // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
+    res.status(200).json({
+      'context.type': '',
+      context: [],
+    });
+    return;
   }
-);
+  res.status(200).json(currentContext);
+});

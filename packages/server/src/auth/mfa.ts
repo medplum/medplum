@@ -20,37 +20,33 @@ authenticator.options = {
 
 export const mfaRouter = Router();
 
-mfaRouter.get(
-  '/status',
-  authenticateRequest,
-  async (_req: Request, res: Response) => {
-    const systemRepo = getSystemRepo();
-    const ctx = getAuthenticatedContext();
-    let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
-    if (user.mfaEnrolled) {
-      res.json({ enrolled: true });
-      return;
-    }
+mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
+  const systemRepo = getSystemRepo();
+  const ctx = getAuthenticatedContext();
+  let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  if (user.mfaEnrolled) {
+    res.json({ enrolled: true });
+    return;
+  }
 
-    if (!user.mfaSecret) {
-      user = await systemRepo.updateResource({
-        ...user,
-        mfaSecret: authenticator.generateSecret(),
-      });
-    }
-
-    const accountName = `Medplum - ${user.email}`;
-    const issuer = 'medplum.com';
-    const secret = user.mfaSecret as string;
-    const otp = authenticator.keyuri(accountName, issuer, secret);
-
-    res.json({
-      enrolled: false,
-      enrollUri: otp,
-      enrollQrCode: await toDataURL(otp),
+  if (!user.mfaSecret) {
+    user = await systemRepo.updateResource({
+      ...user,
+      mfaSecret: authenticator.generateSecret(),
     });
   }
-);
+
+  const accountName = `Medplum - ${user.email}`;
+  const issuer = 'medplum.com';
+  const secret = user.mfaSecret as string;
+  const otp = authenticator.keyuri(accountName, issuer, secret);
+
+  res.json({
+    enrolled: false,
+    enrollUri: otp,
+    enrollQrCode: await toDataURL(otp),
+  });
+});
 
 mfaRouter.post(
   '/login-enroll',
