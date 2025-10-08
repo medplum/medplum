@@ -150,8 +150,8 @@ export function App(): JSX.Element {
     <GraphiQL
       fetcher={fetcher}
       defaultQuery={HELP_TEXT}
-      query={parameters.query || undefined}
-      variables={parameters.variables || undefined}
+      initialQuery={parameters.query || undefined}
+      initialVariables={parameters.variables || undefined}
       operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}
