@@ -549,14 +549,13 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  const matches = matchesSearchRequest(resource, searchRequest);
-  if (!matches) {
+  if (!matchesSearchRequest(resource, searchRequest)) {
     return false;
   }
 
   // Should eventually remove this once we've seen who is relying on this behavior
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger?.warn('This subscription would have fired for this resource but the account fields does not match', {
+    logger?.warn('This subscription would have fired for this resource but the account fields do not match', {
       subscriptionId: subscription.id,
       resourceId: resource.id,
     });
