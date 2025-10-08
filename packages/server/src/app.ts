@@ -4,7 +4,7 @@ import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } f
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import type { Express, NextFunction, Request, Response } from 'express';
+import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import { json, Router, text, urlencoded } from 'express';
 import { rmSync } from 'fs';
 import http from 'http';
@@ -186,6 +186,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
+  app.use(defaultBodyParser());
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
@@ -287,4 +288,16 @@ export async function runMiddleware(
   return new Promise<void>((resolve, reject) => {
     handler(req, res, (err) => (err ? reject(err) : resolve()));
   });
+}
+
+/**
+ * Returns an Express middleware handler for ensuring req.body is not undefined. For backwards
+ * compatibility with Express v4. See ${@link https://github.com/expressjs/body-parser/commit/6cbc279dc875ba1801e9ee5849f3f64e5b42f6e1}
+ * @returns Express middleware request handler.
+ */
+function defaultBodyParser(): RequestHandler {
+  return function defaultParser(req: Request, _res: Response, next: NextFunction) {
+    req.body ??= {};
+    next();
+  };
 }
