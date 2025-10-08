@@ -1,16 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Stack,
-  TextInput,
-  Button,
-  Paper,
-  Text,
-  Box,
-  ScrollArea,
-  Group,
-  Select,
-} from '@mantine/core';
+import { Stack, TextInput, Button, Paper, Text, Box, ScrollArea, Group, Select } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
@@ -253,9 +243,7 @@ export function SpacesPage(): JSX.Element {
           ))}
           {loading && (
             <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-              <Text c="dimmed">
-                {messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}
-              </Text>
+              <Text c="dimmed">{messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}</Text>
             </Paper>
           )}
         </Stack>
