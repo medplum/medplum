@@ -218,8 +218,8 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
     log.info('Downloaded content successfully');
-  } catch (ex) {
-    log.info('Download exception: ' + ex);
+  } catch (ex: any) {
+    log.info('Download exception: ' + ex, ex);
     throw ex;
   }
 }
