@@ -232,7 +232,7 @@ async function includeInExpansion(
   params: ValueSetExpandParameters
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
-  codeSystem = await hydrateCodeSystemProperties(db, codeSystem);
+  await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);
   if (!query) {
@@ -250,12 +250,11 @@ async function includeInExpansion(
  * Hydrate property IDs to optimize expensive DB queries.
  * @param db - Database connection
  * @param codeSystem - CodeSystem resource to hydrate
- * @returns The hydrated CodeSystem resource, with property.id added
  */
 export async function hydrateCodeSystemProperties(
   db: Pool | PoolClient,
   codeSystem: WithId<CodeSystem>
-): Promise<WithId<CodeSystem>> {
+): Promise<void> {
   const propertyIds = await new SelectQuery('CodeSystem_Property')
     .column('id')
     .column('code')
@@ -273,7 +272,6 @@ export async function hydrateCodeSystemProperties(
       property.id = propertyIds.find((row) => row.code === property.code)?.id;
     }
   }
-  return codeSystem;
 }
 
 export function expansionQuery(
