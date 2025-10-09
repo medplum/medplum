@@ -292,25 +292,24 @@ export function expansionQuery(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-        case 'descendent-of':
-          {
-            const parentProperty = getParentProperty(codeSystem);
-            if (!parentProperty?.id) {
-              return undefined;
-            }
-            const newQuery = addParentFilter(
-              query,
-              codeSystem,
-              condition,
-              parentProperty as WithId<CodeSystemProperty>,
-              params
-            );
-            if (!newQuery) {
-              return undefined;
-            }
-            query = newQuery;
+        case 'descendent-of': {
+          const parentProperty = getParentProperty(codeSystem);
+          if (!parentProperty?.id) {
+            return undefined;
           }
+          const newQuery = addParentFilter(
+            query,
+            codeSystem,
+            condition,
+            parentProperty as WithId<CodeSystemProperty>,
+            params
+          );
+          if (!newQuery) {
+            return undefined;
+          }
+          query = newQuery;
           break;
+        }
         case '=':
         case 'in': {
           const property = codeSystem.property?.find((p) => p.code === condition.property);
