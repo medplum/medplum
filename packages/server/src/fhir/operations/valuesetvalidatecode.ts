@@ -16,7 +16,14 @@ import { DatabaseMode } from '../../database';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { addPropertyFilter, findAncestor, findTerminologyResource, selectCoding } from './utils/terminology';
+import {
+  addPropertyFilter,
+  findAncestor,
+  findTerminologyResource,
+  getParentProperty,
+  resolveProperty,
+  selectCoding,
+} from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
@@ -123,6 +130,7 @@ async function satisfies(
   codeSystem: WithId<CodeSystem>
 ): Promise<boolean> {
   const { logger, repo } = getAuthenticatedContext();
+  const db = repo.getDatabaseClient(DatabaseMode.READER);
   let query = selectCoding(codeSystem.id, code);
 
   switch (filter.op) {
@@ -133,19 +141,24 @@ async function satisfies(
       query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','), codeSystem);
       break;
     case 'is-a':
-    case 'descendent-of':
+    case 'descendent-of': {
       if (filter.op !== 'is-a') {
         query.where('code', '!=', filter.value);
       }
 
       // Recursively find parents until one matches
-      query = findAncestor(query, codeSystem, filter.value);
+      const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+      if (!parentProperty) {
+        return false;
+      }
+      query = findAncestor(query, codeSystem, parentProperty, filter.value);
       break;
+    }
     default:
       logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const results = await query.execute(db);
   return results.length > 0;
 }

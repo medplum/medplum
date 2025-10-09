@@ -5,6 +5,7 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
+  CodeSystemProperty,
   Coding,
   ValueSet,
   ValueSetComposeInclude,
@@ -35,6 +36,7 @@ import {
   findAncestor,
   findTerminologyResource,
   getParentProperty,
+  resolveProperty,
 } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
@@ -228,7 +230,7 @@ const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 
 async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
@@ -250,7 +252,11 @@ async function includeInExpansion(
     }
   }
 
-  const query = expansionQuery(include, codeSystem, params);
+  let parentProperty: WithId<CodeSystemProperty> | undefined;
+  if (codeSystem.hierarchyMeaning === 'is-a') {
+    parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+  }
+  const query = expansionQuery(include, codeSystem, parentProperty, params);
   if (!query) {
     return;
   }
@@ -265,6 +271,7 @@ async function includeInExpansion(
 export function expansionQuery(
   include: ValueSetComposeInclude,
   codeSystem: CodeSystem,
+  parentProperty?: WithId<CodeSystemProperty>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
   let query = new SelectQuery('Coding')
@@ -282,6 +289,8 @@ export function expansionQuery(
           if (params?.filter) {
             if (params.filter.length < 3) {
               return undefined; // Must specify minimum filter length to make this expensive query workable
+            } else if (!parentProperty) {
+              return undefined; // CodeSystem must track parent to resolve hierarchy filters
             }
 
             const base = new SelectQuery('Coding', undefined, 'origin')
@@ -291,7 +300,7 @@ export function expansionQuery(
               .column('synonymOf')
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
-            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
+            const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
             query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
           } else {
             query = addDescendants(query, codeSystem, condition.value);
