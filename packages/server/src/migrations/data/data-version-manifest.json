@@ -112,6 +112,6 @@
     "requiredBefore": "4.4.0"
   },
   "v29": {
-    "serverVersion": "4.4.2"
+    "serverVersion": "4.4.3"
   }
 }
