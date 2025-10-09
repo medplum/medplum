@@ -232,10 +232,7 @@ async function includeInExpansion(
   params: ValueSetExpandParameters
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
-
-  if (include.filter?.length) {
-    codeSystem = await hydrateCodeSystemProperties(db, codeSystem);
-  }
+  codeSystem = await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);
   if (!query) {
@@ -259,24 +256,21 @@ export async function hydrateCodeSystemProperties(
   db: Pool | PoolClient,
   codeSystem: WithId<CodeSystem>
 ): Promise<WithId<CodeSystem>> {
-  const properties = codeSystem.property?.map((p) => p.code) ?? [];
-  // Generate possibly-implicit hierarchy property
-  const parentProp = await getParentProperty(codeSystem);
-  if (parentProp && !codeSystem.property?.some((p) => p.code === parentProp.code)) {
-    properties.push(parentProp.code);
-  }
   const propertyIds = await new SelectQuery('CodeSystem_Property')
     .column('id')
     .column('code')
     .where('system', '=', codeSystem.id)
     .execute(db);
 
-  if (codeSystem.property?.length !== properties.length && parentProp) {
+  if (codeSystem.property?.length !== propertyIds.length && codeSystem.hierarchyMeaning === 'is-a') {
+    // Implicit hierarchy property may be present; add it to the CodeSystem so it can be populated
+    const parentProp = await getParentProperty(codeSystem);
     codeSystem.property = append(codeSystem.property, parentProp);
   }
+  // Populate property IDs from the database
   if (codeSystem.property?.length) {
     for (const property of codeSystem.property) {
-      property.id = propertyIds.find((row) => row.code === property.code).id;
+      property.id = propertyIds.find((row) => row.code === property.code)?.id;
     }
   }
   return codeSystem;
