@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import type { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
 import type { Operator as SqlOperator } from '../../sql';
@@ -125,26 +126,21 @@ export function addPropertyFilter(
   return query;
 }
 
-export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
+export function findAncestor(
+  base: SelectQuery,
+  codeSystem: CodeSystem,
+  property: WithId<CodeSystemProperty>,
+  ancestorCode: string
+): SelectQuery {
   const query = new SelectQuery('Coding').addColumns(base.columns).where('system', '=', codeSystem.id);
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'INNER JOIN',
     'Coding_Property',
     propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.join(
-    'INNER JOIN',
-    'CodeSystem_Property',
-    csPropertyTable,
     new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target')),
+      new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );
 
@@ -181,16 +177,39 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
   return property;
 }
 
+export async function resolveProperty(
+  db: Pool | PoolClient,
+  codeSystem: WithId<CodeSystem>,
+  property: CodeSystemProperty
+): Promise<WithId<CodeSystemProperty> | undefined> {
+  const query = new SelectQuery('CodeSystem_Property')
+    .column('id')
+    .where('system', '=', codeSystem.id)
+    .where('code', '=', property.code);
+
+  const id: string | undefined = (await query.execute(db))[0]?.id;
+  if (id) {
+    property.id = id;
+    return property as WithId<CodeSystemProperty>;
+  } else {
+    return undefined;
+  }
+}
+
 /**
  * Extends a query to select descendants of a given coding.
  * @param query - The query to extend.
  * @param codeSystem - The CodeSystem to query within
+ * @param property - The parent (is-a) property for the code system.
  * @param parentCode - The ancestor code, whose descendants are selected.
  * @returns The extended SELECT query.
  */
-export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
+export function addDescendants(
+  query: SelectQuery,
+  codeSystem: CodeSystem,
+  property: CodeSystemProperty,
+  parentCode: string
+): SelectQuery {
   const base = new SelectQuery('Coding')
     .column('id')
     .column('code')
