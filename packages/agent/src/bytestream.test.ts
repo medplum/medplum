@@ -32,7 +32,7 @@ describe('Byte Stream', () => {
   });
 
   test('Send and receive', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test32.example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -107,7 +107,7 @@ describe('Byte Stream', () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
 
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test33.example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -183,7 +183,7 @@ describe('Byte Stream', () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
 
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test34.example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -253,7 +253,7 @@ describe('Byte Stream', () => {
   });
 
   test('Multiple messages in single data chunk', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test35.example.com/ws/agent');
     const receivedMessages: string[] = [];
 
     mockServer.on('connection', (socket) => {
@@ -329,7 +329,7 @@ describe('Byte Stream', () => {
   });
 
   test('Partial message handling', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test36.example.com/ws/agent');
     const receivedMessages: string[] = [];
 
     mockServer.on('connection', (socket) => {
@@ -415,7 +415,7 @@ describe('Byte Stream', () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
 
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test37.example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {

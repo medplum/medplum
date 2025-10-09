@@ -30,7 +30,7 @@ describe('DICOM', () => {
   });
 
   test('C-ECHO and C-STORE', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+    const mockServer = new Server('wss://test38.example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
