@@ -4,7 +4,6 @@ import { getDateProperty, Operator } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'url';
-import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
@@ -20,27 +19,31 @@ import { getClientApplication } from './utils';
 
 /**
  * HTTP GET handler for /oauth2/authorize endpoint.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response) => {
+export const authorizeGetHandler = async (req: Request, res: Response): Promise<void> => {
   const validateResult = await validateAuthorizeRequest(req, res, req.query);
   if (!validateResult) {
     return;
   }
 
   sendSuccessRedirect(req, res, req.query);
-});
+};
 
 /**
  * HTTP POST handler for /oauth2/authorize endpoint.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const authorizePostHandler = asyncWrap(async (req: Request, res: Response) => {
+export const authorizePostHandler = async (req: Request, res: Response): Promise<void> => {
   const validateResult = await validateAuthorizeRequest(req, res, req.body);
   if (!validateResult) {
     return;
   }
 
   sendSuccessRedirect(req, res, req.body);
-});
+};
 
 /**
  * Validates the OAuth/OpenID Authorization Endpoint configuration.

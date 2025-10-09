@@ -13,7 +13,6 @@ import {
 } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
@@ -37,8 +36,10 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * Then executes the bot.
  * Returns the outcome of the bot execution.
  * Assumes that input content-type is output content-type.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
+export const executeHandler = async (req: Request, res: Response): Promise<void> => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
       const result = await executeOperation(req);
@@ -66,7 +67,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
     res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
   }
-});
+};
 
 async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();

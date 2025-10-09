@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Request, Response } from 'express';
-import { asyncWrap } from '../async';
 import { getClientRedirectUris, getStandardClientByRedirectUri } from './clients';
 
 /*
@@ -11,8 +10,10 @@ import { getClientRedirectUris, getStandardClientByRedirectUri } from './clients
 
 /**
  * HTTP POST handler for /oauth2/register endpoint.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const registerHandler = asyncWrap(async (req: Request, res: Response) => {
+export const registerHandler = async (req: Request, res: Response): Promise<void> => {
   const redirectUri = req.body.redirect_uris?.[0];
   if (!redirectUri) {
     res.status(400).json({
@@ -37,4 +38,4 @@ export const registerHandler = asyncWrap(async (req: Request, res: Response) => 
     client_id_issued_at: Math.floor(Date.now() / 1000),
     redirect_uris: getClientRedirectUris(standardClient),
   });
-});
+};
