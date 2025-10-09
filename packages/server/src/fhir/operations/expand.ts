@@ -328,7 +328,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
           new Conjunction(
             params.filter
               .split(/\s+/g)
-              .map((filter) => new Condition('display', 'LOWER_LIKE', `%${escapeLikeString(filter)}%`))
+              .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
           ),
         ])
       )
