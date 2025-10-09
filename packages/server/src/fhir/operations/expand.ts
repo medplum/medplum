@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
@@ -13,6 +13,7 @@ import type {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
@@ -36,7 +37,6 @@ import {
   findAncestor,
   findTerminologyResource,
   getParentProperty,
-  resolveProperty,
 } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
@@ -225,8 +225,6 @@ async function computeExpansion(
   return expansion;
 }
 
-const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 'descendent-of'];
-
 async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
@@ -235,28 +233,11 @@ async function includeInExpansion(
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
 
-  const hierarchyFilter = include.filter?.find((f) => hierarchyOps.includes(f.op));
-  if (hierarchyFilter) {
-    // Hydrate parent property ID to optimize expensive DB queries for hierarchy expansion
-    const parentProp = getParentProperty(codeSystem);
-    const propId = (
-      await new SelectQuery('CodeSystem_Property')
-        .column('id')
-        .where('system', '=', codeSystem.id)
-        .where('code', '=', parentProp.code)
-        .execute(db)
-    )[0]?.id;
-    if (propId) {
-      parentProp.id = propId;
-      codeSystem.property?.unshift?.(parentProp);
-    }
+  if (include.filter?.length) {
+    codeSystem = await hydrateCodeSystemProperties(db, codeSystem);
   }
 
-  let parentProperty: WithId<CodeSystemProperty> | undefined;
-  if (codeSystem.hierarchyMeaning === 'is-a') {
-    parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
-  }
-  const query = expansionQuery(include, codeSystem, parentProperty, params);
+  const query = expansionQuery(include, codeSystem, params);
   if (!query) {
     return;
   }
@@ -268,10 +249,43 @@ async function includeInExpansion(
   }
 }
 
+/**
+ * Hydrate property IDs to optimize expensive DB queries.
+ * @param db - Database connection
+ * @param codeSystem - CodeSystem resource to hydrate
+ * @returns The hydrated CodeSystem resource, with property.id added
+ */
+export async function hydrateCodeSystemProperties(
+  db: Pool | PoolClient,
+  codeSystem: WithId<CodeSystem>
+): Promise<WithId<CodeSystem>> {
+  const properties = codeSystem.property?.map((p) => p.code) ?? [];
+  // Generate possibly-implicit hierarchy property
+  const parentProp = await getParentProperty(codeSystem);
+  if (parentProp && !codeSystem.property?.some((p) => p.code === parentProp.code)) {
+    properties.push(parentProp.code);
+  }
+  const propertyIds = await new SelectQuery('CodeSystem_Property')
+    .column('id')
+    .column('code')
+    .where('system', '=', codeSystem.id)
+    .where('code', 'IN', properties)
+    .execute(db);
+
+  if (codeSystem.property?.length !== properties.length && parentProp) {
+    codeSystem.property = append(codeSystem.property, parentProp);
+  }
+  if (codeSystem.property?.length) {
+    for (const property of codeSystem.property) {
+      property.id = propertyIds.find((row) => row.code === property.code).id;
+    }
+  }
+  return codeSystem;
+}
+
 export function expansionQuery(
   include: ValueSetComposeInclude,
-  codeSystem: CodeSystem,
-  parentProperty?: WithId<CodeSystemProperty>,
+  codeSystem: WithId<CodeSystem>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
   let query = new SelectQuery('Coding')
@@ -286,36 +300,33 @@ export function expansionQuery(
       switch (condition.op) {
         case 'is-a':
         case 'descendent-of':
-          if (!parentProperty) {
-            return undefined; // CodeSystem must track parent to resolve hierarchy filters
-          }
-          if (params?.filter) {
-            if (params.filter.length < 3) {
-              return undefined; // Must specify minimum filter length to make this expensive query workable
+          {
+            const parentProperty = getParentProperty(codeSystem);
+            if (!parentProperty?.id) {
+              return undefined;
             }
-
-            const base = new SelectQuery('Coding', undefined, 'origin')
-              .column('id')
-              .column('code')
-              .column('display')
-              .column('synonymOf')
-              .where(new Column('origin', 'system'), '=', codeSystem.id)
-              .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
-            const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
-            query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
-          } else {
-            query = addDescendants(query, codeSystem, parentProperty, condition.value);
-          }
-          if (condition.op !== 'is-a') {
-            query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
+            const newQuery = addParentFilter(
+              query,
+              codeSystem,
+              condition,
+              parentProperty as WithId<CodeSystemProperty>,
+              params
+            );
+            if (!newQuery) {
+              return undefined;
+            }
+            query = newQuery;
           }
           break;
         case '=':
-          query = addPropertyFilter(query, condition.property, '=', condition.value, codeSystem);
+        case 'in': {
+          const property = codeSystem.property?.find((p) => p.code === condition.property);
+          if (!property?.id) {
+            return undefined;
+          }
+          query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
           break;
-        case 'in':
-          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','), codeSystem);
-          break;
+        }
         default:
           getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
           return undefined; // Unknown filter type, don't make DB query with incorrect filters
@@ -325,6 +336,36 @@ export function expansionQuery(
 
   if (params) {
     query = addExpansionFilters(query, params);
+  }
+  return query;
+}
+
+export function addParentFilter(
+  query: SelectQuery,
+  codeSystem: WithId<CodeSystem>,
+  condition: ValueSetComposeIncludeFilter,
+  parentProperty: WithId<CodeSystemProperty>,
+  params?: ValueSetExpandParameters
+): SelectQuery | undefined {
+  if (params?.filter) {
+    if (params.filter.length < 3) {
+      return undefined; // Must specify minimum filter length to make this expensive query workable
+    }
+
+    const base = new SelectQuery('Coding', undefined, 'origin')
+      .column('id')
+      .column('code')
+      .column('display')
+      .column('synonymOf')
+      .where(new Column('origin', 'system'), '=', codeSystem.id)
+      .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+    const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
+    query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
+  } else {
+    query = addDescendants(query, codeSystem, parentProperty, condition.value);
+  }
+  if (condition.op !== 'is-a') {
+    query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
   }
   return query;
 }
