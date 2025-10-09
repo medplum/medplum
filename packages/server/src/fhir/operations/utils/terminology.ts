@@ -200,12 +200,16 @@ export async function resolveProperty(
  * Extends a query to select descendants of a given coding.
  * @param query - The query to extend.
  * @param codeSystem - The CodeSystem to query within
+ * @param property - The parent (is-a) property for the code system.
  * @param parentCode - The ancestor code, whose descendants are selected.
  * @returns The extended SELECT query.
  */
-export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
+export function addDescendants(
+  query: SelectQuery,
+  codeSystem: CodeSystem,
+  property: CodeSystemProperty,
+  parentCode: string
+): SelectQuery {
   const base = new SelectQuery('Coding')
     .column('id')
     .column('code')

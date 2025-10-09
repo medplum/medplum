@@ -286,11 +286,12 @@ export function expansionQuery(
       switch (condition.op) {
         case 'is-a':
         case 'descendent-of':
+          if (!parentProperty) {
+            return undefined; // CodeSystem must track parent to resolve hierarchy filters
+          }
           if (params?.filter) {
             if (params.filter.length < 3) {
               return undefined; // Must specify minimum filter length to make this expensive query workable
-            } else if (!parentProperty) {
-              return undefined; // CodeSystem must track parent to resolve hierarchy filters
             }
 
             const base = new SelectQuery('Coding', undefined, 'origin')
@@ -303,7 +304,7 @@ export function expansionQuery(
             const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
             query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
           } else {
-            query = addDescendants(query, codeSystem, condition.value);
+            query = addDescendants(query, codeSystem, parentProperty, condition.value);
           }
           if (condition.op !== 'is-a') {
             query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
