@@ -263,7 +263,7 @@ export async function hydrateCodeSystemProperties(
 
   if (codeSystem.property?.length !== propertyIds.length && codeSystem.hierarchyMeaning === 'is-a') {
     // Implicit hierarchy property may be present; add it to the CodeSystem so it can be populated
-    const parentProp = await getParentProperty(codeSystem);
+    const parentProp = getParentProperty(codeSystem);
     codeSystem.property = append(codeSystem.property, parentProp);
   }
   // Populate property IDs from the database
