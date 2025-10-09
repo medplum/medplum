@@ -269,7 +269,6 @@ export async function hydrateCodeSystemProperties(
     .column('id')
     .column('code')
     .where('system', '=', codeSystem.id)
-    .where('code', 'IN', properties)
     .execute(db);
 
   if (codeSystem.property?.length !== properties.length && parentProp) {
@@ -335,7 +334,7 @@ export function expansionQuery(
   }
 
   if (params) {
-    query = addExpansionFilters(query, params);
+    query = addExpansionFilters(query, codeSystem, params);
   }
   return query;
 }
@@ -370,7 +369,11 @@ export function addParentFilter(
   return query;
 }
 
-function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameters): SelectQuery {
+function addExpansionFilters(
+  query: SelectQuery,
+  codeSystem: WithId<CodeSystem>,
+  params: ValueSetExpandParameters
+): SelectQuery {
   if (params.filter) {
     query
       .whereExpr(
@@ -389,14 +392,20 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
       );
   }
   if (params.excludeNotForUI) {
-    query = addAbstractFilter(query);
+    query = addAbstractFilter(query, codeSystem);
   }
 
   query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset ?? 0);
   return query;
 }
 
-function addAbstractFilter(query: SelectQuery): SelectQuery {
+function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): SelectQuery {
+  const property = codeSystem.property?.find((p) => p.uri === abstractProperty);
+  if (!property?.id) {
+    return query; // Cannot add database filter; all found Coding rows must be considered selectable
+  }
+
+  // LEFT JOIN to check if abstract property is present
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'LEFT JOIN',
@@ -404,21 +413,11 @@ function addAbstractFilter(query: SelectQuery): SelectQuery {
     propertyTable,
     new Conjunction([
       new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'value'), '=', 'true'),
+      new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );
+  // Only return Coding rows where the property is NOT present
   query.where(new Column(propertyTable, 'value'), '=', null);
-
-  const codeSystemProperty = query.getNextJoinAlias();
-  query.join(
-    'LEFT JOIN',
-    'CodeSystem_Property',
-    codeSystemProperty,
-    new Conjunction([
-      new Condition(new Column(codeSystemProperty, 'id'), '=', new Column(propertyTable, 'property')),
-      new Condition(new Column(codeSystemProperty, 'uri'), '=', abstractProperty),
-    ])
-  );
 
   return query;
 }
