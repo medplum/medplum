@@ -39,7 +39,7 @@ describe('HL7', () => {
   });
 
   test('Send and receive', async () => {
-    const mockServer = new Server('wss://test39.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -115,7 +115,7 @@ describe('HL7', () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
 
-    const mockServer = new Server('wss://test40.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -193,7 +193,7 @@ describe('HL7', () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
 
-    const mockServer = new Server('wss://test41.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -267,7 +267,7 @@ describe('HL7', () => {
   });
 
   test('Send and receive -- enhanced mode', async () => {
-    const mockServer = new Server('wss://test42.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -348,7 +348,7 @@ describe('HL7', () => {
   });
 
   test('Send and receive -- enhanced mode + messagesPerMin', async () => {
-    const mockServer = new Server('wss://test43.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -446,7 +446,7 @@ describe('HL7', () => {
   test('Invalid messagesPerMin logs warning', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-    const mockServer = new Server('wss://test44.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -497,7 +497,7 @@ describe('HL7', () => {
   });
 
   test('Push', async () => {
-    const mockServer = new Server('wss://test45.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -590,7 +590,7 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://test46.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -853,7 +853,7 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://test47.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -973,7 +973,7 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://test48.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {

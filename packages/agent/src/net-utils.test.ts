@@ -35,7 +35,7 @@ describe('Agent Net Utils', () => {
         return [allOk, {} as Resource];
       });
 
-      mockServer = new Server('wss://test49.example.com/ws/agent');
+      mockServer = new Server('wss://example.com/ws/agent');
 
       mockServer.on('connection', (socket) => {
         wsClient = socket;
@@ -291,7 +291,7 @@ describe('Agent Net Utils', () => {
         return [allOk, {} as Resource];
       });
 
-      mockServer = new Server('wss://test50.example.com/ws/agent');
+      mockServer = new Server('wss://example.com/ws/agent');
 
       mockServer.on('connection', (socket) => {
         wsClient = socket;

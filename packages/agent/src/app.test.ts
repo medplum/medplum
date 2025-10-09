@@ -76,7 +76,7 @@ describe('App', () => {
   test('Runs successfully', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-    const mockServer = new Server('wss://test6.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
       gotHeartbeatRequest: false,
@@ -166,7 +166,7 @@ describe('App', () => {
       originalDispatchEvent.call(this, event);
     });
 
-    const mockServer = new Server('wss://test7.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -219,7 +219,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer1 = new Server('wss://test8.example.com/ws/agent');
+    const mockServer1 = new Server('wss://example.com/ws/agent');
     mockServer1.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -243,7 +243,7 @@ describe('App', () => {
     mockServer1.stop();
 
     // Start a new server
-    const mockServer2 = new Server('wss://test9.example.com/ws/agent');
+    const mockServer2 = new Server('wss://example.com/ws/agent');
     mockServer2.on('connection', mockConnectionHandler);
 
     // Wait for the WebSocket to reconnect
@@ -276,7 +276,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer = new Server('wss://test10.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -335,7 +335,7 @@ describe('App', () => {
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
-    const mockServer = new Server('wss://test11.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -392,7 +392,7 @@ describe('App', () => {
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
-    const mockServer = new Server('wss://test12.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -473,7 +473,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer = new Server('wss://test13.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     // We will create 6 endpoints in total, 3 for each channel type (HL7v2 and DICOM)
@@ -1014,7 +1014,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer = new Server('wss://test14.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     // Create the initial endpoints for all channels
@@ -1102,7 +1102,7 @@ describe('App', () => {
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    const mockServer = new Server('wss://test15.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       state.mySocket = socket;
@@ -1407,7 +1407,7 @@ describe('App', () => {
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    const mockServer = new Server('wss://test16.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       state.mySocket = socket;
@@ -1651,7 +1651,7 @@ describe('App', () => {
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    const mockServer = new Server('wss://test17.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       state.mySocket = socket;
@@ -1790,7 +1790,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test18.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -1894,7 +1894,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test19.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2031,7 +2031,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test20.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2155,7 +2155,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test21.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2249,7 +2249,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test22.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2364,7 +2364,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test23.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2494,7 +2494,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test24.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2606,7 +2606,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test25.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2738,7 +2738,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test26.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2840,7 +2840,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test27.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -2935,7 +2935,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test28.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -3031,7 +3031,7 @@ describe('App', () => {
         });
       }
 
-      const mockServer = new Server('wss://test29.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -3155,7 +3155,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer = new Server('wss://test30.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -3271,7 +3271,7 @@ describe('App', () => {
       });
     }
 
-    const mockServer = new Server('wss://test31.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({

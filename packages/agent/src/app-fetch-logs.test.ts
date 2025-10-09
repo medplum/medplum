@@ -92,7 +92,7 @@ describe('Fetch Logs', () => {
       });
     }
 
-    const mockServer = new Server('wss://test1.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -179,7 +179,7 @@ describe('Fetch Logs', () => {
       });
     }
 
-    const mockServer = new Server('wss://test2.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -276,7 +276,7 @@ describe('Fetch Logs', () => {
       });
     }
 
-    const mockServer = new Server('wss://test3.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
@@ -376,7 +376,7 @@ describe('Fetch Logs', () => {
         });
       }
 
-      const mockServer = new Server('wss://test4.example.com/ws/agent');
+      const mockServer = new Server('wss://example.com/ws/agent');
       mockServer.on('connection', mockConnectionHandler);
 
       const agent = await medplum.createResource<Agent>({
@@ -476,7 +476,7 @@ describe('Fetch Logs', () => {
       });
     }
 
-    const mockServer = new Server('wss://test5.example.com/ws/agent');
+    const mockServer = new Server('wss://example.com/ws/agent');
     mockServer.on('connection', mockConnectionHandler);
 
     const agent = await medplum.createResource<Agent>({
