@@ -675,10 +675,10 @@ describe('project-scoped Repository', () => {
 
   test('Search sort by Patient.address', async () =>
     withTestContext(async () => {
-            const bundle = await repo.search({
+      const bundle = await repo.search({
         resourceType: 'Patient',
         sortRules: [{ code: 'address' }],
-              });
+      });
 
       expect(bundle).toBeDefined();
     }));
@@ -2312,7 +2312,6 @@ describe('project-scoped Repository', () => {
         search: { mode: 'include' },
       });
     }));
-
 
   test('Reverse include canonical', () =>
     withTestContext(async () => {
