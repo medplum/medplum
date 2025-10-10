@@ -37,7 +37,7 @@ describe('Agent Push', () => {
     accessToken = await initTestAuth();
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, () => {
+      server.listen(0, 'localhost', 8514, () => {
         port = (server.address() as AddressInfo).port;
         resolve();
       });

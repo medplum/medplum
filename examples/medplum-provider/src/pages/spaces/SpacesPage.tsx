@@ -5,6 +5,8 @@ import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
 import { IconSend, IconTrash } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface Message {

@@ -5,6 +5,7 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
+  CodeSystemProperty,
   Coding,
   ValueSet,
   ValueSetComposeInclude,
@@ -35,6 +36,7 @@ import {
   findAncestor,
   findTerminologyResource,
   getParentProperty,
+  resolveProperty,
 } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
@@ -228,7 +230,7 @@ const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 
 async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
@@ -250,7 +252,11 @@ async function includeInExpansion(
     }
   }
 
-  const query = expansionQuery(include, codeSystem, params);
+  let parentProperty: WithId<CodeSystemProperty> | undefined;
+  if (codeSystem.hierarchyMeaning === 'is-a') {
+    parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+  }
+  const query = expansionQuery(include, codeSystem, parentProperty, params);
   if (!query) {
     return;
   }
@@ -265,6 +271,7 @@ async function includeInExpansion(
 export function expansionQuery(
   include: ValueSetComposeInclude,
   codeSystem: CodeSystem,
+  parentProperty?: WithId<CodeSystemProperty>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
   let query = new SelectQuery('Coding')
@@ -279,6 +286,9 @@ export function expansionQuery(
       switch (condition.op) {
         case 'is-a':
         case 'descendent-of':
+          if (!parentProperty) {
+            return undefined; // CodeSystem must track parent to resolve hierarchy filters
+          }
           if (params?.filter) {
             if (params.filter.length < 3) {
               return undefined; // Must specify minimum filter length to make this expensive query workable
@@ -291,10 +301,10 @@ export function expansionQuery(
               .column('synonymOf')
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
-            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
+            const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
             query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
           } else {
-            query = addDescendants(query, codeSystem, condition.value);
+            query = addDescendants(query, codeSystem, parentProperty, condition.value);
           }
           if (condition.op !== 'is-a') {
             query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
@@ -328,7 +338,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
           new Conjunction(
             params.filter
               .split(/\s+/g)
-              .map((filter) => new Condition('display', 'LOWER_LIKE', `%${escapeLikeString(filter)}%`))
+              .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
           ),
         ])
       )

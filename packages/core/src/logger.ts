@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { isError } from './outcomes';
+
 /*
  * Once upon a time, we used Winston, and that was fine.
  * Then the log4j fiasco happened, and everyone started auditing logging libraries.
@@ -120,7 +122,7 @@ export class Logger implements ILogger {
     }
 
     let processedData: Record<string, any> | undefined;
-    if (data instanceof Error) {
+    if (isError(data)) {
       processedData = serializeError(data);
     } else if (data) {
       processedData = { ...data };
