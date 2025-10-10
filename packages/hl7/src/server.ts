@@ -6,7 +6,7 @@ import type { Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
 export interface Hl7ServerStopOptions {
-  forceDrainMs?: number;
+  forceDrainTimeoutMs?: number;
 }
 
 export const DEFAULT_FORCE_DRAIN_TIMEOUT_MS = 10_000;
