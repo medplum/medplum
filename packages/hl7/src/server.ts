@@ -5,12 +5,19 @@ import net from 'node:net';
 import type { Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
+export interface Hl7ServerStopOptions {
+  forceDrainMs?: number;
+}
+
+export const DEFAULT_FORCE_DRAIN_TIMEOUT_MS = 10_000;
+
 export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
   private encoding: string | undefined = undefined;
   private enhancedMode = false;
   private messagesPerMin: number | undefined = undefined;
+  private connections = new Set<Hl7Connection>();
 
   constructor(handler: (connection: Hl7Connection) => void) {
     this.handler = handler;
@@ -32,6 +39,10 @@ export class Hl7Server {
         messagesPerMin: this.messagesPerMin,
       });
       this.handler(connection);
+      this.connections.add(connection);
+      connection.addEventListener('close', () => {
+        this.connections.delete(connection);
+      });
     });
 
     // Node errors have a code
@@ -52,20 +63,34 @@ export class Hl7Server {
     this.server = server;
   }
 
-  async stop(): Promise<void> {
+  async stop(options?: Hl7ServerStopOptions): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.server) {
         reject(new Error('Stop was called but there is no server running'));
         return;
+      }
+      let forceDrainTimeout: NodeJS.Timeout | undefined;
+      if (options?.forceDrainMs !== -1) {
+        forceDrainTimeout = setTimeout(() => {
+          for (const connection of this.connections) {
+            // TODO: Handle this better
+            connection.close().catch(console.error);
+          }
+        }, options?.forceDrainMs ?? DEFAULT_FORCE_DRAIN_TIMEOUT_MS);
       }
       this.server.close((err) => {
         if (err) {
           reject(err);
           return;
         }
+        if (forceDrainTimeout) {
+          clearTimeout(forceDrainTimeout);
+        }
         resolve();
       });
+
       this.server = undefined;
+      this.connections.clear();
     });
   }
 
