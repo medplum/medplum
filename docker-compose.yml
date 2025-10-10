@@ -5,7 +5,10 @@
 # You can start all services by running "docker-compose up"
 services:
   postgres:
-    image: postgres:16
+    shm_size: 2g
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     restart: always
     environment:
       - POSTGRES_USER=medplum

@@ -45,7 +45,7 @@ to control its behavior:
   "statement_timeout": "60000",
   "default_transaction_isolation": "REPEATABLE READ",
   // Add auto_explain to any other preloaded libraries in the default config
-  "shared_preload_libraries": "pg_stat_statements,auto_explain",
+  "shared_preload_libraries": "pg_stat_statements,auto_explain,pg_partman_bgw",
   // Log details in the query plan
   "auto_explain.log_analyze": "true",
   "auto_explain.log_buffers": "true",
@@ -134,7 +134,7 @@ Add the desired Postgres parameters under `rdsClusterParameters` in the CDK conf
   "rdsClusterParameters": {
     "statement_timeout": "60000",
     "default_transaction_isolation": "REPEATABLE READ",
-    "shared_preload_libraries": "pg_stat_statements,auto_explain",
+    "shared_preload_libraries": "pg_stat_statements,auto_explain,pg_partman_bgw",
     "auto_explain.log_analyze": "true",
     "auto_explain.log_buffers": "true",
     "auto_explain.log_min_duration": "250",
