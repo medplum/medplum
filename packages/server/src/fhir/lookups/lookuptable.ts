@@ -229,7 +229,7 @@ export abstract class LookupTable {
         .column('resourceId')
         .column(columnName)
         .whereExpr(whereExpression)
-        .orderBy('resourceId', false)
+        .orderBy(columnName)
         .limit(1),
       joinName,
       joinOnExpression
