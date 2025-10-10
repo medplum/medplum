@@ -19,17 +19,6 @@ EVN|A01|20240927120000
 PID|1||123456789^^^HOSPITAL^MR||Doe^John^^^^||19800101|M`;
 
 jest.mock('./util/client');
-jest.mock('node:fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
 
 describe('Agent CLI', () => {
   const env = process.env;
