@@ -5,7 +5,17 @@ import net from 'node:net';
 import type { Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
+/**
+ * Options for configuring the `Hl7Server#stop` method.
+ */
 export interface Hl7ServerStopOptions {
+  /**
+   * Time in milliseconds to allow client connections to gracefully close after the stop method has been called, before forcefully closing them.
+   *
+   * Can be set to `-1` to disable forceful draining of connections during stop.
+   *
+   * Defaults to `10_000`.
+   */
   forceDrainTimeoutMs?: number;
 }
 
@@ -63,6 +73,19 @@ export class Hl7Server {
     this.server = server;
   }
 
+  /**
+   * Stops the HL7 server.
+   *
+   * By default, the server will stop accepting new connections after this method is called, and wait for current connections to close naturally.
+   *
+   * If all connections don't close within 10 seconds, the server will forcefully close them before shutting down.
+   *
+   * The default time to wait before forcefully closing connections can be changed by passing an integer value for the optional `options.forceDrainTimeoutMs`.
+   *
+   * Forced drain can also be disabled by passing `-1` for `options.forceDrainTimeoutMs`.
+   * @param options - Optional options to configure the stopping of the server.
+   * @returns Promise that resolves when the server has stopped, or rejects if an error prevents server from stopping.
+   */
   async stop(options?: Hl7ServerStopOptions): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.server) {
