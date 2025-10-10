@@ -271,9 +271,7 @@ describe('Reference checks', () => {
             extension: [
               {
                 url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
-                extension: [
-                  { url: 'template', valueReference: { reference: '#template' } },
-                ],
+                extension: [{ url: 'template', valueReference: { reference: '#template' } }],
               },
             ],
             item: [
