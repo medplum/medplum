@@ -6,7 +6,7 @@ import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
-import type ws from 'ws';
+import type { RawData, WebSocket } from 'ws';
 import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { heartbeat } from '../heartbeat';
@@ -24,7 +24,7 @@ const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */
-export async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
+export async function handleAgentConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
   const remoteAddress = request.socket.remoteAddress;
   let agentId: string | undefined = undefined;
 
@@ -38,7 +38,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   socket.on(
     'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+    AsyncLocalStorage.bind(async (data: RawData) => {
       try {
         const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         switch (command.type) {

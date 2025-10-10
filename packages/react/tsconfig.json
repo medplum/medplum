@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "es2020",
+    "module": "esnext",
     "types": ["vite/client"],
     "lib": ["esnext", "dom", "dom.iterable"],
     "outDir": "dist/types",
