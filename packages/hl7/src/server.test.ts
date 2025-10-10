@@ -262,7 +262,6 @@ describe('HL7 Server', () => {
     await client.close().catch(() => {
       // Client might already be closed by the server, ignore errors
     });
-
   }, 10000);
 
   describe('Server configuration setters and getters', () => {
