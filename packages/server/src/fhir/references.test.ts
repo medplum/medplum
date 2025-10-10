@@ -276,6 +276,13 @@ describe('Reference checks', () => {
                 ],
               },
             ],
+            item: [
+              {
+                linkId: 'nested-item',
+                type: 'string',
+                text: 'A nested question',
+              },
+            ],
           },
         ],
       };
