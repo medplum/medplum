@@ -110,6 +110,7 @@ export * from './SmartAppLaunchLink/SmartAppLaunchLink';
 export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
+export * from './utils/app';
 export * from './utils/date';
 export * from './utils/dom';
 export * from './utils/outcomes';
