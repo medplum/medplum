@@ -27,7 +27,7 @@ export class Hl7Server {
   private encoding: string | undefined = undefined;
   private enhancedMode = false;
   private messagesPerMin: number | undefined = undefined;
-  private connections = new Set<Hl7Connection>();
+  private readonly connections = new Set<Hl7Connection>();
 
   constructor(handler: (connection: Hl7Connection) => void) {
     this.handler = handler;
