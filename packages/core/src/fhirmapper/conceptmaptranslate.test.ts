@@ -96,7 +96,7 @@ describe('ConceptMap $translate', () => {
 
   test('Code without system', async () => {
     expect(() => conceptMapTranslate(conceptMap, { code: 'BAD' })).toThrow(
-      `Missing required 'system' input parameter with 'code' parameter`
+      'System parameter must be provided with code'
     );
   });
 
@@ -107,9 +107,7 @@ describe('ConceptMap $translate', () => {
   });
 
   test('No source coding', async () => {
-    expect(() => conceptMapTranslate(conceptMap, {})).toThrow(
-      `No source provided: 'code'+'system', 'coding', or 'codeableConcept' input parameter is required`
-    );
+    expect(() => conceptMapTranslate(conceptMap, {})).toThrow(`Source Coding (system + code) must be specified`);
   });
 
   test('Unmapped code handling', async () => {
