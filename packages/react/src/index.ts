@@ -88,6 +88,7 @@ export * from './ResourceAvatar/ResourceAvatar';
 export * from './ResourceBadge/ResourceBadge';
 export * from './ResourceBlame/ResourceBlame';
 export * from './ResourceDiff/ResourceDiff';
+export * from './ResourceDiffTable/ResourceDiffTable';
 export * from './ResourceForm/ResourceForm';
 export * from './ResourceForm/ResourceForm.utils';
 export * from './ResourceHistoryTable/ResourceHistoryTable';
