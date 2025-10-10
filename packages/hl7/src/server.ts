@@ -70,13 +70,14 @@ export class Hl7Server {
         return;
       }
       let forceDrainTimeout: NodeJS.Timeout | undefined;
-      if (options?.forceDrainMs !== -1) {
+      if (options?.forceDrainTimeoutMs !== -1) {
         forceDrainTimeout = setTimeout(() => {
           for (const connection of this.connections) {
-            // TODO: Handle this better
+            // Theoretically close should almost never throw as most errors are caught internal to the method and emitted as error events
+            // We put a .catch here to prevent floating promises and log any errors that somehow make it through
             connection.close().catch(console.error);
           }
-        }, options?.forceDrainMs ?? DEFAULT_FORCE_DRAIN_TIMEOUT_MS);
+        }, options?.forceDrainTimeoutMs ?? DEFAULT_FORCE_DRAIN_TIMEOUT_MS);
       }
       this.server.close((err) => {
         if (err) {
