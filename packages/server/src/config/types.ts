@@ -126,6 +126,14 @@ export interface MedplumServerConfig {
   fhirSearchDiscourageSeqScan?: boolean;
 
   redactAuditEvents?: boolean;
+
+  arrayColumnPadding?: { [searchParamCode: string]: ArrayColumnPaddingConfig };
+}
+
+export interface ArrayColumnPaddingConfig {
+  readonly m: number;
+  readonly lambda: number;
+  readonly statisticsTarget: number;
 }
 
 /**
