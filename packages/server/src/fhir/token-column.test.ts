@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getSearchParameter } from '@medplum/core';
+import { getSearchParameter, isUUID } from '@medplum/core';
 import type { ResearchStudy } from '@medplum/fhirtypes';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
-import { buildTokenColumns, hashTokenColumnValue } from './token-column';
+import { buildTokenColumns, getPaddingElement, hashTokenColumnValue } from './token-column';
 
 const DELIM = '\x01';
 
@@ -114,5 +114,33 @@ describe('buildTokenColumns', () => {
         'location' + DELIM + 'FOUR FIVE SIX',
       ],
     });
+  });
+});
+
+describe('getPaddingElement', () => {
+  test('Math.random is 0.99999999', () => {
+    const randomMock = jest.spyOn(Math, 'random').mockReturnValue(0.99999999);
+    expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 })).toStrictEqual(undefined);
+    // once to decide (not to) return a padding element
+    expect(randomMock).toHaveBeenCalledTimes(1);
+    randomMock.mockRestore();
+  });
+
+  test('Math.random is 0', () => {
+    let callCount = 0;
+    const randomMock = jest.spyOn(Math, 'random').mockImplementation(() => {
+      // first call returns 0 to guarantee padding is returned
+      if (callCount++ === 0) {
+        return 0;
+      }
+      // second call returns 0.99999999 to guarantee the largest padding element is chosen
+      return 0.99999999;
+    });
+    const paddingElement = getPaddingElement({ m: 20, lambda: 150, statisticsTarget: 1 });
+    expect(paddingElement).toStrictEqual('00000000-0000-0000-0000-000000000019');
+    expect(isUUID(paddingElement as string)).toStrictEqual(true);
+    // once to decide whether to return a padding element, once to decide which padding element
+    expect(randomMock).toHaveBeenCalledTimes(2);
+    randomMock.mockRestore();
   });
 });
