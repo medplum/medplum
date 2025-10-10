@@ -87,11 +87,10 @@ export class Hl7Server {
         if (forceDrainTimeout) {
           clearTimeout(forceDrainTimeout);
         }
+        this.connections.clear();
+        this.server = undefined;
         resolve();
       });
-
-      this.server = undefined;
-      this.connections.clear();
     });
   }
 

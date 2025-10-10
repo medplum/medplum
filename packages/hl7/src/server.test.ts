@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message } from '@medplum/core';
+import { Hl7Message, sleep } from '@medplum/core';
 import { Hl7Client } from './client';
 import { Hl7Server } from './server';
 
@@ -106,6 +106,164 @@ describe('HL7 Server', () => {
     const hl7Server = new Hl7Server((_conn) => undefined);
     await expect(hl7Server.stop()).rejects.toThrow('Stop was called but there is no server running');
   });
+
+  test('forceDrainTimeout makes server close on timeout when client does not close', async () => {
+    let connectionCloseCalled = false;
+
+    const server = new Hl7Server((connection) => {
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
+      connection.addEventListener('close', () => {
+        connectionCloseCalled = true;
+      });
+    });
+
+    server.start(1249);
+
+    const client = new Hl7Client({
+      host: 'localhost',
+      port: 1249,
+    });
+
+    await client.connect();
+
+    // Send a message to verify connection is working
+    const response = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      )
+    );
+    expect(response).toBeDefined();
+
+    // Call stop with a short forceDrainTimeoutMs
+    // Client intentionally does NOT close, so forceDrainTimeout should trigger
+    await server.stop({ forceDrainTimeoutMs: 200 });
+
+    // Sleep for 0ms to allow the client-side close event to be processed on next tick
+    await sleep(0);
+
+    // The forceDrainTimeout should have triggered and closed the connection
+    expect(connectionCloseCalled).toBe(true);
+
+    // Clean up the client
+    await client.close().catch(() => {
+      // Client might already be closed by the server, ignore errors
+    });
+  }, 10000);
+
+  test('When forceDrainTimeoutMs is -1, server waits for client to close gracefully', async () => {
+    let connectionCloseCalled = false;
+
+    const server = new Hl7Server((connection) => {
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
+      connection.addEventListener('close', () => {
+        connectionCloseCalled = true;
+      });
+    });
+
+    server.start(1250);
+
+    const client = new Hl7Client({
+      host: 'localhost',
+      port: 1250,
+    });
+
+    await client.connect();
+
+    // Send a message to verify connection is working
+    const response = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      )
+    );
+    expect(response).toBeDefined();
+
+    // Call stop with forceDrainTimeoutMs: -1 (no timeout, wait for graceful close)
+    const stopPromise = server.stop({ forceDrainTimeoutMs: -1 });
+
+    // Wait a bit to verify the server hasn't force-closed the connection
+    await sleep(100);
+    expect(connectionCloseCalled).toBe(false);
+
+    // Now close the client gracefully
+    await client.close();
+
+    // Wait for the server to finish stopping
+    await stopPromise;
+
+    // Sleep for 0ms to allow the close event to be processed on next tick
+    await sleep(0);
+
+    // The connection should have closed gracefully
+    expect(connectionCloseCalled).toBe(true);
+  }, 10000);
+
+  test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
+    let connectionCloseCalled = false;
+
+    const server = new Hl7Server((connection) => {
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
+      connection.addEventListener('close', () => {
+        connectionCloseCalled = true;
+      });
+    });
+
+    server.start(1251);
+
+    const client = new Hl7Client({
+      host: 'localhost',
+      port: 1251,
+    });
+
+    await client.connect();
+
+    // Send a message to verify connection is working
+    const response = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      )
+    );
+    expect(response).toBeDefined();
+
+    jest.useFakeTimers();
+
+    // Call stop with no options - should use default 10 second timeout
+    const stopPromise = server.stop();
+
+    // Advance timers by 5 seconds - connection should still be open
+    jest.advanceTimersByTime(5000);
+    await Promise.resolve();
+    expect(connectionCloseCalled).toBe(false);
+
+    // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
+    jest.advanceTimersByTime(5000);
+    await Promise.resolve();
+
+    jest.useRealTimers();
+
+    // Wait for the server to finish stopping
+    await stopPromise;
+
+    // Sleep for 0ms to allow the close event to be processed on next tick
+    await sleep(0);
+
+    // The forceDrainTimeout should have triggered and closed the connection
+    expect(connectionCloseCalled).toBe(true);
+
+    // Clean up
+    await client.close().catch(() => {
+      // Client might already be closed by the server, ignore errors
+    });
+
+  }, 10000);
 
   describe('Server configuration setters and getters', () => {
     test('setEncoding and getEncoding work correctly', () => {
