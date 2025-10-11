@@ -316,23 +316,42 @@ class TemplateExtractor implements CrawlerVisitor {
   }
 
   private makePatch(results: TypedValue[], path: string, template: any, extension: TypedValueWithPath): void {
+    const originalPath = path;
     const lastDotIndex = path.lastIndexOf('.');
     const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
+    const originalIsArrayElement = originalPath.endsWith(']');
+    // Special case: primitive value extension placed on an array element (e.g., name[0].given[0]._value)
+    // In that case, the target we ultimately want to set is the parent array (e.g., name[0].given)
+    const isPrimitiveArrayElementValue = isPrimitiveExtension && originalPath.endsWith('._value') && originalIsArrayElement;
+
     if (isPrimitiveExtension) {
       // Always remove primitive extension field
       this.patch.push({ op: 'remove', path: asJsonPath(path) });
-      // Convert to "real" path
-      path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
+      // Convert to non-underscore path for subsequent operations
+      if (isPrimitiveArrayElementValue) {
+        // Target the parent array (strip the [index] segment entirely)
+        path = originalPath.slice(0, originalPath.lastIndexOf('['));
+      } else {
+        // Generic: remove underscore prefix from the field name
+        path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
+      }
     }
 
     if (!results.length) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      // If the expression produced no values:
+      // - For primitive extensions, we've already removed the extension field; do not try to remove
+      //   the (possibly non-existent) target field to avoid accidentally deleting structure.
+      // - For non-primitive, remove the target element from the template.
+      if (!isPrimitiveExtension) {
+        this.patch.push({ op: 'remove', path: asJsonPath(path) });
+      }
       return;
     }
 
-    const isArrayElement = path.endsWith(']');
-    if (isArrayElement) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element before inserting copies
+    const isArrayElement = originalIsArrayElement && !isPrimitiveArrayElementValue ? originalIsArrayElement : path.endsWith(']');
+    if (isArrayElement && !isPrimitiveArrayElementValue) {
+      // For non-primitive array elements, remove the template element before inserting copies
+      this.patch.push({ op: 'remove', path: asJsonPath(path) });
     }
 
     switch (extension.value.url) {
@@ -352,9 +371,9 @@ class TemplateExtractor implements CrawlerVisitor {
         break;
 
       case valueExtension:
-        if (isArrayElement) {
+        if (isPrimitiveArrayElementValue || isArrayElement) {
           // Replace the entire array directly with values
-          const arrayPath = path.slice(0, path.lastIndexOf('['));
+          const arrayPath = isPrimitiveArrayElementValue ? path : path.slice(0, path.lastIndexOf('['));
           this.patch.push({
             op: isPrimitiveExtension ? 'add' : 'replace',
             path: asJsonPath(arrayPath),
@@ -364,9 +383,10 @@ class TemplateExtractor implements CrawlerVisitor {
           // Insert single element at path
           this.patch.push({ op: 'add', path: asJsonPath(path), value: results[0].value });
         } else {
-          throw new OperationOutcomeError(
-            badRequest('Error inserting template value: array not allowed at singleton path', path)
-          );
+          // If multiple values are produced for a non-indexed path, treat the field value as an array.
+          // This enables array outputs when the template author places the extension on the parent element
+          // rather than a specific array index.
+          this.patch.push({ op: 'add', path: asJsonPath(path), value: results.map((r) => r.value) });
         }
     }
   }

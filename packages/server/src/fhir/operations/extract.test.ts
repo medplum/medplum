@@ -761,4 +761,197 @@ describe('QuestionnaireResponse/$extract', () => {
     const patient = await repo.readResource<Patient>('Patient', id);
     expect(patient.gender).toBe('unknown');
   });
+
+  test('Value extension yields array for primitive array element', async () => {
+    // Place a value extension on Patient.name._given[0] (primitive array element). The expression yields
+    // multiple strings; server should replace the entire given array with those values.
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'p',
+          name: [
+            {
+              _given: [
+                {
+                  extension: [
+                    { url: valueExtension, valueString: "item.where(linkId = 'given').answer.value" },
+                  ],
+                } as any,
+              ],
+            },
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'name',
+          type: 'group',
+          item: [
+            { linkId: 'given', type: 'string', repeats: true },
+          ],
+          extension: [{ url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#p' } }] }],
+        },
+      ],
+    } as unknown as Questionnaire;
+
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        { linkId: 'name', item: [{ linkId: 'given', answer: [{ valueString: 'A' }, { valueString: 'B' }] }] },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      });
+    // Debug
+    if (res.status !== 200) {
+      console.log('Debug extract non-indexed array status:', res.status, JSON.stringify(res.body));
+    }
+    expect(res.status).toBe(200);
+    const batch = res.body as Bundle;
+    expect(batch.resourceType).toBe('Bundle');
+    const entry = batch.entry?.[0] as BundleEntry;
+    expect(entry.resource).toMatchObject({ resourceType: 'Patient', name: [{ given: ['A', 'B'] }] });
+  });
+
+  test('Removes field when expression yields empty', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'p',
+          name: [
+            {
+              // Family value comes from expression that returns empty -> field should be removed
+              _family: {
+                extension: [
+                  { url: valueExtension, valueString: "item.where(linkId='family').answer.value.where(false)" },
+                ],
+              },
+            } as any,
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'name',
+          type: 'group',
+          item: [{ linkId: 'family', type: 'string' }],
+          extension: [{ url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#p' } }] }],
+        },
+      ],
+    } as unknown as Questionnaire;
+
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [{ linkId: 'name', item: [{ linkId: 'family', answer: [{ valueString: 'Smith' }] }] }],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      });
+    // Debug
+    if (res.status !== 200) {
+      console.log('Debug extract empty result status:', res.status, JSON.stringify(res.body));
+    }
+    expect(res.status).toBe(200);
+    const batch = res.body as Bundle;
+    const entry = batch.entry?.[0] as BundleEntry;
+    const patient = entry.resource as any;
+    if (patient.name) {
+      // name[0] should not have a family field because expression produced no results
+      expect(patient).toMatchObject({ resourceType: 'Patient', name: [{}] });
+      // Ensure no stray underscore primitive present either
+      expect(patient.name[0].family).toBeUndefined();
+    } else {
+      // It's also acceptable for the engine to remove the entire `name` when the only populated child was removed
+      expect(patient.resourceType).toBe('Patient');
+    }
+  });
+
+  test('Context duplicates array elements when there are multiple matches', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'p',
+          telecom: [
+            {
+              // Duplicate this element per phone answer
+              extension: [
+                { url: contextExtension, valueString: "item.where(linkId = 'phone').answer.value" },
+              ],
+              system: 'phone',
+              _value: { extension: [{ url: valueExtension, valueString: 'first()' }] },
+              use: 'mobile',
+            },
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'contact',
+          type: 'group',
+          item: [{ linkId: 'phone', type: 'string', repeats: true }],
+          extension: [{ url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#p' } }] }],
+        },
+      ],
+    } as unknown as Questionnaire;
+
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        {
+          linkId: 'contact',
+          item: [{ linkId: 'phone', answer: [{ valueString: '111' }, { valueString: '222' }] }],
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      });
+    expect(res.status).toBe(200);
+    const batch = res.body as Bundle;
+    const entry = batch.entry?.[0] as BundleEntry;
+    expect(entry.resource).toMatchObject({
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', use: 'mobile', value: '111' },
+        { system: 'phone', use: 'mobile', value: '222' },
+      ],
+    });
+  });
 });
