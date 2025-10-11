@@ -10,6 +10,7 @@ import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-re
 import type { JSX } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { getAppName } from '../utils/app';
 
 export interface HeaderDropdownProps {
   readonly version?: string;
@@ -89,8 +90,8 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
       >
         Sign out
       </Menu.Item>
-      <Text size="xs" c="dimmed" ta="center">
-        Medplum {props.version}
+      <Text size="xs" c="dimmed" my="sm" ta="center">
+        {getAppName()} {props.version}
       </Text>
     </>
   );
