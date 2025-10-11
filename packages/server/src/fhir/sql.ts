@@ -247,6 +247,18 @@ export class Column implements Expression {
   }
 }
 
+export class Constant implements Expression {
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
+  }
+}
+
 export class Parameter implements Expression {
   readonly value: string;
 
