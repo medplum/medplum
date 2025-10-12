@@ -49,7 +49,7 @@ export function ResetPasswordPage(): JSX.Element {
       >
         <Stack gap="lg" mb="xl" align="center">
           <Logo size={32} />
-          <Title>Medplum Password Reset</Title>
+          <Title>Password Reset</Title>
         </Stack>
         <Stack gap="xl">
           <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} />
