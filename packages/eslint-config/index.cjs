@@ -143,6 +143,11 @@ module.exports = {
 
     // React Hooks
     'react-hooks/exhaustive-deps': 'error',
+    'react-hooks/set-state-in-effect': 'warn',
+    'react-hooks/refs': 'warn',
+    'react-hooks/immutability': 'warn',
+    'react-hooks/static-components': 'warn',
+    'react-hooks/preserve-manual-memoization': 'warn',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
