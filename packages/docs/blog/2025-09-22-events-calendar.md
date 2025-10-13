@@ -20,13 +20,32 @@ tags: [community]
   </thead>
   <tbody>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Oct 8, 2025, 4:30 PM PT</td>
-      <td>**Healthcare Devs Open Source Happy Hour - #SFTechWeek**</td>
-      <td>[San Francisco](https://partiful.com/e/GfA7v1EsKiRPtBJwbXbV)</td>
+      <td style={{ whiteSpace: 'nowrap' }}>Oct 22, 2025, 5:00 PM PT</td>
+      <td>**AI x Open source : Community evening with Hatchet, Medplum and SigNoz**</td>
+      <td>[San Francisco](https://luma.com/2w9p5qzn)</td>
       <td align="center">
         <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-        <img src="https://github.com/awell-health.png" alt="Awell Health" width="50" height="50" style={{borderRadius: '50%'}} />
-        [Medplum](https://github.com/medplum), [Awell](https://github.com/awell-health), [Villi Itchev](https://x.com/Villi)
+        <img src="https://github.com/SigNoz.png" alt="SigNoz" width="50" height="50" style={{borderRadius: '50%'}} />
+         <img src="https://github.com/hatchet-dev.png" alt="Hatchet" width="50" height="50" style={{borderRadius: '50%'}} />
+      </td>
+    </tr>
+    <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Oct 30, 2025, 10:00 AM PT</td>
+      <td>**Scheduling Agents for Healthcare Operations**</td>
+      <td>[Zoom](https://luma.com/npl7y6cm)</td>
+      <td align="center">
+        <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} />
+        Cody Hall from Unity AI, [Reshma Khilnani](https://github.com/reshmakh)
+      </td>
+    </tr>
+    <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Jan 15, 2025, 9:00 AM - 2:00 PM PT</td>
+      <td>**Interactive Workshop FHIR+AI for Life Sciences**</td>
+      <td>San Francisco</td>
+      <td align="center">
+        <img src="https://github.com/kerbearasaurus.png" alt="Kerry Weinberg" width="50" height="50" style={{borderRadius: '50%'}} />
+        <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Kerry Weinberg](https://github.com/kerbearasaurus), [Reshma Khilnani](https://github.com/reshmakh)
       </td>
     </tr>
   </tbody>
@@ -46,6 +65,16 @@ tags: [community]
     </tr>
   </thead>
   <tbody>
+    <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>October 2025</td>
+      <td>**Healthcare Devs Open Source Happy Hour - #SFTechWeek**</td>
+      <td>[San Francisco](https://partiful.com/e/GfA7v1EsKiRPtBJwbXbV)</td>
+      <td align="center">
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+        <img src="https://github.com/awell-health.png" alt="Awell Health" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Medplum](https://github.com/medplum), [Awell](https://github.com/awell-health), [Villi Itchev](https://x.com/Villi)
+      </td>
+    </tr>
     <tr>
       <td style={{ whiteSpace: 'nowrap' }}>September 2025</td>
       <td>**[FHIR + AI for Life Sciences](/blog/fhir-ai-for-life-sciences)**</td>

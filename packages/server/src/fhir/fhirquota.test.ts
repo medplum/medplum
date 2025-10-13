@@ -11,25 +11,29 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
-import { createTestProject } from '../test.setup';
+import type { TestRedisConfig } from '../test.setup';
+import { createTestProject, deleteRedisKeys } from '../test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;
   let config: MedplumServerConfig;
+  let redisConfig: TestRedisConfig;
   let accessToken: string;
 
   beforeAll(async () => {
     config = await loadTestConfig();
+    redisConfig = config.redis as TestRedisConfig;
   });
 
   beforeEach(async () => {
     app = express();
     config.defaultRateLimit = -1;
-    config.redis.db = 6; // Use different temp Redis instance for these tests
+    redisConfig.db = 6; // Use different temp Redis instance for these tests
+    redisConfig.keyPrefix = 'fhir-quota:';
   });
 
   afterEach(async () => {
-    await getRedis().flushdb();
+    await deleteRedisKeys(getRedis(), redisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

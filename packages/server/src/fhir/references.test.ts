@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
+import type { Login, Patient, Project, Questionnaire, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -261,7 +261,32 @@ describe('Reference checks', () => {
         ],
       };
 
+      const questionnaire: Questionnaire = {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'group-id',
+            type: 'group',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
+                extension: [{ url: 'template', valueReference: { reference: '#template' } }],
+              },
+            ],
+            item: [
+              {
+                linkId: 'nested-item',
+                type: 'string',
+                text: 'A nested question',
+              },
+            ],
+          },
+        ],
+      };
+
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await expect(repo.createResource<Questionnaire>(questionnaire)).resolves.toBeDefined();
     }));
 
   test('Resources with identical references', () => {

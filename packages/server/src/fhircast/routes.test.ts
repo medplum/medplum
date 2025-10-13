@@ -62,7 +62,7 @@ describe('FHIRcast routes', () => {
     tokenForAnotherProject = _accessToken2;
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8517, resolve);
     });
   });
 

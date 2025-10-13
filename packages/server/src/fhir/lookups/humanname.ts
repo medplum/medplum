@@ -13,7 +13,7 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
-import { Column, DeleteQuery } from '../sql';
+import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
 
@@ -158,13 +158,7 @@ export class HumanNameTable extends LookupTable {
     if (!HumanNameTable.hasHumanName(resourceType)) {
       return;
     }
-
-    const lookupTableName = this.getTableName();
-    await new DeleteQuery(lookupTableName)
-      .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
-      .where(new Column(resourceType, 'lastUpdated'), '<', before)
-      .execute(client);
+    await super.purgeValuesBefore(client, resourceType, before);
   }
 }
 

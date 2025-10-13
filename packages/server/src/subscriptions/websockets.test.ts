@@ -62,7 +62,7 @@ describe('WebSocket Subscription', () => {
     repo = result.repo;
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8520, resolve);
     });
   });
 
@@ -868,7 +868,7 @@ describe('Subscription Heartbeat', () => {
     });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8521, resolve);
     });
   });
 

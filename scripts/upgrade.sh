@@ -97,13 +97,12 @@ fi
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
-# jest - version 30+ conflicts with jest-expo, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express hibp jest jest-* jose node-fetch npm storybook storybook-* zod uuid"
+MAJOR_EXCLUDE="@mantine/* @storybook/* @types/express @types/node commander eslint express hibp jose node-fetch npm storybook storybook-* zod uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

@@ -16,6 +16,7 @@ import {
   IconMail,
   IconPencil,
   IconPill,
+  IconPuzzle,
   IconTimeDuration0,
   IconTransformPoint,
   IconUser,
@@ -49,6 +50,7 @@ import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
+import { SpacesPage } from './pages/spaces/SpacesPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -66,6 +68,10 @@ export function App(): JSX.Element | null {
     <AppShell
       logo={<Logo size={24} />}
       menus={[
+        {
+          title: 'Spaces',
+          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/spaces' }],
+        },
         {
           title: 'Charts',
           links: [
@@ -125,6 +131,7 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
+              <Route path="/spaces" element={<SpacesPage />} />
               <Route
                 path="/"
                 element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}

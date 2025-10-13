@@ -37,7 +37,7 @@ describe('FHIRcast WebSocket', () => {
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
-        server.listen(0, 'localhost', 511, resolve);
+        server.listen(0, 'localhost', 8518, resolve);
       });
     });
 
@@ -791,7 +791,7 @@ describe('FHIRcast WebSocket', () => {
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
-        server.listen(0, 'localhost', 511, resolve);
+        server.listen(0, 'localhost', 8519, resolve);
       });
     });
 
