@@ -472,12 +472,18 @@ function asJsonPath(path: string): string {
   return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
 }
 
-function replacePathIndex(path: string, index: number, before?: number): string {
-  let arrayIndex: number;
+function replacePathIndex(path: string, offset: number, before?: number): string {
+  let arrayStart: number;
   if (before && before >= 0) {
-    arrayIndex = path.lastIndexOf('[', before);
+    arrayStart = path.lastIndexOf('[', before);
   } else {
-    arrayIndex = path.lastIndexOf('[');
+    arrayStart = path.lastIndexOf('[');
   }
-  return arrayIndex < 0 ? path : path.slice(0, arrayIndex + 1) + index + path.slice(path.indexOf(']', arrayIndex));
+  if (arrayStart < 0) {
+    return path;
+  }
+
+  const arrayClose = path.indexOf(']', arrayStart);
+  const currentIndex = parseInt(path.slice(arrayStart + 1, arrayClose), 10);
+  return path.slice(0, arrayStart + 1) + (currentIndex + offset) + path.slice(path.indexOf(']', arrayStart));
 }

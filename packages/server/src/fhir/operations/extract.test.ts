@@ -484,6 +484,136 @@ describe('QuestionnaireResponse/$extract', () => {
     ]);
   });
 
+  test('Handles multiple template elements in same array', async () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'draft',
+      extension: [{ url: allocIdExtension, valueString: 'NewPatientId' }],
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patTemplate',
+          name: [
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'name')" }],
+              _text: {
+                extension: [
+                  {
+                    url: valueExtension,
+                    valueString: "item.where(linkId='given' or linkId='family').answer.value.join(' ')",
+                  },
+                ],
+              },
+              _family: {
+                extension: [{ url: valueExtension, valueString: "item.where(linkId = 'family').answer.value.first()" }],
+              },
+              _given: [
+                { extension: [{ url: valueExtension, valueString: "item.where(linkId = 'given').answer.value" }] },
+              ],
+            },
+          ],
+          telecom: [
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
+              system: 'phone',
+              use: 'mobile',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'email')" }],
+              system: 'email',
+              use: 'home',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'patient',
+          text: 'Patient',
+          type: 'group',
+          extension: [
+            {
+              url: extractExtension,
+              extension: [
+                { url: 'template', valueReference: { reference: '#patTemplate' } },
+                { url: 'fullUrl', valueString: '%NewPatientId' },
+              ],
+            },
+          ],
+          item: [
+            {
+              linkId: 'name',
+              text: 'Name',
+              type: 'group',
+              item: [
+                { linkId: 'given', text: 'Given Name(s)', type: 'string', repeats: true, required: true },
+                { linkId: 'family', text: 'Family/Surname', type: 'string', required: true },
+              ],
+            },
+            { linkId: 'mobile-phone', text: 'Mobile Phone', type: 'string' },
+            { linkId: 'email', text: 'Email', type: 'string' },
+          ],
+        },
+      ],
+    } as unknown as Questionnaire;
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      questionnaire: 'https://medplum.com/Questionnaire/extract-patient-minimal-telecom',
+      author: { reference: 'Practitioner/87a978a6-4844-4b21-aaa3-1abd91f6e8f1' },
+      authored: '2025-10-10T20:45:06.072Z',
+      item: [
+        {
+          linkId: 'patient',
+          item: [
+            {
+              linkId: 'name',
+              item: [
+                { linkId: 'given', answer: [{ valueString: 'Bella McClure' }] },
+                { linkId: 'family', answer: [{ valueString: 'Thaddeus Runte' }] },
+              ],
+            },
+            { linkId: 'mobile-phone', answer: [{ valueString: '127-988-1598' }] },
+            { linkId: 'email', answer: [{ valueString: 'your.email+fakedata62711@gmail.com' }] },
+          ],
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+
+    const patient = batch.entry?.[0].resource as Patient;
+    expect(patient.telecom).toStrictEqual([
+      {
+        system: 'phone',
+        use: 'mobile',
+        value: '127-988-1598',
+      },
+      {
+        system: 'email',
+        use: 'home',
+        value: 'your.email+fakedata62711@gmail.com',
+      },
+    ]);
+  });
+
   test('QuestionnaireResponse must be specified', async () => {
     const res = await request(app)
       .post(`/fhir/R4/QuestionnaireResponse/$extract`)
