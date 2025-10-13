@@ -148,6 +148,7 @@ module.exports = {
     'react-hooks/immutability': 'warn',
     'react-hooks/static-components': 'warn',
     'react-hooks/preserve-manual-memoization': 'warn',
+    'react-hooks/purity': 'warn',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
