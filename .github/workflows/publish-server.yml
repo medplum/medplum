@@ -158,8 +158,17 @@ jobs:
         run: |
           cd ${{ matrix.DESTPATH || matrix.PKGPATH }}
           # Overwrite .npmrc with Azure DevOps registry settings
-          echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/" > ./.npmrc
-          echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          if [[ $NPM_ARTIFACT_TYPE == 'OSS-develop' ]]; then
+            echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/" > ./.npmrc
+            echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/d2e/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          elif [[ $NPM_ARTIFACT_TYPE == 'OSS-release' ]]; then
+            echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/stable/npm/registry/" > ./.npmrc
+            echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/stable/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          elif [[ $NPM_ARTIFACT_TYPE == 'Project' ]]; then
+            echo "@data2evidence:registry=https://pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/" > ./.npmrc
+            echo "//pkgs.dev.azure.com/data2evidence/d2e/_packaging/ms/npm/registry/:_authToken=${NODE_AUTH_TOKEN}" >> ./.npmrc
+          fi
+
           if [[ $SHOULD_PUBLISH == true ]]; then
              ${{ matrix.NPM || 'npm' }} publish -tag latest
           else
