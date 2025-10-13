@@ -97,13 +97,12 @@ fi
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
-# jest - version 30+ conflicts with jest-expo, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/jest @types/node babel-jest commander eslint hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql uuid"
+MAJOR_EXCLUDE="@mantine/* @storybook/* @types/node commander eslint hibp jose node-fetch npm storybook storybook-* zod graphiql uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

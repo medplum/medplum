@@ -513,11 +513,6 @@ export async function resourceMatchesSubscriptionCriteria({
   getPreviousResource,
   logger,
 }: ResourceMatchesSubscriptionCriteria): Promise<boolean> {
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger?.debug('Ignore resource in different account compartment');
-    return false;
-  }
-
   if (!matchesChannelType(subscription, logger)) {
     logger?.debug(`Ignore subscription without recognized channel type`);
     return false;
@@ -554,7 +549,20 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  return matchesSearchRequest(resource, searchRequest);
+  if (!matchesSearchRequest(resource, searchRequest)) {
+    return false;
+  }
+
+  // Should eventually remove this once we've seen who is relying on this behavior
+  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
+    logger?.warn('Subscription suppressed due to mismatched meta.account', {
+      subscriptionId: subscription.id,
+      resourceId: resource.id,
+    });
+    return false;
+  }
+
+  return true;
 }
 
 /**

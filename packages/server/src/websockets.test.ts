@@ -23,7 +23,7 @@ describe('WebSockets', () => {
     server = await initApp(app, config);
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8511, resolve);
     });
   });
 

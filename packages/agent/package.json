@@ -22,7 +22,7 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@medplum/core": "4.4.2",
