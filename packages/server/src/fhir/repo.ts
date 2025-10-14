@@ -230,6 +230,8 @@ export interface RepositoryContext {
    * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
+
+  projectShardId?: string;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -270,6 +272,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
+  private projectShardId: string | undefined;
+
   /**
    * The version to be set on resources when they are inserted/updated into the database.
    * The value should be incremented each time there is a change in the schema (really just columns)
@@ -308,6 +312,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // In the future, as we do more testing and validation, we will explore defaulting to reader mode
     // However, for now, we default to writer and only use reader mode for requests guaranteed not to have consistency risks
     this.mode = RepositoryMode.WRITER;
+
+    this.projectShardId = context.projectShardId;
   }
 
   clone(): Repository {
@@ -2410,11 +2416,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
    * @param mode - The database mode.
+   * @param resourceType - The resource type to be accessed.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode, resourceType?: ResourceType): Pool | PoolClient {
     this.assertNotClosed();
     if (this.conn) {
+      this.assertShardAccess(resourceType);
       // If in a transaction, then use the transaction client.
       return this.conn;
     }
@@ -2429,14 +2437,49 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Returns a proper database connection.
    * Unlike getDatabaseClient(), this method always returns a PoolClient.
    * @param mode - The database mode.
+   * @param resourceType - The resource type to be accessed.
    * @returns Database connection.
    */
-  private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
+  private async getConnection(mode: DatabaseMode, resourceType?: ResourceType): Promise<PoolClient> {
     this.assertNotClosed();
     if (!this.conn) {
+      if (resourceType) {
+        this.connShardId = this.getResourceTypeShardId(resourceType);
+      }
       this.conn = await getDatabasePool(mode).connect();
     }
     return this.conn;
+  }
+
+  // TODO: This should probably be a property of connection instead
+  private connShardId?: string;
+
+  private getResourceTypeShardId(resourceType: ResourceType): string {
+    if (!this.projectShardId) {
+      throw new Error('No project shard ID');
+    }
+
+    if (['User', 'Login', 'ProjectMembership', 'ClientApplication', 'SmartAppLaunch'].includes(resourceType)) {
+      return 'global';
+    }
+
+    return this.projectShardId;
+  }
+
+  private assertShardAccess(resourceType?: ResourceType): void {
+    if (!resourceType) {
+      return;
+    }
+    if (!this.projectShardId) {
+      return;
+    }
+    if (!this.connShardId) {
+      return;
+    }
+
+    if (this.getResourceTypeShardId(resourceType) !== this.connShardId) {
+      throw new Error('Shard access not allowed for resource type: ' + resourceType);
+    }
   }
 
   /**
