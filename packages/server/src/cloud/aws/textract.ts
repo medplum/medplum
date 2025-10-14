@@ -109,8 +109,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     mediaProps
   );
 
-  const options = req.body as { comprehend?: boolean };
-  if (options.comprehend && textractResult?.Blocks) {
+  const options = req.body as undefined | { comprehend?: boolean };
+  if (options?.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });
