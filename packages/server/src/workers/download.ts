@@ -104,17 +104,26 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     return;
   }
 
+  const ignoredUrlPrefixes =
+    project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (isExternalUrl(attachment.url)) {
-      await addDownloadJobData({
-        resourceType: resource.resourceType,
-        id: resource.id,
-        url: attachment.url,
-        requestId: ctx?.requestId,
-        traceId: ctx?.traceId,
-      });
+    if (!isExternalUrl(attachment.url)) {
+      continue;
     }
+
+    if (ignoredUrlPrefixes.some((prefix) => attachment.url?.startsWith(prefix))) {
+      continue;
+    }
+
+    await addDownloadJobData({
+      resourceType: resource.resourceType,
+      id: resource.id,
+      url: attachment.url,
+      requestId: ctx?.requestId,
+      traceId: ctx?.traceId,
+    });
   }
 }
 
