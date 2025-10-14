@@ -4,7 +4,6 @@ import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError
 import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
@@ -32,32 +31,29 @@ async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport>
   return resource;
 }
 
-bulkDataRouter.get(
-  '/export/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { id } = req.params;
-    const bulkDataExport = await getExportResource(id);
+bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { id } = req.params;
+  const bulkDataExport = await getExportResource(id);
 
-    if (bulkDataExport.status === 'cancelled') {
-      res.status(404).json(notFound);
-      return;
-    } else if (bulkDataExport.status !== 'completed') {
-      res.status(202).end();
-      return;
-    }
+  if (bulkDataExport.status === 'cancelled') {
+    res.status(404).json(notFound);
+    return;
+  } else if (bulkDataExport.status !== 'completed') {
+    res.status(202).end();
+    return;
+  }
 
-    const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
-      transactionTime: bulkDataExport.transactionTime,
-      request: bulkDataExport.request,
-      requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
-      output: extractOutputParameters(bulkDataExport, 'output'),
-      error: extractOutputParameters(bulkDataExport, 'error'),
-      deleted: extractOutputParameters(bulkDataExport, 'deleted'),
-    });
-    res.status(200).type(ContentType.JSON).json(json);
-  })
-);
+  const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
+    transactionTime: bulkDataExport.transactionTime,
+    request: bulkDataExport.request,
+    requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
+    output: extractOutputParameters(bulkDataExport, 'output'),
+    error: extractOutputParameters(bulkDataExport, 'error'),
+    deleted: extractOutputParameters(bulkDataExport, 'deleted'),
+  });
+  res.status(200).type(ContentType.JSON).json(json);
+});
 
 bulkDataRouter.delete('/export/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
