@@ -6,7 +6,9 @@ import os from 'node:os';
 import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
+import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
+import { getDownloadQueue } from '../workers/download';
 import { getSubscriptionQueue } from '../workers/subscription';
 
 // This file includes OpenTelemetry helpers.
@@ -133,16 +135,18 @@ export function initOtelHeartbeat(): void {
       BASE_METRIC_OPTIONS
     );
 
-    const subscriptionQueue = getSubscriptionQueue();
-    if (subscriptionQueue) {
-      setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
-      setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
-    }
+    const queueEntries = [
+      ['subscription', getSubscriptionQueue()],
+      ['cron', getCronQueue()],
+      ['download', getDownloadQueue()],
+      ['batch', getBatchQueue()],
+    ] as const;
 
-    const cronQueue = getCronQueue();
-    if (cronQueue) {
-      setGauge('medplum.cron.waitingCount', await cronQueue.getWaitingCount());
-      setGauge('medplum.cron.delayedCount', await cronQueue.getDelayedCount());
+    for (const [queueName, queue] of queueEntries) {
+      if (queue) {
+        setGauge(`medplum.${queueName}.waitingCount`, await queue.getWaitingCount());
+        setGauge(`medplum.${queueName}.delayedCount`, await queue.getDelayedCount());
+      }
     }
   };
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
