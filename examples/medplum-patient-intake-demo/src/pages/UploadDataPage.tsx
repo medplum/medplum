@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router';
 
 import exampleBotData from '../../data/core/example-bots.json';
 import patientIntakeQuestionnaireData from '../../data/core/patient-intake-questionnaire.json';
+import patientIntakeQuestionnaireFullSdcData from '../../data/core/patient-intake-questionnaire-full-sdc.json';
 import valuesetsData from '../../data/core/valuesets.json';
 import exampleData from '../../data/example/example-organization-data.json';
 
@@ -101,8 +102,9 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
 }
 
 async function uploadQuestionnaires(medplum: MedplumClient): Promise<void> {
-  const batch = patientIntakeQuestionnaireData as Bundle;
+  const batch = patientIntakeQuestionnaireFullSdcData as Bundle;
   const result = await medplum.executeBatch(batch);
+  console.log(result);
 
   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
     await setTimeout(

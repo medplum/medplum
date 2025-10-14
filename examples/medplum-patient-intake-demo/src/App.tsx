@@ -35,7 +35,7 @@ export function App(): JSX.Element | null {
     }
 
     medplum
-      .searchOne('Questionnaire', { name: 'patient-intake' })
+      .searchOne('Questionnaire', { name: 'patient-intake-full-sdc' })
       .then((intakeQuestionnaire) => {
         setIntakeQuestionnaire(intakeQuestionnaire);
       })

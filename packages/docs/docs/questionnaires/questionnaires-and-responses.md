@@ -165,3 +165,144 @@ To require a signature for a Questionnaire, add the following extension to the Q
 The `QuestionnaireForm` component will automatically render a signature input field when the signature extension is present in the Questionnaire. The signature input field will be required and will validate that a signature is provided before submission.
 
 See the [Storybook](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--signature-required) for an example.
+
+## Structured Data Capture (SDC)
+
+Medplum supports the [HL7 FHIR Structured Data Capture (SDC) Implementation Guide](http://hl7.org/fhir/uv/sdc/), enabling automatic extraction of structured FHIR resources from questionnaire responses.
+
+### Overview
+
+SDC extends FHIR Questionnaires with specialized extensions to:
+- **Extract structured data**: Convert responses into standard FHIR resources (Patient, Observation, etc.)
+- **Use template resources**: Define template FHIR resources populated with response data
+- **Apply FHIRPath expressions**: Map questionnaire answers to specific resource fields
+- **Handle data transformations**: Support calculations, conversions, and conditional logic
+
+### SDC Extensions
+
+| Extension | Purpose | Example |
+|-----------|---------|---------|
+| `sdc-questionnaire-templateExtract` | Marks items for extraction | `{"url": "template", "valueReference": {"reference": "#patient-template"}}` |
+| `sdc-questionnaire-templateExtractValue` | Extracts values using FHIRPath | `{"valueString": "%resource.item.where(linkId='last-name').answer.valueString.first()"}` |
+| `sdc-questionnaire-templateExtractContext` | Sets FHIRPath context | `{"valueString": "%resource.item.where(linkId='patient-demographics')"}` |
+| `sdc-questionnaire-extractAllocateId` | Allocates unique identifiers | `{"valueString": "NewPatientId"}` |
+
+### The $extract Operation
+
+**Usage:**
+```http
+GET /fhir/R4/QuestionnaireResponse/{id}/$extract
+```
+
+**Processing Order:**
+1. Allocate IDs (`extractAllocateId`)
+2. Set Context (`templateExtractContext`) 
+3. Extract Values (`templateExtractValue`)
+4. Create Resources (`templateExtract`)
+
+### Creating SDC Questionnaires
+
+#### 1. Define Template Resources
+```json
+{
+  "resourceType": "Questionnaire",
+  "contained": [
+    {
+      "resourceType": "Patient",
+      "id": "patient-template",
+      "name": [{
+        "family": "{}",
+        "_family": {
+          "extension": [{
+            "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+            "valueString": "%resource.item.where(linkId='last-name').answer.valueString.first()"
+          }]
+        }
+      }]
+    }
+  ]
+}
+```
+
+#### 2. Add Extraction Extensions
+```json
+{
+  "item": [{
+    "extension": [{
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+      "extension": [{
+        "url": "template",
+        "valueReference": {"reference": "#patient-template"}
+      }]
+    }],
+    "linkId": "patient-info",
+    "type": "group"
+  }]
+}
+```
+
+#### 3. Use FHIRPath Expressions
+```fhirpath
+# Basic extraction
+%resource.item.where(linkId='last-name').answer.valueString.first()
+
+# Conditional logic  
+iif(item.where(linkId='smoking-status').answer.valueCoding.code.first() = 'current', 'active', 'inactive')
+
+# Data transformations
+(answer.value * 2.54).round()
+
+# Array operations
+item.where(linkId='given' or linkId='middle').answer.valueString
+```
+
+### Example: Patient Intake Form
+
+```json
+{
+  "resourceType": "Questionnaire",
+  "extension": [{
+    "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-extractAllocateId",
+    "valueString": "NewPatientId"
+  }],
+  "contained": [{
+    "resourceType": "Patient",
+    "id": "patient-template",
+    "name": [{
+      "family": "{}",
+      "_family": {
+        "extension": [{
+          "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+          "valueString": "%resource.item.where(linkId='last-name').answer.valueString.first()"
+        }]
+      },
+      "given": ["{}"],
+      "_given": [{
+        "extension": [{
+          "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+          "valueString": "%resource.item.where(linkId='first-name').answer.valueString"
+        }]
+      }]
+    }]
+  }],
+  "item": [{
+    "extension": [{
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+      "extension": [
+        {"url": "template", "valueReference": {"reference": "#patient-template"}},
+        {"url": "fullUrl", "valueString": "%NewPatientId"}
+      ]
+    }],
+    "linkId": "patient-info",
+    "text": "Patient Information",
+    "type": "group",
+    "item": [
+      {"linkId": "first-name", "text": "First Name", "type": "string", "required": true},
+      {"linkId": "last-name", "text": "Last Name", "type": "string", "required": true},
+      {"linkId": "dob", "text": "Date of Birth", "type": "date"}
+    ]
+  }]
+}
+```
+
+For comprehensive examples, see the [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo).
