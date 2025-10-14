@@ -11,6 +11,13 @@ import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
 import { getSubscriptionQueue } from '../workers/subscription';
 
+const queueEntries = [
+  ['subscription', getSubscriptionQueue()],
+  ['cron', getCronQueue()],
+  ['download', getDownloadQueue()],
+  ['batch', getBatchQueue()],
+] as const;
+
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
 // The instrumentation.ts code is used to initialize OpenTelemetry.
@@ -134,13 +141,6 @@ export function initOtelHeartbeat(): void {
       heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
       BASE_METRIC_OPTIONS
     );
-
-    const queueEntries = [
-      ['subscription', getSubscriptionQueue()],
-      ['cron', getCronQueue()],
-      ['download', getDownloadQueue()],
-      ['batch', getBatchQueue()],
-    ] as const;
 
     for (const [queueName, queue] of queueEntries) {
       if (queue) {
