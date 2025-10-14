@@ -331,6 +331,45 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.currentProject;
   }
 
+  private _originResourceType: ResourceType[] | undefined;
+  setOriginResourceType(originType: ResourceType | ResourceType[]): void {
+    // if (this._originResourceType !== undefined) {
+    //   throw new Error('Origin resource type is already set');
+    // }
+    this._originResourceType = Array.isArray(originType) ? originType : [originType];
+  }
+
+  clearOriginResourceType(): void {
+    if (this._originResourceType === undefined) {
+      throw new Error('Origin resource type is not set');
+    }
+    this._originResourceType = undefined;
+  }
+
+  typesOfInterest: ResourceType[] = ['User', 'Login', 'ClientApplication', 'SmartAppLaunch', 'ProjectMembership'];
+  onResourceTypeQuery(targetType: string, relation: string, payload?: object): void {
+    let shouldLog = false;
+    shouldLog ||= this._originResourceType?.some((type) => this.typesOfInterest.includes(type)) ?? false;
+    shouldLog ||= this.typesOfInterest.includes(targetType as ResourceType);
+
+    if (!shouldLog) {
+      return;
+    }
+    console.log(
+      'onResourceTypeQuery',
+      JSON.stringify(
+        {
+          originType: this._originResourceType?.length === 1 ? this._originResourceType[0] : this._originResourceType,
+          targetType,
+          relation,
+          payload,
+        },
+        null,
+        2
+      )
+    );
+  }
+
   /**
    * Returns a project by ID.
    * This handles the common case where the project ID is the same as the current project ID,
