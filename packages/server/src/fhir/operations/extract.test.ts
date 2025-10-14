@@ -762,9 +762,11 @@ describe('QuestionnaireResponse/$extract', () => {
     expect(patient.gender).toBe('unknown');
   });
 
-  test('Value extension yields array for primitive array element', async () => {
-    // Place a value extension on Patient.name._given[0] (primitive array element). The expression yields
-    // multiple strings; server should replace the entire given array with those values.
+  test('Context-driven duplication for primitive array element', async () => {
+    // Place a context extension on HumanName to iterate over each "given" answer and
+    // a value extension on Patient.name._given[0] (primitive array element). The expression
+    // should be evaluated per-context (per given item), and the server should replace the
+    // entire given array with those values.
     const questionnaire: Questionnaire = {
       resourceType: 'Questionnaire',
       status: 'unknown',
@@ -774,11 +776,10 @@ describe('QuestionnaireResponse/$extract', () => {
           id: 'p',
           name: [
             {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'given')" }],
               _given: [
                 {
-                  extension: [
-                    { url: valueExtension, valueString: "item.where(linkId = 'given').answer.value" },
-                  ],
+                  extension: [{ url: valueExtension, valueString: 'answer.value' }],
                 } as any,
               ],
             },
