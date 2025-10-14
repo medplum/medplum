@@ -11,14 +11,16 @@ import {
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client, escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
-import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import type { SearchParameterImplementation } from '../fhir/searchparameter';
+import { getSearchParameterImplementation } from '../fhir/searchparameter';
+import type { SqlFunctionDefinition } from '../fhir/sql';
+import { TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -30,7 +32,7 @@ import {
   TableNameAbbreviations,
   tsVectorExpression,
 } from './migrate-utils';
-import {
+import type {
   CheckConstraintDefinition,
   ColumnDefinition,
   DbClient,
@@ -39,9 +41,9 @@ import {
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
-  SerialColumnTypes,
   TableDefinition,
 } from './types';
+import { SerialColumnTypes } from './types';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 
@@ -299,6 +301,9 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingTable(result);
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
+  buildConceptMappingTable(result);
+  buildCodingSystemTable(result);
+  buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -786,6 +791,63 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   });
 }
 
+function buildConceptMappingTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'conceptMap', type: 'UUID', notNull: true },
+      { name: 'sourceSystem', type: 'BIGINT', notNull: true },
+      { name: 'sourceCode', type: 'TEXT', notNull: true },
+      { name: 'targetSystem', type: 'BIGINT', notNull: true },
+      { name: 'targetCode', type: 'TEXT', notNull: true },
+      { name: 'relationship', type: 'TEXT' },
+      { name: 'sourceDisplay', type: 'TEXT' },
+      { name: 'targetDisplay', type: 'TEXT' },
+      { name: 'comment', type: 'TEXT' },
+    ],
+    indexes: [
+      {
+        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
+        unique: true,
+      },
+      {
+        indexNameOverride: 'ConceptMapping_map_reverse_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'targetSystem', 'targetCode', 'sourceSystem'],
+      },
+    ],
+  });
+}
+
+function buildCodingSystemTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodingSystem',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'system', type: 'TEXT', notNull: true },
+    ],
+    indexes: [{ columns: ['system'], indexType: 'btree', unique: true, include: ['id'] }],
+  });
+}
+
+function buildConceptMappingAttributeTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping_Attribute',
+    columns: [
+      { name: 'mapping', type: 'BIGINT', notNull: true },
+      { name: 'uri', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'value', type: 'TEXT', notNull: true },
+      { name: 'kind', type: 'TEXT', notNull: true },
+    ],
+    compositePrimaryKey: ['mapping', 'uri', 'type', 'value', 'kind'],
+    indexes: [],
+  });
+}
+
 function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'DatabaseMigration',
@@ -1142,7 +1204,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
 
   queries.push(
     [
-      `CREATE TABLE ${options.includeIfExists ? ' IF NOT EXISTS' : ''}${escapeIdentifier(tableDef.name)} (`,
+      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS ' : ''}${escapeIdentifier(tableDef.name)} (`,
       createTableLines.join(',\n'),
       ')',
     ].join('\n')

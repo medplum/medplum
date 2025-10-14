@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WithId } from '@medplum/core';
-import { Bot, ProjectMembership } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { MedplumServerConfig } from '../../config/types';
+import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
 

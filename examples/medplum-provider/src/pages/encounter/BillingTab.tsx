@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Flex, Group, Menu, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
+import type {
   ChargeItem,
   Claim,
   ClaimDiagnosis,
@@ -14,7 +14,8 @@ import {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { VisitDetailsPanel } from '../../components/encounter/VisitDetailsPanel';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';

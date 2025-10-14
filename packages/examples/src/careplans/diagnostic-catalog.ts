@@ -3,7 +3,7 @@
 
 // start-block imports
 import { LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
-import { ActivityDefinition, ObservationDefinition, PlanDefinition, SpecimenDefinition } from '@medplum/fhirtypes';
+import type { ActivityDefinition, ObservationDefinition, PlanDefinition, SpecimenDefinition } from '@medplum/fhirtypes';
 
 // end-block imports
 

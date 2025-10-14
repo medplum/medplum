@@ -7,12 +7,12 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, DocumentReference, Media, Resource } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Binary, DocumentReference, Media, Resource } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../../fhir/repo';
+import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { S3Storage } from './storage';
@@ -109,8 +109,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     mediaProps
   );
 
-  const options = req.body as { comprehend?: boolean };
-  if (options.comprehend && textractResult?.Blocks) {
+  const options = req.body as undefined | { comprehend?: boolean };
+  if (options?.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });

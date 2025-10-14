@@ -3,10 +3,10 @@
 import { Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Patient, Resource } from '@medplum/fhirtypes';
+import type { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { PatientConsents } from './PatientConsents';
 import { PatientImmunizations } from './PatientImmunizations';

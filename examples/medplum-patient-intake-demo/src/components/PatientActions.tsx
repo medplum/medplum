@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Title } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconEye } from '@tabler/icons-react';
-import { JSX, useContext } from 'react';
+import { useContext } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 

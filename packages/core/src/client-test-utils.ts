@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
 import { encodeBase64Url } from './base64';
-import { FetchLike, MedplumClient } from './client';
+import type { FetchLike } from './client';
+import { MedplumClient } from './client';
 import { ContentType } from './contenttype';
 import { generateId } from './crypto';
 import { OperationOutcomeError, badRequest, getStatus, isOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ProfileResource, WithId, ensureNoLeadingSlash } from './utils';
+import type { ProfileResource, WithId } from './utils';
+import { ensureNoLeadingSlash } from './utils';
 
 export function mockFetch(
   status: number,

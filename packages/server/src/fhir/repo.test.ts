@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -16,9 +17,8 @@ import {
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Binary,
   BundleEntry,
   ElementDefinition,
@@ -42,7 +42,8 @@ import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew, RegisterRequest } from '../auth/register';
+import type { RegisterRequest } from '../auth/register';
+import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';

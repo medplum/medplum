@@ -3,11 +3,11 @@
 import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
 import { isString, splitN } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { IncomingMessage } from 'http';
-import { Readable } from 'stream';
+import type { Binary } from '@medplum/fhirtypes';
+import type { IncomingMessage } from 'http';
+import type { Readable } from 'stream';
 import { BaseBinaryStorage } from '../../storage/base';
-import { BinarySource } from '../../storage/types';
+import type { BinarySource } from '../../storage/types';
 
 /**
  * The AzureBlobStorage class stores binary data in an Azure Blob Storage container

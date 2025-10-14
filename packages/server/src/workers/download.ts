@@ -1,26 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  arrayify,
-  BackgroundJobContext,
-  crawlTypedValue,
-  isGone,
-  normalizeOperationOutcome,
-  toTypedValue,
-  TypedValue,
-  WithId,
-} from '@medplum/core';
-import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import type { BackgroundJobContext, TypedValue, WithId } from '@medplum/core';
+import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
+import type { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import { Readable } from 'stream';
+import type { Readable } from 'stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
-import { queueRegistry, WorkerInitializer } from './utils';
+import type { WorkerInitializer } from './utils';
+import { queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -224,8 +218,8 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
     log.info('Downloaded content successfully');
-  } catch (ex) {
-    log.info('Download exception: ' + ex);
+  } catch (ex: any) {
+    log.info('Download exception: ' + ex, ex);
     throw ex;
   }
 }

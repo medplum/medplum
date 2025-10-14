@@ -3,7 +3,7 @@
 'use client';
 
 import { Table } from '@mantine/core';
-import { Bundle, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Patient } from '@medplum/fhirtypes';
 import React from 'react';
 
 type PatientTableProps = {

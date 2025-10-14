@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu, Tabs } from '@mantine/core';
-import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
-import { Coding, Patient } from '@medplum/fhirtypes';
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import type { Coding, Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
 import { IconMenu2 } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { ObservationGraph } from './graphs/ObservationGraph';
 

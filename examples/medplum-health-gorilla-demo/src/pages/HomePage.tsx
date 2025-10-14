@@ -1,27 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Code, Container, Group, Input, Radio, Stack, Text, TextInput } from '@mantine/core';
-import { ContentType, MedplumClient } from '@medplum/core';
-import { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
-import {
+import { ContentType } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import { LabOrderValidationError, NPI_SYSTEM } from '@medplum/health-gorilla-core';
+import type {
   BillingInformation,
   DiagnosisCodeableConcept,
   LabOrderInputErrors,
-  LabOrderValidationError,
-  NPI_SYSTEM,
   TestCoding,
 } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import {
   AsyncAutocomplete,
-  AsyncAutocompleteOption,
   DateTimeInput,
   Panel,
   ResourceInput,
   useMedplum,
   ValueSetAutocomplete,
 } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { AsyncAutocompleteOption } from '@medplum/react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { CoverageInput } from '../components/CoverageInput';
 import { PerformingLabInput } from '../components/PerformingLabInput';
 import { TestMetadataCardInput } from '../components/TestMetadataCardInput';

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { HumanName, Task } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { HumanName, Task } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import classes from './TaskListItem.module.css';
 import cx from 'clsx';
 import { MedplumLink, useResource } from '@medplum/react';

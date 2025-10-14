@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { GraphiQLPlugin } from '@graphiql/react';
-import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
+import type { GraphiQLPlugin } from '@graphiql/react';
+import type { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
-import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
+import { MedplumClient, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { GraphiQL } from 'graphiql';
 import 'graphiql/style.css';
-import { JSX, StrictMode } from 'react';
+import type { JSX } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getConfig } from './config';
 
@@ -148,8 +150,8 @@ export function App(): JSX.Element {
     <GraphiQL
       fetcher={fetcher}
       defaultQuery={HELP_TEXT}
-      query={parameters.query || undefined}
-      variables={parameters.variables || undefined}
+      initialQuery={parameters.query || undefined}
+      initialVariables={parameters.variables || undefined}
       operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}

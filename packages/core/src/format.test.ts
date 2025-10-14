@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Observation } from '@medplum/fhirtypes';
+import type { Observation } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
   formatAddress,

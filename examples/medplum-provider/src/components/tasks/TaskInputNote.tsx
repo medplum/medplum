@@ -14,7 +14,7 @@ import {
   Textarea,
 } from '@mantine/core';
 import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
-import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import type { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';

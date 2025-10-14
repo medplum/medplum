@@ -1,16 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  BotEvent,
-  MedplumClient,
-  WithId,
-  createReference,
-  deepClone,
-  getQuestionnaireAnswers,
-  getReferenceString,
-  resolveId,
-} from '@medplum/core';
-import {
+import { createReference, deepClone, getQuestionnaireAnswers, getReferenceString, resolveId } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
   Identifier,
   Patient,
   QuestionnaireResponse,

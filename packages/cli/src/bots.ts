@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
 import { MedplumCommand, addSubcommand, createBot, deployBot, readBotConfigs, saveBot } from './utils';
 

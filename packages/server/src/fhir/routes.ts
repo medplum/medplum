@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
-import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { ResourceType } from '@medplum/fhirtypes';
-import { NextFunction, Request, Response, Router } from 'express';
-import { asyncWrap } from '../async';
+import type { BatchEvent, FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
@@ -27,6 +28,7 @@ import { claimExportGetHandler, claimExportPostHandler } from './operations/clai
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
+import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
@@ -59,7 +61,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
-import { ResendSubscriptionsOptions } from './repo';
+import type { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -138,7 +140,7 @@ publicRoutes.get('/metadata', (_req: Request, res: Response) => {
 });
 
 // FHIR Versions
-publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
+publicRoutes.get(['/$versions', '/%24versions'], (_req: Request, res: Response) => {
   res.status(200).json({ versions: ['4.0'], default: '4.0' });
 });
 
@@ -153,19 +155,23 @@ const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
 // CSV Export (cannot use FhirRouter due to CSV output)
-protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
+protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
-protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
-protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
+protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
+protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandler);
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
 const botPaths = [
-  '/Bot/([$]|%24)execute',
-  '/Bot/:id/([$]|%24)execute',
-  '/Bot/([$]|%24)execute/*',
-  '/Bot/:id/([$]|%24)execute/*',
+  '/Bot/$execute',
+  '/Bot/%24execute',
+  '/Bot/:id/$execute',
+  '/Bot/:id/%24execute',
+  '/Bot/$execute/*splat',
+  '/Bot/%24execute/*splat',
+  '/Bot/:id/$execute/*splat',
+  '/Bot/:id/%24execute/*splat',
 ];
 protectedRoutes.get(botPaths, executeHandler);
 protectedRoutes.post(botPaths, executeHandler);
@@ -214,6 +220,10 @@ function initInternalFhirRouter(): FhirRouter {
   // ConceptMap $translate
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
+
+  // ConceptMap $import
+  router.add('POST', '/ConceptMap/$import', conceptMapImportHandler);
+  router.add('POST', '/ConceptMap/:id/$import', conceptMapImportHandler);
 
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
@@ -393,49 +403,48 @@ function initInternalFhirRouter(): FhirRouter {
 }
 
 // Default route
-protectedRoutes.use(
-  '*',
-  asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
-    const ctx = getAuthenticatedContext();
+protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, res: Response) {
+  const ctx = getAuthenticatedContext();
 
-    const request: FhirRequest = {
-      method: req.method as HttpMethod,
-      url: stripPrefix(req.originalUrl, '/fhir/R4'),
-      pathname: '',
-      params: req.params,
-      query: Object.create(null), // Defer query param parsing to router for consistency
-      body: req.body,
-      headers: req.headers,
-      config: {
-        graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
-          ?.valueInteger,
-        graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
-        graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
-        searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
-        transactions: ctx.project.features?.includes('transaction-bundles'),
-      },
-    };
+  const request: FhirRequest = {
+    method: req.method as HttpMethod,
+    url: stripPrefix(req.originalUrl, '/fhir/R4'),
+    pathname: '',
+    params: req.params,
+    query: Object.create(null), // Defer query param parsing to router for consistency
+    // Express v5 changed the default value of `req.body` from {} to undefined. A decent number of FHIR handlers
+    // rely on the previous behavior, so we defer handling undefined for now
+    body: req.body ?? {},
+    headers: req.headers,
+    config: {
+      graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
+        ?.valueInteger,
+      graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+      graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
+      transactions: ctx.project.features?.includes('transaction-bundles'),
+    },
+  };
 
-    let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+  let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
-    if (isNotFound(result[0])) {
-      const customOperationResponse = await tryCustomOperation(request, ctx.repo);
-      if (customOperationResponse) {
-        result = customOperationResponse;
-      }
+  if (isNotFound(result[0])) {
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    if (customOperationResponse) {
+      result = customOperationResponse;
     }
+  }
 
-    if (result.length === 1) {
-      if (!isOk(result[0])) {
-        throw new OperationOutcomeError(result[0]);
-      }
-      sendOutcome(res, result[0]);
-      return;
+  if (result.length === 1) {
+    if (!isOk(result[0])) {
+      throw new OperationOutcomeError(result[0]);
     }
+    sendOutcome(res, result[0]);
+    return;
+  }
 
-    await sendFhirResponse(req, res, result[0], result[1], result[2]);
-  })
-);
+  await sendFhirResponse(req, res, result[0], result[1], result[2]);
+});
 
 function stripPrefix(str: string, prefix: string): string {
   return str.substring(str.indexOf(prefix) + prefix.length);

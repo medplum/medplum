@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  Filter,
   forbidden,
   getDateProperty,
   getReferenceString,
@@ -14,13 +14,10 @@ import {
   Operator,
   parseJWTPayload,
   parseSearchRequest,
-  ProfileResource,
   resolveId,
-  SearchRequest,
   tooManyRequests,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   ClientApplication,
   IdentityProvider,
@@ -34,19 +31,21 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
-import { Request } from 'express';
-import { IncomingMessage } from 'http';
-import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
+import type { Request } from 'express';
+import type { IncomingMessage } from 'http';
+import type { JWTPayload, VerifyOptions } from 'jose';
+import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
-import { MedplumExternalAuthConfig } from '../config/types';
+import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
-import { parseSmartScopes, SmartScope } from '../fhir/smart';
+import type { SmartScope } from '../fhir/smart';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getRedis } from '../redis';
 import {
@@ -57,15 +56,9 @@ import {
   UserAuthenticationEvent,
 } from '../util/auditevent';
 import { getStandardClientById } from './clients';
-import {
-  generateAccessToken,
-  generateIdToken,
-  generateRefreshToken,
-  generateSecret,
-  MedplumAccessTokenClaims,
-  verifyJwt,
-} from './keys';
-import { AuthState } from './middleware';
+import type { MedplumAccessTokenClaims } from './keys';
+import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
+import type { AuthState } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 

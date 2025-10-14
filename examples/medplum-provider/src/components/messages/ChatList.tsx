@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Stack } from '@mantine/core';
-import { Communication } from '@medplum/fhirtypes';
-import { Fragment, JSX } from 'react';
+import type { Communication } from '@medplum/fhirtypes';
+import { Fragment } from 'react';
+import type { JSX } from 'react';
 import { ChatListItem } from './ChatListItem';
 
 interface ChatListProps {

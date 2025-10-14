@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import { App } from './app';
+import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import type { App } from './app';
 
 export interface Channel {
   readonly log: ILogger;

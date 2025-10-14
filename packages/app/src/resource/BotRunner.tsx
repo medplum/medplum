@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { JSX, Ref } from 'react';
+import type { JSX, Ref } from 'react';
 
 export interface BotRunnerProps {
   readonly className?: string;

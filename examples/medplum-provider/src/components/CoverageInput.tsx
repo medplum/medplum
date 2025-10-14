@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Divider, Group, Input, List, ListItem, rem, Text } from '@mantine/core';
-import { Coverage, Patient } from '@medplum/fhirtypes';
-import { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';
+import type { Coverage, Patient } from '@medplum/fhirtypes';
+import type { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 
 const INITIAL_COVERAGES: { coverage: Coverage; selected: boolean }[] = [];
 const MAX_COVERAGES = 3;
