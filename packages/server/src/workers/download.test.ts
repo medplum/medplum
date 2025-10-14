@@ -302,4 +302,68 @@ describe('Download Worker', () => {
       expect(media2).toBeDefined();
       expect(queue.add).toHaveBeenCalled();
     }));
+
+  test('Stop retries if auto download disabled', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // At this point the job should be in the queue
+      // But let's disable auto download in the project
+      await repo.updateResource({
+        ...project,
+        setting: [{ name: 'autoDownloadEnabled', valueBoolean: false }],
+      });
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job);
+
+      // Fetch should not have been called
+      expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Stop retries if auto download disabled', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // At this point the job should be in the queue
+      // But let's disable auto download in the project
+      await repo.updateResource({
+        ...project,
+        setting: [{ name: 'autoDownloadIgnoredUrlPrefixes', valueString: 'https://example.com' }],
+      });
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job);
+
+      // Fetch should not have been called
+      expect(fetch).not.toHaveBeenCalled();
+    }));
 });
