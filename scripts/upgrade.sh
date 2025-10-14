@@ -81,8 +81,7 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-# @graphiql/react - v0.35+ is only compatible with graphiql v5+
-EXCLUDE="@graphiql/react"
+EXCLUDE=""
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -102,9 +101,8 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
-# graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@mantine/* @storybook/* @types/express @types/node commander eslint express hibp jose node-fetch npm storybook storybook-* zod graphiql uuid"
+MAJOR_EXCLUDE="@mantine/* @storybook/* @types/express @types/node commander eslint express hibp jose node-fetch npm storybook storybook-* zod uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
