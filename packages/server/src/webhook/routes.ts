@@ -4,7 +4,6 @@ import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core'
 import type { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { asyncWrap } from '../async';
 import { executeBot } from '../bots/execute';
 import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
@@ -13,8 +12,10 @@ import { sendBinaryResponse } from '../fhir/response';
 
 /**
  * Handles HTTP requests for anonymous webhooks.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
+export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
   const systemRepo = getSystemRepo();
   const id = req.params.id;
   const runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
@@ -65,7 +66,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   } else {
     res.status(getStatus(outcome)).contentType(getResponseContentType(req)).send(responseBody);
   }
-});
+};
 
 export const webhookRouter = Router();
 webhookRouter.post('/:id', webhookHandler);
