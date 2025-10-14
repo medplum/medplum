@@ -20,6 +20,7 @@ import {
   getSearchParameter,
   invalidSearchOperator,
   isResource,
+  isResourceType,
   isUUID,
   OperationOutcomeError,
   Operator,
@@ -121,6 +122,7 @@ export async function searchImpl<T extends Resource>(
   let entry = undefined;
   let rowCount = undefined;
   let nextResource: T | undefined;
+  repo.setOriginResourceType(searchRequest.types ?? searchRequest.resourceType);
   if (searchRequest.count > 0) {
     const builder = getSelectQueryForSearch(repo, searchRequest, options);
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
@@ -130,6 +132,8 @@ export async function searchImpl<T extends Resource>(
   if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
     total = await getCount(repo, searchRequest, rowCount);
   }
+
+  repo.clearOriginResourceType();
 
   return {
     resourceType: 'Bundle',
@@ -537,7 +541,12 @@ async function getSearchIncludeEntries(
   const canonicalReferences: string[] = [];
   for (const result of fhirPathResult) {
     if (result.type === PropertyType.Reference) {
-      references.push(result.value);
+      const ref = result.value as Reference;
+      references.push(ref);
+      const refType = ref.reference?.split('/')[0];
+      if (refType && isResourceType(refType)) {
+        repo.onResourceTypeQuery?.(refType, 'include-ref', { include });
+      }
     } else if (canonicalReferenceTypes.includes(result.type)) {
       canonicalReferences.push(result.value);
     }
@@ -558,6 +567,11 @@ async function getSearchIncludeEntries(
         count: DEFAULT_MAX_SEARCH_COUNT,
         offset: 0,
       };
+      repo.onResourceTypeQuery(resourceType, 'include-canonical', {
+        include,
+        target: searchParam.target?.join(','),
+        canonicalReferences: canonicalReferences.join(','),
+      });
       const query = getSelectQueryForSearch(repo, searchRequest);
       return getSearchEntries(repo, searchRequest, query);
     });
@@ -931,6 +945,18 @@ export function buildSearchExpression(
       let expr: Expression | undefined;
       if (isChainedSearchFilter(filter)) {
         const chain = parseChainedParameter(searchRequest.resourceType, filter);
+        if (repo.onResourceTypeQuery) {
+          for (const c of chain.chain) {
+            repo.onResourceTypeQuery(
+              c.targetType,
+              c.direction === Direction.FORWARD ? 'chain-forward' : 'chain-reverse',
+              {
+                chain: chain.chain.map((c) => ({ targetType: c.targetType, direction: c.direction })),
+                filter,
+              }
+            );
+          }
+        }
         expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
         expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
