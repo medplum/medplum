@@ -12,24 +12,28 @@ This example app demonstrates the following:
 - Converting the form data into structured data ([`Patient`](/docs/api/fhir/resources/patient), [`Coverage`](/docs/api/fhir/resources/coverage), [`Observation`](/docs/api/fhir/resources/observation)) for easy retrieval and longitudinal tracking.
 - Implementing conditional flows in questionnaires.
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to build a patient intake form.
+- Using **Structured Data Capture (SDC)** with the `$extract` operation to automatically generate FHIR resources from questionnaire responses.
 
 ### Code Organization
 
 This repo is organized into two main directories: `src` and `data`.
 
-The `src` directory contains the React app that implements the intake form UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of the questionnaire response into structured data.
+The `src` directory contains the React app that implements the intake form UX. The questionnaire uses **Structured Data Capture (SDC)** extensions to define how form responses should be automatically converted into FHIR resources using the `$extract` operation.
 
 The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
 
 ### UI and components
 
-- Patients page listing all the patients in the system
-- Patients chart page page with 3 panels:
-  - Clinical Chart
-  - Details (including SDOH and Consents)
+- **Patients page**: Listing all the patients in the system
+- **Patient chart page**: With 3 panels:
+  - Clinical Chart (allergies, medications, conditions, immunizations)
+  - Details (demographics, SDOH observations, and consents)
   - Actions (with a button to fill in the intake form)
-- Patient intake form page to fill in the intake questionnaire
-- Intake form customization page where it's possible to edit fields of the intake form.
+- **Patient intake form page**: Interactive questionnaire form using Medplum React components
+- **Search page**: Find and view specific patients and resources
+- **Upload data page**: Upload core data, questionnaires, and example data
+
+The intake form automatically generates FHIR resources using SDC when submitted, creating Patient, Coverage, Observation, Consent, and other related resources without requiring custom processing code.
 
 ### Getting Started
 
@@ -51,15 +55,6 @@ Next, install the dependencies.
 npm install
 ```
 
-Then, build the bots
-
-> [!WARNING]
-> Bots are not on by default for Medplum projects, make sure they are enabled before proceeding.
-
-```bash
-npm run build:bots
-```
-
 Then, run the app
 
 ```bash
@@ -70,9 +65,19 @@ This app should run on `http://localhost:3000/`
 
 ### Uploading sample data
 
-Click `Upload Core data` in the app navigation menu and then click the upload button.
-Click `Upload Example Bots` in the app navigation menu and then click the upload button.
-[Optional] Click `Upload Example data` in the app navigation menu and then click the upload button.
+1. Click `Upload Core data` in the app navigation menu and then click the upload button.
+2. Click `Upload Questionnaire data` in the app navigation menu and then click the upload button.
+3. [Optional] Click `Upload Example data` in the app navigation menu and then click the upload button.
+
+### How SDC and $extract Work
+
+This demo uses **Structured Data Capture (SDC)** to automatically convert questionnaire responses into FHIR resources:
+
+- **SDC Extensions**: The questionnaire contains SDC extensions that define how each form field should map to FHIR resource properties
+- **$extract Operation**: When a questionnaire response is submitted, the `$extract` operation processes the response and automatically creates the appropriate FHIR resources (Patient, Coverage, Observations, etc.)
+- **No Manual Processing**: Unlike traditional approaches that require custom code to parse form data, SDC handles the conversion automatically based on the questionnaire definition
+
+The questionnaire in `data/core/patient-intake-questionnaire-full-sdc.json` contains extensive SDC extensions that define the complete mapping from form fields to FHIR resources.
 
 ### About Medplum
 
