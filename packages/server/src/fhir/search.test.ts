@@ -19,6 +19,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  CarePlan,
   CareTeam,
   Coding,
   Communication,
@@ -5224,5 +5225,69 @@ describe('systemRepo', () => {
         parseSearchRequest(`Patient?_has:Observation:subject:_filter=${encodeURIComponent('code eq "xyz"')}`)
       );
       expect(result2.entry?.length).toStrictEqual(0);
+    }));
+
+    
+  test('CarePlan with identifiers', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      const carePlan1 = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: createReference(patient),
+        identifier: [{ value: 'foo' }],
+      });
+      expect(carePlan1).toBeDefined();
+
+      const carePlan2 = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: createReference(patient),
+        identifier: [{ value: 'bar' }],
+      });
+      expect(carePlan2).toBeDefined();
+
+      const carePlan3 = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: createReference(patient),
+        identifier: [{ value: 'baz' }],
+      });
+      expect(carePlan3).toBeDefined();
+
+      const carePlan4 = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: createReference(patient),
+        identifier: [{ value: 'quux' }],
+      });
+      expect(carePlan4).toBeDefined();
+
+      // Create a care plan with a different identifier to ensure it's not included
+      const carePlan5 = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: createReference(patient),
+        identifier: [{ value: 'other' }],
+      });
+      expect(carePlan5).toBeDefined();
+
+      const result = await repo.search(parseSearchRequest('CarePlan?identifier=foo,bar,baz,quux'));
+      expect(result.entry?.length).toStrictEqual(4);
+
+      const ids = result.entry?.map(entry => entry.resource?.id).sort();
+      expect(ids).toStrictEqual([carePlan1.id, carePlan2.id, carePlan3.id, carePlan4.id].sort());
     }));
 });
