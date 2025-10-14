@@ -4,9 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
-    "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
