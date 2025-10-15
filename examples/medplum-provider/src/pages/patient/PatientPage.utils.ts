@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -81,7 +81,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'communication', url: 'communication', label: 'Messages' },
+  { id: 'message', url: 'Message', label: 'Messages' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
 ];

@@ -7,10 +7,10 @@ import {
   createReference,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
 } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   DiagnosticReport,
   Observation,

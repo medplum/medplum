@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon } from '@mantine/core';
 import { IconCircleMinus } from '@tabler/icons-react';
-import { JSX, MouseEventHandler } from 'react';
+import type { JSX, MouseEventHandler } from 'react';
 
 export interface ArrayRemoveButtonProps {
   readonly propertyDisplayName?: string;

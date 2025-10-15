@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Task } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
+import type { PatchOperation } from '@medplum/core';
+import type { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface PauseResumeTaskProps {
   readonly task: Task;

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
 import fetch from 'node-fetch';

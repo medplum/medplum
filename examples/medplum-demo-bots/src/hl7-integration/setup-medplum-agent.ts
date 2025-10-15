@@ -1,13 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  BotEvent,
-  MedplumClient,
-  createReference,
-  getAllQuestionnaireAnswers,
-  getReferenceString,
-} from '@medplum/core';
-import { AgentChannel, Bot, Endpoint, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { createReference, getAllQuestionnaireAnswers, getReferenceString } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { AgentChannel, Bot, Endpoint, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;

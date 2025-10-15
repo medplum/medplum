@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import { JSX } from 'react';
 import { Container } from '../Container';
@@ -11,11 +13,9 @@ export function HeroSection(): JSX.Element {
         <Jumbotron>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              Building the future
+              Accelerating
               <br />
-              of healthcare,
-              <br />
-              faster
+              healthcare tech
             </h1>
             <p className={styles.heroText}>
               Medplum is the open source healthcare developer platform that helps you build, test, and deliver any
@@ -27,7 +27,12 @@ export function HeroSection(): JSX.Element {
             </Link>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/illustration-header.svg" alt="Robot working in a medical office" width="450" height="450" />
+            <img
+              src="/img/hero/hero-interop-and-data-platform-square.webp"
+              alt="Robot working in a medical office"
+              width="450"
+              height="450"
+            />
           </div>
         </Jumbotron>
       </Container>

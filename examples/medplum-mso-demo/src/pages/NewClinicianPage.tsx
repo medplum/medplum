@@ -4,10 +4,11 @@ import { Alert, Button, MultiSelect, PasswordInput, Stack, Text, TextInput, Titl
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { AccessPolicy, Organization } from '@medplum/fhirtypes';
+import type { AccessPolicy, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { useAdminStatus } from '../utils/admin';
 

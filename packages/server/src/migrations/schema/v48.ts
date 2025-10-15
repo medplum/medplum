@@ -6,8 +6,8 @@
  * Do not edit manually.
  */
 
-import { Project } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import type { Project } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
 import { r4ProjectId } from '../../constants';
 
 export async function run(client: PoolClient): Promise<void> {

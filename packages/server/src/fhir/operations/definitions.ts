@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, serverError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, OperationDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, OperationDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 
 const operationDefinitions = (
   readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition | OperationDefinition>

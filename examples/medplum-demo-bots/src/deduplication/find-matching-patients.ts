@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, createReference, getReferenceString, resolveId } from '@medplum/core';
-import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, resolveId } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
  * This Bot listens for changes to a `Patient` resource and searches for potential patient duplicates.

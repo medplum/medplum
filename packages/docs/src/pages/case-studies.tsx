@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
@@ -20,9 +22,7 @@ export default function CaseStudiesPage(): JSX.Element {
             <p className={styles.heroText}>
               Read the details on Medplum implementations with extensive reference materials, documentation and videos.
             </p>
-          </div>
-          <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
+            <img src="/img/hero/hero-custom-apps-and-portals.webp" alt="Custom Apps and Portals" />
           </div>
         </Jumbotron>
         <SectionHeader>

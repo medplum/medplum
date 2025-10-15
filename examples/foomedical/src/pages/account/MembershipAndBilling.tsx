@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Stack, Table, Title } from '@mantine/core';
 import { formatCoding, getReferenceString } from '@medplum/core';
-import { Coverage, Patient } from '@medplum/fhirtypes';
+import type { Coverage, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';
 

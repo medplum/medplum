@@ -16,11 +16,12 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { PlanDefinition } from '@medplum/fhirtypes';
+import type { PlanDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import cx from 'clsx';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import classes from './AddPlanDefinition.module.css';
 
 interface AddPlanDefinitionProps {

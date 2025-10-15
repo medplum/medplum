@@ -1,22 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import {
-  ProfileResource,
-  createReference,
-  generateId,
-  getReferenceString,
-  getWebSocketUrl,
-  sleep,
-} from '@medplum/core';
-import { Bundle, Communication } from '@medplum/fhirtypes';
+import type { ProfileResource } from '@medplum/core';
+import { createReference, generateId, getReferenceString, getWebSocketUrl, sleep } from '@medplum/core';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import { BaseChat, BaseChatProps } from './BaseChat';
+import type { BaseChatProps } from './BaseChat';
+import { BaseChat } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
 

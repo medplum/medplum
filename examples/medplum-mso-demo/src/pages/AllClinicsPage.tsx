@@ -3,7 +3,7 @@
 import { Alert, Text, Title } from '@mantine/core';
 import { Document, SearchControl, useMedplumNavigate } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Outlet } from 'react-router';
 import { useAdminStatus } from '../utils/admin';
 

@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Getting Started with DoseSpot
 
 This guide explains how to get the **DoseSpot eRx interface iframed into Medplum** and **sync the relevant resources between Medplum and DoseSpot**. It is all integrated into the [Provider App](https://provider.medplum.com) already, but these instructions will show you how to use the hooks and bots in your own application.

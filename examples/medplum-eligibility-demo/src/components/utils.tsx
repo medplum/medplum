@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 
 /**
  * Cleans a resource of meta data including `lastUpdated`, `versionId`, and `author`. This allows the resource to be updated without

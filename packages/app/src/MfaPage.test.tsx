@@ -6,7 +6,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { act, render, screen, userEvent, UserEvent } from './test-utils/render';
+import type { UserEvent } from './test-utils/render';
+import { act, render, screen, userEvent } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -40,6 +41,7 @@ describe('MfaPage', () => {
 
   test('Enroll', async () => {
     const user = await setup();
+    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
     expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
   });
@@ -47,6 +49,9 @@ describe('MfaPage', () => {
   test('Disable -- success', async () => {
     const getSpy = jest.spyOn(medplum, 'get');
     const user = await setup();
+
+    // Enter a code in the "token" field
+    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
 
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
@@ -81,6 +86,9 @@ describe('MfaPage', () => {
   test('Disable -- failed', async () => {
     const getSpy = jest.spyOn(medplum, 'get');
     const user = await setup();
+
+    // Enter a code in the "token" field
+    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
 
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));

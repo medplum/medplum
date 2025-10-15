@@ -4,10 +4,13 @@ import {
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_DEVICES_SECTION,
+  LOINC_DISABILITY_STATUS,
   LOINC_ENCOUNTERS_SECTION,
+  LOINC_FUNCTIONAL_STATUS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_INSURANCE_SECTION,
   LOINC_MEDICATIONS_SECTION,
   LOINC_NOTE_DOCUMENT,
   LOINC_NOTES_SECTION,
@@ -20,10 +23,12 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   createReference,
   escapeHtml,
+  findCodeBySystem,
   formatCodeableConcept,
   formatDate,
   formatObservationValue,
@@ -31,15 +36,14 @@ import {
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
   resolveId,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
+  Account,
   AllergyIntolerance,
   Bundle,
   CarePlan,
   ClinicalImpression,
-  CodeableConcept,
   Composition,
   CompositionEvent,
   CompositionSection,
@@ -63,9 +67,11 @@ import {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
+import type { AuthenticatedRequestContext } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
+import type { PatientEverythingParameters } from './patienteverything';
+import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
@@ -102,9 +108,11 @@ export const operation = {
 } satisfies OperationDefinition;
 
 const resourceTypes: ResourceType[] = [
+  'Account',
   'AllergyIntolerance',
   'CarePlan',
   'ClinicalImpression',
+  'Coverage',
   'Condition',
   'DeviceUseStatement',
   'DiagnosticReport',
@@ -114,6 +122,7 @@ const resourceTypes: ResourceType[] = [
   'MedicationRequest',
   'Observation',
   'Procedure',
+  'RelatedPerson',
   'ServiceRequest',
 ];
 
@@ -175,6 +184,7 @@ export class PatientSummaryBuilder {
   private readonly patient: Patient;
   private readonly everything: WithId<Resource>[];
   private readonly params: PatientSummaryParameters;
+  private readonly participants: ProfileResource[] = [];
   private readonly allergies: AllergyIntolerance[] = [];
   private readonly medications: MedicationRequest[] = [];
   private readonly problemList: Condition[] = [];
@@ -189,8 +199,10 @@ export class PatientSummaryBuilder {
   private readonly devices: DeviceUseStatement[] = [];
   private readonly goals: Goal[] = [];
   private readonly healthConcerns: Condition[] = [];
+  private readonly functionalStatus: Observation[] = [];
   private readonly notes: ClinicalImpression[] = [];
   private readonly reasonForReferral: ServiceRequest[] = [];
+  private readonly insurance: Account[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(
@@ -250,6 +262,26 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'Condition' && resource.evidence) {
+        for (const evidence of resource.evidence) {
+          if (evidence.detail) {
+            for (const detail of evidence.detail) {
+              if (detail.reference) {
+                this.nestedIds.add(resolveId(detail) as string);
+              }
+            }
+          }
+        }
+      }
+
+      if (resource.resourceType === 'Account' && resource.coverage) {
+        for (const coverage of resource.coverage) {
+          if (coverage.coverage?.reference) {
+            this.nestedIds.add(resolveId(coverage.coverage) as string);
+          }
+        }
+      }
     }
   }
 
@@ -274,7 +306,16 @@ export class PatientSummaryBuilder {
    */
   private chooseSectionForResource(resource: Resource): void {
     switch (resource.resourceType) {
+      // Participants
+      case 'Practitioner':
+      case 'RelatedPerson':
+        this.participants.push(resource);
+        break;
+
       // Simple resource types - add to section directly
+      case 'Account':
+        this.insurance.push(resource);
+        break;
       case 'AllergyIntolerance':
         this.allergies.push(resource);
         break;
@@ -332,7 +373,7 @@ export class PatientSummaryBuilder {
   }
 
   private chooseSectionForCondition(condition: Condition): void {
-    const categoryCode = findCategoryBySystem(condition.category, LOINC);
+    const categoryCode = findCodeBySystem(condition.category, LOINC);
     if (categoryCode === LOINC_HEALTH_CONCERNS_SECTION) {
       this.healthConcerns.push(condition);
     } else {
@@ -341,10 +382,18 @@ export class PatientSummaryBuilder {
   }
 
   private chooseSectionForObservation(obs: Observation): void {
-    const categoryCode = findCategoryBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
+    const code = obs.code?.coding?.[0]?.code;
+    const categoryCode = findCodeBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
     switch (categoryCode) {
       case 'social-history':
         this.socialHistory.push(obs);
+        break;
+      case 'survey':
+        if (code === 'd5' || code === LOINC_DISABILITY_STATUS) {
+          this.functionalStatus.push(obs);
+        } else {
+          this.socialHistory.push(obs);
+        }
         break;
       case 'vital-signs':
         this.vitalSigns.push(obs);
@@ -404,8 +453,10 @@ export class PatientSummaryBuilder {
         this.createPlanOfTreatmentSection(),
         this.createGoalsSection(),
         this.createHealthConcernsSection(),
+        this.createFunctionalStatusSection(),
         this.createNotesSection(),
         this.createReasonForReferralSection(),
+        this.createInsuranceSection(),
       ].filter(Boolean) as CompositionSection[],
     };
     return composition;
@@ -634,6 +685,19 @@ export class PatientSummaryBuilder {
     );
   }
 
+  private createFunctionalStatusSection(): CompositionSection | undefined {
+    if (this.functionalStatus.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_FUNCTIONAL_STATUS_SECTION,
+      'Functional Status',
+      this.buildResultTable(this.functionalStatus),
+      this.functionalStatus
+    );
+  }
+
   private createNotesSection(): CompositionSection | undefined {
     if (this.notes.length === 0) {
       return undefined;
@@ -660,6 +724,22 @@ export class PatientSummaryBuilder {
       'Reason for Referral',
       this.buildPlanTable(this.reasonForReferral),
       this.reasonForReferral
+    );
+  }
+
+  private createInsuranceSection(): CompositionSection | undefined {
+    if (this.insurance.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_INSURANCE_SECTION,
+      'Insurance',
+      createTable(
+        ['Coverage', 'Status', 'Type'],
+        this.insurance.map((a) => [a.name, a.status, a.type ? formatCodeableConcept(a.type) : undefined])
+      ),
+      this.insurance
     );
   }
 
@@ -796,21 +876,4 @@ function createSection(code: string, title: string, html: string, entry: Resourc
     text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>` },
     entry: entry.map(createReference),
   };
-}
-
-function findCategoryBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
-      if (coding.system === system) {
-        return coding.code;
-      }
-    }
-  }
-  return undefined;
 }

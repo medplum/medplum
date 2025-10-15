@@ -3,7 +3,7 @@
 
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { readFile } from 'fs/promises';
 // end-block imports
 

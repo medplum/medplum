@@ -3,10 +3,10 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface BlockAvailabilityProps {
   readonly schedule: Schedule;

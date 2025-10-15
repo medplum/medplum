@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, MedplumClientOptions, MedplumInfraConfig } from '@medplum/core';
+import type { MedplumClient, MedplumClientOptions, MedplumInfraConfig } from '@medplum/core';
 import { spawnSync } from 'node:child_process';
 import * as semver from 'semver';
 import { createMedplumClient } from '../util/client';

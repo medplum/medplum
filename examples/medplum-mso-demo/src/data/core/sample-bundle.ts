@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 
 /**
  * This bundle demonstrates the FHIR upsert pattern using conditional PUT operations.

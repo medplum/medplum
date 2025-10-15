@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError } from '@medplum/core';
 import {
   ContentType,
   createReference,
@@ -8,10 +9,9 @@ import {
   indexStructureDefinitionBundle,
   isOk,
   LOINC,
-  OperationOutcomeError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   AllergyIntolerance,
   Binary,
   Bundle,
@@ -28,8 +28,10 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { processBatch } from './batch';
-import { FhirRequest, FhirRouter } from './fhirrouter';
-import { FhirRepository, MemoryRepository } from './repo';
+import type { FhirRequest } from './fhirrouter';
+import { FhirRouter } from './fhirrouter';
+import type { FhirRepository } from './repo';
+import { MemoryRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();

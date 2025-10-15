@@ -3,11 +3,13 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { PatchOperation } from '@medplum/core';
+import type { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
 import { CodingInput, Container, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { FormularyDisplay } from '../components/FormularyDisplay';
 
 export function MedicationsPage(): JSX.Element {

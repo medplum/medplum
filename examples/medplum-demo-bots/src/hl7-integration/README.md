@@ -18,4 +18,4 @@ This folder contains a set of tools to onboard remote sites to Medplum using the
 - Create a new `Questionnaire`resource using the provided [template questionnaire](./setup-medplum-agent.questionnaire.json)
 - [Upload and deploy](https://www.medplum.com/docs/bots/bots-in-production) the [Setup Agent Bot](./setup-medplum-agent.ts)
 - Connect the Questionnaire to the Bot via a [FHIR Subscription](https://www.medplum.com/docs/bots/bot-for-questionnaire-response)
-- Grant the bot [Project Admin privileges](https://www.medplum.com/docs/auth/user-management-guide#promote-existing-user-to-admin)
+- Grant the bot [Project Admin privileges](https://www.medplum.com/docs/user-management#promote-existing-user-to-admin)

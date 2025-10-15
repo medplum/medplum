@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference, LOINC, WithId } from '@medplum/core';
-import { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { createReference, LOINC } from '@medplum/core';
+import type { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';

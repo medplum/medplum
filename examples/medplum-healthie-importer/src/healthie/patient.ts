@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContactPoint, Patient } from '@medplum/fhirtypes';
-import { HealthieClient } from './client';
+import type { ContactPoint, Patient } from '@medplum/fhirtypes';
+import type { HealthieClient } from './client';
 import { HEALTHIE_USER_ID_SYSTEM } from './constants';
 
 /**

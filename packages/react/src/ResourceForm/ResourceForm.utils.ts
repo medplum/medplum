@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, InternalSchemaElement, isEmpty } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import type { InternalSchemaElement } from '@medplum/core';
+import { capitalize, isEmpty } from '@medplum/core';
+import type { StructureDefinition } from '@medplum/fhirtypes';
 
 export function setPropertyValue(
   obj: any,

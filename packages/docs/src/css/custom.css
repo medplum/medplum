@@ -4,26 +4,36 @@
  * work well for content-centric websites.
  */
 
+/* Import Open Color for standard color definitions. */
+@import 'open-color/open-color.css';
+
 /* You can override the default Infima variables here. */
 :root {
   --ifm-font-size-base: 16px;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'Poppins', sans-serif;
-  --ifm-color-primary: #946af9;
-  --ifm-color-primary-dark: #8762dd;
-  --ifm-color-primary-darker: #7857c5;
-  --ifm-color-primary-darkest: #684bab;
-  --ifm-color-primary-light: #ab8af8;
-  --ifm-color-primary-lighter: #cab6fa;
-  --ifm-color-primary-lightest: #f4f0fe;
+  --ifm-color-primary: var(--oc-grape-8);
+  --ifm-color-primary-dark: var(--oc-grape-8);
+  --ifm-color-primary-darker: var(--oc-grape-9);
+  --ifm-color-primary-darkest: var(--oc-grape-9);
+  --ifm-color-primary-light: var(--oc-grape-2);
+  --ifm-color-primary-lighter: var(--oc-grape-1);
+  --ifm-color-primary-lightest: var(--oc-grape-0);
   --ifm-heading-color: #000000;
   --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --docusaurus-highlighted-code-line-bg: rgba(72, 77, 91, 0.2);
+
+  --ifm-footer-background-color: black;
+  --ifm-footer-color: var(--oc-gray-5);
+  --ifm-footer-title-color: var(--oc-gray-5);
+  --ifm-footer-link-color: var(--oc-gray-0);
+  --ifm-footer-link-hover-color: var(--oc-grape-6);
+  --ifm-footer-padding-vertical: 80px;
 }
 
 [data-theme='dark'] {
-  --ifm-color-primary: #966df6;
+  --ifm-color-primary: var(--oc-grape-5);
   --ifm-color-primary-dark: #6646af;
   --ifm-color-primary-darker: #402c6e;
   --ifm-color-primary-darkest: #19122c;
@@ -34,6 +44,90 @@
   --code-block-shadow: rgba(0, 0, 0, 0.35) 0 2px 4px;
   --img-block-shadow: rgba(0, 0, 0, 0.95) 0 2px 4px;
   --docusaurus-highlighted-code-line-bg: rgb(100 100 100);
+}
+
+.alert--primary {
+  --ifm-alert-background-color: var(--oc-gray-0);
+  --ifm-alert-background-color-highlight: rgba(235, 237, 240, 0.15);
+  --ifm-alert-foreground-color: var(--oc-gray-8);
+  --ifm-alert-border-color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .alert--primary {
+  --ifm-alert-background-color: var(--oc-gray-8);
+  --ifm-alert-background-color-highlight: rgba(235, 237, 240, 0.15);
+  --ifm-alert-foreground-color: var(--oc-gray-1);
+  --ifm-alert-border-color: var(--oc-gray-5);
+}
+
+.alert--secondary {
+  --ifm-alert-background-color: var(--oc-gray-0);
+  --ifm-alert-background-color-highlight: rgba(235, 237, 240, 0.15);
+  --ifm-alert-foreground-color: var(--oc-gray-8);
+  --ifm-alert-border-color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .alert--secondary {
+  --ifm-alert-background-color: var(--oc-gray-8);
+  --ifm-alert-background-color-highlight: rgba(235, 237, 240, 0.15);
+  --ifm-alert-foreground-color: var(--oc-gray-1);
+  --ifm-alert-border-color: var(--oc-gray-5);
+}
+
+.alert--success {
+  --ifm-alert-background-color: var(--oc-green-0);
+  --ifm-alert-background-color-highlight: rgba(55, 178, 77, 0.15);
+  --ifm-alert-foreground-color: var(--oc-green-9);
+  --ifm-alert-border-color: var(--oc-green-5);
+}
+
+[data-theme='dark'] .alert--success {
+  --ifm-alert-background-color: var(--oc-green-9);
+  --ifm-alert-background-color-highlight: rgba(55, 178, 77, 0.15);
+  --ifm-alert-foreground-color: var(--oc-green-0);
+  --ifm-alert-border-color: var(--oc-green-5);
+}
+
+.alert--info {
+  --ifm-alert-background-color: var(--oc-blue-0);
+  --ifm-alert-background-color-highlight: rgba(28, 126, 214, 0.15);
+  --ifm-alert-foreground-color: var(--oc-blue-9);
+  --ifm-alert-border-color: var(--oc-blue-5);
+}
+
+[data-theme='dark'] .alert--info {
+  --ifm-alert-background-color: var(--oc-blue-9);
+  --ifm-alert-background-color-highlight: rgba(28, 126, 214, 0.15);
+  --ifm-alert-foreground-color: var(--oc-blue-0);
+  --ifm-alert-border-color: var(--oc-blue-5);
+}
+
+.alert--warning {
+  --ifm-alert-background-color: var(--oc-orange-0);
+  --ifm-alert-background-color-highlight: rgba(247, 103, 7, 0.15);
+  --ifm-alert-foreground-color: var(--oc-orange-9);
+  --ifm-alert-border-color: var(--oc-orange-5);
+}
+
+[data-theme='dark'] .alert--warning {
+  --ifm-alert-background-color: var(--oc-orange-9);
+  --ifm-alert-background-color-highlight: rgba(247, 103, 7, 0.15);
+  --ifm-alert-foreground-color: var(--oc-orange-0);
+  --ifm-alert-border-color: var(--oc-orange-5);
+}
+
+.alert--danger {
+  --ifm-alert-background-color: var(--oc-red-0);
+  --ifm-alert-background-color-highlight: rgba(240, 62, 62, 0.15);
+  --ifm-alert-foreground-color: var(--oc-red-9);
+  --ifm-alert-border-color: var(--oc-red-5);
+}
+
+[data-theme='dark'] .alert--danger {
+  --ifm-alert-background-color: var(--oc-red-9);
+  --ifm-alert-background-color-highlight: rgba(240, 62, 62, 0.15);
+  --ifm-alert-foreground-color: var(--oc-red-0);
+  --ifm-alert-border-color: var(--oc-red-5);
 }
 
 @font-face {

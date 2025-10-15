@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
+import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Labs } from './Labs';
@@ -58,6 +58,7 @@ describe('PatientSummary - Labs', () => {
     const reports: DiagnosticReport[] = [
       {
         resourceType: 'DiagnosticReport',
+        id: 'report1',
         status: 'final',
         code: { text: 'Test Report' },
         category: [{ coding: [{ code: 'LAB' }] }],
@@ -78,6 +79,7 @@ describe('PatientSummary - Labs', () => {
     const requests: ServiceRequest[] = [
       {
         resourceType: 'ServiceRequest',
+        id: 'sr1',
         status: 'active',
         code: { text: 'Test Request Active 1' },
         requisition: {
@@ -90,6 +92,7 @@ describe('PatientSummary - Labs', () => {
       },
       {
         resourceType: 'ServiceRequest',
+        id: 'sr2',
         status: 'active',
         code: { text: 'Test Request Active 2' },
         requisition: {
@@ -102,6 +105,7 @@ describe('PatientSummary - Labs', () => {
       },
       {
         resourceType: 'ServiceRequest',
+        id: 'sr3',
         status: 'active',
         code: { text: 'Test Request Active 3' },
         requisition: {
@@ -140,6 +144,7 @@ describe('PatientSummary - Labs', () => {
     const reports: DiagnosticReport[] = [
       {
         resourceType: 'DiagnosticReport',
+        id: 'report1',
         status: 'final',
         code: { text: 'Test Report Final' },
         category: [{ coding: [{ code: 'LAB' }] }],
@@ -186,6 +191,7 @@ describe('PatientSummary - Labs', () => {
     const reports: DiagnosticReport[] = [
       {
         resourceType: 'DiagnosticReport',
+        id: 'report1',
         status: 'final',
         code: { text: 'Test Report Final' },
         category: [{ coding: [{ code: 'LAB' }] }],
@@ -203,6 +209,7 @@ describe('PatientSummary - Labs', () => {
     const requests: ServiceRequest[] = [
       {
         resourceType: 'ServiceRequest',
+        id: 'sr1',
         status: 'active',
         code: { text: 'Test Request Active' },
         intent: 'order',
@@ -215,18 +222,21 @@ describe('PatientSummary - Labs', () => {
     const reports: DiagnosticReport[] = [
       {
         resourceType: 'DiagnosticReport',
+        id: 'report1',
         status: 'final',
         code: { text: 'Test Report Final' },
         category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
+        id: 'report2',
         status: 'cancelled',
         code: { text: 'Test Report Cancelled' },
         category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
+        id: 'report3',
         status: 'preliminary',
         code: { text: 'Test Report Preliminary' },
         category: [{ coding: [{ code: 'LAB' }] }],

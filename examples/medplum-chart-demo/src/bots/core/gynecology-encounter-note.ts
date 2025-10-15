@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, getQuestionnaireAnswers, LOINC, MedplumClient, SNOMED } from '@medplum/core';
-import {
+import { getQuestionnaireAnswers, LOINC, SNOMED } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
   Bundle,
   ClinicalImpression,
   CodeableConcept,

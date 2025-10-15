@@ -3,11 +3,12 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { getQuestionnaireAnswers, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, Task, TaskRestriction } from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import type { Questionnaire, QuestionnaireResponse, Task, TaskRestriction } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface AddDueDateProps {
   readonly task: Task;

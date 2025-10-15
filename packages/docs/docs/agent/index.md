@@ -94,7 +94,7 @@ Third, set up the [Agent](https://app.medplum.com/Agent/new). This identifies th
 
 #### Set up a Client Application
 
-Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/auth/user-management-guide#creating-memberships) are available in the Admin panel.
+Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/user-management#creating-memberships) are available in the Admin panel.
 
 At the end of the setup you should have the following items:
 
@@ -106,7 +106,7 @@ You'll need the above to successfully install and connect the agent.
 
 ### Install on Host
 
-This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/methods).
+This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth).
 
 #### Running from Source via CLI
 

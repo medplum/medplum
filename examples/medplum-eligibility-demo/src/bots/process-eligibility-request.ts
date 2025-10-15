@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, getReferenceString, MedplumClient } from '@medplum/core';
-import { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
 
 /**
  * This bot is designed to be executed whenever a `CoverageEligibilityRequest` is created. It will take the request and initiate an

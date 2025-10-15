@@ -10,7 +10,8 @@ import {
 } from '@medplum/dosespot-react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconSettings } from '@tabler/icons-react';
-import { JSX, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
+import type { JSX } from 'react';
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
   const medplum = useMedplum();

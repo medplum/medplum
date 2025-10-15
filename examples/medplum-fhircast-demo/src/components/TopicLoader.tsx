@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Input, Stack } from '@mantine/core';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
   readonly onSetTopic: (topic: string | undefined) => void;

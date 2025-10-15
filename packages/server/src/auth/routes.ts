@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
-import { OperationOutcome, Project } from '@medplum/fhirtypes';
+import type { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Router } from 'express';
-import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
 import { appleHandler, appleValidator } from './apple';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';

@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, MedplumClient, parseReference } from '@medplum/core';
-import { Bundle, BundleEntry, Communication, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import { getReferenceString, parseReference } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type {
+  Bundle,
+  BundleEntry,
+  Communication,
+  Practitioner,
+  Reference,
+  ResourceType,
+  Task,
+} from '@medplum/fhirtypes';
 
 /**
  * This bot creates a task for any messages that have not been responded to in 30 minutes. It is set to run every 15 minutes, and

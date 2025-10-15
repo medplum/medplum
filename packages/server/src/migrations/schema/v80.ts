@@ -6,7 +6,7 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 
 export async function run(_client: PoolClient): Promise<void> {
   // NOTE: This migration has been deprecated: this expensive index is no longer needed and should not be created

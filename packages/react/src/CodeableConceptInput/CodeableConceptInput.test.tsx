@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodeableConcept } from '@medplum/fhirtypes';
+import type { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { CodeableConceptInput, CodeableConceptInputProps } from './CodeableConceptInput';
+import type { CodeableConceptInputProps } from './CodeableConceptInput';
+import { CodeableConceptInput } from './CodeableConceptInput';
 
 const medplum = new MockClient();
 const binding = 'https://example.com/test';

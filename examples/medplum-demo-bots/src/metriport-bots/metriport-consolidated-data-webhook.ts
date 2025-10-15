@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, ContentType, MedplumClient } from '@medplum/core';
-import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
+import { ContentType } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
 
 /**
  * This bot is used to handle the consolidated data webhook from Metriport.

@@ -1,17 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  OperationOutcomeError,
-  TypedValue,
-  WithId,
-  allOk,
-  append,
-  badRequest,
-  notFound,
-  serverError,
-} from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
+import type { TypedValue, WithId } from '@medplum/core';
+import { OperationOutcomeError, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition } from '../sql';

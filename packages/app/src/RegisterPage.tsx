@@ -3,7 +3,8 @@
 import { Alert, Title } from '@mantine/core';
 import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { JSX, useEffect } from 'react';
+import type { JSX } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 

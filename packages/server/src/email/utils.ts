@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import MailComposer from 'nodemailer/lib/mail-composer';
-import Mail, { Address } from 'nodemailer/lib/mailer';
+import type Mail from 'nodemailer/lib/mailer';
+import type { Address } from 'nodemailer/lib/mailer';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 

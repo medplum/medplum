@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ProfileResource, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import {
   AppShell,
   Loading,
@@ -15,11 +16,13 @@ import {
   IconMail,
   IconPencil,
   IconPill,
+  IconPuzzle,
   IconTimeDuration0,
   IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
@@ -44,11 +47,10 @@ import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
-import { TaskDetailsModal } from './pages/tasks/TaskDetailsModal';
-import { TaskDetails } from './pages/tasks/TaskDetails';
+import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
-import { TaskSelectEmpty } from './components/tasks/TaskSelectEmpty';
+import { SpacesPage } from './pages/spaces/SpacesPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -66,6 +68,10 @@ export function App(): JSX.Element | null {
     <AppShell
       logo={<Logo size={24} />}
       menus={[
+        {
+          title: 'Spaces',
+          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/spaces' }],
+        },
         {
           title: 'Charts',
           links: [
@@ -125,6 +131,7 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
+              <Route path="/spaces" element={<SpacesPage />} />
               <Route
                 path="/"
                 element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}
@@ -136,8 +143,8 @@ export function App(): JSX.Element | null {
                   <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />
-                <Route path="communication" element={<CommunicationTab />} />
-                <Route path="communication/:id" element={<CommunicationTab />} />
+                <Route path="Message" element={<CommunicationTab />} />
+                <Route path="Message/:messageId" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
@@ -154,10 +161,8 @@ export function App(): JSX.Element | null {
                 <Route index element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
               </Route>
-              <Route path="/Task" element={<TasksPage />}>
-                <Route index element={<TaskSelectEmpty />} />
-                <Route path=":taskId" element={<TaskDetails />} />
-              </Route>
+              <Route path="Task" element={<TasksPage />} />
+              <Route path="Task/:taskId" element={<TasksPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />

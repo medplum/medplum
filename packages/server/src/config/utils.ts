@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
-import { MedplumServerConfig } from './types';
+import type { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -30,6 +30,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds ??= 30_000;
   config.accurateCountThreshold ??= 1_000_000;
+  config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
@@ -65,6 +66,7 @@ type DefaultConfigKeys =
   | 'bullmq'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
+  | 'maxSearchOffset'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
@@ -73,7 +75,7 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = [
+const integerKeys = new Set([
   'accurateCountThreshold',
   'bcryptHashSalt',
   'defaultAuthRateLimit',
@@ -88,6 +90,7 @@ const integerKeys = [
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -104,17 +107,17 @@ const integerKeys = [
   'bullmq.concurrency',
 
   'fission.routerPort',
-];
+]);
 
 export function isIntegerConfig(key: string): boolean {
-  return integerKeys.includes(key);
+  return integerKeys.has(key);
 }
 
 export function isFloatConfig(_key: string): boolean {
   return false;
 }
 
-const booleanKeys = [
+const booleanKeys = new Set([
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -130,12 +133,15 @@ const booleanKeys = [
   'registerEnabled',
   'require',
   'rejectUnauthorized',
-];
+  'fhirSearchDiscourageSeqScan',
+]);
 
 export function isBooleanConfig(key: string): boolean {
-  return booleanKeys.includes(key);
+  return booleanKeys.has(key);
 }
 
+const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaultOAuthClients', 'smtp']);
+
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
+  return objectKeys.has(key);
 }

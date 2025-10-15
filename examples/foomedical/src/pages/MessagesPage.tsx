@@ -3,10 +3,11 @@
 import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
 import { BaseChat, Document, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { JSX, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { Loading } from '../components/Loading';
 

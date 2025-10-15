@@ -8,11 +8,18 @@ import {
   resolveId,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { AllergyIntolerance, Bundle, MedicationRequest, Patient, Resource, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  AllergyIntolerance,
+  Bundle,
+  MedicationRequest,
+  Patient,
+  Resource,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { generateKeyPairSync } from 'crypto';
 import fetch from 'node-fetch';
-import { Mock } from 'vitest';
+import type { Mock } from 'vitest';
 import { handler } from './epic-query-patient';
 import {
   epicAllergyIntolerance,
@@ -105,7 +112,6 @@ describe('Epic Query Patient Bot', () => {
     (fetch as unknown as Mock).mockImplementation(async (url: string, options?: any): Promise<any> => {
       const { Response } = await vi.importActual<{ Response: any }>('node-fetch');
       const urlString = url.toString();
-      console.log(`Mock Fetch: API request to ${urlString} with options: ${JSON.stringify(options)}`);
 
       if (urlString.includes('/oauth2/token')) {
         return new Response(JSON.stringify({ access_token: 'mock-epic-access-token', expires_in: 300 }), {
@@ -225,7 +231,6 @@ describe('Epic Query Patient Bot', () => {
       const { Response } = await vi.importActual<{ Response: any }>('node-fetch');
       const urlString = url.toString();
       const parsedUrl = new URL(urlString);
-      console.log(`Mock Fetch: API request to ${urlString} with options: ${JSON.stringify(options)}`);
 
       if (urlString.includes('/oauth2/token')) {
         return new Response(JSON.stringify({ access_token: 'mock-epic-access-token', expires_in: 300 }), {

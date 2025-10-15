@@ -2,14 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { LOINC, SNOMED } from '@medplum/core';
 import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
-import { EnumMapper, mapCodeableConceptToCcdaCode } from './systems';
+import { EnumMapper, mapCcdaCodeToCodeableConcept, mapCodeableConceptToCcdaCode } from './systems';
 
 describe('EnumMapper', () => {
-  const mapper = new EnumMapper<string, string>('SNOMED CT', OID_SNOMED_CT_CODE_SYSTEM, SNOMED, [
-    { ccdaValue: 'c0', fhirValue: 'f0', displayName: 'd0' },
-    { ccdaValue: 'c1', fhirValue: 'f1', displayName: 'd1' },
-    { ccdaValue: 'c2', fhirValue: 'f2', displayName: 'd2' },
-  ]);
+  const mapper = new EnumMapper<string, string>(
+    {
+      ccdaSystemOid: OID_SNOMED_CT_CODE_SYSTEM,
+      fhirSystemUrl: SNOMED,
+    },
+    [
+      { ccdaValue: 'c0', fhirValue: 'f0', displayName: 'd0' },
+      { ccdaValue: 'c1', fhirValue: 'f1', displayName: 'd1' },
+      { ccdaValue: 'c2', fhirValue: 'f2', displayName: 'd2' },
+    ]
+  );
 
   test('getEntryByFhir', () => {
     expect(mapper.getEntryByFhir('f0')?.ccdaValue).toBe('c0');
@@ -40,6 +46,35 @@ describe('EnumMapper', () => {
 
     const r2 = mapper.mapCcdaToFhirCodeableConcept('c3');
     expect(r2).toBeUndefined();
+  });
+
+  test('mapCcdaCodeToCodeableConcept', () => {
+    const r0 = mapCcdaCodeToCodeableConcept(undefined);
+    expect(r0).toBeUndefined();
+
+    const r1 = mapCcdaCodeToCodeableConcept({
+      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+      '@_code': 'c0',
+      '@_displayName': 'd0',
+    });
+    expect(r1?.coding?.[0]?.code).toBe('c0');
+    expect(r1?.coding?.[0]?.system).toBe(SNOMED);
+    expect(r1?.text).toBe('d0');
+
+    const r2 = mapCcdaCodeToCodeableConcept({
+      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+      '@_code': 'c1',
+      '@_displayName': 'd1',
+      translation: [
+        { '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'c3', '@_displayName': 'd3' },
+        { '@_code': 'c4' },
+      ],
+    });
+
+    expect(r2?.coding?.length).toBe(2);
+    expect(r2?.coding?.[0]?.code).toBe('c1');
+    expect(r2?.coding?.[0]?.system).toBe(SNOMED);
+    expect(r2?.text).toBe('d1');
   });
 
   test('mapFhirToCcda', () => {

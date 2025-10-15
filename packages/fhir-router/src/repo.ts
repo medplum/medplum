@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   OperationOutcomeError,
   Operator,
-  SearchRequest,
-  SortRule,
-  WithId,
   allOk,
   badRequest,
   created,
@@ -20,8 +18,9 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
-import { Operation, applyPatch } from 'rfc6902';
+import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -29,6 +28,11 @@ export type CreateResourceOptions = {
 
 export type UpdateResourceOptions = {
   ifMatch?: string;
+};
+
+export type ReadHistoryOptions = {
+  offset?: number;
+  limit?: number;
 };
 
 export const RepositoryMode = {
@@ -113,7 +117,11 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  abstract readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<WithId<T>>>;
+  abstract readHistory<T extends Resource>(
+    resourceType: string,
+    id: string,
+    options?: ReadHistoryOptions
+  ): Promise<Bundle<WithId<T>>>;
 
   /**
    * Reads a FHIR resource version.

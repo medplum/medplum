@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, generateId, MedplumClient } from '@medplum/core';
-import { Bundle, Patient, Reference } from '@medplum/fhirtypes';
+import { createReference, generateId } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Bundle, Patient, Reference } from '@medplum/fhirtypes';
 import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healthie/allergy';
 import { HealthieClient } from './healthie/client';
 import {

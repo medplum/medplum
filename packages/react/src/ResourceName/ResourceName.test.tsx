@@ -5,7 +5,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
-import { ResourceName, ResourceNameProps } from './ResourceName';
+import type { ResourceNameProps } from './ResourceName';
+import { ResourceName } from './ResourceName';
 
 const medplum = new MockClient();
 

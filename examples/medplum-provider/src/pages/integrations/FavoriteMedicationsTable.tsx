@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import React from 'react';
 import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
-import { MedicationKnowledge } from '@medplum/fhirtypes';
+import type { MedicationKnowledge } from '@medplum/fhirtypes';
 import { getCodeBySystem, NDC, RXNORM } from '@medplum/core';
 import { getMedicationName } from '@medplum/dosespot-react';
 

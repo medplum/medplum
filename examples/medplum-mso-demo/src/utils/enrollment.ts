@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, MedplumClient, normalizeErrorString, resolveId } from '@medplum/core';
-import {
+import { createReference, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type {
   AccessPolicy,
   Organization,
   Parameters,

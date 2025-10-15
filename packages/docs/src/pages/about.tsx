@@ -7,7 +7,6 @@ import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
 import { ProfileCard } from '../components/ProfileCard';
 import { Feature, FeatureGrid } from '../components/landing/FeatureGrid';
-import { Jumbotron } from '../components/landing/Jumbotron';
 import { Section } from '../components/landing/Section';
 import { SectionHeader } from '../components/landing/SectionHeader';
 import styles from './about.module.css';
@@ -16,18 +15,14 @@ export default function AboutPage(): JSX.Element {
   return (
     <Layout title="About us">
       <Container>
-        <Jumbotron>
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>About Medplum</h1>
-            <p className={styles.heroText}>
-              Our vision is to accelerate the development of new healthcare products and services by clearing a path for
-              every developer who wants to build in the healthcare ecosystem.
-            </p>
-          </div>
-          <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Robot working in a medical office" width="488" height="384" />
-          </div>
-        </Jumbotron>
+        <div style={{ textAlign: 'center', minHeight: '400px', padding: '120px 20px' }}>
+          <h1 className={styles.heroTitle}>About Medplum</h1>
+          <p className={styles.heroText}>
+            Our vision is to accelerate the development of new healthcare products and services
+            <br />
+            by clearing a path for every developer who wants to build in the healthcare ecosystem.
+          </p>
+        </div>
         <Section>
           <CardContainer>
             <Card>

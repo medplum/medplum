@@ -8,12 +8,12 @@ This documentation explains how Medplum integrates with **AWS Textract** for opt
 
 ### Overview
 
-Medplum's integration with AWS Textract and AWS Comprehend is implemented as a custom operation on the FHIR `Media` resource. This integration is designed to handle asynchronous processing of documents, making it ideal for large files.
+Medplum's integration with AWS Textract and AWS Comprehend is implemented as a custom operation on FHIR `Media` and `DocumentReference` resources. This integration is designed to handle asynchronous processing of documents, making it ideal for large files.
 
 The workflow is as follows:
 
-1.  A `Media` resource is created, referencing a `Binary` resource that contains the document (e.g., a PDF, JPEG, or PNG).
-2.  A `POST` request is sent to the `$aws-textract` operation on the `Media` resource.
+1.  A `Media` or `DocumentReference` resource is created, referencing a `Binary` resource that contains the document (e.g., a PDF, JPEG, or PNG).
+2.  A `POST` request is sent to the `$aws-textract` operation on the `Media` or `DocumentReference` resource.
 3.  Medplum sends the document to AWS Textract for text detection. Textract processes the document and returns a job ID.
 4.  Medplum polls Textract using the job ID until the processing is complete.
 5.  Once Textract successfully processes the document, Medplum stores the raw JSON output as a new `Binary` and `Media` resource.
@@ -29,15 +29,19 @@ To use this feature, your Medplum project must have the `aws-textract` feature f
 
 ### Usage
 
-The integration is exposed via the `$aws-textract` operation on a `Media` resource.
+The integration is exposed via the `$aws-textract` operation on `Media` and `DocumentReference` resources.
 
 #### Request
 
-To start the text and entity detection process, send a `POST` request to the following endpoint:
+To start the text and entity detection process, send a `POST` request to one of the following endpoints:
 
+**For Media resources:**
 `POST /fhir/R4/Media/<id>/$aws-textract`
 
-The `<id>` is the unique identifier of the `Media` resource containing the document you wish to process.
+**For DocumentReference resources:**
+`POST /fhir/R4/DocumentReference/<id>/$aws-textract`
+
+The `<id>` is the unique identifier of the `Media` or `DocumentReference` resource containing the document you wish to process.
 
 The request body is optional and can be used to enable the AWS Comprehend Medical integration.
 
@@ -58,11 +62,13 @@ The API will return the raw JSON response from AWS Textract. The response will b
 
 A successful response will have a status code of `200 OK`.
 
-Simultaneously, Medplum will have created new `Binary` and `Media` resources for the Textract output. If Comprehend was enabled, additional resources will be created for its output as well. These resources will have a `subject` field that references the original `Media` resource, creating a clear link between the input document and its processed outputs.
+Simultaneously, Medplum will have created new `Binary` and `Media` resources for the Textract output. If Comprehend was enabled, additional resources will be created for its output as well. These resources will have a `subject` field that references the original `Media` or `DocumentReference` resource, creating a clear link between the input document and its processed outputs.
 
-#### Example
+#### Examples
 
-Here's an example of how to use the integration with the Medplum client library:
+Here are examples of how to use the integration with both `Media` and `DocumentReference` resources:
+
+##### Media Resource Example
 
 ```typescript
 // Import necessary types and client
@@ -94,4 +100,45 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Partial<Me
 }
 ```
 
-This example bot demonstrates how to call the `$aws-textract` operation and process the resulting text. It's a great starting point for building more complex workflows, such as extracting specific data points from a document and mapping them to other FHIR resources.
+##### DocumentReference Resource Example
+
+```typescript
+// Import necessary types and client
+import { MedplumClient } from '@medplum/core';
+import { DocumentReference } from '@medplum/fhirtypes';
+
+/**
+ * Example function to send a DocumentReference resource to the `$aws-textract` operation.
+ * @param medplum The Medplum client instance.
+ * @param docRefId The ID of the DocumentReference resource.
+ * @returns A string containing all the detected text, separated by newlines.
+ */
+export async function processDocumentReference(medplum: MedplumClient, docRefId: string): Promise<string> {
+  // Post the DocumentReference to the `$aws-textract` operation.
+  // The second argument is the request body, here we enable Comprehend.
+  const textractResponse = await medplum.post(
+    medplum.fhirUrl('DocumentReference', docRefId, '$aws-textract'), 
+    {
+      comprehend: true,
+    }
+  );
+
+  // The response contains the raw AWS Textract output.
+  // You can now process this output as needed.
+  const lines = textractResponse.Blocks.map((b: { Text?: string }) => b.Text).filter(Boolean);
+
+  console.log(lines);
+
+  return lines.join('\n');
+}
+```
+
+These examples demonstrate how to call the `$aws-textract` operation on both `Media` and `DocumentReference` resources and process the resulting text. They're great starting points for building more complex workflows, such as extracting specific data points from a document and mapping them to other FHIR resources.
+
+##### Key Differences Between Media and DocumentReference
+
+- **Media**: Represents captured or recorded content (images, videos, documents)
+- **DocumentReference**: A "pointer" to external documents, used for indexing and searching
+- **Binary**: The actual file data storage (referenced by both Media and DocumentReference)
+
+Both resource types can reference the same `Binary` resource, so you can use either approach depending on your use case. If you're working with documents that need OCR processing, you can now use either `Media` or `DocumentReference` resources directly.

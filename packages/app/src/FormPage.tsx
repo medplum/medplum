@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Paper, Text, Title } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
-import { Bundle, OperationOutcome, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, PatientHeader, QuestionnaireForm, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { ResourceHeader } from './components/ResourceHeader';
 import { getPatient } from './utils';

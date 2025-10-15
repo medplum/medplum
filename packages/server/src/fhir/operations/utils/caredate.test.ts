@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, WithId } from '@medplum/core';
-import { Bundle, CodeableConcept, Device, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { deepClone } from '@medplum/core';
+import type { Bundle, CodeableConcept, Device, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { filterByCareDate } from './caredate';
 
 describe('Care Date Utils', () => {

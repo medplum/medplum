@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { BackgroundImage, Box, SimpleGrid } from '@mantine/core';
 import { SignInForm } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { MEDPLUM_GOOGLE_CLIENT_ID, MEDPLUM_PROJECT_ID } from '../config';
 

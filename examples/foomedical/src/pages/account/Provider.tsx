@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Stack, Title } from '@mantine/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, ResourceName, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Provider(): JSX.Element {

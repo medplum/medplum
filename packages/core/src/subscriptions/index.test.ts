@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager, resourceMatchesSubscriptionCriteria } from '.';
+import type { SubscriptionEventMap } from '.';
+import { SubscriptionEmitter, SubscriptionManager, resourceMatchesSubscriptionCriteria } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
+import { Logger } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
@@ -1162,7 +1164,7 @@ describe('SubscriptionManager', () => {
 });
 
 describe('resourceMatchesSubscriptionCriteria', () => {
-  it('should return true for a resource that matches the criteria', async () => {
+  test('should return true for a resource that matches the criteria', async () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
       status: 'active',
@@ -1208,5 +1210,43 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       }),
     });
     expect(result2).toBe(true);
+  });
+
+  test('should return false and log warning whenever a subscription would fire if meta.account was not evaluated', async () => {
+    const log = jest.fn();
+
+    const subscription: Subscription = {
+      id: '123',
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'test subscription',
+      criteria: 'Communication',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+      meta: {
+        account: { reference: 'Organization/123' },
+      },
+    };
+
+    const matches = await resourceMatchesSubscriptionCriteria({
+      resource: {
+        id: '123',
+        resourceType: 'Communication',
+        status: 'in-progress',
+        meta: {
+          account: { reference: 'Organization/456' }, // Primary account is different organization
+          accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }], // But still part of the right account, would pass access policy check
+        },
+      },
+      subscription,
+      context: { interaction: 'create' },
+      getPreviousResource: async () => undefined,
+      logger: new Logger((msg) => log(msg)),
+    });
+
+    expect(matches).toStrictEqual(false);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched meta.account'));
   });
 });

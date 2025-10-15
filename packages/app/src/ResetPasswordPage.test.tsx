@@ -5,7 +5,8 @@ import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { getConfig } from './config';
-import { render, screen, userEvent, UserEvent } from './test-utils/render';
+import type { UserEvent } from './test-utils/render';
+import { render, screen, userEvent } from './test-utils/render';
 
 const medplum = new MockClient();
 

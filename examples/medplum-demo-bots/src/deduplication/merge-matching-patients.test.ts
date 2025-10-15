@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, MedplumClient, WithId, createReference, getStatus, isOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { Mock, vi } from 'vitest';
+import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import type { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 import {
   linkPatientRecords,
   mergePatientRecords,

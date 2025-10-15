@@ -7,10 +7,10 @@ import {
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  MedplumClient,
   SNOMED,
 } from '@medplum/core';
-import {
+import type { MedplumClient } from '@medplum/core';
+import type {
   Address,
   CodeableConcept,
   Coding,

@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
-import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import type { QuestionnaireFormProps } from './QuestionnaireForm';
+import { QuestionnaireForm } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
@@ -2604,8 +2605,8 @@ describe('QuestionnaireForm', () => {
     const answers = getQuestionnaireAnswers(response);
 
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
-    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
-    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+    expect(answers['q2']).toMatchObject({ valueDecimal: 37.78 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 310.93 }); // Calculated Kelvin
   });
 
   test('Questionnaire CalculatedExpression with nested groups and QuestionnaireResponse', async () => {
@@ -2703,8 +2704,8 @@ describe('QuestionnaireForm', () => {
     const answers = getQuestionnaireAnswers(response);
 
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
-    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
-    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+    expect(answers['q2']).toMatchObject({ valueDecimal: 37.78 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 310.93 }); // Calculated Kelvin
   });
 
   test('Required radio button choice validation', async () => {

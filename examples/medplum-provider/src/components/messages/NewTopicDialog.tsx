@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, ProfileResource } from '@medplum/core';
-import {
+import { createReference } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
+import type {
   Communication,
   Patient,
   Practitioner,
@@ -12,21 +13,25 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { JSX, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { JSX } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface NewTopicDialogProps {
+  subject: Reference<Patient> | Patient | undefined;
   opened: boolean;
   onClose: () => void;
   onSubmit?: (communication: Communication) => void;
 }
 
 export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
-  const { opened, onClose, onSubmit } = props;
+  const { subject, opened, onClose, onSubmit } = props;
   const medplum = useMedplum();
   const [topic, setTopic] = useState('');
   const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>([]);
-  const [patient, setPatient] = useState<Reference<Patient> | undefined>(undefined);
+  const [patient, setPatient] = useState<Reference<Patient> | undefined>(
+    subject ? createReference(subject as Patient) : undefined
+  );
   const profile = useMedplumProfile();
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
@@ -76,6 +81,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             resourceType="Patient"
             name="patient"
             required={true}
+            defaultValue={patient}
             onChange={(value) => {
               setPatient(value ? (createReference(value) as Reference<Patient>) : undefined);
             }}

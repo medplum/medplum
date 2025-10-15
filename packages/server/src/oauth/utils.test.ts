@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, WithId } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { OperationOutcomeError, WithId } from '@medplum/core';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';

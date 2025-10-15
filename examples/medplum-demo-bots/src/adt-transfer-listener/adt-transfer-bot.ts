@@ -11,8 +11,9 @@
  * More information about the sections of ADT messages can be found here: https://rhapsody.health/resources/hl7-adt/
  */
 
-import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
-import { Encounter, Patient } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import type { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+import type { Encounter, Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
   const input = event.input;

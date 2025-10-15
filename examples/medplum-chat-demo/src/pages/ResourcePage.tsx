@@ -3,7 +3,7 @@
 import { Grid, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, normalizeErrorString } from '@medplum/core';
-import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
   PatientSummary,
@@ -13,7 +13,8 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { cleanResource, shouldShowPatientSummary } from '../utils';
 

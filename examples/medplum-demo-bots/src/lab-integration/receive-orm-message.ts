@@ -1,17 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  BotEvent,
-  Hl7Field,
-  Hl7Message,
-  Hl7Segment,
-  MedplumClient,
-  createReference,
-  getIdentifier,
-  parseHl7DateTime,
-  setIdentifier,
-} from '@medplum/core';
-import {
+import { createReference, getIdentifier, parseHl7DateTime, setIdentifier } from '@medplum/core';
+import type { BotEvent, Hl7Field, Hl7Message, Hl7Segment, MedplumClient } from '@medplum/core';
+import type {
   Annotation,
   CodeableConcept,
   ContactPoint,

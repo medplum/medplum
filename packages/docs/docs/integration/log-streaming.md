@@ -24,7 +24,7 @@ To capture [AuditEvent](/docs/api/fhir/resources/auditevent) resources for any R
 :::
 
 
-For [batch requests](/docs/fhir-datastore/fhir-batch-requests) and [GraphQL queries](/docs/graphql/basic-queries), each individual read/search operation executed by the query generates its own log line. While these operations are logged separately, they all share the same [request ID / trace ID](/docs/integration/log-streaming#log-correlation) for easy correlation and tracing.
+For [batch requests](/docs/fhir-datastore/fhir-batch-requests) and [GraphQL queries](/docs/graphql), each individual read/search operation executed by the query generates its own log line. While these operations are logged separately, they all share the same [request ID / trace ID](/docs/integration/log-streaming#log-correlation) for easy correlation and tracing.
 
 ## Forwarding Logs via AWS Lambda
 

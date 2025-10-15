@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
+import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
+import { json, Router, text, urlencoded } from 'express';
 import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
-import { asyncWrap } from './async';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
+import type { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
@@ -176,7 +176,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
-  app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
+  app.post('/fhir/R4', authenticateRequest, asyncBatchHandler(config));
 
   app.use(urlencoded({ extended: false }));
   app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
@@ -186,11 +186,12 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
+  app.use(defaultBodyParser());
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
   apiRouter.get('/robots.txt', (_req, res) => res.type(ContentType.TEXT).send('User-agent: *\nDisallow: /'));
-  apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
+  apiRouter.get('/healthcheck', healthcheckHandler);
   apiRouter.get('/openapi.json', openApiHandler);
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
@@ -287,4 +288,16 @@ export async function runMiddleware(
   return new Promise<void>((resolve, reject) => {
     handler(req, res, (err) => (err ? reject(err) : resolve()));
   });
+}
+
+/**
+ * Returns an Express middleware handler for ensuring req.body is not undefined. For backwards
+ * compatibility with Express v4. See ${@link https://github.com/expressjs/body-parser/commit/6cbc279dc875ba1801e9ee5849f3f64e5b42f6e1}
+ * @returns Express middleware request handler.
+ */
+function defaultBodyParser(): RequestHandler {
+  return function defaultParser(req: Request, _res: Response, next: NextFunction) {
+    req.body ??= {};
+    next();
+  };
 }

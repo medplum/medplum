@@ -83,20 +83,86 @@ describe('Tokenizer', () => {
     expect(tokenize('')).toStrictEqual([]);
   });
 
-  test('String escape sequence', () => {
-    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toMatchObject([
-      {
-        id: 'String',
-        value: '\\\\\\/\\f\\r\\n\\t\\"\\`\\\'*',
-      },
-    ]);
+  describe('String escapes', () => {
+    test('String escape sequence', () => {
+      expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toMatchObject([
+        {
+          id: 'String',
+          value: '\\/\f\r\n\t"`\'*',
+        },
+      ]);
+    });
+
+    test.each([
+      // See https://build.fhir.org/ig/HL7/FHIRPath/#string
+      ["'\\''", "'"], // \' Single-quote
+      [`'\\"'`, '"'], // \" Double-quote
+      ["'\\`'", '`'], // \` Backtick
+      ["'\\r'", '\r'], // \r Carriage Return
+      ["'\\n'", '\n'], // \n Line Feed
+      ["'\\t'", '\t'], // \t Tab
+      ["'\\f'", '\f'], // \f Form Feed
+      ["'\\\\'", '\\'], // \\ Backslash
+      ["'\\u002a'", '\u002a'], // \uXXXX Unicode character, where XXXX is the hexadecimal representation of the character
+    ])('String escapes 2', (fhirPathString, jsString) => {
+      expect(tokenize(fhirPathString)).toMatchObject([{ id: 'String', value: jsString }]);
+    });
+
+    test.each([
+      // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+      ["'\\p'", 'p'],
+      ["'\\\\p'", '\\p'],
+      ["'\\3'", '3'],
+      ["'\\u005'", 'u005'],
+      ["'\\ '", ' '],
+    ])('String escapes 3', (fhirPathString, jsString) => {
+      expect(tokenize(fhirPathString)).toMatchObject([{ id: 'String', value: jsString }]);
+    });
+
+    test('String escapes 4', () => {
+      expect(tokenize("'\\'wrapped in single quotes\\''")).toMatchObject([
+        {
+          id: 'String',
+          value: "'wrapped in single quotes'",
+        },
+      ]);
+    });
+
+    test('String escapes 5', () => {
+      expect(tokenize(`'\\"wrapped in double quotes\\"'`)).toMatchObject([
+        {
+          id: 'String',
+          value: '"wrapped in double quotes"',
+        },
+      ]);
+    });
   });
 
-  test('Literal unicode', () => {
-    expect(tokenize("'P\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
-    expect(tokenize("'P\\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
-    expect(tokenize("'P\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'P\\eter' }]);
-    expect(tokenize("'P\\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'P\\eter' }]);
+  describe('Literal unicode', () => {
+    // See spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
+    test('Literal unicode 1', () => {
+      // In FHIR Path land: 'Peter' -> Peter
+      // Reason: Trivial
+      expect(tokenize("'P\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
+    });
+
+    test('Literal unicode 2', () => {
+      // In FHIR Path land: 'P\u0065ter' -> Peter
+      // Reason: FHIR Path Unicode characters
+      expect(tokenize("'P\\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
+    });
+
+    test('Literal unicode 3', () => {
+      // In FHIR Path land: 'P\eter' -> Peter
+      // Reason: If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+      expect(tokenize("'P\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
+    });
+
+    test('Literal unicode 4', () => {
+      // In FHIR Path land: 'P\\u0065ter' -> P\u0065ter
+      // Reason: Unescape backslash
+      expect(tokenize("'P\\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'P\\u0065ter' }]);
+    });
   });
 
   test('FHIR Path', () => {

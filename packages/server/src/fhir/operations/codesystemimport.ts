@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, WithId, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, parentProperty, selectCoding } from './utils/terminology';
+import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -114,15 +115,6 @@ export async function importCodeSystem(
   }
 }
 
-function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
-  const seen = Object.create(null);
-  for (const el of arr) {
-    const key = keyFn(el);
-    seen[key] = el;
-  }
-  return Object.values(seen);
-}
-
 async function processProperties(
   importedProperties: ImportedProperty[],
   codeSystem: WithId<CodeSystem>,
@@ -221,6 +213,6 @@ async function resolveProperty(
     ])
       .returnColumn('id')
       .execute(db)
-  ).rows[0];
+  )[0];
   return [newProp.id, prop];
 }

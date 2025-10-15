@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, MedplumClient, createReference } from '@medplum/core';
-import { Media, Observation, Patient } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Media, Observation, Patient } from '@medplum/fhirtypes';
 import { XMLParser } from 'fast-xml-parser';
 
 // Helper function to safely access nested properties

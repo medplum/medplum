@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Card, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Encounter, Practitioner } from '@medplum/fhirtypes';
+import type { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface VisitDetailsPanelProps {
   practitioner?: Practitioner;

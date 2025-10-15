@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
-import { InternalTypeSchema, addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
-import { Loading, ResourceForm, ResourceFormProps, useMedplum } from '@medplum/react';
+import { addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
+import type { InternalTypeSchema } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
+import { Loading, ResourceForm, useMedplum } from '@medplum/react';
+import type { ResourceFormProps } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { JSX, ReactNode, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 interface ResourceFormWithRequiredProfileProps extends ResourceFormProps {
   /** (optional) If specified, an error is shown in place of `ResourceForm` if the profile cannot be loaded.  */

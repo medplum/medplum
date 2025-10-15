@@ -44,6 +44,10 @@ const options = {
 esbuild
   .build({
     ...options,
+    define: {
+      ...options.define,
+      'import.meta.env': 'process.env',
+    },
     format: 'cjs',
     outfile: './dist/cjs/index.cjs',
   })

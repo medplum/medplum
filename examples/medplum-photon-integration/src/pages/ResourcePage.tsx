@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceTable, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 
 /**

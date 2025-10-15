@@ -4,7 +4,7 @@ import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
-import {
+import type {
   Coding,
   Coverage,
   CoverageEligibilityRequest,
@@ -16,7 +16,8 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 
 interface InitiateEligibilityRequestProps {
   readonly coverage: Coverage;

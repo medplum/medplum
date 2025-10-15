@@ -5,7 +5,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { FhirPathTable, FhirPathTableField, FhirPathTableProps } from './FhirPathTable';
+import type { FhirPathTableField, FhirPathTableProps } from './FhirPathTable';
+import { FhirPathTable } from './FhirPathTable';
 
 const query = `{
   ResourceList: ServiceRequestList {

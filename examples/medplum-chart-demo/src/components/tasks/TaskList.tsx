@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
 import { formatDate, normalizeErrorString } from '@medplum/core';
-import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
+import type { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   ErrorBoundary,
@@ -13,7 +13,8 @@ import {
   useResource,
 } from '@medplum/react';
 import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
-import { Fragment, JSX, ReactNode, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useParams } from 'react-router';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
 import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';

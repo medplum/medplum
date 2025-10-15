@@ -11,8 +11,8 @@
  * The bot requires a Slack Bot Token to be configured in the Medplum Bot secrets.
  */
 
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 
 /**
  * Sends a message to a specified Slack channel.

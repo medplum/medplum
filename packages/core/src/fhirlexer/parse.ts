@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { TypedValue } from '../types';
-import { Token } from './tokenize';
+import type { TypedValue } from '../types';
+import type { Token } from './tokenize';
 
 export interface AtomContext {
   parent?: AtomContext;

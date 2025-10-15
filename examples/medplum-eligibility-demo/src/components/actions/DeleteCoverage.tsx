@@ -3,12 +3,14 @@
 import { Alert, Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Coverage } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type { Coverage } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { NavigateFunction, useNavigate } from 'react-router';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
+import type { NavigateFunction } from 'react-router';
 
 interface DeleteCoverageProps {
   readonly coverage: Coverage;

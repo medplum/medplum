@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Schedule, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Schedule, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { handler, SetAvailabilityEvent } from './set-availability';
+import { handler } from './set-availability';
+import type { SetAvailabilityEvent } from './set-availability';
 
 describe('Set Availability', async () => {
   let medplum: MockClient;

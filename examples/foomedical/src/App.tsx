@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell } from '@mantine/core';
 import { ErrorBoundary, useMedplum } from '@medplum/react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { Router } from './Router';
 import { Footer } from './components/Footer';

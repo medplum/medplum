@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, MedplumClient, resolveId, WithId } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
+import { getReferenceString, MedplumClient, resolveId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import type { Bot } from '@medplum/fhirtypes';
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
 import path from 'path';
 
 // Define the import-healthie-patients bot

@@ -1,21 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  capitalize,
-  DEFAULT_SEARCH_COUNT,
-  evalFhirPathTyped,
-  Filter,
-  formatDateTime,
-  InternalSchemaElement,
-  Operator,
-  SearchRequest,
-} from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
+import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
+import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { SearchControlField } from './SearchControlField';
+import type { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],

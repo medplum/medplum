@@ -3,15 +3,15 @@
 import {
   ContentType,
   Hl7Message,
-  MedplumClient,
   formatHumanName,
   getCodeBySystem,
   getIdentifier,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   CodeableConcept,
   Encounter,
@@ -63,7 +63,6 @@ describe('Send to Partner Lab', () => {
     });
 
     expect(checkServiceRequests).toHaveLength(2);
-    console.debug(JSON.stringify(checkServiceRequests, null, 2));
     const glucoseOrder = checkServiceRequests.find(
       (order) => getCodeBySystem(order.code as CodeableConcept, FACILITY_ORDER_CODE_SYSTEM) === '1032'
     );

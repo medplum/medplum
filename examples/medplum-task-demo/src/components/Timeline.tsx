@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { DefaultResourceTimeline } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 
 /*

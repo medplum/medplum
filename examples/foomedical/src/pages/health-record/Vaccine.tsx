@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Title } from '@mantine/core';
-import { Immunization } from '@medplum/fhirtypes';
+import type { Immunization } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
 

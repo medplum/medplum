@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
-import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
-import { JSX, useMemo } from 'react';
+import type { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useMemo } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';

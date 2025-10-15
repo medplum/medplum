@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Slot } from '@medplum/fhirtypes';
+import type { Slot } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CalendarInput } from './CalendarInput';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';

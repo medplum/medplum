@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   createReference,
   encodeBase64,
@@ -8,9 +9,8 @@ import {
   normalizeErrorString,
   Operator,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,

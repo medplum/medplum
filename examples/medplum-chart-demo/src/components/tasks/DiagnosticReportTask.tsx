@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Flex, Modal } from '@mantine/core';
-import { DiagnosticReport, Task } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
-import { TaskCellProps } from './TaskList';
+import { useState } from 'react';
+import type { JSX } from 'react';
+import type { TaskCellProps } from './TaskList';
 
 export function DiagnosticReportModal(props: TaskCellProps): JSX.Element {
   const [open, setOpen] = useState(false);

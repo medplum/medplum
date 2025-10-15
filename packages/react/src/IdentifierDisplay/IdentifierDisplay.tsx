@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Identifier } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Identifier } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 
 export interface IdentifierDisplayProps {
   readonly value?: Identifier;

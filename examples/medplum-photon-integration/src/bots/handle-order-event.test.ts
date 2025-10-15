@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bot, Bundle, MedicationRequest, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, MedicationRequest, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { Fill, OrderCreatedData } from '../photon-types';
+import type { Fill, OrderCreatedData } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 import { getFillStatus, getPatient, handler } from './handle-order-event';
 import { createdWebhook, noPrescriptionId, placedWebhook } from './test-data/order-event-test-data';

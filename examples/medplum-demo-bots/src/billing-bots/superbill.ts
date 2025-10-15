@@ -1,16 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  BotEvent,
-  CreatePdfOptions,
-  formatAddress,
-  formatDate,
-  formatHumanName,
-  getQuestionnaireAnswers,
-  getReferenceString,
-  MedplumClient,
-} from '@medplum/core';
-import {
+import { formatAddress, formatDate, formatHumanName, getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
+import type { BotEvent, CreatePdfOptions, MedplumClient } from '@medplum/core';
+import type {
   ChargeItemDefinition,
   Coding,
   DocumentReference,

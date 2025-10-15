@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   AccessPolicy,
   Agent,
   Attachment,
@@ -10,6 +10,7 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
+  ClientApplication,
   Communication,
   Device,
   DocumentReference,
@@ -19,11 +20,13 @@ import {
   Media,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   ProjectSetting,
   Reference,
+  RelatedPerson,
   Resource,
   ResourceType,
   SearchParameter,
@@ -39,16 +42,19 @@ import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
+import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
-import {
+import type {
   CurrentContext,
-  FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
   FhircastEventVersionOptional,
   FhircastEventVersionRequired,
   PendingSubscriptionRequest,
   SubscriptionRequest,
+} from './fhircast';
+import {
+  FhircastConnection,
   assertContextVersionOptional,
   createFhircastMessagePayload,
   isContextVersionRequired,
@@ -70,15 +76,14 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage, IClientStorage } from './storage';
-import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import type { IClientStorage } from './storage';
+import { ClientStorage } from './storage';
+import type { SubscriptionEmitter } from './subscriptions';
+import { SubscriptionManager } from './subscriptions';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
+import type { CodeChallengeMethod, ProfileResource, QueryTypes, WithId } from './utils';
 import {
-  CodeChallengeMethod,
-  ProfileResource,
-  QueryTypes,
-  WithId,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -463,7 +468,9 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
+  readonly enrollQrCode?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -501,6 +508,7 @@ export interface BotEvent<T = unknown> {
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
 }
@@ -517,6 +525,7 @@ export interface InviteRequest {
   membership?: Partial<ProjectMembership>;
   upsert?: boolean;
   forceNewMembership?: boolean;
+  mfaRequired?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
@@ -608,6 +617,11 @@ export interface CreatePdfOptions extends Omit<CreateBinaryOptions, 'data' | 'co
    * Optional pdfmake custom font dictionary.
    */
   readonly fonts?: TFontDictionary;
+}
+
+export interface ReadHistoryOptions {
+  readonly count?: number;
+  readonly offset?: number;
 }
 
 /**
@@ -904,7 +918,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
     this.cacheTime =
-      options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
+      options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
     if (this.cacheTime > 0) {
       this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     } else {
@@ -1045,7 +1059,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   clear(): void {
     this.storage.clear();
-    if (typeof window !== 'undefined') {
+    if (isBrowserEnvironment()) {
       sessionStorage.clear();
     }
     this.clearActiveLogin();
@@ -1369,7 +1383,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The user profile resource if available.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | undefined> {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(locationUtils.getSearch());
     const code = urlParams.get('code');
     if (!code) {
       await this.requestAuthorization(loginParams);
@@ -1384,7 +1398,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   signOutWithRedirect(): void {
-    window.location.assign(this.logoutUrl);
+    locationUtils.assign(this.logoutUrl);
   }
 
   /**
@@ -1407,7 +1421,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (pkceEnabled) {
       loginRequest = await this.ensureCodeChallenge(baseLogin);
     }
-    window.location.assign(
+    locationUtils.assign(
       this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest, pkceEnabled)
     );
   }
@@ -1947,15 +1961,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Read
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param options - Optional fetch options.
+   * @param options - Optional history options.
+   * @param requestOptions - Optional fetch options.
    * @returns Promise to the resource history.
    */
   readHistory<RT extends ResourceType>(
     resourceType: RT,
     id: string,
-    options?: MedplumRequestOptions
+    options?: ReadHistoryOptions,
+    requestOptions?: MedplumRequestOptions
   ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history'), options);
+    const url = this.fhirUrl(resourceType, id, '_history');
+    if (options?.count) {
+      url.searchParams.set('_count', options.count.toString());
+    }
+    if (options?.offset) {
+      url.searchParams.set('_offset', options.offset.toString());
+    }
+    return this.get(url.toString(), requestOptions);
   }
 
   /**
@@ -3477,7 +3500,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   private setCurrentRateLimit(res: Response): void {
-    const rateLimitHeader = res.headers?.get('ratelimit');
+    // Handle cases where response might not have headers property (e.g., in tests)
+    if (!res?.headers || typeof res.headers.get !== 'function') {
+      return;
+    }
+    const rateLimitHeader = res.headers.get('ratelimit');
     if (rateLimitHeader) {
       this.currentRateLimits = rateLimitHeader;
     }
@@ -3737,11 +3764,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? getWindowOrigin());
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? locationUtils.getOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
     url.searchParams.set('scope', loginRequest.scope ?? 'openid profile');
-    window.location.assign(url.toString());
+    locationUtils.assign(url.toString());
   }
 
   /**
@@ -3757,7 +3784,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       grant_type: OAuthGrantType.AuthorizationCode,
       code,
       client_id: loginParams?.clientId ?? this.clientId ?? '',
-      redirect_uri: loginParams?.redirectUri ?? getWindowOrigin(),
+      redirect_uri: loginParams?.redirectUri ?? locationUtils.getOrigin(),
     };
 
     if (typeof sessionStorage !== 'undefined') {
@@ -4169,7 +4196,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         // On storage clear (key === null) or profile change (key === 'activeLogin', and profile in 'activeLogin' is different)
         // Refresh the page to ensure the active login is up to date.
         if (e.key === null) {
-          window.location.reload();
+          locationUtils.reload();
         } else if (e.key === 'activeLogin') {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
@@ -4177,7 +4204,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
             oldState?.profile.reference !== newState?.profile.reference ||
             !this.checkSessionDetailsMatchLogin(newState)
           ) {
-            window.location.reload();
+            locationUtils.reload();
           } else if (newState) {
             this.setAccessToken(newState.accessToken, newState.refreshToken);
           } else {
@@ -4290,18 +4317,6 @@ function getDefaultFetch(): FetchLike {
     throw new Error('Fetch not available in this environment');
   }
   return globalThis.fetch.bind(globalThis);
-}
-
-/**
- * Returns the base URL for the current page.
- * @returns The window origin string.
- * @category HTTP
- */
-function getWindowOrigin(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  return window.location.protocol + '//' + window.location.host + '/';
 }
 
 /**

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 export * from './access';
-export * from './agent';
-export * from './base-schema';
+export type * from './agent';
+export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';
 export * from './cache';
@@ -14,6 +14,7 @@ export * from './crypto';
 export * from './datasampler';
 export * from './default-values';
 export * from './elements-context';
+export * from './environment';
 export * from './eventtarget';
 export * from './fhircast';
 export * from './fhirlexer/parse';

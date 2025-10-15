@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { IncomingMessage } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
-import ws from 'ws';
+import type ws from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Radio, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
-import { JSX, useCallback, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
+import type { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import type { TypedValue } from '../types';
+import { PropertyType, getElementDefinition, isResource } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
 import { validationRegexes } from '../typeschema/validation';
 import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 
@@ -163,6 +164,11 @@ export function getTypedPropertyValueWithSchema(
       resultValue = resultValue.slice();
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
+      }
+    } else if (!resultValue && Array.isArray(primitiveExtension)) {
+      resultValue = primitiveExtension.slice();
+      for (let i = 0; i < primitiveExtension.length; i++) {
+        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
       }
     } else {
       resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);

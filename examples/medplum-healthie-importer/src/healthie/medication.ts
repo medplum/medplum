@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedicationRequest, Patient, Quantity, Reference } from '@medplum/fhirtypes';
-import { HealthieClient } from './client';
+import type { MedicationRequest, Patient, Quantity, Reference } from '@medplum/fhirtypes';
+import type { HealthieClient } from './client';
 import {
   HEALTHIE_MEDICATION_CODE_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,

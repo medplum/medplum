@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Resource, ViewDefinition, ViewDefinitionSelect } from '@medplum/fhirtypes';
+import type { Resource, ViewDefinition, ViewDefinitionSelect } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
-import { TypedValue } from '../types';
+import type { TypedValue } from '../types';
 
 /**
  * Represents a "selection structure" in the SQL-on-FHIR specification.

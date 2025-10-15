@@ -183,6 +183,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash
@@ -257,6 +259,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash

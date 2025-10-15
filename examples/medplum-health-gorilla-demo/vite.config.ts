@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import react from '@vitejs/plugin-react';
-import { existsSync, copyFileSync } from 'fs';
-import path from 'path';
 import dns from 'dns';
-import { defineConfig, UserConfig } from 'vite';
+import { copyFileSync, existsSync } from 'fs';
+import path from 'path';
+import type { UserConfig } from 'vite';
+import { defineConfig } from 'vite';
 
 dns.setDefaultResultOrder('verbatim');
 

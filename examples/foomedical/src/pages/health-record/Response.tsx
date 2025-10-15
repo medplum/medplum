@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Paper, Stack, Title, TitleOrder } from '@mantine/core';
+import { Box, Paper, Stack, Title } from '@mantine/core';
+import type { TitleOrder } from '@mantine/core';
 import { formatDate } from '@medplum/core';
-import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import type { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, QuantityDisplay, RangeDisplay, useMedplum } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function Response(): JSX.Element {

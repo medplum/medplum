@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 
 export function cleanResource(resource: Resource): Resource {
   let meta = resource.meta;

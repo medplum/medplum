@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { Filter, SearchRequest, SortRule } from '@medplum/core';
 
 // Get the default fields for a given resource type
 function getDefaultFields(resourceType: string): string[] {

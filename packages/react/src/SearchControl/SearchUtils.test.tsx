@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Filter, Operator, SearchRequest } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import {
   addField,
   addFilter,

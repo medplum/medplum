@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   BinarySource,
-  ContentType,
   CreateBinaryOptions,
   LoginState,
-  MedplumClient,
   MedplumClientOptions,
   MedplumRequestOptions,
-  OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
   WithId,
+} from '@medplum/core';
+import {
+  ContentType,
+  MedplumClient,
+  OperationOutcomeError,
   allOk,
   badRequest,
   generateId,
@@ -21,8 +23,9 @@ import {
   loadDataType,
   normalizeCreateBinaryOptions,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
+import type {
   Agent,
   Binary,
   Bot,

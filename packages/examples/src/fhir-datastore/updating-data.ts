@@ -3,7 +3,7 @@
 
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 // end-block imports
 
 const medplum = new MedplumClient();

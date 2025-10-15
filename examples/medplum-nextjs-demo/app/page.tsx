@@ -3,7 +3,8 @@
 'use client';
 import { Button, Title } from '@mantine/core';
 import { Container, ResourceTable, SignInForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 
 // Medplum can autodetect Google Client ID from origin, but only if using window.location.host.
 // Because window.location.host is not available on the server, we must use a constant value.

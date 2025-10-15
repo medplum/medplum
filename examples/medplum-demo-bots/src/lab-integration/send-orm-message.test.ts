@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import type { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';

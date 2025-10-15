@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Loader, Tabs } from '@mantine/core';
 import { capitalize, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { Document, PatientHeader, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { HeadlessPrescription } from '../components/headless-prescription/HeadlessPrescription';
 import { PatientHistory } from '../components/PatientHistory';

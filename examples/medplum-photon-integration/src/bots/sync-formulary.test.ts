@@ -7,7 +7,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
+import type {
   Bot,
   Bundle,
   BundleEntry,

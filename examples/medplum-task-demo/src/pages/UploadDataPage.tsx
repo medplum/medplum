@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  MedplumClient,
-  WithId,
-  capitalize,
-  createReference,
-  getReferenceString,
-  isOk,
-  normalizeErrorString,
-} from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
+import { capitalize, createReference, getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import type { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import businessStatusValueSet from '../../data/core/business-status-valueset.json';
 import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';

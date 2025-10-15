@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator, WithId } from '@medplum/core';
-import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import setCookieParser from 'set-cookie-parser';

@@ -7,7 +7,7 @@ import {
   unauthorized,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Binary, Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Binary, Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { validateRequest } from 'twilio/lib/webhooks/webhooks';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

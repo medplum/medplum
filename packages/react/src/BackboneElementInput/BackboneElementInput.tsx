@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ElementsContextType, buildElementsContext, tryGetDataType } from '@medplum/core';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useState } from 'react';
+import type { ElementsContextType } from '@medplum/core';
+import { buildElementsContext, tryGetDataType } from '@medplum/core';
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface BackboneElementInputProps extends BaseInputProps {

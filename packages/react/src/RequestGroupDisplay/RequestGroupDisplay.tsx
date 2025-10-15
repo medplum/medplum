@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Grid, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheckbox, IconSquare } from '@tabler/icons-react';
-import { Fragment, JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 

@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, getCodeBySystem, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
-import { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { CreatePatientVariables, PhotonAllergenInput, PhotonMedHistoryInput, PhotonPatient } from '../photon-types';
+import { getCodeBySystem, getReferenceString } from '@medplum/core';
+import type { BotEvent, MedplumClient, PatchOperation } from '@medplum/core';
+import type { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type {
+  CreatePatientVariables,
+  PhotonAllergenInput,
+  PhotonMedHistoryInput,
+  PhotonPatient,
+} from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
   formatAWSDate,

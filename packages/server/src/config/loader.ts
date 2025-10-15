@@ -7,8 +7,9 @@ import { join, resolve } from 'path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
-import { MedplumServerConfig } from './types';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, ServerConfig } from './utils';
+import type { MedplumServerConfig } from './types';
+import type { ServerConfig } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 

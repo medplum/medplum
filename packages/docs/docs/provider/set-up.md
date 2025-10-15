@@ -26,7 +26,7 @@ Setting up practitioners is one of the first steps in configuring your Medplum s
    * On the Users page, click the "Invite New User" link at the bottom of the page  
    * Choose "Practitioner" for this user's Role and add the other required information
    * If applicable, choose an Access Policy and/or check if you'd like for this user to be an "Admin" or "Project Scoped" (only added to this project)
-      * See out [User Management Guide](https://www.medplum.com/docs/auth/user-management-guide) for details on this
+      * See out [User Management Guide](https://www.medplum.com/docs/user-management) for details on this
    * Check "Send email" if you'd like to send an automated email invite to this practitioner (recommended)
    * Click the "Invite" button to add and invite this practitioner
 

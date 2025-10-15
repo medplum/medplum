@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
   Form,
@@ -13,7 +13,8 @@ import {
   getIssuesForExpression,
   useMedplum,
 } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router';
 
 export function SetPasswordPage(): JSX.Element {

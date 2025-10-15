@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { evalFhirPathTyped, toTypedValue } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 import { XMLParser } from 'fast-xml-parser';
 import fhirpath from 'fhirpath';
 import { readFileSync, writeFileSync } from 'node:fs';

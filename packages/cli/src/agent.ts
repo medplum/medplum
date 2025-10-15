@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, WithId, isOk, isUUID } from '@medplum/core';
-import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
+import type { IssueSeverity, MedplumClient, MedplumClientOptions, WithId } from '@medplum/core';
+import { ContentType, isOk, isUUID } from '@medplum/core';
+import type { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
 import { MedplumCommand, addSubcommand } from './utils';

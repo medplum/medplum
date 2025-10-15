@@ -4,7 +4,7 @@ import { Button, Flex, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
+import type { Practitioner } from '@medplum/fhirtypes';
 import {
   Document,
   ResourceName,
@@ -14,7 +14,7 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Outlet } from 'react-router';
 import { NEUTRON_HEALTH_BOTS } from '../bots/constants';
 

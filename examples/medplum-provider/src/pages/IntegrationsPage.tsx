@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Flex } from '@mantine/core';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { IntegrationCard } from '../components/IntegrationCard';
 
 interface Integration {

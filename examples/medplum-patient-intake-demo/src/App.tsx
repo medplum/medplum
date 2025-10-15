@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Questionnaire } from '@medplum/fhirtypes';
+import type { Questionnaire } from '@medplum/fhirtypes';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconDatabaseImport,
@@ -11,7 +11,8 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { Route, Routes } from 'react-router';
 import { IntakeFormPage } from './pages/IntakeFormPage';
 import { IntakeResponsePage } from './pages/IntakeResponsePage';

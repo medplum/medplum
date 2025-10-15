@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumInfraConfig } from '@medplum/core';
+import type { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -102,7 +102,7 @@ export class BackEnd extends Construct {
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
-        rds.AuroraPostgresEngineVersion.VER_12_9
+        rds.AuroraPostgresEngineVersion.VER_16_9
       );
 
       const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {

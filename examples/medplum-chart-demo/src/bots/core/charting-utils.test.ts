@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   CodeableConcept,
   Encounter,

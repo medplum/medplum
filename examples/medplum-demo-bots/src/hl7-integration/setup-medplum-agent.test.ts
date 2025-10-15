@@ -8,7 +8,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bot, Bundle, ClientApplication, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, ClientApplication, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import { handler } from './setup-medplum-agent';

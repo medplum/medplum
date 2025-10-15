@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getSearchParameter } from '@medplum/core';
-import { ResearchStudy } from '@medplum/fhirtypes';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
+import type { ResearchStudy } from '@medplum/fhirtypes';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { buildTokenColumns, hashTokenColumnValue } from './token-column';
 

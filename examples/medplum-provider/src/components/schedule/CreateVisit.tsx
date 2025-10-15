@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
-import { useState, useEffect, JSX } from 'react';
-import { SlotInfo } from 'react-big-calendar';
+import { useState, useEffect } from 'react';
+import type { JSX } from 'react';
+import type { SlotInfo } from 'react-big-calendar';
 import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
-import { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
+import type { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import classes from './CreateVisit.module.css';
 import { createEncounter } from '../../utils/encounter';
