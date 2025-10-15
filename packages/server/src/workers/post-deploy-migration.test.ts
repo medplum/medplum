@@ -114,7 +114,7 @@ describe('Post-Deploy Migration Worker', () => {
         request: '/admin/super/migrate',
       });
 
-      const jobData = prepareCustomMigrationJobData(asyncJob);
+      const jobData = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
 
       const result = await addPostDeployMigrationJobData(jobData);
 
@@ -147,7 +147,10 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({
+        asyncJob: mockAsyncJob,
+        shardId: 'test-shard-id',
+      });
       job = {
         id: '1',
         data: jobData,
@@ -199,7 +202,10 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migrationActions);
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(
+        { asyncJob: mockAsyncJob, shardId: 'test-shard-id' },
+        migrationActions
+      );
       job = {
         id: '1',
         data: jobData,
@@ -252,7 +258,10 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({
+        asyncJob: mockAsyncJob,
+        shardId: 'test-shard-id',
+      });
       job = {
         id: '1',
         data: jobData,
@@ -307,7 +316,10 @@ describe('Post-Deploy Migration Worker', () => {
       // temporarily set to {} to appease typescript since it gets set within withTestContext
       let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
       await withTestContext(async () => {
-        const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+        const jobData: PostDeployJobData = prepareCustomMigrationJobData({
+          asyncJob: mockAsyncJob,
+          shardId: 'test-shard-id',
+        });
         job = new Job(queue, 'PostDeployMigrationJobData', jobData);
         // Since the Job class is fully mocked, we need to set the data property manually
         job.data = jobData;
@@ -374,7 +386,10 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({
+        asyncJob: mockAsyncJob,
+        shardId: 'test-shard-id',
+      });
       job = new Job(queue, 'PostDeployMigrationJobData', jobData);
       // Since the Job class is fully mocked, we need to set the data property manually
       job.data = jobData;
@@ -445,7 +460,10 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({
+        asyncJob: mockAsyncJob,
+        shardId: 'test-shard-id',
+      });
       job = new Job(queue, 'PostDeployMigrationJobData', jobData);
       // Since the Job class is fully mocked, we need to set the data property manually
       job.data = jobData;
@@ -487,6 +505,7 @@ describe('Post-Deploy Migration Worker', () => {
       asyncJobId: asyncJob.id,
       requestId: '123',
       traceId: '456',
+      shardId: 'test-shard-id',
     };
     const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
 
@@ -527,6 +546,7 @@ describe('Post-Deploy Migration Worker', () => {
       asyncJobId: asyncJob.id,
       requestId: '123',
       traceId: '456',
+      shardId: 'test-shard-id',
     };
 
     const result = await runCustomMigration(systemRepo, undefined, jobData, async (_client, results) => {

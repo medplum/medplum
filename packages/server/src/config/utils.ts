@@ -72,6 +72,16 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
     config.signingKeyPassphrase = passphrase;
   }
 
+  config.shards ??= {};
+  config.shards.global = {
+    id: 'global',
+    database: config.database,
+    readonlyDatabase: config.readonlyDatabase,
+    redis: config.redis,
+  };
+  for (const [shardId, shardConfig] of Object.entries(config.shards)) {
+    shardConfig.id = shardId;
+  }
   return config as ServerConfig;
 }
 
@@ -99,7 +109,8 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota';
+  | 'defaultFhirQuota'
+  | 'shards';
 
 const integerKeys = new Set([
   'accurateCountThreshold',

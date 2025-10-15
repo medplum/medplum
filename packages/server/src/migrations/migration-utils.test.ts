@@ -21,7 +21,7 @@ describe('withLongRunningDatabaseClient', () => {
   test('should execute callback with long-running database client', async () => {
     const result = await withLongRunningDatabaseClient(async (client) => {
       return client.query<{ result: string }>("SELECT '12-12-2022' as result").then((result) => result.rows[0].result);
-    });
+    }, 'global');
     expect(result).toBe('12-12-2022');
   });
 });

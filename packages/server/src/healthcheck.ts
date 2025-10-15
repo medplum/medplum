@@ -14,8 +14,8 @@ const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricO
 const METRIC_IN_SECS_OPTIONS = { ...BASE_METRIC_OPTIONS, options: { unit: 's' } } satisfies RecordMetricOptions;
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  const writerPool = getDatabasePool(DatabaseMode.WRITER);
-  const readerPool = getDatabasePool(DatabaseMode.READER);
+  const writerPool = getDatabasePool(DatabaseMode.WRITER, 'global');
+  const readerPool = getDatabasePool(DatabaseMode.READER, 'global');
 
   let startTime = Date.now();
   const postgresWriterOk = await testPostgres(writerPool);
