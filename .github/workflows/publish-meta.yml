@@ -38,6 +38,9 @@ jobs:
             TAG_NAME=$(echo "$release" | jq -r '.tag_name')
             echo "Processing release: $TAG_NAME"
             
+            # Track if all assets exist for this release
+            ALL_EXIST=true
+            
             # Process each asset in the release
             echo "$release" | jq -c '.assets[]' | while read -r asset; do
               ASSET_NAME=$(echo "$asset" | jq -r '.name')
@@ -51,11 +54,19 @@ jobs:
                 echo "    Asset already exists in S3, skipping"
               else
                 echo "    Streaming asset directly to S3"
+                # Mark that not all assets existed
+                ALL_EXIST=false
                 # Stream directly from curl to S3
                 curl -L "$DOWNLOAD_URL" | aws s3 cp - "s3://download.medplum.com/${S3_KEY}" \
                   --cache-control "public, max-age=31536000, immutable"
               fi
             done
+            
+            # If all assets existed for this release, stop processing older releases
+            if [ "$ALL_EXIST" = true ]; then
+              echo "  All assets already exist for this release, stopping processing of older releases"
+              break
+            fi
           done
 
       - name: Create JSON manifests with S3 URLs
