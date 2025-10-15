@@ -438,6 +438,7 @@ class TemplateExtractor implements CrawlerVisitor {
       const resource = deepClone(template.value);
       const patch = this.getTemplatePatch();
       applyPatch(resource, patch);
+      console.log('===== PATCHED', JSON.stringify(resource.telecom, null, 2), patch);
       this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
     }
   }

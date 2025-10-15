@@ -14,6 +14,7 @@ import type {
   QuestionnaireResponse,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -485,6 +486,7 @@ describe('QuestionnaireResponse/$extract', () => {
   });
 
   test('Handles multiple template elements in same array', async () => {
+    const staticUrl = 'http://example.com/' + randomUUID();
     const questionnaire: Questionnaire = {
       resourceType: 'Questionnaire',
       status: 'draft',
@@ -493,31 +495,21 @@ describe('QuestionnaireResponse/$extract', () => {
         {
           resourceType: 'Patient',
           id: 'patTemplate',
-          name: [
-            {
-              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'name')" }],
-              _text: {
-                extension: [
-                  {
-                    url: valueExtension,
-                    valueString: "item.where(linkId='given' or linkId='family').answer.value.join(' ')",
-                  },
-                ],
-              },
-              _family: {
-                extension: [{ url: valueExtension, valueString: "item.where(linkId = 'family').answer.value.first()" }],
-              },
-              _given: [
-                { extension: [{ url: valueExtension, valueString: "item.where(linkId = 'given').answer.value" }] },
-              ],
-            },
-          ],
           telecom: [
             {
               extension: [{ url: contextExtension, valueString: "item.where(linkId = 'email')" }],
               system: 'email',
               use: 'home',
               _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'pager')" }],
+              system: 'pager',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            {
+              system: 'url',
+              value: staticUrl,
             },
             {
               extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
@@ -543,17 +535,9 @@ describe('QuestionnaireResponse/$extract', () => {
             },
           ],
           item: [
-            {
-              linkId: 'name',
-              text: 'Name',
-              type: 'group',
-              item: [
-                { linkId: 'given', text: 'Given Name(s)', type: 'string', repeats: true, required: true },
-                { linkId: 'family', text: 'Family/Surname', type: 'string', required: true },
-              ],
-            },
             { linkId: 'email', text: 'Email', type: 'string', repeats: true },
             { linkId: 'mobile-phone', text: 'Mobile Phone', type: 'string' },
+            { linkId: 'pager', text: 'Pager', type: 'string' },
           ],
         },
       ],
@@ -568,16 +552,10 @@ describe('QuestionnaireResponse/$extract', () => {
         {
           linkId: 'patient',
           item: [
-            {
-              linkId: 'name',
-              item: [
-                { linkId: 'given', answer: [{ valueString: 'Bella McClure' }] },
-                { linkId: 'family', answer: [{ valueString: 'Thaddeus Runte' }] },
-              ],
-            },
-            { linkId: 'email', answer: [{ valueString: 'your.email+fakedata62711@gmail.com' }] },
-            { linkId: 'email', answer: [{ valueString: 'your.email+fakedata62722@gmail.com' }] },
-            { linkId: 'mobile-phone', answer: [{ valueString: '127-988-1598' }] },
+            { linkId: 'email', answer: [{ valueString: 'fake.email+1@example.com' }] },
+            { linkId: 'email', answer: [{ valueString: 'fake.email+2@example.com' }] },
+            { linkId: 'email', answer: [{ valueString: 'fake.email+3@example.com' }] },
+            { linkId: 'mobile-phone', answer: [{ valueString: '555-988-1598' }] },
           ],
         },
       ],
@@ -605,17 +583,26 @@ describe('QuestionnaireResponse/$extract', () => {
       {
         system: 'email',
         use: 'home',
-        value: 'your.email+fakedata62711@gmail.com',
+        value: 'fake.email+1@example.com',
       },
       {
         system: 'email',
         use: 'home',
-        value: 'your.email+fakedata62722@gmail.com',
+        value: 'fake.email+2@example.com',
+      },
+      {
+        system: 'email',
+        use: 'home',
+        value: 'fake.email+3@example.com',
+      },
+      {
+        system: 'url',
+        value: staticUrl,
       },
       {
         system: 'phone',
         use: 'mobile',
-        value: '127-988-1598',
+        value: '555-988-1598',
       },
     ]);
   });
