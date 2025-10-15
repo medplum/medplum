@@ -137,16 +137,20 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
   exec.start(async () => {
     const action: OutputAction[] = [];
-    await withLongRunningDatabaseClient(async (client) => {
-      await configureGinIndexes(client, action, tableNames, config);
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await configureGinIndexes(client, action, tableNames, config);
 
-      // Vacuum if the fastupdate is disabled to flush GIN pending lists
-      if (config.fastUpdate === false) {
-        for (const tableName of tableNames) {
-          await vacuumTable(client, action, tableName);
+        // Vacuum if the fastupdate is disabled to flush GIN pending lists
+        if (config.fastUpdate === false) {
+          for (const tableName of tableNames) {
+            await vacuumTable(client, action, tableName);
+          }
         }
-      }
-    }, DatabaseMode.WRITER);
+      },
+      systemRepo.projectShardId,
+      DatabaseMode.WRITER
+    );
     return buildOutputParameters(operation, { action });
   });
   return [accepted(exec.getContentLocation(baseUrl))];

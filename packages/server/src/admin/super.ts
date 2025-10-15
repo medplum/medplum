@@ -166,7 +166,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
+      await addReindexJob('TODO', resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
 
     const { baseUrl } = getConfig();
@@ -291,7 +291,7 @@ superAdminRouter.post(
     }
 
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration('TODO', req?.body?.dataVersion as number | undefined);
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);
@@ -321,7 +321,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.originalUrl);
   await exec.run(async (asyncJob) => {
-    const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+    const jobData = prepareDynamicMigrationJobData({ asyncJob, shardId: 'TODO' }, migrationActions);
     await addPostDeployMigrationJobData(jobData);
   });
 

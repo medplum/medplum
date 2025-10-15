@@ -11,7 +11,7 @@ import { getAuthenticatedContext } from '../../../context';
 import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 import { getSystemRepo } from '../../repo';
@@ -116,9 +116,16 @@ export class AsyncJobExecutor {
       output,
     };
     if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), updatedJob.dataVersion);
+      getLogger().info('Marking post-deploy migration complete', {
+        shardId: repo.projectShardId,
+        version: `v${updatedJob.dataVersion}`,
+      });
+      await markPostDeployMigrationCompleted(
+        getDatabasePool(DatabaseMode.WRITER, repo.projectShardId),
+        updatedJob.dataVersion
+      );
       updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
+      await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
       return updatedJob;
     } else {
       return repo.updateResource<AsyncJob>(updatedJob);

@@ -39,6 +39,7 @@ import {
 
 export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
+  readonly shardId: string;
   readonly resourceTypes: ResourceType[];
   readonly minReindexWorkerVersion?: number;
   readonly maxResourceVersion?: number;
@@ -100,7 +101,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 };
 
 export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
-  const result = await new ReindexJob().execute(job, job.data);
+  const result = await new ReindexJob(getSystemRepo(undefined, job.data.shardId)).execute(job, job.data);
   if (result === 'ineligible') {
     await moveToDelayedAndThrow(job, 'Reindex job delayed since worker is not eligible to execute it');
   }
@@ -115,8 +116,8 @@ export class ReindexJob {
   private readonly logger = globalLogger;
   private readonly defaultStatementTimeout: number | 'DEFAULT';
 
-  constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
-    this.systemRepo = systemRepo ?? getSystemRepo();
+  constructor(systemRepo: Repository, batchSize?: number, progressLogThreshold?: number) {
+    this.systemRepo = systemRepo;
     this.batchSize = batchSize ?? defaultBatchSize;
     this.progressLogThreshold = progressLogThreshold ?? defaultProgressLogThreshold;
     this.defaultStatementTimeout = getDefaultStatementTimeout(getConfig());
@@ -127,7 +128,9 @@ export class ReindexJob {
   }
 
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
-    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
+    const postDeployVersion = await getPostDeployVersion(
+      getDatabasePool(DatabaseMode.WRITER, this.systemRepo.projectShardId)
+    );
     if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
@@ -474,16 +477,18 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
 }
 
 export async function addReindexJob(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
   searchFilter?: SearchRequest,
   maxResourceVersion?: number
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter, maxResourceVersion);
+  const jobData = prepareReindexJobData(shardId, resourceTypes, asyncJob.id, searchFilter, maxResourceVersion);
   return addReindexJobData(jobData);
 }
 
 export function prepareReindexJobData(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJobId: string,
   searchFilter?: SearchRequest,
@@ -495,6 +500,7 @@ export function prepareReindexJobData(
 
   return {
     type: 'reindex',
+    shardId,
     minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
     endTimestamp,
