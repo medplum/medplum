@@ -64,7 +64,7 @@ jest.mock('./migrations/data/v1', () => {
   const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
-    prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+    prepareJobData: (config) => prepareCustomMigrationJobData(config),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
         const results: MigrationActionResult[] = [];
@@ -191,7 +191,7 @@ describe('Database migrations', () => {
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
-              ...prepareCustomMigrationJobData(asyncJob),
+              ...prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' }),
               // requestId and traceId will likely be different since in the mocked v1 migration,
               // the call to prepareJobData is not within `withTestContext`
               requestId: expect.any(String),
@@ -223,7 +223,7 @@ describe('Database migrations', () => {
 
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
-        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration('test-shard-id')).rejects.toThrow(
           'Cannot run post-deploy migration since pre-deploy migrations are disabled'
         );
       }));
@@ -249,7 +249,7 @@ describe('Database migrations', () => {
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
         mockValues.serverVersion = '3.3.0';
-        const asyncJob = await maybeStartPostDeployMigration();
+        const asyncJob = await maybeStartPostDeployMigration('test-shard-id');
         if (!asyncJob) {
           throw new Error('Expected to start post-deploy migration');
         }
@@ -265,7 +265,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
       }));
@@ -275,7 +275,7 @@ describe('Database migrations', () => {
         const lastVersion = getLatestPostDeployMigrationVersion();
         mockValues.postDeployVersion = lastVersion;
 
-        await expect(maybeStartPostDeployMigration()).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration('test-shard-id')).resolves.toBeUndefined();
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
 
@@ -290,13 +290,13 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartPostDeployMigration()).resolves.toMatchObject({
+        await expect(maybeStartPostDeployMigration('test-shard-id')).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
       }));
@@ -319,7 +319,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const asyncJob = await maybeStartPostDeployMigration();
+        const asyncJob = await maybeStartPostDeployMigration('test-shard-id');
         if (!asyncJob) {
           throw new Error('Expected to start post-deploy migration');
         }
@@ -335,7 +335,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
 
@@ -367,7 +367,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration('test-shard-id')).rejects.toThrow(
           'Unable to start post-deploy migration since there are more than one existing data-migration AsyncJob with accepted status'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -377,7 +377,7 @@ describe('Database migrations', () => {
       withTestContext(async () => {
         mockValues.postDeployVersion = 2;
 
-        await expect(maybeStartPostDeployMigration(1)).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration('test-shard-id', 1)).resolves.toBeUndefined();
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
 
@@ -385,7 +385,7 @@ describe('Database migrations', () => {
       withTestContext(async () => {
         mockValues.postDeployVersion = 1;
 
-        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration('test-shard-id', 2)).rejects.toThrow(
           'Requested post-deploy migration v2, but there are no pending post-deploy migrations.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -403,7 +403,7 @@ describe('Database migrations', () => {
 
         expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
 
-        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration('test-shard-id', 2)).rejects.toThrow(
           'Requested post-deploy migration v2, but the pending post-deploy migration is v1.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -441,8 +441,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob().execute(undefined, jobData);
+        const jobData = prepareReindexJobData('test-shard-id', ['ImmunizationEvaluation'], asyncJob.id);
+        const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -474,8 +474,8 @@ describe('Database migrations', () => {
 
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
-        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob().execute(undefined, jobData);
+        const jobData = prepareReindexJobData('test-shard-id', ['MedicinalProductContraindication'], asyncJob.id);
+        await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -519,7 +519,7 @@ describe('Database migrations', () => {
 
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+        jobData = prepareReindexJobData('test-shard-id', ['ValueSet'], asyncJob.id);
       });
 
       const reindexJob = new ReindexJob(systemRepo);

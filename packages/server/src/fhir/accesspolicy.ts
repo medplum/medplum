@@ -69,6 +69,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    projectShardId: project.shardId ?? 'global',
   });
 }
 

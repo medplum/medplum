@@ -13,7 +13,7 @@ jest.mock('./migrations/data/v1', () => {
   const { prepareCustomMigrationJobData, runCustomMigration } = require('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
-    prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+    prepareJobData: (config) => prepareCustomMigrationJobData(config),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
         const results: MigrationActionResult[] = [];
