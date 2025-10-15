@@ -64,14 +64,14 @@ jobs:
           # Replace GitHub URLs with S3 URLs
           jq '{
             versions: [
-              .[] | {
+              .[] | . as $release | {
                 tag_name,
                 version: (.tag_name | ltrimstr("v")),
                 published_at,
                 assets: [
                   .assets[] | {
                     name,
-                    browser_download_url: "https://download.medplum.com/releases/\(.tag_name)/\(.name)"
+                    browser_download_url: "https://download.medplum.com/releases/\($release.tag_name)/\(.name)"
                   }
                 ]
               }
@@ -79,14 +79,14 @@ jobs:
           }' releases.json > all.json
 
           # Create latest release file
-          jq '.[0] | {
+          jq '.[0] | . as $release | {
             tag_name,
             version: (.tag_name | ltrimstr("v")),
             published_at,
             assets: [
               .assets[] | {
                 name,
-                browser_download_url: "https://download.medplum.com/releases/\(.tag_name)/\(.name)"
+                browser_download_url: "https://download.medplum.com/releases/\($release.tag_name)/\(.name)"
               }
             ]
           }' releases.json > latest.json
