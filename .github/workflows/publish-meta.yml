@@ -33,11 +33,21 @@ jobs:
           # Download releases data
           curl -s "https://api.github.com/repos/medplum/medplum/releases?per_page=100" > releases.json
 
+          # Track whether we should continue syncing
+          DONE=false
+
           # Process each release and upload assets to S3
           jq -c '.[]' releases.json | while read -r release; do
             TAG_NAME=$(echo "$release" | jq -r '.tag_name')
             echo "Processing release: $TAG_NAME"
             
+            # Skip if we've already found a complete release
+            # This only exists so we don't see a broken pipe error at the end if "break" early
+            # If we use a literal break it causes jq to attempt to write to a broken pipe...
+            if [ "$DONE" = true ]; then
+              continue
+            fi
+
             # Track if all assets exist for this release
             ALL_EXIST=true
             
@@ -62,10 +72,10 @@ jobs:
               fi
             done
             
-            # If all assets existed for this release, stop processing older releases
+            # If all assets existed for this release, don't attempt to sync subsequent releases
             if [ "$ALL_EXIST" = true ]; then
-              echo "  All assets already exist for this release, stopping processing of older releases"
-              break
+              echo "  All assets already exist for this release, will skip older releases"
+              DONE=true
             fi
           done
 
