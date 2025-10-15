@@ -185,6 +185,20 @@ describe('ConceptMap $translate', () => {
     });
   });
 
+  test('Allows GET request', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ConceptMap/$translate?url=${conceptMap.url}&system=${system}&code=${code}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(res.status).toBe(200);
+
+    const output = (res.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(2);
+  });
+
   test('Lookup by source ValueSet', async () => {
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/$translate`)
