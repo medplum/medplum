@@ -19,11 +19,7 @@ export function MessageWithLinks({ content }: MessageWithLinksProps): JSX.Elemen
     const matchIndex = match.index;
 
     if (matchIndex > lastIndex) {
-      parts.push(
-        <span key={`text-${lastIndex}`}>
-          {content.substring(lastIndex, matchIndex)}
-        </span>
-      );
+      parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex, matchIndex)}</span>);
     }
 
     const href = `/${resourceType}/${resourceId}`;
@@ -44,13 +40,8 @@ export function MessageWithLinks({ content }: MessageWithLinksProps): JSX.Elemen
   }
 
   if (lastIndex < content.length) {
-    parts.push(
-      <span key={`text-${lastIndex}`}>
-        {content.substring(lastIndex)}
-      </span>
-    );
+    parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex)}</span>);
   }
 
   return <Text style={{ whiteSpace: 'pre-wrap' }}>{parts.length > 0 ? parts : content}</Text>;
 }
-

@@ -98,15 +98,17 @@ export const FHIR_TOOLS = [
           method: {
             type: 'string',
             enum: ['GET', 'POST', 'PUT', 'DELETE'],
-            description: 'HTTP method: GET for search/read, POST for create, PUT for update (requires full resource), DELETE for remove',
+            description:
+              'HTTP method: GET for search/read, POST for create, PUT for update (requires full resource), DELETE for remove',
           },
-          path: { 
+          path: {
             type: 'string',
-            description: 'FHIR resource path, e.g., "Patient/123" or "Patient?name=John"'
+            description: 'FHIR resource path, e.g., "Patient/123" or "Patient?name=John"',
           },
-          body: { 
+          body: {
             type: 'object',
-            description: 'Request body. For PUT: complete FHIR resource with all fields. For POST: full FHIR resource to create. Not used for GET/DELETE.'
+            description:
+              'Request body. For PUT: complete FHIR resource with all fields. For POST: full FHIR resource to create. Not used for GET/DELETE.',
           },
         },
         required: ['method', 'path'],
@@ -115,4 +117,3 @@ export const FHIR_TOOLS = [
     },
   },
 ];
-
