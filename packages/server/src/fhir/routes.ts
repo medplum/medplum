@@ -218,7 +218,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
 
   // ConceptMap $translate
+  router.add('GET', '/ConceptMap/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
+  router.add('GET', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
   router.add('POST', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
 
   // ConceptMap $import
