@@ -514,15 +514,15 @@ describe('QuestionnaireResponse/$extract', () => {
           ],
           telecom: [
             {
-              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
-              system: 'phone',
-              use: 'mobile',
-              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
-            },
-            {
               extension: [{ url: contextExtension, valueString: "item.where(linkId = 'email')" }],
               system: 'email',
               use: 'home',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
+              system: 'phone',
+              use: 'mobile',
               _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
             },
           ],
@@ -552,8 +552,8 @@ describe('QuestionnaireResponse/$extract', () => {
                 { linkId: 'family', text: 'Family/Surname', type: 'string', required: true },
               ],
             },
+            { linkId: 'email', text: 'Email', type: 'string', repeats: true },
             { linkId: 'mobile-phone', text: 'Mobile Phone', type: 'string' },
-            { linkId: 'email', text: 'Email', type: 'string' },
           ],
         },
       ],
@@ -575,8 +575,9 @@ describe('QuestionnaireResponse/$extract', () => {
                 { linkId: 'family', answer: [{ valueString: 'Thaddeus Runte' }] },
               ],
             },
-            { linkId: 'mobile-phone', answer: [{ valueString: '127-988-1598' }] },
             { linkId: 'email', answer: [{ valueString: 'your.email+fakedata62711@gmail.com' }] },
+            { linkId: 'email', answer: [{ valueString: 'your.email+fakedata62722@gmail.com' }] },
+            { linkId: 'mobile-phone', answer: [{ valueString: '127-988-1598' }] },
           ],
         },
       ],
@@ -602,14 +603,19 @@ describe('QuestionnaireResponse/$extract', () => {
     const patient = batch.entry?.[0].resource as Patient;
     expect(patient.telecom).toStrictEqual([
       {
-        system: 'phone',
-        use: 'mobile',
-        value: '127-988-1598',
+        system: 'email',
+        use: 'home',
+        value: 'your.email+fakedata62711@gmail.com',
       },
       {
         system: 'email',
         use: 'home',
-        value: 'your.email+fakedata62711@gmail.com',
+        value: 'your.email+fakedata62722@gmail.com',
+      },
+      {
+        system: 'phone',
+        use: 'mobile',
+        value: '127-988-1598',
       },
     ]);
   });

@@ -202,25 +202,57 @@ class TemplateExtractor implements CrawlerVisitor {
     this.bundle = { resourceType: 'Bundle', type: 'transaction', entry: [] };
   }
 
-  private currentContext(): TemplateExtractionContext {
-    return this.context[this.context.length - 1];
+  private currentContext(path?: string): TemplateExtractionContext {
+    path = path ? trimArrayIndex(path) : undefined;
+    return (
+      this.context.findLast((c) => path?.startsWith(c.path) && c.path !== path) ?? this.context[this.context.length - 1]
+    );
   }
 
-  private evaluateExpression(expression: string | undefined, type: string): TypedValue | undefined;
-  private evaluateExpression(expression: string | undefined): TypedValue[];
-  private evaluateExpression(expression: string | undefined, type?: string): TypedValue[] | TypedValue | undefined {
+  private enterContext(path: string, values: TypedValue[]): void {
+    path = trimArrayIndex(path);
+    const currentContext = this.currentContext();
+    if (currentContext.path === path) {
+      currentContext.values = values;
+    } else {
+      this.exitContext(path);
+      this.context.push({ path, values });
+    }
+    console.log('===== ENTER', this.context);
+  }
+
+  private exitContext(path: string): void {
+    if (this.context.length === 1) {
+      return; // Cannot exit top context frame
+    }
+    const currentPath = this.currentContext().path;
+    if (currentPath.startsWith(path)) {
+      const exit = this.context.pop();
+      console.log('===== EXIT', exit, this.context);
+    }
+  }
+
+  private evaluateExpression(path: string, expression: string | undefined, type: string): TypedValue | undefined;
+  private evaluateExpression(path: string, expression: string | undefined): TypedValue[];
+  private evaluateExpression(
+    path: string,
+    expression: string | undefined,
+    type?: string
+  ): TypedValue[] | TypedValue | undefined {
     if (!expression) {
       return type ? undefined : [];
     }
-    const context = this.currentContext().values;
+    const context = this.currentContext(path).values;
     const results = evalFhirPathTyped(expression, context, this.variables);
     return type ? singleton(results, type) : results;
   }
 
   onExitObject(_path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
-    if (value.path === this.currentContext().path) {
-      this.context.pop();
-    }
+    this.exitContext(value.path);
+  }
+
+  onExitResource(path: string, _value: TypedValueWithPath, _schema: InternalTypeSchema): void {
+    this.exitContext(path);
   }
 
   private getTopLevelExtensions(
@@ -265,8 +297,7 @@ class TemplateExtractor implements CrawlerVisitor {
     const extensions = this.getTopLevelExtensions(path, propertyValues);
     if (extensions?.length) {
       for (const extension of extensions) {
-        const handler = this.extensionHandler(extension.value as Extension);
-        handler?.(extension, parent);
+        this.extensionHandler(extension.value as Extension)?.(extension, parent);
       }
     }
   }
@@ -277,10 +308,13 @@ class TemplateExtractor implements CrawlerVisitor {
   }
 
   private processContext(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
+    if (!parent.path.startsWith(this.currentContext().path)) {
+      this.exitContext(this.currentContext().path);
+    }
     let results: TypedValue[];
     const { valueString, valueExpression } = extension.value as Extension;
     if (valueString) {
-      results = this.evaluateExpression(valueString);
+      results = this.evaluateExpression(parent.path, valueString);
     } else if (valueExpression) {
       const { expression, language, name } = valueExpression;
       if (!expression || language !== 'text/fhirpath') {
@@ -289,7 +323,7 @@ class TemplateExtractor implements CrawlerVisitor {
         );
       }
 
-      results = this.evaluateExpression(expression);
+      results = this.evaluateExpression(parent.path, expression);
 
       // Assign named expressions as FHIRPath variables for evaluation of expressions on or underneath this element
       if (name) {
@@ -299,7 +333,7 @@ class TemplateExtractor implements CrawlerVisitor {
       throw new OperationOutcomeError(badRequest('Invalid extraction context extension', extension.path));
     }
 
-    this.context.push({ path: parent.path, values: results });
+    this.enterContext(parent.path, results);
     this.makePatch(results, parent.path, parent.value, extension);
   }
 
@@ -354,7 +388,7 @@ class TemplateExtractor implements CrawlerVisitor {
       case valueExtension:
         if (isArrayElement) {
           // Replace the entire array directly with values
-          const arrayPath = path.slice(0, path.lastIndexOf('['));
+          const arrayPath = trimArrayIndex(path);
           this.patch.push({
             op: isPrimitiveExtension ? 'add' : 'replace',
             path: asJsonPath(arrayPath),
@@ -387,12 +421,13 @@ class TemplateExtractor implements CrawlerVisitor {
     const contextValues = this.getExtractionContext(parent);
     for (const value of contextValues) {
       // Scan template resource and evaluate expressions to compute inserted values
-      this.context.push({ path: template.type, values: [value] });
+      this.enterContext(template.type, [value]);
       crawlTypedValue(template, this, { skipMissingProperties: true });
 
       // Insert values into template resource and add to transaction Bundle
       const resource = deepClone(template.value);
       const patch = this.getTemplatePatch();
+      console.log('===== PATCH', JSON.stringify(patch, null, 2));
       applyPatch(resource, patch);
       this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
     }
@@ -403,7 +438,7 @@ class TemplateExtractor implements CrawlerVisitor {
     // @see https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-templateExtract.html
     const values: Record<string, string> = Object.create(null);
     for (const field of ['resourceId', 'fullUrl', 'ifMatch', 'ifNoneMatch', 'ifNoneExist', 'ifModifiedSince']) {
-      values[field] = this.evaluateExpression(getExtension(extension, field)?.valueString, 'string')?.value;
+      values[field] = this.evaluateExpression('', getExtension(extension, field)?.valueString, 'string')?.value;
     }
 
     const { resourceId, fullUrl, ifMatch, ifNoneMatch, ifNoneExist, ifModifiedSince } = values;
@@ -486,4 +521,13 @@ function replacePathIndex(path: string, offset: number, before?: number): string
   const arrayClose = path.indexOf(']', arrayStart);
   const currentIndex = parseInt(path.slice(arrayStart + 1, arrayClose), 10);
   return path.slice(0, arrayStart + 1) + (currentIndex + offset) + path.slice(path.indexOf(']', arrayStart));
+}
+
+function trimArrayIndex(path: string): string {
+  const index = path.lastIndexOf('[');
+  if (index > 0) {
+    return path.slice(0, index);
+  } else {
+    return path;
+  }
 }
