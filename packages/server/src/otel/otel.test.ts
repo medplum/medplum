@@ -12,13 +12,39 @@ import {
   setGauge,
 } from '../otel/otel';
 
+// Create shared mock queue that all mocks will return
+const createMockQueue = (): any => ({
+  getWaitingCount: jest.fn().mockResolvedValue(5),
+  getDelayedCount: jest.fn().mockResolvedValue(3),
+});
+
+const mockSharedQueue = createMockQueue();
+
+// Mock worker modules before they're imported
+jest.mock('../workers/subscription', () => ({
+  getSubscriptionQueue: () => mockSharedQueue,
+}));
+
+jest.mock('../workers/cron', () => ({
+  getCronQueue: () => mockSharedQueue,
+}));
+
+jest.mock('../workers/download', () => ({
+  getDownloadQueue: () => mockSharedQueue,
+}));
+
+jest.mock('../workers/batch', () => ({
+  getBatchQueue: () => mockSharedQueue,
+}));
+
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    jest.resetModules();
     jest.restoreAllMocks();
     process.env = { ...OLD_ENV };
+    mockSharedQueue.getWaitingCount.mockClear();
+    mockSharedQueue.getDelayedCount.mockClear();
   });
 
   afterAll(async () => {
@@ -108,7 +134,9 @@ describe('OpenTelemetry', () => {
     expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
   });
 
-  test('Heartbeat listener is called after calling initOtelHeartbeat', async () => {
+  test('Heartbeat listener records queue metrics for all 4 queues', async () => {
+    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+
     const getDatabasePoolSpy = jest.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
       () =>
         ({
@@ -120,7 +148,16 @@ describe('OpenTelemetry', () => {
 
     heartbeat.dispatchEvent({ type: 'heartbeat' });
 
+    // Wait for async heartbeat listener to complete
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     // We call getDatabasePool at the beginning of the listener callback
     expect(getDatabasePoolSpy).toHaveBeenCalled();
+
+    // Check that the queue methods were called for all 4 queues (subscription, cron, download, batch)
+    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(4);
+    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(4);
+
+    cleanupOtelHeartbeat();
   });
 });

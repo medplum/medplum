@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
 import opentelemetry from '@opentelemetry/api';
+import { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -11,12 +12,21 @@ import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
 import { getSubscriptionQueue } from '../workers/subscription';
 
-const queueEntries = [
-  ['subscription', getSubscriptionQueue()],
-  ['cron', getCronQueue()],
-  ['download', getDownloadQueue()],
-  ['batch', getBatchQueue()],
-] as const;
+let queueEntries: [string, Queue<any>][] | undefined;
+function getQueueEntries(): [string, Queue<any>][] {
+  if (!queueEntries) {
+    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue())) {
+      throw new Error('Queues not initialized');
+    }
+    queueEntries = [
+      ['subscription', getSubscriptionQueue()!],
+      ['cron', getCronQueue()!],
+      ['download', getDownloadQueue()!],
+      ['batch', getBatchQueue()!],
+    ];
+  }
+  return queueEntries;
+}
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
@@ -142,7 +152,7 @@ export function initOtelHeartbeat(): void {
       BASE_METRIC_OPTIONS
     );
 
-    for (const [queueName, queue] of queueEntries) {
+    for (const [queueName, queue] of getQueueEntries()) {
       if (queue) {
         setGauge(`medplum.${queueName}.waitingCount`, await queue.getWaitingCount());
         setGauge(`medplum.${queueName}.delayedCount`, await queue.getDelayedCount());
@@ -156,5 +166,8 @@ export function cleanupOtelHeartbeat(): void {
   if (otelHeartbeatListener) {
     heartbeat.removeEventListener('heartbeat', otelHeartbeatListener);
     otelHeartbeatListener = undefined;
+  }
+  if (queueEntries) {
+    queueEntries = undefined;
   }
 }
