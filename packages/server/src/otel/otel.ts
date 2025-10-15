@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
 import opentelemetry from '@opentelemetry/api';
-import { Queue } from 'bullmq';
+import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -12,17 +12,17 @@ import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
 import { getSubscriptionQueue } from '../workers/subscription';
 
-let queueEntries: [string, Queue<any>][] | undefined;
-function getQueueEntries(): [string, Queue<any>][] {
+let queueEntries: [string, Queue][] | undefined;
+function getQueueEntries(): [string, Queue][] {
   if (!queueEntries) {
     if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue())) {
       throw new Error('Queues not initialized');
     }
     queueEntries = [
-      ['subscription', getSubscriptionQueue()!],
-      ['cron', getCronQueue()!],
-      ['download', getDownloadQueue()!],
-      ['batch', getBatchQueue()!],
+      ['subscription', getSubscriptionQueue() as Queue],
+      ['cron', getCronQueue() as Queue],
+      ['download', getDownloadQueue() as Queue],
+      ['batch', getBatchQueue() as Queue],
     ];
   }
   return queueEntries;
