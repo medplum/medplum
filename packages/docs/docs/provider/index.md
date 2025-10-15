@@ -47,12 +47,18 @@ The following sections outline the primary functionality of the Medplum Provider
 #### [Visits](./provider/visits)
   * [Understanding Visits](./provider/visits#understanding-visits)
   * [Documenting Visits](./provider/visits#documenting-visits)
-  * [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)  
+  * [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)
+
+#### [Tasks](./provider/tasks)
+  * [Creating a Task](./provider/tasks#creating-a-task)
+  * [Updating a Task](./provider/tasks#updating-a-task)
+  * [Deleting a Task](./provider/tasks#deleting-a-task)
+  * [Adding a Task Note](./provider/tasks#adding-a-task-note)
+  * [Filtering Tasks](./provider/tasks#filtering-tasks)
 
 <br />
 
 #### Documentation Coming Soon:
-* Tasks
 * Messages
 * Labs
 * Medications
