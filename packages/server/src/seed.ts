@@ -5,38 +5,64 @@ import type { ClientApplication, Practitioner, Project, ProjectMembership, User 
 import { bcryptHashPassword } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
+import { DatabaseMode, getDatabasePool } from './database';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
+import type { ShardPool } from './shard-pool';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
-  const systemRepo = getSystemRepo();
+  // Ensure 'global' shard is run first
+  const globalPool = getDatabasePool(DatabaseMode.WRITER, 'global');
+  await seedDatabaseShard(globalPool, config);
+
+  // Seed all other shards
+  if (config.shards) {
+    for (const shardName of Object.keys(config.shards)) {
+      if (shardName === 'global') {
+        continue;
+      }
+      const pool = getDatabasePool(DatabaseMode.WRITER, shardName);
+      await seedDatabaseShard(pool, config);
+    }
+  }
+}
+
+export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
+  const conn = await pool.connect();
+  const systemRepo = getSystemRepo(conn);
 
   if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded');
+    globalLogger.info('Already seeded', { shardId: pool.shardId });
     return;
   }
 
   await systemRepo.withTransaction(async () => {
     await createSuperAdmin(systemRepo, config);
 
-    globalLogger.info('Building structure definitions...');
+    globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
     let startTime = Date.now();
     await rebuildR4StructureDefinitions(systemRepo);
-    globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+    globalLogger.info('Finished building structure definitions', {
+      shardId: pool.shardId,
+      durationMs: Date.now() - startTime,
+    });
 
-    globalLogger.info('Building value sets...');
+    globalLogger.info('Building value sets...', { shardId: pool.shardId });
     startTime = Date.now();
     await rebuildR4ValueSets(systemRepo);
-    globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+    globalLogger.info('Finished building value sets', { shardId: pool.shardId, durationMs: Date.now() - startTime });
 
-    globalLogger.info('Building search parameters...');
+    globalLogger.info('Building search parameters...', { shardId: pool.shardId });
     startTime = Date.now();
     await rebuildR4SearchParameters(systemRepo);
-    globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+    globalLogger.info('Finished building search parameters', {
+      shardId: pool.shardId,
+      durationMs: Date.now() - startTime,
+    });
   });
 }
 

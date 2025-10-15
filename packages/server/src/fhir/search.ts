@@ -396,7 +396,11 @@ function getBaseSelectQuery(
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
+    const shardId = repo.getResourceTypeShardId(searchRequest.types[0]);
     for (const resourceType of searchRequest.types) {
+      if (shardId !== repo.getResourceTypeShardId(resourceType)) {
+        throw new OperationOutcomeError(badRequest(`Cannot search across shards`));
+      }
       const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
       queries.push(query);
     }
