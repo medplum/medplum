@@ -168,6 +168,7 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
 
 type TemplateExtractionContext = {
   path: string;
+  indexOffset: number;
   values: TypedValue[];
 };
 
@@ -193,7 +194,7 @@ class TemplateExtractor implements CrawlerVisitor {
 
     // Initialize FHIRPath context stack and variables
     const typedResponse = toTypedValue(response);
-    this.context = [{ path: 'Questionnaire', values: [typedResponse] }];
+    this.context = [{ path: 'Questionnaire', values: [typedResponse], indexOffset: 0 }];
     this.variables = variables ?? Object.create(null);
     this.variables['%resource'] = typedResponse;
 
@@ -213,12 +214,12 @@ class TemplateExtractor implements CrawlerVisitor {
     path = trimArrayIndex(path);
     const currentContext = this.currentContext();
     if (currentContext.path === path) {
+      currentContext.indexOffset += (currentContext.values.length || 1) - 1;
       currentContext.values = values;
     } else {
       this.exitContext(path);
-      this.context.push({ path, values });
+      this.context.push({ path, values, indexOffset: 0 });
     }
-    console.log('===== ENTER', this.context);
   }
 
   private exitContext(path: string): void {
@@ -227,8 +228,13 @@ class TemplateExtractor implements CrawlerVisitor {
     }
     const currentPath = this.currentContext().path;
     if (currentPath.startsWith(path)) {
-      const exit = this.context.pop();
-      console.log('===== EXIT', exit, this.context);
+      this.context.pop();
+    }
+  }
+
+  private checkCurrentContext(path: string): void {
+    if (!path.startsWith(this.currentContext().path)) {
+      this.exitContext(this.currentContext().path);
     }
   }
 
@@ -297,6 +303,7 @@ class TemplateExtractor implements CrawlerVisitor {
     const extensions = this.getTopLevelExtensions(path, propertyValues);
     if (extensions?.length) {
       for (const extension of extensions) {
+        this.checkCurrentContext(parent.path);
         this.extensionHandler(extension.value as Extension)?.(extension, parent);
       }
     }
@@ -308,9 +315,6 @@ class TemplateExtractor implements CrawlerVisitor {
   }
 
   private processContext(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
-    if (!parent.path.startsWith(this.currentContext().path)) {
-      this.exitContext(this.currentContext().path);
-    }
     let results: TypedValue[];
     const { valueString, valueExpression } = extension.value as Extension;
     if (valueString) {
@@ -340,12 +344,17 @@ class TemplateExtractor implements CrawlerVisitor {
   private processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     const { valueString: expression } = extension.value as Extension;
     const path = parent.path;
-    const contextValues = this.currentContext().values;
+    const context = this.currentContext();
 
     // Manually evaluate expression for each context value, in order to set the correct path based on value index
-    for (let i = 0; i < contextValues.length; i++) {
-      const results = expression ? evalFhirPathTyped(expression, [contextValues[i]], this.variables) : [];
-      this.makePatch(results, replacePathIndex(path, i, path.lastIndexOf('.')), parent.value, extension);
+    for (let i = 0; i < context.values.length; i++) {
+      const results = expression ? evalFhirPathTyped(expression, [context.values[i]], this.variables) : [];
+      this.makePatch(
+        results,
+        replacePathIndex(path, context.indexOffset + i, path.lastIndexOf('.')),
+        parent.value,
+        extension
+      );
     }
   }
 
@@ -366,6 +375,7 @@ class TemplateExtractor implements CrawlerVisitor {
 
     const isArrayElement = path.endsWith(']');
     if (isArrayElement) {
+      path = replacePathIndex(path, this.currentContext().indexOffset);
       this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element before inserting copies
     }
 
@@ -373,7 +383,7 @@ class TemplateExtractor implements CrawlerVisitor {
       case contextExtension:
         for (let i = 0; i < results.length; i++) {
           if (isArrayElement && i) {
-            path = replacePathIndex(path, i);
+            path = replacePathIndex(path, this.currentContext().indexOffset + i);
           }
 
           // Clone template object and remove SDC extension from it
@@ -427,7 +437,6 @@ class TemplateExtractor implements CrawlerVisitor {
       // Insert values into template resource and add to transaction Bundle
       const resource = deepClone(template.value);
       const patch = this.getTemplatePatch();
-      console.log('===== PATCH', JSON.stringify(patch, null, 2));
       applyPatch(resource, patch);
       this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
     }
