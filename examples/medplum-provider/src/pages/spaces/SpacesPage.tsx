@@ -26,11 +26,7 @@ function MessageWithLinks({ content }: { content: string }): JSX.Element {
     const matchIndex = match.index;
 
     if (matchIndex > lastIndex) {
-      parts.push(
-        <span key={`text-${lastIndex}`}>
-          {content.substring(lastIndex, matchIndex)}
-        </span>
-      );
+      parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex, matchIndex)}</span>);
     }
 
     const href = `/${resourceType}/${resourceId}`;
@@ -51,11 +47,7 @@ function MessageWithLinks({ content }: { content: string }): JSX.Element {
   }
 
   if (lastIndex < content.length) {
-    parts.push(
-      <span key={`text-${lastIndex}`}>
-        {content.substring(lastIndex)}
-      </span>
-    );
+    parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex)}</span>);
   }
 
   return <Text style={{ whiteSpace: 'pre-wrap' }}>{parts.length > 0 ? parts : content}</Text>;
@@ -157,15 +149,17 @@ const FHIR_TOOLS = [
           method: {
             type: 'string',
             enum: ['GET', 'POST', 'PUT', 'DELETE'],
-            description: 'HTTP method: GET for search/read, POST for create, PUT for update (requires full resource), DELETE for remove',
+            description:
+              'HTTP method: GET for search/read, POST for create, PUT for update (requires full resource), DELETE for remove',
           },
-          path: { 
+          path: {
             type: 'string',
-            description: 'FHIR resource path, e.g., "Patient/123" or "Patient?name=John"'
+            description: 'FHIR resource path, e.g., "Patient/123" or "Patient?name=John"',
           },
-          body: { 
+          body: {
             type: 'object',
-            description: 'Request body. For PUT: complete FHIR resource with all fields. For POST: full FHIR resource to create. Not used for GET/DELETE.'
+            description:
+              'Request body. For PUT: complete FHIR resource with all fields. For POST: full FHIR resource to create. Not used for GET/DELETE.',
           },
         },
         required: ['method', 'path'],
@@ -240,7 +234,7 @@ export function SpacesPage(): JSX.Element {
         currentMessages.push(assistantMessageWithToolCalls);
 
         let hasFailedRequest = false;
-        
+
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'fhir_request') {
             const args =
@@ -261,7 +255,7 @@ export function SpacesPage(): JSX.Element {
               } else if (method === 'DELETE') {
                 result = await medplum.delete(medplum.fhirUrl(path));
               }
-              
+
               if (result?.resourceType === 'Bundle' && result?.entry) {
                 result.entry.forEach((entry: any) => {
                   if (entry.resource?.resourceType && entry.resource?.id) {
@@ -277,15 +271,14 @@ export function SpacesPage(): JSX.Element {
                 tool_call_id: toolCall.id,
                 content: JSON.stringify(result),
               });
-              
             } catch (err: any) {
               hasFailedRequest = true;
               const errorResult = {
                 error: true,
                 message: `Unable to execute ${method}: ${path}`,
-                details: err.message || 'Unknown error'
+                details: err.message || 'Unknown error',
               };
-              
+
               currentMessages.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
@@ -312,7 +305,7 @@ export function SpacesPage(): JSX.Element {
               { name: 'temperature', valueString: '0.3' },
             ],
           });
-          
+
           const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
           if (content) {
             setMessages([...currentMessages, { role: 'assistant', content }]);
@@ -346,7 +339,7 @@ export function SpacesPage(): JSX.Element {
         let finalContent = content;
         if (allResourceRefs.length > 0) {
           const uniqueRefs = [...new Set(allResourceRefs)];
-          finalContent = `${content}\n\nResources Found:\n${uniqueRefs.map(ref => `• ${ref}`).join('\n')}`;
+          finalContent = `${content}\n\nResources Found:\n${uniqueRefs.map((ref) => `• ${ref}`).join('\n')}`;
         }
         setMessages([...currentMessages, { role: 'assistant', content: finalContent }]);
       }
@@ -382,7 +375,7 @@ export function SpacesPage(): JSX.Element {
           <Text size="xl" fw={700} mb="xs">
             Start a New Space
           </Text>
-          
+
           <Paper p="md" radius="lg" withBorder bg="white">
             <Group gap="md" wrap="nowrap" align="center">
               <TextInput
@@ -483,11 +476,7 @@ export function SpacesPage(): JSX.Element {
           ))}
           {loading && (
             <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-              <Text c="dimmed">
-                {currentFhirRequest
-                  ? `Executing ${currentFhirRequest}`
-                  : 'Thinking...'}
-              </Text>
+              <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
             </Paper>
           )}
         </Stack>
