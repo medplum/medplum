@@ -507,10 +507,7 @@ describe('QuestionnaireResponse/$extract', () => {
               system: 'pager',
               _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
             },
-            {
-              system: 'url',
-              value: staticUrl,
-            },
+            { system: 'url', value: staticUrl },
             {
               extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
               system: 'phone',
@@ -580,30 +577,11 @@ describe('QuestionnaireResponse/$extract', () => {
 
     const patient = batch.entry?.[0].resource as Patient;
     expect(patient.telecom).toStrictEqual([
-      {
-        system: 'email',
-        use: 'home',
-        value: 'fake.email+1@example.com',
-      },
-      {
-        system: 'email',
-        use: 'home',
-        value: 'fake.email+2@example.com',
-      },
-      {
-        system: 'email',
-        use: 'home',
-        value: 'fake.email+3@example.com',
-      },
-      {
-        system: 'url',
-        value: staticUrl,
-      },
-      {
-        system: 'phone',
-        use: 'mobile',
-        value: '555-988-1598',
-      },
+      { system: 'email', use: 'home', value: 'fake.email+1@example.com' },
+      { system: 'email', use: 'home', value: 'fake.email+2@example.com' },
+      { system: 'email', use: 'home', value: 'fake.email+3@example.com' },
+      { system: 'url', value: staticUrl },
+      { system: 'phone', use: 'mobile', value: '555-988-1598' },
     ]);
   });
 
