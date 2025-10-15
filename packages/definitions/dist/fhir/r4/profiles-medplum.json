@@ -589,6 +589,34 @@
               "strength": "required",
               "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
             }
+          },
+          {
+            "id": "Project.shard",
+            "path": "Project.shard",
+            "definition": "The shards associated with this Project",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.shard",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id" : "Project.shard.id",
+            "path" : "Project.shard.id",
+            "definition" : "The sahrd id",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Project.shard.id",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
