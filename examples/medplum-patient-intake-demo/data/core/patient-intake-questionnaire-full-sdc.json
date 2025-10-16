@@ -124,7 +124,7 @@
                   "extension": [
                     {
                       "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
-                      "valueString": "%resource.item.where(linkId='social-determinants-of-health').item.where(linkId='veteran-status').answer.valueBoolean.first()"
+                      "valueString": "iif(%resource.item.where(linkId='social-determinants-of-health').item.where(linkId='veteran-status').answer.exists(), %resource.item.where(linkId='social-determinants-of-health').item.where(linkId='veteran-status').answer.valueBoolean.first(), false)"
                     }
                   ]
                 }
