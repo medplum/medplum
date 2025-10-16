@@ -1,0 +1,30 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.title {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.contentContainer {
+  transition: background 0.2s;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.contentContainer:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+
+.contentContainer.selected {
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
+}
