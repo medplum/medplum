@@ -79,8 +79,6 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: ValueOrExternalSecret<boolean>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -182,8 +180,6 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: boolean;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

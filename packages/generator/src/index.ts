@@ -149,13 +149,6 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
       writeInterface(b, subType);
     }
   }
-
-  if (typeName === 'Project') {
-    // TODO: Remove this in Medplum v4
-    b.newLine();
-    generateJavadoc(b, '@deprecated Use ProjectSetting instead');
-    b.append('export type ProjectSecret = ProjectSetting;');
-  }
 }
 
 function writeInterfaceProperty(
