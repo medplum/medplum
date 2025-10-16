@@ -5242,6 +5242,9 @@ describe('systemRepo', () => {
       // boolean
       ['Patient?active:in=true', 'Invalid modifier'],
       ['Patient?active:not-in=true', 'Invalid modifier'],
+      // reference
+      ['Patient?general-practitioner:in=123', 'Invalid modifier'],
+      ['Patient?general-practitioner:not-in=123', 'Invalid modifier'],
       // token column
       ['Patient?identifier:in=123', 'Invalid modifier'],
       ['Patient?identifier:not-in=123', 'Invalid modifier'],

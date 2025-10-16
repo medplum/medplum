@@ -1043,7 +1043,7 @@ function buildNormalSearchFilterExpression(
         return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
       }
     case 'reference':
-      return buildReferenceSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
+      return buildReferenceSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
     case 'date':
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
@@ -1316,16 +1316,19 @@ function buildBooleanSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
+ * @param filter - The search filter.
  * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
+  filter: Filter,
   values: string[] | Column
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
     values = values.map((v) =>
@@ -1342,7 +1345,9 @@ function buildReferenceSearchFilter(
   } else {
     condition = new Condition(column, 'IN', values);
   }
-  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
+  return filter.operator === Operator.NOT || filter.operator === Operator.NOT_EQUALS
+    ? new Negation(condition)
+    : condition;
 }
 
 function buildReferenceEqualsCondition(
