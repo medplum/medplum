@@ -56,7 +56,7 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean
 }
 
 function shouldValidateReference(ref: Reference): boolean {
-  return Boolean(ref.reference && !ref.reference.startsWith('%'));
+  return Boolean(ref.reference && !ref.reference.startsWith('%') && !ref.reference.startsWith('#'));
 }
 
 export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {

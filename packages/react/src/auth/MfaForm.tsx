@@ -44,7 +44,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
           </Stack>
         )}
         <Stack>
-          <TextInput name="token" label="MFA code" required autoFocus />
+          <TextInput name="token" label="MFA code" autoComplete="one-time-code" required autoFocus />
         </Stack>
         <Group justify="flex-end" mt="xl">
           <SubmitButton>{props.buttonText}</SubmitButton>

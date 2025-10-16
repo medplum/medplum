@@ -64,13 +64,13 @@ All Medplum components are released in lockstep with the same version number:
 
 #### Node.js
 
-- Supports current "Active" and "Maintenance" LTS Node.js versions
+- Supports current "Active" and "Maintenance" [LTS Node.js versions](https://nodejs.org/en/about/previous-releases)
 - All unit and integration tests are run against supported versions
 - Follows Node.js even-numbered LTS release schedule (16.x, 18.x, 20.x, etc.)
 
 #### PostgreSQL
 
-- Supports all PostgreSQL LTS versions that overlap with Medplum "Active" releases
+- Supports all [PostgreSQL LTS versions](https://www.postgresql.org/support/versioning/) that overlap with Medplum "Active" releases
 - Integration tests are run against all supported versions
 - Typically covers 4 major PostgreSQL versions
 

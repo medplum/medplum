@@ -11,15 +11,16 @@ import {
 } from '@medplum/core';
 import type { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
+ * @param _req - The request object
+ * @param res - The response object
  */
-export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
+export const userInfoHandler: RequestHandler = async (_req: Request, res: Response): Promise<void> => {
   const systemRepo = getSystemRepo();
   const ctx = getAuthenticatedContext();
   const user = await systemRepo.readReference(ctx.login.user as Reference<User>);
@@ -43,7 +44,7 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
   }
 
   res.status(200).json(userInfo);
-});
+};
 
 function buildProfile(userInfo: Record<string, any>, profile: ProfileResource | Bot | ClientApplication): void {
   userInfo.profile = getReferenceString(profile);

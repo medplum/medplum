@@ -3,15 +3,16 @@
 import type { Login, SmartAppLaunch } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTPayload } from 'jose';
-import { asyncWrap } from '../async';
 import { getSystemRepo } from '../fhir/repo';
 import { verifyJwt } from './keys';
 
 /**
  * Handles the OAuth2 Token Introspection Endpoint
  * See: https://www.rfc-editor.org/rfc/rfc7662.html
+ * @param req - The request object
+ * @param res - The response object
  */
-export const tokenIntrospectHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   const systemRepo = getSystemRepo();
   const token = req.body.token;
   if (!token) {
@@ -37,7 +38,7 @@ export const tokenIntrospectHandler: RequestHandler = asyncWrap(async (req: Requ
   } catch (_) {
     writeInactiveResponse(res);
   }
-});
+};
 
 function writeInactiveResponse(res: Response): void {
   res.status(200).json({ active: false }).end();

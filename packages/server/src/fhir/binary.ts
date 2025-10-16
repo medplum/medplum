@@ -6,7 +6,6 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import type { Readable } from 'stream';
 import zlib from 'zlib';
-import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -21,21 +20,18 @@ const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 export const binaryRouter = Router().use(authenticateRequest);
 
 // Create a binary
-binaryRouter.post('/', asyncWrap(handleBinaryWriteRequest));
+binaryRouter.post('/', handleBinaryWriteRequest);
 
 // Update a binary
-binaryRouter.put('/:id', asyncWrap(handleBinaryWriteRequest));
+binaryRouter.put('/:id', handleBinaryWriteRequest);
 
 // Get binary content
-binaryRouter.get(
-  '/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { id } = req.params;
-    const binary = await ctx.repo.readResource<Binary>('Binary', id);
-    await sendFhirResponse(req, res, allOk, binary);
-  })
-);
+binaryRouter.get('/:id', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { id } = req.params;
+  const binary = await ctx.repo.readResource<Binary>('Binary', id);
+  await sendFhirResponse(req, res, allOk, binary);
+});
 
 async function handleBinaryWriteRequest(req: Request, res: Response): Promise<void> {
   const { repo } = getAuthenticatedContext();

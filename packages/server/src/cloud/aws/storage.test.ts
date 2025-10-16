@@ -16,7 +16,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import type { Request } from 'express';
 import type internal from 'stream';
-import { PassThrough, Readable } from 'stream';
+import { Readable } from 'stream';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
@@ -40,28 +40,7 @@ describe('Storage', () => {
     expect(() => getBinaryStorage()).toThrow();
   });
 
-  test('Multipart upload with string and PassThrough', async () => {
-    initBinaryStorage('s3:foo');
-    const storage = getBinaryStorage();
-
-    const binary = {
-      resourceType: 'Binary',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    } as Binary;
-
-    const fiveMbAndABitStr = 'a'.repeat(5 * 1024 * 1024 + 10);
-
-    mockS3Client.on(CreateMultipartUploadCommand).resolves({ UploadId: 'mock-upload-id' });
-    mockS3Client.on(UploadPartCommand).resolves({ ETag: 'mock-etag' });
-
-    const passThrough = PassThrough.from(fiveMbAndABitStr);
-    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, passThrough);
-  });
-
-  test('Multipart upload with Express Request stream and PassThrough', async () => {
+  test('Multipart upload with Express Request stream succeeds', async () => {
     initBinaryStorage('s3:foo');
     const storage = getBinaryStorage();
 
@@ -86,40 +65,7 @@ describe('Storage', () => {
     mockS3Client.on(CreateMultipartUploadCommand).resolves({ UploadId: 'mock-upload-id' });
     mockS3Client.on(UploadPartCommand).resolves({ ETag: 'mock-etag' });
 
-    await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, PassThrough.from(req));
-  });
-
-  test('Multipart upload with Express Request stream fails', async () => {
-    initBinaryStorage('s3:foo');
-    const storage = getBinaryStorage();
-
-    const binary = {
-      resourceType: 'Binary',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    } as Binary;
-
-    const req = new Readable() as Request;
-    const fiveMbAndABit = 5 * 1024 * 1024 + 10;
-    const oneKb = 'a'.repeat(1024);
-    for (let i = 0; i < fiveMbAndABit; i += 1024) {
-      req.push(Buffer.from(oneKb));
-    }
-    req.push(null);
-    (req as any).path = '/';
-    (req as any).headers = {};
-
-    mockS3Client.on(CreateMultipartUploadCommand).resolves({ UploadId: 'mock-upload-id' });
-    mockS3Client.on(UploadPartCommand).resolves({ ETag: 'mock-etag' });
-
-    try {
-      await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
-      throw new Error('Expected storage.writeBinary to fail; may be able to stop using PassThrough.from(req)');
-    } catch (err) {
-      expect((err as Error).message).toContain('Expected 1 part(s) but uploaded 2 part(s)');
-    }
+    await expect(storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req)).resolves.toBeUndefined();
   });
 
   test('S3 storage', async () => {

@@ -1,5 +1,8 @@
 {
   "testEnvironment": "jsdom",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "testTimeout": 120000,
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"

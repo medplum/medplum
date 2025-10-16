@@ -1,5 +1,8 @@
 {
   "testEnvironment": "node",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "testTimeout": 30000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {

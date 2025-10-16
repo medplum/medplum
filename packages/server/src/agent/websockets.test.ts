@@ -34,7 +34,7 @@ describe('Agent WebSockets', () => {
     accessToken = await initTestAuth({ membership: { admin: true } });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8512, resolve);
     });
 
     // Create a test bot

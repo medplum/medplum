@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
+  CodeSystemProperty,
   Coding,
   ValueSet,
   ValueSetComposeInclude,
@@ -12,6 +13,7 @@ import type {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
@@ -223,32 +225,14 @@ async function computeExpansion(
   return expansion;
 }
 
-const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 'descendent-of'];
-
 async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
-
-  const hierarchyFilter = include.filter?.find((f) => hierarchyOps.includes(f.op));
-  if (hierarchyFilter) {
-    // Hydrate parent property ID to optimize expensive DB queries for hierarchy expansion
-    const parentProp = getParentProperty(codeSystem);
-    const propId = (
-      await new SelectQuery('CodeSystem_Property')
-        .column('id')
-        .where('system', '=', codeSystem.id)
-        .where('code', '=', parentProp.code)
-        .execute(db)
-    )[0]?.id;
-    if (propId) {
-      parentProp.id = propId;
-      codeSystem.property?.unshift?.(parentProp);
-    }
-  }
+  await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);
   if (!query) {
@@ -262,9 +246,37 @@ async function includeInExpansion(
   }
 }
 
+/**
+ * Hydrate property IDs to optimize expensive DB queries.
+ * @param db - Database connection
+ * @param codeSystem - CodeSystem resource to hydrate
+ */
+export async function hydrateCodeSystemProperties(
+  db: Pool | PoolClient,
+  codeSystem: WithId<CodeSystem>
+): Promise<void> {
+  const propertyIds = await new SelectQuery('CodeSystem_Property')
+    .column('id')
+    .column('code')
+    .where('system', '=', codeSystem.id)
+    .execute(db);
+
+  if (codeSystem.property?.length !== propertyIds.length && codeSystem.hierarchyMeaning === 'is-a') {
+    // Implicit hierarchy property may be present; add it to the CodeSystem so it can be populated
+    const parentProp = getParentProperty(codeSystem);
+    codeSystem.property = append(codeSystem.property, parentProp);
+  }
+  // Populate property IDs from the database
+  if (codeSystem.property?.length) {
+    for (const property of codeSystem.property) {
+      property.id = propertyIds.find((row) => row.code === property.code)?.id;
+    }
+  }
+}
+
 export function expansionQuery(
   include: ValueSetComposeInclude,
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
   let query = new SelectQuery('Coding')
@@ -278,34 +290,33 @@ export function expansionQuery(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-        case 'descendent-of':
-          if (params?.filter) {
-            if (params.filter.length < 3) {
-              return undefined; // Must specify minimum filter length to make this expensive query workable
-            }
-
-            const base = new SelectQuery('Coding', undefined, 'origin')
-              .column('id')
-              .column('code')
-              .column('display')
-              .column('synonymOf')
-              .where(new Column('origin', 'system'), '=', codeSystem.id)
-              .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
-            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
-            query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
-          } else {
-            query = addDescendants(query, codeSystem, condition.value);
+        case 'descendent-of': {
+          const parentProperty = getParentProperty(codeSystem);
+          if (!parentProperty?.id) {
+            return undefined;
           }
-          if (condition.op !== 'is-a') {
-            query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
+          const newQuery = addParentFilter(
+            query,
+            codeSystem,
+            condition,
+            parentProperty as WithId<CodeSystemProperty>,
+            params
+          );
+          if (!newQuery) {
+            return undefined;
           }
+          query = newQuery;
           break;
+        }
         case '=':
-          query = addPropertyFilter(query, condition.property, '=', condition.value, codeSystem);
+        case 'in': {
+          const property = codeSystem.property?.find((p) => p.code === condition.property);
+          if (!property?.id) {
+            return undefined;
+          }
+          query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
           break;
-        case 'in':
-          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','), codeSystem);
-          break;
+        }
         default:
           getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
           return undefined; // Unknown filter type, don't make DB query with incorrect filters
@@ -314,12 +325,46 @@ export function expansionQuery(
   }
 
   if (params) {
-    query = addExpansionFilters(query, params);
+    query = addExpansionFilters(query, codeSystem, params);
   }
   return query;
 }
 
-function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameters): SelectQuery {
+export function addParentFilter(
+  query: SelectQuery,
+  codeSystem: WithId<CodeSystem>,
+  condition: ValueSetComposeIncludeFilter,
+  parentProperty: WithId<CodeSystemProperty>,
+  params?: ValueSetExpandParameters
+): SelectQuery | undefined {
+  if (params?.filter) {
+    if (params.filter.length < 3) {
+      return undefined; // Must specify minimum filter length to make this expensive query workable
+    }
+
+    const base = new SelectQuery('Coding', undefined, 'origin')
+      .column('id')
+      .column('code')
+      .column('display')
+      .column('synonymOf')
+      .where(new Column('origin', 'system'), '=', codeSystem.id)
+      .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+    const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
+    query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
+  } else {
+    query = addDescendants(query, codeSystem, parentProperty, condition.value);
+  }
+  if (condition.op !== 'is-a') {
+    query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
+  }
+  return query;
+}
+
+function addExpansionFilters(
+  query: SelectQuery,
+  codeSystem: WithId<CodeSystem>,
+  params: ValueSetExpandParameters
+): SelectQuery {
   if (params.filter) {
     query
       .whereExpr(
@@ -328,7 +373,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
           new Conjunction(
             params.filter
               .split(/\s+/g)
-              .map((filter) => new Condition('display', 'LOWER_LIKE', `%${escapeLikeString(filter)}%`))
+              .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
           ),
         ])
       )
@@ -338,14 +383,20 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
       );
   }
   if (params.excludeNotForUI) {
-    query = addAbstractFilter(query);
+    query = addAbstractFilter(query, codeSystem);
   }
 
   query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset ?? 0);
   return query;
 }
 
-function addAbstractFilter(query: SelectQuery): SelectQuery {
+function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): SelectQuery {
+  const property = codeSystem.property?.find((p) => p.uri === abstractProperty);
+  if (!property?.id) {
+    return query; // Cannot add database filter; all found Coding rows must be considered selectable
+  }
+
+  // LEFT JOIN to check if abstract property is present
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'LEFT JOIN',
@@ -353,21 +404,11 @@ function addAbstractFilter(query: SelectQuery): SelectQuery {
     propertyTable,
     new Conjunction([
       new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'value'), '=', 'true'),
+      new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );
+  // Only return Coding rows where the property is NOT present
   query.where(new Column(propertyTable, 'value'), '=', null);
-
-  const codeSystemProperty = query.getNextJoinAlias();
-  query.join(
-    'LEFT JOIN',
-    'CodeSystem_Property',
-    codeSystemProperty,
-    new Conjunction([
-      new Condition(new Column(codeSystemProperty, 'id'), '=', new Column(propertyTable, 'property')),
-      new Condition(new Column(codeSystemProperty, 'uri'), '=', abstractProperty),
-    ])
-  );
 
   return query;
 }

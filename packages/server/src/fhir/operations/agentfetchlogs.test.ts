@@ -30,7 +30,7 @@ describe('Agent/$fetch-logs', () => {
     accessToken = await initTestAuth({ membership: { admin: true } });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, () => {
+      server.listen(0, 'localhost', 8513, () => {
         port = (server.address() as AddressInfo).port;
         resolve();
       });
