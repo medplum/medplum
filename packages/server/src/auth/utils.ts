@@ -25,6 +25,7 @@ import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
+  systemRepo: Repository,
   project: Project,
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
@@ -38,7 +39,6 @@ export async function createProfile(
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
 
-  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {

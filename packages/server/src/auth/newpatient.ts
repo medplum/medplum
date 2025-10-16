@@ -6,8 +6,11 @@ import type { Login, Patient, Project, ProjectMembership, Reference, User } from
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
+import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
+import type { GlobalProject } from '../sharding';
+import { getProjectShardId } from '../sharding';
 import { makeValidationMiddleware } from '../util/validator';
 import { createProfile, createProjectMembership } from './utils';
 
@@ -23,7 +26,7 @@ export const newPatientValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newPatientHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, 'global');
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
@@ -65,21 +68,41 @@ export async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  const project = await systemRepo.readResource<Project>('Project', projectId);
+  const globalSystemRepo = getSystemRepo(undefined, 'global');
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
+
+  // global project only has id and shard
+  const globalProject: GlobalProject = await globalSystemRepo.readResource<Project>('Project', projectId);
+
+  let systemRepo: Repository;
+  let project: WithId<Project>;
+  const shardId = getProjectShardId(globalProject);
+  if (shardId === 'global') {
+    systemRepo = globalSystemRepo;
+    project = globalProject as WithId<Project>;
+  } else {
+    systemRepo = getSystemRepo(undefined, shardId);
+    project = await systemRepo.readResource<Project>('Project', projectId);
+  }
 
   if (!project.defaultPatientAccessPolicy) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
-  const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
+  const profile = (await createProfile(
+    systemRepo,
+    project,
+    'Patient',
+    firstName,
+    lastName,
+    user.email as string
+  )) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  const membership = await createProjectMembership(systemRepo, user, project, profile, {
+  const membership = await createProjectMembership(globalSystemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
 
-  await systemRepo.updateResource<Login>({
+  await globalSystemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });

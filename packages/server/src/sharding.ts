@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProjectShard } from '@medplum/fhirtypes';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
+
+export interface GlobalProject {
+  id: string;
+  shard?: ProjectShard[];
+}
 
 export interface ShardPoolClient extends PoolClient {
   shardId: string;
@@ -36,4 +42,11 @@ export class ShardPool extends Pool {
       return conn;
     }) as Promise<ShardPoolClient>;
   }
+}
+
+export function getProjectShardId(
+  project: GlobalProject,
+  defaultShardId: string = 'TODO-getProjectShardIdDefault'
+): string {
+  return project.shard?.[0]?.id ?? defaultShardId;
 }

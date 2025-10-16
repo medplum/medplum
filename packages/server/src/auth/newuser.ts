@@ -107,7 +107,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
   globalLogger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, 'global');
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,

@@ -11,9 +11,11 @@ import type {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { Repository, getSystemRepo } from './repo';
+import type { GlobalProject } from '../sharding';
+import { getProjectShardId } from '../sharding';
+import { getSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -30,10 +32,19 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
   const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
-  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await systemRepo.readReference(membership.project);
+  const globalProject: GlobalProject = await getSystemRepo(undefined, 'global').readReference<Project>(
+    membership.project
+  );
+  console.log(JSON.stringify(globalProject));
+  const projectShardId = getProjectShardId(globalProject);
+  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const project =
+    projectShardId === 'global'
+      ? (globalProject as WithId<Project>)
+      : await systemRepo.readReference<Project>(membership.project);
+
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -57,6 +68,8 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     }
   }
 
+  globalLogger.info('getRepoForLogin', { project: project.id, projectShardId });
+
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
@@ -69,7 +82,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
-    projectShardId: project.shardId ?? 'global',
+    projectShardId,
   });
 }
 

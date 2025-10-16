@@ -8,6 +8,7 @@ import type {
   OperationDefinition,
   Project,
   ProjectMembership,
+  ProjectShard,
   Reference,
   User,
 } from '@medplum/fhirtypes';
@@ -19,6 +20,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
+import type { GlobalProject } from '../../sharding';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -131,18 +133,42 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getSystemRepo();
   const config = getConfig();
+  const defaultShardId = config.defaultShardId ?? 'global';
+  const systemRepo = getSystemRepo(undefined, defaultShardId);
 
-  log.info('Project creation request received', { name: projectName });
-  const project = await systemRepo.createResource<Project>({
-    resourceType: 'Project',
-    name: projectName,
-    owner: admin ? createReference(admin) : undefined,
-    strictMode: true,
-    features: config.defaultProjectFeatures,
-    systemSetting: config.defaultProjectSystemSetting,
-  });
+  log.info('Project creation request received', { shardId: systemRepo.projectShardId, name: projectName });
+  let projectId: string | undefined;
+  let projectShard: ProjectShard[] | undefined;
+  if (defaultShardId === 'global') {
+    projectShard = [{ id: defaultShardId }];
+  } else {
+    const globalSystemRepo = getSystemRepo(undefined, 'global');
+    const globalProject: GlobalProject = await globalSystemRepo.createResource<Project>({
+      resourceType: 'Project',
+      shard: [{ id: defaultShardId }],
+      // name: projectName,
+      // owner: admin ? createReference(admin) : undefined,
+      strictMode: true,
+      // features: config.defaultProjectFeatures,
+      // systemSetting: config.defaultProjectSystemSetting,
+    });
+    projectId = globalProject.id;
+  }
+
+  const project = await systemRepo.createResource<Project>(
+    {
+      id: projectId,
+      resourceType: 'Project',
+      name: projectName,
+      owner: admin ? createReference(admin) : undefined,
+      strictMode: true,
+      features: config.defaultProjectFeatures,
+      systemSetting: config.defaultProjectSystemSetting,
+      shard: projectShard,
+    },
+    { assignedId: true }
+  );
 
   log.info('Project created', {
     id: project.id,
@@ -156,6 +182,7 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
+      systemRepo,
       project,
       'Practitioner',
       admin.firstName as string,

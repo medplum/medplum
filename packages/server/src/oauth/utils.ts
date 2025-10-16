@@ -692,7 +692,7 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByEmailInProject(email: string, projectId: string): Promise<WithId<User> | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, 'global');
   const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
@@ -718,7 +718,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByEmailWithoutProject(email: string): Promise<WithId<User> | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, 'global');
   const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
