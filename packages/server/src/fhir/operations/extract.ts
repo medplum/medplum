@@ -214,7 +214,7 @@ class TemplateExtractor implements CrawlerVisitor {
     path = trimArrayIndex(path);
     const currentContext = this.currentContext();
     if (currentContext.path === path) {
-      currentContext.indexOffset += (currentContext.values.length || 1) - 1;
+      currentContext.indexOffset += currentContext.values.length - 1;
       currentContext.values = values;
     } else {
       this.exitContext(path);
