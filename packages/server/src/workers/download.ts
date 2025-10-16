@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, TypedValue, WithId } from '@medplum/core';
 import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
-import type { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
@@ -104,17 +104,26 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     return;
   }
 
+  const ignoredUrlPrefixes =
+    project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (isExternalUrl(attachment.url)) {
-      await addDownloadJobData({
-        resourceType: resource.resourceType,
-        id: resource.id,
-        url: attachment.url,
-        requestId: ctx?.requestId,
-        traceId: ctx?.traceId,
-      });
+    if (!isExternalUrl(attachment.url)) {
+      continue;
     }
+
+    if (ignoredUrlPrefixes.some((prefix) => attachment.url?.startsWith(prefix))) {
+      continue;
+    }
+
+    await addDownloadJobData({
+      resourceType: resource.resourceType,
+      id: resource.id,
+      url: attachment.url,
+      requestId: ctx?.requestId,
+      traceId: ctx?.traceId,
+    });
   }
 }
 
@@ -172,6 +181,20 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   if (!JSON.stringify(resource).includes(url)) {
     // If the resource no longer includes the URL, then stop processing it.
     return;
+  }
+
+  const projectId = resource.meta?.project;
+  if (projectId) {
+    const project = await systemRepo.readResource<Project>('Project', projectId);
+    if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+      // If the project has auto-download disabled, then stop processing it.
+      return;
+    }
+    const ignoredUrlPrefixes =
+      project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+    if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+      return;
+    }
   }
 
   const headers: HeadersInit = {};
