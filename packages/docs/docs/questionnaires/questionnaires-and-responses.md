@@ -189,9 +189,44 @@ SDC extends FHIR Questionnaires with specialized extensions to:
 
 ### The $extract Operation
 
-**Usage:**
+The `$extract` operation supports instance-level and type-level invocation patterns:
+
+- **Instance-level operations**: `GET /fhir/R4/QuestionnaireResponse/{id}/$extract` 
+  - extract from specific QuestionnaireResponse
+- **Type-level operations**: `POST /fhir/R4/QuestionnaireResponse/$extract` 
+  - extract with questionnaire and response in request body
+
+**Usage Examples:**
+
 ```http
-GET /fhir/R4/QuestionnaireResponse/{id}/$extract
+# Instance-level (extract from specific QuestionnaireResponse)
+GET /fhir/R4/QuestionnaireResponse/123/$extract
+
+# Type-level (extract with questionnaire and response in body)
+POST /fhir/R4/QuestionnaireResponse/$extract
+Content-Type: application/fhir+json
+
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "questionnaire",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "id": "example-questionnaire",
+        // ... questionnaire definition
+      }
+    },
+    {
+      "name": "questionnaire-response", 
+      "resource": {
+        "resourceType": "QuestionnaireResponse",
+        "questionnaire": "Questionnaire/example-questionnaire",
+        // ... questionnaire response data
+      }
+    }
+  ]
+}
 ```
 
 **Processing Order:**
