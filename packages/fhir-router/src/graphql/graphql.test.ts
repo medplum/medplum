@@ -10,7 +10,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Binary,
   Bundle,
   Encounter,

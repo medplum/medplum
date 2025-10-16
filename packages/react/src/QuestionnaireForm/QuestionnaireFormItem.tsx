@@ -1,16 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Checkbox,
-  ComboboxItem,
-  Group,
-  MultiSelect,
-  NativeSelect,
-  Radio,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+import type { ComboboxItem } from '@mantine/core';
+import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
+import type { TypedValue } from '@medplum/core';
 import {
   capitalize,
   deepEquals,
@@ -19,10 +11,9 @@ import {
   getExtension,
   HTTP_HL7_ORG,
   stringify,
-  TypedValue,
   typedValueToString,
 } from '@medplum/core';
-import {
+import type {
   Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -32,6 +23,7 @@ import {
   ValueSet,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
+import type { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
 import {
   getItemAnswerOptionValue,
   getItemInitialValue,
@@ -39,11 +31,11 @@ import {
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
-  QuestionnaireFormLoadedState,
   QuestionnaireItemType,
   useMedplum,
 } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, useEffect, useState } from 'react';
+import type { ChangeEvent, JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';

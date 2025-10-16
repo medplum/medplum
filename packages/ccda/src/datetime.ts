@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Period } from '@medplum/fhirtypes';
-import { CcdaEffectiveTime } from './types';
+import type { Period } from '@medplum/fhirtypes';
+import type { CcdaEffectiveTime } from './types';
 
 /*
  * C-CDA date/time formats:

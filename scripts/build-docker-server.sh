@@ -22,6 +22,8 @@ tar \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
+  LICENSE.txt \
+  NOTICE \
   package.json \
   package-lock.json \
   packages/bot-layer/package.json \

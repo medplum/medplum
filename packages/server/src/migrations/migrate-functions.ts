@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, escapeIdentifier, Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
-import { SqlBuilder, UpdateQuery } from '../fhir/sql';
+import type { QueryResult, QueryResultRow } from 'pg';
+import { escapeIdentifier } from 'pg';
+import type { UpdateQuery } from '../fhir/sql';
+import { SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
-import { CheckConstraintDefinition, MigrationActionResult } from './types';
+import type { CheckConstraintDefinition, DbClient, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   results: MigrationActionResult[],
   queryStr: string,
   params?: any[]
@@ -32,7 +34,7 @@ export async function query<R extends QueryResultRow = any>(
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   results: MigrationActionResult[],
   indexName: string,
   createIndexSql: string
@@ -75,7 +77,7 @@ export async function idempotentCreateIndex(
 }
 
 export async function analyzeTable(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   actions: MigrationActionResult[],
   tableName: string
 ): Promise<void> {
@@ -98,7 +100,7 @@ export async function analyzeTable(
  * @param constraintExpression - The expression for the constraint.
  */
 export async function nonBlockingAddCheckConstraint(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -138,7 +140,7 @@ export async function nonBlockingAddCheckConstraint(
 }
 
 async function getExistingConstraint(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   tableName: string,
   constraintName: string
 ): Promise<CheckConstraintDefinition | undefined> {
@@ -156,7 +158,7 @@ async function getExistingConstraint(
  * @param columnName - The name of the column to analyze.
  */
 export async function nonBlockingAlterColumnNotNull(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   actions: MigrationActionResult[],
   tableName: string,
   columnName: string
@@ -218,7 +220,7 @@ export function getCheckConstraintQuery(
 }
 
 export async function addCheckConstraint(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -236,7 +238,7 @@ export async function addCheckConstraint(
  * @param maxIterations - The maximum number of iterations to perform, Infinity is valid.
  */
 export async function batchedUpdate(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
   actions: MigrationActionResult[],
   updateQuery: UpdateQuery,
   maxIterations: number

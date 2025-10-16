@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, createReference, WithId } from '@medplum/core';
-import { AccessPolicy, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { allOk, ContentType, createReference } from '@medplum/core';
+import type { AccessPolicy, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

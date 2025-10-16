@@ -1,18 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma, WithId } from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import type { Filter, SortRule, WithId } from '@medplum/core';
+import { Operator as FhirOperator, splitSearchOnComma } from '@medplum/core';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
-import { LookupTableSearchParameterImplementation } from '../searchparameter';
+import type { LookupTableSearchParameterImplementation } from '../searchparameter';
+import type { Expression } from '../sql';
 import {
   Column,
   Condition,
   Conjunction,
+  Constant,
   DeleteQuery,
   Disjunction,
   escapeLikeString,
-  Expression,
   InsertQuery,
   Negation,
   SelectQuery,
@@ -24,6 +26,11 @@ const lookupTableBatchSize = 5_000;
 export interface LookupTableRow {
   resourceId: string;
 }
+
+export type TableJoin = {
+  tableName: string;
+  joinCondition: Expression;
+};
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -209,14 +216,21 @@ export abstract class LookupTable {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const joinOnExpression = new Condition(
-      new Column(selectQuery.effectiveTableName, 'id'),
+    const whereExpression = new Condition(
+      new Column(selectQuery.actualTableName, 'id'),
       '=',
-      new Column(joinName, 'resourceId')
+      new Column(lookupTableName, 'resourceId')
     );
+    const joinOnExpression = new Constant('true');
+
     selectQuery.join(
-      'LEFT JOIN',
-      new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
+      'LEFT JOIN LATERAL',
+      new SelectQuery(lookupTableName)
+        .column('resourceId')
+        .column(columnName)
+        .whereExpr(whereExpression)
+        .orderBy(columnName)
+        .limit(1),
       joinName,
       joinOnExpression
     );
@@ -271,10 +285,24 @@ export abstract class LookupTable {
    */
   async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
     const lookupTableName = this.getTableName(resourceType);
-    await new DeleteQuery(lookupTableName)
-      .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
-      .where(new Column(resourceType, 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(client, lookupTableName, {
+      tableName: resourceType,
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+        new Condition(new Column(resourceType, 'lastUpdated'), '<', before),
+      ]),
+    });
+  }
+
+  protected static async purge(
+    client: Pool | PoolClient,
+    lookupTableName: string,
+    ...joins: TableJoin[]
+  ): Promise<void> {
+    const deleteLookupRows = new DeleteQuery(lookupTableName);
+    for (const join of joins) {
+      deleteLookupRows.using(join.tableName).whereExpr(join.joinCondition);
+    }
+    await deleteLookupRows.execute(client);
   }
 }

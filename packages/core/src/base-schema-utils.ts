@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
+import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
 
 export type BaseSchema = Record<string, { elements: Record<string, Partial<InternalSchemaElement>> }>;
 

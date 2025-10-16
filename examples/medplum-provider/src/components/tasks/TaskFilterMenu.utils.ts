@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodeableConcept, Patient, Reference, Task } from '@medplum/fhirtypes';
+import type { CodeableConcept, Patient, Reference, Task } from '@medplum/fhirtypes';
 
 export type TaskFilterValue = Reference<Patient> | Reference | CodeableConcept | string;
 

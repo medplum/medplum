@@ -3,7 +3,7 @@
 
 import { Anchor, Divider, Group, Stack, Text } from '@mantine/core';
 import { formatDateTime, getDisplayString } from '@medplum/core';
-import { Annotation } from '@medplum/fhirtypes';
+import type { Annotation } from '@medplum/fhirtypes';
 import { ResourceAvatar, useResource } from '@medplum/react';
 import React from 'react';
 

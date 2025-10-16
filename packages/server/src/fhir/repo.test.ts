@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -16,9 +17,8 @@ import {
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Binary,
   BundleEntry,
   ElementDefinition,
@@ -27,7 +27,6 @@ import {
   OperationOutcome,
   Organization,
   Patient,
-  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -43,7 +42,8 @@ import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew, RegisterRequest } from '../auth/register';
+import type { RegisterRequest } from '../auth/register';
+import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
@@ -1416,16 +1416,22 @@ describe('FHIR Repo', () => {
         link: [],
       };
 
-      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
-
       // Postgres uses a 16-bit counter for placeholder formats internally,
-      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
-      for (let i = 0; i < 64 * 1024 + 1; i++) {
-        link.other.reference = 'Patient/' + randomUUID();
-        patient.link?.push(link);
+      // so (2^16 + 1) / 3 = (64k + 1) / 3 will definitely overflow it if not sent in smaller batches
+      // the division by three since there are 3 column placeholders per inserted row
+      for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 3); i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
-      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await repo.withTransaction(async (client) => {
+        const querySpy = jest.spyOn(client, 'query');
+        await repo.createResource<Patient>(patient);
+        const calls = querySpy.mock.calls;
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
+        querySpy.mockRestore();
+      });
     }));
 
   test('__version column', async () => {
@@ -1477,6 +1483,10 @@ describe('FHIR Repo', () => {
       // This is invalid in a similar way to some of the legacy UUIDs imported from other systems which we must continue to support
       // This test fails using the version of the validator.js isUUID (13.15.0) that caused the regression this PR fixed: https://github.com/medplum/medplum/pull/6289
       const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
+
+      // cleanup if it exists so the test can run again successfully
+      await systemRepo.expungeResource('Patient', nonconformantUuid);
+
       const patient = await repo.createResource<Patient>(
         {
           id: nonconformantUuid,

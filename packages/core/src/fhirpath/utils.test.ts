@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Period, Questionnaire } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue } from '../types';
-import { indexStructureDefinitionBundle, InternalSchemaElement } from '../typeschema/types';
+import type { Bundle, Period, Questionnaire } from '@medplum/fhirtypes';
+import type { TypedValue } from '../types';
+import { PropertyType } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,

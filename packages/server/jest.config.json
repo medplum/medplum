@@ -1,5 +1,8 @@
 {
   "testEnvironment": "node",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "testTimeout": 30000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {
@@ -9,5 +12,10 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*", "!**/src/__mocks__/**/*.ts", "!**/src/migrations/**/*.ts"]
+  "collectCoverageFrom": [
+    "**/src/**/*",
+    "!**/src/__mocks__/**/*.ts",
+    "!**/src/migrations/schema/**/*.ts",
+    "!**/src/migrations/data/**/*.ts"
+  ]
 }

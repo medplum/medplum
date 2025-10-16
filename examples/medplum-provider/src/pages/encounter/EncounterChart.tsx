@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
-import { ClinicalImpression, Encounter, Task } from '@medplum/fhirtypes';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
@@ -14,6 +15,19 @@ import { EncounterHeader } from '../../components/encounter/EncounterHeader';
 import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { BillingTab } from './BillingTab';
+import { createReference, getReferenceString } from '@medplum/core';
+
+const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
+const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
+const FHIR_DOCUMENT_COMPLETION_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-DocumentCompletion';
+
+const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
+  'completed',
+  'cancelled',
+  'failed',
+  'rejected',
+  'entered-in-error',
+]);
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -36,6 +50,20 @@ export const EncounterChart = (): JSX.Element => {
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
+  const [provenance, setProvenance] = useState<Provenance | undefined>(undefined);
+
+  useEffect(() => {
+    if (!encounter) {
+      return;
+    }
+
+    const fetchProvenance = async (): Promise<void> => {
+      const provenance = await medplum.searchResources('Provenance', `target=${getReferenceString(encounter)}`);
+      setProvenance(provenance[0]);
+    };
+
+    fetchProvenance().catch((err) => showErrorNotification(err));
+  }, [encounter, medplum]);
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -49,6 +77,7 @@ export const EncounterChart = (): JSX.Element => {
       if (!encounter) {
         return;
       }
+
       try {
         const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, newStatus);
         setEncounter(updatedEncounter);
@@ -87,6 +116,76 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
+  const handleSign = async (practitioner: Reference<Practitioner>): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+
+    // Complete all incomplete tasks
+    const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
+    const updatedTasks = await Promise.all(
+      tasksToUpdate.map((task) =>
+        medplum.updateResource({
+          ...task,
+          status: 'completed',
+        })
+      )
+    );
+
+    setTasks(
+      tasks.map((task) => {
+        const updated = updatedTasks.find((t) => t.id === task.id);
+        return updated || task;
+      })
+    );
+
+    // Create provenance record with signature
+    const newProvenance = await medplum.createResource<Provenance>({
+      resourceType: 'Provenance',
+      target: [createReference(encounter)],
+      recorded: new Date().toISOString(),
+      reason: [
+        {
+          coding: [
+            {
+              system: FHIR_ACT_REASON_SYSTEM,
+              code: 'SIGN',
+              display: 'Signed',
+            },
+          ],
+        },
+      ],
+      agent: [
+        {
+          type: {
+            coding: [
+              {
+                system: FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM,
+                code: 'author',
+              },
+            ],
+          },
+          who: practitioner,
+        },
+      ],
+      signature: [
+        {
+          type: [
+            {
+              system: FHIR_DOCUMENT_COMPLETION_SYSTEM,
+              code: 'LA',
+              display: 'legally authenticated',
+            },
+          ],
+          when: new Date().toISOString(),
+          who: practitioner,
+        },
+      ],
+    });
+
+    setProvenance(newProvenance);
+  };
+
   if (!patient || !encounter) {
     return <Loading />;
   }
@@ -96,11 +195,12 @@ export const EncounterChart = (): JSX.Element => {
       <Stack justify="space-between" gap={0}>
         <EncounterHeader
           encounter={encounter}
+          signed={provenance !== undefined}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
+          onSign={handleSign}
         />
-
         <Box p="md">
           {activeTab === 'notes' && (
             <Stack gap="md">
@@ -114,16 +214,15 @@ export const EncounterChart = (): JSX.Element => {
                     autosize
                     minRows={4}
                     maxRows={8}
+                    disabled={provenance !== undefined}
                   />
                 </Card>
               )}
-
               {tasks.map((task: Task) => (
-                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} enabled={provenance === undefined} />
               ))}
             </Stack>
           )}
-
           {activeTab === 'details' && (
             <BillingTab
               encounter={encounter}

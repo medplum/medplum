@@ -52,7 +52,17 @@ Create a "medplum" database:
 ```PLpgSQL
 CREATE DATABASE medplum;
 GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
+```
+
+Connect to the "medplum" database:
+
+```PLpgSQL
 \c medplum
+```
+
+Grant privileges on the "public" schema to the "medplum" user:
+
+```PLpgSQL
 GRANT ALL ON SCHEMA public TO medplum;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
 ```
@@ -60,7 +70,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
 Exit psql
 
 ```PLpgSQL
-exit
+\q
 ```
 
 ## Install Redis
@@ -165,9 +175,12 @@ You should now be able to access the Medplum app at [http://localhost:3000](http
 
 :::info
 
-While these instructions demonstrate a basic nginx setup, our primary recommendation is deploying Medplum to AWS using CDK or other infrastructure-as-code tools for production environments. This guide serves as an educational example of how the components work together and could be a viable solution for some deployments.
+This "Install from Scratch" guide is designed to help you understand how the different pieces of Medplum work. It's not our recommended approach for production deployments.
 
-While this configuration is not officially supported at present, we welcome community interest - if you would like to sponsor work on publishing an official deb image and APT repository, we would love to work with you!
+For production, we now have much better options that you should consider:
+
+- For a single-server deployment: Use our [Install on Ubuntu](./install-on-ubuntu) guide which uses our official APT repository. This automates the NGINX and SSL certificate setup for you.
+- For cloud deployments: Use our [Install on AWS](./install-on-aws) guide with AWS CDK, which is our recommended solution for scalable, production-ready environments.
 
 :::
 
@@ -201,7 +214,7 @@ Update the `medplum.config.json` file with your new domain:
 }
 ```
 
-Restart the server. If you intend to run the server continuously and survive SSH disconnects, you may consider using `nohup`:
+Restart the server. If you intend to run the server continuously and survive SSH disconnects, you should consider using `nohup`:
 
 ```bash
 nohup npm run dev > server.log 2>&1 &
@@ -253,7 +266,7 @@ sudo certbot --nginx -d api.example.com
 
 ### Add Nginx site for `app`
 
-For the app, we will proxy requests to the Vite preview server running on port 4173.
+For the app, we will proxy requests to the Vite preview server running on port 3000.
 
 Create an `app` config file such as `/etc/nginx/sites-available/app.example.com`:
 
@@ -281,7 +294,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://localhost:4173;
+        proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

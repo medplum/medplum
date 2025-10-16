@@ -1,11 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type {
+  BackgroundJobInteraction,
+  Filter,
+  SearchParameterDetails,
+  SearchRequest,
+  TypedValue,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
   arrayify,
-  BackgroundJobInteraction,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -19,7 +26,6 @@ import {
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
@@ -46,27 +52,18 @@ import {
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
-  SearchParameterDetails,
   SearchParameterType,
-  SearchRequest,
   serverError,
   sleep,
   stringify,
   toPeriod,
   toTypedValue,
-  TypedValue,
   validateResource,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
-  CreateResourceOptions,
-  FhirRepository,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import {
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
@@ -82,8 +79,8 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { Pool, PoolClient } from 'pg';
-import { Operation } from 'rfc6902';
+import type { Pool, PoolClient } from 'pg';
+import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -93,9 +90,9 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
-  AuditEventSubtype,
   createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
@@ -111,30 +108,32 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
-import { FhirRateLimiter } from './fhirquota';
+import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
+import type { HumanNameResource } from './lookups/humanname';
+import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
-import { ResourceCap } from './resource-cap';
+import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { SearchOptions } from './search';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
   DeleteQuery,
   Disjunction,
-  Expression,
   InsertQuery,
   normalizeDatabaseError,
   periodToRangeString,
   PostgresError,
   SelectQuery,
-  TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
@@ -278,9 +277,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *  8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
    *  9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
    * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
-   *
+   * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    */
-  static readonly VERSION: number = 10;
+  static readonly VERSION: number = 11;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -726,11 +725,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Add default profiles before validating resource
-    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+    if (!resource.meta?.profile) {
       const defaultProfiles = this.currentProject()?.defaultProfile?.find(
         (o) => o.resourceType === resourceType
       )?.profile;
-      resource.meta = { ...resource.meta, profile: defaultProfiles };
+      if (defaultProfiles?.length) {
+        resource.meta = { ...resource.meta, profile: defaultProfiles };
+      }
     }
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);

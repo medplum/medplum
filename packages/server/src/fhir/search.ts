@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -8,16 +9,13 @@ import {
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
-  FhirFilterExpression,
   FhirFilterNegation,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
   getSearchParameter,
-  IncludeTarget,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -27,18 +25,15 @@ import {
   parseParameter,
   PropertyType,
   SearchParameterType,
-  SearchRequest,
   serverError,
-  SortRule,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleLink,
@@ -52,9 +47,11 @@ import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
-import { Repository } from './repo';
+import type { Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
   Column,
@@ -63,11 +60,9 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
   Negation,
   periodToRangeString,
   SelectQuery,
-  Operator as SQL,
   SqlFunction,
   Union,
   UnionAllBuilder,
@@ -312,10 +307,32 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const rowCount = rows.length;
+  const config = getConfig();
+  const originalLimit = builder.limit_;
+
+  if (config.fhirSearchMinLimit !== undefined && config.fhirSearchMinLimit > builder.limit_) {
+    builder.limit(config.fhirSearchMinLimit);
+  }
+
+  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  let rows: any[];
+  try {
+    if (config.fhirSearchDiscourageSeqScan) {
+      // Despite the name, this doesn't truly remove the possibility of a sequential scan,
+      // just massively inflates the cost of a sequential scan to the planner.
+      await client.query('SET enable_seqscan = off');
+    }
+    rows = await builder.execute(client);
+  } finally {
+    if (config.fhirSearchDiscourageSeqScan) {
+      await client.query('RESET enable_seqscan');
+    }
+  }
+
+  const rowCount = Math.min(rows.length, originalLimit);
   const resources = [];
-  for (const row of rows) {
+  for (let i = 0; i < rowCount; i++) {
+    const row = rows[i];
     if (row.content) {
       resources.push(JSON.parse(row.content));
     } else {

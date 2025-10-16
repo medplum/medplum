@@ -1,19 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  badRequest,
-  Operator as FhirOperator,
-  Filter,
-  OperationOutcomeError,
-  SortRule,
-  splitN,
-  splitSearchOnComma,
-} from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Filter, SortRule } from '@medplum/core';
+import { badRequest, Operator as FhirOperator, OperationOutcomeError, splitN, splitSearchOnComma } from '@medplum/core';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
-import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, SelectQuery } from './sql';
+import { Column, Disjunction, Negation, TypedCondition } from './sql';
+import type { Token } from './tokens';
+import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Loader } from '@mantine/core';
 import { PatientTimeline } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { usePatient } from '../../hooks/usePatient';
 
 export function TimelineTab(): JSX.Element {

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
-import { BinarySource, BinaryStorage } from './types';
+import type { Binary } from '@medplum/fhirtypes';
+import type { Readable } from 'stream';
+import type { BinarySource, BinaryStorage } from './types';
 import { checkFileMetadata } from './utils';
 
 export abstract class BaseBinaryStorage implements BinaryStorage {

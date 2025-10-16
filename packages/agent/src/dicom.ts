@@ -1,19 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  AgentTransmitResponse,
-  ContentType,
-  createReference,
-  ILogger,
-  normalizeErrorString,
-  sleep,
-} from '@medplum/core';
-import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
+import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import { ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
+import type { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
-import net from 'node:net';
+import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';

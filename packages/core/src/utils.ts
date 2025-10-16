@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Attachment,
   Bundle,
   CodeableConcept,
@@ -113,7 +113,8 @@ export function resolveId(input: Reference | Resource | undefined): string | und
 /**
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
- * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource.
+ * @throws {OperationOutcomeError} If the reference cannot be parsed.
  */
 export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
@@ -644,6 +645,25 @@ export function isPopulated<T extends { length: number } | object>(arg: CanBePop
     (t === 'string' && arg !== '') ||
     (t === 'object' && (('length' in arg && arg.length > 0) || Object.keys(arg).length > 0))
   );
+}
+
+/**
+ * Returns an array with trailing empty elements removed.
+ * For example, [1, 2, 3, null, undefined, ''] becomes [1, 2, 3].
+ * This is useful for FHIR arrays, which by default must maintain the same length,
+ * but while editing we may want to trim trailing empty elements.
+ * @param arr - The input array.
+ * @returns The array with trailing empty elements removed.
+ */
+export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefined {
+  if (!arr) {
+    return undefined;
+  }
+  let i = arr.length - 1;
+  while (i >= 0 && isEmpty(arr[i])) {
+    i--;
+  }
+  return i >= 0 ? arr.slice(0, i + 1) : undefined;
 }
 
 /**

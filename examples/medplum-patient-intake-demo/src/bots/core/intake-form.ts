@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addProfileToResource, BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { addProfileToResource, createReference, getQuestionnaireAnswers } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,

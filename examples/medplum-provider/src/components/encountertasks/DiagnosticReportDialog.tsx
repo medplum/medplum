@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { JSX, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
+import type { JSX } from 'react';
 import { CodeableConceptInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { Button, Group, Stack } from '@mantine/core';
-import { CodeableConcept, DiagnosticReport, Practitioner } from '@medplum/fhirtypes';
+import type { CodeableConcept, DiagnosticReport, Practitioner } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 
