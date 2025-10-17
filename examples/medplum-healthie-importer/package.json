@@ -1,6 +1,6 @@
 {
   "name": "medplum-healthie-importer",
-  "version": "4.4.3",
+  "version": "4.5.0",
   "description": "Medplum Healthie Importer",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -31,12 +31,12 @@
     "root": true
   },
   "devDependencies": {
-    "@medplum/bot-layer": "4.4.3",
-    "@medplum/cli": "4.4.3",
-    "@medplum/core": "4.4.3",
-    "@medplum/eslint-config": "4.4.3",
-    "@medplum/fhirtypes": "4.4.3",
-    "@medplum/mock": "4.4.3",
+    "@medplum/bot-layer": "4.5.0",
+    "@medplum/cli": "4.5.0",
+    "@medplum/core": "4.5.0",
+    "@medplum/eslint-config": "4.5.0",
+    "@medplum/fhirtypes": "4.5.0",
+    "@medplum/mock": "4.5.0",
     "@types/node": "20.19.20",
     "@types/node-fetch": "2.6.13",
     "@types/ssh2-sftp-client": "9.0.5",
