@@ -6,6 +6,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
 import { IconSend, IconTrash } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
+import { MessageWithLinks } from '../../components/MessageWithLinks';
+import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -14,64 +16,10 @@ interface Message {
   tool_call_id?: string;
 }
 
-const SYSTEM_MESSAGE: Message = {
-  role: 'system',
-  content: `You are a helpful healthcare assistant with access to FHIR data through the Medplum platform.
-
-FHIR BASICS:
-FHIR (Fast Healthcare Interoperability Resources) is a standard for healthcare data exchange. Key concepts:
-- Resources: Structured data types like Patient, Observation, Medication
-- References: Links between resources (e.g., Patient/123)
-- Search: Query resources using parameters
-
-AVAILABLE RESOURCES:
-- Patient, Practitioner, Observation, Condition, MedicationRequest, Appointment, Task, Encounter, DiagnosticReport, DocumentReference
-
-SEARCH EXAMPLES:
-- Patient?name=John
-- Patient/abc-123
-- Observation?subject=Patient/123
-
-COMMON TASKS:
-- "Find patient John" → GET Patient?name=John
-- "Show patient details" → GET Patient/{id}
-- "Create a task" → POST Task
-- "Find all observations for patient X" → GET Observation?subject=Patient/{id}
-
-Always maintain conversation context and reference previous searches or data when relevant.`,
-};
-
 const MODELS = [
   { value: 'gpt-5', label: 'GPT-5' },
-  { value: 'o1', label: 'O1' },
-  { value: 'o1-mini', label: 'O1 Mini' },
   { value: 'gpt-4o', label: 'GPT-4o' },
   { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'gpt-4', label: 'GPT-4' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-];
-
-const FHIR_TOOLS = [
-  {
-    type: 'function',
-    function: {
-      name: 'fhir_request',
-      description:
-        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
-      parameters: {
-        type: 'object',
-        properties: {
-          method: {
-            type: 'string',
-            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-          },
-          path: { type: 'string' },
-          body: { type: 'object' },
-        },
-        required: ['method', 'path'],
-      },
-    },
-  },
 ];
 
 export function SpacesPage(): JSX.Element {
@@ -80,33 +28,23 @@ export function SpacesPage(): JSX.Element {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
-
-  // Load saved model from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('selectedModel');
-    if (saved) {
-      setSelectedModel(saved);
-    }
-  }, []);
-
-  // Persist model to localStorage
-  useEffect(() => {
-    localStorage.setItem('selectedModel', selectedModel);
-  }, [selectedModel]);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport) {
+    if (viewport && hasStarted) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, hasStarted]);
 
   const handleClear = (): void => {
     setMessages([SYSTEM_MESSAGE]);
+    setHasStarted(false);
   };
 
   const handleSend = async (): Promise<void> => {
@@ -114,24 +52,30 @@ export function SpacesPage(): JSX.Element {
       return;
     }
 
+    if (!hasStarted) {
+      setHasStarted(true);
+    }
+
     const userMessage: Message = { role: 'user', content: input };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     setInput('');
+    setCurrentFhirRequest(undefined);
     setLoading(true);
 
     try {
-      // First request
       let response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
           { name: 'model', valueString: selectedModel },
           { name: 'tools', valueString: JSON.stringify(FHIR_TOOLS) },
+          { name: 'temperature', valueString: '0.3' },
         ],
       });
 
       const toolCallsStr = response.parameter?.find((p: any) => p.name === 'tool_calls')?.valueString;
+      const allResourceRefs: string[] = [];
 
       if (toolCallsStr) {
         const toolCalls = JSON.parse(toolCallsStr);
@@ -142,7 +86,8 @@ export function SpacesPage(): JSX.Element {
         };
         currentMessages.push(assistantMessageWithToolCalls);
 
-        // Execute FHIR calls locally
+        let hasFailedRequest = false;
+
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'fhir_request') {
             const args =
@@ -151,6 +96,7 @@ export function SpacesPage(): JSX.Element {
                 : toolCall.function.arguments;
 
             const { method, path, body } = args;
+            setCurrentFhirRequest(`${method} ${path}`);
             let result;
             try {
               if (method === 'GET') {
@@ -159,36 +105,96 @@ export function SpacesPage(): JSX.Element {
                 result = await medplum.post(medplum.fhirUrl(path), body);
               } else if (method === 'PUT') {
                 result = await medplum.put(medplum.fhirUrl(path), body);
-              } else if (method === 'PATCH') {
-                result = await medplum.patch(medplum.fhirUrl(path), body);
               } else if (method === 'DELETE') {
                 result = await medplum.delete(medplum.fhirUrl(path));
               }
-            } catch (error: any) {
-              result = { error: error.message };
-            }
 
-            currentMessages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(result),
-            });
+              if (result?.resourceType === 'Bundle' && result?.entry) {
+                result.entry.forEach((entry: any) => {
+                  if (entry.resource?.resourceType && entry.resource?.id) {
+                    allResourceRefs.push(`${entry.resource.resourceType}/${entry.resource.id}`);
+                  }
+                });
+              } else if (result?.resourceType && result?.id) {
+                allResourceRefs.push(`${result.resourceType}/${result.id}`);
+              }
+
+              currentMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(result),
+              });
+            } catch (err: any) {
+              hasFailedRequest = true;
+              const errorResult = {
+                error: true,
+                message: `Unable to execute ${method}: ${path}`,
+                details: err.message || 'Unknown error',
+              };
+
+              currentMessages.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(errorResult),
+              });
+            }
           }
         }
 
-        // Send updated messages after FHIR requests
+        if (hasFailedRequest) {
+          const summaryMessages = [
+            {
+              role: 'system',
+              content: SUMMARY_SYSTEM_MESSAGE,
+            },
+            ...currentMessages.slice(1),
+          ];
+
+          response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'messages', valueString: JSON.stringify(summaryMessages) },
+              { name: 'model', valueString: selectedModel },
+              { name: 'temperature', valueString: '0.3' },
+            ],
+          });
+
+          const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
+          if (content) {
+            setMessages([...currentMessages, { role: 'assistant', content }]);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Second AI request: summarize the FHIR response
+        // Use the existing conversation context but replace system message with summary version
+        const summaryMessages = [
+          {
+            role: 'system',
+            content: SUMMARY_SYSTEM_MESSAGE,
+          },
+          ...currentMessages.slice(1), // Skip original system message, include all conversation
+        ];
+
         response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'messages', valueString: JSON.stringify(currentMessages) },
+            { name: 'messages', valueString: JSON.stringify(summaryMessages) },
             { name: 'model', valueString: selectedModel },
+            { name: 'temperature', valueString: '0.3' },
           ],
         });
       }
 
       const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
       if (content) {
-        setMessages([...currentMessages, { role: 'assistant', content }]);
+        let finalContent = content;
+        if (allResourceRefs.length > 0) {
+          const uniqueRefs = [...new Set(allResourceRefs)];
+          finalContent = `${content}\n\nResources Found:\n${uniqueRefs.map((ref) => `• ${ref}`).join('\n')}`;
+        }
+        setMessages([...currentMessages, { role: 'assistant', content: finalContent }]);
       }
     } catch (error: any) {
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${error.message}` }]);
@@ -197,7 +203,7 @@ export function SpacesPage(): JSX.Element {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent): void => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend().catch((error) => showErrorNotification(error));
@@ -208,8 +214,84 @@ export function SpacesPage(): JSX.Element {
     (m) => m.role !== 'system' && m.role !== 'tool' && !(m.role === 'assistant' && m.tool_calls)
   );
 
+  // Centered layout before first message
+  if (!hasStarted) {
+    return (
+      <Stack h="calc(100vh - 68px)" justify="center" align="center" p="sm">
+        <Box
+          w="100%"
+          style={{
+            maxWidth: '700px',
+            animation: hasStarted ? 'fadeOut 0.3s ease-out' : 'none',
+          }}
+        >
+          <Text size="xl" fw={700} mb="xs">
+            Start a New Space
+          </Text>
+
+          <Paper p="md" radius="lg" withBorder bg="white">
+            <Group gap="md" wrap="nowrap" align="center">
+              <TextInput
+                placeholder="Ask, search, or make anything..."
+                value={input}
+                onChange={(e) => setInput(e.currentTarget.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                style={{ flex: 1 }}
+                styles={{
+                  input: {
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: '15px',
+                    padding: 0,
+                  },
+                }}
+              />
+              <Select
+                size="xs"
+                data={MODELS}
+                value={selectedModel}
+                onChange={(value) => setSelectedModel(value ?? 'gpt-5')}
+                styles={{
+                  input: {
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#666',
+                    minWidth: '100px',
+                    cursor: 'pointer',
+                  },
+                }}
+              />
+              <Button
+                radius="xl"
+                size="sm"
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                w="36px"
+                h="36px"
+                bg="#7c3aed"
+                p={0}
+              >
+                <IconSend size={18} />
+              </Button>
+            </Group>
+          </Paper>
+        </Box>
+      </Stack>
+    );
+  }
+
+  // Chat layout after first message
   return (
-    <Stack h="calc(100vh - 68px)" p="md">
+    <Stack
+      h="calc(100vh - 68px)"
+      p="md"
+      style={{
+        animation: 'fadeIn 0.3s ease-in',
+      }}
+    >
       <Group justify="space-between">
         <Text size="xl" fw={700}>
           AI Assistant
@@ -238,12 +320,16 @@ export function SpacesPage(): JSX.Element {
                 backgroundColor: message.role === 'user' ? '#F8F0FC' : '#f5f5f5',
               }}
             >
-              <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+              {message.role === 'assistant' ? (
+                <MessageWithLinks content={message.content || ''} />
+              ) : (
+                <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+              )}
             </Paper>
           ))}
           {loading && (
             <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-              <Text c="dimmed">{messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}</Text>
+              <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
             </Paper>
           )}
         </Stack>
@@ -256,7 +342,7 @@ export function SpacesPage(): JSX.Element {
               placeholder="Ask, search, or make anything..."
               value={input}
               onChange={(e) => setInput(e.currentTarget.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               disabled={loading}
               style={{ flex: 1 }}
               styles={{
@@ -300,6 +386,17 @@ export function SpacesPage(): JSX.Element {
           </Group>
         </Paper>
       </Box>
+
+      <style>{`
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </Stack>
   );
 }

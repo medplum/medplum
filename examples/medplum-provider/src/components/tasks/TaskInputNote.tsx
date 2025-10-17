@@ -153,6 +153,12 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         <Divider />
 
         <ScrollArea w="100%" h="calc(100% - 70px)" p="lg">
+          {task.description && (
+            <Stack mb="lg">
+              <Text size="lg">{task.description}</Text>
+              <Divider />
+            </Stack>
+          )}
           <Stack>
             {task?.focus?.reference?.startsWith('Questionnaire/') && (
               <>
