@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
-import WS from 'jest-websocket-mock';
+import { WS } from 'jest-websocket-mock';
 import type { SubscriptionEventMap } from '.';
 import { SubscriptionEmitter, SubscriptionManager, resourceMatchesSubscriptionCriteria } from '.';
 import { MockMedplumClient } from '../client-test-utils';
