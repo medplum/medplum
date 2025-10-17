@@ -362,6 +362,20 @@ export abstract class Connective implements Expression {
       builder.append(')');
     }
   }
+
+  static mergeConditions(conditions: Condition[]): Expression {
+    if (conditions.length === 1) {
+      // noop
+      return conditions[0];
+    } else {
+      // are any of the conditions arrays themselves?
+      const parameters: any[] = conditions.flatMap((cond) =>
+        Array.isArray(cond.parameter) ? cond.parameter : [cond.parameter]
+      );
+      const { column, operator, parameterType } = conditions[0];
+      return new TypedCondition(column, operator, parameters, parameterType);
+    }
+  }
 }
 
 export class Conjunction extends Connective {
@@ -1231,6 +1245,45 @@ export function periodToRangeString(period: Period): string | undefined {
 export interface SqlFunctionDefinition {
   readonly name: string;
   readonly createQuery: string;
+}
+
+export function combineExpressions(expressions: Expression[]): Expression[] {
+  const combinable: Record<string, Record<string, Record<string, Record<string, Condition[]>>>> = {};
+  const nonCombinable: Expression[] = [];
+
+  // maybe in the future we'll support more?
+  const SUPPORTED_OPERATIONS = new Set(['ARRAY_OVERLAPS']);
+
+  // Group expressions by tableName, columnName, operator, paramType so that only exact matches are merged
+  for (const expr of expressions) {
+    if (expr instanceof Condition && SUPPORTED_OPERATIONS.has(expr.operator)) {
+      const tableName = expr.column.tableName ?? '';
+      const columnName = expr.column.actualColumnName;
+      const operator = expr.operator;
+      const paramType = expr.parameterType ?? '';
+
+      combinable[tableName] ??= {};
+      combinable[tableName][columnName] ??= {};
+      combinable[tableName][columnName][operator] ??= {};
+      combinable[tableName][columnName][operator][paramType] ??= [];
+      combinable[tableName][columnName][operator][paramType].push(expr);
+    } else {
+      nonCombinable.push(expr);
+    }
+  }
+
+  const result: Expression[] = [
+    ...Object.values(combinable).flatMap((byColumn) =>
+      Object.values(byColumn).flatMap((byOperator) =>
+        Object.values(byOperator).flatMap((byParamType) =>
+          Object.values(byParamType).map((conditions) => Connective.mergeConditions(conditions))
+        )
+      )
+    ),
+    ...nonCombinable,
+  ];
+
+  return result;
 }
 
 /**

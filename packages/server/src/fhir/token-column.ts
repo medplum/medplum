@@ -7,7 +7,7 @@ import { NIL, v5 } from 'uuid';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, Disjunction, Negation, TypedCondition } from './sql';
+import { Column, combineExpressions, Disjunction, Negation, TypedCondition } from './sql';
 import type { Token } from './tokens';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 
@@ -175,7 +175,11 @@ export function buildTokenColumnsSearchFilter(
         expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
       }
 
-      const expression = new Disjunction(expressions);
+      // Combine the expressions if possible because they might be of the same type and operator
+      // TODO: merge into buildTokenColumnsWhereCondition itself
+      const combinedExpressions = combineExpressions(expressions);
+
+      const expression = new Disjunction(combinedExpressions);
       if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
         return new Negation(expression);
       }
