@@ -48,7 +48,7 @@ export const SignAddendumCard = ({
       }));
       setProvenanceDisplays(displays);
     };
-    loadProvenanceData().catch(console.error);
+    loadProvenanceData().catch(showErrorNotification);
   }, [provenances, medplum]);
 
   useEffect(() => {
