@@ -222,9 +222,8 @@ export const EncounterChart = (): JSX.Element => {
         <Box p="md">
           {activeTab === 'notes' && (
             <Stack gap="md">
-
               <SignAddendumCard encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
-              
+
               {clinicalImpression && (
                 <Card withBorder shadow="sm" mt="md">
                   <Title>Fill chart note</Title>

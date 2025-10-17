@@ -6,5 +6,3 @@ export enum ChartNoteStatus {
   Signed = 'signed',
   SignedAndLocked = 'signedAndLocked',
 }
-
-

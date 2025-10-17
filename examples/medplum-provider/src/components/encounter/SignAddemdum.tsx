@@ -27,10 +27,10 @@ interface AddendumDisplay {
   text: string;
 }
 
-export const SignAddendumCard = ({ 
-  provenances, 
+export const SignAddendumCard = ({
+  provenances,
   chartNoteStatus,
-  encounter 
+  encounter,
 }: SignAddendumCardProps): JSX.Element | null => {
   const medplum = useMedplum();
   const author = useMedplumProfile();
@@ -86,7 +86,6 @@ export const SignAddendumCard = ({
   const handleAddAddendum = async (): Promise<void> => {
     setIsSubmitting(true);
     try {
-
       const documentReference = await medplum.createResource({
         resourceType: 'DocumentReference',
         status: 'current',
@@ -125,12 +124,14 @@ export const SignAddendumCard = ({
         ],
       });
 
-      
-      setAddendumDisplays([...addendumDisplays, {
-        authorName: authorReference?.display || 'Unknown Author',
-        timestamp: formatDate(documentReference.date),
-        text: addendumText,
-      }]);
+      setAddendumDisplays([
+        ...addendumDisplays,
+        {
+          authorName: authorReference?.display || 'Unknown Author',
+          timestamp: formatDate(documentReference.date),
+          text: addendumText,
+        },
+      ]);
       setAddendumText('');
     } catch (error) {
       showErrorNotification(error);
@@ -163,7 +164,6 @@ export const SignAddendumCard = ({
               <Text c="dimmed" size="sm">
                 {display.timestamp}
               </Text>
-              
             </Group>
             <Divider />
           </Stack>

@@ -15,7 +15,7 @@ interface SignLockDialogProps {
 export const SignLockDialog = (props: SignLockDialogProps): JSX.Element => {
   const { onSign } = props;
   const author = useMedplumProfile();
-  const authorReference = author ? createReference(author) as Reference<Practitioner> : undefined;
+  const authorReference = author ? (createReference(author) as Reference<Practitioner>) : undefined;
 
   const handleSign = (lock: boolean): void => {
     if (!authorReference) {
@@ -42,7 +42,13 @@ export const SignLockDialog = (props: SignLockDialogProps): JSX.Element => {
           Sign & Lock Note
         </Button>
 
-        <Button variant="outline" fullWidth leftSection={<IconSignature size={18} />} onClick={() => handleSign(false)} mt="md">
+        <Button
+          variant="outline"
+          fullWidth
+          leftSection={<IconSignature size={18} />}
+          onClick={() => handleSign(false)}
+          mt="md"
+        >
           Just Sign
         </Button>
       </Stack>
