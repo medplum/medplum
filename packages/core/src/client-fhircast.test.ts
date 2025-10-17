@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import WS from 'jest-websocket-mock';
+import { WS } from 'jest-websocket-mock';
 import { MedplumClient } from './client';
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
