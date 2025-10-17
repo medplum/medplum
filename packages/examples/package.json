@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "4.5.0",
+  "version": "4.4.3",
   "description": "Medplum Code Examples",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -20,9 +20,9 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@medplum/core": "4.5.0",
-    "@medplum/fhirtypes": "4.5.0",
-    "@medplum/mock": "4.5.0"
+    "@medplum/core": "4.4.3",
+    "@medplum/fhirtypes": "4.4.3",
+    "@medplum/mock": "4.4.3"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
