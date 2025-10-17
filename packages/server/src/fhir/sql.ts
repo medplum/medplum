@@ -369,14 +369,13 @@ export abstract class Connective implements Expression {
       return conditions[0];
     } else {
       // are any of the conditions arrays themselves?
-      const parameters: any[] = conditions.flatMap(cond =>
+      const parameters: any[] = conditions.flatMap((cond) =>
         Array.isArray(cond.parameter) ? cond.parameter : [cond.parameter]
       );
       const { column, operator, parameterType } = conditions[0];
       return new TypedCondition(column, operator, parameters, parameterType);
     }
   }
-
 }
 
 export class Conjunction extends Connective {
@@ -1257,7 +1256,6 @@ export function combineExpressions(expressions: Expression[]): Expression[] {
 
   // Group expressions by tableName, columnName, operator, paramType so that only exact matches are merged
   for (const expr of expressions) {
-
     if (expr instanceof Condition && SUPPORTED_OPERATIONS.has(expr.operator)) {
       const tableName = expr.column.tableName ?? '';
       const columnName = expr.column.actualColumnName;
@@ -1275,16 +1273,13 @@ export function combineExpressions(expressions: Expression[]): Expression[] {
   }
 
   const result: Expression[] = [
-    ...Object.values(combinable)
-      .flatMap(byColumn =>
-        Object.values(byColumn).flatMap(byOperator =>
-          Object.values(byOperator).flatMap(byParamType =>
-            Object.values(byParamType).map(conditions =>
-              Connective.mergeConditions(conditions)
-            )
-          )
+    ...Object.values(combinable).flatMap((byColumn) =>
+      Object.values(byColumn).flatMap((byOperator) =>
+        Object.values(byOperator).flatMap((byParamType) =>
+          Object.values(byParamType).map((conditions) => Connective.mergeConditions(conditions))
         )
-      ),
+      )
+    ),
     ...nonCombinable,
   ];
 

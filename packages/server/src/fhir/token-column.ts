@@ -7,7 +7,7 @@ import { NIL, v5 } from 'uuid';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, combineExpressions, Connective, Disjunction, Negation, TypedCondition } from './sql';
+import { Column, combineExpressions, Disjunction, Negation, TypedCondition } from './sql';
 import type { Token } from './tokens';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 

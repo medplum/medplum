@@ -5227,7 +5227,6 @@ describe('systemRepo', () => {
       expect(result2.entry?.length).toStrictEqual(0);
     }));
 
-    
   test('CarePlan with identifiers', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
@@ -5287,7 +5286,7 @@ describe('systemRepo', () => {
       const result = await repo.search(parseSearchRequest('CarePlan?identifier=foo,bar,baz,quux'));
       expect(result.entry?.length).toStrictEqual(4);
 
-      const ids = result.entry?.map(entry => entry.resource?.id).sort();
+      const ids = result.entry?.map((entry) => entry.resource?.id).sort();
       expect(ids).toStrictEqual([carePlan1.id, carePlan2.id, carePlan3.id, carePlan4.id].sort());
     }));
 });

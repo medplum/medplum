@@ -5,9 +5,7 @@ import type { CTE, Operator } from './sql';
 import {
   Column,
   Condition,
-  Connective,
   Constant,
-  Disjunction,
   Negation,
   SelectQuery,
   SqlBuilder,
@@ -372,9 +370,24 @@ describe('SqlBuilder', () => {
   describe('combineExpressions', () => {
     test('combines multiple ARRAY_OVERLAPS conditions on same table, column, and type', () => {
       // given
-      const tc1 =  new TypedCondition(new Column("MyTable", "tokenColumnName"), 'ARRAY_OVERLAPS', '7f0b383c-1bea-4c74-bb33-ac772a94aa18', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("MyTable", "tokenColumnName"), 'ARRAY_OVERLAPS', '46f2da5a-bcce-4438-a9f3-748d0a582874', 'UUID[]');
-      const tc3 = new TypedCondition(new Column("MyTable", "tokenColumnName"), 'ARRAY_OVERLAPS', '8dddbd03-3529-43c5-a3e3-1bc1504df021', 'UUID[]');
+      const tc1 = new TypedCondition(
+        new Column('MyTable', 'tokenColumnName'),
+        'ARRAY_OVERLAPS',
+        '7f0b383c-1bea-4c74-bb33-ac772a94aa18',
+        'UUID[]'
+      );
+      const tc2 = new TypedCondition(
+        new Column('MyTable', 'tokenColumnName'),
+        'ARRAY_OVERLAPS',
+        '46f2da5a-bcce-4438-a9f3-748d0a582874',
+        'UUID[]'
+      );
+      const tc3 = new TypedCondition(
+        new Column('MyTable', 'tokenColumnName'),
+        'ARRAY_OVERLAPS',
+        '8dddbd03-3529-43c5-a3e3-1bc1504df021',
+        'UUID[]'
+      );
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2, tc3]);
@@ -383,7 +396,11 @@ describe('SqlBuilder', () => {
       expect(combinedExpressions.length).toStrictEqual(1);
       const combinedTc = combinedExpressions[0] as TypedCondition<'ARRAY_OVERLAPS'>;
       expect(combinedTc.operator).toStrictEqual('ARRAY_OVERLAPS');
-      expect(combinedTc.parameter).toStrictEqual(['7f0b383c-1bea-4c74-bb33-ac772a94aa18', '46f2da5a-bcce-4438-a9f3-748d0a582874', '8dddbd03-3529-43c5-a3e3-1bc1504df021']);
+      expect(combinedTc.parameter).toStrictEqual([
+        '7f0b383c-1bea-4c74-bb33-ac772a94aa18',
+        '46f2da5a-bcce-4438-a9f3-748d0a582874',
+        '8dddbd03-3529-43c5-a3e3-1bc1504df021',
+      ]);
       expect(combinedTc.parameterType).toStrictEqual('UUID[]');
       expect(combinedTc.column.tableName).toStrictEqual('MyTable');
       expect(combinedTc.column.actualColumnName).toStrictEqual('tokenColumnName');
@@ -391,8 +408,8 @@ describe('SqlBuilder', () => {
 
     test('does not combine conditions with different columns', () => {
       // given
-      const tc1 = new TypedCondition(new Column("MyTable", "column1"), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("MyTable", "column2"), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
+      const tc1 = new TypedCondition(new Column('MyTable', 'column1'), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
+      const tc2 = new TypedCondition(new Column('MyTable', 'column2'), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2]);
@@ -405,8 +422,8 @@ describe('SqlBuilder', () => {
 
     test('does not combine conditions with different tables', () => {
       // given
-      const tc1 = new TypedCondition(new Column("Table1", "column"), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("Table2", "column"), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
+      const tc1 = new TypedCondition(new Column('Table1', 'column'), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
+      const tc2 = new TypedCondition(new Column('Table2', 'column'), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2]);
@@ -419,8 +436,8 @@ describe('SqlBuilder', () => {
 
     test('does not combine conditions with different parameter types', () => {
       // given
-      const tc1 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', 'value2', 'TEXT[]');
+      const tc1 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
+      const tc2 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', 'value2', 'TEXT[]');
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2]);
@@ -433,8 +450,8 @@ describe('SqlBuilder', () => {
 
     test('does not combine non-ARRAY_OVERLAPS conditions', () => {
       // given
-      const tc1 = new TypedCondition(new Column("MyTable", "column"), '=', 'value1');
-      const tc2 = new TypedCondition(new Column("MyTable", "column"), '=', 'value2');
+      const tc1 = new TypedCondition(new Column('MyTable', 'column'), '=', 'value1');
+      const tc2 = new TypedCondition(new Column('MyTable', 'column'), '=', 'value2');
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2]);
@@ -447,9 +464,9 @@ describe('SqlBuilder', () => {
 
     test('handles mix of combinable and non-combinable expressions', () => {
       // given
-      const tc1 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
-      const tc3 = new TypedCondition(new Column("MyTable", "other"), '=', 'value3');
+      const tc1 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
+      const tc2 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', 'value2', 'UUID[]');
+      const tc3 = new TypedCondition(new Column('MyTable', 'other'), '=', 'value3');
       const negation = new Negation(new Condition('field', '=', 'test'));
 
       // when
@@ -457,10 +474,10 @@ describe('SqlBuilder', () => {
 
       // then
       expect(combinedExpressions.length).toStrictEqual(3);
-      
+
       // Find the combined ARRAY_OVERLAPS condition
-      const arrayOverlaps = combinedExpressions.find(e => 
-        e instanceof Condition && e.operator === 'ARRAY_OVERLAPS'
+      const arrayOverlaps = combinedExpressions.find(
+        (e) => e instanceof Condition && e.operator === 'ARRAY_OVERLAPS'
       ) as TypedCondition<'ARRAY_OVERLAPS'>;
       expect(arrayOverlaps).toBeDefined();
       expect(arrayOverlaps.parameter).toStrictEqual(['value1', 'value2']);
@@ -472,8 +489,8 @@ describe('SqlBuilder', () => {
 
     test('combines conditions with array parameters', () => {
       // given
-      const tc1 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', ['value1', 'value2'], 'UUID[]');
-      const tc2 = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', ['value3', 'value4'], 'UUID[]');
+      const tc1 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', ['value1', 'value2'], 'UUID[]');
+      const tc2 = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', ['value3', 'value4'], 'UUID[]');
 
       // when
       const combinedExpressions = combineExpressions([tc1, tc2]);
@@ -486,7 +503,7 @@ describe('SqlBuilder', () => {
 
     test('returns single condition unchanged', () => {
       // given
-      const tc = new TypedCondition(new Column("MyTable", "column"), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
+      const tc = new TypedCondition(new Column('MyTable', 'column'), 'ARRAY_OVERLAPS', 'value1', 'UUID[]');
 
       // when
       const combinedExpressions = combineExpressions([tc]);
@@ -506,12 +523,12 @@ describe('SqlBuilder', () => {
 
     test('combines conditions in mixed order', () => {
       // given - Conditions are NOT in table/column order, but should still be grouped correctly
-      const tc1 = new TypedCondition(new Column("TableA", "column1"), 'ARRAY_OVERLAPS', 'valueA1', 'UUID[]');
-      const tc2 = new TypedCondition(new Column("TableB", "column2"), 'ARRAY_OVERLAPS', 'valueB1', 'TEXT[]');
-      const tc3 = new TypedCondition(new Column("TableA", "column1"), 'ARRAY_OVERLAPS', 'valueA2', 'UUID[]');
-      const tc4 = new TypedCondition(new Column("TableB", "column2"), 'ARRAY_OVERLAPS', 'valueB2', 'TEXT[]');
-      const tc5 = new TypedCondition(new Column("TableA", "column1"), 'ARRAY_OVERLAPS', 'valueA3', 'UUID[]');
-      const otherCondition = new TypedCondition(new Column("TableC", "column3"), '=', 'valueC');
+      const tc1 = new TypedCondition(new Column('TableA', 'column1'), 'ARRAY_OVERLAPS', 'valueA1', 'UUID[]');
+      const tc2 = new TypedCondition(new Column('TableB', 'column2'), 'ARRAY_OVERLAPS', 'valueB1', 'TEXT[]');
+      const tc3 = new TypedCondition(new Column('TableA', 'column1'), 'ARRAY_OVERLAPS', 'valueA2', 'UUID[]');
+      const tc4 = new TypedCondition(new Column('TableB', 'column2'), 'ARRAY_OVERLAPS', 'valueB2', 'TEXT[]');
+      const tc5 = new TypedCondition(new Column('TableA', 'column1'), 'ARRAY_OVERLAPS', 'valueA3', 'UUID[]');
+      const otherCondition = new TypedCondition(new Column('TableC', 'column3'), '=', 'valueC');
 
       // when - Pass conditions in mixed order
       const combinedExpressions = combineExpressions([tc1, tc2, tc3, tc4, tc5, otherCondition]);
@@ -520,16 +537,12 @@ describe('SqlBuilder', () => {
       expect(combinedExpressions.length).toStrictEqual(3);
 
       // Find the combined conditions
-      const tableACondition = combinedExpressions.find(e => 
-        e instanceof Condition && 
-        e.operator === 'ARRAY_OVERLAPS' && 
-        e.column.tableName === 'TableA'
+      const tableACondition = combinedExpressions.find(
+        (e) => e instanceof Condition && e.operator === 'ARRAY_OVERLAPS' && e.column.tableName === 'TableA'
       ) as TypedCondition<'ARRAY_OVERLAPS'>;
-      
-      const tableBCondition = combinedExpressions.find(e => 
-        e instanceof Condition && 
-        e.operator === 'ARRAY_OVERLAPS' && 
-        e.column.tableName === 'TableB'
+
+      const tableBCondition = combinedExpressions.find(
+        (e) => e instanceof Condition && e.operator === 'ARRAY_OVERLAPS' && e.column.tableName === 'TableB'
       ) as TypedCondition<'ARRAY_OVERLAPS'>;
 
       // Verify TableA conditions were combined correctly
