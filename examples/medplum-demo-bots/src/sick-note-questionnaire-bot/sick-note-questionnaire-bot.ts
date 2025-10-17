@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { DocumentReference, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import { createReference, getQuestionnaireAnswers } from '@medplum/core';
+import type { DocumentReference, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export async function handler(
   medplum: MedplumClient,

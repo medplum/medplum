@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Patient, QuestionnaireResponse, Practitioner } from '@medplum/fhirtypes';
+import type { Patient, QuestionnaireResponse, Practitioner } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { handler } from './sick-note-questionnaire-bot';
