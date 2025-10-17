@@ -14,10 +14,10 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: "20"
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
+      TURBO_CACHE: "remote:rw"
     permissions:
       actions: read
       contents: write
@@ -28,6 +28,10 @@ jobs:
       - name: Install NSIS
         run: choco install nsis
 
+      - name: Add NSIS to PATH
+        run: echo "C:\Program Files (x86)\NSIS" >> $GITHUB_PATH
+        shell: bash
+
       - name: Install Wget
         run: choco install wget
 
@@ -35,7 +39,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
       - name: Get npm cache directory
@@ -138,10 +142,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: "20"
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
+      TURBO_CACHE: "remote:rw"
     permissions:
       actions: read
       contents: write
@@ -153,7 +157,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Cache node modules
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -214,10 +218,10 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: "20"
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
+      TURBO_CACHE: "remote:rw"
     permissions:
       actions: read
       contents: write
@@ -229,7 +233,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Cache node modules
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
