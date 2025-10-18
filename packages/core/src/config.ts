@@ -79,6 +79,7 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
+  containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -180,6 +181,7 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
+  containerRegistryCredentialsSecretArn?: string;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

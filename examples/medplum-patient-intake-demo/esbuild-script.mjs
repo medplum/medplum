@@ -1,6 +1,8 @@
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* global process */
-/* eslint no-console: "off" */
+/* global console */
 /*eslint no-process-exit: "off"*/
 
 import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };

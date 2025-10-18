@@ -2,18 +2,17 @@
 sidebar_position: 1100
 ---
 
-# Testing Emails with Mailtrap
+# Testing emails with Mailtrap Email Sandbox
 
-[Mailtrap.io](https://mailtrap.io/) is an Email Delivery Platform built to help product companies ensure fast email delivery and high inboxing rates. It combines an intuitive interface for marketers to send impactful campaigns, a reliable API/SMTP services for developers, and a secure testing environment to ensure email quality before sending.
+[Mailtrap.io](https://mailtrap.io/)  is an email platform for developer and product teams who need high inboxing rates and fast email delivery. It offers a flexible email API and a reliable SMTP service for developers to send transactional and bulk emails.
 
-By acting as a dummy SMTP server, Mailtrap Email Sandbox eliminates the need for complex email authentication ([SPF](https://en.wikipedia.org/wiki/Sender_Policy_Framework), [DKIM](https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail), [DMARC](https://en.wikipedia.org/wiki/DMARC)) in pre-production environments and provides a secure inbox to catch all test emails, allowing you to safely verify their content and functionality.
+Also, Mailtrap provides a built-in Email Sandbox, which acts as a dummy SMTP server, capturing all outgoing emails. Teams can use it to catch test emails in an Email Sandbox, then inspect content, layout, HTML, and plain text versions. This way, they can make sure emails function correctly and fix any potential errors before messages reach real users.
 
 ## Prerequisites
 
 1. Create a [Mailtrap account](https://mailtrap.io/register/signup?ref=header)
-2. In the Mailtrap dashboard, select "Email Testing" from the left navigation
-3. Click "Inboxes" and then select your inbox
-4. In the Integration tab, find your SMTP credentials which include:
+2. In the Mailtrap dashboard, select "Sandboxes" from the left navigation and then select your sandbox
+4. In the Integration tab, find your SMTP credentials, which include:
    - Host (sandbox.smtp.mailtrap.io)
    - Port (choose from available options: 25, 465, 587, or 2525)
    - Username

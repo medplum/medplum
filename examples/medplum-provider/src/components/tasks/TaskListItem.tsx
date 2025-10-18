@@ -18,6 +18,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
   const isSelected = selectedTask?.id === task.id;
   const patient = useResource(task.for);
   const owner = useResource(task.owner);
+  const taskFrom = task?.authoredOn ? `from ${formatDate(task?.authoredOn)}` : '';
 
   return (
     <MedplumLink to={`/Task/${task.id}`} c="dark">
@@ -31,7 +32,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
       >
         <Stack gap={0}>
           <Text fw={700} className={classes.content}>
-            {task.code?.text ?? `Task from ${formatDate(task?.authoredOn)}`}
+            {task.code?.text ?? `Task ${taskFrom}`}
           </Text>
           {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
           {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}

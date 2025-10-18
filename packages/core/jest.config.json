@@ -11,5 +11,5 @@
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": ["**/src/**/*.ts"],
-  "setupFiles": ["./test.setup.cjs"]
+  "setupFiles": ["./src/test.setup.ts"]
 }
