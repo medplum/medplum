@@ -75,6 +75,7 @@ jobs:
 
   preview:
     name: Deploy previews
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [build]
@@ -119,7 +120,7 @@ jobs:
       - name: Deploy app preview
         run: './scripts/deploy-app.sh'
         env:
-          APP_BUCKET: preview.medplum.dev/previews/app-${{ github.sha }}
+          APP_BUCKET: preview.medplum.dev/previews/app-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'

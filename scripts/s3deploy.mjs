@@ -69,8 +69,10 @@ async function main() {
     return;
   }
 
-  const trimmedDestPath = destPath.replace(/^s3:\/\//, '');
-  const [s3Bucket, s3KeyPrefix] = trimmedDestPath.split('/');
+  const trimmedDestPath = destPath.toLowerCase().replace(/^s3:\/\//, '');
+  const slashIndex = trimmedDestPath.indexOf('/');
+  const s3Bucket = slashIndex === -1 ? trimmedDestPath : trimmedDestPath.substring(0, slashIndex);
+  const s3KeyPrefix = slashIndex === -1 ? undefined : trimmedDestPath.substring(slashIndex + 1);
   if (!s3Bucket) {
     console.error('Error: Destination path must be in the format "s3://bucket/key-prefix".');
     return;
