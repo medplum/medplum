@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
@@ -344,7 +344,7 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
     case 'number':
     case 'date':
     case 'quantity': {
-      const { operator, value: searchValue } = parsePrefix(value);
+      const { operator, value: searchValue } = parsePrefix(value, (modifier as Operator) || Operator.EQUALS);
       if (!isValidSearchValue(searchParam, searchValue)) {
         throw new OperationOutcomeError(
           badRequest(`Invalid format for ${searchParam.type} search parameter: ${searchValue}`)
@@ -386,13 +386,13 @@ function parseUnknownParameter(code: string, modifier: string, value: string): F
   return { code, operator, value };
 }
 
-function parsePrefix(input: string): { operator: Operator; value: string } {
+function parsePrefix(input: string, defaultOperator: Operator): { operator: Operator; value: string } {
   const prefix = input.substring(0, 2);
   const prefixOperator = PREFIX_OPERATORS[prefix];
   if (prefixOperator) {
     return { operator: prefixOperator, value: input.substring(2) };
   }
-  return { operator: Operator.EQUALS, value: input };
+  return { operator: defaultOperator, value: input };
 }
 
 function parseModifier(modifier: string): Operator {
@@ -576,4 +576,15 @@ export function splitSearchOnComma(input: string): string[] {
   // Push the last segment
   result.push(current);
   return result;
+}
+
+function invalidSearchModifier(modifier: string, searchParameterCodeOrId: string): OperationOutcome {
+  return badRequest(`Invalid modifier :${modifier} for ${searchParameterCodeOrId}`);
+}
+
+export function invalidSearchOperator(operator: Operator, searchParameterCodeOrId: string): OperationOutcome {
+  if (operator in MODIFIER_OPERATORS) {
+    return invalidSearchModifier(operator, searchParameterCodeOrId);
+  }
+  return badRequest(`Invalid operator ${operator} for ${searchParameterCodeOrId}`);
 }
