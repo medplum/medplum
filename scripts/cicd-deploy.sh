@@ -137,11 +137,6 @@ if [[ "$DEPLOY_APP" = true ]]; then
   source ./scripts/deploy-app.sh
 fi
 
-if [[ "$DEPLOY_DOCS" = true ]]; then
-  echo "Deploy docs"
-  source ./scripts/deploy-docs.sh
-fi
-
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
   source ./scripts/deploy-graphiql.sh
@@ -151,4 +146,10 @@ if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   source ./scripts/build-docker-server.sh
   source ./scripts/deploy-server.sh
+fi
+
+# Deploy docs last since it is the slowest
+if [[ "$DEPLOY_DOCS" = true ]]; then
+  echo "Deploy docs"
+  source ./scripts/deploy-docs.sh
 fi
