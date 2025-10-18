@@ -14,7 +14,8 @@ import { extname, join, relative } from 'node:path';
 // The normal AWS CLI command to copy files to S3 does not reliably handle content type and cache control headers.
 // This script uses the AWS SDK to upload files with the correct headers.
 
-const s3Client = new S3Client({});
+const region = 'us-east-1'; // S3 buckets for CloudFront must be in us-east-1
+const s3Client = new S3Client({ region });
 
 const mimeTypes = {
   '.js': 'text/javascript; charset=utf-8',
@@ -75,7 +76,7 @@ async function main() {
     return;
   }
 
-  console.log(`Starting deployment to s3://${destPath}/`);
+  console.log(`Starting deployment to s3://${trimmedDestPath}/`);
   const allFiles = await getFiles(sourcePath);
   const uploadRequests = [];
   for (const filePath of allFiles) {
