@@ -81,6 +81,7 @@ jobs:
     needs: [build]
     permissions:
       id-token: write
+      pull-requests: write
     env:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     steps:
