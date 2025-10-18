@@ -105,7 +105,7 @@ jobs:
       - name: Install
         run: npm ci
       - name: Build Project
-        run: npm run build
+        run: npm run build:all
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
@@ -117,15 +117,51 @@ jobs:
         with:
           role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
+      - name: Compare values
+        run: |
+          echo "github.run_number: ${{ github.run_number }}"
+          echo "github.run_id: ${{ github.run_id }}"
+      - name: Check in script
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('context.runNumber:', context.runNumber);  // Will match github.run_number
+            console.log('context.runId:', context.runId);          // Will match github.run_id
       - name: Deploy app preview
         run: './scripts/deploy-app.sh'
         env:
           APP_BUCKET: preview.medplum.dev/previews/app-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
-          MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
-          AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
+      - name: Deploy docs preview
+        run: './scripts/deploy-docs.sh'
+        env:
+          DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+      - name: Comment preview URLs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const body = `### 🚀 Preview Links
+
+            | Project   | URL  |
+            | --------- | ---- |
+            | App       | https://app-${context.payload.pull_request.user.login}-${context.runNumber}.preview.medplum.dev   |
+            | Docs      | https://docs-${context.payload.pull_request.user.login}-${context.runNumber}.preview.medplum.dev  |
+            | GraphiQL  | TODO |
+            | Provider  | TODO |
+
+            **Commit:** \`${context.sha.substring(0, 7)}\`
+            **Build:** [See logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            `;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
 
   eslint:
     name: Run eslint
@@ -176,7 +212,7 @@ jobs:
         id: fmt
         run: |
           rm -f .failed
-          npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
+          npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed
 
           if [ -s .failed ]; then
             delimiter="$(openssl rand -hex 8)"
@@ -414,7 +450,7 @@ jobs:
               echo "Max retries reached. Deployment not ready."
               exit 1
             fi
-            
+
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
             sleep 30
