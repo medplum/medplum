@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BaseSchema, InternalTypeSchema } from '@medplum/core';
-import { compressElement, getAllDataTypes, indexStructureDefinitionBundle, isLowerCase } from '@medplum/core';
+import { compressElement, getAllDataTypes, indexStructureDefinitionBundle, isLowerCase, isMain } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
@@ -27,10 +27,6 @@ export function main(): void {
   );
 }
 
-if (require.main === module) {
-  main();
-}
-
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
   return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && schema.kind !== 'logical' && !schema.parentType;
 }
@@ -47,4 +43,8 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
       addOutputType(outputTypes, innerType.name, innerType);
     }
   }
+}
+
+if (isMain(import.meta)) {
+  main();
 }
