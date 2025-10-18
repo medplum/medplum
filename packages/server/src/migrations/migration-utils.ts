@@ -84,9 +84,9 @@ export function getPostDeployMigration(migrationNumber: number): PostDeployMigra
 
 export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
-  requiredBefore: string | undefined;
+  requiredBefore?: string;
 } {
-  const manifest = dataVersionManifest as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+  const manifest = dataVersionManifest as Record<string, { serverVersion: string; requiredBefore?: string }>;
   return manifest['v' + migrationNumber];
 }
 
