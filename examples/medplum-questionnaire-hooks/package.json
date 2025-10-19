@@ -1,22 +1,17 @@
 {
   "name": "medplum-questionnaire-hooks",
-  "private": true,
   "version": "4.5.2",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "dev": "vite",
     "preview": "vite preview"
   },
   "prettier": {
     "printWidth": 120,
     "singleQuote": true,
     "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
   },
   "devDependencies": {
     "@medplum/core": "4.5.2",
