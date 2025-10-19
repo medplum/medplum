@@ -3210,7 +3210,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Bulk Data Response containing links to Bulk Data files. See the {@link https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status | "Response - Complete Status"} for full details.
    */
   async bulkExport(
-    //eslint-disable-next-line default-param-last
     exportLevel = '',
     resourceTypes?: string,
     since?: string,
