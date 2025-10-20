@@ -13,7 +13,8 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { Repository, getSystemRepo } from './repo';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
+import { getSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -30,10 +31,9 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
   const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
-  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await systemRepo.readReference(membership.project);
+  const { project, projectShardId } = await getProjectAndProjectShardId(membership.project);
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -44,6 +44,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
+    const systemRepo = getSystemRepo(undefined, projectShardId);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -70,7 +71,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     validateTerminology: project.features?.some((f) => f === 'validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
-    projectShardId: project.shardId ?? 'global',
+    projectShardId,
   });
 }
 
@@ -80,6 +81,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
  * @returns The finalized access policy.
  */
 export async function getAccessPolicyForLogin(authState: AuthState): Promise<AccessPolicy | undefined> {
+  // TODO{sharding} check this function to be sure it is correct for sharding
   const { project, login } = authState;
   const membership = authState.onBehalfOfMembership ?? authState.membership;
 

@@ -319,7 +319,8 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  // TODO{sharding} more thorough way to handle multiple searchRequest.types
+  const client = repo.getDatabaseClient(DatabaseMode.READER, searchRequest.resourceType ?? searchRequest.types?.[0]);
   let rows: any[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {

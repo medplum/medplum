@@ -29,6 +29,8 @@ export interface MedplumServerConfig {
   /** @deprecated specify `readonlyDatabase.host` and `readonlyDatabase.ssl.require` as needed */
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  /** The default shard ID to place new projects and related resources */
+  defaultShardId?: string;
   shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;

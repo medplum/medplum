@@ -95,7 +95,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import type { ShardPool, ShardPoolClient } from '../shard-pool';
+import type { ShardPool, ShardPoolClient } from '../sharding';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -314,7 +314,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   get projectShardId(): string {
-    return this.context.projectShardId ?? 'global';
+    return this.context.projectShardId ?? 'TODO-Repository.projectShardIdDefault';
   }
 
   clone(): Repository {
@@ -2432,7 +2432,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       this.mode = RepositoryMode.WRITER;
     }
 
-    const shardId = resourceType ? this.getResourceTypeShardId(resourceType) : 'global';
+    const shardId = this.getResourceTypeShardId(resourceType);
     return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode, shardId);
   }
 
@@ -2446,15 +2446,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async getConnection(mode: DatabaseMode, resourceType?: ResourceType): Promise<PoolClient> {
     this.assertNotClosed();
     if (!this.conn) {
-      const shardId = resourceType ? this.getResourceTypeShardId(resourceType) : 'global';
+      const shardId = this.getResourceTypeShardId(resourceType);
       this.conn = await getDatabasePool(mode, shardId).connect();
     }
     return this.conn;
   }
 
-  public getResourceTypeShardId(resourceType: ResourceType): string {
+  public getResourceTypeShardId(
+    resourceType: string | undefined,
+    defaultShardId: string = 'TODO-getResourceTypeShardIdDefault'
+  ): string {
     if (!this.projectShardId) {
       throw new Error('No project shard ID');
+    }
+
+    if (!resourceType) {
+      if (defaultShardId.startsWith('TODO')) {
+        defaultShardId = this.projectShardId;
+      }
+      return defaultShardId;
     }
 
     if (['User', 'Login', 'ProjectMembership', 'ClientApplication', 'SmartAppLaunch'].includes(resourceType)) {
@@ -2476,7 +2486,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (this.getResourceTypeShardId(resourceType) !== this.conn.shardId) {
-      throw new Error('Shard access not allowed for resource type: ' + resourceType);
+      throw new Error(
+        'Shard access not allowed for resource type' +
+          JSON.stringify({
+            resourceType,
+            resourceTypeShardId: this.getResourceTypeShardId(resourceType),
+            projectShardId: this.projectShardId,
+            connShardId: this.conn.shardId,
+          })
+      );
     }
   }
 
@@ -2903,7 +2921,10 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(conn?: ShardPoolClient, projectShardId?: string): Repository {
+export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): Repository {
+  if (conn && shardId) {
+    throw new Error('Cannot specify both conn and shardId');
+  }
   return new Repository(
     {
       superAdmin: true,
@@ -2912,8 +2933,8 @@ export function getSystemRepo(conn?: ShardPoolClient, projectShardId?: string): 
       author: {
         reference: 'system',
       },
-      // System repo does not have an associated Project; it can write to any
-      projectShardId,
+      projects: undefined, // System repo does not have an associated Project; it can write to any
+      projectShardId: conn?.shardId ?? shardId, // but it still must be associated with a shard
     },
     conn
   );
