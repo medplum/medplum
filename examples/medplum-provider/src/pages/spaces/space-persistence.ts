@@ -129,7 +129,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
           sequenceNumber: data.sequenceNumber || 0,
         });
       } catch (error) {
-         throw new Error(`Failed to parse message: ${error}`);
+        throw new Error(`Failed to parse message: ${error}`);
       }
     }
   }
