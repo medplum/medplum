@@ -124,8 +124,6 @@ export function SpacesPage(): JSX.Element {
           await saveMessage(medplum, currentTopicId, assistantMessageWithToolCalls, currentMessages.length - 1);
         }
 
-        let hasFailedRequest = false;
-
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'fhir_request') {
             const args =
@@ -169,7 +167,6 @@ export function SpacesPage(): JSX.Element {
                 await saveMessage(medplum, currentTopicId, toolMessage, currentMessages.length - 1);
               }
             } catch (err: any) {
-              hasFailedRequest = true;
               const errorResult = {
                 error: true,
                 message: `Unable to execute ${method}: ${path}`,
@@ -189,38 +186,6 @@ export function SpacesPage(): JSX.Element {
               }
             }
           }
-        }
-
-        if (hasFailedRequest) {
-          const summaryMessages = [
-            {
-              role: 'system',
-              content: SUMMARY_SYSTEM_MESSAGE,
-            },
-            ...currentMessages.slice(1),
-          ];
-
-          response = await medplum.executeBot(botId, {
-            resourceType: 'Parameters',
-            parameter: [
-              { name: 'messages', valueString: JSON.stringify(summaryMessages) },
-              { name: 'model', valueString: selectedModel },
-              { name: 'temperature', valueString: '0.3' },
-            ],
-          });
-
-          const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
-          if (content) {
-            const assistantMessage: Message = { role: 'assistant', content };
-            setMessages([...currentMessages, assistantMessage]);
-
-            // Save assistant message
-            if (currentTopicId) {
-              await saveMessage(medplum, currentTopicId, assistantMessage, currentMessages.length);
-            }
-          }
-          setLoading(false);
-          return;
         }
 
         // Second AI request: summarize the FHIR response
