@@ -9,7 +9,7 @@ import { getTopicForUser } from './utils';
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
   });
 
   afterAll(async () => {

@@ -219,7 +219,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
   loadStructureDefinitions();
-  initRedis(config.redis);
+  initRedis(config);
 
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     await initDatabase(config);

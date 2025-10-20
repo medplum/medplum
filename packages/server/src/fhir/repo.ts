@@ -932,7 +932,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Handle special cases for resource caching
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const redis = getRedis();
+      const redis = getRedis(this.getResourceTypeShardId(resource.resourceType));
       const project = resource?.meta?.project;
       if (!project) {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
@@ -941,7 +941,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
     }
     if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
+      await removeCachedProfile(this.getResourceTypeShardId(resource.resourceType), resource);
     }
   }
 
@@ -1025,7 +1025,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.context.projects?.length) {
       // Try loading from cache, using all available Project IDs
       const cacheKeys = this.context.projects.map((p) => getProfileCacheKey(p.id, url));
-      const results = await getRedis().mget(...cacheKeys);
+      const results = await getRedis(this.getResourceTypeShardId('StructureDefinition')).mget(...cacheKeys);
       const cachedProfile = results.find(Boolean) as string | undefined;
       if (cachedProfile) {
         return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
@@ -1056,7 +1056,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (this.context.projects?.length && profile) {
       // Store loaded profile in cache
-      await cacheProfile(profile);
+      await cacheProfile(this.getResourceTypeShardId('StructureDefinition'), profile);
     }
     return profile;
   }
@@ -2647,7 +2647,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return undefined;
     }
-    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+
+    const cachedValue = await getRedis(this.getResourceTypeShardId(resourceType)).get(getCacheKey(resourceType, id));
     return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
   }
 
@@ -2666,7 +2667,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // Return early to avoid calling mget() with no args, which is an error
       return [];
     }
-    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
+
+    // Only read from cache if all references are in the same shard
+    // This may not be necessary constraint, but keeping it simple for now
+    const shardId = this.getResourceTypeShardId(referenceKeys[0].split('/')[0]);
+    for (let i = 1; i < referenceKeys.length; i++) {
+      const otherShardId = this.getResourceTypeShardId(referenceKeys[i].split('/')[0]);
+      if (otherShardId !== shardId) {
+        return new Array(references.length);
+      }
+    }
+    return (await getRedis(shardId).mget(referenceKeys)).map((cachedValue) =>
       cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
     );
   }
@@ -2686,7 +2697,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const projectId = resource.meta?.project;
-    await getRedis().set(
+    const shardId = this.getResourceTypeShardId(resource.resourceType);
+    await getRedis(shardId).set(
       getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
@@ -2706,7 +2718,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    await getRedis().del(getCacheKey(resourceType, id));
+    await getRedis(this.getResourceTypeShardId(resourceType)).del(getCacheKey(resourceType, id));
   }
 
   /**
@@ -2725,7 +2737,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return getCacheKey(resourceType, id);
     });
 
-    await getRedis().del(cacheKeys);
+    await getRedis(this.getResourceTypeShardId(resourceType)).del(cacheKeys);
   }
 
   async ensureInTransaction<TResult>(
@@ -2781,14 +2793,15 @@ function getCacheKey(resourceType: string, id: string): string {
 
 /**
  * Writes a FHIR profile cache entry to Redis.
+ * @param shardId - The shard ID.
  * @param profile - The profile structure definition.
  */
-async function cacheProfile(profile: StructureDefinition): Promise<void> {
+async function cacheProfile(shardId: string, profile: StructureDefinition): Promise<void> {
   if (!profile.url || !profile.meta?.project) {
     return;
   }
   profile = await getSystemRepo().readReference(createReference(profile));
-  await getRedis().set(
+  await getRedis(shardId).set(
     getProfileCacheKey(profile.meta?.project as string, profile.url),
     JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
     'EX',
@@ -2798,13 +2811,14 @@ async function cacheProfile(profile: StructureDefinition): Promise<void> {
 
 /**
  * Writes a FHIR profile cache entry to Redis.
+ * @param shardId - The shard ID.
  * @param profile - The profile structure definition.
  */
-async function removeCachedProfile(profile: StructureDefinition): Promise<void> {
+async function removeCachedProfile(shardId: string, profile: StructureDefinition): Promise<void> {
   if (!profile.url || !profile.meta?.project) {
     return;
   }
-  await getRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
+  await getRedis(shardId).del(getProfileCacheKey(profile.meta.project, profile.url));
 }
 
 /**
