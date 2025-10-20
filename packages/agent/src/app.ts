@@ -680,7 +680,7 @@ export class App {
   private trySendToHl7Connection(): void {
     while (this.hl7Queue.length > 0) {
       const msg = this.hl7Queue.shift();
-      if (msg?.type === 'agent:transmit:response' && msg.channel) {
+      if (msg && msg.type === 'agent:transmit:response' && msg.channel) {
         const channel = this.channels.get(msg.channel);
         if (channel) {
           channel.sendToRemote(msg);
