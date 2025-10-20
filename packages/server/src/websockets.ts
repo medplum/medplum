@@ -15,7 +15,7 @@ import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat 
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from './heartbeat';
 import { globalLogger } from './logger';
 import { setGauge } from './otel/otel';
-import { getRedis, getRedisSubscriber } from './redis';
+import { getGlobalRedis, getRedisSubscriber } from './redis';
 import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
@@ -153,7 +153,7 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
-      await getRedis().publish(channel, data as Buffer);
+      await getGlobalRedis().publish(channel, data as Buffer);
     })
   );
 
