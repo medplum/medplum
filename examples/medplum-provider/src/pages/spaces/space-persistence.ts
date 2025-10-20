@@ -110,7 +110,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
     _sort: '_lastUpdated',
-    _count: '100',
+    _count: '20',
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
@@ -129,13 +129,10 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
         sequenceNumber: data.sequenceNumber || 0,
       });
       } catch (error) {
-        throw new Error('Failed to parse message: ' + error);
+         throw new Error(`Failed to parse message: ${error}`);
       }
     }
   }
-
-  // Sort by sequence number to maintain order
-  messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
   return messages.map((m) => m.message);
 }

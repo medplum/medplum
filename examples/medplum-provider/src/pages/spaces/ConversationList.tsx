@@ -24,14 +24,11 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
       try {
         const recentTopics = await loadRecentTopics(medplum, 20);
         setTopics(recentTopics);
-      } catch (error) {
-        showErrorNotification(error);
       } finally {
         setLoading(false);
       }
     };
-    loadTopics()
-      .catch(showErrorNotification)
+    loadTopics().catch(showErrorNotification);
   }, [medplum]);
 
   return (

@@ -233,7 +233,7 @@ export function SpacesPage(): JSX.Element {
           ...currentMessages.slice(1), // Skip original system message, include all conversation
         ];
 
-        response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+        response = await medplum.executeBot(botId, {
           resourceType: 'Parameters',
           parameter: [
             { name: 'messages', valueString: JSON.stringify(summaryMessages) },
