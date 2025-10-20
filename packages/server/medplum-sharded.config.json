@@ -21,21 +21,8 @@
   "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
   "introspectionEnabled": true,
+  "defaultShardId": "shard-1",
   "shards": {
-    "shard-0": {
-      "database": {
-        "host": "localhost",
-        "port": 5432,
-        "dbname": "medplum",
-        "username": "medplum",
-        "password": "medplum"
-      },
-      "redis": {
-        "host": "localhost",
-        "port": 6379,
-        "password": "medplum"
-      }
-    },
     "shard-1": {
       "database": {
         "disableRunPostDeployMigrations": false,

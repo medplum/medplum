@@ -12,7 +12,7 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-import type { ShardPool } from './shard-pool';
+import type { ShardPool } from './sharding';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   // Ensure 'global' shard is run first
@@ -150,6 +150,12 @@ async function createSuperAdmin(systemRepo: Repository, config: MedplumServerCon
  * @param systemRepo - The system repository to use to check if the database is seeded.
  * @returns True if already seeded.
  */
-function isSeeded(systemRepo: Repository): Promise<User | undefined> {
-  return systemRepo.searchOne({ resourceType: 'User' });
+function isSeeded(systemRepo: Repository): Promise<Project | undefined> {
+  //TODO{sharding} - replace this with some well known table that is set after seeding so it doesn't potentially
+  // relay on the global shard or a super admin NOT having taken some action like deleting all projects; which is
+  // weird to think about but technically possible?
+  return systemRepo.searchOne({
+    resourceType: 'Project',
+    filters: [{ code: 'name', operator: 'exact', value: 'Super Admin' }],
+  });
 }

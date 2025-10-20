@@ -114,8 +114,8 @@ export function initOtelHeartbeat(): void {
     return;
   }
   otelHeartbeatListener = async () => {
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, 'TODO-otelHeartbeatListenerWriter');
+    const readerPool = getDatabasePool(DatabaseMode.READER, 'TODO-otelHeartbeatListenerReader');
 
     setGauge('medplum.db.idleConnections', writerPool.idleCount, {
       ...BASE_METRIC_OPTIONS,
