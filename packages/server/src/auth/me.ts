@@ -35,10 +35,10 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
   const { authState } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource>;
+  const systemRepo = getSystemRepo(undefined, authState.projectShardId);
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
