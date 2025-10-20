@@ -25,7 +25,7 @@
     "@mantine/notifications": "7.17.8",
     "@medplum/core": "4.5.1",
     "@medplum/eslint-config": "4.5.1",
-    "next": "15.5.6",
+    "next": "15.5.4",
     "next-auth": "4.24.11",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
@@ -34,11 +34,11 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "4.5.1",
-    "@types/node": "20.19.22",
+    "@types/node": "20.19.20",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
+    "@types/react-dom": "19.2.1",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.5.6",
+    "eslint-config-next": "15.5.4",
     "typescript": "5.9.3"
   },
   "packageManager": "npm@10.9.4",

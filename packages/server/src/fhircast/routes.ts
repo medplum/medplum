@@ -262,7 +262,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
 
   const currentContext = await getCurrentContext(projectId, event['hub.topic']);
   // If the current context is a DiagnosticReport anchor context, then store it for later
-  if (currentContext?.['context.type'] === 'DiagnosticReport') {
+  if (currentContext && currentContext['context.type'] === 'DiagnosticReport') {
     const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource;
     if (!isResource(report, 'DiagnosticReport')) {
       sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));

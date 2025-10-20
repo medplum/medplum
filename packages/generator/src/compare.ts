@@ -152,7 +152,7 @@ function processTest(test: any): void {
 
   let outputStr;
   let anyOutput = false;
-  if (test.output?.['#text'] === true) {
+  if (test.output && test.output['#text'] === true) {
     outputStr = JSON.stringify([true]);
   } else if (test.output && Array.isArray(test.output)) {
     outputStr = JSON.stringify(test.output.map((o: any) => o['#text']));

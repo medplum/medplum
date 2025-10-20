@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BotEvent, CreatePdfOptions, MedplumClient } from '@medplum/core';
 import { formatAddress, formatDate, formatHumanName, getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
+import type { BotEvent, CreatePdfOptions, MedplumClient } from '@medplum/core';
 import type {
   ChargeItemDefinition,
   Coding,
@@ -13,7 +13,6 @@ import type {
   QuestionnaireResponse,
   Reference,
 } from '@medplum/fhirtypes';
-import type { TableCell } from 'pdfmake/interfaces';
 
 type DocDefinition = CreatePdfOptions['docDefinition'];
 type Content = DocDefinition['content'];
@@ -159,7 +158,7 @@ function getPatientInfo(patient: Patient): Content[] {
 }
 
 function createFeeTable(chargeDefinitions: ChargeItemDefinition[], serviceDate: string): Content[] {
-  const body: TableCell[][] = [];
+  const body = [];
   let totalFee = 0;
   for (const chargeDefinition of chargeDefinitions) {
     const serviceDisplay = getServiceDisplayString(chargeDefinition);
