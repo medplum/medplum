@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Group, ScrollArea, Box, Divider } from '@mantine/core';
+import { Stack, Text, Group, ScrollArea, Box, Divider, Paper   } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
@@ -31,7 +31,8 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
 
 
   return (
-    <Stack w={300} p="md">
+    <Paper h="100%">
+    <Stack  p="md">
       <Text size="sm" fw={600} c="dimmed" mt="md">
         Recent Conversations
       </Text>
@@ -51,13 +52,12 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
           {!loading &&
             topics.length > 0 &&
             topics.map((topic) => (
-              <Stack gap={0}>
+              <Stack gap={0} key={topic.id}>
                 <Box
-                  key={topic.id}
+                  bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
                   p="sm"
                   style={{
                     cursor: 'pointer',
-                    backgroundColor: currentTopicId === topic.id ? 'white' : undefined,
                   }}
                   onClick={() => {
                     if (topic.id) {
@@ -80,6 +80,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
         </Stack>
       </ScrollArea>
     </Stack>
+    </Paper>
   );
 }
 

@@ -80,7 +80,6 @@ export function ChatInput({
           styles={{
             input: {
               fontSize: '12px',
-              color: '#666',
               cursor: 'pointer',
             },
           }}

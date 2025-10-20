@@ -16,6 +16,11 @@ export async function createConversationTopic(
   title: string,
   model: string
 ): Promise<Communication> {
+
+  if (!medplum.getProfile()?.id) {
+    throw new Error('Profile not found');
+  }
+
   const topic: Communication = {
     resourceType: 'Communication',
     status: 'in-progress',

@@ -13,6 +13,8 @@ import { createConversationTopic, saveMessage, loadConversationMessages } from '
 import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
 
+const BOT_ID = '9bce4942-3b77-4d8c-b025-e324da963810';
+
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
   const [messages, setMessages] = useState<Message[]>([SYSTEM_MESSAGE]);
@@ -91,7 +93,7 @@ export function SpacesPage(): JSX.Element {
       if (currentTopicId) {
         await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
       }
-      let response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+      let response = await medplum.executeBot(BOT_ID, {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
@@ -194,7 +196,7 @@ export function SpacesPage(): JSX.Element {
             ...currentMessages.slice(1),
           ];
 
-          response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+          response = await medplum.executeBot(BOT_ID, {
             resourceType: 'Parameters',
             parameter: [
               { name: 'messages', valueString: JSON.stringify(summaryMessages) },
@@ -281,8 +283,6 @@ export function SpacesPage(): JSX.Element {
               w={320}
               style={{
                 ...styles,
-                borderRight: '1px solid #e9ecef',
-                position: 'relative',
               }}
             >
               <ConversationList
