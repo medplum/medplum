@@ -12,6 +12,7 @@ import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { AuthState } from '../oauth/middleware';
+import { getProjectShardId } from '../sharding';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;
@@ -25,6 +26,7 @@ export class ResourceCap {
   private current?: RateLimiterRes;
   private readonly enabled: boolean;
   private readonly logger: Logger;
+  private readonly projectShardId: string;
 
   private initPromise?: Promise<void>;
 
@@ -39,6 +41,7 @@ export class ResourceCap {
 
     this.logger = logger;
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableResourceCap')?.valueBoolean === true;
+    this.projectShardId = getProjectShardId(authState.project);
   }
 
   private async init(): Promise<void> {
@@ -52,7 +55,7 @@ export class ResourceCap {
         new SelectQuery(rt).raw(`COUNT(*)::int as "count"`).where('projectId', '=', this.projectKey)
       );
       const query = new SelectQuery('combined', new Union(...subqueries)).column('count');
-      const tableCounts = await query.execute(getDatabasePool(DatabaseMode.READER));
+      const tableCounts = await query.execute(getDatabasePool(DatabaseMode.READER, this.projectShardId));
       const totalCount = tableCounts.reduce((sum, row) => sum + row.count, 0);
       currentStatus = await this.limiter.set(this.projectKey, totalCount, ONE_DAY);
     }

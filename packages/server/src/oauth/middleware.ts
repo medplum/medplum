@@ -11,6 +11,7 @@ import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
 export interface AuthState {
   login: Login;
   project: WithId<Project>;
+  projectShardId: string;
   membership: WithId<ProjectMembership>;
   userConfig: UserConfiguration;
   accessToken?: string;

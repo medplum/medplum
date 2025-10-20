@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { Project, ProjectShard, Reference } from '@medplum/fhirtypes';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
+import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 
 export interface GlobalProject {
@@ -46,6 +47,10 @@ export class ShardPool extends Pool {
   }
 }
 
+export function getGlobalSystemRepo(): Repository {
+  return getSystemRepo(undefined, 'global');
+}
+
 export function getProjectShardId(
   project: GlobalProject,
   defaultShardId: string = 'TODO-getProjectShardIdDefault'
@@ -57,7 +62,7 @@ export function getProjectShardId(
 export async function getProjectAndProjectShardId(
   projectReference: Reference<Project>
 ): Promise<{ project: WithId<Project>; projectShardId: string }> {
-  const globalSystemRepo = getSystemRepo(undefined, 'global');
+  const globalSystemRepo = getGlobalSystemRepo();
   const globalProject: GlobalProject = await globalSystemRepo.readReference<Project>(
     projectReference as Reference<Project>
   );

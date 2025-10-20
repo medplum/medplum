@@ -13,7 +13,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -28,12 +28,10 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership, project, projectShardId } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
-  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await systemRepo.readReference(membership.project);
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -44,6 +42,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
+    const systemRepo = getSystemRepo(undefined, projectShardId);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -69,7 +68,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
-    projectShardId: project.shardId ?? 'global',
+    projectShardId,
   });
 }
 
