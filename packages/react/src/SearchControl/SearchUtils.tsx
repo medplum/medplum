@@ -531,12 +531,12 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   // Priority 1: InternalSchemaElement by exact match
-  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+  if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
 
   // Priority 2: SearchParameter by exact match
-  if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
+  if (field.searchParams?.length === 1 && field.name === field.searchParams[0].code) {
     return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 
@@ -578,7 +578,7 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
  */
 function renderSearchParameterValue(resource: Resource, searchParam: SearchParameter): JSX.Element | null {
   const value = evalFhirPathTyped(searchParam.expression as string, [{ type: resource.resourceType, value: resource }]);
-  if (!value || value.length === 0) {
+  if (value?.length === 0) {
     return null;
   }
 

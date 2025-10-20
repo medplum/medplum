@@ -45,7 +45,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   } else {
     // DocumentReference
     const inputDocRef = await repo.readResource<DocumentReference>('DocumentReference', id);
-    if (!inputDocRef.content || inputDocRef.content.length === 0) {
+    if (inputDocRef.content?.length === 0) {
       return [badRequest('DocumentReference has no content attachments')];
     }
 

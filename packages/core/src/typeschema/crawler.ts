@@ -257,7 +257,7 @@ export function getNestedProperty(
         for (const element of current) {
           next.push(propertyGetter(element, prop, options));
         }
-      } else if (options?.withPath && current && current.value !== undefined) {
+      } else if (options?.withPath && current?.value !== undefined) {
         next.push(propertyGetter(current, prop, options));
       } else if (!options?.withPath && current !== undefined) {
         next.push(propertyGetter(current, prop, options));
