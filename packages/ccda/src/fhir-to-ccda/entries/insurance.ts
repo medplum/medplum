@@ -28,7 +28,7 @@ export function createInsuranceEntry(converter: FhirToCcdaConverter, account: Ac
   if (account.coverage) {
     for (const accountCoverage of account.coverage) {
       const coverage = converter.findResourceByReference(accountCoverage.coverage);
-      if (!coverage || coverage.resourceType !== 'Coverage') {
+      if (coverage?.resourceType !== 'Coverage') {
         continue;
       }
 

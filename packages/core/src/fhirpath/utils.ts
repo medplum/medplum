@@ -134,7 +134,7 @@ export function getTypedPropertyValueWithSchema(
 
   const value = typedValue.value;
   const types = element.type;
-  if (!types || types.length === 0) {
+  if (types?.length === 0) {
     return undefined;
   }
 
