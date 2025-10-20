@@ -15,9 +15,9 @@ import { ChatInput } from './ChatInput';
 import type { Identifier } from '@medplum/fhirtypes';
 
 const botId: Identifier = {
-  "value": "ai-api-bot",
-  "system": "https://www.medplum.com/bots"
-}
+  value: 'ai-api-bot',
+  system: 'https://www.medplum.com/bots',
+};
 
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();

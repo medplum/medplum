@@ -30,8 +30,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
         setLoading(false);
       }
     };
-    loadTopics()
-      .catch(showErrorNotification)
+    loadTopics().catch(showErrorNotification);
   }, [medplum]);
 
   return (
