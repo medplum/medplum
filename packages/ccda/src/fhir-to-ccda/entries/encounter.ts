@@ -57,7 +57,7 @@ function createEncounterDiagnosis(
   diagnosis: EncounterDiagnosis
 ): CcdaEntryRelationship | undefined {
   const condition = converter.findResourceByReference(diagnosis.condition);
-  if (condition?.resourceType !== 'Condition') {
+  if (!condition || condition.resourceType !== 'Condition') {
     return undefined;
   }
   return {
