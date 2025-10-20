@@ -119,7 +119,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1249);
+    await server.start(1249);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -165,7 +165,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1250);
+    await server.start(1250);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -215,7 +215,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1251);
+    await server.start(1251);
 
     const client = new Hl7Client({
       host: 'localhost',
