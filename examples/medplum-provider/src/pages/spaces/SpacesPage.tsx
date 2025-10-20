@@ -12,6 +12,7 @@ import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
 import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
+import classes from './SpacesPage.module.css';
 import type { Identifier } from '@medplum/fhirtypes';
 
 const botId: Identifier = {
@@ -268,9 +269,9 @@ export function SpacesPage(): JSX.Element {
         <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
           <Box
             w="100%"
+            className={hasStarted ? classes.fadeOut : undefined}
             style={{
               maxWidth: '700px',
-              animation: hasStarted ? 'fadeOut 0.3s ease-out' : 'none',
             }}
           >
             <Text size="xl" fw={700} mb="xs">
@@ -313,9 +314,9 @@ export function SpacesPage(): JSX.Element {
 
       <Stack
         p="md"
+        className={classes.fadeIn}
         style={{
           flex: 1,
-          animation: 'fadeIn 0.3s ease-in',
         }}
       >
         <Group justify="space-between">
@@ -378,17 +379,6 @@ export function SpacesPage(): JSX.Element {
             onModelChange={setSelectedModel}
           />
         </Box>
-
-        <style>{`
-          @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}</style>
       </Stack>
     </Flex>
   );
