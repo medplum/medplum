@@ -101,10 +101,7 @@ export async function saveMessage(
  * @param topicId - The ID of the conversation topic
  * @returns Array of messages
  */
-export async function loadConversationMessages(
-  medplum: MedplumClient,
-  topicId: string
-): Promise<Message[]> {
+export async function loadConversationMessages(medplum: MedplumClient, topicId: string): Promise<Message[]> {
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
     _sort: '_lastUpdated',
@@ -151,4 +148,3 @@ export async function loadRecentTopics(medplum: MedplumClient, limit: number = 1
     _count: String(limit),
   });
 }
-

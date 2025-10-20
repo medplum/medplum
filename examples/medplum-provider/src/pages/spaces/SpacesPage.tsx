@@ -285,11 +285,7 @@ export function SpacesPage(): JSX.Element {
                 position: 'relative',
               }}
             >
-              <ConversationList
-                key={refreshKey}
-                currentTopicId={topicId}
-                onSelectTopic={handleSelectTopic}
-              />
+              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
             </Box>
           )}
         </Transition>
@@ -341,11 +337,7 @@ export function SpacesPage(): JSX.Element {
               position: 'relative',
             }}
           >
-            <ConversationList
-              key={refreshKey}
-              currentTopicId={topicId}
-              onSelectTopic={handleSelectTopic}
-            />
+            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
           </Box>
         )}
       </Transition>
