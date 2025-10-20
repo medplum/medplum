@@ -15,7 +15,7 @@ describe('Redis', () => {
   });
 
   test('Get redis', async () => {
-    initRedis(config.redis);
+    initRedis(config);
     expect(getRedis()).toBeDefined();
     await closeRedis();
   });
@@ -32,14 +32,14 @@ describe('Redis', () => {
     });
 
     test('Getting a subscriber', async () => {
-      initRedis(config.redis);
+      initRedis(config);
       const subscriber = getRedisSubscriber();
       expect(subscriber).toBeInstanceOf(Redis);
       await closeRedis();
     });
 
     test('Hanging subscriber still disconnects on closeRedis', async () => {
-      initRedis(config.redis);
+      initRedis(config);
       const subscriber = getRedisSubscriber();
 
       let reject: (err: Error) => void;
@@ -62,7 +62,7 @@ describe('Redis', () => {
     });
 
     test('Disconnecting a subscriber removes it from the list', async () => {
-      initRedis(config.redis);
+      initRedis(config);
       expect(getRedisSubscriberCount()).toStrictEqual(0);
       const subscriber = getRedisSubscriber();
       expect(getRedisSubscriberCount()).toStrictEqual(1);
