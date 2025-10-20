@@ -388,7 +388,7 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
   }
 
   let sourceValue = evalFhirPathTyped(sourceElement, [sourceContext]);
-  if (!sourceValue || sourceValue.length === 0) {
+  if (sourceValue?.length === 0) {
     return [];
   }
 

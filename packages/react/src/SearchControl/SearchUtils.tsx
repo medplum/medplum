@@ -578,7 +578,7 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
  */
 function renderSearchParameterValue(resource: Resource, searchParam: SearchParameter): JSX.Element | null {
   const value = evalFhirPathTyped(searchParam.expression as string, [{ type: resource.resourceType, value: resource }]);
-  if (!value || value.length === 0) {
+  if (value?.length === 0) {
     return null;
   }
 
