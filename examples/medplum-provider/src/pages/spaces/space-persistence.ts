@@ -118,16 +118,16 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   for (const comm of communications) {
     if (comm.payload?.[0]?.contentString) {
       try {
-      const data = JSON.parse(comm.payload[0].contentString);
-      messages.push({
-        message: {
-          role: data.role,
-          content: data.content,
-          tool_calls: data.tool_calls,
-          tool_call_id: data.tool_call_id,
-        },
-        sequenceNumber: data.sequenceNumber || 0,
-      });
+        const data = JSON.parse(comm.payload[0].contentString);
+        messages.push({
+          message: {
+            role: data.role,
+            content: data.content,
+            tool_calls: data.tool_calls,
+            tool_call_id: data.tool_call_id,
+          },
+          sequenceNumber: data.sequenceNumber || 0,
+        });
       } catch (error) {
          throw new Error(`Failed to parse message: ${error}`);
       }
