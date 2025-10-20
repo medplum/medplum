@@ -25,10 +25,9 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
       setTopics(recentTopics);
     };
     loadTopics()
-    .catch(showErrorNotification)
-    .finally(() => setLoading(false));
+      .catch(showErrorNotification)
+      .finally(() => setLoading(false));
   }, [medplum]);
-
 
   return (
     <Paper h="100%">

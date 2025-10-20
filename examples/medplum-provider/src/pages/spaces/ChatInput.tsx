@@ -88,4 +88,3 @@ export function ChatInput({
     </Paper>
   );
 }
-
