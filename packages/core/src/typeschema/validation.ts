@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
-import { FhirPathAtom } from '../fhirpath/atoms';
+import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
@@ -14,19 +14,20 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isReference, isResource } from '../types';
+import type { TypedValue } from '../types';
+import { PropertyType, isReference, isResource } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
-import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
-import {
+import type { CrawlerVisitor, TypedValueWithPath } from './crawler';
+import { crawlTypedValue, getNestedProperty } from './crawler';
+import type {
   Constraint,
   InternalSchemaElement,
   InternalTypeSchema,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
-  getDataType,
-  parseStructureDefinition,
 } from './types';
+import { getDataType, parseStructureDefinition } from './types';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.

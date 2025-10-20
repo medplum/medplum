@@ -10,13 +10,6 @@ const medplum = new MockClient();
 
 describe('BulkAppPage', () => {
   async function setup(url: string): Promise<void> {
-    const urlObj = new URL(url, 'http://localhost');
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: urlObj.href,
-        search: urlObj.search,
-      },
-    });
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>

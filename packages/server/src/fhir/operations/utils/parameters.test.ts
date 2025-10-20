@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Observation,
   OperationDefinition,
   Parameters,
@@ -10,7 +10,7 @@ import {
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { parse } from 'qs';
 import { buildOutputParameters, parseInputParameters, parseParameters } from './parameters';
 

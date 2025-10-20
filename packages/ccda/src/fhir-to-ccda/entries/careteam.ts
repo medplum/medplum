@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CareTeam } from '@medplum/fhirtypes';
+import type { CareTeam } from '@medplum/fhirtypes';
 import { OID_CARE_TEAM_ORGANIZER_ENTRY } from '../../oids';
-import { CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import type { CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
+import type { FhirToCcdaConverter } from '../convert';
 import { mapIdentifiers } from '../utils';
 
 export function createCareTeamEntry(_converter: FhirToCcdaConverter, careTeam: CareTeam): CcdaEntry {

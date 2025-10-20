@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { InviteRequest, isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { InviteRequest } from '@medplum/core';
+import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import type { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   Form,
   FormSection,
@@ -13,7 +14,8 @@ import {
   getErrorsForInput,
   useMedplum,
 } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {

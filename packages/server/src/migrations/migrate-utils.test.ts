@@ -14,7 +14,7 @@ import {
   splitIndexColumnNames,
   tsVectorExpression,
 } from './migrate-utils';
-import { IndexDefinition } from './types';
+import type { IndexDefinition } from './types';
 
 describe('migration-utils', () => {
   beforeAll(async () => {

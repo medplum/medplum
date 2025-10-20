@@ -26,6 +26,7 @@ Medplum supports the following first party integrations.
 | [Sumo Logic](https://www.sumologic.com/)                               | Observability   | Application monitoring                        | Coming soon                                                                                                 |
 | [Snowflake](https://www.datadoghq.com/)                                | Data warehouse  | Synchronize data to datawarehouse             | Documentation coming soon                                                                                   |
 | [OpenAI](https://www.openai.com/)                                      | AI              | Large language models                         | Documentation coming soon                                                                                   |
+| [Zus Health](https://zushealth.com/)                                   | HIE             | Integrated HIE, analytics and longitudinal care | [Medplum integration](https://docs.zushealth.com/docs/medplum) |
 
 ## Common Medical Integrations
 

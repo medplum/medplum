@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, Stack, Title, TitleOrder } from '@mantine/core';
+import { Paper, Stack, Title } from '@mantine/core';
+import type { TitleOrder } from '@mantine/core';
 import { formatDate } from '@medplum/core';
-import {
+import type {
   Encounter,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, QuantityDisplay, RangeDisplay } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;

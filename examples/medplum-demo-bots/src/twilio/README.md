@@ -57,7 +57,7 @@ At a high level, the integration has the following components:
    ```url
    https://api.medplum.com/webhook/<project-membership-id>
    ```
-   
+
 Replace `<project-membership-id>` with the ID of the project membership for your bot.
 
 4. Set the HTTP method to `POST`.
@@ -66,7 +66,7 @@ Replace `<project-membership-id>` with the ID of the project membership for your
 
 This bot provides a foundation for voice call handling. You can extend it to:
 
-- Route calls based on caller ID or time of day  
+- Route calls based on caller ID or time of day
 - Integrate with Medplum `Patient` resources for personalized greetings
 - Log call details as FHIR `Communication` resources
 - Implement interactive voice response (IVR) menus

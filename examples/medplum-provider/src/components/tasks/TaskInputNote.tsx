@@ -14,7 +14,7 @@ import {
   Textarea,
 } from '@mantine/core';
 import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
-import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import type { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
@@ -153,6 +153,12 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         <Divider />
 
         <ScrollArea w="100%" h="calc(100% - 70px)" p="lg">
+          {task.description && (
+            <Stack mb="lg">
+              <Text size="lg">{task.description}</Text>
+              <Divider />
+            </Stack>
+          )}
           <Stack>
             {task?.focus?.reference?.startsWith('Questionnaire/') && (
               <>

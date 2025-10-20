@@ -4,10 +4,10 @@ import {
   convertHealthieFormAnswerGroupToFhir,
   createSlug,
   convertHealthieTimestampToIso,
-  HealthieFormAnswerGroup,
 } from './questionnaire-response';
+import type { HealthieFormAnswerGroup } from './questionnaire-response';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
-import { Reference, Patient } from '@medplum/fhirtypes';
+import type { Reference, Patient } from '@medplum/fhirtypes';
 
 // Test data for different mod_types
 const COVID_SCREENING_FORM: HealthieFormAnswerGroup = {

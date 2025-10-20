@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
-import {
+import type {
   AsyncJob,
   Bundle,
   Communication,
@@ -405,6 +405,49 @@ describe('Patient Set Accounts Operation', () => {
     expect(resBody.output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
+  });
+
+  test('Removes account without extended header', async () => {
+    const setTwo = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization1) },
+          { name: 'accounts', valueReference: createReference(organization2) },
+          { name: 'propagate', valueBoolean: false },
+        ],
+      });
+    expect(setTwo.status).toBe(200);
+
+    const get1 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(get1.status).toBe(200);
+    expect(get1.body.meta?.accounts?.map((r: any) => r.reference)).toEqual(
+      expect.arrayContaining([`Organization/${organization1.id}`, `Organization/${organization2.id}`])
+    );
+
+    const setOne = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization2) },
+          { name: 'propagate', valueBoolean: false },
+        ],
+      });
+    expect(setOne.status).toBe(200);
+    expect(setOne.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
+
+    const get2 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(get2.status).toBe(200);
+    const acctRefs = (get2.body.meta?.accounts ?? []).map((r: any) => r.reference);
+    expect(acctRefs).toEqual([`Organization/${organization2.id}`]);
   });
 
   test('Accounts applied to resource with no default profile', async () => {

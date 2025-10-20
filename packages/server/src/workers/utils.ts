@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator, WithId } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator } from '@medplum/core';
+import type {
   AsyncJob,
   AuditEvent,
   AuditEventEntity,
@@ -14,13 +15,15 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { DelayedError, Job, Queue, Worker } from 'bullmq';
+import type { Job, Queue, Worker } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { AuditEventOutcome } from '../util/auditevent';
+import type { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(

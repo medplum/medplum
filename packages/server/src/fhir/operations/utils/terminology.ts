@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, WithId, badRequest, createReference, resolveId } from '@medplum/core';
-import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
+import type {
+  CodeSystem,
+  CodeSystemProperty,
+  ConceptMap,
+  Reference,
+  ValueSet,
+  ValueSetComposeIncludeFilter,
+} from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
-import {
-  Column,
-  Condition,
-  Conjunction,
-  Disjunction,
-  SelectQuery,
-  SqlFunction,
-  Operator as SqlOperator,
-  Union,
-} from '../../sql';
+import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -104,27 +104,16 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
 
 export function addPropertyFilter(
   query: SelectQuery,
-  property: string,
-  operator: keyof typeof SqlOperator,
-  value: string | string[],
-  codeSystem: CodeSystem
+  condition: ValueSetComposeIncludeFilter,
+  property: WithId<CodeSystemProperty>
 ): SelectQuery {
+  const multiValue = condition.op.endsWith('in');
+  const values = multiValue ? condition.value.split(',') : condition.value;
   const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
     new Conjunction([
       new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
-      new Condition('value', operator, value),
-    ])
-  );
-
-  const csPropertyTable = propertyQuery.getNextJoinAlias();
-  propertyQuery.join(
-    'INNER JOIN',
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.effectiveTableName, 'property')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property),
-      new Condition(new Column(csPropertyTable, 'system'), '=', codeSystem.id),
+      new Condition(new Column('Coding_Property', 'property'), '=', property.id),
+      new Condition('value', multiValue ? 'IN' : '=', values),
     ])
   );
 
@@ -132,26 +121,21 @@ export function addPropertyFilter(
   return query;
 }
 
-export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
+export function findAncestor(
+  base: SelectQuery,
+  codeSystem: CodeSystem,
+  property: WithId<CodeSystemProperty>,
+  ancestorCode: string
+): SelectQuery {
   const query = new SelectQuery('Coding').addColumns(base.columns).where('system', '=', codeSystem.id);
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'INNER JOIN',
     'Coding_Property',
     propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.join(
-    'INNER JOIN',
-    'CodeSystem_Property',
-    csPropertyTable,
     new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target')),
+      new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );
 
@@ -188,16 +172,39 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
   return property;
 }
 
+export async function resolveProperty(
+  db: Pool | PoolClient,
+  codeSystem: WithId<CodeSystem>,
+  property: CodeSystemProperty
+): Promise<WithId<CodeSystemProperty> | undefined> {
+  const query = new SelectQuery('CodeSystem_Property')
+    .column('id')
+    .where('system', '=', codeSystem.id)
+    .where('code', '=', property.code);
+
+  const id: string | undefined = (await query.execute(db))[0]?.id;
+  if (id) {
+    property.id = id;
+    return property as WithId<CodeSystemProperty>;
+  } else {
+    return undefined;
+  }
+}
+
 /**
  * Extends a query to select descendants of a given coding.
  * @param query - The query to extend.
  * @param codeSystem - The CodeSystem to query within
+ * @param property - The parent (is-a) property for the code system.
  * @param parentCode - The ancestor code, whose descendants are selected.
  * @returns The extended SELECT query.
  */
-export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
+export function addDescendants(
+  query: SelectQuery,
+  codeSystem: CodeSystem,
+  property: WithId<CodeSystemProperty>,
+  parentCode: string
+): SelectQuery {
   const base = new SelectQuery('Coding')
     .column('id')
     .column('code')
@@ -210,23 +217,8 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
   const propertyJoinCondition = new Conjunction([
     new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
   ]);
-  if (property.id) {
-    propertyJoinCondition.where(new Column(propertyTable, 'property'), '=', property.id);
-  }
+  propertyJoinCondition.where(new Column(propertyTable, 'property'), '=', property.id);
   query.join('INNER JOIN', 'Coding_Property', propertyTable, propertyJoinCondition);
-
-  if (!property.id) {
-    const csPropertyTable = query.getNextJoinAlias();
-    query.join(
-      'INNER JOIN',
-      'CodeSystem_Property',
-      csPropertyTable,
-      new Conjunction([
-        new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-        new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-      ])
-    );
-  }
 
   const recursiveCTE = 'cte_descendants';
   const recursiveTable = query.getNextJoinAlias();
@@ -248,4 +240,13 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
     .withRecursive(recursiveCTE, new Union(base, query))
     .limit(limit)
     .offset(offset);
+}
+
+export function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
+  const seen = Object.create(null);
+  for (const el of arr) {
+    const key = keyFn(el);
+    seen[key] = el;
+  }
+  return Object.values(seen);
 }

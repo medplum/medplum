@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, ProfileResource } from '@medplum/core';
+import type { MedplumClient, ProfileResource } from '@medplum/core';
 import { createContext, useContext } from 'react';
 
 export const reactContext = createContext(undefined as MedplumContext | undefined);

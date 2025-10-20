@@ -1,7 +1,10 @@
 {
   "testEnvironment": "node",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "testTimeout": 30000,
-  "testSequencer": "<rootDir>/jest.sequencer.js",
+  "testSequencer": "<rootDir>/jest.sequencer.mjs",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState, useEffect } from 'react';
-import { Communication } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { createReference, getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../utils/notifications';

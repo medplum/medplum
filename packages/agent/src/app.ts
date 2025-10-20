@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   AgentError,
   AgentLogsRequest,
   AgentMessage,
@@ -9,13 +9,15 @@ import {
   AgentTransmitResponse,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
-  ContentType,
-  Hl7Message,
   ILogger,
   LogLevel,
+  MedplumClient,
+} from '@medplum/core';
+import {
+  ContentType,
+  Hl7Message,
   Logger,
   MEDPLUM_VERSION,
-  MedplumClient,
   OperationOutcomeError,
   ReconnectingWebSocket,
   checkIfValidMedplumVersion,
@@ -24,9 +26,10 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
+import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
+import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
@@ -34,7 +37,8 @@ import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
-import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import type { Channel } from './channel';
+import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
-import { getReferenceString, isReference, WithId } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { getReferenceString, isReference } from '@medplum/core';
+import type {
   Period,
   Practitioner,
   Questionnaire,
@@ -12,7 +13,8 @@ import {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { JSX, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, WithId } from '@medplum/core';
-import { ContactPoint, Parameters, Practitioner, Project, User } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
+import type { ContactPoint, Parameters, Practitioner, Project, User } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -10,7 +11,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
 import { createTestProject } from '../../test.setup';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 
 describe('User/$update-email', () => {
   const app = express();

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { InputLogEvent } from '@aws-sdk/client-cloudwatch-logs';
 import {
   CloudWatchLogsClient,
   CreateLogGroupCommand,
   CreateLogStreamCommand,
-  InputLogEvent,
   PutLogEventsCommand,
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';

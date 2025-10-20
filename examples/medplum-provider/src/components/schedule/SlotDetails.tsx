@@ -4,11 +4,11 @@ import { Button, Group, Modal, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { formatPeriod, normalizeErrorString } from '@medplum/core';
-import { Schedule, Slot } from '@medplum/fhirtypes';
+import type { Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconClock, IconEdit, IconNote, IconTrash } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { Event } from 'react-big-calendar';
+import type { JSX } from 'react';
+import type { Event } from 'react-big-calendar';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 
 interface SlotDetailsProps {

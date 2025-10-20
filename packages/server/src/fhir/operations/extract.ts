@@ -1,25 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { CrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
 import {
   allOk,
   badRequest,
-  CrawlerVisitor,
   crawlTypedValue,
   deepClone,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
-  InternalTypeSchema,
   OperationOutcomeError,
   Operator,
   singleton,
   toTypedValue,
-  TypedValue,
-  TypedValueWithPath,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   Extension,
@@ -31,7 +28,8 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { applyPatch, Operation } from 'rfc6902';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 

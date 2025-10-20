@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import { ContentType, isUUID, normalizeErrorString } from '@medplum/core';
+import type { Bot } from '@medplum/fhirtypes';
 import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { JSX, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
+import type { JSX, SyntheticEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';

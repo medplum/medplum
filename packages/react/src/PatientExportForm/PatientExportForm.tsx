@@ -3,10 +3,11 @@
 import { Group, SegmentedControl, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { ContentType, normalizeErrorString, resolveId } from '@medplum/core';
-import { Patient, Reference } from '@medplum/fhirtypes';
+import type { Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { JSX, useCallback } from 'react';
+import type { JSX } from 'react';
+import { useCallback } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
