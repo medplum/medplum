@@ -347,7 +347,7 @@ export function SchedulePage(): JSX.Element | null {
 
 // This function collapses contiguous or overlapping slots of the same status into single events
 function slotsToEvents(slots: Slot[]): SlotEvent[] {
-  if (slots?.length === 0) {
+  if (!slots || slots.length === 0) {
     return [];
   }
 

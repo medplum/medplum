@@ -35,9 +35,9 @@
     "@medplum/mock": "4.5.1",
     "@medplum/react": "4.5.1",
     "@tabler/icons-react": "3.35.0",
-    "@types/node": "20.19.22",
+    "@types/node": "20.19.20",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
+    "@types/react-dom": "19.2.1",
     "@vitejs/plugin-react": "5.0.4",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
@@ -46,7 +46,7 @@
     "react-router": "7.9.4",
     "rimraf": "6.0.1",
     "typescript": "5.9.3",
-    "vite": "7.1.10"
+    "vite": "7.1.9"
   },
   "packageManager": "npm@10.9.4",
   "engines": {

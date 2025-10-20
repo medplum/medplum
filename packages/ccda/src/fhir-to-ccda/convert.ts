@@ -470,7 +470,7 @@ export class FhirToCcdaConverter {
     }
 
     const resource = this.findResourceByReference(recipient[0]);
-    if (resource?.resourceType !== 'Practitioner') {
+    if (!resource || resource.resourceType !== 'Practitioner') {
       return undefined;
     }
 

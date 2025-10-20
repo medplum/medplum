@@ -464,7 +464,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     const parts = reference.reference?.split('/');
-    if (parts?.length !== 2) {
+    if (!parts || parts.length !== 2) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);

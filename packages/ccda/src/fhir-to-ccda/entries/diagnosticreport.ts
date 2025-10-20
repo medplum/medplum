@@ -14,7 +14,7 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
   if (resource.result) {
     for (const member of resource.result) {
       const child = converter.findResourceByReference(member);
-      if (child?.resourceType !== 'Observation') {
+      if (!child || child.resourceType !== 'Observation') {
         continue;
       }
 

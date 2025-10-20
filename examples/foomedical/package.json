@@ -36,14 +36,14 @@
     "@tabler/icons-react": "3.35.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
-    "@types/node": "20.19.22",
+    "@types/node": "20.19.20",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
+    "@types/react-dom": "19.2.1",
     "@vitejs/plugin-react": "5.0.4",
     "@types/jest": "30.0.0",
     "babel-jest": "30.2.0",
     "c8": "10.1.3",
-    "chart.js": "4.5.1",
+    "chart.js": "4.5.0",
     "fast-json-patch": "3.1.1",
     "jest": "30.2.0",
     "jest-environment-jsdom": "30.2.0",
@@ -55,7 +55,7 @@
     "react-dom": "19.2.0",
     "react-router": "7.9.4",
     "typescript": "5.9.3",
-    "vite": "7.1.10"
+    "vite": "7.1.9"
   },
   "packageManager": "npm@10.9.4",
   "engines": {
