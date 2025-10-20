@@ -117,6 +117,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
 
   for (const comm of communications) {
     if (comm.payload?.[0]?.contentString) {
+      try {
       const data = JSON.parse(comm.payload[0].contentString);
       messages.push({
         message: {
@@ -127,6 +128,9 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
         },
         sequenceNumber: data.sequenceNumber || 0,
       });
+      } catch (error) {
+        throw new Error('Failed to parse message: ' + error);
+      }
     }
   }
 

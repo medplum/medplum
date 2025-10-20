@@ -12,8 +12,12 @@ import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
 import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
+import type { Identifier } from '@medplum/fhirtypes';
 
-const BOT_ID = '9bce4942-3b77-4d8c-b025-e324da963810';
+const botId: Identifier = {
+  "value": "ai-api-bot",
+  "system": "https://www.medplum.com/bots"
+}
 
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
@@ -93,7 +97,7 @@ export function SpacesPage(): JSX.Element {
       if (currentTopicId) {
         await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
       }
-      let response = await medplum.executeBot(BOT_ID, {
+      let response = await medplum.executeBot(botId, {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
@@ -196,7 +200,7 @@ export function SpacesPage(): JSX.Element {
             ...currentMessages.slice(1),
           ];
 
-          response = await medplum.executeBot(BOT_ID, {
+          response = await medplum.executeBot(botId, {
             resourceType: 'Parameters',
             parameter: [
               { name: 'messages', valueString: JSON.stringify(summaryMessages) },

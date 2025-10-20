@@ -21,12 +21,17 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
   useEffect(() => {
     const loadTopics = async (): Promise<void> => {
       setLoading(true);
-      const recentTopics = await loadRecentTopics(medplum, 20);
-      setTopics(recentTopics);
+      try {
+        const recentTopics = await loadRecentTopics(medplum, 20);
+        setTopics(recentTopics);
+      } catch (error) {
+        showErrorNotification(error);
+      } finally {
+        setLoading(false);
+      }
     };
     loadTopics()
       .catch(showErrorNotification)
-      .finally(() => setLoading(false));
   }, [medplum]);
 
   return (
