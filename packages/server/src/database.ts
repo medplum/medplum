@@ -13,8 +13,8 @@ import {
   getPreDeployMigration,
 } from './migrations/migration-utils';
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
-import type { ShardPoolClient } from './shard-pool';
-import { ShardPool } from './shard-pool';
+import type { ShardPoolClient } from './sharding';
+import { ShardPool } from './sharding';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -29,7 +29,11 @@ const globalPools: { pool: ShardPool | undefined; readonlyPool: ShardPool | unde
 };
 const shardPools: Record<string, { pool: ShardPool | undefined; readonlyPool: ShardPool | undefined }> = {};
 
-export function getDatabasePool(mode: DatabaseMode, shardId: string): ShardPool {
+export function getDatabasePool(mode: DatabaseMode, shardId: string = 'TODO-default'): ShardPool {
+  if (shardId.startsWith('TODO')) {
+    shardId = 'global';
+  }
+
   const pools = shardId && shardId !== 'global' ? shardPools[shardId] : globalPools;
 
   if (!pools.pool) {
@@ -61,6 +65,9 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
   }
 
   for (const [shardId, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
+    if (shardId === 'global') {
+      continue;
+    }
     const shardPool = await initPool(shardId, shardConfig.database, undefined);
     shardPools[shardId] = {
       pool: shardPool,

@@ -11,7 +11,7 @@ import {
   recordHistogramValue,
   setGauge,
 } from '../otel/otel';
-import type { ShardPool } from '../shard-pool';
+import type { ShardPool } from '../sharding';
 
 // Create shared mock queue that all mocks will return
 const createMockQueue = (): any => ({

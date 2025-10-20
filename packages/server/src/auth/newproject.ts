@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../sharding';
 import { makeValidationMiddleware } from '../util/validator';
 
 export interface NewProjectRequest {
@@ -27,8 +27,8 @@ export const newProjectValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const login = await systemRepo.readResource<Login>('Login', req.body.login);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
@@ -36,11 +36,11 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   }
 
   const projectName = req.body.projectName;
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
   const { membership } = await createProject(projectName, user);
 
   // Set the membership on the login
-  const updatedLogin = await systemRepo.updateResource<Login>({
+  const updatedLogin = await globalSystemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership as ProjectMembership),
   });
