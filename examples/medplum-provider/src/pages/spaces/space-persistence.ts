@@ -16,8 +16,8 @@ export async function createConversationTopic(
   title: string,
   model: string
 ): Promise<Communication> {
-
-  if (!medplum.getProfile()?.id) {
+  const profile = medplum.getProfile();
+  if (!profile?.id) {
     throw new Error('Profile not found');
   }
 
@@ -117,20 +117,16 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
 
   for (const comm of communications) {
     if (comm.payload?.[0]?.contentString) {
-      try {
-        const data = JSON.parse(comm.payload[0].contentString);
-        messages.push({
-          message: {
-            role: data.role,
-            content: data.content,
-            tool_calls: data.tool_calls,
-            tool_call_id: data.tool_call_id,
-          },
-          sequenceNumber: data.sequenceNumber || 0,
-        });
-      } catch (error) {
-        console.error('Failed to parse message:', error);
-      }
+      const data = JSON.parse(comm.payload[0].contentString);
+      messages.push({
+        message: {
+          role: data.role,
+          content: data.content,
+          tool_calls: data.tool_calls,
+          tool_call_id: data.tool_call_id,
+        },
+        sequenceNumber: data.sequenceNumber || 0,
+      });
     }
   }
 
