@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Group, ScrollArea, Box, Divider, Paper   } from '@mantine/core';
+import { Stack, Text, Group, ScrollArea, Box, Divider, Paper } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
@@ -31,54 +31,54 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
 
   return (
     <Paper h="100%">
-    <Stack  p="md">
-      <Text size="sm" fw={600} c="dimmed" mt="md">
-        Recent Conversations
-      </Text>
+      <Stack p="md">
+        <Text size="sm" fw={600} c="dimmed" mt="md">
+          Recent Conversations
+        </Text>
 
-      <ScrollArea style={{ flex: 1 }}>
-        <Stack gap="xs">
-          {loading && (
-            <Text size="sm" c="dimmed">
-              Loading...
-            </Text>
-          )}
-          {!loading && topics.length === 0 && (
-            <Text size="sm" c="dimmed">
-              No conversations yet
-            </Text>
-          )}
-          {!loading &&
-            topics.length > 0 &&
-            topics.map((topic) => (
-              <Stack gap={0} key={topic.id}>
-                <Box
-                  bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
-                  p="sm"
-                  style={{
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    if (topic.id) {
-                      onSelectTopic(topic.id);
-                    }
-                  }}
-                >
-                  <Text size="sm" fw={500} lineClamp={2}>
-                    {topic.topic?.text || 'Untitled conversation'}
-                  </Text>
-                  <Group gap="xs" mt={4}>
-                    <Text size="xs" c="dimmed">
-                      {formatDate(topic.meta?.lastUpdated)}
+        <ScrollArea style={{ flex: 1 }}>
+          <Stack gap="xs">
+            {loading && (
+              <Text size="sm" c="dimmed">
+                Loading...
+              </Text>
+            )}
+            {!loading && topics.length === 0 && (
+              <Text size="sm" c="dimmed">
+                No conversations yet
+              </Text>
+            )}
+            {!loading &&
+              topics.length > 0 &&
+              topics.map((topic) => (
+                <Stack gap={0} key={topic.id}>
+                  <Box
+                    bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
+                    p="sm"
+                    style={{
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      if (topic.id) {
+                        onSelectTopic(topic.id);
+                      }
+                    }}
+                  >
+                    <Text size="sm" fw={500} lineClamp={2}>
+                      {topic.topic?.text || 'Untitled conversation'}
                     </Text>
-                  </Group>
-                </Box>
-                <Divider />
-              </Stack>
-            ))}
-        </Stack>
-      </ScrollArea>
-    </Stack>
+                    <Group gap="xs" mt={4}>
+                      <Text size="xs" c="dimmed">
+                        {formatDate(topic.meta?.lastUpdated)}
+                      </Text>
+                    </Group>
+                  </Box>
+                  <Divider />
+                </Stack>
+              ))}
+          </Stack>
+        </ScrollArea>
+      </Stack>
     </Paper>
   );
 }
