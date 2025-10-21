@@ -557,13 +557,13 @@ export async function resourceMatchesSubscriptionCriteria({
   if (subscription.meta?.accounts?.length) {
     // Check if at least one account from subscription is in the resource's accounts
     const resourceAccounts = resource.meta?.accounts;
-    
+
     if (resourceAccounts?.length) {
       // Check if at least one subscription account matches at least one resource account
-      const hasMatchingAccount = subscription.meta.accounts.some(subAccount =>
-        resourceAccounts.some(resAccount => resAccount.reference === subAccount.reference)
+      const hasMatchingAccount = subscription.meta.accounts.some((subAccount) =>
+        resourceAccounts.some((resAccount) => resAccount.reference === subAccount.reference)
       );
-      
+
       if (!hasMatchingAccount) {
         logger?.debug('Subscription suppressed due to mismatched meta.accounts', {
           subscriptionId: subscription.id,
@@ -581,11 +581,11 @@ export async function resourceMatchesSubscriptionCriteria({
         });
         return false;
       }
-      
+
       const hasMatchingAccount = subscription.meta.accounts.some(
-        subAccount => subAccount.reference === resourceAccountRefStr
+        (subAccount) => subAccount.reference === resourceAccountRefStr
       );
-      
+
       if (!hasMatchingAccount) {
         logger?.debug('Subscription suppressed due to mismatched account', {
           subscriptionId: subscription.id,

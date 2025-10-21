@@ -1322,7 +1322,9 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       });
 
       expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched meta.accounts'));
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('Subscription suppressed due to mismatched meta.accounts')
+      );
     });
 
     test('should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account', async () => {
@@ -1431,7 +1433,9 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       });
 
       expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to missing account on resource'));
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('Subscription suppressed due to missing account on resource')
+      );
     });
 
     test('should return true when subscription has meta.accounts with single account and resource has matching meta.account', async () => {
@@ -1507,7 +1511,9 @@ describe('resourceMatchesSubscriptionCriteria', () => {
 
       // Should fall through to meta.account check since accounts array is empty
       expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched meta.account'));
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('Subscription suppressed due to mismatched meta.account')
+      );
     });
   });
 
@@ -1583,7 +1589,9 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       });
 
       expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched meta.account'));
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('Subscription suppressed due to mismatched meta.account')
+      );
     });
 
     test('should return true when neither subscription nor resource have account metadata', async () => {
