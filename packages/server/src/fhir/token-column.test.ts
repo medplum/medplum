@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator, getSearchParameter } from '@medplum/core';
 import type { Filter } from '@medplum/core';
+import { Operator, getSearchParameter } from '@medplum/core';
 import type { ResearchStudy } from '@medplum/fhirtypes';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
+import { Column, Condition, Disjunction, Negation, SqlBuilder, TypedCondition } from './sql';
 import { loadStructureDefinitions } from './structure';
 import { buildTokenColumns, buildTokenColumnsSearchFilter, hashTokenColumnValue } from './token-column';
-import { Column, Condition, Disjunction, Negation, SqlBuilder, TypedCondition } from './sql';
 
 const DELIM = '\x01';
 
