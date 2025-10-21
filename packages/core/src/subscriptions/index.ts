@@ -565,7 +565,7 @@ export async function resourceMatchesSubscriptionCriteria({
     ) {
       logger?.debug('Subscription suppressed due to mismatched accounts', {
         subscriptionId: subscription.id,
-        resourceId: resource.id,
+        resource: getReferenceString(resource),
       });
       return false;
     }
