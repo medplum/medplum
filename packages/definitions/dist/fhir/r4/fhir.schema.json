@@ -60258,6 +60258,10 @@
         "userAgent": {
           "description": "The User-Agent request header as sent by the client.",
           "$ref": "#/definitions/string"
+        },
+        "pictureUrl": {
+          "description": "Optional picture URL from the external identity provider.",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
