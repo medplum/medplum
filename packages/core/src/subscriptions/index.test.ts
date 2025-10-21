@@ -1698,7 +1698,9 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       });
 
       expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched meta.account'));
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('Subscription suppressed due to mismatched meta.account')
+      );
     });
   });
 });
