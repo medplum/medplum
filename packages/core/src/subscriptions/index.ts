@@ -553,8 +553,49 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  // Should eventually remove this once we've seen who is relying on this behavior
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
+  // Check accounts agreement
+  if (subscription.meta?.accounts?.length) {
+    // Check if at least one account from subscription is in the resource's accounts
+    const resourceAccounts = resource.meta?.accounts;
+    
+    if (resourceAccounts?.length) {
+      // Check if at least one subscription account matches at least one resource account
+      const hasMatchingAccount = subscription.meta.accounts.some(subAccount =>
+        resourceAccounts.some(resAccount => resAccount.reference === subAccount.reference)
+      );
+      
+      if (!hasMatchingAccount) {
+        logger?.debug('Subscription suppressed due to mismatched meta.accounts', {
+          subscriptionId: subscription.id,
+          resourceId: resource.id,
+        });
+        return false;
+      }
+    } else {
+      // No accounts on resource, check the meta.account field
+      const resourceAccountRefStr = resource.meta?.account?.reference;
+      if (!resourceAccountRefStr) {
+        logger?.debug('Subscription suppressed due to missing account on resource', {
+          subscriptionId: subscription.id,
+          resourceId: resource.id,
+        });
+        return false;
+      }
+      
+      const hasMatchingAccount = subscription.meta.accounts.some(
+        subAccount => subAccount.reference === resourceAccountRefStr
+      );
+      
+      if (!hasMatchingAccount) {
+        logger?.debug('Subscription suppressed due to mismatched account', {
+          subscriptionId: subscription.id,
+          resourceId: resource.id,
+        });
+        return false;
+      }
+    }
+  } else if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
+    // Should we eventually remove this once we've seen who is relying on this behavior?
     logger?.warn('Subscription suppressed due to mismatched meta.account', {
       subscriptionId: subscription.id,
       resourceId: resource.id,
