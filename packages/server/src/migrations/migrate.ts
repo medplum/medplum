@@ -1509,12 +1509,13 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
 
 /**
  * Translate SERIAL types to INT types based on {@link https://www.postgresql.org/docs/16/datatype-numeric.html#DATATYPE-SERIAL}
+ * Translate IDENTITY types to NOT NULL
  *
  * @param tableDef - the table definition
  * @param inputColumnDef - the column definition to desugar
- * @returns the desugared column definition if it was a SERIAL type, otherwise the original column definition
+ * @returns the desugared column definition if it was a SERIAL/IDENTITY column, otherwise the original column definition
  */
-function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
+function desugarColumnDefinition(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
   if (SerialColumnTypes.has(inputColumnDef.type.toLocaleUpperCase())) {
     const columnDef = deepClone(inputColumnDef);
     columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
@@ -1523,6 +1524,14 @@ function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: Col
     columnDef.defaultValue = `nextval('${escapeIdentifier(sequenceName)}'::regclass)`;
     return columnDef;
   }
+
+  if (inputColumnDef.identity) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.identity = undefined;
+    columnDef.notNull = true;
+    return columnDef;
+  }
+
   return inputColumnDef;
 }
 
@@ -1535,7 +1544,7 @@ export function columnDefinitionsEqual(table: TableDefinition, a: ColumnDefiniti
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
-  return deepEquals(desugarSerialColumnTypes(table, a), desugarSerialColumnTypes(table, b));
+  return deepEquals(desugarColumnDefinition(table, a), desugarColumnDefinition(table, b));
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
