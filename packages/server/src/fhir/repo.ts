@@ -59,7 +59,7 @@ import {
   toPeriod,
   toTypedValue,
   validateResource,
-  validateResourceType
+  validateResourceType,
 } from '@medplum/core';
 import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
 import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
