@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from './client';
+import type { ReleaseManifest } from './version-utils';
 import {
   assertReleaseManifest,
   checkIfValidMedplumVersion,
@@ -7,7 +10,6 @@ import {
   fetchVersionManifest,
   isValidMedplumSemver,
   MEDPLUM_RELEASES_URL,
-  ReleaseManifest,
   warnIfNewerVersionAvailable,
 } from './version-utils';
 

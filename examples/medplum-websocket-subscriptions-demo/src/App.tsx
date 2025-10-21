@@ -1,4 +1,7 @@
-import { ProfileResource, getReferenceString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getReferenceString } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import {
   AppShell,
   ErrorBoundary,
@@ -9,7 +12,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconClipboardCheck, IconHome, IconMail } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 import { Route, Routes } from 'react-router';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';

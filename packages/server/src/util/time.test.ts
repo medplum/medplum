@@ -1,4 +1,7 @@
-import { TimeUnit, formatDuration } from './time';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TimeUnit } from './time';
+import { formatDuration } from './time';
 
 describe('Time utils', () => {
   test.each([

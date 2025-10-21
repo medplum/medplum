@@ -1,13 +1,10 @@
-import {
-  buildElementsContext,
-  ElementsContextType,
-  getPathDisplayName,
-  isEmpty,
-  tryGetDataType,
-  TypedValue,
-} from '@medplum/core';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType, TypedValue } from '@medplum/core';
+import { buildElementsContext, getPathDisplayName, isEmpty, tryGetDataType } from '@medplum/core';
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';

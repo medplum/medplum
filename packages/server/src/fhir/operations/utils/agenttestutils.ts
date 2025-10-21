@@ -1,15 +1,16 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentConnectRequest,
   AgentConnectResponse,
   AgentHeartbeatResponse,
   AgentMessage,
   AgentRequestMessage,
   AgentResponseMessage,
-  MEDPLUM_VERSION,
   WithId,
-  getWebSocketUrl,
 } from '@medplum/core';
-import {
+import { MEDPLUM_VERSION, getWebSocketUrl } from '@medplum/core';
+import type {
   Agent,
   Bundle,
   OperationOutcome,
@@ -17,7 +18,8 @@ import {
   Parameters,
   ParametersParameter,
 } from '@medplum/fhirtypes';
-import { MessageEvent, WebSocket } from 'ws';
+import type { MessageEvent } from 'ws';
+import { WebSocket } from 'ws';
 
 let serverPort: number | undefined;
 const agentWsMap = new Map<string, WebSocket>();

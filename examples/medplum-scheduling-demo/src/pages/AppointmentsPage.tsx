@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Paper, Tabs } from '@mantine/core';
-import { Filter, getReferenceString, Operator, SearchRequest, WithId } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
+import { getReferenceString, Operator } from '@medplum/core';
+import type { Filter, SearchRequest, WithId } from '@medplum/core';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { SearchControl, useMedplumProfile } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function AppointmentsPage(): JSX.Element {

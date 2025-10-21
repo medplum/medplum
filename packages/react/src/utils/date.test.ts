@@ -1,4 +1,6 @@
-import { Communication, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Communication, Resource } from '@medplum/fhirtypes';
 import { sortByDateAndPriority } from './date';
 
 describe('Date utils', () => {

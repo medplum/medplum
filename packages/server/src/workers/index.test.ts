@@ -1,5 +1,7 @@
-import { BackgroundJobContext, WithId } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, WithId } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, initDatabase } from '../database';
@@ -43,7 +45,7 @@ describe('Workers', () => {
         },
       };
 
-      const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+      const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
       const subSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';

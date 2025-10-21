@@ -1,9 +1,14 @@
-import { Button, Paper, PaperProps } from '@mantine/core';
-import { createReference, HTTP_HL7_ORG, ProfileResource } from '@medplum/core';
-import { Reference, Signature } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { PaperProps } from '@mantine/core';
+import { Button, Paper } from '@mantine/core';
+import type { ProfileResource } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG } from '@medplum/core';
+import type { Reference, Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconTrash } from '@tabler/icons-react';
-import { JSX, useEffect, useRef } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useRef } from 'react';
 import SignaturePad from 'signature_pad';
 
 export interface SignatureInputProps extends PaperProps {
@@ -35,7 +40,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
         ],
         when: new Date().toISOString(),
         who: who ?? createReference(medplum.getProfile() as ProfileResource),
-        data: signaturePadRef.current?.toDataURL(),
+        data: signaturePadRef.current?.toDataURL().split(',')[1],
       });
     }
 

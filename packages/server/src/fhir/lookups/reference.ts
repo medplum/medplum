@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   PropertyType,
-  WithId,
   evalFhirPathTyped,
   getSearchParameters,
   isResource,
@@ -8,10 +10,11 @@ import {
   resolveId,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { InsertQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+import type { LookupTableRow } from './lookuptable';
+import { LookupTable } from './lookuptable';
 
 export interface ReferenceTableRow extends LookupTableRow {
   resourceId: string;

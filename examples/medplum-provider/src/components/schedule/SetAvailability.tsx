@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getAllQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   Coding,
   Questionnaire,
   QuestionnaireItemAnswerOption,
@@ -10,7 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface SetAvailabilityProps {
   readonly schedule: Schedule;

@@ -1,12 +1,17 @@
-import { createReference, resolveId, WithId } from '@medplum/core';
-import { User, UserSecurityRequest } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { verifyEmail } from './verifyemail';
 
 const app = express();
 
@@ -26,7 +31,7 @@ export async function createUserSecurityRequest(
   });
 }
 
-describe('Verify email', () => {
+describe('Verify email handler', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -52,7 +57,7 @@ describe('Verify email', () => {
   test('Success', async () =>
     withTestContext(async () => {
       const systemRepo = getSystemRepo();
-      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email');
+      const usr = await verifyEmail(user);
 
       // Attempt verification with incorrect secret
       const res1 = await request(app)

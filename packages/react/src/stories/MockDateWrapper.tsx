@@ -1,5 +1,8 @@
-import { JSX, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import sinon from 'sinon';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type sinon from 'sinon';
 import { MockDateContext, createGlobalTimer } from './MockDateWrapper.utils';
 
 export function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element | null {

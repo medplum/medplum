@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { evalFhirPath } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Resource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface FhirPathDisplayProps {

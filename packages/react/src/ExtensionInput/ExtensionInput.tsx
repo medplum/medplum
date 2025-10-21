@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isPopulated, isProfileLoaded } from '@medplum/core';
-import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
+import type { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type ExtensionInputProps = ComplexTypeInputProps<Extension> & {
   readonly propertyType: ElementDefinitionType;

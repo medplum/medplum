@@ -1,11 +1,14 @@
-import { OperationOutcomeError, WithId, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
-import { InsertQuery, SelectQuery } from '../sql';
+import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, parentProperty, selectCoding } from './utils/terminology';
+import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -100,22 +103,16 @@ export async function importCodeSystem(
       display: c.display,
       isSynonym: false,
     }));
-    const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
+    const query = new InsertQuery('Coding', rows).mergeOnConflict(
+      ['system', 'code'],
+      new Condition('synonymOf', '=', null)
+    );
     await query.execute(db);
   }
 
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
   }
-}
-
-function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
-  const seen = Object.create(null);
-  for (const el of arr) {
-    const key = keyFn(el);
-    seen[key] = el;
-  }
-  return Object.values(seen);
 }
 
 async function processProperties(
@@ -143,6 +140,7 @@ async function processProperties(
   // Batch lookup all Codings with associated properties
   const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
   const rows: Record<string, any>[] = [];
+  const syonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
@@ -157,10 +155,25 @@ async function processProperties(
       value: imported.value,
       target: property.type === 'code' && targetCodingId ? targetCodingId : null,
     });
+
+    if (property.uri === 'http://hl7.org/fhir/concept-properties#synonym') {
+      syonyms.push({
+        system: codeSystem.id,
+        code: imported.code,
+        display: imported.value,
+        isSynonym: true,
+        synonymOf: sourceCodingId,
+      });
+    }
   }
 
   const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
   await query.execute(db);
+
+  if (syonyms.length) {
+    const query = new InsertQuery('Coding', syonyms).ignoreOnConflict();
+    await query.execute(db);
+  }
 }
 
 async function resolveProperty(
@@ -200,6 +213,6 @@ async function resolveProperty(
     ])
       .returnColumn('id')
       .execute(db)
-  ).rows[0];
+  )[0];
   return [newProp.id, prop];
 }

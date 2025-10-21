@@ -19,6 +19,8 @@ The FHIR search framework allows for special search parameters that enable more 
 - [\_compartment](#_compartment)
 - [\_total](#_total)
 - [\_profile](#_profile)
+- [\_security](#_security)
+- [\_source](#_source)
 - [\_filter](#_filter)
 - [\_sort](#_sort)
 
@@ -233,6 +235,60 @@ The `_profile` parameter is a reference parameter, meaning you may provide a ref
     </TabItem>
     <TabItem value="curl" label="cURL">
       <MedplumCodeBlock language="bash" selectBlocks="profileCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+## \_security
+
+The `_security` parameter allows you to search on the `security` field of the `meta` element of the resource you are searching for.
+
+The [Confidentiality Level Code System](http://terminology.hl7.org/CodeSystem/v3-Confidentiality) is a standard code system for confidentiality levels.
+
+<details>
+  <summary>Example: Searching for patients that are of a **normal** confidentiality level.</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="securityTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="securityCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="securityCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+## \_source
+
+The `_source` parameter allows you to search on the `source` field of the `meta` element of the resource you are searching for.
+
+The `meta.source` field indicates the system or application that originally created or supplied the resource, which can be useful for filtering or tracking resources based on their origin.
+
+<details>
+  <summary>Example: Searching for Patients sourced from `https://foomedical.com`</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="sourceTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="sourceCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="sourceCurl">
         {ExampleCode}
       </MedplumCodeBlock>
     </TabItem>

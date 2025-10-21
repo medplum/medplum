@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { Container } from '../components/Container';
@@ -8,10 +9,13 @@ export default function PricingPage(): JSX.Element {
     <Layout title="Pricing">
       <Container>
         <div className={styles.pricing}>
-          <h1>Pricing</h1>
+          <h1>Build the future of healthcare</h1>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            For questions about pricing or to <a href="https://cal.com/medplum/15">schedule a demo</a> please reach out
-            to us at <a href="mailto:hello@medplum.com">hello@medplum.com</a>.
+            Plans for startups, enterprises, and everyone in between.
+          </p>
+          <p style={{ maxWidth: 600, margin: '20px auto' }}>
+            For questions about pricing or to <Link href="https://cal.com/medplum/15">schedule a demo</Link> please
+            reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
             <colgroup>
@@ -79,17 +83,17 @@ export default function PricingPage(): JSX.Element {
                 <td>Pricing</td>
                 <td>Free</td>
                 <td>
-                  <a href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">$2,000/mo</a>
+                  <Link href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">$2,000/mo</Link>
                 </td>
                 <td>
-                  <a href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">$6,000/mo</a>
+                  <Link href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">$6,000/mo</Link>
                 </td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</Link>
                 </td>
                 <td>Free</td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</Link>
                 </td>
               </tr>
               <tr>
@@ -410,7 +414,7 @@ export default function PricingPage(): JSX.Element {
                 <td>Log Streaming</td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td>DIY</td>
                 <td>✔️</td>
@@ -485,17 +489,17 @@ export default function PricingPage(): JSX.Element {
                 </td>
                 <td></td>
                 <td>
-                  <a href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</a>
+                  <Link href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</Link>
                 </td>
                 <td>
-                  <a href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">Start Now</a>
+                  <Link href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">Start Now</Link>
                 </td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</Link>
                 </td>
                 <td></td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</Link>
                 </td>
               </tr>
             </tbody>
@@ -518,20 +522,22 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note4">
                 <strong>Enterprise</strong>: recommended for institutions with complex workflow, integration or data
-                requirements. Read more details on our <a href="/enterprise">Enterprise</a> offering page.
+                requirements. Read more details on our <Link href="/enterprise">Enterprise</Link> offering page.
               </li>
               <li id="note5">
                 <strong>Community</strong>: refers to self-hosting the{' '}
-                <a href="https://github.com/medplum/medplum">Medplum application</a>.
+                <Link href="https://github.com/medplum/medplum">Medplum application</Link>.
               </li>
               <li id="note6">
                 <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their
-                own cloud infrastructure. Read more details on our <a href="/enterprise">Enterprise</a> offering page.
+                own cloud infrastructure. Read more details on our <Link href="/enterprise">Enterprise</Link> offering
+                page.
               </li>
               <li id="note7">
                 <strong>Bot Invocations</strong>: refers to custom logic written by customers to execute their workflow.{' '}
-                <a href="https://www.medplum.com/products/bots">Automation</a> documentation and{' '}
-                <a href="https://www.medplum.com/products/integration">integration</a> are a good place to learn more.
+                <Link href="https://www.medplum.com/products/bots">Automation</Link> documentation and{' '}
+                <Link href="https://www.medplum.com/products/integration">integration</Link> are a good place to learn
+                more.
               </li>
               <li id="note8">
                 <strong>Required authentication methods</strong>: Organizations can require that all logins at their
@@ -540,11 +546,11 @@ export default function PricingPage(): JSX.Element {
               <li id="note9">
                 <strong>Compliance</strong>: Many complex compliance scenarios can be supported with this
                 infrastructure. You can read more on the{' '}
-                <a href="https://www.medplum.com/docs/compliance">compliance page</a>.
+                <Link href="https://www.medplum.com/docs/compliance">compliance page</Link>.
               </li>
               <li id="note10">
                 <strong>Websocket Subscriptions</strong>: maximal number of concurrent websocket{' '}
-                <a href="https://www.medplum.com/docs/subscriptions">subscriptions</a> available.
+                <Link href="https://www.medplum.com/docs/subscriptions">subscriptions</Link> available.
               </li>
               <li id="note11">
                 <strong>Audit Support</strong>: receive support during common audits common in health system and payor
@@ -572,9 +578,9 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note17">
                 <strong> Cloud Hosted</strong>: Medplum is available for purchase through{' '}
-                <a href="https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa">
+                <Link href="https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa">
                   AWS Marketplace
-                </a>
+                </Link>
                 .
               </li>
             </ol>

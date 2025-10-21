@@ -1,4 +1,6 @@
-import { MedplumSourceInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
 import { unlink, writeFile } from 'fs/promises';
 import { resolve } from 'path';
@@ -391,6 +393,30 @@ describe('Infra', () => {
           },
         },
       },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Use containerInsightsV2', async () => {
+    const filename = await writeConfig('./medplum.containerInsightsV2.config.json', {
+      ...baseConfig,
+      name: 'containerInsightsV2',
+      stackName: 'MedplumContainerInsightsV2Stack',
+      containerInsightsV2: 'enhanced',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Use containerRegistryCredentialsSecretArn', async () => {
+    const filename = await writeConfig('./medplum.containerRegistryCredentialsSecretArn.config.json', {
+      ...baseConfig,
+      name: 'containerRegistryCredentialsSecretArn',
+      stackName: 'MedplumContainerRegistryCredentialsSecretArnStack',
+      containerRegistryCredentialsSecretArn: 'arn:aws:secretsmanager:us-east-1:123456789:secret:TestCredentials-sHDBJc',
     });
 
     await expect(main({ config: filename })).resolves.not.toThrow();

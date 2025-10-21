@@ -1,18 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, OperationOutcomeError, SearchRequest, WithId } from '@medplum/core';
 import {
   createReference,
-  Filter,
   getReferenceString,
   getSearchParameter,
   LOINC,
   normalizeErrorString,
-  OperationOutcomeError,
   Operator,
   parseSearchRequest,
-  SearchRequest,
   SNOMED,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   ActivityDefinition,
   AllergyIntolerance,
   Appointment,
@@ -52,12 +51,13 @@ import {
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -675,12 +675,58 @@ describe('project-scoped Repository', () => {
 
   test('Search sort by Patient.address', async () =>
     withTestContext(async () => {
+      const identifier = '13438374-1515-4da7-ab0d-6992a39bfed1';
+
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system: 'https://www.example.com', value: identifier }],
+        address: [{ line: ['1234 Fake Street'], city: 'Fake City', state: 'OK', postalCode: '99999', country: 'US' }],
+      });
+
       const bundle = await repo.search({
         resourceType: 'Patient',
         sortRules: [{ code: 'address' }],
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: identifier,
+          },
+        ],
       });
 
-      expect(bundle).toBeDefined();
+      const identifiers = bundle.entry?.map((e) => (e.resource as Patient).identifier?.[0]?.value);
+      expect(identifiers).toStrictEqual([identifier]);
+    }));
+
+  test('Search sort by Patient.postalCode', async () =>
+    withTestContext(async () => {
+      const identifier = '137f8a2f-4dff-4bb0-b971-f9f34d50a97c';
+
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Hopper' }],
+        identifier: [{ system: 'https://www.example.com', value: identifier }],
+        address: [
+          { line: ['1234 Fake Street'], city: 'Fake City', state: 'OK', postalCode: '123456789', country: 'US' },
+        ],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Patient',
+        sortRules: [{ code: 'address-postalcode' }],
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: identifier,
+          },
+        ],
+      });
+
+      const identifiers = bundle.entry?.map((e) => (e.resource as Patient).identifier?.[0]?.value);
+      expect(identifiers).toStrictEqual([identifier]);
     }));
 
   test('Search sort by Patient.telecom', async () =>
@@ -4727,6 +4773,51 @@ describe('project-scoped Repository', () => {
         repo.search(parseSearchRequest('ResearchStudy?_has:EvidenceVariable:derived-from:_id=foo'))
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
+
+  describe('discourage sequential scans', () => {
+    let querySpy: jest.SpyInstance;
+    beforeEach(() => {
+      querySpy = jest.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+    });
+
+    afterEach(() => {
+      querySpy.mockRestore();
+      config.fhirSearchDiscourageSeqScan = undefined;
+      config.fhirSearchMinLimit = undefined;
+    });
+
+    test('config.fhirSearchDiscourageSeqScan', async () => {
+      expect(config.fhirSearchDiscourageSeqScan).toBeUndefined();
+
+      await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      querySpy.mockClear();
+
+      config.fhirSearchDiscourageSeqScan = true;
+      await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(3);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringContaining('SET enable_seqscan = off'));
+      expect(querySpy).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT'), expect.anything());
+      expect(querySpy).toHaveBeenNthCalledWith(3, expect.stringContaining('RESET enable_seqscan'));
+
+      querySpy.mockRestore();
+    });
+
+    test('config.fhirSearchMinLimit', async () => {
+      expect(config.fhirSearchMinLimit).toBeUndefined();
+
+      await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
+      querySpy.mockClear();
+
+      config.fhirSearchMinLimit = 39;
+      await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+      querySpy.mockClear();
+    });
+  });
 });
 
 describe('systemRepo', () => {
@@ -5056,7 +5147,7 @@ describe('systemRepo', () => {
       expect(ids).toContain(patient1.id);
       expect(ids).toContain(patient2.id);
 
-      // with maxResourceVersion: OLDER_VERSION, exepct only the outdated patient1
+      // with maxResourceVersion: OLDER_VERSION, expect only the outdated patient1
       const bundle2 = await systemRepo.search(
         {
           resourceType: 'Patient',
@@ -5072,25 +5163,66 @@ describe('systemRepo', () => {
       );
       expect(bundle2.entry?.length).toStrictEqual(1);
       expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
+    }));
 
-      // with maxResourceVersion: 0, expect only patients with __version === NULL
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [null, patient1.id]);
-      expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(null);
+  test('Search for deleted resources', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
 
-      const bundle3 = await systemRepo.search(
-        {
-          resourceType: 'Patient',
-          filters: [
-            {
-              code: '_project',
-              operator: Operator.EQUALS,
-              value: project,
-            },
-          ],
-        },
-        { maxResourceVersion: 0 }
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.deleteResource<Patient>('Patient', patient.id);
+
+      const searchResult1 = await repo.search({
+        resourceType: 'Patient',
+      });
+      expect(searchResult1.entry?.length).toBe(0);
+
+      const searchResult2 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_deleted',
+            operator: Operator.EQUALS,
+            value: 'true',
+          },
+        ],
+      });
+      expect(searchResult2.entry?.length).toBe(1);
+    }));
+
+  test('Reverse chained search with _filter', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      const obs = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+        valueDateTime: '2020-01-02T03:04:05Z',
+      });
+      expect(obs).toBeDefined();
+
+      const result1 = await repo.search(
+        parseSearchRequest(
+          `Patient?_has:Observation:subject:_filter=${encodeURIComponent('code eq "3141-9" and value-date eq "2020-01-02T03:04:05Z"')}`
+        )
       );
-      expect(bundle3.entry?.length).toStrictEqual(1);
-      expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
+      expect(result1.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+
+      const result2 = await repo.search(
+        parseSearchRequest(`Patient?_has:Observation:subject:_filter=${encodeURIComponent('code eq "xyz"')}`)
+      );
+      expect(result2.entry?.length).toStrictEqual(0);
     }));
 });

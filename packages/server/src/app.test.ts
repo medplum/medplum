@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
@@ -8,7 +10,8 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
-import { createTestProject, initTestAuth } from './test.setup';
+import type { TestRedisConfig } from './test.setup';
+import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -186,6 +189,22 @@ describe('App', () => {
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
+
+    test('Logs on middleware error', async () => {
+      const accessToken = await initTestAuth();
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(`>kjaysgdfsk;sdfgjsdrg<`); // Send malformed data that will fail in the body parser middleware
+      expect(res1.status).toBe(400);
+      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+      const calls = (process.stdout.write as jest.Mock).mock.calls;
+      const logLine = calls[calls.length - 1][0];
+      const logObj = JSON.parse(logLine);
+      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
+    });
   });
 
   test('Internal Server Error', async () => {
@@ -256,14 +275,17 @@ describe('App', () => {
     const app = express();
     const config = await loadTestConfig();
     config.defaultRateLimit = 1;
-    config.redis.db = 6; // Use different temp Redis instance for this test only
+
+    const testRedisConfig = config.redis as TestRedisConfig;
+    testRedisConfig.db = 6; // Use different temp Redis instance for this test only
+    testRedisConfig.keyPrefix = 'server-rate-limit:';
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await getRedis().flushdb();
+    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 });

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, isResource } from '@medplum/core';
-import { Reference, UserConfiguration } from '@medplum/fhirtypes';
+import type { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 export interface UserConfigurationInputProps {
   readonly name: string;

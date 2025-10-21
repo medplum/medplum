@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { capitalize, getExtension, HTTP_HL7_ORG } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 
 export function getGenderIdentity(patient: Patient): string | undefined {
   const genderIdentityExt = getExtension(

@@ -1,5 +1,8 @@
-import { ContentType, LOINC, WithId, createReference } from '@medplum/core';
-import { Condition, Observation, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, LOINC, createReference } from '@medplum/core';
+import type { Condition, Observation, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';

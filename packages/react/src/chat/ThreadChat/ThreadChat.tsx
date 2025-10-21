@@ -1,7 +1,11 @@
-import { ProfileResource, createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
+import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
-import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {

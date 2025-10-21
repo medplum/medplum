@@ -1,14 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import {
+import type {
   ExternalSecret,
   ExternalSecretPrimitive,
   ExternalSecretPrimitiveType,
   MedplumInfraConfig,
   MedplumSourceInfraConfig,
-  OperationOutcomeError,
-  badRequest,
-  validationError,
 } from '@medplum/core';
+import { OperationOutcomeError, badRequest, validationError } from '@medplum/core';
 
 const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];
 const ssmClients = {} as Record<string, SSMClient>;

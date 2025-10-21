@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Storage } from '@google-cloud/storage';
 import { isString } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import type { Binary } from '@medplum/fhirtypes';
+import type { Readable } from 'stream';
 import { BaseBinaryStorage } from '../../storage/base';
-import { BinarySource } from '../../storage/types';
+import type { BinarySource } from '../../storage/types';
 
 export class GoogleCloudStorage extends BaseBinaryStorage {
   private readonly storage: Storage;

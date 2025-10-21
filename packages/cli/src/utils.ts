@@ -1,5 +1,8 @@
-import { ContentType, encodeBase64, MedplumClient, WithId } from '@medplum/core';
-import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, WithId } from '@medplum/core';
+import { ContentType, encodeBase64 } from '@medplum/core';
+import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';

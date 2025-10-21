@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '@medplum/core';
 import {
   badRequest,
   crawlTypedValueAsync,
@@ -8,11 +11,11 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo, Repository } from './repo';
+import type { Repository } from './repo';
+import { getSystemRepo } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation
@@ -53,7 +56,7 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean
 }
 
 function shouldValidateReference(ref: Reference): boolean {
-  return Boolean(ref.reference && !ref.reference.startsWith('%'));
+  return Boolean(ref.reference && !ref.reference.startsWith('%') && !ref.reference.startsWith('#'));
 }
 
 export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
-import { Reference, User } from '@medplum/fhirtypes';
+import type { Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getAuthenticatedContext } from '../context';

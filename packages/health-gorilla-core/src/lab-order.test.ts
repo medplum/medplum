@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import {
   getExtension,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
 } from '@medplum/core';
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -17,16 +19,16 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
+import type { PartialLabOrderInputs } from './lab-order';
 import {
   assertLabOrderInputs,
   createLabOrderBundle,
   isValidLabOrderInputs,
   LabOrderValidationError,
-  PartialLabOrderInputs,
   validateLabOrderInputs,
 } from './lab-order';
 import { expectToBeDefined } from './test-utils';
-import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import type { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
 
 interface TestContext {
   medplum: MedplumClient;

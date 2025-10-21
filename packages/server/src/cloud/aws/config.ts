@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
+import type { Parameter } from '@aws-sdk/client-ssm';
+import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
-import { MedplumServerConfig } from '../../config/types';
+import type { MedplumServerConfig } from '../../config/types';
 import { isBooleanConfig, isIntegerConfig, isObjectConfig } from '../../config/utils';
 
 const DEFAULT_AWS_REGION = 'us-east-1';

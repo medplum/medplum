@@ -1,5 +1,7 @@
-import cors from 'cors';
-import { Request } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type cors from 'cors';
+import type { Request } from 'express';
 import { getConfig } from './config/loader';
 
 const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location'];

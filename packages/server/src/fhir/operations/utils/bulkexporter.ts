@@ -1,8 +1,12 @@
-import { getReferenceString, WithId } from '@medplum/core';
-import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
-import { getSystemRepo, Repository } from '../../repo';
+import type { Repository } from '../../repo';
+import { getSystemRepo } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 

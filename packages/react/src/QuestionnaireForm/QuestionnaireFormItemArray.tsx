@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Stack } from '@mantine/core';
-import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { isQuestionEnabled, QuestionnaireFormLoadedState, QuestionnaireItemType } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import type { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
+import { isQuestionEnabled, QuestionnaireItemType } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { FormSection } from '../FormSection/FormSection';
 import { QuestionnaireFormGroup } from './QuestionnaireFormGroup';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem';

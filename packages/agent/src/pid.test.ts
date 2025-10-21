@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import fs, { PathOrFileDescriptor } from 'node:fs';
+import type { PathOrFileDescriptor } from 'node:fs';
+import fs from 'node:fs';
 import os from 'node:os';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   createPidFile,
   deregisterAgentCleanup,
@@ -26,7 +29,7 @@ const mockedFs = jest.mocked(fs);
 const mockedOs = jest.mocked(os);
 const APP_NAME = 'test-pid-app';
 const PID_DIR = dirname(getPidFilePath(APP_NAME));
-const TEST_PID_PATH = '/tmp/medplum-agent/test-pid-app.pid';
+const TEST_PID_PATH = join('/tmp', 'medplum-agent', 'test-pid-app.pid');
 const createdPidFiles = new Set<string>();
 
 describe('PID File Manager', () => {
@@ -197,7 +200,7 @@ describe('PID File Manager', () => {
   test('returns appropriate file path for the current OS -- win32', () => {
     mockedOs.platform.mockImplementationOnce(() => 'win32');
     const pidFilePath = getPidFilePath(APP_NAME);
-    expect(pidFilePath).toEqual(`C:/ProgramData/MedplumAgent/pids/${APP_NAME}.pid`);
+    expect(pidFilePath).toEqual(join('C:', 'ProgramData', 'MedplumAgent', 'pids', `${APP_NAME}.pid`));
   });
 
   test('throws on unsupported or invalid OS', () => {
@@ -407,7 +410,7 @@ describe('PID File Manager', () => {
       processEvents.SIGTERM?.();
 
       expect(pidLoggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error removing PID file: /tmp/medplum-agent/test-pid-app.pid'),
+        expect.stringContaining(`Error removing PID file: ${TEST_PID_PATH}`),
         new Error('Permission denied')
       );
       expect(process.exit).toHaveBeenCalledWith(0);

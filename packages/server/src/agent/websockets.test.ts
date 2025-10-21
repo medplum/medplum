@@ -1,17 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
-import { Agent, Bot, Device } from '@medplum/fhirtypes';
+import type { Agent, Bot, Device } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { Server } from 'http';
+import type { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import * as executeBotModule from '../bots/execute';
-import { BotExecutionResult } from '../bots/types';
+import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
-import { AgentConnectionState, AgentInfo } from './utils';
+import type { AgentInfo } from './utils';
+import { AgentConnectionState } from './utils';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -31,7 +34,7 @@ describe('Agent WebSockets', () => {
     accessToken = await initTestAuth({ membership: { admin: true } });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8512, resolve);
     });
 
     // Create a test bot

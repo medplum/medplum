@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
-import { act, render, screen, userEvent, UserEvent, waitFor } from './test-utils/render';
+import type { UserEvent } from './test-utils/render';
+import { act, render, screen, userEvent, waitFor } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -13,7 +16,7 @@ describe('OAuthPage', () => {
     const user = userEvent.setup();
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <AppRoutes />
           </MemoryRouter>
@@ -25,10 +28,6 @@ describe('OAuthPage', () => {
   }
 
   beforeAll(() => {
-    Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder,
-    });
-
     Object.defineProperty(global.self, 'crypto', {
       value: crypto.webcrypto,
     });
@@ -40,10 +39,7 @@ describe('OAuthPage', () => {
   });
 
   test('Success', async () => {
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { assign: jest.fn() },
-    });
+    locationUtils.assign = jest.fn();
 
     const user = await setup(
       '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid+profile&state=abc&nonce=xyz'
@@ -61,8 +57,8 @@ describe('OAuthPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Set scope' }));
 
-    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
-    expect(window.location.assign).toHaveBeenCalled();
+    await waitFor(() => expect(locationUtils.assign).toHaveBeenCalled());
+    expect(locationUtils.assign).toHaveBeenCalled();
   });
 
   test('Forgot password', async () => {

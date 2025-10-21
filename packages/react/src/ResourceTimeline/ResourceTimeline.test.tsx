@@ -1,10 +1,14 @@
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
+import type { ResourceTimelineProps } from './ResourceTimeline';
+import { ResourceTimeline } from './ResourceTimeline';
 
 const medplum = new MockClient();
 

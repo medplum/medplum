@@ -77,6 +77,6 @@ We're committed to making this transition as smooth as possible. Our team will p
 
 ## Stay Connected
 
-For questions, concerns, or feedback about the upcoming v5 release, please join the conversation in our [community forum](https://www.medplum.com/docs/contributing/support) or submit issues on [GitHub](https://github.com/medplum/medplum).
+For questions, concerns, or feedback about the upcoming v5 release, please join the conversation on [Discord](https://discord.gg/medplum) or submit issues on [GitHub](https://github.com/medplum/medplum).
 
 By embracing these modern technologies, Medplum continues its mission to accelerate healthcare innovation through powerful, interoperable, and developer-friendly tools.

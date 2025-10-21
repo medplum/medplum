@@ -1,16 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
-import { convertFhirToCcda } from './fhir-to-ccda';
-import { Ccda } from './types';
+import { convertFhirToCcda } from './fhir-to-ccda/convert';
+import type { Ccda } from './types';
 import { convertCcdaToXml, convertXmlToCcda } from './xml';
 
 const testDataFolder = resolve(__dirname, '../testdata');
 const testData = [
   'MinimalPassingValidator',
   'Patient',
+  'Participants',
   'AllergyToEgg',
   'MedicationAtBedtime',
   'ProblemPneumonia',
@@ -25,7 +28,6 @@ const testData = [
   'ProcedureSectionObservationEntry',
   'ProcedureSectionProcedureEntry',
   // 'EncounterHospitalDischarge',
-  // 'AliceNewman_USCDIv3_21Jan_2025',
 ];
 
 describe('convertCcdaToFhir', () => {

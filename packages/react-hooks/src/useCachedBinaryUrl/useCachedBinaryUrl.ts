@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { useMemo } from 'react';
 
 // Maintain a cache of urls to avoid unnecessary re-download of attachments

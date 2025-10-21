@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
 import {
   accepted,
   allOk,
@@ -7,21 +10,22 @@ import {
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
-  SearchRequest,
   validateResourceType,
 } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { assert } from 'console';
-import { Request, Response, Router } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
-import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
+import type { AuthenticatedRequestContext } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
@@ -45,54 +49,41 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
 
-export function isValidTableName(tableName: string): boolean {
-  return /^[\w_]+$/.test(tableName);
-}
-
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
 // to rebuild the terminology tables.
 // Run this after changes to how ValueSet elements are defined.
-superAdminRouter.post(
-  '/valuesets',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/valuesets', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
 
-    const systemRepo = getSystemRepo();
-    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
-  })
-);
+  const systemRepo = getSystemRepo();
+  await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
+});
 
 // POST to /admin/super/structuredefinitions
 // to rebuild the "StructureDefinition" table.
 // Run this after any changes to the built-in StructureDefinitions.
-superAdminRouter.post(
-  '/structuredefinitions',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/structuredefinitions', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
 
-    const systemRepo = getSystemRepo();
-    await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
-  })
-);
+  const systemRepo = getSystemRepo();
+  await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
+});
 
 // POST to /admin/super/searchparameters
 // to rebuild the "SearchParameter" table.
 // Run this after any changes to the built-in SearchParameters.
-superAdminRouter.post(
-  '/searchparameters',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/searchparameters', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
 
-    const systemRepo = getSystemRepo();
-    await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
-  })
-);
+  const systemRepo = getSystemRepo();
+  await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
+});
 
 // POST to /admin/super/reindex
 // to reindex a single resource type.
@@ -113,7 +104,7 @@ superAdminRouter.post(
       .isEmpty()
       .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
 
@@ -180,7 +171,7 @@ superAdminRouter.post(
 
     const { baseUrl } = getConfig();
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
-  })
+  }
 );
 
 // POST to /admin/super/setpassword
@@ -191,7 +182,7 @@ superAdminRouter.post(
     body('email').isEmail().withMessage('Valid email address is required'),
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -208,7 +199,7 @@ superAdminRouter.post(
 
     await setPassword(user, req.body.password as string);
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 // POST to /admin/super/purge
@@ -219,7 +210,7 @@ superAdminRouter.post(
     body('resourceType').isIn(['AuditEvent', 'Login']).withMessage('Invalid resource type'),
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -230,7 +221,7 @@ superAdminRouter.post(
 
     await ctx.repo.purgeResources(req.body.resourceType, req.body.before);
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 // POST to /admin/super/removebotidjobsfromqueue
@@ -238,7 +229,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/removebotidjobsfromqueue',
   [body('botId').notEmpty().withMessage('Bot ID is required')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -250,43 +241,37 @@ superAdminRouter.post(
     await removeBullMQJobByKey(req.body.botId);
 
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 // POST to /admin/super/rebuildprojectid
 // to rebuild the projectId column on all resource types.
-superAdminRouter.post(
-  '/rebuildprojectid',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/rebuildprojectid', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const resourceTypes = getResourceTypes();
-      for (const resourceType of resourceTypes) {
-        await getDatabasePool(DatabaseMode.WRITER).query(
-          `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
-        );
-      }
-    });
-  })
-);
+  await sendAsyncResponse(req, res, async () => {
+    const resourceTypes = getResourceTypes();
+    for (const resourceType of resourceTypes) {
+      await getDatabasePool(DatabaseMode.WRITER).query(
+        `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
+      );
+    }
+  });
+});
 
-superAdminRouter.get(
-  '/migrations',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
+superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
+  requireSuperAdmin();
 
-    const postDeployMigrations = getPostDeployMigrationVersions();
-    const conn = await getDatabasePool(DatabaseMode.WRITER);
-    const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
+  const postDeployMigrations = getPostDeployMigrationVersions();
+  const conn = await getDatabasePool(DatabaseMode.WRITER);
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
-    res.json({
-      postDeployMigrations,
-      pendingPostDeployMigration,
-    });
-  })
-);
+  res.json({
+    postDeployMigrations,
+    pendingPostDeployMigration,
+  });
+});
 
 // POST to /admin/super/migrate
 // to run pending data migrations.
@@ -295,7 +280,7 @@ superAdminRouter.get(
 superAdminRouter.post(
   '/migrate',
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
@@ -314,38 +299,35 @@ superAdminRouter.post(
     }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
-  })
+  }
 );
 
-superAdminRouter.post(
-  '/reconcile-db-schema-drift',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Response) => {
+  const ctx = requireSuperAdmin();
+  requireAsync(req);
 
-    const migrationActions = await generateMigrationActions({
-      dbClient: getDatabasePool(DatabaseMode.WRITER),
-      dropUnmatchedIndexes: true,
-      allowPostDeployActions: true,
-    });
+  const migrationActions = await generateMigrationActions({
+    dbClient: getDatabasePool(DatabaseMode.WRITER),
+    dropUnmatchedIndexes: true,
+    allowPostDeployActions: true,
+  });
 
-    if (migrationActions.length === 0) {
-      // Nothing to do
-      sendOutcome(res, allOk);
-      return;
-    }
+  if (migrationActions.length === 0) {
+    // Nothing to do
+    sendOutcome(res, allOk);
+    return;
+  }
 
-    const exec = new AsyncJobExecutor(ctx.repo);
-    await exec.init(req.originalUrl);
-    await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
-      await addPostDeployMigrationJobData(jobData);
-    });
+  const exec = new AsyncJobExecutor(ctx.repo);
+  await exec.init(req.originalUrl);
+  await exec.run(async (asyncJob) => {
+    const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+    await addPostDeployMigrationJobData(jobData);
+  });
 
-    const { baseUrl } = getConfig();
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
-  })
-);
+  const { baseUrl } = getConfig();
+  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+});
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.
@@ -354,7 +336,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/setdataversion',
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -367,7 +349,7 @@ superAdminRouter.post(
     await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
 
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 // POST to /admin/super/tablesettings
@@ -410,7 +392,7 @@ superAdminRouter.post(
     }),
     checkExact(),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
 
     const errors = validationResult(req);
@@ -432,7 +414,7 @@ superAdminRouter.post(
       durationMs: Date.now() - startTime,
     });
     sendOutcome(res, allOk);
-  })
+  }
 );
 
 // POST to /admin/super/vacuum
@@ -451,7 +433,7 @@ superAdminRouter.post(
     body('vacuum').isBoolean().optional().default(true),
     checkExact(),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
 
@@ -490,30 +472,27 @@ superAdminRouter.post(
         ],
       };
     });
-  })
+  }
 );
 
 // POST to /admin/super/reloadcron
 // to clear out the cron queue and reload all cron strings from cron bots
-superAdminRouter.post(
-  '/reloadcron',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
+superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
+  requireSuperAdmin();
+  requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const startTime = Date.now();
-      await reloadCronBots();
-      globalLogger.info('[Super Admin]: Cron bots reloaded', {
-        durationMs: Date.now() - startTime,
-      });
-      return {
-        resourceType: 'Parameters',
-        parameter: [{ name: 'outcome', resource: allOk }],
-      };
+  await sendAsyncResponse(req, res, async () => {
+    const startTime = Date.now();
+    await reloadCronBots();
+    globalLogger.info('[Super Admin]: Cron bots reloaded', {
+      durationMs: Date.now() - startTime,
     });
-  })
-);
+    return {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'outcome', resource: allOk }],
+    };
+  });
+});
 
 export function requireSuperAdmin(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();

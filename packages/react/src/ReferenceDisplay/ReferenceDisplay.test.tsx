@@ -1,7 +1,9 @@
-import { Reference } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import { ReferenceDisplay } from './ReferenceDisplay';

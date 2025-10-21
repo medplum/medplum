@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 'use client';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
-import { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 const medplum = new MedplumClient({
   // Uncomment this to run against the server on your localhost

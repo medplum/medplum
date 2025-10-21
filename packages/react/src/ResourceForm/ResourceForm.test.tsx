@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Bot,
   Bundle,
   Condition,
@@ -14,7 +16,8 @@ import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { ResourceForm, ResourceFormProps } from './ResourceForm';
+import type { ResourceFormProps } from './ResourceForm';
+import { ResourceForm } from './ResourceForm';
 
 const medplum = new MockClient();
 

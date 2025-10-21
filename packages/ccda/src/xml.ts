@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { XSI_URL } from './systems';
-import { Ccda } from './types';
+import type { Ccda } from './types';
 
 const ARRAY_PATHS = [
   'ClinicalDocument.recordTarget',
@@ -34,6 +36,7 @@ const ARRAY_PATHS = [
   'component.act',
 
   'code.translation',
+  'value.translation',
 
   'section.entry',
 

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import type { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { QuestionnaireFormItemArray } from './QuestionnaireFormItemArray';
 
 export interface QuestionnaireFormGroupProps {

@@ -1,9 +1,12 @@
-import { Anchor, AnchorProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AnchorProps } from '@mantine/core';
+import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ensureTrailingSlash, normalizeErrorString } from '@medplum/core';
-import { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
+import { ensureTrailingSlash, locationUtils, normalizeErrorString } from '@medplum/core';
+import type { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;
@@ -27,7 +30,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         const url = new URL(client.launchUri as string);
         url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
         url.searchParams.set('launch', result.id as string);
-        window.location.assign(url.toString());
+        locationUtils.assign(url.toString());
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }

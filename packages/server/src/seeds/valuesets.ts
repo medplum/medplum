@@ -1,8 +1,11 @@
-import { Operator, WithId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
-import { Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.

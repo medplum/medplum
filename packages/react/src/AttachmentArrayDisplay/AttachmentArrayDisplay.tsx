@@ -1,6 +1,9 @@
-import { InternalSchemaElement, getPathDisplayName, isPopulated } from '@medplum/core';
-import { Attachment } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { getPathDisplayName, isPopulated } from '@medplum/core';
+import type { Attachment } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
 

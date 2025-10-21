@@ -1,16 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { globalSchema, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
-import {
+import type {
   ColumnSearchParameterImplementation,
-  getSearchParameterImplementation,
   LookupTableSearchParameterImplementation,
   SearchParameterImplementation,
-  SearchStrategies,
   TokenColumnSearchParameterImplementation,
 } from './searchparameter';
+import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 
 describe('SearchParameterImplementation', () => {
   const indexedSearchParams: SearchParameter[] = [];
@@ -254,14 +255,16 @@ describe('SearchParameterImplementation', () => {
   });
 
   test.each([
-    ['individual-address-country', AddressTable],
-    ['Patient-name', HumanNameTable],
-  ])('lookup table for SearchParameter %s on Patient', (searchParamId, lookupTableClass) => {
+    ['individual-address-country', AddressTable, false],
+    ['individual-given', HumanNameTable, true],
+    ['Patient-name', HumanNameTable, true],
+  ])('lookup table for SearchParameter %s on Patient', (searchParamId, lookupTableClass, shouldHaveSortColumn) => {
     const resourceType = 'Patient';
     const searchParam = indexedSearchParams.find((e) => e.id === searchParamId) as SearchParameter;
     const impl = getSearchParameterImplementation(resourceType, searchParam);
     expectLookupTableImplementation(impl);
     expect(impl.lookupTable instanceof lookupTableClass).toBeTruthy();
+    expect(!!impl.sortColumnName).toBe(shouldHaveSortColumn);
   });
 
   test('Everything', () => {

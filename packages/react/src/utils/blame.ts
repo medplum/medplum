@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { Bundle, Meta } from '@medplum/fhirtypes';
+import type { Bundle, Meta } from '@medplum/fhirtypes';
 import { diff } from './diff';
 
 export interface BlameRow {

@@ -1,13 +1,11 @@
-import {
-  ACMClient,
-  CertificateSummary,
-  ListCertificatesCommand,
-  RequestCertificateCommand,
-  ValidationMethod,
-} from '@aws-sdk/client-acm';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CertificateSummary, ValidationMethod } from '@aws-sdk/client-acm';
+import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
+import type { MedplumInfraConfig } from '@medplum/core';
+import { normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { getConfigFileName, writeConfig } from '../utils';

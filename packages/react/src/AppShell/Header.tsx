@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, AppShell as MantineAppShell, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
-import { HumanName } from '@medplum/fhirtypes';
+import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import cx from 'clsx';
-import { JSX, ReactNode, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import classes from './Header.module.css';
 import { HeaderDropdown } from './HeaderDropdown';

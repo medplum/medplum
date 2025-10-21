@@ -59501,6 +59501,7 @@
           "description": "A list of optional features that are enabled for the project.",
           "items": {
             "enum": [
+              "ai",
               "aws-comprehend",
               "aws-textract",
               "bots",
@@ -59971,8 +59972,15 @@
           "$ref": "#/definitions/uri"
         },
         "redirectUri": {
-          "description": "Optional redirect URI used when redirecting a client back to the client application.",
+          "description": "@deprecated This field is deprecated. Use redirectUris instead.",
           "$ref": "#/definitions/uri"
+        },
+        "redirectUris": {
+          "description": "Optional redirect URI array used when redirecting a client back to the client application.",
+          "items": {
+            "$ref": "#/definitions/uri"
+          },
+          "type": "array"
         },
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",
@@ -60098,6 +60106,10 @@
         "mfaSecret": {
           "description": "Shared secret for MFA authenticator applications.",
           "$ref": "#/definitions/string"
+        },
+        "mfaRequired": {
+          "description": "Whether the user is required to complete MFA enrollment. If true, the user must complete MFA enrollment before they can log in.",
+          "$ref": "#/definitions/boolean"
         },
         "mfaEnrolled": {
           "description": "Whether the user has completed MFA enrollment.",

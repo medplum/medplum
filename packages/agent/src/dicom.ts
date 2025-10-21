@@ -1,17 +1,13 @@
-import {
-  AgentTransmitResponse,
-  ContentType,
-  Logger,
-  createReference,
-  normalizeErrorString,
-  sleep,
-} from '@medplum/core';
-import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import { ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
+import type { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
-import net from 'node:net';
+import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
@@ -21,7 +17,9 @@ export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
+  private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -137,7 +135,8 @@ export class AgentDicomChannel extends BaseChannel {
           });
           response.setStatus(dimse.constants.Status.Success);
         } catch (err) {
-          DcmjsDimseScp.channel.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+          DcmjsDimseScp.channel.log.error(`DICOM error - check channel logs`);
+          DcmjsDimseScp.channel.channelLog.error(`DICOM error: ${normalizeErrorString(err)}`);
           response.setStatus(dimse.constants.Status.ProcessingFailure);
         }
 
@@ -151,13 +150,16 @@ export class AgentDicomChannel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
+    this.prefix = `[DICOM:${definition.name}] `;
+    this.log = app.log.clone({ options: { prefix: this.prefix } });
+    this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
+    this.prefix = `[DICOM:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
 

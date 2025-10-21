@@ -1,7 +1,11 @@
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Encounter, Reference, ResourceType } from '@medplum/fhirtypes';
-import { JSX } from 'react';
-import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Attachment, Encounter, Reference, ResourceType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import type { ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
+import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface EncounterTimelineProps extends Pick<ResourceTimelineProps<Encounter>, 'getMenu'> {
   readonly encounter: Encounter | Reference<Encounter>;

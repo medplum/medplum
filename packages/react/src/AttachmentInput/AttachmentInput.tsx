@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
-import { Attachment, Reference } from '@medplum/fhirtypes';
-import { JSX, MouseEvent, useState } from 'react';
+import type { Attachment, Reference } from '@medplum/fhirtypes';
+import type { JSX, MouseEvent } from 'react';
+import { useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentInputProps extends ComplexTypeInputProps<Attachment> {

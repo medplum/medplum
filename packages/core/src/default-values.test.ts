@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, MedicationRequest, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, MedicationRequest, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { HTTP_HL7_ORG } from './constants';
 import {
   applyDefaultValuesToElement,
@@ -7,14 +9,8 @@ import {
   applyFixedOrPatternValue,
   getDefaultValuesForNewSliceEntry,
 } from './default-values';
-import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SlicingRules,
-  indexStructureDefinitionBundle,
-  tryGetProfile,
-} from './typeschema/types';
+import type { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
+import { indexStructureDefinitionBundle, tryGetProfile } from './typeschema/types';
 import { isPopulated } from './utils';
 
 function isStructureDefinition(sd: any): sd is StructureDefinition {

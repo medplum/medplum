@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Loader, Paper, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { PatientHeader, useResource } from '@medplum/react';
-import { Fragment, JSX } from 'react';
+import { Fragment } from 'react';
+import type { JSX } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 
 export function PatientPage(): JSX.Element {

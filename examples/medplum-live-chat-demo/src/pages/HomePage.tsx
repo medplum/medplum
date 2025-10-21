@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Stack, TextInput, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import { Communication, Patient, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, Patient, Practitioner } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
 import {
   ChatModal,
@@ -13,7 +15,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconArrowRight } from '@tabler/icons-react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
 
 /**
  * Home page that greets the user and displays a list of patients.

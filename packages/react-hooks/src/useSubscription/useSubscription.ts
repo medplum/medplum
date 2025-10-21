@@ -1,5 +1,8 @@
-import { SubscriptionEmitter, SubscriptionEventMap, deepEquals } from '@medplum/core';
-import { Bundle, Subscription } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SubscriptionEmitter, SubscriptionEventMap } from '@medplum/core';
+import { deepEquals } from '@medplum/core';
+import type { Bundle, Subscription } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 

@@ -1,4 +1,6 @@
-import { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
 import { getReferenceString } from './utils';
 
 export type StatsFn = (data: number[]) => number | Quantity;

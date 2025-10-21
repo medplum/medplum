@@ -1,6 +1,8 @@
-import { MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { locationUtils, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 import { fireEvent, render, screen } from '../test-utils/render';
 import { MedplumLink } from './MedplumLink';
@@ -26,21 +28,20 @@ const medplum = new MedplumClient({
 });
 
 function setup(ui: ReactElement): void {
-  Object.defineProperty(window, 'location', {
-    value: {
-      assign: jest.fn(),
-    },
-    writable: true,
-  });
-
   render(
     <MemoryRouter>
-      <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>
+      <MedplumProvider medplum={medplum} navigate={jest.fn()}>
+        {ui}
+      </MedplumProvider>
     </MemoryRouter>
   );
 }
 
 describe('MedplumLink', () => {
+  beforeEach(() => {
+    locationUtils.assign = jest.fn();
+  });
+
   test('Renders', () => {
     setup(<MedplumLink>test</MedplumLink>);
     expect(screen.getByText('test')).toBeDefined();

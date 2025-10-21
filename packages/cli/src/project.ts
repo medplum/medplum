@@ -1,4 +1,6 @@
-import { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
 import { addSubcommand, MedplumCommand } from './utils';

@@ -1,11 +1,20 @@
-import { allOk, badRequest, WithId } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findAncestor, findTerminologyResource, selectCoding } from './utils/terminology';
+import {
+  findAncestor,
+  findTerminologyResource,
+  getParentProperty,
+  resolveProperty,
+  selectCoding,
+} from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'subsumes');
 
@@ -64,10 +73,15 @@ export async function isSubsumed(
   ancestorCode: string,
   codeSystem: WithId<CodeSystem>
 ): Promise<boolean> {
-  const ctx = getAuthenticatedContext();
+  const { repo } = getAuthenticatedContext();
   const base = selectCoding(codeSystem.id, baseCode);
+  const db = repo.getDatabaseClient(DatabaseMode.READER);
 
-  const query = findAncestor(base, codeSystem, ancestorCode);
-  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
+  const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+  if (!parentProperty) {
+    return false;
+  }
+  const query = findAncestor(base, codeSystem, parentProperty, ancestorCode);
+  const results = await query.execute(db);
   return results.length > 0;
 }

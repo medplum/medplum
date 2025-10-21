@@ -1,5 +1,8 @@
-import { append, WithId } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { append } from '@medplum/core';
+import type {
   CodeSystem,
   CodeSystemConcept,
   CodeSystemConceptProperty,
@@ -7,10 +10,11 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
-import { importCodeSystem, ImportedProperty } from '../operations/codesystemimport';
+import type { Pool, PoolClient } from 'pg';
+import type { ImportedProperty } from '../operations/codesystemimport';
+import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
-import { Column, DeleteQuery } from '../sql';
+import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -64,22 +68,34 @@ export class CodingTable extends LookupTable {
    * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
-    if (resource.resourceType !== 'CodeSystem') {
+    const resourceType = resource.resourceType;
+    if (resourceType !== 'CodeSystem') {
       return;
     }
 
-    // Delete CodeSystem_Property entries
-    await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
+    await LookupTable.purge(client, 'CodeSystem_Property', {
+      tableName: resourceType,
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column('CodeSystem_Property', 'system')),
+        new Condition(new Column(resourceType, 'id'), '=', resource.id),
+      ]),
+    });
 
-    // Delete Coding_Property entries with a join
-    await new DeleteQuery('Coding_Property')
-      .using('Coding')
-      .where(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id'))
-      .where(new Column('Coding', 'system'), '=', resource.id)
-      .execute(client);
+    await LookupTable.purge(client, 'Coding_Property', {
+      tableName: 'Coding',
+      joinCondition: new Conjunction([
+        new Condition(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id')),
+        new Condition(new Column('Coding', 'system'), '=', resource.id),
+      ]),
+    });
 
-    // Delete Coding entries
-    await new DeleteQuery('Coding').where('system', '=', resource.id).execute(client);
+    await LookupTable.purge(client, 'Coding', {
+      tableName: resourceType,
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column('Coding', 'system')),
+        new Condition(new Column(resourceType, 'id'), '=', resource.id),
+      ]),
+    });
   }
 
   /**
@@ -94,27 +110,39 @@ export class CodingTable extends LookupTable {
       return;
     }
 
-    // Delete CodeSystem_Property entries
-    await new DeleteQuery('CodeSystem_Property')
-      .using('CodeSystem')
-      .where(new Column('CodeSystem_Property', 'system'), '=', new Column('CodeSystem', 'id'))
-      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
-      .execute(client);
+    const resourceOlderThanCutoff = new Condition(new Column(resourceType, 'lastUpdated'), '<', before);
 
-    // Delete Coding_Property entries with a join
-    await new DeleteQuery('Coding_Property')
-      .using('CodeSystem', 'Coding')
-      .where(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id'))
-      .where(new Column('Coding', 'system'), '=', new Column('CodeSystem', 'id'))
-      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(client, 'CodeSystem_Property', {
+      tableName: resourceType,
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column('CodeSystem_Property', 'system')),
+        resourceOlderThanCutoff,
+      ]),
+    });
 
-    // Delete Coding entries
-    await new DeleteQuery('Coding')
-      .using('CodeSystem')
-      .where(new Column('Coding', 'system'), '=', new Column('CodeSystem', 'id'))
-      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
-      .execute(client);
+    await LookupTable.purge(
+      client,
+      'Coding_Property',
+      {
+        tableName: 'Coding',
+        joinCondition: new Condition(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id')),
+      },
+      {
+        tableName: resourceType,
+        joinCondition: new Conjunction([
+          new Condition(new Column('Coding', 'system'), '=', new Column(resourceType, 'id')),
+          resourceOlderThanCutoff,
+        ]),
+      }
+    );
+
+    await LookupTable.purge(client, 'Coding', {
+      tableName: 'CodeSystem',
+      joinCondition: new Conjunction([
+        new Condition(new Column(resourceType, 'id'), '=', new Column('Coding', 'system')),
+        resourceOlderThanCutoff,
+      ]),
+    });
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {

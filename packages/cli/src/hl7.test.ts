@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'node:fs';
 import net from 'node:net';
 import { generateSampleHl7Message } from './hl7';

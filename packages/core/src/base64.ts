@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { getBuffer, isBrowserEnvironment } from './environment';
+
 /**
  * Decodes a base64 string.
  * Handles both browser and Node environments.
@@ -5,14 +10,16 @@
  * @param data - The base-64 encoded input string.
  * @returns The decoded string.
  */
+
 export function decodeBase64(data: string): string {
-  if (typeof window !== 'undefined') {
+  if (isBrowserEnvironment()) {
     const binaryString = window.atob(data);
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
     return new window.TextDecoder().decode(bytes);
   }
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(data, 'base64').toString('utf-8');
+  const BufferConstructor = getBuffer();
+  if (BufferConstructor) {
+    return BufferConstructor.from(data, 'base64').toString('utf-8');
   }
   throw new Error('Unable to decode base64');
 }
@@ -25,14 +32,15 @@ export function decodeBase64(data: string): string {
  * @returns The base-64 encoded string.
  */
 export function encodeBase64(data: string): string {
-  if (typeof window !== 'undefined') {
+  if (isBrowserEnvironment()) {
     const utf8Bytes = new window.TextEncoder().encode(data);
     // utf8Bytes is a Uint8Array, but String.fromCharCode expects a sequence of numbers.
     const binaryString = String.fromCharCode.apply(null, utf8Bytes as unknown as number[]);
     return window.btoa(binaryString);
   }
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(data, 'utf8').toString('base64');
+  const BufferConstructor = getBuffer();
+  if (BufferConstructor) {
+    return BufferConstructor.from(data, 'utf8').toString('base64');
   }
   throw new Error('Unable to encode base64');
 }

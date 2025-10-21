@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, createReference, normalizeErrorString } from '@medplum/core';
-import { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 import { executeFissionFunction } from './utils';
 
@@ -9,12 +11,13 @@ import { executeFissionFunction } from './utils';
  * @returns The bot execution result.
  */
 export async function executeFissionBot(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId, headers } = request;
+  const { bot, accessToken, secrets, requester, input, contentType, traceId, headers } = request;
   const config = getConfig();
   const payload = {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
     accessToken,
+    requester,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
     secrets,

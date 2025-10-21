@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
-import { BackboneElementDisplay, BackboneElementDisplayProps } from './BackboneElementDisplay';
+import type { BackboneElementDisplayProps } from './BackboneElementDisplay';
+import { BackboneElementDisplay } from './BackboneElementDisplay';
 
 const medplum = new MockClient();
 

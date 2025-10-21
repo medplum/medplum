@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceTimelineMenuItemContext } from '@medplum/react';
 import {
   DefaultResourceTimeline,
   EncounterTimeline,
   PatientTimeline,
-  ResourceTimelineMenuItemContext,
   ServiceRequestTimeline,
   useMedplum,
   useMedplumNavigate,
@@ -23,7 +25,8 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { JSX, ReactNode, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router';
 import { isAwsTextractEnabled } from '../config';
 import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';

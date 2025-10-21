@@ -1,4 +1,6 @@
-import { TypeName } from './types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypeName } from './types';
 
 export const ExternalSecretSystems = {
   aws_ssm_parameter_store: 'aws_ssm_parameter_store',
@@ -77,7 +79,10 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
+  containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
+  /** @deprecated Use containerInsightsV2 instead */
   containerInsights?: ValueOrExternalSecret<boolean>;
+  containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
     logGroupCreate?: ValueOrExternalSecret<boolean>;
@@ -178,7 +183,10 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
+  containerRegistryCredentialsSecretArn?: string;
+  /** @deprecated Use containerInsightsV2 instead */
   containerInsights?: boolean;
+  containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;
     logGroupCreate?: boolean;

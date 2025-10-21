@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { calculateAgeString, formatAddress, formatHumanName, resolveId } from '@medplum/core';
-import {
+import type {
   AllergyIntolerance,
   Appointment,
   Condition,
@@ -28,7 +30,8 @@ import {
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';

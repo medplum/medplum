@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -133,10 +135,15 @@ export interface ClientApplication {
   jwksUri?: string;
 
   /**
-   * Optional redirect URI used when redirecting a client back to the
-   * client application.
+   * @deprecated This field is deprecated. Use redirectUris instead.
    */
   redirectUri?: string;
+
+  /**
+   * Optional redirect URI array used when redirecting a client back to the
+   * client application.
+   */
+  redirectUris?: string[];
 
   /**
    * Optional launch URI for SMART EHR launch sequence.

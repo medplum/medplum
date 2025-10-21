@@ -1,20 +1,16 @@
-import {
-  Avatar,
-  Group,
-  MantineColorScheme,
-  Menu,
-  SegmentedControl,
-  Stack,
-  Text,
-  useMantineColorScheme,
-} from '@mantine/core';
-import { ProfileResource, getReferenceString } from '@medplum/core';
-import { HumanName } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MantineColorScheme } from '@mantine/core';
+import { Avatar, Group, Menu, SegmentedControl, Stack, Text, useMantineColorScheme } from '@mantine/core';
+import type { ProfileResource } from '@medplum/core';
+import { getReferenceString, locationUtils } from '@medplum/core';
+import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { getAppName } from '../utils/app';
 
 export interface HeaderDropdownProps {
   readonly version?: string;
@@ -44,7 +40,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
               onClick={() => {
                 medplum
                   .setActiveLogin(login)
-                  .then(() => window.location.reload())
+                  .then(() => locationUtils.reload())
                   .catch(console.log);
               }}
             >
@@ -94,8 +90,8 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
       >
         Sign out
       </Menu.Item>
-      <Text size="xs" c="dimmed" ta="center">
-        {props.version}
+      <Text size="xs" c="dimmed" my="sm" ta="center">
+        {getAppName()} {props.version}
       </Text>
     </>
   );

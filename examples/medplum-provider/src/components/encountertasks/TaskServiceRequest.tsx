@@ -1,6 +1,9 @@
-import { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { StatusBadge, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
@@ -53,7 +56,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
 
   return (
     <>
-      <Stack p="md">
+      <Stack p={0}>
         <Stack gap={0}>
           <Title>{displayText ? displayText : getDisplayString(serviceRequest)}</Title>
           {codeText && <Text>SNOMED: {codeText}</Text>}

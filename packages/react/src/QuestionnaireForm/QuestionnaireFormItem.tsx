@@ -1,14 +1,8 @@
-import {
-  Checkbox,
-  ComboboxItem,
-  Group,
-  MultiSelect,
-  NativeSelect,
-  Radio,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ComboboxItem } from '@mantine/core';
+import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
+import type { TypedValue } from '@medplum/core';
 import {
   capitalize,
   deepEquals,
@@ -17,10 +11,9 @@ import {
   getExtension,
   HTTP_HL7_ORG,
   stringify,
-  TypedValue,
   typedValueToString,
 } from '@medplum/core';
-import {
+import type {
   Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -30,6 +23,7 @@ import {
   ValueSet,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
+import type { QuestionnaireFormLoadedState } from '@medplum/react-hooks';
 import {
   getItemAnswerOptionValue,
   getItemInitialValue,
@@ -37,11 +31,11 @@ import {
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
-  QuestionnaireFormLoadedState,
   QuestionnaireItemType,
   useMedplum,
 } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, useEffect, useState } from 'react';
+import type { ChangeEvent, JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
@@ -125,7 +119,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueDecimal: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -140,7 +134,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueInteger: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -189,7 +183,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );
@@ -203,7 +197,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );

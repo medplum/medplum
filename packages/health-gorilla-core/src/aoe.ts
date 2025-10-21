@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { arrayify, getAllQuestionnaireAnswers, getExtensionValue, getTypedPropertyValue } from '@medplum/core';
-import {
+import type {
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,

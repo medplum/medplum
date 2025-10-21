@@ -1,5 +1,8 @@
-import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
+import type {
   HumanName,
   Patient,
   Person,
@@ -9,20 +12,30 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
-import { Column, DeleteQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+import type { Pool, PoolClient } from 'pg';
+import { DeleteQuery } from '../sql';
+import type { LookupTableRow } from './lookuptable';
+import { LookupTable } from './lookuptable';
 
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 const resourceTypeSet = new Set(resourceTypes);
 type HumanNameResourceType = (typeof resourceTypes)[number];
-type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
+export type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
 export interface HumanNameTableRow extends LookupTableRow {
   name: string | undefined;
   given: string | undefined;
   family: string | undefined;
 }
+
+export const HumanNameSearchParameterIds = new Set<string>([
+  'individual-given',
+  'individual-family',
+  'Patient-name',
+  'Person-name',
+  'Practitioner-name',
+  'RelatedPerson-name',
+]);
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -145,13 +158,7 @@ export class HumanNameTable extends LookupTable {
     if (!HumanNameTable.hasHumanName(resourceType)) {
       return;
     }
-
-    const lookupTableName = this.getTableName();
-    await new DeleteQuery(lookupTableName)
-      .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
-      .where(new Column(resourceType, 'lastUpdated'), '<', before)
-      .execute(client);
+    await super.purgeValuesBefore(client, resourceType, before);
   }
 }
 
@@ -201,3 +208,56 @@ function getTokens(input: string): Set<string> {
   // Remove empty strings
   return new Set<string>(input.toLowerCase().split(/\s+/).filter(Boolean));
 }
+
+export function getHumanNameSortValue(
+  names: (HumanName | undefined | null)[] | undefined,
+  searchParam: SearchParameter
+): string | undefined {
+  if (!Array.isArray(names)) {
+    return undefined;
+  }
+
+  let result: string | undefined;
+  let resultPrecedence: number = Infinity;
+  for (const name of names) {
+    if (!name) {
+      continue;
+    }
+
+    let candidate: string | undefined;
+    if (searchParam.code === 'given') {
+      candidate = formatGivenName(name);
+    } else if (searchParam.code === 'family') {
+      candidate = formatFamilyName(name);
+    } else {
+      candidate = getNameString(name);
+    }
+
+    if (!candidate) {
+      continue;
+    }
+
+    const candidatePrecedence = UsePrecedence[name.use ?? ''] ?? MissingUsePrecedence;
+    if (
+      !result ||
+      candidatePrecedence < resultPrecedence ||
+      (candidatePrecedence === resultPrecedence && candidate.localeCompare(result) < 0)
+    ) {
+      result = candidate;
+      resultPrecedence = candidatePrecedence;
+    }
+  }
+  return result;
+}
+
+const MissingUsePrecedence = 3;
+const UsePrecedence = {
+  usual: 1,
+  official: 2,
+  '': MissingUsePrecedence,
+  temp: 4,
+  nickname: 5,
+  anonymous: 6,
+  old: 7,
+  maiden: 8,
+};

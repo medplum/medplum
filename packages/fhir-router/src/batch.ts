@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Event, WithId } from '@medplum/core';
 import {
   append,
   badRequest,
-  Event,
   getReferenceString,
   getStatus,
   isOk,
@@ -9,9 +11,8 @@ import {
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
@@ -19,16 +20,15 @@ import {
   ParametersParameter,
   Resource,
 } from '@medplum/fhirtypes';
-import { IncomingHttpHeaders } from 'node:http';
-import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
-import { FhirRepository } from './repo';
-import { HttpMethod, RouteResult } from './urlrouter';
+import type { IncomingHttpHeaders } from 'node:http';
+import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
+import type { FhirRepository } from './repo';
+import type { HttpMethod, RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
-const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
 
@@ -270,11 +270,7 @@ class BatchProcessor {
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
-    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
-      return undefined;
-    }
-
-    const placeholder = entry.fullUrl;
+    const placeholder = entry.fullUrl ?? '';
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -294,11 +290,7 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
-    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
-      return undefined;
-    }
-
-    const placeholder = entry.fullUrl;
+    const placeholder = entry.fullUrl ?? '';
     if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
 
@@ -475,6 +467,7 @@ class BatchProcessor {
       query: route?.query ?? Object.create(null),
       body,
       headers,
+      config: this.req.config,
     };
   }
 

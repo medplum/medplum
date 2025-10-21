@@ -1,18 +1,22 @@
-import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest, WithId } from '@medplum/core';
-import { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { Queue } from 'bullmq';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
+import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { AuthenticatedRequestContext } from './context';
 import { DatabaseMode, getDatabasePool } from './database';
-import { getSystemRepo, Repository } from './fhir/repo';
+import type { Repository } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
-import {
+import type {
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
@@ -20,13 +24,14 @@ import {
 import * as migrateModule from './migrations/migrate';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import { MigrationAction, MigrationActionResult } from './migrations/types';
+import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
-import { getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './workers/reindex';
+import type { ReindexJobData } from './workers/reindex';
+import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
 import { queueRegistry } from './workers/utils';
 
 const DEFAULT_SERVER_VERSION = '3.3.0';

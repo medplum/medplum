@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TokensContext } from '@medplum/core';
 import {
   badRequest,
   convertToSearchableTokens,
@@ -6,10 +9,9 @@ import {
   OperationOutcomeError,
   Operator,
   PropertyType,
-  TokensContext,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { Resource, SearchParameter } from '@medplum/fhirtypes';
 
 export interface Token {
   readonly code: string;

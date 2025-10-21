@@ -1,8 +1,12 @@
-import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorString } from '@medplum/core';
-import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
+import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
-import { App } from './app';
+import type { App } from './app';
 import { BaseChannel } from './channel';
 import { getCurrentStats, updateStat } from './stats';
 
@@ -10,7 +14,9 @@ export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
+  private prefix: string;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -19,7 +25,9 @@ export class AgentHl7Channel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[HL7:${definition.name}] ` } });
+    this.prefix = `[HL7:${definition.name}] `;
+    this.log = app.log.clone({ options: { prefix: this.prefix } });
+    this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
   }
 
   start(): void {
@@ -40,7 +48,7 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    this.connections.forEach((connection) => connection.close());
+    await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
     this.started = false;
     this.log.info('Channel stopped successfully');
@@ -59,6 +67,7 @@ export class AgentHl7Channel extends BaseChannel {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
+    this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
 
@@ -90,11 +99,22 @@ export class AgentHl7Channel extends BaseChannel {
     const address = new URL(this.getEndpoint().address as string);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
+    let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
+
+    if (messagesPerMin !== undefined && !Number.isInteger(messagesPerMin)) {
+      this.log.warn(
+        `Invalid messagesPerMin: '${messagesPerMinRaw}'; must be a valid integer. Creating channel without a set messagesPerMin...`
+      );
+      messagesPerMin = undefined;
+    }
     this.server.setEncoding(encoding);
     this.server.setEnhancedMode(enhancedMode);
+    this.server.setMessagesPerMin(messagesPerMin);
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
       connection.hl7Connection.setEnhancedMode(enhancedMode);
+      connection.hl7Connection.setMessagesPerMin(messagesPerMin);
     }
   }
 
@@ -128,7 +148,7 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
-      this.channel.log.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
+      this.channel.channelLog.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
@@ -139,15 +159,17 @@ export class AgentHl7ChannelConnection {
         callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
       });
     } catch (err) {
-      this.channel.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+      this.channel.log.error(`HL7 error occurred - check channel logs`);
+      this.channel.channelLog.error(`HL7 error: ${normalizeErrorString(err)}`);
     }
   }
 
   private async handleError(event: Hl7ErrorEvent): Promise<void> {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
+    this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
-  close(): void {
-    this.hl7Connection.close();
+  close(): Promise<void> {
+    return this.hl7Connection.close();
   }
 }

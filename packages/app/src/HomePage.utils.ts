@@ -1,13 +1,8 @@
-import {
-  convertToTransactionBundle,
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  MedplumClient,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
-import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, MedplumClient, SearchRequest, SortRule } from '@medplum/core';
+import { convertToTransactionBundle, DEFAULT_SEARCH_COUNT, formatSearchQuery } from '@medplum/core';
+import type { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 
 /** Custom navigation paths when the user clicks New... */
 export const RESOURCE_TYPE_CREATION_PATHS: Partial<Record<ResourceType, string>> = {

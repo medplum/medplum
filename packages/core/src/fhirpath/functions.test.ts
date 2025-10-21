@@ -1,9 +1,13 @@
-import { Patient } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer/parse';
-import { PropertyType, TypedValue } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient } from '@medplum/fhirtypes';
+import type { Atom, AtomContext } from '../fhirlexer/parse';
+import type { TypedValue } from '../types';
+import { PropertyType } from '../types';
 import { createReference, getReferenceString } from '../utils';
 import { LiteralAtom } from './atoms';
-import { FhirPathFunction, functions } from './functions';
+import type { FhirPathFunction } from './functions';
+import { functions } from './functions';
 import { booleanToTypedValue, toTypedValue } from './utils';
 
 const context = {

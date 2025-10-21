@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Alert, Box, Button, Code, CopyButton, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import { AccessPolicy } from '@medplum/fhirtypes';
+import type { AccessPolicy } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCheck, IconCopy } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { MSO_ACCESS_POLICY } from '../data/core/access-policy';
 import { useAdminStatus } from '../utils/admin';
 

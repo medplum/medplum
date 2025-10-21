@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { runInLambda } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome } from '../util/auditevent';
-import { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
+import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
 import { createAuditEvent, getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
 import { runInVmContext } from './vmcontext';
 

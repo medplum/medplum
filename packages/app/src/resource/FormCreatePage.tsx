@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
 import { addProfileToResource } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, SupportedProfileStructureDefinition } from '@medplum/react';
-import { JSX, useCallback, useState } from 'react';
+import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import type { SupportedProfileStructureDefinition } from '@medplum/react';
+import { Document, ResourceForm } from '@medplum/react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { ProfileTabs } from './ProfileTabs';
 import { useCreateResource } from './useCreateResource';

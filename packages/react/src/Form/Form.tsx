@@ -1,4 +1,7 @@
-import { CSSProperties, JSX, ReactNode, SyntheticEvent, useState } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CSSProperties, JSX, ReactNode, SyntheticEvent } from 'react';
+import { useState } from 'react';
 import { FormContext } from './Form.context';
 import { parseForm } from './FormUtils';
 

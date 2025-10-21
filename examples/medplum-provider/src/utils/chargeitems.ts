@@ -1,5 +1,8 @@
-import { getReferenceString, MedplumClient } from '@medplum/core';
-import { ChargeItem, Encounter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getReferenceString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type { ChargeItem, Encounter } from '@medplum/fhirtypes';
 
 export const CPT = 'http://www.ama-assn.org/go/cpt';
 

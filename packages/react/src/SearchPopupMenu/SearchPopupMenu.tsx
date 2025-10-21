@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import type { Filter, SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import {
   IconBleach,
   IconBleachOff,
@@ -17,7 +20,7 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import {
   addLastMonthFilter,
   addMissingFilter,

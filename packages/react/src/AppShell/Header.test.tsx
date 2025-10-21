@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
+import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -62,13 +65,7 @@ describe('Header', () => {
   });
 
   test('Switch profile', async () => {
-    const reloadMock = jest.fn();
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        reload: reloadMock,
-      },
-    });
+    const reloadSpy = jest.spyOn(locationUtils, 'reload').mockImplementation(() => {});
 
     window.localStorage.setItem(
       'activeLogin',
@@ -130,7 +127,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('My Other Project'));
     });
 
-    expect(window.location.reload).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
   test('Add another account', async () => {

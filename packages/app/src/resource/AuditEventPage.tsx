@@ -1,7 +1,11 @@
-import { Operator, SearchRequest } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, SearchControl } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function AuditEventPage(): JSX.Element | null {

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobInteraction, WithId } from '@medplum/core';
 import {
-  BackgroundJobInteraction,
   ContentType,
   createReference,
   getExtension,
@@ -7,9 +9,8 @@ import {
   OperationOutcomeError,
   Operator,
   resourceMatchesSubscriptionCriteria,
-  WithId,
 } from '@medplum/core';
-import { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';

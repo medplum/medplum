@@ -1,4 +1,6 @@
-import { Parameters } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -40,9 +42,9 @@ describe('$db-invalid-indexes', () => {
       .send({});
     expect(res.status).toBe(200);
     const params = res.body as Parameters;
-    const invalidIndex = params.parameter?.filter((p) => p.name === 'invalidIndex');
+    const invalidIndex = params.parameter?.find(
+      (p) => p.name === 'invalidIndex' && p.valueString?.startsWith('"CarePlan_replaces_idx"')
+    );
     expect(invalidIndex).toBeDefined();
-    expect(invalidIndex?.length).toBe(1);
-    expect(invalidIndex?.[0].valueString).toContain('CarePlan_replaces_idx');
   });
 });

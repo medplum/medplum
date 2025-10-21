@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TypedEventTarget } from '@medplum/core';
-import { MedplumServerConfig } from './config/types';
+import type { MedplumServerConfig } from './config/types';
 
 export type HeartbeatEventMap = {
   heartbeat: { type: 'heartbeat' };

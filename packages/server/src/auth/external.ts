@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
   ContentType,
@@ -7,14 +9,16 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { globalLogger } from '../logger';
-import { CodeChallengeMethod, getClientApplication, tryLogin } from '../oauth/utils';
+import { getLogger, globalLogger } from '../logger';
+import { getClientRedirectUri } from '../oauth/clients';
+import type { CodeChallengeMethod } from '../oauth/utils';
+import { getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -108,12 +112,25 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  if (login.membership && body.redirectUri && client?.redirectUri) {
-    if (!body.redirectUri.startsWith(client.redirectUri)) {
+  if (login.membership && body.redirectUri && client) {
+    // Get the redirect URI from the client application
+    // Note that we're currently allowing partial matches for external auth.
+    // This is generally NOT recommended by the OAuth spec.
+    // However, we need to support it here for backwards compatibility with existing clients.
+    const redirectUri = getClientRedirectUri(client, body.redirectUri, true);
+    if (!redirectUri) {
       sendOutcome(res, badRequest('Invalid redirect URI'));
       return;
     }
-    const redirectUrl = new URL(body.redirectUri);
+    const exactRedirectUri = getClientRedirectUri(client, redirectUri);
+    if (!exactRedirectUri) {
+      getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
+        clientId: client.id,
+        requestedUri: body.redirectUri,
+        partialMatchUri: redirectUri,
+      });
+    }
+    const redirectUrl = new URL(redirectUri);
     redirectUrl.searchParams.set('login', login.id);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { MedplumServerConfig } from '../../config/types';
+import type { MedplumServerConfig } from '../../config/types';
 import { loadGcpConfig } from './config';
 
 jest.mock('@google-cloud/secret-manager');

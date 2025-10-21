@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { diag, DiagConsoleLogger, DiagLogLevel, Span, SpanStatusCode } from '@opentelemetry/api';
+import type { Span } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
@@ -8,14 +11,16 @@ import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrum
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-import { PgInstrumentation, PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
+import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-import { Resource } from '@opentelemetry/resources';
-import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
+import type { MetricReader } from '@opentelemetry/sdk-metrics';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { ClientRequest, IncomingMessage, ServerResponse } from 'http';
+import type { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -36,8 +41,8 @@ export function initOpenTelemetry(): void {
     return;
   }
 
-  const resource = Resource.default().merge(
-    new Resource({
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
       [ATTR_SERVICE_NAME]: 'medplum',
       [ATTR_SERVICE_VERSION]: MEDPLUM_VERSION,
     })
@@ -92,7 +97,12 @@ export function initOpenTelemetry(): void {
     }),
   ];
 
-  sdk = new NodeSDK({ resource, instrumentations, metricReader, traceExporter });
+  sdk = new NodeSDK({
+    resource,
+    instrumentations,
+    metricReaders: metricReader ? [metricReader] : undefined,
+    traceExporter,
+  });
   sdk.start();
 }
 
@@ -108,7 +118,9 @@ export function httpResponseHook(
 }
 
 export function pgResponseHook(span: Span, { data }: PgResponseHookInformation): void {
-  span.setAttribute('medplum.db.rowCount', data.rowCount);
+  if (data.rowCount !== null) {
+    span.setAttribute('medplum.db.rowCount', data.rowCount);
+  }
 }
 
 export async function shutdownOpenTelemetry(): Promise<void> {

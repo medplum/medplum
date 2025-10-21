@@ -1,10 +1,32 @@
-import opentelemetry, { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
+import { metrics } from '@opentelemetry/api';
+import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
+import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
+import { getDownloadQueue } from '../workers/download';
 import { getSubscriptionQueue } from '../workers/subscription';
+
+let queueEntries: [string, Queue][] | undefined;
+function getQueueEntries(): [string, Queue][] {
+  if (!queueEntries) {
+    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue())) {
+      throw new Error('Queues not initialized');
+    }
+    queueEntries = [
+      ['subscription', getSubscriptionQueue() as Queue],
+      ['cron', getCronQueue() as Queue],
+      ['download', getDownloadQueue() as Queue],
+      ['batch', getBatchQueue() as Queue],
+    ];
+  }
+  return queueEntries;
+}
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
@@ -27,7 +49,7 @@ export type RecordMetricOptions = {
 
 function getMeter(): Meter {
   if (!meter) {
-    meter = opentelemetry.metrics.getMeter('medplum');
+    meter = metrics.getMeter('medplum');
   }
   return meter;
 }
@@ -130,16 +152,11 @@ export function initOtelHeartbeat(): void {
       BASE_METRIC_OPTIONS
     );
 
-    const subscriptionQueue = getSubscriptionQueue();
-    if (subscriptionQueue) {
-      setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
-      setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
-    }
-
-    const cronQueue = getCronQueue();
-    if (cronQueue) {
-      setGauge('medplum.cron.waitingCount', await cronQueue.getWaitingCount());
-      setGauge('medplum.cron.delayedCount', await cronQueue.getDelayedCount());
+    for (const [queueName, queue] of getQueueEntries()) {
+      if (queue) {
+        setGauge(`medplum.${queueName}.waitingCount`, await queue.getWaitingCount());
+        setGauge(`medplum.${queueName}.delayedCount`, await queue.getDelayedCount());
+      }
     }
   };
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
@@ -149,5 +166,8 @@ export function cleanupOtelHeartbeat(): void {
   if (otelHeartbeatListener) {
     heartbeat.removeEventListener('heartbeat', otelHeartbeatListener);
     otelHeartbeatListener = undefined;
+  }
+  if (queueEntries) {
+    queueEntries = undefined;
   }
 }

@@ -28,6 +28,10 @@ jobs:
       - name: Install NSIS
         run: choco install nsis
 
+      - name: Add NSIS to PATH
+        run: echo "C:\Program Files (x86)\NSIS" >> $GITHUB_PATH
+        shell: bash
+
       - name: Install Wget
         run: choco install wget
 
@@ -69,7 +73,7 @@ jobs:
         run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
-        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: find-signtool
         with:
           result-encoding: string
@@ -183,6 +187,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash
@@ -257,6 +263,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash

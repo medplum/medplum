@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Blockquote, Stack } from '@mantine/core';
-import { Annotation } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Annotation } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import classes from './NoteDisplay.module.css';
 
 export interface NoteDisplayProps {

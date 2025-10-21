@@ -1,5 +1,8 @@
-import { Subscription } from '@medplum/fhirtypes';
-import { Job, Queue, Worker } from 'bullmq';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Subscription } from '@medplum/fhirtypes';
+import type { Job, Worker } from 'bullmq';
+import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
 import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';

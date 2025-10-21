@@ -1,19 +1,14 @@
-import {
-  badRequest,
-  forbidden,
-  getReferenceString,
-  OperationOutcomeError,
-  Operator,
-  SearchRequest,
-  WithId,
-} from '@medplum/core';
-import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Operation } from 'rfc6902';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
+import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { patchObject } from '../util/patch';
-import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
+import type { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
 
 /**
  * Searches for users in the project.

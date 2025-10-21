@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getExtension } from '@medplum/core';
-import {
+import type {
   Encounter,
   Questionnaire,
   QuestionnaireItem,
@@ -173,7 +175,9 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     let currentItem: QuestionnaireResponse | QuestionnaireResponseItem | undefined =
       state.current.questionnaireResponse;
     for (const contextElement of context) {
-      currentItem = currentItem?.item?.find((i) => i.linkId === contextElement.linkId);
+      currentItem = currentItem?.item?.find((i) =>
+        contextElement.id ? i.id === contextElement.id : i.linkId === contextElement.linkId
+      );
     }
     if (item) {
       currentItem = currentItem?.item?.find((i) => i.linkId === item.linkId);

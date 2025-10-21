@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Modal, Text } from '@mantine/core';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface SearchExportDialogProps {
   readonly visible: boolean;

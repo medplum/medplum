@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications, cleanNotifications } from '@mantine/notifications';
+import type { LogMessage } from '@medplum/core';
 import {
   ContentType,
   MEDPLUM_RELEASES_URL,
@@ -12,11 +15,11 @@ import {
   serverError,
   sleep,
 } from '@medplum/core';
-import { Agent } from '@medplum/fhirtypes';
+import type { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render } from '@testing-library/react';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, screen } from '../test-utils/render';
@@ -552,8 +555,6 @@ describe('ToolsPage', () => {
       return [serverError(new Error('Something is broken'))];
     });
 
-    const medplumGetSpy = jest.spyOn(medplum, 'get');
-
     agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Agente - Upgrade error',
@@ -581,14 +582,89 @@ describe('ToolsPage', () => {
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
 
+    const medplumGetSpy = jest.spyOn(medplum, 'get');
+
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
     });
 
-    expect(medplumGetSpy).toHaveBeenCalledWith(
-      medplum.fhirUrl('Agent', agent.id as string, '$upgrade'),
-      expect.objectContaining({ cache: 'reload' })
-    );
+    const upgradeUrl = medplum.fhirUrl('Agent', agent.id as string, '$upgrade');
+    upgradeUrl.searchParams.set('force', 'false');
+
+    expect(medplumGetSpy).toHaveBeenCalledWith(upgradeUrl, expect.objectContaining({ cache: 'reload' }));
+
+    await act(async () => {
+      await sleep(500);
+    });
+
+    expect(await screen.findByText(/something is broken/i)).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Success', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => {
+      return [
+        allOk,
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'logs',
+              valueString: (
+                [
+                  { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 1' },
+                  { level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test 2' },
+                  { level: 'WARN', timestamp: new Date().toISOString(), msg: 'Test 3' },
+                  {
+                    level: 'ERROR',
+                    timestamp: new Date().toISOString(),
+                    msg: 'There is an error',
+                    error: 'There is an error',
+                  },
+                ] as LogMessage[]
+              )
+                .map((msg) => JSON.stringify(msg))
+                .join('\n'),
+            },
+          ],
+        },
+      ];
+    });
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Fetch logs success',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
+
+    expect((await screen.findAllByText(/there is an error/i))[0]).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Error', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => [
+      serverError(new Error('Something is broken')),
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Fetch logs error',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
 
     await act(async () => {
       await sleep(500);

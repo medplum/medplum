@@ -1,6 +1,9 @@
-import { allOk, badRequest, concatUrls, createReference, Filter, Operator, resolveId } from '@medplum/core';
-import { User, UserSecurityRequest } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter } from '@medplum/core';
+import { allOk, badRequest, concatUrls, createReference, Operator, resolveId } from '@medplum/core';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';

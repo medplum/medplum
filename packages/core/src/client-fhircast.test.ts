@@ -1,17 +1,18 @@
-import WS from 'jest-websocket-mock';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { WS } from 'jest-websocket-mock';
 import { MedplumClient } from './client';
 import { mockFetch } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { generateId } from './crypto';
-import {
+import type {
   CurrentContext,
-  FhircastConnection,
   FhircastEventName,
   FhircastPatientOpenContext,
   PendingSubscriptionRequest,
   SubscriptionRequest,
-  serializeFhircastSubscriptionRequest,
 } from './fhircast';
+import { FhircastConnection, serializeFhircastSubscriptionRequest } from './fhircast';
 import { OperationOutcomeError } from './outcomes';
 
 describe('FHIRcast', () => {

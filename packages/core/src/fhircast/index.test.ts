@@ -1,10 +1,8 @@
-import WS from 'jest-websocket-mock';
-import {
-  assertContextVersionOptional,
-  createFhircastMessagePayload,
-  FHIRCAST_EVENT_VERSION_REQUIRED,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { WS } from 'jest-websocket-mock';
+import type {
   FhircastConnectEvent,
-  FhircastConnection,
   FhircastDiagnosticReportOpenContext,
   FhircastDiagnosticReportUpdateContext,
   FhircastDisconnectEvent,
@@ -12,9 +10,15 @@ import {
   FhircastMessageEvent,
   FhircastMessagePayload,
   FhircastPatientOpenContext,
+  SubscriptionRequest,
+} from '.';
+import {
+  assertContextVersionOptional,
+  createFhircastMessagePayload,
+  FHIRCAST_EVENT_VERSION_REQUIRED,
+  FhircastConnection,
   isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
-  SubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
 import { generateId } from '../crypto';

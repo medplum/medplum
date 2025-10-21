@@ -1,9 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  BackgroundJobInteraction,
+  Filter,
+  SearchParameterDetails,
+  SearchRequest,
+  TypedValue,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
   arrayify,
-  BackgroundJobInteraction,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -17,7 +26,6 @@ import {
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
@@ -44,20 +52,19 @@ import {
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
-  SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  serverError,
   sleep,
   stringify,
   toPeriod,
   toTypedValue,
-  TypedValue,
   validateResource,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
-import {
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
@@ -73,21 +80,20 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { Pool, PoolClient } from 'pg';
-import { Operation } from 'rfc6902';
+import type { Pool, PoolClient } from 'pg';
+import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
-import { syntheticR4Project } from '../constants';
-import { tryGetRequestContext } from '../context';
+import { syntheticR4Project, systemResourceProjectId } from '../constants';
+import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { FhirRateLimiter } from '../fhirquota';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
-  AuditEventSubtype,
   createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
@@ -103,26 +109,32 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import type { HumanNameResource } from './lookups/humanname';
+import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
+import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
+import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { SearchOptions } from './search';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
   DeleteQuery,
   Disjunction,
-  Expression,
   InsertQuery,
   normalizeDatabaseError,
   periodToRangeString,
   PostgresError,
   SelectQuery,
-  TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
@@ -249,6 +261,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   *  1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   *  2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   *  3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   *  4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   *  5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
+   *  6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   *  7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
+   *  8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
+   *  9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
+   * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
+   * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
+   */
+  static readonly VERSION: number = 11;
+
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
@@ -276,11 +309,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = mode;
   }
 
-  rateLimiter(): FhirRateLimiter | undefined {
-    if (this.isSuperAdmin()) {
-      return undefined;
-    }
-    return tryGetRequestContext()?.fhirRateLimiter;
+  private rateLimiter(): FhirRateLimiter | undefined {
+    return !this.isSuperAdmin() ? tryGetRequestContext()?.fhirRateLimiter : undefined;
+  }
+
+  private resourceCap(): ResourceCap | undefined {
+    const context = tryGetRequestContext();
+    return !this.isSuperAdmin() && context instanceof AuthenticatedRequestContext ? context.resourceCap : undefined;
   }
 
   currentProject(): WithId<Project> | undefined {
@@ -306,6 +341,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
     await this.rateLimiter()?.recordWrite();
+    await this.resourceCap()?.created();
+
+    if (options?.assignedId && resource.id && !this.context.superAdmin) {
+      // NB: To be removed after proper client assigned ID support is added
+      const systemRepo = getSystemRepo();
+      try {
+        const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
+        if (existing) {
+          throw new Error('Assigned ID is already in use');
+        }
+      } catch (err) {
+        if (!isNotFound(normalizeOperationOutcome(err))) {
+          throw err;
+        }
+      }
+    }
 
     const resourceWithId = {
       ...resource,
@@ -499,10 +550,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * See: https://www.hl7.org/fhir/http.html#history
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
-   * @param limit - The maximum number of results to return.
+   * @param options - The read history options.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+  async readHistory<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ReadHistoryOptions
+  ): Promise<Bundle<T>> {
     await this.rateLimiter()?.recordHistory();
     const startTime = Date.now();
     try {
@@ -518,6 +573,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
 
+      if (options?.offset !== undefined) {
+        const maxOffset = getConfig().maxSearchOffset;
+        if (maxOffset !== undefined && options.offset > maxOffset) {
+          throw new OperationOutcomeError(
+            badRequest(`Search offset exceeds maximum (got ${options.offset}, max ${maxOffset})`)
+          );
+        }
+      }
+
       const rows = await new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
@@ -525,8 +589,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         .column('lastUpdated')
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
-        .limit(Math.min(limit, DEFAULT_MAX_SEARCH_COUNT))
+        .limit(clamp(0, options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
+        .offset(Math.max(0, options?.offset ?? 0))
         .execute(this.getDatabaseClient(DatabaseMode.READER));
+
+      const countRows = await new SelectQuery(resourceType + '_History')
+        .raw('COUNT(*)::int AS "count"')
+        .where('id', '=', id)
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
+
+      const totalCount = countRows[0].count as number;
 
       const entries: BundleEntry<T>[] = [];
 
@@ -567,6 +639,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         resourceType: 'Bundle',
         type: 'history',
         entry: entries,
+        total: totalCount,
       };
     } catch (err) {
       const durationMs = Date.now() - startTime;
@@ -627,9 +700,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
-        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options));
       } else {
-        result = await this.updateResourceImpl(resource, false);
+        result = await this.updateResourceImpl(resource, false, options);
       }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
@@ -653,11 +726,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Add default profiles before validating resource
-    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+    if (!resource.meta?.profile) {
       const defaultProfiles = this.currentProject()?.defaultProfile?.find(
         (o) => o.resourceType === resourceType
       )?.profile;
-      resource.meta = { ...resource.meta, profile: defaultProfiles };
+      if (defaultProfiles?.length) {
+        resource.meta = { ...resource.meta, profile: defaultProfiles };
+      }
     }
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
@@ -668,7 +743,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    versionId?: string
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
@@ -695,7 +770,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
-      if (versionId && existing.meta?.versionId !== versionId) {
+      if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
         throw new OperationOutcomeError(preconditionFailed);
       }
     }
@@ -1108,7 +1183,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let previousVersion: T | undefined;
 
     if (interaction === 'update') {
-      const history = await this.readHistory(resourceType, id, 2);
+      const history = await this.readHistory(resourceType, id, { limit: 2 });
       if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
         throw new OperationOutcomeError(preconditionFailed);
       }
@@ -1157,10 +1232,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           id,
           lastUpdated,
           deleted: true,
-          projectId: resource.meta?.project,
-          compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
+          projectId: resource.meta?.project ?? systemResourceProjectId,
           content,
+          __version: -1,
         };
+
+        if (resourceType !== 'Binary') {
+          columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+        }
 
         for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
           this.buildColumn({ resourceType } as Resource, columns, searchParam);
@@ -1221,7 +1300,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+        const result = await this.updateResourceImpl(resource, false, options);
         const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
@@ -1256,7 +1335,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param ids - The resource IDs.
    */
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
-    if (!this.isSuperAdmin()) {
+    if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
     if (ids.length === 0) {
@@ -1277,6 +1356,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       { attributes: { resourceType, result: 'success' } },
       ids.length
     );
+    await this.resourceCap()?.deleted(ids.length);
   }
 
   /**
@@ -1488,24 +1568,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  /**
-   * The version to be set on resources when they are inserted/updated into the database.
-   * The value should be incremented each time there is a change in the schema (really just columns)
-   * of the resource tables or when there are code changes to `buildResourceRow`.
-   *
-   * Version history:
-   *
-   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
-   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
-   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
-   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
-   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
-   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
-   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
-   *
-   */
-  static readonly VERSION: number = 7;
-
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -1515,7 +1577,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      projectId: meta.project,
+      projectId: meta.project ?? systemResourceProjectId,
       content,
       __version: Repository.VERSION,
     };
@@ -1653,6 +1715,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
+      searchParam.code === '_deleted' ||
       searchParam.type === 'composite'
     ) {
       return;
@@ -1665,6 +1728,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
+      if (impl.sortColumnName) {
+        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+      }
       return;
     }
 
@@ -1903,7 +1969,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     updated: WithId<Resource>
   ): Promise<Reference[] | undefined> {
     if (updated.meta && this.canWriteAccount()) {
-      // If the user specifies accounts, allow it if they have permission.
+      // If the user specifies accounts, and they have permission, then use the provided accounts.
       const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
@@ -2018,10 +2084,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
-  private canPerformInteraction(
-    interaction: AccessPolicyInteraction,
-    resource: Resource
-  ): AccessPolicyResource | undefined {
+  canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
     if (!this.isSuperAdmin()) {
       // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {
@@ -2366,6 +2429,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           attempt,
           attemptDurationMs,
           transactionAttempts,
+          serializable: options?.serializable ?? false,
           delayMs,
           baseDelayMs,
         });
@@ -2375,6 +2439,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           attempt,
           attemptDurationMs,
           transactionAttempts,
+          serializable: options?.serializable ?? false,
         });
       }
     }

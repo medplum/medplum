@@ -1,5 +1,8 @@
-import { ContentType, encodeBase64Url, getReferenceString, ProfileResource, WithId } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';

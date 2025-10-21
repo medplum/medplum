@@ -1,25 +1,20 @@
-import {
-  AgentConnectRequest,
-  AgentMessage,
-  AgentTransmitRequest,
-  ContentType,
-  Hl7Message,
-  MEDPLUM_VERSION,
-  getReferenceString,
-  normalizeErrorString,
-} from '@medplum/core';
-import { Agent, Bot, Reference } from '@medplum/fhirtypes';
-import { Redis } from 'ioredis';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentConnectRequest, AgentMessage, AgentTransmitRequest } from '@medplum/core';
+import { ContentType, Hl7Message, MEDPLUM_VERSION, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
+import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { IncomingMessage } from 'node:http';
-import ws from 'ws';
+import type { IncomingMessage } from 'node:http';
+import type ws from 'ws';
 import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis, getRedisSubscriber } from '../redis';
-import { AgentConnectionState, AgentInfo } from './utils';
+import type { AgentInfo } from './utils';
+import { AgentConnectionState } from './utils';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
@@ -70,6 +65,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
           case 'agent:transmit:response':
           case 'agent:reloadconfig:response':
           case 'agent:upgrade:response':
+          case 'agent:logs:response':
             if (command.callback) {
               const redis = getRedis();
               await redis.publish(command.callback, JSON.stringify(command));
@@ -203,6 +199,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       agent,
       bot,
       runAs: authState.membership,
+      requester: authState.membership.profile,
       contentType: command.contentType,
       input,
       remoteAddress,

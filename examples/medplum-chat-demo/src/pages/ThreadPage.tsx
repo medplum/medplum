@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Grid, GridCol, List, Paper, Stack, Title } from '@mantine/core';
 import { resolveId } from '@medplum/core';
-import { Communication, Patient } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { CommunicationActions } from '../components/actions/CommunicationActions';
 

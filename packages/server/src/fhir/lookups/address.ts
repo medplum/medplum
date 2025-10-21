@@ -1,8 +1,12 @@
-import { formatAddress, WithId } from '@medplum/core';
-import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
-import { Column, DeleteQuery } from '../sql';
-import { LookupTable, LookupTableRow } from './lookuptable';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { formatAddress } from '@medplum/core';
+import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
+import { DeleteQuery } from '../sql';
+import type { LookupTableRow } from './lookuptable';
+import { LookupTable } from './lookuptable';
 
 export interface AddressTableRow extends LookupTableRow {
   address: string | undefined;
@@ -209,12 +213,6 @@ export class AddressTable extends LookupTable {
     if (!AddressTable.hasAddress(resourceType)) {
       return;
     }
-
-    const lookupTableName = this.getTableName();
-    await new DeleteQuery(lookupTableName)
-      .using(resourceType)
-      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
-      .where(new Column(resourceType, 'lastUpdated'), '<', before)
-      .execute(client);
+    await super.purgeValuesBefore(client, resourceType, before);
   }
 }

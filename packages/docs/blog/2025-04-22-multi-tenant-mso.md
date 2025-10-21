@@ -122,6 +122,10 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
         reference: 'Organization/456',
       },
     },
+    {
+      name: 'propagate',
+      valueBoolean: true,
+    },
   ],
 });
 ```
@@ -228,6 +232,10 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
         reference: 'Practitioner/789',
       },
     },
+    {
+      name: 'propagate',
+      valueBoolean: true,
+    },
   ],
 });
 ```
@@ -275,7 +283,7 @@ The `%profile` value does not need to be explicitly added to the Practitioner's 
 
 ### Project vs Server Scoped Users
 
-When building an MSO, it is recommended to follow the best practices for [project-scoped and server-scoped users](/docs/auth/project-vs-server-scoped-users):
+When building an MSO, it is recommended to follow the best practices for [project-scoped and server-scoped users](/docs/user-management/project-vs-server-scoped-users):
 
 - **Project-scoped users**: Ideal for clinicians and patients who primarily interact with a single production project
 - **Server-scoped users**: Best for administrators and developers who need access across multiple projects

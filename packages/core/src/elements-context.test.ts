@@ -1,14 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { AccessPolicyInteraction, satisfiedAccessPolicy } from './access';
 import { HTTP_HL7_ORG } from './constants';
-import { ExtendedInternalSchemaElement, buildElementsContext } from './elements-context';
-import {
-  InternalTypeSchema,
-  getDataType,
-  indexStructureDefinitionBundle,
-  parseStructureDefinition,
-} from './typeschema/types';
+import type { ExtendedInternalSchemaElement } from './elements-context';
+import { buildElementsContext } from './elements-context';
+import type { InternalTypeSchema } from './typeschema/types';
+import { getDataType, indexStructureDefinitionBundle, parseStructureDefinition } from './typeschema/types';
 import { isPopulated } from './utils';
 
 describe('buildElementsContext', () => {

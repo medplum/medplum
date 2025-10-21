@@ -1,12 +1,15 @@
-import { Binary } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, readFileSync } from 'fs';
 import { access, copyFile, mkdir } from 'fs/promises';
 import { resolve, sep } from 'path';
-import { pipeline, Readable } from 'stream';
+import type { Readable } from 'stream';
+import { pipeline } from 'stream';
 import { getLogger } from '../logger';
 import { BaseBinaryStorage } from './base';
 import { generatePresignedUrl } from './presign';
-import { BinarySource } from './types';
+import type { BinarySource } from './types';
 import { checkFileMetadata } from './utils';
 
 /**

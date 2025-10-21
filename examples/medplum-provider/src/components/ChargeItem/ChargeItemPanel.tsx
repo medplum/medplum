@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
-import { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
+import type { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
 import { CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconTrash } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { applyChargeItemDefinition } from '../../utils/chargeitems';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
@@ -86,8 +89,8 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs" p="md">
-        <Flex justify="space-between">
-          <Box flex={1} mr="md">
+        <Flex justify="space-between" align="flex-start">
+          <Box flex={1} mr="md" maw="calc(100% - 60px)">
             <CodeableConceptInput
               key={cptCodeKey}
               binding="http://www.ama-assn.org/go/cpt/vs"
@@ -100,14 +103,12 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
               disabled={true}
             />
           </Box>
-
           <Menu shadow="md" width={200} position="bottom-end">
             <Menu.Target>
               <ActionIcon variant="subtle">
                 <IconTrash size={24} />
               </ActionIcon>
             </Menu.Target>
-
             <Menu.Dropdown>
               <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={deleteChargeItem}>
                 Delete

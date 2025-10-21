@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getDateProperty, Operator } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { URL } from 'url';
-import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { generateSecret, MedplumIdTokenClaims, verifyJwt } from './keys';
+import { getClientRedirectUri } from './clients';
+import type { MedplumIdTokenClaims } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
 /*
@@ -16,27 +19,31 @@ import { getClientApplication } from './utils';
 
 /**
  * HTTP GET handler for /oauth2/authorize endpoint.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response) => {
+export const authorizeGetHandler = async (req: Request, res: Response): Promise<void> => {
   const validateResult = await validateAuthorizeRequest(req, res, req.query);
   if (!validateResult) {
     return;
   }
 
   sendSuccessRedirect(req, res, req.query);
-});
+};
 
 /**
  * HTTP POST handler for /oauth2/authorize endpoint.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const authorizePostHandler = asyncWrap(async (req: Request, res: Response) => {
+export const authorizePostHandler = async (req: Request, res: Response): Promise<void> => {
   const validateResult = await validateAuthorizeRequest(req, res, req.body);
   if (!validateResult) {
     return;
   }
 
   sendSuccessRedirect(req, res, req.body);
-});
+};
 
 /**
  * Validates the OAuth/OpenID Authorization Endpoint configuration.
@@ -59,17 +66,17 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
 
-  const redirectUri = client.redirectUri;
-  if (!redirectUri) {
-    res.status(400).send('Client has no redirect URI');
+  if (!params.redirect_uri) {
+    res.status(400).send('Missing redirect URI');
     return false;
   }
-  if (!URL.canParse(redirectUri)) {
+  if (!URL.canParse(params.redirect_uri)) {
     res.status(400).send('Invalid redirect URI');
     return false;
   }
-  if (redirectUri !== params.redirect_uri) {
-    res.status(400).send('Incorrect redirect_uri');
+  const redirectUri = getClientRedirectUri(client, params.redirect_uri);
+  if (!redirectUri) {
+    res.status(400).send('Invalid redirect URI');
     return false;
   }
 
@@ -77,7 +84,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  params.scope ??= client.defaultScope;
+  params.scope ??= client.defaultScope?.join(' ');
   if (!params.scope) {
     sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Input } from '@mantine/core';
-import { JSX, ReactNode, useContext } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import classes from '../FormSection/FormSection.module.css';
 import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';

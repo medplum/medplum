@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
@@ -15,7 +17,8 @@ import {
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchRequest } from './search';
+import type { SearchRequest } from './search';
+import { Operator, parseSearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type

@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   ConceptMap,
   StructureMap,
   StructureMapGroup,
@@ -10,7 +12,7 @@ import {
   StructureMapGroupRuleTargetParameter,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Atom, Parser } from '../fhirlexer/parse';
+import type { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';

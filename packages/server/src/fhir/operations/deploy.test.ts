@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Binary, Bot } from '@medplum/fhirtypes';
+import type { Binary, Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import stream from 'node:stream';
@@ -9,7 +11,7 @@ import { registerNew } from '../../auth/register';
 import * as awsDeploy from '../../cloud/aws/deploy';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
-import { BinaryStorage } from '../../storage/types';
+import type { BinaryStorage } from '../../storage/types';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
 

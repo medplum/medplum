@@ -1,11 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
-  BackgroundJobContext,
-  BackgroundJobInteraction,
   ContentType,
   OperationOutcomeError,
   Operator,
-  WithId,
   createReference,
   deepClone,
   getExtension,
@@ -20,23 +20,39 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import fetch, { HeadersInit } from 'node-fetch';
+import type {
+  Bot,
+  ClientApplication,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  Subscription,
+} from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import type { HeadersInit } from 'node-fetch';
+import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
-import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
+import type { Repository, ResendSubscriptionsOptions } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
 import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import type { WorkerInitializer } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -651,9 +667,12 @@ async function execBot(
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
-  let runAs: ProjectMembership | undefined;
+  const requester = resource.meta?.author as Reference<
+    Bot | ClientApplication | Patient | Practitioner | RelatedPerson
+  >;
+  let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, resource.meta?.author as Reference);
+    runAs = await findProjectMembership(project, requester);
   } else {
     runAs = await findProjectMembership(project, createReference(bot));
   }
@@ -666,6 +685,7 @@ async function execBot(
     subscription,
     bot,
     runAs,
+    requester,
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,

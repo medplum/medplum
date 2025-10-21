@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
-import { Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum, useMedplumProfile, usePrevious } from '@medplum/react';
 import dayjs from 'dayjs';
-import { JSX, useCallback, useContext, useEffect, useState } from 'react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { Calendar, dayjsLocalizer } from 'react-big-calendar';
+import type { Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useParams } from 'react-router';
 import { CreateAppointment } from '../components/actions/CreateAppointment';

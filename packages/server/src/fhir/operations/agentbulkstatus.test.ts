@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import {
+import type {
   Agent,
   Bundle,
   BundleEntry,
@@ -10,8 +12,10 @@ import {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import request, { Response } from 'supertest';
-import { AgentConnectionState, AgentInfo } from '../../agent/utils';
+import type { Response } from 'supertest';
+import request from 'supertest';
+import type { AgentInfo } from '../../agent/utils';
+import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';

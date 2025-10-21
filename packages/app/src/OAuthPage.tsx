@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
-import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
+import type { CodeChallengeMethod } from '@medplum/core';
+import { locationUtils, normalizeErrorString } from '@medplum/core';
+import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
 
@@ -53,7 +57,7 @@ export function OAuthPage(): JSX.Element | null {
       }
     }
     redirectUrl.searchParams.set('code', code);
-    window.location.assign(redirectUrl.toString());
+    locationUtils.assign(redirectUrl.toString());
   }
 
   return (

@@ -1,22 +1,38 @@
-import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal, ActionIcon } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { Encounter, HumanName, Practitioner } from '@medplum/fhirtypes';
-import { IconChevronDown } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import type { Encounter, HumanName, Practitioner, Reference } from '@medplum/fhirtypes';
+import { IconChevronDown, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { useDisclosure } from '@mantine/hooks';
+import { SignLockDialog } from './SignLockDialog';
+import { ChartNoteStatus } from '../../types/encounter';
 
 interface EncounterHeaderProps {
   encounter: Encounter;
   practitioner?: Practitioner | undefined;
+  chartNoteStatus?: ChartNoteStatus;
   onStatusChange?: (status: Encounter['status']) => void;
   onTabChange?: (tab: string) => void;
+  onSign?: (practitioner: Reference<Practitioner>, lock: boolean) => void;
+  onSignLock?: (practitioner: Reference<Practitioner>) => void;
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
-  const { encounter, practitioner, onStatusChange, onTabChange } = props;
+  const {
+    encounter,
+    practitioner,
+    chartNoteStatus = ChartNoteStatus.Unsigned,
+    onStatusChange,
+    onTabChange,
+    onSign,
+  } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [confirmOpened, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
+  const [signOpened, { open: openSign, close: closeSign }] = useDisclosure(false);
 
   const handleStatusChange = (newStatus: Encounter['status']): void => {
     if (newStatus === 'cancelled') {
@@ -34,9 +50,21 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     closeConfirm();
   };
 
+  const onConfirmSign = (practitioner: Reference<Practitioner>, lock: boolean): void => {
+    onSign?.(practitioner, lock);
+    closeSign();
+  };
+
   const handleTabChange = (tab: string): void => {
     setActiveTab(tab);
     onTabChange?.(tab);
+  };
+
+  const handleSign = (): void => {
+    if (chartNoteStatus === ChartNoteStatus.SignedAndLocked) {
+      return;
+    }
+    openSign();
   };
 
   const practitionerName = practitioner?.name?.[0]
@@ -51,6 +79,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
         <>
           <Menu.Item onClick={() => handleStatusChange('arrived')}>Arrived</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
@@ -61,6 +90,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       return (
         <>
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
@@ -93,9 +123,29 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
           </Stack>
           <Group>
             {status === 'cancelled' || status === 'finished' ? (
-              <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
-                {getStatusDisplay(status)}
-              </Button>
+              <>
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
+                  <ActionIcon radius="50%" variant={'outline'} color={'gray'} onClick={handleSign}>
+                    <IconLock size={16} />
+                  </ActionIcon>
+                )}
+
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
+                  <ActionIcon radius="50%" variant={'outline'} color={'gray'} onClick={handleSign}>
+                    <IconLockOpen size={16} />
+                  </ActionIcon>
+                )}
+
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
+                  <ActionIcon radius="50%" variant={'filled'} color={'blue'} onClick={handleSign}>
+                    <IconLock size={16} />
+                  </ActionIcon>
+                )}
+
+                <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
+                  {getStatusDisplay(status)}
+                </Button>
+              </>
             ) : (
               <Menu position="bottom-end" shadow="md">
                 <Menu.Target>
@@ -161,6 +211,10 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             Yes, cancel it
           </Button>
         </Group>
+      </Modal>
+
+      <Modal opened={signOpened} onClose={closeSign} title="Signing As">
+        <SignLockDialog onSign={onConfirmSign} />
       </Modal>
     </>
   );

@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'util';
-import { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 
 /**
@@ -11,13 +13,14 @@ import { getConfig } from '../../config/loader';
  * @returns The bot execution result.
  */
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId, headers } = request;
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
   const payload = {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
+    requester,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,

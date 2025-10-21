@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TextInput } from '@mantine/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { ChangeEvent, JSX } from 'react';
-import { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import type { ChangeEvent, JSX } from 'react';
+import type { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 

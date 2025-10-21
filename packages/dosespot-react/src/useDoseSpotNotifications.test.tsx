@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { vi } from 'vitest';
-import { DoseSpotNotificationsOptions, useDoseSpotNotifications } from './useDoseSpotNotifications';
+import type { DoseSpotNotificationsOptions } from './useDoseSpotNotifications';
+import { useDoseSpotNotifications } from './useDoseSpotNotifications';
 
 export function MyTestIcon(props?: DoseSpotNotificationsOptions): JSX.Element {
   const unreadCount = useDoseSpotNotifications(props);

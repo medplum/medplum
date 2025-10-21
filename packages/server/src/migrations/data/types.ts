@@ -1,8 +1,10 @@
-import { WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
-import { Repository } from '../../fhir/repo';
-import { MigrationAction } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import type { AsyncJob } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
+import type { Repository } from '../../fhir/repo';
+import type { MigrationAction } from '../types';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom' | 'dynamic';

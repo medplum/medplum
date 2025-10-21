@@ -1,14 +1,8 @@
-import {
-  BotEvent,
-  createReference,
-  getReferenceString,
-  LOINC,
-  MedplumClient,
-  SNOMED,
-  UCUM,
-  WithId,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getReferenceString, LOINC, SNOMED, UCUM } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
   AllergyIntolerance,
   BundleEntry,
   CarePlan,

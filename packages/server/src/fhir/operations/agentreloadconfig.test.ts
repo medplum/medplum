@@ -1,25 +1,25 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentError,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitResponse,
-  ContentType,
   WithId,
-  allOk,
-  badRequest,
-  serverError,
 } from '@medplum/core';
-import { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { ContentType, allOk, badRequest, serverError } from '@medplum/core';
+import type { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
-import request, { Response } from 'supertest';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import type { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import type { MockAgentResponseHandle } from './utils/agenttestutils';
 import {
-  MockAgentResponseHandle,
   cleanupMockAgents,
   configMockAgents,
   expectBundleToContainOutcome,
@@ -41,7 +41,7 @@ describe('Agent/$reload-config', () => {
     accessToken = await initTestAuth({ membership: { admin: true } });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, () => {
+      server.listen(0, 'localhost', 8515, () => {
         port = (server.address() as AddressInfo).port;
         resolve();
       });

@@ -1,5 +1,7 @@
-import { WithId } from '@medplum/core';
-import { AccessPolicy, UserConfiguration, ValueSet } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import type { AccessPolicy, UserConfiguration, ValueSet } from '@medplum/fhirtypes';
 
 export const ExampleAccessPolicy: WithId<AccessPolicy> = {
   resourceType: 'AccessPolicy',

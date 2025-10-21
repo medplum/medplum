@@ -1,4 +1,6 @@
-import { HumanName } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { HumanName } from '@medplum/fhirtypes';
 import { formatHumanName, getSimplePhone } from './cms1500pdf';
 
 describe('CMS 1500 PDF Utils', () => {

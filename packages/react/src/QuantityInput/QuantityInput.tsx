@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { Quantity } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useState, WheelEvent } from 'react';
+import type { Quantity } from '@medplum/fhirtypes';
+import type { JSX, WheelEvent } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface QuantityInputProps extends ComplexTypeInputProps<Quantity> {
   readonly autoFocus?: boolean;

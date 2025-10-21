@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation } from '@medplum/fhirtypes';
-import { AtomContext } from '../fhirlexer/parse';
+import type { Bundle, Observation } from '@medplum/fhirtypes';
+import type { AtomContext } from '../fhirlexer/parse';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { LiteralAtom, SymbolAtom } from './atoms';

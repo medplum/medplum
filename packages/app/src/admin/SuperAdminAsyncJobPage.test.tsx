@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
-import { AsyncJob, BundleEntry } from '@medplum/fhirtypes';
+import type { AsyncJob, BundleEntry } from '@medplum/fhirtypes';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';

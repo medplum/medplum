@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block customEmails
-import { BotEvent, getDisplayString, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { BotEvent, MedplumClient, ProfileResource } from '@medplum/core';
+import { getDisplayString, getReferenceString } from '@medplum/core';
+import type { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {
   // This Bot executes on every new UserSecurityRequest resource.

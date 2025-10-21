@@ -1,4 +1,7 @@
-import { MantineProvider, MantineThemeOverride } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { MantineProvider } from '@mantine/core';
+import type { MantineThemeOverride } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';

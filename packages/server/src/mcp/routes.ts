@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { Request, Response, Router } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { IncomingMessage } from 'http';
-import { asyncWrap } from '../async';
+import type { IncomingMessage } from 'http';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -14,19 +16,16 @@ export const mcpRouter = Router().use(authenticateRequest);
 
 // MCP Streamable HTTP endpoint (/mcp/stream)
 // Handles all HTTP methods (GET, POST, etc.)
-mcpRouter.all(
-  '/stream',
-  asyncWrap(async (req: Request, res: Response) => {
-    const server = getMcpServer();
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-    res.on('close', async () => {
-      await transport.close();
-      await server.close();
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-  })
-);
+mcpRouter.all('/stream', async (req: Request, res: Response) => {
+  const server = getMcpServer();
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  res.on('close', async () => {
+    await transport.close();
+    await server.close();
+  });
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
 
 // MCP SSE GET endpoint (/mcp/sse)
 // This endpoint uses Server-Sent Events (SSE) to stream messages to the client

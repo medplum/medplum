@@ -1,17 +1,24 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentError,
+  AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
+  ILogger,
+  LogLevel,
+  MedplumClient,
+} from '@medplum/core';
+import {
   ContentType,
   Hl7Message,
-  LogLevel,
   Logger,
   MEDPLUM_VERSION,
-  MedplumClient,
+  OperationOutcomeError,
   ReconnectingWebSocket,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
@@ -19,24 +26,31 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
+import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
-import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import { AgentByteStreamChannel } from './bytestream';
+import type { Channel } from './channel';
+import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
-async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
+async function execAsync(
+  command: string,
+  options: ExecOptionsWithStringEncoding
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
       if (ex) {
@@ -49,12 +63,17 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
   });
 }
 
+export interface AppOptions {
+  mainLogger?: ILogger;
+  channelLogger?: ILogger;
+}
+
 export class App {
   static instance: App;
   readonly medplum: MedplumClient;
   readonly agentId: string;
-  readonly logLevel: LogLevel;
-  readonly log: Logger;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -71,12 +90,12 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
 
-  constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
+  constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
     this.medplum = medplum;
     this.agentId = agentId;
-    this.logLevel = logLevel;
-    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 
   async start(): Promise<void> {
@@ -92,7 +111,9 @@ export class App {
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket().catch(this.log.error);
+        this.connectWebSocket().catch((err) => {
+          this.log.error(normalizeErrorString(err));
+        });
       } else {
         this.startWebSocketWorker();
       }
@@ -171,7 +192,9 @@ export class App {
   private async heartbeat(): Promise<void> {
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket().catch(this.log.error);
+      this.connectWebSocket().catch((err) => {
+        this.log.error(normalizeErrorString(err));
+      });
       return;
     }
 
@@ -291,6 +314,9 @@ export class App {
           case 'agent:upgrade:request':
             await this.tryUpgradeAgent(command);
             break;
+          case 'agent:logs:request':
+            await this.handleLogRequest(command);
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -316,10 +342,15 @@ export class App {
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
+    // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {
-      for (const client of this.hl7Clients.values()) {
-        client.close();
+      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((client) => client.close()));
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          this.log.error(normalizeErrorString(result.reason));
+        }
       }
+      this.hl7Clients.clear();
     }
 
     if (this.logStatsFreqSecs !== logStatsFreqSecs && this.logStatsTimer) {
@@ -411,6 +442,8 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
+    const errors = [] as Error[];
+
     for (let i = 0; i < filteredChannels.length; i++) {
       const definition = filteredChannels[i];
       const endpoint = filteredEndpoints[i];
@@ -422,8 +455,33 @@ export class App {
       try {
         await this.startOrReloadChannel(definition, endpoint);
       } catch (err) {
+        errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
       }
+    }
+
+    // If there were any errors thrown during reloading, throw them as one error
+    if (errors.length) {
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: {
+              text: `${errors.length} error(s) occurred while reloading channels`,
+            },
+          },
+          ...errors.map(
+            (err) =>
+              ({
+                severity: 'error',
+                code: 'invalid',
+                details: { text: normalizeErrorString(err) },
+              }) satisfies OperationOutcomeIssue
+          ),
+        ],
+      });
     }
   }
 
@@ -473,15 +531,24 @@ export class App {
       return;
     }
 
-    switch (getChannelType(endpoint)) {
-      case ChannelType.DICOM:
-        channel = new AgentDicomChannel(this, definition, endpoint);
-        break;
-      case ChannelType.HL7_V2:
-        channel = new AgentHl7Channel(this, definition, endpoint);
-        break;
-      default:
-        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    try {
+      const channelType = getChannelType(endpoint);
+      switch (channelType) {
+        case ChannelType.DICOM:
+          channel = new AgentDicomChannel(this, definition, endpoint);
+          break;
+        case ChannelType.HL7_V2:
+          channel = new AgentHl7Channel(this, definition, endpoint);
+          break;
+        case ChannelType.BYTE_STREAM:
+          channel = new AgentByteStreamChannel(this, definition, endpoint);
+          break;
+        default:
+          throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+      }
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      return;
     }
 
     channel.start();
@@ -508,9 +575,11 @@ export class App {
     }
 
     if (this.hl7Clients.size !== 0) {
-      for (const client of this.hl7Clients.values()) {
-        client.close();
+      const clientClosePromises = [];
+      for (const channel of this.channels.values()) {
+        clientClosePromises.push(channel.stop());
       }
+      await Promise.all(clientClosePromises);
     }
 
     const channelStopPromises = [];
@@ -807,6 +876,36 @@ export class App {
     }
   }
 
+  private async handleLogRequest(command: AgentLogsRequest): Promise<void> {
+    if (!isWinstonWrapperLogger(this.log)) {
+      const errMsg = 'Unable to fetch logs since current logger instance does not support fetching';
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: errMsg,
+        callback: command.callback,
+      });
+      return;
+    }
+
+    try {
+      const logs = await this.log.fetchLogs({ limit: command.limit });
+      await this.sendToWebSocket({
+        type: 'agent:logs:response',
+        statusCode: 200,
+        logs,
+        callback: command.callback,
+      });
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: normalizeErrorString(err),
+        callback: command.callback,
+      });
+    }
+  }
+
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
     if (!this.webSocket) {
       throw new Error('WebSocket not connected');
@@ -856,15 +955,23 @@ export class App {
       if (client.keepAlive) {
         this.hl7Clients.set(message.remote, client);
         client.addEventListener('close', () => {
-          this.hl7Clients.delete(message.remote);
+          // If the current client for this remote is this client, make sure to clean it up
+          if (this.hl7Clients.get(message.remote) === client) {
+            this.hl7Clients.delete(message.remote);
+          }
           this.log.info(`Persistent connection to remote '${message.remote}' closed`);
         });
-        client.addEventListener('error', () => {
-          this.hl7Clients.delete(message.remote);
-          this.log.info(
-            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+        client.addEventListener('error', (event) => {
+          // If the current client for this remote is this client, make sure to clean it up
+          if (this.hl7Clients.get(message.remote) === client) {
+            this.hl7Clients.delete(message.remote);
+          }
+          this.log.error(
+            `Persistent connection to remote '${message.remote}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
           );
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         });
       }
     }
@@ -906,12 +1013,16 @@ export class App {
 
         if (client.keepAlive) {
           this.hl7Clients.delete(message.remote);
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       })
       .finally(() => {
         if (!client.keepAlive) {
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       });
   }

@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Bundle,
   CodeableConcept,
   Coding,
@@ -10,8 +12,9 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
-import { SearchParameterDetails } from './search/details';
-import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
+import type { SearchParameterDetails } from './search/details';
+import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
+import { getAllDataTypes, tryGetDataType } from './typeschema/types';
 import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
@@ -449,10 +452,23 @@ export function isResource<T extends Resource>(value: unknown, resourceType?: T[
 /**
  * Type guard to validate that an object is a FHIR reference
  * @param value - The object to check
+ * @param resourceType - Checks that the reference is of the given type
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
-export function isReference(value: unknown): value is Reference & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
+
+export function isReference<T extends Resource = Resource>(
+  value: unknown,
+  resourceType?: T['resourceType']
+): value is Reference<T> & { reference: string } {
+  // if the value is an object with a reference property and the reference is a string, then it is a reference
+  if (value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string') {
+    // if resourceType is provided, check if the reference matches the resource type
+    if (resourceType) {
+      return value.reference.match(new RegExp(`^${resourceType}(/|\\?)`)) !== null;
+    }
+    return true;
+  }
+  return false;
 }
 
 /**

@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Operator, created, parseSearchRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Measure,
   MeasureGroup,
   MeasureGroupPopulation,
@@ -9,7 +11,7 @@ import {
   MeasureReportGroupPopulation,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 

@@ -1,5 +1,8 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { ContextRunner, validationResult } from 'express-validator';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { ContextRunner } from 'express-validator';
+import { validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 
 export function makeValidationMiddleware(runners: ContextRunner[]): RequestHandler {

@@ -1,17 +1,15 @@
-import {
-  badRequest,
-  Operator as FhirOperator,
-  Filter,
-  OperationOutcomeError,
-  SortRule,
-  splitN,
-  splitSearchOnComma,
-} from '@medplum/core';
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, SortRule } from '@medplum/core';
+import { badRequest, Operator as FhirOperator, OperationOutcomeError, splitN, splitSearchOnComma } from '@medplum/core';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
-import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
-import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, SelectQuery } from './sql';
+import { Column, Disjunction, Negation, TypedCondition } from './sql';
+import type { Token } from './tokens';
+import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
@@ -118,15 +116,13 @@ export function hashTokenColumnValue(value: string): string {
 /**
  * Adds "order by" clause to the select query builder.
  * @param selectQuery - The select query builder.
- * @param resourceType - The resource type.
+ * @param impl - The search parameter implementation.
  * @param sortRule - The sort rule details.
- * @param param - The search parameter.
  */
 export function addTokenColumnsOrderBy(
   selectQuery: SelectQuery,
-  resourceType: ResourceType,
-  sortRule: SortRule,
-  param: SearchParameter
+  impl: TokenColumnSearchParameterImplementation,
+  sortRule: SortRule
 ): void {
   /*
     [R4 spec behavior](https://www.hl7.org/fhir/r4/search.html#_sort):
@@ -150,11 +146,6 @@ export function addTokenColumnsOrderBy(
     To avoid the surprising behavior, we could store both the alphabetically first and last
     values for each search parameter.
   */
-  const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy !== 'token-column') {
-    throw new Error('Invalid search strategy: ' + impl.searchStrategy);
-  }
-
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
 

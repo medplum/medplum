@@ -1,15 +1,19 @@
-import { Period, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Period, Resource } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toPeriod, toTypedValue } from '../fhirpath/utils';
-import { TypedValue, globalSchema } from '../types';
+import type { TypedValue } from '../types';
+import { globalSchema } from '../types';
+import type { SearchableToken } from './ir';
 import {
-  SearchableToken,
   convertToSearchableDates,
   convertToSearchableReferences,
   convertToSearchableStrings,
   convertToSearchableTokens,
 } from './ir';
-import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
+import type { Filter, SearchRequest } from './search';
+import { Operator, splitSearchOnComma } from './search';
 
 /**
  * Determines if the resource matches the search request.

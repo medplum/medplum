@@ -1,6 +1,9 @@
-import { ProfileResource, getReferenceString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { useMedplumProfile } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react';
 import {
   Icon2fa,
   IconBellRinging,
@@ -12,7 +15,7 @@ import {
   IconReceipt2,
   IconSettings,
 } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
 import { NotificationIcon } from '../NotificationIcon/NotificationIcon';
 import { AppShell } from './AppShell';

@@ -1,12 +1,8 @@
-import {
-  ProfileResource,
-  WithId,
-  createReference,
-  isResource,
-  projectAdminResourceTypes,
-  resolveId,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { createReference, isResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
@@ -16,7 +12,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 

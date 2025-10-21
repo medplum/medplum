@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { append, createReference, isResource } from '@medplum/core';
-import {
+import type {
   AuditEvent,
   AuditEventAgentNetwork,
   AuditEventEntity,
@@ -10,7 +12,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import { CloudWatchLogger } from './cloudwatch';
 

@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isResourceWithId } from '@medplum/core';
-import { Request, Response } from 'express';
-import { JSONSchema4 } from 'json-schema';
+import type { Request, Response } from 'express';
+import type { JSONSchema4 } from 'json-schema';
 import type {
   ComponentsObject,
   OpenAPIObject,

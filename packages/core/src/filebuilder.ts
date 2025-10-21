@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 const DEFAULT_INDENT = ' '.repeat(2);
 
 export class FileBuilder {
@@ -11,6 +13,8 @@ export class FileBuilder {
     this.indentCount = 0;
 
     if (header) {
+      this.appendNoWrap('// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors');
+      this.appendNoWrap('// SPDX-License-Identifier: Apache-2.0');
       this.appendNoWrap('/*');
       this.appendNoWrap(' * This is a generated file');
       this.appendNoWrap(' * Do not edit manually.');

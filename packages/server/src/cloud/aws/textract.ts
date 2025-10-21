@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ComprehendMedicalClient, DetectEntitiesV2Command } from '@aws-sdk/client-comprehendmedical';
 import {
   GetDocumentTextDetectionCommand,
@@ -5,12 +7,12 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Media, Resource } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Binary, DocumentReference, Media, Resource } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../../fhir/repo';
+import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { S3Storage } from './storage';
@@ -26,9 +28,35 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     return [badRequest('AWS Textract requires S3 storage')];
   }
 
-  const { id } = req.params;
-  const inputMedia = await repo.readResource<Media>('Media', id);
-  const inputBinary = await repo.readReference<Binary>({ reference: inputMedia.content.url });
+  const { resourceType, id } = req.params;
+
+  // Validate that the resource type is supported
+  if (resourceType !== 'Media' && resourceType !== 'DocumentReference') {
+    return [badRequest(`AWS Textract operation is not supported for resource type: ${resourceType}`)];
+  }
+
+  let inputBinary: Binary;
+  let subject: any;
+
+  if (resourceType === 'Media') {
+    const inputMedia = await repo.readResource<Media>('Media', id);
+    inputBinary = await repo.readReference<Binary>({ reference: inputMedia.content.url });
+    subject = inputMedia.subject;
+  } else {
+    // DocumentReference
+    const inputDocRef = await repo.readResource<DocumentReference>('DocumentReference', id);
+    if (!inputDocRef.content || inputDocRef.content.length === 0) {
+      return [badRequest('DocumentReference has no content attachments')];
+    }
+
+    const attachment = inputDocRef.content[0].attachment;
+    if (!attachment?.url) {
+      return [badRequest('DocumentReference attachment has no URL')];
+    }
+
+    inputBinary = await repo.readReference<Binary>({ reference: attachment.url });
+    subject = inputDocRef.subject;
+  }
 
   const { awsRegion } = getConfig();
   const bucket = storage.bucket;
@@ -70,7 +98,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   }
 
   const mediaProps: Partial<Media> = {
-    subject: inputMedia.subject,
+    subject: subject,
   };
 
   await createBinaryAndMedia(
@@ -81,8 +109,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     mediaProps
   );
 
-  const options = req.body as { comprehend?: boolean };
-  if (options.comprehend && textractResult?.Blocks) {
+  const options = req.body as undefined | { comprehend?: boolean };
+  if (options?.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });

@@ -1,9 +1,12 @@
-import { Parser } from '../fhirlexer/parse';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Parser } from '../fhirlexer/parse';
 import { initFhirPathParserBuilder } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { Operator } from '../search/search';
 import { tokenize } from './tokenize';
-import { FhirFilterComparison, FhirFilterConnective, FhirFilterExpression, FhirFilterNegation } from './types';
+import type { FhirFilterExpression } from './types';
+import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
 
 /**
  * The operatorMap maps FHIR _filter operators to Medplum search operators.

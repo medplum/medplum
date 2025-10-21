@@ -1,4 +1,6 @@
-import readline from 'node:readline';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type readline from 'node:readline';
 
 export function mockReadline(...answers: string[]): readline.Interface {
   const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };

@@ -1,5 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LOINC, UCUM, createReference } from '@medplum/core';
-import { CodeableConcept, Encounter, Observation, ObservationComponent, Patient, Quantity } from '@medplum/fhirtypes';
+import type {
+  CodeableConcept,
+  Encounter,
+  Observation,
+  ObservationComponent,
+  Patient,
+  Quantity,
+} from '@medplum/fhirtypes';
 
 /**
  * Tries to get the observation quantity value.

@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { Reference } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Reference } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ReferenceDisplayProps {

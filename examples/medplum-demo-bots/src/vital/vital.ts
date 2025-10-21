@@ -1,5 +1,13 @@
-import { BotEvent, isObject, MedplumClient } from '@medplum/core';
-import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { isObject } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
+  ProjectSetting,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+} from '@medplum/fhirtypes';
 
 type GetLabTestEvent = {
   endpoint: 'get_lab_tests';

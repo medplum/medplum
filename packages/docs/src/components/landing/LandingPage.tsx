@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX, useEffect } from 'react';
 import { Card } from '../Card';
@@ -181,10 +184,10 @@ export function LandingPage(): JSX.Element {
                 compliant, and scalable foundation. It’s clean, customizable technology that simply works - from MVP to
                 IPO.
               </p>
-              <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+              <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
                 <div>Book a demo</div>
                 <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-              </a>
+              </Link>
             </div>
             <div className={styles.heroImage}>
               <img
@@ -269,13 +272,14 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <TestimonialHeader
-                  name="Jose Rodriguez"
-                  title="Head of Engineering Summer Health"
-                  imgSrc="/img/avatars/jose-rodrigues.webp"
+                  name="Stuart Parmenter"
+                  title="Former CTO, One Medical"
+                  imgSrc="/img/avatars/stuart.png"
+                  twitter="https://twitter.com/stuartparmenter"
                 />
                 <p>
-                  If you don’t want to reinvent everything, and want standards compliant data and well documented
-                  interfaces, Medplum is what you would choose.
+                  I’ve built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum’s
+                  infrastructure so you can ship care, not plumbing.
                 </p>
               </Card>
             </CardContainer>
@@ -326,8 +330,15 @@ export function LandingPage(): JSX.Element {
                 <p>Open source will transform healthcare, and Medplum is a prime example.</p>
               </Card>
               <Card>
-                <TestimonialHeader name="Alan G" imgSrc="/img/avatars/ag.webp" />
-                <p>First off I want to say this is amazing and I love the work you all are doing.</p>
+                <TestimonialHeader
+                  name="Jose Rodriguez"
+                  title="Head of Engineering Summer Health"
+                  imgSrc="/img/avatars/jose-rodrigues.webp"
+                />
+                <p>
+                  If you don’t want to reinvent everything, and want standards compliant data and well documented
+                  interfaces, Medplum is what you would choose.
+                </p>
               </Card>
             </CardContainer>
           </Section>

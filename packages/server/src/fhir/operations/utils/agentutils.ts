@@ -1,11 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentError, AgentRequestMessage, AgentResponseMessage, WithId } from '@medplum/core';
 import {
-  AgentError,
-  AgentRequestMessage,
-  AgentResponseMessage,
   ContentType,
   OperationOutcomeError,
   Operator,
-  WithId,
   allOk,
   badRequest,
   getReferenceString,
@@ -15,15 +14,15 @@ import {
   serverError,
   singularize,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { getRedis, getRedisSubscriber } from '../../../redis';
-import { Repository } from '../../repo';
-import { AgentPushParameters } from '../agentpush';
+import type { Repository } from '../../repo';
+import type { AgentPushParameters } from '../agentpush';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -207,6 +206,39 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
 
   await publishRequestMessage(agent, message);
   return [allOk];
+}
+
+export interface SendAndHandleAgentRequestOptions<T extends AgentResponseMessage = AgentResponseMessage> {
+  successHandler?: (response: T) => Parameters;
+  messageOptions?: Partial<AgentMessageOptions>;
+}
+
+export async function sendAndHandleAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
+  agent: WithId<Agent>,
+  message: AgentRequestMessage,
+  expectedResponseType: T['type'],
+  options?: SendAndHandleAgentRequestOptions<T>
+): Promise<FhirResponse> {
+  // Send agent message
+  const [outcome, result] = await publishAgentRequest<T>(agent, message, {
+    ...options?.messageOptions,
+    waitForResponse: true,
+  });
+
+  if (!result) {
+    return [outcome];
+  }
+
+  if (result.type === 'agent:error') {
+    throw new OperationOutcomeError(badRequest(result.body));
+  }
+
+  if (result.type === expectedResponseType) {
+    const parameters = options?.successHandler?.(result);
+    return parameters ? [outcome, parameters] : [outcome];
+  }
+
+  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
 }
 
 function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(

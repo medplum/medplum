@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -8,13 +10,6 @@ const medplum = new MockClient();
 
 describe('BulkAppPage', () => {
   async function setup(url: string): Promise<void> {
-    const urlObj = new URL(url, 'http://localhost');
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: urlObj.href,
-        search: urlObj.search,
-      },
-    });
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>

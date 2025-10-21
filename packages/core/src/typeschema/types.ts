@@ -1,16 +1,21 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Bundle,
   Coding,
   ElementDefinition,
   ElementDefinitionBinding,
   Resource,
+  ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { DataTypesMap, inflateBaseSchema } from '../base-schema';
+import type { DataTypesMap } from '../base-schema-utils';
+import { inflateBaseSchema } from '../base-schema-utils';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
+import type { TypedValue } from '../types';
+import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
@@ -212,7 +217,7 @@ export function getDataType(type: string, profileUrl?: string): InternalTypeSche
  * @param resourceType - The candidate resource type string.
  * @returns True if the resource type is a valid FHIR resource type.
  */
-export function isResourceType(resourceType: string): boolean {
+export function isResourceType(resourceType: string): resourceType is ResourceType {
   const typeSchema = DATA_TYPES[resourceType];
   return typeSchema && isResourceTypeSchema(typeSchema);
 }

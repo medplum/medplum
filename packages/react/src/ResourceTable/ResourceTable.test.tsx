@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import type { StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpsonUSCorePatient, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
-import { ResourceTable, ResourceTableProps } from './ResourceTable';
+import type { ResourceTableProps } from './ResourceTable';
+import { ResourceTable } from './ResourceTable';
 
 const medplum = new MockClient();
 

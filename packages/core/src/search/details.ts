@@ -1,5 +1,7 @@
-import { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
-import { Atom } from '../fhirlexer/parse';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import type { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
   BooleanInfixOperatorAtom,
@@ -12,7 +14,7 @@ import {
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
+import type { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
 
 export const SearchParameterType = {

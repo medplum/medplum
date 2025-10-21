@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import os from 'node:os';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
-import { RecordMetricOptions, setGauge } from './otel/otel';
+import type { RecordMetricOptions } from './otel/otel';
+import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
 
 const hostname = os.hostname();

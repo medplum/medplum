@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ComprehendMedicalClient, DetectEntitiesV2Command } from '@aws-sdk/client-comprehendmedical';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
@@ -6,7 +8,8 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import express from 'express';
 import request from 'supertest';
@@ -121,5 +124,123 @@ describe('AWS Textract', () => {
       .send({ comprehend: true });
     expect(res3.status).toBe(200);
     expect(res3.body.Blocks).toBeDefined();
+  });
+
+  test('DocumentReference happy path', async () => {
+    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+
+    // Step 1: Create a PDF Binary
+    const res1 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world from DocumentReference');
+    expect(res1.status).toBe(201);
+
+    // Step 2: Create a DocumentReference
+    const res2 = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: 'application/pdf',
+              url: 'Binary/' + res1.body.id,
+              title: 'Test Document',
+            },
+          },
+        ],
+        subject: {
+          reference: 'Patient/test-patient',
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    // Step 3: Submit the DocumentReference to Textract
+    const res3 = await request(app)
+      .post(`/fhir/R4/DocumentReference/${res2.body.id}/$aws-textract`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.Blocks).toBeDefined();
+  });
+
+  test('DocumentReference with Comprehend', async () => {
+    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+
+    // Step 1: Create a PDF Binary
+    const res1 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world from DocumentReference with Comprehend');
+    expect(res1.status).toBe(201);
+
+    // Step 2: Create a DocumentReference
+    const res2 = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: 'application/pdf',
+              url: 'Binary/' + res1.body.id,
+              title: 'Test Document with Comprehend',
+            },
+          },
+        ],
+        subject: {
+          reference: 'Patient/test-patient',
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    // Step 3: Submit the DocumentReference to Textract with Comprehend
+    const res3 = await request(app)
+      .post(`/fhir/R4/DocumentReference/${res2.body.id}/$aws-textract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ comprehend: true });
+    expect(res3.status).toBe(200);
+    expect(res3.body.Blocks).toBeDefined();
+  });
+
+  test('DocumentReference with no attachment URL', async () => {
+    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+
+    // Create a DocumentReference with content but no attachment URL
+    const res1 = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: 'application/pdf',
+              title: 'Test Document without URL',
+            },
+          },
+        ],
+        subject: {
+          reference: 'Patient/test-patient',
+        },
+      });
+    expect(res1.status).toBe(201);
+
+    // Try to submit the DocumentReference to Textract
+    const res2 = await request(app)
+      .post(`/fhir/R4/DocumentReference/${res1.body.id}/$aws-textract`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toBe('DocumentReference attachment has no URL');
   });
 });

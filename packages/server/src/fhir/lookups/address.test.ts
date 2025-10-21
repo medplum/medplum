@@ -1,13 +1,17 @@
-import { Operator, WithId } from '@medplum/core';
-import { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { AddressTable, AddressTableRow } from './address';
+import type { AddressTableRow } from './address';
+import { AddressTable } from './address';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getSystemRepo();

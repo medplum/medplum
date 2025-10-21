@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
+import type { GoogleCredentialResponse } from '@medplum/core';
+import { allOk, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID, webcrypto } from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { RegisterForm, RegisterFormProps } from './RegisterForm';
+import type { RegisterFormProps } from './RegisterForm';
+import { RegisterForm } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
 

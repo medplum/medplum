@@ -1,16 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HealthieClient } from './client';
 import { HEALTHIE_ALLERGY_CODE_SYSTEM, HEALTHIE_ALLERGY_ID_SYSTEM, HEALTHIE_REACTION_CODE_SYSTEM } from './constants';
 import {
   convertHealthieAllergyToFhir,
   fetchAllergySensitivities,
-  HealthieAllergySensitivity,
   mapHealthieStatusToClinicalStatus,
   mapHealthieCategoryToType,
   mapHealthieCategoryTypeToCategory,
   mapHealthieSeverityToCriticality,
   mapHealthieSeverityToReactionSeverity,
 } from './allergy';
+import type { HealthieAllergySensitivity } from './allergy';
 
 type MockResponse = {
   json: () => Promise<any>;

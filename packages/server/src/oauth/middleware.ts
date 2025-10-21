@@ -1,6 +1,9 @@
-import { OperationOutcomeError, ProfileResource, unauthorized, WithId } from '@medplum/core';
-import { Login, Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
-import { NextFunction, Request, Response } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { OperationOutcomeError, unauthorized } from '@medplum/core';
+import type { Login, Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';

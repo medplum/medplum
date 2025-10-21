@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Content type constants.
  */
@@ -23,4 +26,5 @@ export const ContentType = {
   XML: 'text/xml',
   // See: https://www.iana.org/assignments/media-types/application/cda+xml
   CDA_XML: 'application/cda+xml',
+  OCTET_STREAM: 'application/octet-stream',
 } as const;

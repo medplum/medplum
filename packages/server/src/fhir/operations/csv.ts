@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
   evalFhirPath,
@@ -8,7 +10,7 @@ import {
   OperationOutcomeError,
   parseSearchRequest,
 } from '@medplum/core';
-import {
+import type {
   Address,
   CodeableConcept,
   ContactPoint,
@@ -17,7 +19,7 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 

@@ -1,14 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * Parse HL7 SMART scope strings.
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
 import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
-import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import qs from 'node:querystring';
 import { getConfig } from '../config/loader';
-import { PopulatedAccessPolicy } from './accesspolicy';
+import type { PopulatedAccessPolicy } from './accesspolicy';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 

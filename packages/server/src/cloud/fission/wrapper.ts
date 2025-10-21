@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import packageJson from '../../../package.json';
 
 export const FISSION_PACKAGE_JSON = `{
@@ -28,7 +30,7 @@ module.exports = async function (context) {
   logOutput.length = 0;
   try {
     const event = context.request.body;
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
     const medplum = new MedplumClient({
       baseUrl,
       fetch: function (url, options = {}) {
@@ -46,6 +48,7 @@ module.exports = async function (context) {
     }
     let returnValue = await userCode.handler(medplum, {
       bot,
+      requester,
       input,
       contentType,
       secrets,

@@ -1,16 +1,11 @@
-import {
-  AgentMessage,
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  ContentType,
-  generateId,
-  LogLevel,
-  sleep,
-} from '@medplum/core';
-import { Agent, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentMessage, AgentTransmitRequest, AgentTransmitResponse } from '@medplum/core';
+import { allOk, ContentType, generateId, LogLevel, sleep } from '@medplum/core';
+import type { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { Client, Server } from 'mock-socket';
+import type { Client } from 'mock-socket';
+import { Server } from 'mock-socket';
 import child_process, { ChildProcess } from 'node:child_process';
 import { App } from './app';
 

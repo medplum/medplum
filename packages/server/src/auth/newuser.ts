@@ -1,7 +1,10 @@
-import { badRequest, NewUserRequest, normalizeOperationOutcome, WithId } from '@medplum/core';
-import { ClientApplication, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { NewUserRequest, WithId } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome } from '@medplum/core';
+import type { ClientApplication, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config/loader';

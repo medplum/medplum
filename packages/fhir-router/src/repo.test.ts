@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
@@ -5,12 +8,10 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
-  OperationOutcomeError,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 

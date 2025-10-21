@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button } from '@mantine/core';
-import { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react';
 import { IconCloudUpload } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { AttachmentButton } from './AttachmentButton';
 

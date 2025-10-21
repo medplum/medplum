@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  Filter,
   forbidden,
   getDateProperty,
   getReferenceString,
@@ -12,13 +14,10 @@ import {
   Operator,
   parseJWTPayload,
   parseSearchRequest,
-  ProfileResource,
   resolveId,
-  SearchRequest,
   tooManyRequests,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   ClientApplication,
   IdentityProvider,
@@ -32,19 +31,21 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
-import { Request } from 'express';
-import { IncomingMessage } from 'http';
-import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
+import type { Request } from 'express';
+import type { IncomingMessage } from 'http';
+import type { JWTPayload, VerifyOptions } from 'jose';
+import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
-import { MedplumExternalAuthConfig } from '../config/types';
+import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
-import { parseSmartScopes, SmartScope } from '../fhir/smart';
+import type { SmartScope } from '../fhir/smart';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getRedis } from '../redis';
 import {
@@ -55,15 +56,9 @@ import {
   UserAuthenticationEvent,
 } from '../util/auditevent';
 import { getStandardClientById } from './clients';
-import {
-  generateAccessToken,
-  generateIdToken,
-  generateRefreshToken,
-  generateSecret,
-  MedplumAccessTokenClaims,
-  verifyJwt,
-} from './keys';
-import { AuthState } from './middleware';
+import type { MedplumAccessTokenClaims } from './keys';
+import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
+import type { AuthState } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -304,11 +299,11 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
-  if (!user.mfaEnrolled) {
+  const secret = user.mfaSecret;
+  if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
@@ -779,6 +774,14 @@ function includeRefreshToken(request: LoginRequest): boolean {
   return scopeArray.includes('offline') || scopeArray.includes('offline_access');
 }
 
+export function normalizeUserInfoUrl(userInfoUrl: string): string {
+  const url = new URL(userInfoUrl);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Must use http or https protocol');
+  }
+  return url.toString();
+}
+
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
@@ -793,8 +796,11 @@ export async function getExternalUserInfo(
   idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
-  if (!userInfoUrl.startsWith('http:') && !userInfoUrl.startsWith('https:')) {
-    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId });
+
+  try {
+    userInfoUrl = normalizeUserInfoUrl(userInfoUrl);
+  } catch (err: unknown) {
+    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId, err });
     throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
   }
 

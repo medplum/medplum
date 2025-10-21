@@ -1,35 +1,27 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Hl7Message } from '@medplum/core';
 import iconv from 'iconv-lite';
 import { Hl7Connection } from './connection';
 import { CR, FS, VT } from './constants';
 import { Hl7MessageEvent } from './events';
+import { MockSocket } from './test-utils';
 
 describe('HL7 Connection', () => {
   test('Error', async () => {
-    const handlers: Record<string, (event: any) => void> = {};
-
     // Create a mock net.Socket
-    const mockSocket: any = {
-      on: jest.fn((event: string, handler: (event: any) => void) => {
-        handlers[event] = handler;
-        return mockSocket;
-      }),
-      setEncoding: jest.fn(() => mockSocket),
-      end: jest.fn(),
-      destroy: jest.fn(),
-    };
-
+    const mockSocket = new MockSocket();
     const listener = jest.fn();
 
     const connection = new Hl7Connection(mockSocket as any);
-    expect(handlers.data).toBeDefined();
-    expect(handlers.error).toBeDefined();
+    expect(mockSocket.handlers.data).toBeDefined();
+    expect(mockSocket.handlers.error).toBeDefined();
 
     // Listen for errors
     connection.addEventListener('error', listener);
 
     // Simulate an error
-    handlers.error(new Error('test'));
+    mockSocket.emit('error', new Error('test'));
     expect(listener).toHaveBeenCalledTimes(1);
 
     // Reset the listener
@@ -37,31 +29,19 @@ describe('HL7 Connection', () => {
 
     // Simulate an invalid data event
     // this.socket.write(VT + reply.toString() + FS + CR);
-    handlers.data(VT + FS + CR);
+    mockSocket.emit('data', VT + FS + CR);
     expect(listener).toHaveBeenCalledTimes(1);
 
     // Close multiple times to test idempotency
-    connection.close();
-    connection.close();
+    await connection.close();
+    await connection.close();
   });
 
-  test('enhancedMode', () => {
-    const handlers: Record<string, (event: any) => void> = {};
-
-    // Create a mock net.Socket
-    const mockSocket: any = {
-      on: jest.fn((event: string, handler: (event: any) => void) => {
-        handlers[event] = handler;
-        return mockSocket;
-      }),
-      setEncoding: jest.fn(() => mockSocket),
-      end: jest.fn(),
-      destroy: jest.fn(),
-      write: jest.fn(),
-    };
+  test('enhancedMode', async () => {
+    const mockSocket = new MockSocket();
 
     const connection = new Hl7Connection(mockSocket as any, undefined, true);
-    expect(handlers.data).toBeDefined();
+    expect(mockSocket.handlers.data).toBeDefined();
 
     const msg =
       Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
@@ -89,6 +69,6 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     ackToCompare.getSegment('MSH')?.setField(10, 'CONTROLID');
 
     expect(receivedMsg.toString().replaceAll('\r', '\n')).toStrictEqual(ackToCompare.toString().replaceAll('\r', '\n'));
-    connection.close();
+    await connection.close();
   });
 });

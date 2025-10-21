@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   createReference,
   encodeBase64,
@@ -6,9 +9,8 @@ import {
   normalizeErrorString,
   Operator,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
@@ -764,7 +766,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           account: {
             reference: account,
@@ -871,7 +873,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
       });
       expect(clientApplication).toBeDefined();
 
@@ -2083,6 +2085,25 @@ describe('AccessPolicy', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      const patient4 = await adminRepo.updateResource<Patient>({
+        ...patient3,
+        meta: {
+          security: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
+              code: 'N',
+            },
+          ],
+          tag: [
+            {
+              system: 'http://example.com',
+              code: 'example-tag',
+            },
+          ],
+        },
+      });
+      expect(patient4.meta?.accounts).toBeUndefined(); //accounts were overwritten
 
       // Remove patient accounts as project admin
       // Project admin should be allowed to clear accounts
