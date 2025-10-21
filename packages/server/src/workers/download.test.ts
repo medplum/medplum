@@ -99,6 +99,23 @@ describe('Download Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
+  test('Ignore HTTP URL', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'http://localhost/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
   test('Retry on 400', () =>
     withTestContext(async () => {
       const url = 'https://example.com/download';
@@ -297,6 +314,47 @@ describe('Download Worker', () => {
         content: {
           contentType: ContentType.TEXT,
           url: 'https://example.com/download',
+        },
+      });
+      expect(media2).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+    }));
+
+  test('Ignore if does not match allowed URL prefix', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        project: {
+          setting: [
+            {
+              name: 'autoDownloadAllowedUrlPrefixes',
+              valueString: 'https://allowed.example.com',
+            },
+          ],
+        },
+      });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media1 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://ignore.example.com/download',
+        },
+      });
+      expect(media1).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Ensure that other URLs still work
+      const media2 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://allowed.example.com/download',
         },
       });
       expect(media2).toBeDefined();

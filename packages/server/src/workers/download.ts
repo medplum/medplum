@@ -97,26 +97,16 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     return;
   }
 
-  // Check if the project has a setting for "autoDownloadEnabled" and if it is set to false.
-  // Auto-download is enabled by default, but can be disabled per project.
   const project = context?.project;
-  if (project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+  if (!project) {
     return;
   }
 
-  const ignoredUrlPrefixes =
-    project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
-
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (!isExternalUrl(attachment.url)) {
+    if (!isExternalUrl(attachment.url) || !isUrlAllowedByProject(project, attachment.url)) {
       continue;
     }
-
-    if (ignoredUrlPrefixes.some((prefix) => attachment.url?.startsWith(prefix))) {
-      continue;
-    }
-
     await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id,
@@ -140,10 +130,40 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
 function isExternalUrl(url: string | undefined): url is string {
   return !!(
     url &&
+    url.startsWith('https://') &&
     !url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/') &&
     !url.startsWith(getConfig().storageBaseUrl) &&
     !url.startsWith('Binary/')
   );
+}
+
+/**
+ * Determines if a URL is allowed for auto-download.
+ * @param project - The project settings.
+ * @param url - The URL to check.
+ * @returns True if the URL is allowed for auto-download.
+ */
+function isUrlAllowedByProject(project: Project, url: string): boolean {
+  if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+    // If the project has auto-download disabled, then ignore all URLs.
+    return false;
+  }
+
+  const allowedUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadAllowedUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (allowedUrlPrefixes.length > 0 && !allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If allowed URLs are specified and the URL does not match an allowed prefix, then ignore it.
+    return false;
+  }
+
+  const ignoredUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If the URL matches an ignored prefix, then ignore it.
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -184,17 +204,13 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   }
 
   const projectId = resource.meta?.project;
-  if (projectId) {
-    const project = await systemRepo.readResource<Project>('Project', projectId);
-    if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
-      // If the project has auto-download disabled, then stop processing it.
-      return;
-    }
-    const ignoredUrlPrefixes =
-      project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
-    if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-      return;
-    }
+  if (!projectId) {
+    return;
+  }
+
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  if (!isUrlAllowedByProject(project, url)) {
+    return;
   }
 
   const headers: HeadersInit = {};
