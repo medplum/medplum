@@ -1212,621 +1212,160 @@ describe('resourceMatchesSubscriptionCriteria', () => {
     expect(result2).toBe(true);
   });
 
-  test('should return true when subscription has meta.account and resource has matching account in meta.accounts even if meta.account differs', async () => {
-    const log = jest.fn();
-
-    const subscription: Subscription = {
-      id: '123',
-      resourceType: 'Subscription',
-      status: 'active',
-      reason: 'test subscription',
-      criteria: 'Communication',
-      channel: {
-        type: 'rest-hook',
-        endpoint: 'Bot/123',
-      },
-      meta: {
-        account: { reference: 'Organization/123' },
-      },
-    };
-
-    const matches = await resourceMatchesSubscriptionCriteria({
-      resource: {
-        id: '123',
-        resourceType: 'Communication',
-        status: 'in-progress',
-        meta: {
-          account: { reference: 'Organization/456' }, // Primary account is different organization
-          accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }], // But still part of the right account, would pass access policy check
-        },
-      },
-      subscription,
-      context: { interaction: 'create' },
-      getPreviousResource: async () => undefined,
-      logger: new Logger((msg) => log(msg)),
-    });
-
-    expect(matches).toStrictEqual(true);
-    expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-  });
-
-  describe('meta.accounts (plural) matching logic', () => {
-    test('should return true when subscription has meta.accounts and resource has matching account in meta.accounts', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has meta.accounts but resource has no matching accounts in meta.accounts', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/999' }],
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has meta.accounts and resource has no meta.accounts but non-matching meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/789' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return false when subscription has meta.accounts but resource has neither meta.accounts nor meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {},
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return true when subscription has meta.accounts with single account and resource has matching meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [{ reference: 'Organization/123' }],
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/123' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has empty meta.accounts array', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          accounts: [],
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      // Should fall through to meta.account check since accounts array is empty
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-  });
-
-  describe('meta.account (singular) matching logic - existing behavior', () => {
-    test('should return true when subscription has meta.account and resource has matching meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/123' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has meta.account and resource has non-matching meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' },
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts but subscription account matches one in the combined list', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' }, // Primary account NOT in accounts array
-            accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }], // Has matching org in accounts
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      // extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // and should match since Organization/123 is in that combined list
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and subscription account matches the resource meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
+  describe('Account matching logic', () => {
+    test.each([
+      {
+        description:
+          'should return true when subscription has meta.account and resource has matching account in meta.accounts even if meta.account differs',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: {
           account: { reference: 'Organization/456' },
+          accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }],
         },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' }, // Matches subscription account
-            accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }], // meta.account not in this array
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      // extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // and should match since Organization/456 is in that combined list (as first element)
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and no match in combined list', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/999' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' }, // Primary account NOT in accounts array
-            accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }], // Neither matches subscription
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      // extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // but Organization/999 is not in that list, so should not match
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts but resource account matches one in combined list', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/456' }, // Primary account NOT in accounts array
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts and resource has matching account in meta.accounts',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        resourceMeta: { accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }] },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts but resource has no matching accounts in meta.accounts',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        resourceMeta: { accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/999' }] },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        resourceMeta: { account: { reference: 'Organization/456' } },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts and resource has no meta.accounts but non-matching meta.account',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        resourceMeta: { account: { reference: 'Organization/789' } },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts but resource has neither meta.accounts nor meta.account',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        resourceMeta: {},
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts with single account and resource has matching meta.account',
+        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }] },
+        resourceMeta: { account: { reference: 'Organization/123' } },
+        shouldMatch: true,
+      },
+      {
+        description: 'should return false when subscription has empty meta.accounts array',
+        subscriptionMeta: { accounts: [], account: { reference: 'Organization/123' } },
+        resourceMeta: { account: { reference: 'Organization/456' } },
+        shouldMatch: false,
+      },
+      {
+        description: 'should return true when subscription has meta.account and resource has matching meta.account',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: { account: { reference: 'Organization/123' } },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has non-matching meta.account',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: { account: { reference: 'Organization/456' } },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts but subscription account matches one in the combined list',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: {
+          account: { reference: 'Organization/456' },
           accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
         },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/123' }, // Matches one in subscription's combined list
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      // Subscription extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // Resource has Organization/123, which is in the combined list
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and resource account matches subscription meta.account', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/456' }, // Primary account NOT in accounts array
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and subscription account matches the resource meta.account',
+        subscriptionMeta: { account: { reference: 'Organization/456' } },
+        resourceMeta: {
+          account: { reference: 'Organization/456' },
           accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
         },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/456' }, // Matches subscription's meta.account
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      // Subscription extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // Resource has Organization/456, which is the first element in the combined list
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and no match', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/456' }, // Primary account NOT in accounts array
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and no match in combined list',
+        subscriptionMeta: { account: { reference: 'Organization/999' } },
+        resourceMeta: {
+          account: { reference: 'Organization/456' },
           accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
         },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            account: { reference: 'Organization/999' }, // Does not match any in subscription's combined list
-          },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts but resource account matches one in combined list',
+        subscriptionMeta: {
+          account: { reference: 'Organization/456' },
+          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
         },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      // Subscription extractAccountReferences should return [Organization/456, Organization/789, Organization/123]
-      // Resource has Organization/999, which is not in that list
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-    });
-
-    test('should return true when neither subscription nor resource have account metadata', async () => {
+        resourceMeta: { account: { reference: 'Organization/123' } },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and resource account matches subscription meta.account',
+        subscriptionMeta: {
+          account: { reference: 'Organization/456' },
+          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+        },
+        resourceMeta: { account: { reference: 'Organization/456' } },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and no match',
+        subscriptionMeta: {
+          account: { reference: 'Organization/456' },
+          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+        },
+        resourceMeta: { account: { reference: 'Organization/999' } },
+        shouldMatch: false,
+      },
+      {
+        description: 'should return true when neither subscription nor resource have account metadata',
+        subscriptionMeta: {},
+        resourceMeta: {},
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has matching account in meta.accounts',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: { accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }] },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has non-matching accounts in meta.accounts',
+        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: { accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/789' }] },
+        shouldMatch: false,
+      },
+    ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
       const log = jest.fn();
 
       const subscription: Subscription = {
@@ -1839,7 +1378,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
           type: 'rest-hook',
           endpoint: 'Bot/123',
         },
-        meta: {},
+        meta: subscriptionMeta,
       };
 
       const matches = await resourceMatchesSubscriptionCriteria({
@@ -1847,44 +1386,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
           id: '123',
           resourceType: 'Communication',
           status: 'in-progress',
-          meta: {},
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger((msg) => log(msg)),
-      });
-
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return true when subscription has meta.account and resource has matching account in meta.accounts', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }],
-          },
+          meta: resourceMeta,
         },
         subscription,
         context: { interaction: 'create' },
@@ -1892,45 +1394,12 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         logger: new Logger(log, undefined, LogLevel.DEBUG),
       });
 
-      expect(matches).toStrictEqual(true);
-      expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
-    });
-
-    test('should return false when subscription has meta.account and resource has non-matching accounts in meta.accounts', async () => {
-      const log = jest.fn();
-
-      const subscription: Subscription = {
-        id: '123',
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: 'test subscription',
-        criteria: 'Communication',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'Bot/123',
-        },
-        meta: {
-          account: { reference: 'Organization/123' },
-        },
-      };
-
-      const matches = await resourceMatchesSubscriptionCriteria({
-        resource: {
-          id: '123',
-          resourceType: 'Communication',
-          status: 'in-progress',
-          meta: {
-            accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/789' }],
-          },
-        },
-        subscription,
-        context: { interaction: 'create' },
-        getPreviousResource: async () => undefined,
-        logger: new Logger(log, undefined, LogLevel.DEBUG),
-      });
-
-      expect(matches).toStrictEqual(false);
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
+      expect(matches).toStrictEqual(shouldMatch);
+      if (!shouldMatch) {
+        expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
+      } else {
+        expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
+      }
     });
   });
 });

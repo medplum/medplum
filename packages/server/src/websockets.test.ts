@@ -36,7 +36,7 @@ describe('WebSockets', () => {
       await request(server)
         .ws('/ws/echo')
         .exec(async () => {
-          await sleep(10);
+          await sleep(1000);
         })
         .sendText('foo')
         .expectText('foo')
