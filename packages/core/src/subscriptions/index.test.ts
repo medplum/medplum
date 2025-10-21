@@ -1213,105 +1213,110 @@ describe('resourceMatchesSubscriptionCriteria', () => {
   });
 
   describe('Account matching logic', () => {
+    const ORGANIZATION_ONE = { reference: 'Organization/123' };
+    const ORGANIZATION_TWO = { reference: 'Organization/456' };
+    const ORGANIZATION_THREE = { reference: 'Organization/789' };
+    const ORGANIZATION_FOUR = { reference: 'Organization/999' };
+
     test.each([
       {
         description:
           'should return true when subscription has meta.account and resource has matching account in meta.accounts even if meta.account differs',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
         resourceMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE],
         },
         shouldMatch: true,
       },
       {
         description:
           'should return true when subscription has meta.accounts and resource has matching account in meta.accounts',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
-        resourceMeta: { accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }] },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE] },
         shouldMatch: true,
       },
       {
         description:
           'should return false when subscription has meta.accounts but resource has no matching accounts in meta.accounts',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
-        resourceMeta: { accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/999' }] },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_FOUR] },
         shouldMatch: false,
       },
       {
         description:
           'should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
-        resourceMeta: { account: { reference: 'Organization/456' } },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { account: ORGANIZATION_TWO },
         shouldMatch: true,
       },
       {
         description:
           'should return false when subscription has meta.accounts and resource has no meta.accounts but non-matching meta.account',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
-        resourceMeta: { account: { reference: 'Organization/789' } },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { account: ORGANIZATION_THREE },
         shouldMatch: false,
       },
       {
         description:
           'should return false when subscription has meta.accounts but resource has neither meta.accounts nor meta.account',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }, { reference: 'Organization/456' }] },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
         resourceMeta: {},
         shouldMatch: false,
       },
       {
         description:
           'should return true when subscription has meta.accounts with single account and resource has matching meta.account',
-        subscriptionMeta: { accounts: [{ reference: 'Organization/123' }] },
-        resourceMeta: { account: { reference: 'Organization/123' } },
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE] },
+        resourceMeta: { account: ORGANIZATION_ONE },
         shouldMatch: true,
       },
       {
         description: 'should return false when subscription has empty meta.accounts array',
-        subscriptionMeta: { accounts: [], account: { reference: 'Organization/123' } },
-        resourceMeta: { account: { reference: 'Organization/456' } },
+        subscriptionMeta: { accounts: [], account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_TWO },
         shouldMatch: false,
       },
       {
         description: 'should return true when subscription has meta.account and resource has matching meta.account',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
-        resourceMeta: { account: { reference: 'Organization/123' } },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_ONE },
         shouldMatch: true,
       },
       {
         description:
           'should return false when subscription has meta.account and resource has non-matching meta.account',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
-        resourceMeta: { account: { reference: 'Organization/456' } },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_TWO },
         shouldMatch: false,
       },
       {
         description:
           'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts but subscription account matches one in the combined list',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
         resourceMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
         shouldMatch: true,
       },
       {
         description:
           'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and subscription account matches the resource meta.account',
-        subscriptionMeta: { account: { reference: 'Organization/456' } },
+        subscriptionMeta: { account: ORGANIZATION_TWO },
         resourceMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
         shouldMatch: true,
       },
       {
         description:
           'should return false when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and no match in combined list',
-        subscriptionMeta: { account: { reference: 'Organization/999' } },
+        subscriptionMeta: { account: ORGANIZATION_FOUR },
         resourceMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
         shouldMatch: false,
       },
@@ -1319,30 +1324,30 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         description:
           'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts but resource account matches one in combined list',
         subscriptionMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
-        resourceMeta: { account: { reference: 'Organization/123' } },
+        resourceMeta: { account: ORGANIZATION_ONE },
         shouldMatch: true,
       },
       {
         description:
           'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and resource account matches subscription meta.account',
         subscriptionMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
-        resourceMeta: { account: { reference: 'Organization/456' } },
+        resourceMeta: { account: ORGANIZATION_TWO },
         shouldMatch: true,
       },
       {
         description:
           'should return false when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and no match',
         subscriptionMeta: {
-          account: { reference: 'Organization/456' },
-          accounts: [{ reference: 'Organization/789' }, { reference: 'Organization/123' }],
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
         },
-        resourceMeta: { account: { reference: 'Organization/999' } },
+        resourceMeta: { account: ORGANIZATION_FOUR },
         shouldMatch: false,
       },
       {
@@ -1354,15 +1359,15 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       {
         description:
           'should return true when subscription has meta.account and resource has matching account in meta.accounts',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
-        resourceMeta: { accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/123' }] },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE] },
         shouldMatch: true,
       },
       {
         description:
           'should return false when subscription has meta.account and resource has non-matching accounts in meta.accounts',
-        subscriptionMeta: { account: { reference: 'Organization/123' } },
-        resourceMeta: { accounts: [{ reference: 'Organization/456' }, { reference: 'Organization/789' }] },
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_THREE] },
         shouldMatch: false,
       },
     ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
