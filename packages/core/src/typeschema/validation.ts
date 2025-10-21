@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import type { Coding, OperationOutcomeIssue, Reference, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
 import type { FhirPathAtom } from '../fhirpath/atoms';
@@ -27,7 +27,7 @@ import type {
   SliceDiscriminator,
   SlicingRules,
 } from './types';
-import { getDataType, parseStructureDefinition } from './types';
+import { getDataType, isResourceType, parseStructureDefinition } from './types';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -102,20 +102,24 @@ export const validationRegexes: Record<string, RegExp> = {
  */
 const skippedConstraintKeys: Record<string, boolean> = {
   'ele-1': true,
-  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requires "descendants()")
   'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
   'sdf-19': true, // FHIR Specification models only use FHIR defined types
 };
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
+  collect?: {
+    tokens?: Map<InternalSchemaElement, Coding[]>;
+    references?: Map<InternalSchemaElement, Reference[]>;
+  };
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
-  if (!resource.resourceType) {
-    throw new OperationOutcomeError(validationError('Missing resource type'));
+  if (!isResourceType(resource.resourceType)) {
+    throw new OperationOutcomeError(validationError('Invalid resource type'));
   }
-  return new ResourceValidator(toTypedValue(resource), options).validate();
+  return validateTypedValue(toTypedValue(resource), options);
 }
 
 export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOptions): OperationOutcomeIssue[] {

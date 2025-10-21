@@ -6,6 +6,7 @@ import type {
   SearchParameterDetails,
   SearchRequest,
   TypedValue,
+  ValidatorOptions,
   WithId,
 } from '@medplum/core';
 import {
@@ -32,6 +33,7 @@ import {
   getReferenceString,
   getStatus,
   gone,
+  InternalSchemaElement,
   isGone,
   isNotFound,
   isObject,
@@ -69,6 +71,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  Coding,
   Meta,
   OperationOutcome,
   Project,
@@ -114,6 +117,8 @@ import type { HumanNameResource } from './lookups/humanname';
 import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
+import { findTerminologyResource } from './operations/utils/terminology';
+import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -211,6 +216,8 @@ export interface RepositoryContext {
    * and that the current user has access to the referenced resource.
    */
   checkReferencesOnWrite?: boolean;
+
+  validateTerminology?: boolean;
 
   /**
    * Optional flag to include Medplum extended meta fields.
@@ -930,7 +937,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
-    const issues = validateResource(resource);
+    const tokens = new Map<InternalSchemaElement, Coding[]>();
+    const issues = validateResource(resource, { collect: { tokens } });
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
@@ -940,8 +948,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    if (this.context.currentProject?.features?.includes('')) {
-      // Validate terminology
+    if (this.context.validateTerminology) {
+      // Validate terminology bindings
+      for (const [schema, codings] of tokens.entries()) {
+        if (schema.binding?.strength !== 'required' || !schema.binding.valueSet) {
+          continue;
+        }
+
+        const valueSet = await findTerminologyResource('ValueSet', schema.binding.valueSet);
+        const codeIssues = await validateCodingInValueSet(valueSet);
+      }
     }
 
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
@@ -955,7 +971,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+  private async validateProfiles(resource: Resource, profileUrls: string[], options?: ValidatorOptions): Promise<void> {
     const logger = getLogger();
     for (const url of profileUrls) {
       const loadStart = process.hrtime.bigint();
@@ -969,7 +985,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validateResource(resource, { profile });
+      validateResource(resource, { ...options, profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       logger.debug('Profile loaded', {
         url,
