@@ -147,9 +147,6 @@ export async function importConceptMap(
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
   for (const mapping of mappings) {
-    if (!mapping.source.code) {
-      throw new OperationOutcomeError(badRequest('Source code for mapping is required'));
-    }
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
@@ -163,7 +160,7 @@ function gatherResourceMappings(conceptMap: WithId<ConceptMap>): ConceptMapping[
   for (const group of conceptMap.group ?? EMPTY_ARRAY) {
     for (const mapping of group.element ?? EMPTY_ARRAY) {
       if (!mapping.code) {
-        throw new OperationOutcomeError(badRequest('Source code for mapping is required'));
+        continue;
       }
       for (const target of mapping.target ?? EMPTY_ARRAY) {
         const entry: ConceptMapping = {
