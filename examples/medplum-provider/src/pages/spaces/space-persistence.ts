@@ -24,15 +24,10 @@ export async function createConversationTopic(
   const topic: Communication = {
     resourceType: 'Communication',
     status: 'in-progress',
-    category: [
+    identifier: [
       {
-        coding: [
-          {
-            system: 'http://medplum.com/ai-message',
-            code: 'ai-message-topic',
-            display: 'AI Message Topic',
-          },
-        ],
+        system: 'http://medplum.com/ai-message',
+        value: 'ai-message-topic',
       },
     ],
     subject: {
@@ -68,15 +63,10 @@ export async function saveMessage(
   const communication: Communication = {
     resourceType: 'Communication',
     status: 'completed',
-    category: [
+    identifier: [
       {
-        coding: [
-          {
-            system: 'http://medplum.com/ai-message',
-            code: 'ai-message',
-            display: 'AI Message',
-          },
-        ],
+        system: 'http://medplum.com/ai-message',
+        value: 'ai-message',
       },
     ],
     partOf: [
@@ -145,7 +135,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
  */
 export async function loadRecentTopics(medplum: MedplumClient, limit: number = 10): Promise<Communication[]> {
   return medplum.searchResources('Communication', {
-    category: 'http://medplum.com/ai-message|ai-message-topic',
+    identifier: 'http://medplum.com/ai-message|ai-message-topic',
     _sort: '-_lastUpdated',
     _count: String(limit),
   });

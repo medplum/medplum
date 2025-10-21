@@ -41,8 +41,17 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
   useEffect(() => {
     const fetchAllCommunications = async (): Promise<void> => {
       const searchParams = new URLSearchParams(query);
+      searchParams.append('identifier:not', 'ai-message');
       searchParams.append('part-of:missing', 'true');
-      const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+      const searchResultBundle = await medplum.search('Communication', searchParams, { cache: 'no-cache' });
+
+      // Extract resources from the Bundle
+      const searchResult =
+        Array.isArray(searchResultBundle.entry)
+          ? searchResultBundle.entry
+              .map((entry) => entry.resource as Communication)
+              .filter((r): r is Communication => !!r)
+          : [];
 
       const partOfReferences = searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ');
 
