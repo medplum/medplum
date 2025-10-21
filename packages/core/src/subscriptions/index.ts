@@ -10,7 +10,7 @@ import { normalizeErrorString, OperationOutcomeError, serverError, validationErr
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import type { ProfileResource, WithId } from '../utils';
-import { deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
@@ -553,54 +553,22 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  // Check accounts agreement
-  if (subscription.meta?.accounts?.length) {
-    // Check if at least one account from subscription is in the resource's accounts
-    const resourceAccounts = resource.meta?.accounts;
+  const subscriptionAccounts = extractAccountReferences(subscription.meta) ?? [];
+  const resourceAccounts = extractAccountReferences(resource.meta) ?? [];
 
-    if (resourceAccounts?.length) {
-      // Check if at least one subscription account matches at least one resource account
-      const hasMatchingAccount = subscription.meta.accounts.some((subAccount) =>
+  if (subscriptionAccounts.length) {
+    // Check if there is any common account between the subscription and the resource
+    if (
+      !subscriptionAccounts.some((subAccount) =>
         resourceAccounts.some((resAccount) => resAccount.reference === subAccount.reference)
-      );
-
-      if (!hasMatchingAccount) {
-        logger?.debug('Subscription suppressed due to mismatched meta.accounts', {
-          subscriptionId: subscription.id,
-          resourceId: resource.id,
-        });
-        return false;
-      }
-    } else {
-      // No accounts on resource, check the meta.account field
-      const resourceAccountRefStr = resource.meta?.account?.reference;
-      if (!resourceAccountRefStr) {
-        logger?.debug('Subscription suppressed due to missing account on resource', {
-          subscriptionId: subscription.id,
-          resourceId: resource.id,
-        });
-        return false;
-      }
-
-      const hasMatchingAccount = subscription.meta.accounts.some(
-        (subAccount) => subAccount.reference === resourceAccountRefStr
-      );
-
-      if (!hasMatchingAccount) {
-        logger?.debug('Subscription suppressed due to mismatched account', {
-          subscriptionId: subscription.id,
-          resourceId: resource.id,
-        });
-        return false;
-      }
+      )
+    ) {
+      logger?.debug('Subscription suppressed due to mismatched accounts', {
+        subscriptionId: subscription.id,
+        resourceId: resource.id,
+      });
+      return false;
     }
-  } else if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    // Should we eventually remove this once we've seen who is relying on this behavior?
-    logger?.warn('Subscription suppressed due to mismatched meta.account', {
-      subscriptionId: subscription.id,
-      resourceId: resource.id,
-    });
-    return false;
   }
 
   return true;

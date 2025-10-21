@@ -12,7 +12,6 @@ import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
-  arrayify,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -26,6 +25,7 @@ import {
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
+  extractAccountReferences,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
@@ -59,7 +59,7 @@ import {
   toPeriod,
   toTypedValue,
   validateResource,
-  validateResourceType,
+  validateResourceType
 } from '@medplum/core';
 import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
 import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
@@ -1939,7 +1939,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<Reference[] | undefined> {
     if (updated.meta && this.canWriteAccount()) {
       // If the user specifies accounts, and they have permission, then use the provided accounts.
-      const updatedAccounts = this.extractAccountReferences(updated.meta);
+      const updatedAccounts = extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
 
@@ -1954,7 +1954,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (updated.resourceType === 'Patient') {
       // When examining a Patient resource, we only look at the individual patient
       // We should not call `getPatients` and `readReference`
-      const existingAccounts = this.extractAccountReferences(existing?.meta);
+      const existingAccounts = extractAccountReferences(existing?.meta);
       if (existingAccounts?.length) {
         for (const account of existingAccounts) {
           accounts.add(account.reference as string);
@@ -1970,7 +1970,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
 
         // If the patient has an account, then use it as the resource account.
-        const patientAccounts = this.extractAccountReferences(patient.meta);
+        const patientAccounts = extractAccountReferences(patient.meta);
         if (patientAccounts?.length) {
           for (const account of patientAccounts) {
             if (account.reference) {
@@ -1990,21 +1990,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       result.push({ reference });
     }
     return result;
-  }
-
-  private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
-    if (!meta) {
-      return undefined;
-    }
-    if (meta.accounts && meta.account) {
-      const accounts = meta.accounts;
-      if (accounts.some((a) => a.reference === meta.account?.reference)) {
-        return accounts;
-      }
-      return [meta.account, ...accounts];
-    } else {
-      return arrayify(meta.accounts ?? meta.account);
-    }
   }
 
   /**
