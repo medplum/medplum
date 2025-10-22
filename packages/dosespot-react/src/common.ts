@@ -29,6 +29,11 @@ export const DOSESPOT_SEARCH_MEDICATIONS_BOT: Identifier = {
   value: 'dosespot-search-medication-bot',
 };
 
+export const DOSESPOT_SEARCH_ALLERGENS_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-search-allergen-bot',
+};
+
 export const DOSESPOT_MEDICATION_HISTORY_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'dosespot-medication-history-bot',
