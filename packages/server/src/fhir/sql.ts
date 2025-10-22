@@ -5,7 +5,7 @@ import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
-import type { ShardPool, ShardPoolClient } from '../sharding';
+import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 

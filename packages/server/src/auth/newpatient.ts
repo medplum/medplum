@@ -6,9 +6,9 @@ import type { Login, Patient, ProjectMembership, Reference, User } from '@medplu
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { getGlobalSystemRepo, getProjectAndProjectShardId } from '../sharding';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { createProfile, createProjectMembership } from './utils';
 

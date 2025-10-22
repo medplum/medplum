@@ -30,6 +30,7 @@ export interface RegisterResponse {
   readonly accessToken: string;
   readonly user: WithId<User>;
   readonly project: WithId<Project>;
+  readonly projectShardId: string;
   readonly login: WithId<Login>;
   readonly membership: WithId<ProjectMembership>;
   readonly profile: WithId<ProfileResource>;
@@ -69,7 +70,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     allowNoMembership: true,
   });
 
-  const { membership, client, project, profile } = await createProject(projectName, user);
+  const { membership, client, project, projectShardId, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
     user,
@@ -85,6 +86,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     accessToken: token.accessToken,
     user,
     project,
+    projectShardId,
     login,
     membership: membership as WithId<ProjectMembership>,
     profile: profile as WithId<ProfileResource>,

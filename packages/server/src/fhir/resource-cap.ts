@@ -12,7 +12,7 @@ import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { AuthState } from '../oauth/middleware';
-import { getProjectShardId } from '../sharding';
+import { getProjectShardId } from '../sharding/sharding-utils';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;
