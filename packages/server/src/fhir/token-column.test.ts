@@ -139,12 +139,8 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
-      expect(cond).toBeInstanceOf(Condition);
+      expect(expr).toBeInstanceOf(Condition);
+      const cond = expr as Condition;
       expect(cond.column).toBeInstanceOf(Column);
       expect((cond.column as Column).actualColumnName).toBe('__identifier');
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
@@ -169,12 +165,8 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
-      expect(cond).toBeInstanceOf(Condition);
+      expect(expr).toBeInstanceOf(Condition);
+      const cond = expr as Condition;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
 
       // Searching for just the value - parameter is now an array
@@ -196,11 +188,8 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
+      expect(expr).toBeInstanceOf(Condition);
+      const cond = expr as Condition;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
 
       // Searching for just the system - parameter is now an array
@@ -222,11 +211,8 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
+      expect(expr).toBeInstanceOf(Condition);
+      const cond = expr as Condition;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
 
       // Searching for NULL_SYSTEM with value - parameter is now an array
@@ -249,12 +235,8 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      // Now creates a single expression with both values in the parameter array
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
+      expect(expr).toBeInstanceOf(Condition);
+      const cond = expr as Condition;
       expect(cond.operator).toBe('ARRAY_OVERLAPS');
 
       // Both hashes are now in a single parameter array (more efficient SQL)
@@ -277,8 +259,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
 
-      const disjunction = expr as Disjunction;
-      const cond = disjunction.expressions[0] as Condition;
+      const cond = expr as Condition;
 
       // Should NOT be lowercased (identifiers are case-sensitive) - parameter is now an array
       const expectedHash = hashTokenColumnValue(DELIM + 'ABC123');
@@ -299,8 +280,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       const expr = buildTokenColumnsSearchFilter('ResearchStudy', 'ResearchStudy', param, filter);
 
-      const disjunction = expr as Disjunction;
-      const cond = disjunction.expressions[0] as Condition;
+      const cond = expr as Condition;
 
       expect((cond.column as Column).actualColumnName).toBe('__sharedTokens');
 
@@ -327,7 +307,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
-      expect(negation.expression).toBeInstanceOf(Disjunction);
+      expect(negation.expression).toBeInstanceOf(Condition);
     });
 
     test('NOT_EQUALS operator with single value', () => {
@@ -346,7 +326,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
-      expect(negation.expression).toBeInstanceOf(Disjunction);
+      expect(negation.expression).toBeInstanceOf(Condition);
     });
 
     test('NOT operator with comma-separated values', () => {
@@ -365,13 +345,11 @@ describe('buildTokenColumnsSearchFilter', () => {
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
-      expect(negation.expression).toBeInstanceOf(Disjunction);
+      expect(negation.expression).toBeInstanceOf(Condition);
 
       // The inner disjunction now has 1 expression with both values in the parameter array
-      const disjunction = negation.expression as Disjunction;
-      expect(disjunction.expressions).toHaveLength(1);
-
-      const cond = disjunction.expressions[0] as Condition;
+      const cond = negation.expression as Condition;
+      expect(cond.operator).toBe('ARRAY_OVERLAPS');
       const expectedHash1 = hashTokenColumnValue(DELIM + '12345');
       const expectedHash2 = hashTokenColumnValue(DELIM + '67890');
       expect(cond.parameter).toEqual([expectedHash1, expectedHash2]);
@@ -646,12 +624,10 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter) as Condition;
 
-      expect(expr).toBeInstanceOf(Disjunction);
-      const disjunction = expr as Disjunction;
-      const cond = disjunction.expressions[0] as TypedCondition<'ARRAY_OVERLAPS'>;
-      expect(cond.operator).toBe('ARRAY_OVERLAPS');
+      expect(expr).toBeInstanceOf(Condition);
+      expect(expr.operator).toBe('ARRAY_OVERLAPS');
     });
   });
 

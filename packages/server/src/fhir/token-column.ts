@@ -184,7 +184,7 @@ export function buildTokenColumnsSearchFilter(
       filter.operator satisfies TokenQueryOperator;
 
       // https://www.hl7.org/fhir/r4/search.html#combining
-      const expressions = buildTokenColumnsWhereConditionEqualsAndExact(
+      const expression = buildTokenColumnsWhereConditionEqualsAndExact(
         impl,
         tableName,
         filter.code,
@@ -192,11 +192,11 @@ export function buildTokenColumnsSearchFilter(
         filter.value
       );
 
-      const expression = new Disjunction(expressions);
       if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
         return new Negation(expression);
+      } else {
+        return expression;
       }
-      return expression;
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
@@ -314,7 +314,7 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
   code: string,
   operator: TokenQueryOperator,
   filterValue: string
-): Expression[] {
+): Expression {
   const searchStrings: string[] = [];
   const queries = splitSearchOnComma(filterValue).map((query) => query.trim());
   for (const query of queries) {
@@ -358,8 +358,7 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
     searchStrings,
     'UUID[]'
   );
-  // list of one to match the signature of the function
-  return [condition];
+  return condition;
 }
 
 export function escapeRegexString(str: string): string {
