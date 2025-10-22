@@ -152,30 +152,21 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   validate(): OperationOutcomeIssue[] {
-    // Check root constraints
-    this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
-
     checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
+    // Check root constraints
+    this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
     crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
-    const issues = this.issues;
-
-    let foundError = false;
-    for (const issue of issues) {
+    for (const issue of this.issues) {
       if (issue.severity === 'error') {
-        foundError = true;
+        throw new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: this.issues,
+        });
       }
     }
-
-    if (foundError) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        issue: issues,
-      });
-    }
-
-    return issues;
+    return this.issues;
   }
 
   onExitObject(_path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
@@ -253,7 +244,6 @@ class ResourceValidator implements CrawlerVisitor {
           element.binding.strength === 'required' &&
           isTerminologyType(value.type)
         ) {
-          // Index token
           let arr = this.collect.tokens.get(element);
           arr = append(arr, value);
           this.collect.tokens.set(element, arr);
@@ -477,8 +467,9 @@ class ResourceValidator implements CrawlerVisitor {
       '%ucum': toTypedValue(UCUM),
     };
 
-    if (this.resourceStack.length > 0) {
-      variables['%resource'] = toTypedValue(this.resourceStack[this.resourceStack.length - 1]);
+    const resource = this.currentResource();
+    if (resource) {
+      variables['%resource'] = toTypedValue(resource);
     }
 
     if (isResource(this.root.value)) {
