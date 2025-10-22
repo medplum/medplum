@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Client } from 'pg';
+import type { Client, PoolClient } from 'pg';
 import type { CTE, Operator } from './sql';
 import {
   Column,
   Condition,
   Constant,
+  InsertQuery,
   Negation,
   SelectQuery,
   SqlBuilder,
@@ -278,6 +279,12 @@ describe('SqlBuilder', () => {
 
       await sql.execute(conn);
       expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+    });
+
+    test('Empty insert is no-op', async () => {
+      const db = { query: jest.fn() } as unknown as PoolClient;
+      await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
+      expect(db.query).not.toHaveBeenCalled();
     });
 
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {

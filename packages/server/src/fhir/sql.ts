@@ -1134,6 +1134,13 @@ export class InsertQuery extends BaseQuery {
       first = false;
     }
   }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    if (!this.values?.length) {
+      return [];
+    }
+    return super.execute(conn);
+  }
 }
 
 export class DeleteQuery extends BaseQuery {
