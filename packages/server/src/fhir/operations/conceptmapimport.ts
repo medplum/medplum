@@ -276,6 +276,10 @@ async function prepareMappingRows(
   db: PoolClient,
   rows: MappingRow[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
+  if (!rows.length) {
+    return rows as Awaited<ReturnType<typeof prepareMappingRows>>;
+  }
+
   const systems = new Set<string>();
   const uniqueMappings = uniqueOn(rows, (r) => {
     systems.add(r.sourceSystem as string);
