@@ -453,17 +453,16 @@ describe('ConceptMap/$import', () => {
   });
 
   test('Handles ConceptMap with no valid mappings', async () => {
-    const map: ConceptMap = {
+    const map: ConceptMap = await repo.createResource({
       resourceType: 'ConceptMap',
       group: [
         {
-          source: 'urn:uuid:41dbf026-0044-48d8-8a15-c4ed46bcf222',
           target: 'urn:uuid:f2334818-8254-4c9f-95a4-335109e78c25',
           element: [{ target: [{ equivalence: 'disjoint' }] }],
         },
       ],
       status: 'active',
-    };
+    });
 
     const pool = getDatabasePool(DatabaseMode.READER);
     const results = await getMappingRows(pool, map);
