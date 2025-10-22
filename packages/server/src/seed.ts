@@ -12,7 +12,7 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-import type { ShardPool } from './sharding';
+import type { ShardPool } from './sharding/sharding-types';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   // Ensure 'global' shard is run first
