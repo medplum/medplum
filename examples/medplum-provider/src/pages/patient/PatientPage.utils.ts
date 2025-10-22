@@ -53,7 +53,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'labs',
-    url: 'ServiceRequest?_fields=_lastUpdated,code,status,orderDetail,category&_offset=0&_sort=-_lastUpdated&category=108252007&patient=%patient.id',
+    url: 'labs',
     label: 'Labs',
   },
   {
