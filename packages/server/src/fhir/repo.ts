@@ -53,7 +53,6 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   SearchParameterType,
-  serverError,
   sleep,
   stringify,
   toPeriod,
@@ -802,6 +801,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Validate resource after all modifications and touchups above are done
     await this.validateResource(result);
+    // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
+    if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
+      await this.checkWebSocketSubscriptionLimit(result);
+    }
+
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
         await validateResourceReferences(this, result);
@@ -888,14 +892,39 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
       const redis = getRedis();
       const project = resource?.meta?.project;
-      if (!project) {
-        throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
+      const author = resource?.meta?.author?.reference;
+      if (!(project && author)) {
+        throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
       }
+      await redis.sadd(`medplum:subscriptions:r4:user:${author}:active`, `Subscription/${resource.id}`);
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
     }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
+    }
+  }
+
+  private async checkWebSocketSubscriptionLimit(resource: WithId<Resource>): Promise<void> {
+    const redis = getRedis();
+    const projectRefStr = resource?.meta?.project;
+    const author = resource?.meta?.author?.reference;
+    if (!(projectRefStr && author)) {
+      throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
+    }
+    const project = await this.readReference<Project>({ reference: projectRefStr });
+    if (!project) {
+      throw new OperationOutcomeError(badRequest('No valid project connected to the specified Subscription.'));
+    }
+    const maxUserWsSubs =
+      project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
+      // We know this is defined in defaults so this is safe to cast
+      (getConfig().defaultMaxUserWebSocketSubscriptions as number);
+    const userSubCount = await redis.scard(`medplum:subscriptions:r4:user:${author}:active`);
+    if (userSubCount >= maxUserWsSubs) {
+      throw new OperationOutcomeError(
+        badRequest(`User has exceeded allotted maximum number of concurrent WebSocket subscriptions: ${maxUserWsSubs}`)
+      );
     }
   }
 
