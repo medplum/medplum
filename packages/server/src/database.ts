@@ -13,8 +13,8 @@ import {
   getPreDeployMigration,
 } from './migrations/migration-utils';
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
-import type { ShardPoolClient } from './sharding';
-import { ShardPool } from './sharding';
+import { DefaultShardPool } from './sharding/shard-pool';
+import type { ShardPool, ShardPoolClient } from './sharding/sharding-types';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -69,9 +69,12 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
       continue;
     }
     const shardPool = await initPool(shardId, shardConfig.database, undefined);
+    const readonlyShardPool =
+      shardConfig.readonlyDatabase && (await initPool(shardId, shardConfig.readonlyDatabase, undefined));
+
     shardPools[shardId] = {
       pool: shardPool,
-      readonlyPool: shardConfig.readonlyDatabase && (await initPool(shardId, shardConfig.readonlyDatabase, undefined)),
+      readonlyPool: readonlyShardPool,
     };
 
     if (shardConfig.database.runMigrations !== false) {
@@ -102,7 +105,7 @@ async function initPool(
     poolConfig.ssl.require = true;
   }
 
-  const pool = new ShardPool(poolConfig, shardId);
+  const pool = new DefaultShardPool(poolConfig, shardId);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -132,10 +135,22 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
 export async function closeDatabase(): Promise<void> {
   for (const pools of [globalPools, ...Object.values(shardPools)]) {
     if (pools.pool) {
+      globalLogger.info('Closing database pool', {
+        shardId: pools.pool.shardId,
+        totalCount: pools.pool.totalCount,
+        idleCount: pools.pool.idleCount,
+        waitingCount: pools.pool.waitingCount,
+      });
       await pools.pool.end();
       pools.pool = undefined;
     }
     if (pools.readonlyPool) {
+      globalLogger.info('Closing readonly database pool', {
+        shardId: pools.readonlyPool.shardId,
+        totalCount: pools.readonlyPool.totalCount,
+        idleCount: pools.readonlyPool.idleCount,
+        waitingCount: pools.readonlyPool.waitingCount,
+      });
       await pools.readonlyPool.end();
       pools.readonlyPool = undefined;
     }
@@ -143,23 +158,35 @@ export async function closeDatabase(): Promise<void> {
 }
 
 async function runMigrations(pool: ShardPool): Promise<void> {
-  const client = await pool.connect();
   let hasLock = false;
+  await withPoolClient(async (client) => {
+    try {
+      hasLock = await acquireAdvisoryLock(client, locks.migration);
+      if (!hasLock) {
+        throw new Error('Failed to acquire migration lock');
+      }
+      await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
+      await migrate(client);
+    } catch (err: any) {
+      globalLogger.error('Database schema migration error', err);
+      throw err;
+    } finally {
+      if (hasLock) {
+        await releaseAdvisoryLock(client, locks.migration);
+      }
+    }
+  }, pool);
+}
+
+export async function withPoolClient<TResult>(
+  callback: (client: ShardPoolClient) => Promise<TResult>,
+  pool: ShardPool
+): Promise<TResult> {
+  const client = await pool.connect();
   try {
-    hasLock = await acquireAdvisoryLock(client, locks.migration);
-    if (!hasLock) {
-      throw new Error('Failed to acquire migration lock');
-    }
-    await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
-    await migrate(client);
-  } catch (err: any) {
-    globalLogger.error('Database schema migration error', err);
-    throw err;
+    return await callback(client);
   } finally {
-    if (hasLock) {
-      await releaseAdvisoryLock(client, locks.migration);
-    }
-    client.release(true); // Ensure migration connection is torn down and not re-used
+    client.release(true);
   }
 }
 
