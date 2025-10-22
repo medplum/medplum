@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding, OperationOutcomeIssue, Reference, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
 import type { FhirPathAtom } from '../fhirpath/atoms';
@@ -16,7 +16,7 @@ import {
 } from '../outcomes';
 import type { TypedValue } from '../types';
 import { PropertyType, isReference, isResource } from '../types';
-import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { append, arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
 import type { CrawlerVisitor, TypedValueWithPath } from './crawler';
 import { crawlTypedValue, getNestedProperty } from './crawler';
 import type {
@@ -110,8 +110,7 @@ const skippedConstraintKeys: Record<string, boolean> = {
 export interface ValidatorOptions {
   profile?: StructureDefinition;
   collect?: {
-    tokens?: Map<InternalSchemaElement, Coding[]>;
-    references?: Map<InternalSchemaElement, Reference[]>;
+    tokens?: Map<InternalSchemaElement, TypedValueWithPath[]>;
   };
 }
 
@@ -129,21 +128,27 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
 class ResourceValidator implements CrawlerVisitor {
   private readonly issues: OperationOutcomeIssue[];
   private readonly root: TypedValue;
-  private currentResource: Resource[];
+  private resourceStack: Resource[];
   private readonly schema: InternalTypeSchema;
+  private readonly collect: ValidatorOptions['collect'];
 
   constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
     this.root = typedValue;
-    this.currentResource = [];
+    this.resourceStack = [];
     if (isResource(typedValue.value)) {
-      this.currentResource.push(typedValue.value);
+      this.resourceStack.push(typedValue.value);
     }
     if (!options?.profile) {
       this.schema = getDataType(typedValue.type);
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
+    this.collect = options?.collect;
+  }
+
+  currentResource(): Resource | undefined {
+    return this.resourceStack[this.resourceStack.length - 1];
   }
 
   validate(): OperationOutcomeIssue[] {
@@ -180,11 +185,11 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   onEnterResource(_path: string, obj: TypedValueWithPath): void {
-    this.currentResource.push(obj.value);
+    this.resourceStack.push(obj.value);
   }
 
   onExitResource(): void {
-    this.currentResource.pop();
+    this.resourceStack.pop();
   }
 
   visitProperty(
@@ -241,6 +246,18 @@ class ResourceValidator implements CrawlerVisitor {
         this.constraintsCheck(value, element);
         this.referenceTypeCheck(value, element);
         this.checkPropertyValue(value);
+
+        if (
+          this.collect?.tokens &&
+          element.binding?.valueSet &&
+          element.binding.strength === 'required' &&
+          isTerminologyType(value.type)
+        ) {
+          // Index token
+          let arr = this.collect.tokens.get(element);
+          arr = append(arr, value);
+          this.collect.tokens.set(element, arr);
+        }
 
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -460,8 +477,8 @@ class ResourceValidator implements CrawlerVisitor {
       '%ucum': toTypedValue(UCUM),
     };
 
-    if (this.currentResource.length > 0) {
-      variables['%resource'] = toTypedValue(this.currentResource[this.currentResource.length - 1]);
+    if (this.resourceStack.length > 0) {
+      variables['%resource'] = toTypedValue(this.resourceStack[this.resourceStack.length - 1]);
     }
 
     if (isResource(this.root.value)) {
@@ -707,4 +724,24 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
     { type: v.type, value: primitiveValue },
     { type: 'Element', value: extensionElement },
   ];
+}
+
+/**
+ * Check if a given type can have a terminology binding, i.e. be restricted to a specific set of values.
+ * @param type - The data type.
+ * @returns Whether the type can have a terminology binding.
+ * @see {@link https://hl7.org/fhir/R4/elementdefinition.html#ElementDefinition-inv|eld-11}
+ */
+function isTerminologyType(type: string): boolean {
+  switch (type) {
+    case 'CodeableConcept':
+    case 'Coding':
+    case 'code':
+    case 'Quantity':
+    case 'string':
+    case 'uri':
+      return true;
+    default:
+      return false;
+  }
 }

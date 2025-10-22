@@ -40,6 +40,8 @@ import { ContentType } from '../contenttype';
 import { generateId } from '../crypto';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
+import type { TypedValueWithPath } from './crawler';
+import type { InternalSchemaElement } from './types';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
 
@@ -1724,6 +1726,23 @@ describe('FHIR resource validation', () => {
     expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
       'Invalid additional property "foo" (Address.foo)'
     );
+  });
+
+  test('Gather tokens', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: 'Patient/123' },
+    };
+
+    const tokens = new Map<InternalSchemaElement, TypedValueWithPath[]>();
+    const issues = validateResource(observation, { collect: { tokens } });
+    expect(issues).toHaveLength(0);
+    expect(tokens.size).toBe(1);
+    expect(Array.from(tokens.values()).flat()).toStrictEqual([
+      { type: 'code', value: 'final', path: 'Observation.status' },
+    ]);
   });
 
   test('Element type code different than path', () => {

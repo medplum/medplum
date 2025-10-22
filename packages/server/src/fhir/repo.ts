@@ -3,9 +3,11 @@
 import type {
   BackgroundJobInteraction,
   Filter,
+  InternalSchemaElement,
   SearchParameterDetails,
   SearchRequest,
   TypedValue,
+  TypedValueWithPath,
   ValidatorOptions,
   WithId,
 } from '@medplum/core';
@@ -33,7 +35,6 @@ import {
   getReferenceString,
   getStatus,
   gone,
-  InternalSchemaElement,
   isGone,
   isNotFound,
   isObject,
@@ -71,6 +72,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  CodeableConcept,
   Coding,
   Meta,
   OperationOutcome,
@@ -80,6 +82,7 @@ import type {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
@@ -937,8 +940,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
-    const tokens = new Map<InternalSchemaElement, Coding[]>();
-    const issues = validateResource(resource, { collect: { tokens } });
+    let options: ValidatorOptions | undefined;
+    if (this.context.validateTerminology) {
+      const tokens = new Map<InternalSchemaElement, TypedValueWithPath[]>();
+      options = { ...options, collect: { tokens } };
+    }
+    const issues = validateResource(resource, options);
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
@@ -948,16 +955,44 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    if (this.context.validateTerminology) {
+    if (this.context.validateTerminology && options?.collect?.tokens?.size) {
       // Validate terminology bindings
-      for (const [schema, codings] of tokens.entries()) {
-        if (schema.binding?.strength !== 'required' || !schema.binding.valueSet) {
-          continue;
+      for (const [schema, values] of options.collect.tokens.entries()) {
+        const url = schema.binding?.valueSet as string;
+        const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+        for (const value of values) {
+          let codings: Coding[] | undefined;
+          switch (value.type) {
+            case 'CodeableConcept':
+              codings = (value.value as CodeableConcept).coding;
+              break;
+            case 'Coding':
+              codings = [value.value as Coding];
+              break;
+            default:
+              codings = [{ code: value.value as string }];
+              break;
+          }
+          if (!codings?.length) {
+            continue;
+          }
+          const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+          if (!matchedCoding) {
+            issues.push({
+              severity: 'error',
+              code: 'value',
+              details: {
+                text: `Value ${JSON.stringify(value.value)} could not be validated against terminology binding ${url}`,
+              },
+              expression: [value.path],
+            });
+          }
         }
-
-        const valueSet = await findTerminologyResource('ValueSet', schema.binding.valueSet);
-        const codeIssues = await validateCodingInValueSet(valueSet);
       }
+    }
+
+    if (issues.some((iss) => iss.severity === 'error')) {
+      throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
     }
 
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds

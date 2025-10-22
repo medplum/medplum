@@ -989,6 +989,23 @@ describe('FHIR Repo', () => {
       );
     }));
 
+  test('Terminology validation', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: { validateTerminology: true } });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/patient-id', value: 'foo' }],
+        name: [{ given: ['Alex'], family: 'Baker' }],
+        gender: 'male',
+      };
+
+      await expect(repo.createResource(patient)).resolves.toBeTruthy();
+      await expect(repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })).rejects.toThrow(
+        `Value "enby" could not be validated against terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
+      );
+    }));
+
   test('Conditional update', () =>
     withTestContext(async () => {
       const mrn = randomUUID();
