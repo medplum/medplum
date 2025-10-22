@@ -95,7 +95,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import type { ShardPool, ShardPoolClient } from '../sharding';
+import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -2953,6 +2953,10 @@ export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): Reposit
     },
     conn
   );
+}
+
+export function getGlobalSystemRepo(): Repository {
+  return getSystemRepo(undefined, 'global');
 }
 
 function lowercaseFirstLetter(str: string): string {

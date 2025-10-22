@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo } from '../sharding';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
 
 export interface NewProjectRequest {

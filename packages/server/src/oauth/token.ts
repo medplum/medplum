@@ -26,7 +26,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { getProjectAndProjectShardId } from '../sharding';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
 import {

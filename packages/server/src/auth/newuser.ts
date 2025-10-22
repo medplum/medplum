@@ -9,10 +9,9 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { getGlobalSystemRepo } from '../sharding';
 import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword } from './utils';
 

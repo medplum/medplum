@@ -48,6 +48,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
@@ -57,6 +58,7 @@ jest.mock('hibp');
 
 describe('FHIR Repo', () => {
   let testProject: WithId<Project>;
+  let testProjectShardId: string;
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
@@ -69,7 +71,8 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProject = await getSystemRepo().createResource({
+    testProjectShardId = GLOBAL_SHARD_ID;
+    testProject = await getSystemRepo(undefined, testProjectShardId).createResource({
       resourceType: 'Project',
       id: randomUUID(),
     });
@@ -99,6 +102,7 @@ describe('FHIR Repo', () => {
           project: createReference(testProject),
         } as WithId<ProjectMembership>,
         project: testProject,
+        projectShardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid author reference');
@@ -621,6 +625,7 @@ describe('FHIR Repo', () => {
 
       const repo1 = await getRepoForLogin({
         project: result1.project,
+        projectShardId: result1.projectShardId,
         membership: result1.membership,
         login: result1.login,
         userConfig: {} as UserConfiguration,
@@ -649,6 +654,7 @@ describe('FHIR Repo', () => {
 
       const repo2 = await getRepoForLogin({
         project: result2.project,
+        projectShardId: result2.projectShardId,
         membership: result2.membership,
         login: result2.login,
         userConfig: {} as UserConfiguration,
@@ -1340,7 +1346,7 @@ describe('FHIR Repo', () => {
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
       const systemRepo = getSystemRepo();
-      const { membership, project } = await registerNew({
+      const { membership, project, projectShardId } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -1348,7 +1354,11 @@ describe('FHIR Repo', () => {
         password: randomUUID(),
       });
 
-      const { membership: membership2, project: project2 } = await registerNew({
+      const {
+        membership: membership2,
+        project: project2,
+        projectShardId: projectShardId2,
+      } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -1364,6 +1374,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership: membership2,
         project: project2,
+        projectShardId: projectShardId2,
         userConfig: {} as UserConfiguration,
       });
       const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
@@ -1380,6 +1391,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project: updatedProject,
+        projectShardId,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
@@ -1393,6 +1405,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project: unlinkedProject,
+        projectShardId,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
@@ -1400,13 +1413,13 @@ describe('FHIR Repo', () => {
 
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
-      const { project, repo, login, membership } = await createTestProject({
+      const { project, projectShardId, repo, login, membership } = await createTestProject({
         withRepo: { extendedMode: false },
         withAccessToken: true,
         withClient: true,
       });
       const extendedRepo = await getRepoForLogin(
-        { login, project, membership, userConfig: {} as UserConfiguration },
+        { login, project, projectShardId, membership, userConfig: {} as UserConfiguration },
         true
       );
 
@@ -1588,6 +1601,7 @@ describe('FHIR Repo', () => {
 
       const repo = await getRepoForLogin({
         project,
+        projectShardId: regResult.projectShardId,
         membership: regResult.membership,
         login: regResult.login,
         userConfig: {} as UserConfiguration,
