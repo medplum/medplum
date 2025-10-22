@@ -154,7 +154,7 @@ export function HomePage(): JSX.Element {
                   <Stack gap={4}>
                     <Radio value="patient" label="Patient" />
                     <Radio value="insurance" label="Insurance" />
-                    <Radio value="customer-account" label="Customer" />
+                    <Radio value="self" label="Our Account" />
                   </Stack>
                 </Radio.Group>
               </div>
