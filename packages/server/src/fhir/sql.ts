@@ -527,6 +527,8 @@ export class SqlBuilder {
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
+    } else if (value === null || value === undefined) {
+      this.append('NULL');
     } else {
       this.values.push(value);
       this.sql.push('$' + this.values.length);

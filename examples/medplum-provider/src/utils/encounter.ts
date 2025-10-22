@@ -66,7 +66,7 @@ export async function createEncounter(
 
   const clinicalImpressionData: ClinicalImpression = {
     resourceType: 'ClinicalImpression',
-    status: 'completed',
+    status: 'in-progress',
     description: 'Initial clinical impression',
     subject: createReference(patient),
     encounter: createReference(encounter),

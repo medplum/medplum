@@ -9,6 +9,7 @@ import type {
   Extension,
   ExtensionValue,
   Identifier,
+  Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -114,7 +115,7 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource.
- * @throws {OperationOutcomeError} If the reference cannot be parsed.
+ * @throws {@link OperationOutcomeError} If the reference cannot be parsed.
  */
 export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
@@ -125,6 +126,26 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type, id];
+}
+
+/**
+ * Normalizes Medplum's `meta.account` and `meta.accounts` into a singular array of FHIR references.
+ * @param meta - The `meta` object of a FHIR resource.
+ * @returns An array of references, or `undefined` if none.
+ */
+export function extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
+  if (!meta) {
+    return undefined;
+  }
+  if (meta.accounts && meta.account) {
+    const accounts = meta.accounts;
+    if (accounts.some((a) => a.reference === meta.account?.reference)) {
+      return accounts;
+    }
+    return [meta.account, ...accounts];
+  } else {
+    return arrayify(meta.accounts ?? meta.account);
+  }
 }
 
 /**
