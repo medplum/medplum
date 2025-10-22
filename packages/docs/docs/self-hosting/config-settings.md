@@ -324,6 +324,8 @@ The fully qualified base URL of the binary storage. This should be the CDK confi
 
 The AWS key ID of the CloudFront signing key that you created before.
 
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
+
 **Created by:** `cdk`
 **Default:** None
 
@@ -331,12 +333,16 @@ The AWS key ID of the CloudFront signing key that you created before.
 
 The private key of the CloudFront signing key.
 
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
+
 **Created by:** `init`
 **Default:** None
 
 ### signingKeyPassphrase (required)
 
 The passphrase of the CloudFront signing key.
+
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
 
 **Created by:** `init`
 **Default:** None
