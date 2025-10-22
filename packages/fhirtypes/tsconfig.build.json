@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "composite": false
-  },
-  "exclude": ["**/*.test.ts"]
+    "composite": false,
+    "noEmit": true
+  }
 }

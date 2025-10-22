@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json",
-    "clean": "rimraf dist/index.js dist/index.d.ts",
+    "clean": "rimraf dist/index*",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest"
