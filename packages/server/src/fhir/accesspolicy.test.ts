@@ -37,12 +37,14 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
+  let testProjectShardId: string;
   let systemRepo: Repository;
 
   beforeAll(async () => {
@@ -51,12 +53,17 @@ describe('AccessPolicy', () => {
   });
 
   beforeEach(async () => {
-    testProject = (await createTestProject()).project;
-    systemRepo = getSystemRepo();
+    const result = await createTestProject();
+    ({ project: testProject, projectShardId: testProjectShardId } = result);
+    systemRepo = getSystemRepo(undefined, testProjectShardId);
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test('empty', () => {
+    expect(true).toBe(true);
   });
 
   test('Access policy restricting read', () =>
@@ -795,6 +802,7 @@ describe('AccessPolicy', () => {
           user: createReference(clientApplication),
         },
         project: testProject,
+        projectShardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -896,6 +904,7 @@ describe('AccessPolicy', () => {
           user: createReference(clientApplication),
         },
         project: testProject,
+        projectShardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -969,7 +978,7 @@ describe('AccessPolicy', () => {
       });
     }));
 
-  test.skip('Readonly choice-of-type fields on write', () =>
+  test.failing('Readonly choice-of-type fields on write', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1013,7 +1022,8 @@ describe('AccessPolicy', () => {
         multipleBirthInteger: 2,
         active: true,
       });
-    }));
+    })
+  );
 
   test('Try to create with readonly property', () =>
     withTestContext(async () => {
@@ -1046,7 +1056,7 @@ describe('AccessPolicy', () => {
       expect(patient.identifier).toBeUndefined();
     }));
 
-  test.skip('Try to create with readonly choice-of-type property', () =>
+  test('Try to create with readonly choice-of-type property', () =>
     withTestContext(async () => {
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
@@ -1197,7 +1207,7 @@ describe('AccessPolicy', () => {
       expect(bundle2.entry?.length).toStrictEqual(1);
     }));
 
-  test.skip('Try to remove readonly choice-of-type property', () =>
+  test.failing('Try to remove readonly choice-of-type property', () =>
     withTestContext(async () => {
       // Create a patient with an identifier
       const patient1 = await systemRepo.createResource<Patient>({
@@ -1231,7 +1241,8 @@ describe('AccessPolicy', () => {
       // This returns success, but multipleBirth[x] is still there
       const patient2 = await repo.updateResource<Patient>(rest);
       expect(patient2.multipleBirthInteger).toStrictEqual(2);
-    }));
+    })
+  );
 
   test('Hidden fields on read', () =>
     withTestContext(async () => {
@@ -1485,7 +1496,7 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
     }));
 
-  test.skip('Hidden choice-of-type field', () =>
+  test.failing('Hidden choice-of-type field', () =>
     withTestContext(async () => {
       // Create an Observation with a valueQuantity
       const obsQuantity = await systemRepo.createResource<Observation>({
@@ -1536,7 +1547,8 @@ describe('AccessPolicy', () => {
       });
       expect(readResource2.valueQuantity).toBeUndefined();
       expect(readResource2.valueString).toBeDefined();
-    }));
+    })
+  );
 
   test('Hidden meta field', () =>
     withTestContext(async () => {
@@ -1762,6 +1774,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership,
         project: testProject,
+        projectShardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -1810,6 +1823,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership,
         project: testProject,
+        projectShardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -1820,10 +1834,12 @@ describe('AccessPolicy', () => {
   test('Project admin with access policy', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project],
+        projectShardId,
         strictMode: true,
         extendedMode: true,
       });
@@ -1844,6 +1860,7 @@ describe('AccessPolicy', () => {
       const adminInviteResult = await inviteUser({
         resourceType: 'Practitioner',
         project,
+        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -1860,6 +1877,7 @@ describe('AccessPolicy', () => {
       const inviteResult = await inviteUser({
         resourceType: 'Patient',
         project,
+        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -1870,6 +1888,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership,
         project,
+        projectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -1908,6 +1927,7 @@ describe('AccessPolicy', () => {
         name: 'Test Project',
         systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
       });
+      const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -1918,7 +1938,13 @@ describe('AccessPolicy', () => {
       });
 
       const repo2 = await getRepoForLogin(
-        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        {
+          login: { resourceType: 'Login' } as Login,
+          membership,
+          project,
+          projectShardId,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
 
@@ -1984,7 +2010,7 @@ describe('AccessPolicy', () => {
 
   test('Project admin cannot override synthetic access policy for admin types', () =>
     withTestContext(async () => {
-      const { project, login, membership } = await createTestProject({
+      const { project, projectShardId, login, membership } = await createTestProject({
         withAccessToken: true,
         withClient: true,
         project: {
@@ -1996,7 +2022,10 @@ describe('AccessPolicy', () => {
           resource: [{ resourceType: '*' }, { resourceType: 'Project' }, { resourceType: 'ProjectMembership' }],
         },
       });
-      const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+      const repo = await getRepoForLogin(
+        { login, project, membership, projectShardId, userConfig: {} as UserConfiguration },
+        true
+      );
 
       const check1 = await repo.readResource<Project>('Project', project.id);
       expect(check1.id).toStrictEqual(project.id);
@@ -2055,6 +2084,7 @@ describe('AccessPolicy', () => {
   test('Project admin can modify meta.account', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminMembership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -2077,6 +2107,7 @@ describe('AccessPolicy', () => {
           login: { resourceType: 'Login' } as Login,
           membership: adminMembership,
           project,
+          projectShardId,
           userConfig: {} as UserConfiguration,
         },
         true
@@ -2086,6 +2117,7 @@ describe('AccessPolicy', () => {
           login: { resourceType: 'Login' } as Login,
           membership: nonAdminMembership,
           project,
+          projectShardId,
           userConfig: {} as UserConfiguration,
         },
         true
@@ -2166,6 +2198,7 @@ describe('AccessPolicy', () => {
   test('Project admin can set multiple accounts', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
 
       const adminMembership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -2188,6 +2221,7 @@ describe('AccessPolicy', () => {
           login: { resourceType: 'Login' } as Login,
           membership: adminMembership,
           project,
+          projectShardId,
           userConfig: {} as UserConfiguration,
         },
         true
@@ -2197,6 +2231,7 @@ describe('AccessPolicy', () => {
           login: { resourceType: 'Login' } as Login,
           membership: nonAdminMembership,
           project,
+          projectShardId,
           userConfig: {} as UserConfiguration,
         },
         true
@@ -2262,7 +2297,7 @@ describe('AccessPolicy', () => {
 
   test('Super Admin with access policy', () =>
     withTestContext(async () => {
-      const { project, membership } = await createTestProject({ superAdmin: true, withClient: true });
+      const { project, membership, projectShardId } = await createTestProject({ superAdmin: true, withClient: true });
 
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
@@ -2288,6 +2323,7 @@ describe('AccessPolicy', () => {
       const adminInviteResult = await inviteUser({
         resourceType: 'Practitioner',
         project,
+        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -2300,6 +2336,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership: miniAdminMembership,
         project,
+        projectShardId,
         userConfig: {} as UserConfiguration,
       });
 
@@ -2327,6 +2364,7 @@ describe('AccessPolicy', () => {
       const inviteResult = await inviteUser({
         resourceType: 'Patient',
         project,
+        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -2463,7 +2501,7 @@ describe('AccessPolicy', () => {
 
   test('Empty access policy allows reading StructureDefinitions', () =>
     withTestContext(async () => {
-      const { project, login, membership } = await registerNew({
+      const { project, projectShardId, login, membership } = await registerNew({
         firstName: 'First',
         lastName: 'Last',
         projectName: 'Empty Access Policy Test',
@@ -2486,7 +2524,13 @@ describe('AccessPolicy', () => {
 
       // Get a repo for the user
       const repo = await getRepoForLogin(
-        { login, membership: updatedMembership, project, userConfig: {} as UserConfiguration },
+        {
+          login,
+          membership: updatedMembership,
+          project,
+          projectShardId,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
 
@@ -2558,7 +2602,7 @@ describe('AccessPolicy', () => {
 
   test('Project Admin cannot link Projects', async () =>
     withTestContext(async () => {
-      const { project, membership, login } = await registerNew({
+      const { project, projectShardId, membership, login } = await registerNew({
         firstName: 'Link',
         lastName: 'Test',
         projectName: 'Project link test',
@@ -2566,7 +2610,10 @@ describe('AccessPolicy', () => {
         password: randomUUID(),
       });
       expect(project.link).toBeUndefined();
-      const repo = await getRepoForLogin({ login, membership, project, userConfig: {} as UserConfiguration }, true);
+      const repo = await getRepoForLogin(
+        { login, membership, project, projectShardId, userConfig: {} as UserConfiguration },
+        true
+      );
 
       project.link = [{ project: { reference: 'Project/foo' } }, { project: { reference: 'Project/bar' } }];
 
@@ -2590,7 +2637,7 @@ describe('AccessPolicy', () => {
 
   test('AccessPolicy for Subscriptions with author in criteria', async () =>
     withTestContext(async () => {
-      const { project, login, membership } = await registerNew({
+      const { project, projectShardId, login, membership } = await registerNew({
         firstName: 'Project',
         lastName: 'Admin',
         projectName: 'Testing AccessPolicy for Subscriptions',
@@ -2619,7 +2666,7 @@ describe('AccessPolicy', () => {
 
       // Repo for project admin
       const projAdminRepo = await getRepoForLogin(
-        { login, membership, project, userConfig: {} as UserConfiguration },
+        { login, membership, project, projectShardId, userConfig: {} as UserConfiguration },
         true
       );
 
