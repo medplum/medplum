@@ -256,7 +256,7 @@ describe('Google Auth', () => {
       const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
-        setting: [{ name: 'google-auth-profile-pictures', valueBoolean: true }],
+        setting: [{ name: 'googleAuthProfilePictures', valueBoolean: true }],
       });
     });
 

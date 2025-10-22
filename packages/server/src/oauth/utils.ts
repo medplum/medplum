@@ -436,7 +436,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   if (
     login.authMethod === 'google' &&
     login.pictureUrl &&
-    project.setting?.find((s) => s.name === 'google-auth-profile-pictures' && s.valueBoolean)
+    project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
   ) {
     try {
       const [resourceType, id] = parseReference(membership.profile);
