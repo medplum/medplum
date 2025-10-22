@@ -5,7 +5,7 @@ import type { ClientApplication, Practitioner, Project, ProjectMembership, User 
 import { bcryptHashPassword } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
-import { DatabaseMode, getDatabasePool } from './database';
+import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
@@ -32,38 +32,39 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
 }
 
 export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
-  const conn = await pool.connect();
-  const systemRepo = getSystemRepo(conn);
+  await withPoolClient(async (client) => {
+    const systemRepo = getSystemRepo(client);
 
-  if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded', { shardId: pool.shardId });
-    return;
-  }
+    if (await isSeeded(systemRepo)) {
+      globalLogger.info('Already seeded', { shardId: pool.shardId });
+      return;
+    }
 
-  await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo, config);
+    await systemRepo.withTransaction(async () => {
+      await createSuperAdmin(systemRepo, config);
 
-    globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
-    let startTime = Date.now();
-    await rebuildR4StructureDefinitions(systemRepo);
-    globalLogger.info('Finished building structure definitions', {
-      shardId: pool.shardId,
-      durationMs: Date.now() - startTime,
+      globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
+      let startTime = Date.now();
+      await rebuildR4StructureDefinitions(systemRepo);
+      globalLogger.info('Finished building structure definitions', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
+
+      globalLogger.info('Building value sets...', { shardId: pool.shardId });
+      startTime = Date.now();
+      await rebuildR4ValueSets(systemRepo);
+      globalLogger.info('Finished building value sets', { shardId: pool.shardId, durationMs: Date.now() - startTime });
+
+      globalLogger.info('Building search parameters...', { shardId: pool.shardId });
+      startTime = Date.now();
+      await rebuildR4SearchParameters(systemRepo);
+      globalLogger.info('Finished building search parameters', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
     });
-
-    globalLogger.info('Building value sets...', { shardId: pool.shardId });
-    startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
-    globalLogger.info('Finished building value sets', { shardId: pool.shardId, durationMs: Date.now() - startTime });
-
-    globalLogger.info('Building search parameters...', { shardId: pool.shardId });
-    startTime = Date.now();
-    await rebuildR4SearchParameters(systemRepo);
-    globalLogger.info('Finished building search parameters', {
-      shardId: pool.shardId,
-      durationMs: Date.now() - startTime,
-    });
-  });
+  }, pool);
 }
 
 async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
