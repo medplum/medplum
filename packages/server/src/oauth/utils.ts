@@ -44,12 +44,12 @@ import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getRedis } from '../redis';
-import { getGlobalSystemRepo, getProjectAndProjectShardId } from '../sharding';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import {
   AuditEventOutcome,
   createAuditEvent,

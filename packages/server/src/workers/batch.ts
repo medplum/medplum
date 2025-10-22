@@ -99,12 +99,13 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
  */
 export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
-  const { login, project, membership } = job.data.authState;
+  const { login, project, membership, projectShardId } = job.data.authState;
   const logger = getLogger();
+  const systemRepo = getSystemRepo(undefined, projectShardId);
 
   // Prepare the original submitting user's repo
-  const userConfig = await getUserConfiguration(getSystemRepo(), project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const repo = await getRepoForLogin({ login, project, projectShardId, membership, userConfig }, true);
   const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',
@@ -115,7 +116,6 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     body: bundle,
   };
 
-  const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
 
   // Intentionally swallow all errors thrown during or after execution of the batch request, since we do NOT want to
