@@ -76,6 +76,7 @@ import type {
   Coding,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Project,
   Reference,
   Resource,
@@ -940,61 +941,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
+    // Prepare validator options
     let options: ValidatorOptions | undefined;
     if (this.context.validateTerminology) {
       const tokens = new Map<InternalSchemaElement, TypedValueWithPath[]>();
       options = { ...options, collect: { tokens } };
     }
+
+    // Validate resource against base FHIR spec
     const issues = validateResource(resource, options);
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
 
+    // Validate profiles after verifying compliance with base spec
     const profileUrls = resource.meta?.profile;
     if (profileUrls) {
-      await this.validateProfiles(resource, profileUrls);
+      await this.validateProfiles(resource, profileUrls, options);
     }
 
+    // (Optionally) check any required terminology bindings found
     if (this.context.validateTerminology && options?.collect?.tokens?.size) {
-      // Validate terminology bindings
-      for (const [schema, values] of options.collect.tokens.entries()) {
-        const url = schema.binding?.valueSet as string;
-        const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
-        for (const value of values) {
-          let codings: Coding[] | undefined;
-          switch (value.type) {
-            case 'CodeableConcept':
-              codings = (value.value as CodeableConcept).coding;
-              break;
-            case 'Coding':
-              codings = [value.value as Coding];
-              break;
-            default:
-              codings = [{ code: value.value as string }];
-              break;
-          }
-          if (!codings?.length) {
-            continue;
-          }
-          const matchedCoding = await validateCodingInValueSet(valueSet, codings);
-          if (!matchedCoding) {
-            issues.push({
-              severity: 'error',
-              code: 'value',
-              details: {
-                text: `Value ${JSON.stringify(value.value)} could not be validated against terminology binding ${url}`,
-              },
-              expression: [value.path],
-            });
-          }
-        }
+      await this.validateTerminology(options.collect.tokens, issues);
+      if (issues.some((iss) => iss.severity === 'error')) {
+        throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
       }
     }
 
-    if (issues.some((iss) => iss.severity === 'error')) {
-      throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
-    }
-
+    // Track latency for successful validation
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
     recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
@@ -1027,6 +1001,44 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         loadTime,
         validateTime,
       });
+    }
+  }
+
+  private async validateTerminology(
+    tokens: Map<InternalSchemaElement, TypedValueWithPath[]>,
+    issues: OperationOutcomeIssue[]
+  ): Promise<void> {
+    for (const [schema, values] of tokens.entries()) {
+      const url = schema.binding?.valueSet as string;
+      const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+
+      for (const value of values) {
+        let codings: Coding[] | undefined;
+        switch (value.type) {
+          case 'CodeableConcept':
+            codings = (value.value as CodeableConcept).coding;
+            break;
+          case 'Coding':
+            codings = [value.value as Coding];
+            break;
+          default:
+            codings = [{ code: value.value as string }];
+            break;
+        }
+        if (!codings?.length) {
+          continue;
+        }
+
+        const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+        if (!matchedCoding) {
+          issues.push({
+            severity: 'error',
+            code: 'value',
+            details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+            expression: [value.path],
+          });
+        }
+      }
     }
   }
 

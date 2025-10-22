@@ -1002,7 +1002,7 @@ describe('FHIR Repo', () => {
 
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await expect(repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })).rejects.toThrow(
-        `Value "enby" could not be validated against terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
+        `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
       );
     }));
 
