@@ -237,17 +237,7 @@ class ResourceValidator implements CrawlerVisitor {
         this.constraintsCheck(value, element);
         this.referenceTypeCheck(value, element);
         this.checkPropertyValue(value);
-
-        if (
-          this.collect?.tokens &&
-          element.binding?.valueSet &&
-          element.binding.strength === 'required' &&
-          isTerminologyType(value.type)
-        ) {
-          let arr = this.collect.tokens.get(element);
-          arr = append(arr, value);
-          this.collect.tokens.set(element, arr);
-        }
+        this.collectValue(value, element);
 
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -459,6 +449,19 @@ class ResourceValidator implements CrawlerVisitor {
         value.path
       )
     );
+  }
+
+  private collectValue(value: TypedValueWithPath, element: InternalSchemaElement): void {
+    if (
+      this.collect?.tokens &&
+      element.binding?.valueSet &&
+      element.binding.strength === 'required' &&
+      isTerminologyType(value.type)
+    ) {
+      let arr = this.collect.tokens.get(element);
+      arr = append(arr, value);
+      this.collect.tokens.set(element, arr);
+    }
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValueWithPath): boolean {
