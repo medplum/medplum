@@ -110,7 +110,7 @@ const skippedConstraintKeys: Record<string, boolean> = {
 export interface ValidatorOptions {
   profile?: StructureDefinition;
   collect?: {
-    tokens?: Map<InternalSchemaElement, TypedValueWithPath[]>;
+    tokens?: Record<string, TypedValueWithPath[]>;
   };
 }
 
@@ -452,16 +452,33 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   private collectValue(value: TypedValueWithPath, element: InternalSchemaElement): void {
-    if (
-      this.collect?.tokens &&
-      element.binding?.valueSet &&
-      element.binding.strength === 'required' &&
-      isTerminologyType(value.type)
-    ) {
-      let arr = this.collect.tokens.get(element);
-      arr = append(arr, value);
-      this.collect.tokens.set(element, arr);
+    if (element.binding?.valueSet && element.binding.strength === 'required' && isTerminologyType(value.type)) {
+      this.appendToken(element.binding.valueSet, value);
     }
+  }
+
+  private appendToken(url: string, value: TypedValueWithPath): void {
+    if (!this.collect?.tokens) {
+      return;
+    }
+
+    let tokens = this.collect.tokens[url];
+    if (!tokens) {
+      const existingKeys = Object.keys(this.collect.tokens);
+      for (const key of existingKeys) {
+        if (key.startsWith(url + '|')) {
+          tokens = this.collect.tokens[key];
+        }
+      }
+    }
+    if (tokens?.length) {
+      for (const token of tokens) {
+        if (token.path === value.path) {
+          return; // Token already exists
+        }
+      }
+    }
+    this.collect.tokens[url] = append(tokens, value);
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValueWithPath): boolean {

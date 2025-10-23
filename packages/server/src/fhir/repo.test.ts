@@ -992,7 +992,6 @@ describe('FHIR Repo', () => {
   test('Terminology validation', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: { validateTerminology: true } });
-
       const patient: Patient = {
         resourceType: 'Patient',
         identifier: [{ system: 'http://example.com/patient-id', value: 'foo' }],

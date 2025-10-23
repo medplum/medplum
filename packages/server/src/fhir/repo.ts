@@ -3,7 +3,6 @@
 import type {
   BackgroundJobInteraction,
   Filter,
-  InternalSchemaElement,
   SearchParameterDetails,
   SearchRequest,
   TypedValue,
@@ -944,7 +943,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // Prepare validator options
     let options: ValidatorOptions | undefined;
     if (this.context.validateTerminology) {
-      const tokens = new Map<InternalSchemaElement, TypedValueWithPath[]>();
+      const tokens = Object.create(null);
       options = { ...options, collect: { tokens } };
     }
 
@@ -961,7 +960,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // (Optionally) check any required terminology bindings found
-    if (this.context.validateTerminology && options?.collect?.tokens?.size) {
+    if (this.context.validateTerminology && options?.collect?.tokens) {
       await this.validateTerminology(options.collect.tokens, issues);
       if (issues.some((iss) => iss.severity === 'error')) {
         throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
@@ -1005,13 +1004,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async validateTerminology(
-    tokens: Map<InternalSchemaElement, TypedValueWithPath[]>,
+    tokens: Record<string, TypedValueWithPath[]>,
     issues: OperationOutcomeIssue[]
   ): Promise<void> {
-    for (const [schema, values] of tokens.entries()) {
-      const url = schema.binding?.valueSet as string;
+    for (const [url, values] of Object.entries(tokens)) {
       const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
-
       for (const value of values) {
         let codings: Coding[] | undefined;
         switch (value.type) {
