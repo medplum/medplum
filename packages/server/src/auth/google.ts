@@ -134,6 +134,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
+    pictureUrl: claims.picture,
   });
   await sendLoginResult(res, login);
 }

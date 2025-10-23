@@ -2714,6 +2714,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.pictureUrl",
+            "path" : "Login.pictureUrl",
+            "definition" : "Optional picture URL from the external identity provider.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.pictureUrl",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }

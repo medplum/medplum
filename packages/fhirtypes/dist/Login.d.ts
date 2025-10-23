@@ -225,4 +225,9 @@ export interface Login {
    * The User-Agent request header as sent by the client.
    */
   userAgent?: string;
+
+  /**
+   * Optional picture URL from the external identity provider.
+   */
+  pictureUrl?: string;
 }
