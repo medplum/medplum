@@ -1,12 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
-interface Message {
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  content: string | null;
-  tool_calls?: any[];
-  tool_call_id?: string;
-}
+import type { Message } from '../../types/spaces';
 
 export const SYSTEM_MESSAGE: Message = {
   role: 'system',
