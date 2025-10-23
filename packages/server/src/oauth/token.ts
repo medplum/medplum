@@ -421,6 +421,7 @@ export async function exchangeExternalAuthToken(
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    forceUseFirstMembership: true,
   });
 
   await sendTokenResponse(res, login, client);

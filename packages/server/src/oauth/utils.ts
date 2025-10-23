@@ -82,6 +82,7 @@ export interface LoginRequest {
   readonly allowNoMembership?: boolean;
   readonly origin?: string;
   readonly pictureUrl?: string;
+  readonly forceUseFirstMembership?: boolean;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -206,7 +207,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
-  if (memberships.length === 1) {
+  if (memberships.length === 1 || request.forceUseFirstMembership) {
     return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
