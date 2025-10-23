@@ -90,7 +90,7 @@ export async function saveMessage(
 }
 
 /**
- * Loads the last 20 messages for a conversation topic
+ * Loads the last messages for a conversation topic
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
  * @returns Array of messages
@@ -98,8 +98,7 @@ export async function saveMessage(
 export async function loadConversationMessages(medplum: MedplumClient, topicId: string): Promise<Message[]> {
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
-    _sort: '_lastUpdated',
-    _count: '20',
+    _sort: '_lastUpdated'
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
