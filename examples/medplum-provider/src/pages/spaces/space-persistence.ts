@@ -98,7 +98,7 @@ export async function saveMessage(
 export async function loadConversationMessages(medplum: MedplumClient, topicId: string): Promise<Message[]> {
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
-    _sort: '_lastUpdated'
+    _sort: '_lastUpdated',
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
