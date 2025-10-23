@@ -35,11 +35,11 @@ export interface LabOrderTestMetadata {
   aoeResponses?: QuestionnaireResponse;
 }
 
-export const BillToOptions = ['patient', 'insurance', 'customer-account'] as const;
+export const BillToOptions = ['patient', 'insurance', 'customer-account', 'self'] as const;
 export type BillTo = (typeof BillToOptions)[number];
 
 export function isBillTo(value: unknown): value is BillTo {
-  if (value === 'patient' || value === 'insurance' || value === 'customer-account') {
+  if (value === 'patient' || value === 'insurance' || value === 'customer-account' || value === 'self') {
     value satisfies BillTo;
     return true;
   }
