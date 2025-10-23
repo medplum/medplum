@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Communication } from '@medplum/fhirtypes';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, ProfileResource } from '@medplum/core';
 import type { Message } from '../../types/spaces';
+import { createReference, getReferenceString } from '@medplum/core';
 
 /**
  * Creates a new conversation topic (main Communication resource)
@@ -30,9 +31,7 @@ export async function createConversationTopic(
         value: 'ai-message-topic',
       },
     ],
-    subject: {
-      reference: `Practitioner/${profile.id}`,
-    },
+    sender: createReference(profile),
     topic: {
       text: title,
     },
@@ -91,7 +90,7 @@ export async function saveMessage(
 }
 
 /**
- * Loads all messages for a conversation topic
+ * Loads the last messages for a conversation topic
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
  * @returns Array of messages
@@ -100,7 +99,6 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
     _sort: '_lastUpdated',
-    _count: '20',
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
@@ -134,8 +132,10 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
  * @returns Array of conversation topic Communications
  */
 export async function loadRecentTopics(medplum: MedplumClient, limit: number = 10): Promise<Communication[]> {
+  const profile = await medplum.getProfile();
   return medplum.searchResources('Communication', {
     identifier: 'http://medplum.com/ai-message|ai-message-topic',
+    sender: getReferenceString(profile as ProfileResource),
     _sort: '-_lastUpdated',
     _count: String(limit),
   });
