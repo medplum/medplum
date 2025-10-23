@@ -46,11 +46,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       const searchResultBundle = await medplum.search('Communication', searchParams, { cache: 'no-cache' });
 
       // Extract resources from the Bundle
-      const searchResult = Array.isArray(searchResultBundle.entry)
-        ? searchResultBundle.entry
-            .map((entry) => entry.resource as Communication)
-            .filter((r): r is Communication => !!r)
-        : [];
+      const searchResult =
+        searchResultBundle?.entry?.map((entry) => entry.resource).filter((r) => r !== undefined) ?? [];
 
       const partOfReferences = searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ');
 
