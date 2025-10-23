@@ -31,7 +31,7 @@ export async function createConversationTopic(
       },
     ],
     subject: {
-      reference: `Practitioner/${medplum.getProfile()?.id}`,
+      reference: `Practitioner/${profile.id}`,
     },
     topic: {
       text: title,
