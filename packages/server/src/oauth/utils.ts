@@ -13,6 +13,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseJWTPayload,
+  parseReference,
   parseSearchRequest,
   resolveId,
   tooManyRequests,
@@ -80,6 +81,7 @@ export interface LoginRequest {
   readonly userAgent?: string;
   readonly allowNoMembership?: boolean;
   readonly origin?: string;
+  readonly pictureUrl?: string;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -192,6 +194,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     codeChallengeMethod: request.codeChallengeMethod,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
+    pictureUrl: request.pictureUrl,
   });
 
   // Try to get user memberships
@@ -427,6 +430,23 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
+  }
+
+  // Optionally update the profile picture from Google
+  if (
+    login.authMethod === 'google' &&
+    login.pictureUrl &&
+    project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
+  ) {
+    try {
+      const [resourceType, id] = parseReference(membership.profile);
+      await systemRepo.patchResource(resourceType, id, [
+        { op: 'test', path: '/photo', value: undefined },
+        { op: 'add', path: '/photo', value: [{ url: login.pictureUrl, contentType: 'image/jpeg' }] },
+      ]);
+    } catch (err) {
+      getLogger().warn('Failed to update profile picture', { err });
+    }
   }
 
   // TODO: Do we really need to check IP access rules inside this method?
