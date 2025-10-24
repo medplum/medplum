@@ -81,7 +81,7 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
   if (observation.hasMember) {
     for (const member of observation.hasMember) {
       const child = converter.findResourceByReference(member);
-      if (!child || child.resourceType !== 'Observation') {
+      if (child?.resourceType !== 'Observation') {
         continue;
       }
 
@@ -133,7 +133,7 @@ export function createCcdaObservation(
   if (observation.hasMember) {
     for (const member of observation.hasMember) {
       const child = converter.findResourceByReference(member);
-      if (!child || child.resourceType !== 'Observation') {
+      if (child?.resourceType !== 'Observation') {
         continue;
       }
 
