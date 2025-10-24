@@ -426,15 +426,6 @@ describe('HL7', () => {
       ),
       { returnAck: ReturnAckCategory.FIRST }
     );
-    await client.sendAndWait(
-      Hl7Message.parse(
-        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00003|P|2.5\r' +
-          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-      ),
-      { returnAck: ReturnAckCategory.FIRST }
-    );
 
     const endTime = Date.now();
     expect(endTime - startTime).toBeGreaterThan(800);

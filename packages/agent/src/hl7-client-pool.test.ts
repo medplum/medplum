@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, Logger } from '@medplum/core';
+import { Hl7Message, Logger, sleep } from '@medplum/core';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 
 describe('Hl7ClientPool', () => {
   let server: Hl7Server;
-  const port = 25123;
+  const port = 57200;
 
   beforeAll(() => {
     server = new Hl7Server((connection) => {
@@ -106,7 +106,7 @@ describe('Hl7ClientPool', () => {
       });
 
       // Give it a moment to ensure it's waiting
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await sleep(50);
       expect(client3Resolved).toBe(false);
 
       // Release one client
@@ -170,7 +170,7 @@ describe('Hl7ClientPool', () => {
     });
   });
 
-  describe('non-keepAlive mode', () => {
+  describe('Non-keepAlive mode', () => {
     test('Creates new clients each time', async () => {
       const log = new Logger(() => undefined);
       const createClientSpy = jest.fn((options) => new Hl7Client(options));
@@ -226,7 +226,7 @@ describe('Hl7ClientPool', () => {
       });
 
       // Give it a moment to ensure it's waiting
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await sleep(50);
       expect(client3Resolved).toBe(false);
 
       // Release one client
@@ -314,7 +314,7 @@ describe('Hl7ClientPool', () => {
     });
   });
 
-  describe('concurrent requests', () => {
+  describe('Concurrent requests', () => {
     test('Handles multiple concurrent requests in keepAlive mode', async () => {
       const log = new Logger(() => undefined);
 

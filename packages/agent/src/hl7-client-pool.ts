@@ -34,7 +34,7 @@ export class Hl7ClientPool {
   private readonly log: ILogger;
   private readonly createClient: Hl7ClientPoolOptions['createClient'];
   private readonly onEmpty?: () => void;
-  private readonly clients: PooledClient[] = [];
+  private readonly clients = new Map<Hl7Client, PooledClient>();
   private readonly waitQueue: {
     resolve: (client: Hl7Client) => void;
     reject: (err: Error) => void;
@@ -74,21 +74,17 @@ export class Hl7ClientPool {
    * @param client - The client to release
    */
   releaseClient(client: Hl7Client): void {
-    const pooledClient = this.clients.find((pc) => pc.client === client);
-    if (!pooledClient) {
+    if (!this.clients.has(client)) {
       return;
     }
 
     if (this.keepAlive) {
-      pooledClient.inUse = false;
+      (this.clients.get(client) as PooledClient).inUse = false;
       // Try to satisfy any waiting requests
       this.processWaitQueue();
     } else {
       // Remove the client from the pool
-      const index = this.clients.indexOf(pooledClient);
-      if (index !== -1) {
-        this.clients.splice(index, 1);
-      }
+      this.clients.delete(client);
       // Try to satisfy any waiting requests
       this.processWaitQueue();
     }
@@ -100,26 +96,22 @@ export class Hl7ClientPool {
    * @param client - The client to remove
    */
   removeClient(client: Hl7Client): void {
-    const index = this.clients.findIndex((pc) => pc.client === client);
-    if (index !== -1) {
-      this.clients.splice(index, 1);
-    }
-
-    // If pool is now empty and in keepAlive mode, notify parent
-    if (this.clients.length === 0 && this.keepAlive && this.onEmpty) {
-      this.onEmpty();
-    }
+    this.clients.delete(client);
 
     // Try to satisfy any waiting requests
     this.processWaitQueue();
+
+    // If pool is now empty and in keepAlive mode, notify parent
+    if (this.clients.size === 0 && this.keepAlive && this.onEmpty) {
+      this.onEmpty();
+    }
   }
 
   /**
    * Closes all clients in the pool.
    */
   async closeAll(): Promise<void> {
-    const closePromises = this.clients.map((pc) => pc.client.close());
-    this.clients.length = 0;
+    const closePromises = this.clients.keys().map((client) => client.close());
 
     // Reject all waiting requests
     while (this.waitQueue.length > 0) {
@@ -137,7 +129,7 @@ export class Hl7ClientPool {
    * @returns the number of clients in the pool.
    */
   size(): number {
-    return this.clients.length;
+    return this.clients.size;
   }
 
   /**
@@ -145,7 +137,7 @@ export class Hl7ClientPool {
    * @returns An array of the raw HL7Clients.
    */
   getClients(): Hl7Client[] {
-    return this.clients.map((pc) => pc.client);
+    return Array.from(this.clients.keys());
   }
 
   /**
@@ -155,14 +147,14 @@ export class Hl7ClientPool {
    */
   private async getKeepAliveClient(): Promise<Hl7Client> {
     // Try to find an available client
-    const availableClient = this.clients.find((pc) => !pc.inUse);
+    const availableClient = this.clients.values().find((pc) => !pc.inUse);
     if (availableClient) {
       availableClient.inUse = true;
       return availableClient.client;
     }
 
     // If we're under the limit, create a new client
-    if (this.clients.length < this.maxClientsPerRemote) {
+    if (this.clients.size < this.maxClientsPerRemote) {
       const client = this.createAndTrackClient();
       return client;
     }
@@ -180,7 +172,7 @@ export class Hl7ClientPool {
    */
   private async getNonKeepAliveClient(): Promise<Hl7Client> {
     // If we're under the limit, create a new client
-    if (this.clients.length < this.maxClientsPerRemote) {
+    if (this.clients.size < this.maxClientsPerRemote) {
       const client = this.createAndTrackClient();
       return client;
     }
@@ -208,7 +200,7 @@ export class Hl7ClientPool {
       inUse: true,
     };
 
-    this.clients.push(pooledClient);
+    this.clients.set(client, pooledClient);
 
     // Set up event listeners
     client.addEventListener('close', () => {
@@ -234,7 +226,7 @@ export class Hl7ClientPool {
   private processWaitQueue(): void {
     while (this.waitQueue.length > 0) {
       // Check if we can satisfy a waiting request
-      const availableClient = this.clients.find((pc) => !pc.inUse);
+      const availableClient = this.clients.values().find((pc) => !pc.inUse);
 
       if (availableClient) {
         const waiter = this.waitQueue.shift();
@@ -242,7 +234,7 @@ export class Hl7ClientPool {
           availableClient.inUse = true;
           waiter.resolve(availableClient.client);
         }
-      } else if (this.clients.length < this.maxClientsPerRemote) {
+      } else if (this.clients.size < this.maxClientsPerRemote) {
         const waiter = this.waitQueue.shift();
         if (waiter) {
           try {

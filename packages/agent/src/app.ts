@@ -342,9 +342,7 @@ export class App {
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
-    const maxClientsPerRemoteSetting = agent?.setting?.find(
-      (setting) => setting.name === 'maxClientsPerRemote'
-    )?.valueInteger;
+    const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
     // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
@@ -368,8 +366,8 @@ export class App {
     this.keepAlive = keepAlive ?? false;
 
     // Determine maxClientsPerRemote: default is 10, but becomes 1 when keepAlive is true (unless explicitly set)
-    if (maxClientsPerRemoteSetting !== undefined) {
-      this.maxClientsPerRemote = maxClientsPerRemoteSetting;
+    if (maxClientsPerRemote !== undefined) {
+      this.maxClientsPerRemote = maxClientsPerRemote;
     } else if (this.keepAlive) {
       this.maxClientsPerRemote = 1;
     } else {
