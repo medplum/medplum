@@ -9,7 +9,7 @@ export interface Hl7ClientPoolOptions {
   port: number;
   encoding?: string;
   keepAlive: boolean;
-  maxClientsPerRemote: number;
+  maxClients: number;
   log: ILogger;
 }
 
@@ -21,7 +21,7 @@ export interface PooledClient {
 /**
  * Manages a pool of HL7 clients for a single remote host.
  *
- * In keepAlive mode, connections are reused up to maxClientsPerRemote limit.
+ * In keepAlive mode, connections are reused up to maxClients limit.
  * In non-keepAlive mode, tracks outstanding connections and enforces the limit.
  */
 export class Hl7ClientPool {
@@ -29,7 +29,7 @@ export class Hl7ClientPool {
   private readonly port: number;
   private readonly encoding?: string;
   private readonly keepAlive: boolean;
-  private readonly maxClientsPerRemote: number;
+  private maxClients: number;
   private readonly log: ILogger;
   private readonly clients = new Map<Hl7Client, PooledClient>();
   private readonly waitQueue: {
@@ -43,7 +43,7 @@ export class Hl7ClientPool {
     this.port = options.port;
     this.encoding = options.encoding;
     this.keepAlive = options.keepAlive;
-    this.maxClientsPerRemote = options.maxClientsPerRemote;
+    this.maxClients = options.maxClients;
     this.log = options.log;
   }
 
@@ -171,7 +171,7 @@ export class Hl7ClientPool {
     }
 
     // If we're under the limit, create a new client
-    if (this.clients.size < this.maxClientsPerRemote) {
+    if (this.clients.size < this.maxClients) {
       const client = this.createAndTrackClient();
       return client;
     }
@@ -189,7 +189,7 @@ export class Hl7ClientPool {
    */
   private async getNonKeepAliveClient(): Promise<Hl7Client> {
     // If we're under the limit, create a new client
-    if (this.clients.size < this.maxClientsPerRemote) {
+    if (this.clients.size < this.maxClients) {
       const client = this.createAndTrackClient();
       return client;
     }
@@ -253,7 +253,7 @@ export class Hl7ClientPool {
           availableClient.inUse = true;
           waiter.resolve(availableClient.client);
         }
-      } else if (this.clients.size < this.maxClientsPerRemote) {
+      } else if (this.clients.size < this.maxClients) {
         const waiter = this.waitQueue.shift();
         if (waiter) {
           try {
@@ -268,5 +268,13 @@ export class Hl7ClientPool {
         break;
       }
     }
+  }
+
+  setMaxClients(maxClients: number): void {
+    this.maxClients = maxClients;
+  }
+
+  getMaxClients(): number {
+    return this.maxClients;
   }
 }

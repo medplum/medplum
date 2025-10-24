@@ -373,6 +373,11 @@ export class App {
       this.maxClientsPerRemote = 10;
     }
 
+    // If we have pools sitting around at this point (they weren't cleared above), set the maxClients for all of the pools
+    for (const pool of this.hl7Clients.values()) {
+      pool.setMaxClients(this.maxClientsPerRemote);
+    }
+
     this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
@@ -963,13 +968,13 @@ export class App {
         port: Number.parseInt(address.port, 10),
         encoding,
         keepAlive: this.keepAlive,
-        maxClientsPerRemote: this.maxClientsPerRemote,
+        maxClients: this.maxClientsPerRemote,
         log: this.log,
       });
       this.hl7Clients.set(message.remote, pool);
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
-        maxClientsPerRemote: this.maxClientsPerRemote,
+        maxClients: this.maxClientsPerRemote,
         encoding,
       });
     }

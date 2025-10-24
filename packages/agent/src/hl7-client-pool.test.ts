@@ -47,14 +47,14 @@ describe('Hl7ClientPool', () => {
   });
 
   describe('keepAlive mode', () => {
-    test('Reuses a single client when maxClientsPerRemote is 1', async () => {
+    test('Reuses a single client when maxClients is 1', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 1,
+        maxClients: 1,
         log,
       });
 
@@ -74,14 +74,14 @@ describe('Hl7ClientPool', () => {
       await pool.closeAll();
     });
 
-    test('Creates multiple clients up to maxClientsPerRemote', async () => {
+    test('Creates multiple clients up to maxClients', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 3,
+        maxClients: 3,
         log,
       });
 
@@ -101,14 +101,14 @@ describe('Hl7ClientPool', () => {
       await pool.closeAll();
     });
 
-    test('Waits when maxClientsPerRemote is reached', async () => {
+    test('Waits when maxClients is reached', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 2,
+        maxClients: 2,
         log,
       });
 
@@ -148,7 +148,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 1,
+        maxClients: 1,
         log,
       });
 
@@ -171,7 +171,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 3,
+        maxClients: 3,
         log,
       });
 
@@ -195,7 +195,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: false,
-        maxClientsPerRemote: 10,
+        maxClients: 10,
         log,
       });
 
@@ -215,14 +215,14 @@ describe('Hl7ClientPool', () => {
       await pool.closeAll();
     });
 
-    test('Enforces maxClientsPerRemote limit', async () => {
+    test('Enforces maxClients limit', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
         port,
         keepAlive: false,
-        maxClientsPerRemote: 2,
+        maxClients: 2,
         log,
       });
 
@@ -261,7 +261,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: false,
-        maxClientsPerRemote: 10,
+        maxClients: 10,
         log,
       });
 
@@ -283,7 +283,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 3,
+        maxClients: 3,
         log,
       });
 
@@ -306,7 +306,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 1,
+        maxClients: 1,
         log,
       });
 
@@ -332,7 +332,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: true,
-        maxClientsPerRemote: 3,
+        maxClients: 3,
         log,
       });
 
@@ -371,7 +371,7 @@ describe('Hl7ClientPool', () => {
         host: 'localhost',
         port,
         keepAlive: false,
-        maxClientsPerRemote: 3,
+        maxClients: 3,
         log,
       });
 
