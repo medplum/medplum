@@ -47,7 +47,7 @@ import {
 import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import type { FhirRepository } from '../repo';
 import { RepositoryMode } from '../repo';
-import { getGraphQLInputType } from './input-types';
+import { getGraphQLInputType, getPatchOperationInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import type { GraphQLContext } from './utils';
 import {
