@@ -59510,7 +59510,8 @@
               "google-auth-required",
               "graphql-introspection",
               "websocket-subscriptions",
-              "transaction-bundles"
+              "transaction-bundles",
+              "validate-terminology"
             ]
           },
           "type": "array"
