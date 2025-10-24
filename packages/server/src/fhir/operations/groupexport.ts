@@ -7,9 +7,13 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
+import { getOperationDefinition } from './definitions';
 import type { PatientEverythingParameters } from './patienteverything';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
+import { parseInputParameters } from './utils/parameters';
+
+const operation = getOperationDefinition('Group', 'export');
 
 /**
  * Handles a Group export request.
@@ -25,7 +29,7 @@ import { BulkExporter } from './utils/bulkexporter';
 export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const { id } = req.params;
+  const { id } = parseInputParameters<{ id: string }>(operation, req);
   const since = singularize(req.query._since);
   const types = singularize(req.query._type)?.split(',');
 
