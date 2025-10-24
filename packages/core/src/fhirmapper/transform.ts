@@ -297,7 +297,7 @@ function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule
 function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule): boolean {
   // First, check if this is actually a shorthand rule
   // Shorthand rule has exactly one target, no transform, no rule, and no dependent
-  if (!rule.target || rule.target.length !== 1 || rule.target[0].transform || rule.rule || rule.dependent) {
+  if (rule.target?.length !== 1 || rule.target[0].transform || rule.rule || rule.dependent) {
     return false;
   }
 

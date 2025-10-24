@@ -531,12 +531,12 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   // Priority 1: InternalSchemaElement by exact match
-  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+  if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
 
   // Priority 2: SearchParameter by exact match
-  if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
+  if (field.searchParams?.length === 1 && field.name === field.searchParams[0].code) {
     return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 
