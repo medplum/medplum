@@ -25,6 +25,7 @@ import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext implements IRequestContext {
@@ -112,12 +113,18 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.repo[Symbol.dispose]();
   }
 
+  getProjectSystemRepo(): Repository {
+    return getSystemRepo(undefined, this.authState.projectShardId);
+  }
+
+  // TODO{sharding} should system() go away? unclear what benefit it provides and is complicated by shards
+  // since it is not attached to a project
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     return new AuthenticatedRequestContext(
       ctx?.requestId ?? '',
       ctx?.traceId ?? '',
       { userConfig: {} } as unknown as AuthState,
-      getSystemRepo(),
+      getSystemRepo(undefined, GLOBAL_SHARD_ID),
       { logger: systemLogger }
     );
   }

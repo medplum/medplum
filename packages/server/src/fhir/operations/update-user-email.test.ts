@@ -17,13 +17,14 @@ describe('User/$update-email', () => {
   const app = express();
   let repo: Repository;
   let project: WithId<Project>;
+  let projectShardId: string;
   let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    ({ project, accessToken, repo } = await createTestProject({
+    ({ project, projectShardId, accessToken, repo } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       membership: { admin: true },
@@ -40,6 +41,7 @@ describe('User/$update-email', () => {
     const password = randomUUID();
     const { user } = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       sendEmail: false,
@@ -72,6 +74,7 @@ describe('User/$update-email', () => {
     const password = randomUUID();
     const { user, profile } = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       sendEmail: false,
@@ -114,6 +117,7 @@ describe('User/$update-email', () => {
     const password = randomUUID();
     const { user, profile } = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       sendEmail: false,
@@ -155,6 +159,7 @@ describe('User/$update-email', () => {
     const password = randomUUID();
     const { user } = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       sendEmail: false,
@@ -181,11 +186,12 @@ describe('User/$update-email', () => {
   });
 
   test('Cannot alter user from other Project', async () => {
-    const { project: otherProject } = await createTestProject();
+    const { project: otherProject, projectShardId: otherProjectShardId } = await createTestProject();
     const email = `user+${randomUUID()}@example.com`;
     const password = randomUUID();
     const { user } = await inviteUser({
       project: otherProject,
+      projectShardId: otherProjectShardId,
       email,
       password,
       sendEmail: false,
@@ -216,6 +222,7 @@ describe('User/$update-email', () => {
     const password = randomUUID();
     const { user, profile } = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       sendEmail: false,

@@ -162,7 +162,7 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 100;
     await initApp(app, config);
 
-    const { accessToken, project } = await createTestProject({
+    const { accessToken, project, projectShardId } = await createTestProject({
       withAccessToken: true,
       project: {
         systemSetting: [{ name: 'totalFhirQuota', valueInteger: 100 }],
@@ -171,7 +171,15 @@ describe('FHIR Rate Limits', () => {
 
     const email = `${randomUUID()}@example.com`;
     const password = randomUUID();
-    await inviteUser({ project, resourceType: 'Practitioner', firstName: 'A.', lastName: 'Zee', email, password });
+    await inviteUser({
+      project,
+      projectShardId,
+      resourceType: 'Practitioner',
+      firstName: 'A.',
+      lastName: 'Zee',
+      email,
+      password,
+    });
 
     const loginRes = await request(app).post('/auth/login').type('json').send({
       email,

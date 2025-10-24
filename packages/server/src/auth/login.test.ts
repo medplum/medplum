@@ -26,6 +26,7 @@ const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
 let project: WithId<Project>;
+let projectShardId: string;
 let client: WithId<ClientApplication>;
 let corsClient: WithId<ClientApplication>;
 
@@ -37,7 +38,7 @@ describe('Login', () => {
       await initApp(app, config);
 
       // Create a test project
-      ({ project, client } = await createTestProject({ withClient: true }));
+      ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
 
       // Create another client with CORS "allowed origins"
       corsClient = await getSystemRepo().createResource<ClientApplication>({
@@ -54,6 +55,7 @@ describe('Login', () => {
       // Create a test user
       const { user } = await inviteUser({
         project,
+        projectShardId,
         resourceType: 'Practitioner',
         firstName: 'Test',
         lastName: 'User',
@@ -404,6 +406,7 @@ describe('Login', () => {
 
     await inviteUser({
       project,
+      projectShardId,
       email,
       resourceType: 'Patient',
       firstName: 'Patient',
@@ -515,6 +518,7 @@ describe('Login', () => {
     const { membership } = await withTestContext(() =>
       inviteUser({
         project,
+        projectShardId,
         resourceType: 'Practitioner',
         firstName: 'Test',
         lastName: 'User',

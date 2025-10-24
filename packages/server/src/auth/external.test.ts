@@ -32,6 +32,7 @@ const identityProvider = {
 };
 
 let project: WithId<Project>;
+let projectShardId: string;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 
@@ -52,6 +53,7 @@ describe('External', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
       project = registerResult.project;
+      projectShardId = registerResult.projectShardId;
       defaultClient = registerResult.client;
 
       const systemRepo = getSystemRepo();
@@ -85,6 +87,7 @@ describe('External', () => {
       // Invite user with external ID
       await inviteUser({
         project,
+        projectShardId,
         externalId,
         resourceType: 'Patient',
         firstName: 'External',
@@ -548,6 +551,7 @@ describe('External', () => {
       // Invite user with external ID
       const { user, membership } = await inviteUser({
         project,
+        projectShardId,
         externalId,
         resourceType: 'Patient',
         firstName: 'External',

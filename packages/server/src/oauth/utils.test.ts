@@ -5,7 +5,7 @@ import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestClient, withTestContext } from '../test.setup';
+import { createTestClient } from '../test.setup';
 import {
   getAuthTokens,
   getClientApplication,
@@ -206,16 +206,14 @@ describe('OAuth utils', () => {
   });
 
   test('Login successfully', async () => {
-    const login = await withTestContext(() =>
-      tryLogin({
-        clientId: client.id,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-      })
-    );
+    const login = await tryLogin({
+      clientId: client.id,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      nonce: 'nonce',
+    });
     expect(login).toBeDefined();
   });
 

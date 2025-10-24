@@ -9,9 +9,10 @@ import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
+import type { GlobalProject } from '../sharding/sharding-types';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -109,8 +110,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getSystemRepo();
-    await systemRepo.createResource<User>({
+    await getGlobalSystemRepo().createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
@@ -143,7 +143,7 @@ function validateProjectId(inputProjectId: unknown): string | undefined {
   return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
-function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
+function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<GlobalProject[]> {
   const filters = [
     {
       code: 'google-client-id',
@@ -160,6 +160,5 @@ function getProjectsByGoogleClientId(googleClientId: string, projectId: string |
     });
   }
 
-  const systemRepo = getSystemRepo();
-  return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
+  return getGlobalSystemRepo().searchResources<Project>({ resourceType: 'Project', filters });
 }

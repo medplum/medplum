@@ -59,7 +59,8 @@ superAdminRouter.post('/valuesets', async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  // TODO{sharding} - A Shard need to be specified for this operation
+  const systemRepo = getSystemRepo(undefined, 'TODO-super-rebuild-valuesets');
   await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
 });
 
@@ -70,7 +71,8 @@ superAdminRouter.post('/structuredefinitions', async (req: Request, res: Respons
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  // TODO{sharding} - A Shard need to be specified for this operation
+  const systemRepo = getSystemRepo(undefined, 'TODO-super-rebuild-structuredefinitions');
   await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
 });
 
@@ -81,7 +83,8 @@ superAdminRouter.post('/searchparameters', async (req: Request, res: Response) =
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  // TODO{sharding} - A shard needs to be specified for this operation
+  const systemRepo = getSystemRepo(undefined, 'TODO-super-rebuild-searchparameters');
   await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
 });
 
@@ -130,7 +133,8 @@ superAdminRouter.post(
       searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
     }
 
-    const systemRepo = getSystemRepo();
+    // TODO{sharding} - A Shard need to be specified for this operation
+    const systemRepo = getSystemRepo(undefined, 'TODO-reindex-shard-id');
 
     const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
     let maxResourceVersion: number | undefined;
@@ -167,7 +171,7 @@ superAdminRouter.post(
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
       await addReindexJob(
-        'TODO-super.reindex',
+        systemRepo.projectShardId,
         resourceTypes as ResourceType[],
         asyncJob,
         searchFilter,
@@ -418,7 +422,8 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+    // TODO{sharding} - A Shard need to be specified for this operation
+    await getSystemRepo(undefined, 'TODO-super-tablesettings').getDatabaseClient(DatabaseMode.WRITER).query(query);
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -468,7 +473,8 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+      // TODO{sharding} - A Shard need to be specified for this operation
+      await getSystemRepo(undefined, 'TODO-super-vacuum').getDatabaseClient(DatabaseMode.WRITER).query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

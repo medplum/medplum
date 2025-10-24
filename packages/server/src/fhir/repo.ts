@@ -90,6 +90,7 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
+import { getProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -2387,7 +2388,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return defaultShardId;
     }
 
-    if (['User', 'Login', 'ProjectMembership', 'ClientApplication', 'SmartAppLaunch'].includes(resourceType)) {
+    if (GlobalResourceTypes.has(resourceType)) {
       return 'global';
     }
 
@@ -2848,6 +2849,14 @@ export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): Reposit
     },
     conn
   );
+}
+
+export async function getSystemRepoForProject(projectId: string): Promise<Repository> {
+  return getSystemRepo(undefined, await getProjectShardId(projectId));
+}
+
+export function getShardSystemRepo(shardId: string): Repository {
+  return getSystemRepo(undefined, shardId);
 }
 
 export function getGlobalSystemRepo(): Repository {
