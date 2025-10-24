@@ -293,9 +293,11 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
+  router.add('POST', '/Group/:id/$export', groupExportHandler);
 
   // Patient $export operation
   router.add('GET', '/Patient/$export', patientExportHandler);
+  router.add('POST', '/Patient/$export', patientExportHandler);
 
   // Measure $evaluate-measure operation
   router.add('POST', '/Measure/:id/$evaluate-measure', evaluateMeasureHandler);
