@@ -2486,7 +2486,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    if (this.getResourceTypeShardId(resourceType) !== this.conn.shardId) {
+    let resourceTypeShardId = this.getResourceTypeShardId(resourceType);
+    if (resourceTypeShardId.startsWith('TODO')) {
+      console.warn(`Repository.getResourceTypeShardId(${resourceType}) returned ${resourceTypeShardId}`);
+      resourceTypeShardId = 'global';
+    }
+    if (resourceTypeShardId !== this.conn.shardId) {
       throw new Error(
         'Shard access not allowed for resource type' +
           JSON.stringify({
