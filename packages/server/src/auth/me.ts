@@ -69,7 +69,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
       memberships: memberships.map((membership) => ({
         resourceType: 'ProjectMembership',
         id: membership.id,
-        project: membership.project,
+        identifier: membership.identifier,
         profile: membership.profile,
         admin: membership.admin,
       })),
