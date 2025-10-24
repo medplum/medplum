@@ -346,7 +346,7 @@ export class App {
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
-      const results = await Promise.allSettled(this.hl7Clients.values().map((pool) => pool.closeAll()));
+      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
       for (const result of results) {
         if (result.status === 'rejected') {
           this.log.error(normalizeErrorString(result.reason));

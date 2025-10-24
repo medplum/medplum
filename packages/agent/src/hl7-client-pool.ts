@@ -164,7 +164,7 @@ export class Hl7ClientPool {
    */
   private async getKeepAliveClient(): Promise<Hl7Client> {
     // Try to find an available client
-    const availableClient = this.clients.values().find((pc) => !pc.inUse);
+    const availableClient = Array.from(this.clients.values()).find((pc) => !pc.inUse);
     if (availableClient) {
       availableClient.inUse = true;
       return availableClient.client;
@@ -245,7 +245,7 @@ export class Hl7ClientPool {
   private processWaitQueue(): void {
     while (this.waitQueue.length > 0) {
       // Check if we can satisfy a waiting request
-      const availableClient = this.clients.values().find((pc) => !pc.inUse);
+      const availableClient = Array.from(this.clients.values()).find((pc) => !pc.inUse);
 
       if (availableClient) {
         const waiter = this.waitQueue.shift();
