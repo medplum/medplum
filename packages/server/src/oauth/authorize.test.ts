@@ -12,7 +12,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
@@ -22,6 +22,7 @@ describe('OAuth Authorize', () => {
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
   let project: WithId<Project>;
+  let projectShardId: string;
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
@@ -29,11 +30,12 @@ describe('OAuth Authorize', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
 
     // Create a test user
     const { user } = await inviteUser({
       project,
+      projectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
@@ -397,16 +399,17 @@ describe('OAuth Authorize', () => {
 
     const cookie = cookies[0];
 
-    await withTestContext(async () =>
-      revokeLogin(
-        (
-          await systemRepo.search({
-            resourceType: 'Login',
-            filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
-          })
-        ).entry?.[0]?.resource as Login
-      )
-    );
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = (
+      await globalSystemRepo.search<Login>({
+        resourceType: 'Login',
+        filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
+      })
+    ).entry?.[0]?.resource;
+    if (!login) {
+      throw new Error('Login not found');
+    }
+    await withTestContext(async () => revokeLogin(globalSystemRepo, login));
 
     const params = new URLSearchParams({
       response_type: 'code',

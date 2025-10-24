@@ -72,6 +72,7 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let projectShardId: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
@@ -81,7 +82,7 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -108,6 +109,7 @@ describe('OAuth2 Token', () => {
     // Create a test user
     const { user, membership } = await inviteUser({
       project,
+      projectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
@@ -1364,6 +1366,7 @@ describe('OAuth2 Token', () => {
     const testPatient = await withTestContext(async () => {
       const patient = await inviteUser({
         project,
+        projectShardId,
         resourceType: 'Patient',
         firstName: 'Test',
         lastName: 'Patient',
@@ -1932,13 +1935,16 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject, projectShardId: superAdminProjectShardId } = await createTestProject({
+      project: { superAdmin: true },
+    });
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;
     const password = 'test-password';
     await inviteUser({
-      project,
+      project: superAdminProject,
+      projectShardId: superAdminProjectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',

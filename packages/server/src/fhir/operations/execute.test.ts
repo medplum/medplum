@@ -106,6 +106,7 @@ const botDefinitions: { name: BotName; system: boolean; code: [string, string] }
 describe('Execute', () => {
   let app: express.Express;
   let project1: WithId<Project>;
+  let projectShardId1: string;
   let accessToken1: string;
   const bots = {} as Record<BotName, WithId<Bot>>;
 
@@ -130,6 +131,7 @@ describe('Execute', () => {
       membership: { admin: true },
     });
     project1 = testSetup.project;
+    projectShardId1 = testSetup.projectShardId;
     accessToken1 = testSetup.accessToken;
 
     async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<WithId<Bot>> {
@@ -521,6 +523,7 @@ describe('Execute', () => {
     const { membership, profile } = await inviteUser({
       resourceType: 'Practitioner',
       project: project1,
+      projectShardId: projectShardId1,
       firstName: 'Test',
       lastName: 'User',
     });

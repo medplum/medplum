@@ -210,16 +210,14 @@ describe('OAuth utils', () => {
   });
 
   test('Login successfully', async () => {
-    const login = await withTestContext(() =>
-      tryLogin({
-        clientId: client.id,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-      })
-    );
+    const login = await tryLogin({
+      clientId: client.id,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      nonce: 'nonce',
+    });
     expect(login).toBeDefined();
   });
 
