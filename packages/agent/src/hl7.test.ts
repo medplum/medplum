@@ -1523,6 +1523,7 @@ describe('HL7', () => {
     expect(app.hl7Clients.get('mllp://localhost:57004')?.size()).toStrictEqual(0);
 
     await app.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
     mockServer.stop();
   });
 
