@@ -54,7 +54,7 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, repo.projectShardId);
   const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,

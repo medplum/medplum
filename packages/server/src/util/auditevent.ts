@@ -18,6 +18,7 @@ import type {
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
+import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 
 /*
@@ -331,6 +332,7 @@ function tail(str: string, n: number): string {
 
 /**
  * Creates an AuditEvent for a subscription attempt.
+ * @param systemRepo - The system repository.
  * @param resource - The resource that triggered the subscription.
  * @param startTime - The time the subscription attempt started.
  * @param outcome - The outcome code.
@@ -339,6 +341,7 @@ function tail(str: string, n: number): string {
  * @param bot - Optional bot that was executed.
  */
 export async function createSubscriptionAuditEvent(
+  systemRepo: Repository,
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
@@ -346,7 +349,6 @@ export async function createSubscriptionAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({

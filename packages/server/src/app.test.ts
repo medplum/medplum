@@ -161,7 +161,7 @@ describe('App', () => {
     });
 
     test('Authenticated request with On-Behalf-Of', async () => {
-      const { accessToken, project, client } = await createTestProject({
+      const { accessToken, project, projectShardId, client } = await createTestProject({
         withAccessToken: true,
         withClient: true,
         membership: { admin: true },
@@ -169,6 +169,7 @@ describe('App', () => {
 
       const { profile } = await inviteUser({
         project,
+        projectShardId,
         resourceType: 'Practitioner',
         firstName: 'Test',
         lastName: 'Person',

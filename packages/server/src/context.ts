@@ -17,6 +17,7 @@ import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
 import type { Repository } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -109,6 +110,10 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   [Symbol.dispose](): void {
     this.repo[Symbol.dispose]();
+  }
+
+  getProjectSystemRepo(): Repository {
+    return getSystemRepo(undefined, this.authState.projectShardId);
   }
 }
 

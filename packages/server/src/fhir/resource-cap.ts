@@ -12,7 +12,6 @@ import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { AuthState } from '../oauth/middleware';
-import { getProjectShardId } from '../sharding/sharding-utils';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;
@@ -41,7 +40,7 @@ export class ResourceCap {
 
     this.logger = logger;
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableResourceCap')?.valueBoolean === true;
-    this.projectShardId = getProjectShardId(authState.project);
+    this.projectShardId = authState.projectShardId;
   }
 
   private async init(): Promise<void> {

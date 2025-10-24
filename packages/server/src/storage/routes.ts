@@ -46,7 +46,8 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const id = singularize(req.params.id) ?? '';
-  const systemRepo = getSystemRepo();
+  //TODO{sharding} this is an unauthenticated endpoint; how to know which shard/project to query?
+  const systemRepo = getSystemRepo(undefined, 'TODO-storage.get');
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
