@@ -42,6 +42,7 @@ import { ChannelType, getChannelType, getChannelTypeShortName } from './channel'
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
@@ -77,7 +78,7 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  readonly hl7Clients = new Map<string, Hl7Client>();
+  readonly hl7Clients = new Map<string, Hl7ClientPool>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private outstandingHeartbeats = 0;
@@ -86,6 +87,7 @@ export class App {
   private live = false;
   private shutdown = false;
   private keepAlive = false;
+  private maxClientsPerRemote = 10;
   private logStatsFreqSecs = -1;
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
@@ -340,11 +342,14 @@ export class App {
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
+    const maxClientsPerRemoteSetting = agent?.setting?.find(
+      (setting) => setting.name === 'maxClientsPerRemote'
+    )?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
     // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {
-      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((client) => client.close()));
+      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
       for (const result of results) {
         if (result.status === 'rejected') {
           this.log.error(normalizeErrorString(result.reason));
@@ -361,17 +366,31 @@ export class App {
 
     this.config = agent;
     this.keepAlive = keepAlive ?? false;
+
+    // Determine maxClientsPerRemote: default is 10, but becomes 1 when keepAlive is true (unless explicitly set)
+    if (maxClientsPerRemoteSetting !== undefined) {
+      this.maxClientsPerRemote = maxClientsPerRemoteSetting;
+    } else if (this.keepAlive) {
+      this.maxClientsPerRemote = 1;
+    } else {
+      this.maxClientsPerRemote = 10;
+    }
+
     this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
       this.logStatsTimer = setInterval(() => {
         const stats = getCurrentStats();
+        let totalHl7Clients = 0;
+        for (const pool of this.hl7Clients.values()) {
+          totalHl7Clients += pool.size();
+        }
         this.log.info('Agent stats', {
           stats: {
             ...stats,
             webSocketQueueDepth: this.webSocketQueue.length,
             hl7QueueDepth: this.hl7Queue.length,
-            hl7ClientCount: this.hl7Clients.size,
+            hl7ClientCount: totalHl7Clients,
             live: this.live,
             outstandingHeartbeats: this.outstandingHeartbeats,
           },
@@ -575,11 +594,12 @@ export class App {
     }
 
     if (this.hl7Clients.size !== 0) {
-      const clientClosePromises = [];
-      for (const channel of this.channels.values()) {
-        clientClosePromises.push(channel.stop());
+      const poolClosePromises = [];
+      for (const pool of this.hl7Clients.values()) {
+        poolClosePromises.push(pool.closeAll());
       }
-      await Promise.all(clientClosePromises);
+      await Promise.all(poolClosePromises);
+      this.hl7Clients.clear();
     }
 
     const channelStopPromises = [];
@@ -936,44 +956,33 @@ export class App {
     }
 
     const address = new URL(message.remote);
+    const encoding = address.searchParams.get('encoding') ?? undefined;
 
-    let client: Hl7Client;
-
-    if (this.hl7Clients.has(message.remote)) {
-      client = this.hl7Clients.get(message.remote) as Hl7Client;
-    } else {
-      const encoding = address.searchParams.get('encoding') ?? undefined;
-      const keepAlive = this.keepAlive;
-      client = new Hl7Client({
+    // Get or create the pool for this remote
+    let pool = this.hl7Clients.get(message.remote);
+    if (!pool) {
+      pool = new Hl7ClientPool({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
         encoding,
-        keepAlive,
+        keepAlive: this.keepAlive,
+        maxClientsPerRemote: this.maxClientsPerRemote,
+        log: this.log,
+        createClient: (options) => new Hl7Client(options),
+        onEmpty: () => {
+          // Remove the pool from the map when it becomes empty
+          if (this.keepAlive) {
+            this.hl7Clients.delete(message.remote);
+            this.log.info(`Client pool for remote '${message.remote}' is now empty and has been removed`);
+          }
+        },
       });
-      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
-
-      if (client.keepAlive) {
-        this.hl7Clients.set(message.remote, client);
-        client.addEventListener('close', () => {
-          // If the current client for this remote is this client, make sure to clean it up
-          if (this.hl7Clients.get(message.remote) === client) {
-            this.hl7Clients.delete(message.remote);
-          }
-          this.log.info(`Persistent connection to remote '${message.remote}' closed`);
-        });
-        client.addEventListener('error', (event) => {
-          // If the current client for this remote is this client, make sure to clean it up
-          if (this.hl7Clients.get(message.remote) === client) {
-            this.hl7Clients.delete(message.remote);
-          }
-          this.log.error(
-            `Persistent connection to remote '${message.remote}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
-          );
-          client.close().catch((err) => {
-            this.log.error(normalizeErrorString(err));
-          });
-        });
-      }
+      this.hl7Clients.set(message.remote, pool);
+      this.log.info(`Client pool created for remote '${message.remote}'`, {
+        keepAlive: this.keepAlive,
+        maxClientsPerRemote: this.maxClientsPerRemote,
+        encoding,
+      });
     }
 
     const requestMsg = Hl7Message.parse(message.body);
@@ -985,22 +994,58 @@ export class App {
 
     this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
 
-    client
-      .sendAndWait(requestMsg)
-      .then((response) => {
-        this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
-        this.addToWebSocketQueue({
-          type: 'agent:transmit:response',
-          channel: message.channel,
-          remote: message.remote,
-          callback: message.callback,
-          contentType: ContentType.HL7_V2,
-          statusCode: 200,
-          body: response.toString(),
-        } satisfies AgentTransmitResponse);
+    // Get a client from the pool
+    pool
+      .getClient()
+      .then((client) => {
+        return client
+          .sendAndWait(requestMsg)
+          .then((response) => {
+            this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
+            this.addToWebSocketQueue({
+              type: 'agent:transmit:response',
+              channel: message.channel,
+              remote: message.remote,
+              callback: message.callback,
+              contentType: ContentType.HL7_V2,
+              statusCode: 200,
+              body: response.toString(),
+            } satisfies AgentTransmitResponse);
+          })
+          .catch((err) => {
+            this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+            this.addToWebSocketQueue({
+              type: 'agent:transmit:response',
+              channel: message.channel,
+              remote: message.remote,
+              callback: message.callback,
+              contentType: ContentType.TEXT,
+              statusCode: 400,
+              body: normalizeErrorString(err),
+            } satisfies AgentTransmitResponse);
+
+            if (this.keepAlive) {
+              // On error in keepAlive mode, close the client and remove it from the pool
+              pool.removeClient(client);
+              client.close().catch((err) => {
+                this.log.error(normalizeErrorString(err));
+              });
+            }
+          })
+          .finally(() => {
+            // Release the client back to the pool
+            pool.releaseClient(client);
+
+            if (!this.keepAlive) {
+              // In non-keepAlive mode, close the client after use
+              client.close().catch((err) => {
+                this.log.error(normalizeErrorString(err));
+              });
+            }
+          });
       })
       .catch((err) => {
-        this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+        this.log.error(`Failed to get client from pool: ${normalizeErrorString(err)}`);
         this.addToWebSocketQueue({
           type: 'agent:transmit:response',
           channel: message.channel,
@@ -1010,20 +1055,6 @@ export class App {
           statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
-
-        if (client.keepAlive) {
-          this.hl7Clients.delete(message.remote);
-          client.close().catch((err) => {
-            this.log.error(normalizeErrorString(err));
-          });
-        }
-      })
-      .finally(() => {
-        if (!client.keepAlive) {
-          client.close().catch((err) => {
-            this.log.error(normalizeErrorString(err));
-          });
-        }
       });
   }
 

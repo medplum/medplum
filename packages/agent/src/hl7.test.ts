@@ -426,6 +426,15 @@ describe('HL7', () => {
       ),
       { returnAck: ReturnAckCategory.FIRST }
     );
+    await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00003|P|2.5\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+      ),
+      { returnAck: ReturnAckCategory.FIRST }
+    );
 
     const endTime = Date.now();
     expect(endTime - startTime).toBeGreaterThan(800);
@@ -678,7 +687,7 @@ describe('HL7', () => {
     expect(hl7Messages.length).toBe(1);
 
     // Make sure we are not keeping clients around yet
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -701,7 +710,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Update config and make agent reload config
     const updatedAgent1 = await medplum.updateResource({
@@ -811,7 +820,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(5);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -834,7 +843,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(6);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Shutdown everything
     await hl7Server.stop();
@@ -1075,8 +1084,12 @@ describe('HL7', () => {
     expect(app.hl7Clients.size).toStrictEqual(1);
 
     // An error happened
-    const hl7Client = app.hl7Clients.get('mllp://localhost:57001');
-    expect(hl7Client).toBeDefined();
+    const hl7ClientPool = app.hl7Clients.get('mllp://localhost:57001');
+    expect(hl7ClientPool).toBeDefined();
+    const clients = hl7ClientPool?.getClients();
+    expect(clients).toBeDefined();
+    expect(clients?.length).toBeGreaterThan(0);
+    const hl7Client = clients?.[0];
     expect(hl7Client?.connection).toBeDefined();
     expect(hl7Client?.connection?.socket).toBeDefined();
 
