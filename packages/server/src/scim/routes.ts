@@ -6,6 +6,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { createScimUser, deleteScimUser, patchScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
 
@@ -20,7 +21,11 @@ scimRouter.get(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await searchScimUsers(ctx.project, req.query as Record<string, string>);
+    const result = await searchScimUsers(
+      getSystemRepo(undefined, ctx.authState.projectShardId),
+      ctx.project,
+      req.query as Record<string, string>
+    );
     res.status(200).json(result);
   })
 );
@@ -39,7 +44,7 @@ scimRouter.get(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await readScimUser(ctx.project, req.params.id);
+    const result = await readScimUser(ctx.getProjectSystemRepo(), ctx.project, req.params.id);
     res.status(200).json(result);
   })
 );
@@ -48,7 +53,7 @@ scimRouter.put(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await updateScimUser(ctx.project, req.body);
+    const result = await updateScimUser(ctx.getProjectSystemRepo(), ctx.project, req.body);
     res.status(200).json(result);
   })
 );
@@ -57,7 +62,7 @@ scimRouter.patch(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await patchScimUser(ctx.project, req.params.id, req.body);
+    const result = await patchScimUser(ctx.getProjectSystemRepo(), ctx.project, req.params.id, req.body);
     res.status(200).json(result);
   })
 );
@@ -66,7 +71,7 @@ scimRouter.delete(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    await deleteScimUser(ctx.project, req.params.id);
+    await deleteScimUser(ctx.getProjectSystemRepo(), ctx.project, req.params.id);
     res.sendStatus(204);
   })
 );

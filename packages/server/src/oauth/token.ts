@@ -15,7 +15,7 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
@@ -24,7 +24,7 @@ import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import type { MedplumRefreshTokenClaims } from './keys';
@@ -110,10 +110,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   let client: WithId<ClientApplication>;
   try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    client = await globalSystemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (_err) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
@@ -128,16 +128,16 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const membership = await getClientApplicationMembership(client);
+  const membership = await getClientApplicationMembership(globalSystemRepo, client);
   if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
 
-  const { project, projectShardId } = await getProjectAndProjectShardId(membership.project as Reference<Project>);
+  const { project, projectShardId } = await getProjectAndProjectShardId(membership.project);
   const scope = (req.body.scope || 'openid') as string;
 
-  const login = await systemRepo.createResource<Login>({
+  const login = await globalSystemRepo.createResource<Login>({
     resourceType: 'Login',
     authMethod: 'client',
     user: createReference(client),
@@ -153,7 +153,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   // TODO: build full AuthState object, including on-behalf-of
 
   try {
-    const userConfig = await getUserConfiguration(systemRepo, project, membership);
+    const userConfig = await getUserConfiguration(globalSystemRepo, project, membership);
     const accessPolicy = await getAccessPolicyForLogin({ project, projectShardId, login, membership, userConfig });
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
@@ -183,8 +183,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const systemRepo = getSystemRepo();
-  const searchResult = await systemRepo.search({
+  const globalSystemRepo = getGlobalSystemRepo();
+  const searchResult = await globalSystemRepo.search({
     resourceType: 'Login',
     filters: [
       {
@@ -213,7 +213,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   if (login.granted) {
-    await revokeLogin(login);
+    await revokeLogin(globalSystemRepo, login);
     sendTokenError(res, 'invalid_grant', 'Token already granted');
     return;
   }
@@ -281,8 +281,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const systemRepo = getSystemRepo();
-  const login = await systemRepo.readResource<Login>('Login', claims.login_id);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined || !claims.refresh_secret) {
     // This token does not have a refresh available
@@ -325,7 +325,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   if (login.client) {
     const clientId = resolveId(login.client) ?? '';
     try {
-      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+      client = await globalSystemRepo.readResource<ClientApplication>('ClientApplication', clientId);
     } catch (_err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
@@ -334,7 +334,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   // Refresh token rotation
   // Generate a new refresh secret and update the login
-  const updatedLogin = await systemRepo.updateResource<Login>({
+  const updatedLogin = await globalSystemRepo.updateResource<Login>({
     ...login,
     refreshSecret: generateSecret(32),
     remoteAddress: req.ip,
@@ -395,9 +395,9 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
-  const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  const client = await globalSystemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
   if (!idp) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -508,11 +508,11 @@ async function parseClientAssertion(
     return { error: 'Invalid client assertion issuer' };
   }
 
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   const clientId = claims.iss as string;
   let client: ClientApplication;
   try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    client = await globalSystemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (_err) {
     return { error: 'Client not found' };
   }
@@ -601,9 +601,9 @@ async function validateClientIdAndSecret(
 async function sendTokenResponse(res: Response, login: WithId<Login>, client?: ClientApplication): Promise<void> {
   const config = getConfig();
 
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  const membership = await systemRepo.readReference<ProjectMembership>(
+  const globalSystemRepo = getGlobalSystemRepo();
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
+  const membership = await globalSystemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
   );
 
@@ -615,7 +615,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
   let encounter = undefined;
 
   if (login.launch) {
-    const launch = await systemRepo.readReference(login.launch);
+    const launch = await globalSystemRepo.readReference(login.launch);
     patient = resolveId(launch.patient);
     encounter = resolveId(launch.encounter);
   }

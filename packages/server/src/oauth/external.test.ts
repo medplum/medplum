@@ -35,11 +35,12 @@ describe('External auth', () => {
     await initApp(app, config);
 
     // Create a test project
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
 
     // Invite a normal Practitioner user to the project
     const inviteResult = await inviteUser({
       project,
+      projectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Person',

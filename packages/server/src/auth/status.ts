@@ -5,7 +5,7 @@ import type { Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { param } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
 import { sendLoginResult } from './utils';
 
@@ -17,10 +17,10 @@ import { sendLoginResult } from './utils';
 export const statusValidator = makeValidationMiddleware([param('login').isUUID().withMessage('Login ID is required')]);
 
 export async function statusHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
 
   const loginId = req.params.login;
-  const login = await systemRepo.readResource<Login>('Login', loginId);
+  const login = await globalSystemRepo.readResource<Login>('Login', loginId);
 
   if (login.granted) {
     sendOutcome(res, badRequest('Login already granted'));

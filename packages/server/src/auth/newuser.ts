@@ -9,7 +9,7 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -39,15 +39,13 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const systemRepo = getSystemRepo();
-
   let projectId = req.body.projectId as string | undefined;
 
   // If the user specifies a client ID, then make sure it is compatible with the project
   const clientId = req.body.clientId;
   let client: ClientApplication | undefined = undefined;
   if (clientId) {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    client = await getGlobalSystemRepo().readResource<ClientApplication>('ClientApplication', clientId);
     if (projectId) {
       if (client.meta?.project !== projectId) {
         sendOutcome(res, badRequest('Client and project do not match'));
@@ -107,8 +105,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
   globalLogger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
-  const systemRepo = getGlobalSystemRepo();
-  const result = await systemRepo.createResource<User>({
+  const result = await getGlobalSystemRepo().createResource<User>({
     resourceType: 'User',
     firstName,
     lastName,

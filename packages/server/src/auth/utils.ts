@@ -19,10 +19,11 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
+import { getProjectShardId } from '../sharding/sharding-utils';
 
 export async function createProfile(
   systemRepo: Repository,
@@ -85,8 +86,8 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     const accountName = `Medplum - ${user.email}`;
@@ -122,17 +123,22 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
-  const redactedMemberships = memberships.map((m) => ({
-    id: m.id,
-    project: m.project,
-    profile: m.profile,
-  }));
-  res.json(
-    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      login: login.id,
-      memberships: redactedMemberships,
+  const redactedMemberships = await Promise.all(
+    memberships.map(async (m) => {
+      const projectShardId = await getProjectShardId(m.project);
+      const systemRepo = getSystemRepo(undefined, projectShardId);
+      return rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
+        id: m.id,
+        project: m.project,
+        profile: m.profile,
+      });
     })
   );
+
+  res.json({
+    login: login.id,
+    memberships: redactedMemberships,
+  });
 }
 
 /**
@@ -221,7 +227,8 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getSystemRepo();
+  // TODO{sharding} - Requires searching across all shards for a project
+  const systemRepo = getSystemRepo(undefined, 'TODO-getProjectByRecaptchaSiteKey');
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

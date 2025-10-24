@@ -21,23 +21,23 @@ import * as semver from 'semver';
 import type { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import type { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(
-  project: string,
+  projectId: string,
   profile: Reference
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {
         code: 'project',
         operator: Operator.EQUALS,
-        value: `Project/${project}`,
+        value: `Project/${projectId}`,
       },
       {
         code: 'profile',
@@ -50,6 +50,8 @@ export function findProjectMembership(
 
 /**
  * Creates an AuditEvent for a subscription attempt.
+ *
+ * @param systemRepo - The system repository.
  * @param resource - The resource that triggered the subscription.
  * @param startTime - The time the subscription attempt started.
  * @param outcome - The outcome code.
@@ -58,6 +60,7 @@ export function findProjectMembership(
  * @param bot - Optional bot that was executed.
  */
 export async function createAuditEvent(
+  systemRepo: Repository,
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
@@ -65,7 +68,6 @@ export async function createAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({

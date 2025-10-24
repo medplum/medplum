@@ -560,6 +560,7 @@ describe('Project Admin routes', () => {
     const projectScopedUser = await withTestContext(() =>
       inviteUser({
         project: testProjectAdmin.project,
+        projectShardId: testProjectAdmin.projectShardId,
         resourceType: 'Patient',
         firstName: 'First',
         lastName: 'Last',

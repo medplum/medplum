@@ -5,7 +5,7 @@ import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'url';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
@@ -119,8 +119,8 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
-    const systemRepo = getSystemRepo();
-    const updatedLogin = await systemRepo.updateResource<Login>({
+    const globalSystemRepo = getGlobalSystemRepo();
+    const updatedLogin = await globalSystemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
       codeChallenge: params.code_challenge ?? existingLogin.codeChallenge,
@@ -178,9 +178,9 @@ function isValidAudience(aud: string | undefined): boolean {
  * @returns True if the launch is valid; false otherwise.
  */
 async function isValidLaunch(launch: string): Promise<boolean> {
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   try {
-    await systemRepo.readResource('SmartAppLaunch', launch);
+    await globalSystemRepo.readResource('SmartAppLaunch', launch);
     return true;
   } catch (_err) {
     return false;
@@ -235,8 +235,8 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
-  return systemRepo.readResource<Login>('Login', existingLoginId);
+  const globalSystemRepo = getGlobalSystemRepo();
+  return globalSystemRepo.readResource<Login>('Login', existingLoginId);
 }
 
 /**
@@ -252,8 +252,8 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
-  const bundle = await systemRepo.search<Login>({
+  const globalSystemRepo = getGlobalSystemRepo();
+  const bundle = await globalSystemRepo.search<Login>({
     resourceType: 'Login',
     filters: [
       {

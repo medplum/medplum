@@ -12,7 +12,7 @@ import {
 import type { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
@@ -21,9 +21,7 @@ import { getSystemRepo } from '../fhir/repo';
  * @param res - The response object
  */
 export const userInfoHandler: RequestHandler = async (_req: Request, res: Response): Promise<void> => {
-  const systemRepo = getSystemRepo();
   const ctx = getAuthenticatedContext();
-  const user = await systemRepo.readReference(ctx.login.user as Reference<User>);
   const profile = await ctx.repo.readReference(ctx.profile);
   const userInfo: Record<string, any> = {
     sub: profile.id,
@@ -34,6 +32,8 @@ export const userInfoHandler: RequestHandler = async (_req: Request, res: Respon
     buildProfile(userInfo, profile);
   }
   if (scopes?.includes('email')) {
+    const globalSystemRepo = getGlobalSystemRepo();
+    const user = await globalSystemRepo.readReference(ctx.login.user as Reference<User>);
     buildEmail(userInfo, profile, user);
   }
   if (scopes?.includes('phone')) {

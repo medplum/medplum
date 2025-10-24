@@ -11,6 +11,7 @@ import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { getProjectShardId } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer } from './utils';
@@ -28,6 +29,7 @@ import { queueRegistry } from './utils';
  */
 
 export interface DownloadJobData {
+  readonly shardId: string;
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
@@ -102,12 +104,14 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     return;
   }
 
+  const projectShardId = await getProjectShardId(project.id);
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (!isExternalUrl(attachment.url) || !isUrlAllowedByProject(project, attachment.url)) {
       continue;
     }
     await addDownloadJobData({
+      shardId: projectShardId,
       resourceType: resource.resourceType,
       id: resource.id,
       url: attachment.url,
@@ -182,7 +186,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo(undefined, job.data.shardId);
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 

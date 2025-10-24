@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { revokeLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -17,8 +17,8 @@ export const revokeValidator = makeValidationMiddleware([
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  const systemRepo = getSystemRepo();
-  const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', req.body.loginId);
 
   // Make sure the login belongs to the current user
   if (login.user?.reference !== ctx.membership.user?.reference) {
@@ -27,7 +27,7 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
   }
 
   // Mark the login as revoked
-  await revokeLogin(login);
+  await revokeLogin(globalSystemRepo, login);
 
   sendOutcome(res, allOk);
 }

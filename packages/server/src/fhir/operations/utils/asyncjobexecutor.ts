@@ -12,6 +12,7 @@ import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
+import { getProjectShardId } from '../../../sharding/sharding-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 import { getSystemRepo } from '../../repo';
@@ -59,7 +60,13 @@ export class AsyncJobExecutor {
     }
 
     const startTime = Date.now();
-    const systemRepo = getSystemRepo();
+    let projectShardId: string;
+    if (this.resource.meta?.project) {
+      projectShardId = await getProjectShardId(this.resource.meta?.project);
+    } else {
+      projectShardId = 'TODO-AsyncJobExecutor.startAsync';
+    }
+    const systemRepo = getSystemRepo(undefined, projectShardId);
     log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
 
     return this.run(callback)
@@ -116,16 +123,20 @@ export class AsyncJobExecutor {
       output,
     };
     if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
+      //TODO - This needs more validation to check that it's a system resource
+      const completedDataVersion = updatedJob.dataVersion;
       getLogger().info('Marking post-deploy migration complete', {
         shardId: repo.projectShardId,
-        version: `v${updatedJob.dataVersion}`,
+        version: `v${completedDataVersion}`,
       });
-      await markPostDeployMigrationCompleted(
-        getDatabasePool(DatabaseMode.WRITER, repo.projectShardId),
-        updatedJob.dataVersion
-      );
-      updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
-      await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
+      await repo.withTransaction(async () => {
+        await markPostDeployMigrationCompleted(
+          getDatabasePool(DatabaseMode.WRITER, repo.projectShardId),
+          completedDataVersion
+        );
+        updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
+        await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
+      });
       return updatedJob;
     } else {
       return repo.updateResource<AsyncJob>(updatedJob);
@@ -184,6 +195,7 @@ export async function sendAsyncResponse(
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+  //TODO{sharding} - The repo used in AsyncJobExecutor should be parameterized
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);

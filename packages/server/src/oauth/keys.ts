@@ -6,7 +6,7 @@ import { randomBytes } from 'crypto';
 import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
@@ -108,8 +108,8 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
-  const systemRepo = getSystemRepo();
-  const searchResult = await systemRepo.searchResources<JsonWebKey>({
+  const globalSystemRepo = getGlobalSystemRepo();
+  const searchResult = await globalSystemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
@@ -125,7 +125,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     globalLogger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(PREFERRED_ALG);
     const jwk = await exportJWK(keyResult.privateKey);
-    const createResult = await systemRepo.createResource<JsonWebKey>({
+    const createResult = await globalSystemRepo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',
       active: true,
       alg: PREFERRED_ALG,
