@@ -61,6 +61,10 @@ describe('FHIR Repo', () => {
   let testProjectRepo: Repository;
   let systemRepo: Repository;
 
+  const usCorePatientProfile = JSON.parse(
+    readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+  ) as StructureDefinition;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
@@ -909,10 +913,7 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const profile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-      profile.url = (profile.url ?? '') + Math.random();
+      const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
       const patient: Patient = {
         resourceType: 'Patient',
         meta: {
@@ -944,13 +945,9 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const originalProfile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-
       const profile = await repo.createResource<StructureDefinition>({
-        ...originalProfile,
-        url: randomUUID(),
+        ...usCorePatientProfile,
+        url: 'urn:uuid:' + randomUUID(),
       });
 
       const patient: Patient = {
@@ -994,15 +991,42 @@ describe('FHIR Repo', () => {
       const { repo } = await createTestProject({ withRepo: { validateTerminology: true } });
       const patient: Patient = {
         resourceType: 'Patient',
-        identifier: [{ system: 'http://example.com/patient-id', value: 'foo' }],
-        name: [{ given: ['Alex'], family: 'Baker' }],
+        identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+        active: true,
+        name: [
+          { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+          { use: 'usual', given: ['Jim'] },
+          { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+        ],
+        telecom: [
+          { use: 'home', system: 'url', value: 'http://example.com' },
+          { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+          { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+          { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+        ],
         gender: 'male',
+        birthDate: '1974-12-25',
+        address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+        contact: [
+          {
+            name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+            telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+            address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+            gender: 'female',
+          },
+        ],
       };
 
-      await expect(repo.createResource(patient)).resolves.toBeTruthy();
+      const profile = await repo.createResource<StructureDefinition>({
+        ...usCorePatientProfile,
+        url: 'urn:uuid:' + randomUUID(),
+      });
+
+      await expect(repo.createResource(patient)).resolves.toBeDefined();
       await expect(repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })).rejects.toThrow(
         `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
       );
+      await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
     }));
 
   test('Conditional update', () =>
@@ -1315,10 +1339,7 @@ describe('FHIR Repo', () => {
         project: project2,
         userConfig: {} as UserConfiguration,
       });
-      const profileJson = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-      const profile = await repo2.createResource(profileJson);
+      const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
 
       const patientJson: Patient = {
         resourceType: 'Patient',

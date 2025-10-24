@@ -1009,6 +1009,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<void> {
     for (const [url, values] of Object.entries(tokens)) {
       const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+
+      const resultCache: Record<string, boolean | undefined> = Object.create(null);
       for (const value of values) {
         let codings: Coding[] | undefined;
         switch (value.type) {
@@ -1018,15 +1020,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           case 'Coding':
             codings = [value.value as Coding];
             break;
-          default:
+          default: {
+            const cachedResult = resultCache[`${value.type}|${value.value}`];
+            if (cachedResult === false) {
+              issues.push({
+                severity: 'error',
+                code: 'value',
+                details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+                expression: [value.path],
+              });
+            }
+            if (cachedResult !== undefined) {
+              continue;
+            }
             codings = [{ code: value.value as string }];
             break;
+          }
         }
         if (!codings?.length) {
           continue;
         }
 
         const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+        resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
         if (!matchedCoding) {
           issues.push({
             severity: 'error',
