@@ -351,7 +351,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
-  return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);
+  return exchangeExternalAuthToken(
+    req,
+    res,
+    req.body.client_id,
+    req.body.subject_token,
+    req.body.subject_token_type,
+    req.body.membership_id
+  );
 }
 
 /**
@@ -362,13 +369,15 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
  * @param clientId - The client application ID.
  * @param subjectToken - The subject token. Only access tokens are currently supported.
  * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ * @param membershipId - Optional membership ID to restrict the exchange to.
  */
 export async function exchangeExternalAuthToken(
   req: Request,
   res: Response,
   clientId: string,
   subjectToken: string,
-  subjectTokenType: OAuthTokenType
+  subjectTokenType: OAuthTokenType,
+  membershipId?: string
 ): Promise<void> {
   if (!clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -422,6 +431,7 @@ export async function exchangeExternalAuthToken(
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     forceUseFirstMembership: true,
+    membershipId,
   });
 
   await sendTokenResponse(res, login, client);

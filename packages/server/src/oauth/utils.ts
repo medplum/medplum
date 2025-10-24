@@ -72,6 +72,7 @@ export interface LoginRequest {
   readonly nonce: string;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
+  readonly membershipId?: string;
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
@@ -201,7 +202,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getMembershipsForLogin(login);
+  let memberships = await getMembershipsForLogin(login);
+
+  if (request.membershipId) {
+    memberships = memberships.filter((m) => m.id === request.membershipId);
+  }
 
   if (memberships.length === 0 && !request.allowNoMembership) {
     throw new OperationOutcomeError(badRequest('User not found'));
