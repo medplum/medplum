@@ -1,7 +1,11 @@
-import { allOk, badRequest, isOperationOutcome, normalizeErrorString, WithId } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { AgentConnectionState, AgentInfo } from '../../agent/utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, isOperationOutcome, normalizeErrorString } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Agent, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { AgentInfo } from '../../agent/utils';
+import { AgentConnectionState } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { getAgentForRequest } from './utils/agentutils';

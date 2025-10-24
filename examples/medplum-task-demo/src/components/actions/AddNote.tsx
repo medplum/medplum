@@ -1,17 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import {
-  createReference,
-  getQuestionnaireAnswers,
-  MedplumClient,
-  normalizeErrorString,
-  PatchOperation,
-} from '@medplum/core';
-import { Annotation, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import type { Annotation, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface AddCommentProps {
   readonly task: Task;

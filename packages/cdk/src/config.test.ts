@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig, OperationOutcomeError } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import {
   InfraConfigNormalizer,

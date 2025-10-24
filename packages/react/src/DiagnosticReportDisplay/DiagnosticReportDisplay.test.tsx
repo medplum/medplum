@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -12,7 +14,8 @@ import {
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
 import { act, render, screen } from '../test-utils/render';
-import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
+import type { DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
+import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 
 const syntheaReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
-import {
+import type {
   Address,
   Communication,
   DiagnosticReport,

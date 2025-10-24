@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getDisplayString } from '@medplum/core';
-import { Organization, Patient, Reference, RelatedPerson } from '@medplum/fhirtypes';
+import type { Organization, Patient, Reference, RelatedPerson } from '@medplum/fhirtypes';
 import { HumanNameDisplay, MedplumLink, useResource } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import styles from './CoverageHeader.module.css';
 
 interface CoverageHeaderProps {

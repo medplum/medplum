@@ -1,4 +1,7 @@
-import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-cdk-lib';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { aws_cloudfront as cloudfront, aws_s3 as s3 } from 'aws-cdk-lib';
+import { aws_iam as iam } from 'aws-cdk-lib';
 
 /**
  * Grants S3 bucket read access to the CloudFront Origin Access Identity (OAI).

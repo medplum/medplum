@@ -4,9 +4,9 @@
   padding-right: 0.75rem;
   padding-left: 1rem;
   grid-column-gap: 0.5rem;
-  background-color: #f4f0fe;
+  background-color: #eddeff;
   transition: all 200ms ease;
-  color: #946af9;
+  color: var(--oc-grape-8);
   font-size: 1rem;
   line-height: 2rem;
   text-decoration: none;
@@ -21,7 +21,7 @@
 
 .cardButton:hover {
   background-color: #ebe6fe;
-  color: #946af9;
+  color: var(--oc-grape-8);
   cursor: pointer;
   text-decoration: none;
 }

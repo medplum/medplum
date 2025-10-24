@@ -1,8 +1,11 @@
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
-import { ResourceDiffTable, ResourceDiffTableProps } from './ResourceDiffTable';
+import type { ResourceDiffTableProps } from './ResourceDiffTable';
+import { ResourceDiffTable } from './ResourceDiffTable';
 
 const medplum = new MockClient();
 
@@ -240,5 +243,46 @@ describe('ResourceDiffTable', () => {
 
     // There should be 2 download links
     expect(screen.getAllByText('Download')).toHaveLength(2);
+  });
+
+  test('Handles changes in contained resources', async () => {
+    console.warn = jest.fn();
+
+    const original: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      id: '123',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/456' },
+      contained: [
+        {
+          resourceType: 'Medication',
+          id: 'med1',
+          code: { text: 'Before' },
+        },
+      ],
+    };
+
+    const revised: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      id: '123',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/456' },
+      contained: [
+        {
+          resourceType: 'Medication',
+          id: 'med1',
+          code: { text: 'After' },
+        },
+      ],
+    };
+
+    await act(async () => {
+      setup({ original, revised });
+    });
+
+    expect(await screen.findByText('Replace contained[0].code.text')).toBeInTheDocument();
+    expect(console.warn).toHaveBeenCalledWith('Failed to get element definition', expect.anything());
   });
 });

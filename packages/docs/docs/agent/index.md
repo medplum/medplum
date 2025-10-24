@@ -94,7 +94,7 @@ Third, set up the [Agent](https://app.medplum.com/Agent/new). This identifies th
 
 #### Set up a Client Application
 
-Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/auth/user-management-guide#creating-memberships) are available in the Admin panel.
+Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/user-management#creating-memberships) are available in the Admin panel.
 
 At the end of the setup you should have the following items:
 
@@ -106,7 +106,7 @@ You'll need the above to successfully install and connect the agent.
 
 ### Install on Host
 
-This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/methods).
+This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth).
 
 #### Running from Source via CLI
 
@@ -231,7 +231,7 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 - [Medplum Agent design discussion](https://github.com/medplum/medplum/discussions/2012)
 - [Medplum WebSockets design discussion](https://github.com/medplum/medplum/discussions/1490)
 - [FHIR WebSocket Subscriptions](https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/channels.html#websockets)
-- [FHIRCast](https://fhircast.org/)
+- [FHIRcast](https://fhircast.org/)
 - [Medplum CLI](/docs/cli)
 - [Sim Hospital](https://github.com/google/simhospital) is a useful tool to generate HL7 V2 test messages locally for testing
 - [Medplum Agent Demo Video](https://youtu.be/MmE3Dn939B4) on Youtube

@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
   Button,
   Checkbox,
+  Code,
   Divider,
   Group,
   Modal,
@@ -13,10 +16,11 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
-import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
+import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
 type UpgradeConfirmContentProps = {
@@ -87,12 +91,14 @@ export function ToolsPage(): JSX.Element | null {
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [reloadingConfig, setReloadingConfig] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [fetchingLogs, setFetchingLogs] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
   const [working, setWorking] = useState(false);
+  const [logs, setLogs] = useState<string | undefined>();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
   useEffect(() => {
@@ -147,13 +153,35 @@ export function ToolsPage(): JSX.Element | null {
   const handleUpgrade = useCallback(
     (force: boolean) => {
       setUpgrading(true);
+      const upgradeUrl = medplum.fhirUrl('Agent', id, '$upgrade');
+      upgradeUrl.searchParams.set('force', String(force));
       medplum
-        .get(medplum.fhirUrl('Agent', id, '$upgrade', `?force=${force}`), { cache: 'reload' })
+        .get(upgradeUrl, { cache: 'reload' })
         .then((_result: Bundle<Parameters>) => {
           showSuccess('Agent upgraded successfully.');
         })
         .catch((err) => showError(normalizeErrorString(err)))
         .finally(() => setUpgrading(false));
+    },
+    [medplum, id]
+  );
+
+  const handleFetchLogs = useCallback(
+    (formData: Record<string, string>) => {
+      setFetchingLogs(true);
+      const limit = formData.logLimit || 20;
+      medplum
+        .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit !== undefined ? `?limit=${limit}` : ''}`), {
+          cache: 'reload',
+        })
+        .then((result: Parameters) => {
+          const param = result?.parameter?.find((param) => param.name === 'logs');
+          if (param) {
+            setLogs(param?.valueString);
+          }
+        })
+        .catch((err) => showError(normalizeErrorString(err)))
+        .finally(() => setFetchingLogs(false));
     },
     [medplum, id]
   );
@@ -241,6 +269,28 @@ export function ToolsPage(): JSX.Element | null {
       <Button onClick={openModal} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
         Upgrade
       </Button>
+      <Divider my="lg" />
+      <Form onSubmit={handleFetchLogs}>
+        <Title order={2}>Fetch Logs</Title>
+        <p>Fetch logs from the agent.</p>
+        {logs?.length ? (
+          <Code block mb={15}>
+            {logs}
+          </Code>
+        ) : null}
+        <Group>
+          <NumberInput w={100} id="logLimit" name="logLimit" placeholder="20" label="Log Limit" />
+          <Button
+            mt={22}
+            loading={fetchingLogs}
+            disabled={working && !fetchingLogs}
+            aria-label="Fetch logs"
+            type="submit"
+          >
+            Fetch Logs
+          </Button>
+        </Group>
+      </Form>
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>

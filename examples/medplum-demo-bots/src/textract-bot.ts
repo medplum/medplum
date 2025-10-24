@@ -1,5 +1,7 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { Media } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Media } from '@medplum/fhirtypes';
 
 // Some types for the AWS Textract response
 // You can find these types in the AWS Textract documentation

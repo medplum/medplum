@@ -1,29 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  Filter,
   getReferenceString,
   getSearchParameters,
   Operator,
   parseSearchRequest,
-  SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
-import {
-  GraphQLBoolean,
-  GraphQLError,
-  GraphQLFieldConfigArgumentMap,
-  GraphQLFloat,
-  GraphQLID,
-  GraphQLInt,
-  GraphQLResolveInfo,
-  GraphQLScalarType,
-  GraphQLString,
-  Kind,
-} from 'graphql';
-import { FhirRequestConfig } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import type { GraphQLError, GraphQLFieldConfigArgumentMap, GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
+import { GraphQLBoolean, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLString, Kind } from 'graphql';
+import type { FhirRequestConfig } from '../fhirrouter';
+import type { FhirRepository } from '../repo';
 
 export interface GraphQLContext {
   repo: FhirRepository;
@@ -218,6 +209,10 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
       type: GraphQLString,
       description:
         ' The _filter parameter provides a syntax for expressing a set of query expressions on the underlying resources.',
+    },
+    _cursor: {
+      type: GraphQLString,
+      description: 'The _cursor parameter is used to retrieve the next page of results from a previous search.',
     },
   };
   const searchParams = getSearchParameters(resourceType);

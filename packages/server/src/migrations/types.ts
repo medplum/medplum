@@ -1,4 +1,9 @@
-import { SqlFunctionDefinition } from '../fhir/sql';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Client, Pool, PoolClient } from 'pg';
+import type { SqlFunctionDefinition } from '../fhir/sql';
+
+export type DbClient = Client | Pool | PoolClient;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -10,7 +15,10 @@ export interface TableDefinition {
   columns: ColumnDefinition[];
   compositePrimaryKey?: string[];
   indexes: IndexDefinition[];
+  constraints?: CheckConstraintDefinition[];
 }
+
+export const SerialColumnTypes = new Set(['BIGSERIAL', 'SERIAL', 'SMALLSERIAL']);
 
 export interface ColumnDefinition {
   name: string;
@@ -18,9 +26,10 @@ export interface ColumnDefinition {
   notNull?: boolean;
   defaultValue?: string;
   primaryKey?: boolean;
+  identity?: 'ALWAYS' | 'BY DEFAULT';
 }
 
-export const IndexTypes = ['btree', 'gin', 'gist'] as const;
+export const IndexTypes = ['btree', 'gin', 'gist', 'brin'] as const;
 export type IndexType = (typeof IndexTypes)[number];
 
 export type IndexColumn = {
@@ -32,10 +41,21 @@ export interface IndexDefinition {
   columns: (string | IndexColumn)[];
   indexType: IndexType;
   unique?: boolean;
+  primaryKey?: boolean;
   include?: string[];
   where?: string;
   indexNameSuffix?: string;
+  indexNameOverride?: string;
   indexdef?: string;
+}
+
+export interface CheckConstraintDefinition {
+  type: 'check';
+  name: string;
+  expression: string;
+
+  // excluded from equality checks
+  valid?: boolean;
 }
 
 export type MigrationAction =
@@ -50,6 +70,11 @@ export type MigrationAction =
   | { type: 'ALTER_COLUMN_TYPE'; tableName: string; columnName: string; columnType: string }
   | { type: 'CREATE_INDEX'; indexName: string; createIndexSql: string }
   | { type: 'DROP_INDEX'; indexName: string }
+  | { type: 'ADD_CONSTRAINT'; tableName: string; constraintName: string; constraintExpression: string }
   | { type: 'ANALYZE_TABLE'; tableName: string };
 
-export type MigrationActionResult = { name: string; durationMs: number };
+export interface MigrationActionResult {
+  name: string;
+  durationMs: number;
+  [key: string]: string | number | undefined;
+}

@@ -1,4 +1,6 @@
-import { MedplumClientOptions } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClientOptions } from '@medplum/core';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';

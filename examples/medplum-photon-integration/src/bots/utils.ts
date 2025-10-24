@@ -1,5 +1,8 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { normalizeErrorString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -9,7 +12,7 @@ import {
   Patient,
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
-import { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
+import type { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {

@@ -1,5 +1,7 @@
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary } from '@medplum/fhirtypes';
+import type { Readable } from 'stream';
 
 /**
  * Binary input type.

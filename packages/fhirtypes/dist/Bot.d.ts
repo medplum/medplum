@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -112,7 +114,7 @@ export interface Bot {
    * The identifier of the bot runtime environment (i.e., vmcontext,
    * awslambda, etc).
    */
-  runtimeVersion?: 'awslambda' | 'vmcontext';
+  runtimeVersion?: 'awslambda' | 'vmcontext' | 'fission';
 
   /**
    * The maximum allowed execution time of the bot in seconds.

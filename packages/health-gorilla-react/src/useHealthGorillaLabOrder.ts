@@ -1,5 +1,8 @@
-import { ResourceArray, createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ResourceArray } from '@medplum/core';
+import { createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
+import type {
   Bundle,
   Coverage,
   Location,
@@ -10,16 +13,17 @@ import {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import {
+import type {
   BillingInformation,
   DiagnosisCodeableConcept,
-  HEALTH_GORILLA_SYSTEM,
-  LabOrderInputErrors,
   LabOrderServiceRequest,
   LabOrderTestMetadata,
   LabOrganization,
-  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
   TestCoding,
+} from '@medplum/health-gorilla-core';
+import {
+  HEALTH_GORILLA_SYSTEM,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
   createLabOrderBundle,
   isReferenceOfType,
   normalizeAoeQuestionnaire,
@@ -28,7 +32,13 @@ import {
 } from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { AOESearch, LabSearch, TestSearch, getAutocompleteSearchFunction } from './autocomplete-endpoint';
+import type { AOESearch, LabSearch, TestSearch } from './autocomplete-endpoint';
+import { getAutocompleteSearchFunction } from './autocomplete-endpoint';
+import type {
+  HealthGorillaLabOrderState,
+  TestMetadata,
+  UseHealthGorillaLabOrderReturn,
+} from './HealthGorillaLabOrderContext';
 
 export type UseHealthGorillaLabOrderOptions = {
   /** Patient the tests are ordered for. */
@@ -43,62 +53,8 @@ export type UseHealthGorillaLabOrderOptions = {
   requestingLocation?: Location | Organization | (Reference<Location | Organization> & { reference: string });
 };
 
-export type HealthGorillaLabOrderState = {
-  performingLab: LabOrganization | undefined;
-  performingLabAccountNumber: string | undefined;
-  selectedTests: TestCoding[];
-  testMetadata: Record<string, TestMetadata | undefined>;
-  diagnoses: DiagnosisCodeableConcept[];
-  billingInformation: BillingInformation;
-  specimenCollectedDateTime: Date | undefined;
-  orderNotes: string | undefined;
-};
-
-export type TestMetadata = LabOrderTestMetadata & {
-  aoeStatus: 'loading' | 'loaded' | 'none' | 'error';
-  /** The AOE `Questionnaire`, if any, containing Ask at Order Entry (AOE) questions for the test.  */
-  aoeQuestionnaire?: Questionnaire;
-};
-
 export type EditableLabOrderTestMetadata = Pick<LabOrderTestMetadata, 'priority' | 'notes' | 'aoeResponses'>;
 const EDITABLE_TEST_METADATA_KEYS: (keyof LabOrderTestMetadata)[] = ['priority', 'notes', 'aoeResponses'];
-
-export type UseHealthGorillaLabOrderReturn = {
-  state: HealthGorillaLabOrderState;
-
-  searchAvailableLabs: (query: string) => Promise<LabOrganization[]>;
-  /**
-   * Set the desired performer for doing the diagnostic testing. Compatible with
-   * results from the `searchAvailableLabs` function.
-   */
-  setPerformingLab: (lab: LabOrganization | undefined) => void;
-  /**
-   * Sets the account number for the performing lab. If not provided, the
-   * `HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER` `Project.secret` is used.
-   */
-  setPerformingLabAccountNumber: (accountNumber: string | undefined) => void;
-
-  searchAvailableTests: (query: string) => Promise<TestCoding[]>;
-  addTest: (test: TestCoding) => void;
-  removeTest: (test: TestCoding) => void;
-  setTests: (tests: TestCoding[]) => void;
-
-  updateTestMetadata: (test: TestCoding, metadata: Partial<LabOrderTestMetadata>) => void;
-
-  addDiagnosis: (diagnosis: DiagnosisCodeableConcept) => void;
-  removeDiagnosis: (diagnosis: DiagnosisCodeableConcept) => void;
-  setDiagnoses: (diagnoses: DiagnosisCodeableConcept[]) => void;
-
-  getActivePatientCoverages: () => Promise<Coverage[]>;
-  updateBillingInformation: (billingInfo: Partial<BillingInformation>) => void;
-
-  setSpecimenCollectedDateTime: (date: Date | undefined) => void;
-
-  setOrderNotes: (orderNotes: string | undefined) => void;
-
-  validateOrder: () => LabOrderInputErrors | undefined;
-  createOrderBundle: () => Promise<{ transactionResponse: Bundle; serviceRequest: ServiceRequest }>;
-};
 
 const INITIAL_TESTS: TestCoding[] = [];
 const INITIAL_DIAGNOSES: DiagnosisCodeableConcept[] = [];

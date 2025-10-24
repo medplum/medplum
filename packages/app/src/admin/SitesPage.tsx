@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { InternalSchemaElement, deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
-import { ProjectSite } from '@medplum/fhirtypes';
+import type { InternalSchemaElement } from '@medplum/core';
+import { deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
+import type { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import { FormEvent, JSX, useEffect, useState } from 'react';
+import type { FormEvent, JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {

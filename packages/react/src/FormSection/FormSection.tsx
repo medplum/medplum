@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Input } from '@mantine/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import cx from 'clsx';
-import { JSX, ReactNode, useContext } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';
 import { getErrorsForInput } from '../utils/outcomes';

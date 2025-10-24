@@ -1,11 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, resolveId } from '@medplum/core';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../async';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { revokeLogin } from '../oauth/utils';
 
-export const logoutHandler = asyncWrap(async (req: Request, res: Response): Promise<void> => {
+export const logoutHandler = async (_req: Request, res: Response): Promise<void> => {
   const ctx = getAuthenticatedContext();
 
   // Mark the login as revoked
@@ -22,4 +23,4 @@ export const logoutHandler = asyncWrap(async (req: Request, res: Response): Prom
   }
 
   sendOutcome(res, allOk);
-});
+};

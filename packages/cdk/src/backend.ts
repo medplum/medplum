@@ -1,4 +1,6 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -41,8 +43,8 @@ export class BackEnd extends Construct {
   taskRolePolicies: iam.PolicyDocument;
   taskRole: iam.Role;
   taskDefinition: ecs.FargateTaskDefinition;
-  logGroup: logs.ILogGroup;
-  logDriver: ecs.AwsLogDriver;
+  logGroup?: logs.ILogGroup;
+  logDriver: ecs.LogDriver;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
@@ -100,7 +102,7 @@ export class BackEnd extends Construct {
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
-        rds.AuroraPostgresEngineVersion.VER_12_9
+        rds.AuroraPostgresEngineVersion.VER_16_9
       );
 
       const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
@@ -286,10 +288,13 @@ export class BackEnd extends Construct {
     this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
-    this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
-      vpc: this.vpc,
-      containerInsights: config.containerInsights,
-    });
+    let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
+    if (config.containerInsightsV2) {
+      clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
+    } else {
+      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
+    }
+    this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
     // Task Policies
     this.taskRolePolicies = new iam.PolicyDocument({
@@ -443,20 +448,37 @@ export class BackEnd extends Construct {
       taskRole: this.taskRole,
     });
 
-    // Log Groups
-    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: '/ecs/medplum/' + name,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    // Log Drivers
+    if (config.fireLens?.enabled) {
+      this.logDriver = new ecs.FireLensLogDriver({
+        options: {
+          ...config.fireLens.logDriverConfig?.options,
+        },
+      });
+    } else {
+      this.logGroup = new logs.LogGroup(this, 'LogGroup', {
+        logGroupName: '/ecs/medplum/' + name,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
 
-    this.logDriver = new ecs.AwsLogDriver({
-      logGroup: this.logGroup,
-      streamPrefix: 'Medplum',
-    });
+      this.logDriver = new ecs.AwsLogDriver({
+        logGroup: this.logGroup,
+        streamPrefix: 'Medplum',
+      });
+    }
+
+    let containerRegistryCredentials: secretsmanager.ISecret | undefined = undefined;
+    if (config.containerRegistryCredentialsSecretArn) {
+      containerRegistryCredentials = secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'RegistryCredentialsSecret',
+        config.containerRegistryCredentialsSecretArn
+      );
+    }
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -471,13 +493,22 @@ export class BackEnd extends Construct {
       for (const container of config.additionalContainers) {
         this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
           containerName: container.name,
-          image: this.getContainerImage(config, container.image),
+          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
           command: container.command,
           environment: container.environment,
           logging: this.logDriver,
           essential: container.essential ?? false, // Default to false
         });
       }
+    }
+
+    if (config.fireLens?.enabled) {
+      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
     }
 
     // Security Groups
@@ -498,6 +529,7 @@ export class BackEnd extends Construct {
       desiredCount: config.desiredServerCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
+      minHealthyPercent: 50, // 50% is the default; make it explicit
     });
 
     // Add autoscaling
@@ -666,9 +698,14 @@ export class BackEnd extends Construct {
    * Otherwise, the image name is assumed to be a Docker Hub image.
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
+   * @param credentials - The credentials for the image repository.
    * @returns The container image.
    */
-  private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {
+  private getContainerImage(
+    config: MedplumInfraConfig,
+    imageName: string,
+    credentials: secretsmanager.ISecret | undefined
+  ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
       `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
@@ -687,7 +724,7 @@ export class BackEnd extends Construct {
     }
 
     // Otherwise, use the standard container image
-    return ecs.ContainerImage.fromRegistry(imageName);
+    return ecs.ContainerImage.fromRegistry(imageName, { credentials });
   }
 }
 

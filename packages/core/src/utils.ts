@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Attachment,
   Bundle,
   CodeableConcept,
@@ -7,6 +9,7 @@ import {
   Extension,
   ExtensionValue,
   Identifier,
+  Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -111,7 +114,8 @@ export function resolveId(input: Reference | Resource | undefined): string | und
 /**
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
- * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource.
+ * @throws {@link OperationOutcomeError} If the reference cannot be parsed.
  */
 export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
@@ -122,6 +126,26 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type, id];
+}
+
+/**
+ * Normalizes Medplum's `meta.account` and `meta.accounts` into a singular array of FHIR references.
+ * @param meta - The `meta` object of a FHIR resource.
+ * @returns An array of references, or `undefined` if none.
+ */
+export function extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
+  if (!meta) {
+    return undefined;
+  }
+  if (meta.accounts && meta.account) {
+    const accounts = meta.accounts;
+    if (accounts.some((a) => a.reference === meta.account?.reference)) {
+      return accounts;
+    }
+    return [meta.account, ...accounts];
+  } else {
+    return arrayify(meta.accounts ?? meta.account);
+  }
 }
 
 /**
@@ -645,6 +669,25 @@ export function isPopulated<T extends { length: number } | object>(arg: CanBePop
 }
 
 /**
+ * Returns an array with trailing empty elements removed.
+ * For example, [1, 2, 3, null, undefined, ''] becomes [1, 2, 3].
+ * This is useful for FHIR arrays, which by default must maintain the same length,
+ * but while editing we may want to trim trailing empty elements.
+ * @param arr - The input array.
+ * @returns The array with trailing empty elements removed.
+ */
+export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefined {
+  if (!arr) {
+    return undefined;
+  }
+  let i = arr.length - 1;
+  while (i >= 0 && isEmpty(arr[i])) {
+    i--;
+  }
+  return i >= 0 ? arr.slice(0, i + 1) : undefined;
+}
+
+/**
  * Resource equality.
  * Ignores meta.versionId and meta.lastUpdated.
  * @param object1 - The first object.
@@ -821,6 +864,29 @@ export function isCoding(value: unknown): value is Coding & { code: string } {
  */
 export function isCodeableConcept(value: unknown): value is CodeableConcept & { coding: Coding[] } {
   return isObject(value) && 'coding' in value && Array.isArray(value.coding) && value.coding.every(isCoding);
+}
+
+/**
+ * Finds the code for a specific system in a list of CodeableConcepts.
+ * @param categories - The list of CodeableConcepts to search.
+ * @param system - The system to match.
+ * @returns The code for the matching system, or undefined if not found.
+ */
+export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
+  if (!categories) {
+    return undefined;
+  }
+  for (const category of categories) {
+    if (!category.coding) {
+      continue;
+    }
+    for (const coding of category.coding) {
+      if (coding.system === system) {
+        return coding.code;
+      }
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -1388,7 +1454,7 @@ export function removeProfileFromResource<T extends Resource = Resource>(resourc
   return resource;
 }
 
-export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | undefined): U[] {
+export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | U[] | undefined): U[] {
   const result: U[] = [];
   if (!arr) {
     return result;
@@ -1397,7 +1463,7 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   for (let i = 0; i < arr.length; i++) {
     const resultValue = fn(arr[i], i);
     if (Array.isArray(resultValue)) {
-      result.push(...resultValue.flat());
+      result.push(...resultValue);
     } else if (resultValue !== undefined) {
       result.push(resultValue);
     }

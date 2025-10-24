@@ -1,5 +1,8 @@
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import type {
   Address,
   Annotation,
   Attachment,
@@ -17,7 +20,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
+import type { ResourcePropertyInputProps } from './ResourcePropertyInput';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
 

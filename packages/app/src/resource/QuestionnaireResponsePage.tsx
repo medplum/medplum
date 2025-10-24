@@ -1,7 +1,11 @@
-import { Operator, SearchRequest } from '@medplum/core';
-import { Questionnaire } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { Questionnaire } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplum } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function QuestionnaireResponsePage(): JSX.Element {

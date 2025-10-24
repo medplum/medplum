@@ -1,18 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { LOINC } from '../constants';
-import { TypedValue } from '../types';
+import type { TypedValue } from '../types';
+import type { InternalSchemaElement, InternalTypeSchema, SlicingRules } from './types';
 import {
   getDataType,
   indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
   isProfileLoaded,
   loadDataType,
   parseStructureDefinition,
-  SlicingRules,
   subsetResource,
   tryGetDataType,
   tryGetProfile,

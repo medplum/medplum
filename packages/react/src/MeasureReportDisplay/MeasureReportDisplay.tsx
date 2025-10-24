@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, SimpleGrid } from '@mantine/core';
-import { MeasureReport, MeasureReportGroup, Reference } from '@medplum/fhirtypes';
+import type { MeasureReport, MeasureReportGroup, Reference } from '@medplum/fhirtypes';
 import { useResource, useSearchOne } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { MeasureReportGroupDisplay, MeasureTitle } from './MeasureReportGroupDisplay/MeasureReportGroupDisplay';
 
 export interface MeasureReportDisplayProps {

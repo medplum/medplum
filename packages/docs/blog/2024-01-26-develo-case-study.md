@@ -35,7 +35,7 @@ _(Scheduling orders)_
 Develo EHR is FHIR native and built on Medplum using the following features:
 
 - [Self-hosting](/docs/self-hosting): Develo hosts Medplum in their own AWS.
-- [Multi-tenant](/docs/auth/user-management-guide#background-user-model): Develo customers have separate datastores using Medplum projects.
+- [Multi-tenant](/docs/user-management#background-user-model): Develo customers have separate datastores using Medplum projects.
 
 This application is an example of a **software company**, using Medplum to build a custom EHR that delights pediatricians, patients, and families alike. Some screen shots of the applications are shown below.
 

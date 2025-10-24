@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
+import type { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
 import { LOINC } from '../constants';
 import { toTypedValue } from '../fhirpath/utils';
-import { TypedValue } from '../types';
+import type { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
 import { crawlTypedValue, crawlTypedValueAsync } from './crawler';
 import { indexStructureDefinitionBundle } from './types';

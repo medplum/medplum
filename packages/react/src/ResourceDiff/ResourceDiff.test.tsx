@@ -1,4 +1,6 @@
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient } from '@medplum/fhirtypes';
 import { render, screen } from '../test-utils/render';
 import { ResourceDiff } from './ResourceDiff';
 

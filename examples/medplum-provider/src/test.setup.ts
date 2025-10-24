@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // See: https://mantine.dev/guides/vitest/
 
 import '@testing-library/jest-dom';
 
 import { MemoryStorage, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 
 const { getComputedStyle } = window;

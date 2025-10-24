@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, List, Stack, Text, Title } from '@mantine/core';
 import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
-import {
+import type {
   Annotation,
   DiagnosticReport,
   Observation,
@@ -11,7 +13,8 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';

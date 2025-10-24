@@ -1,6 +1,8 @@
-import { DiagnosticReport, MeasureReport, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { DiagnosticReport, MeasureReport, ResourceType } from '@medplum/fhirtypes';
 import { DiagnosticReportDisplay, Document, MeasureReportDisplay, useResource } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function ReportPage(): JSX.Element | null {

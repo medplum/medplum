@@ -1,4 +1,6 @@
-import { Request } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Request } from 'express';
 import { loadTestConfig } from './config/loader';
 import {
   RequestContext,

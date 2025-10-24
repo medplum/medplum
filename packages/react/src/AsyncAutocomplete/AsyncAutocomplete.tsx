@@ -1,28 +1,12 @@
-import {
-  Combobox,
-  ComboboxItem,
-  ComboboxProps,
-  Group,
-  Loader,
-  Pill,
-  PillsInput,
-  ScrollAreaAutosize,
-  useCombobox,
-} from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ComboboxItem, ComboboxProps } from '@mantine/core';
+import { Combobox, Group, Loader, Pill, PillsInput, ScrollAreaAutosize, useCombobox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
-import {
-  JSX,
-  KeyboardEvent,
-  ReactNode,
-  SyntheticEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 

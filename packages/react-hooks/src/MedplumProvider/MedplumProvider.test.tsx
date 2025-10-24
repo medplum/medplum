@@ -1,16 +1,12 @@
-import {
-  ClientStorage,
-  MedplumClientEventMap,
-  MemoryStorage,
-  MockAsyncClientStorage,
-  ProfileResource,
-  getDisplayString,
-  sleep,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClientEventMap, ProfileResource } from '@medplum/core';
+import { ClientStorage, MemoryStorage, MockAsyncClientStorage, getDisplayString, sleep } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 

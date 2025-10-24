@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
-import { CloudFrontClient, CreatePublicKeyCommand, PublicKey } from '@aws-sdk/client-cloudfront';
+import type { PublicKey } from '@aws-sdk/client-cloudfront';
+import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';

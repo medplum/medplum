@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   ContentType,
@@ -8,7 +10,7 @@ import {
   getReferenceString,
   stringify,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AuditEvent,
   Binary,
@@ -20,20 +22,21 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
+import type { Job, Worker } from 'bullmq';
 import * as bullmqModule from 'bullmq';
-import bullmq, { Job } from 'bullmq';
-import { Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
@@ -941,6 +944,69 @@ describe('Subscription Worker', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         description: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot as Bot),
+        },
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+      expect(fetch).not.toHaveBeenCalled();
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      });
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
+  test('Execute bot subscriptions run as user', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        runAsUser: true,
         runtimeVersion: 'awslambda',
         code: `
         export async function handler(medplum, event) {
@@ -2042,7 +2108,7 @@ describe('Subscription Worker Event Handling', () => {
         return mockWorker;
       }),
     };
-    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as bullmq.Worker);
+    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
     // Now import the subscription worker init function
 
     // Mock the logger and metrics functions

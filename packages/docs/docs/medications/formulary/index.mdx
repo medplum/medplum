@@ -19,7 +19,7 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 - How to annotate medications with the proper codes.
 - How to represent physical characteristics about the medication and its package.
 - How to categorize medications in the formulary.
-- How to represent compounded medications.
+- How to represent compounded medications, including dose variations. 
 - How to represent relationships between medications.
 
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
@@ -215,14 +215,243 @@ Refer to the [HL7 Controlled Substances Schedule](https://terminology.hl7.org/Va
 
 ## Compounded Medications
 
-For medications that must be mixed before being dispensed, the `MedicationKnowledge.ingredients` field is used for listing ingredients of compounded medications, with RxNorm as the preferred code system for each ingredient.
+For medications that must be mixed before being dispensed, the `MedicationKnowledge.ingredient` field is used for listing ingredients of compounded medications, with RxNorm as the preferred code system for each ingredient.
 
 The `MedicationKnowledge.amount` field indicates the total amount of the compound to be dispensed, and the `strength` of each ingredient is stored as a ratio of the total volume (e.g. 1g per 100g).
 
-`ingredient.active` indicates which of the listed ingredients are active.
+`ingredient.isActive` indicates which of the listed ingredients are active.
+
+### Dose Variations
+
+For compounded medications with multiple dose variations, it's common to model a parent-child relationship where:
+
+- **Parent medication**: Contains the core compound formula with ingredients and base concentrations
+- **Child medications**: Represent specific dose variations of the parent compound with different volumes and administration instructions
+
+This hierarchical structure allows for efficient management of compound families while maintaining specific dosing information for each variation.
+
+```mermaid
+graph TD
+    A[Parent: Base Formula with Ingredients<br/>Semaglutide 2.5 mg/mL + Glycine 5 mg/mL] --> B[Child: 2.5mg Dose<br/>4 mL Volume<br/>Weekly Administration]
+    A --> C[Child: 1.7mg Dose<br/>3 mL Volume<br/>Weekly Administration]
+    A --> D[Child: 1mg Dose<br/>1.6 mL Volume<br/>Weekly Administration]
+
+    
+    style A fill:#e1f5fe
+
+    style B fill:#e8f5e8
+    style C fill:#e8f5e8
+    style D fill:#e8f5e8
+
+```
 
 <details>
-  <summary>Example Compounded Medication</summary>
+  <summary>Example: Parent Compound Medication</summary>
+
+```ts
+{
+  resourceType: "MedicationKnowledge",
+  status: "active",
+  ingredient: [
+    {
+      itemReference: {
+        reference: "Substance/1234",
+        display: "Semaglutide"
+      },
+      strength: {
+        numerator: {
+          value: 2.5,
+          unit: "mg"
+        },
+        denominator: {
+          value: 1
+        }
+      }
+    },
+    {
+      itemReference: {
+        reference: "Substance/5678",
+        display: "Glycine"
+      },
+      strength: {
+        numerator: {
+          value: 5,
+          unit: "mg"
+        },
+        denominator: {
+          value: 1
+        }
+      }
+    }
+  ],
+  code: {
+    text: "Semaglutide 2.5 mg/mL + Glycine 5 mg/mL",
+    coding: [
+      {
+        system: "medication-coding-system",
+        code: "3099",
+        display: "Semaglutide 2.5 mg/mL + Glycine 5 mg/mL"
+      }
+    ]
+  },
+  productType: [
+    {
+      coding: [
+        {
+          system: "medication-type-coding-system",
+          code: "compound",
+          display: "Compound"
+        }
+      ]
+    }
+  ],
+  doseForm: {
+    coding: [
+      {
+        system: "http://hl7.org/fhir/administrable-dose-form",
+        code: "100000073863",
+        display: "Solution for injection"
+      }
+    ]
+  },
+  // Parent medication references its child variations
+  relatedMedicationKnowledge: [
+    {
+      type: {
+        coding: [
+          {
+            system: "compounded-medication-family",
+            code: "child",
+            display: "child"
+          }
+        ]
+      },
+      reference: [
+        {
+          reference: "MedicationKnowledge/<child1-id>",
+          display: "1.7mg Semaglutide 2.5 mg/mL + Glycine 5 mg/mL 3 mL"
+        },
+        {
+          reference: "MedicationKnowledge/<child2-id>",
+          display: "1mg Semaglutide 2.5 mg/mL + Glycine 5 mg/mL 1.5 mL"
+        }
+        // Additional child variations...
+      ]
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+  <summary>Example: Child Dose Variation</summary>
+
+```ts
+{
+  resourceType: "MedicationKnowledge",
+  status: "active",
+  amount: {
+    value: 1,
+    extension: [
+      {
+        id: "medication-days-supply",
+        url: "https://www.hl7.org/fhir/datatypes.html#integer",
+        valueInteger: 28
+      }
+    ],
+    unit: "Each"
+  },
+  code: {
+    text: "1.7mg Semaglutide 2.5 mg/mL + Glycine 5 mg/mL 3 mL",
+    coding: [
+      {
+        system: "medication-coding-system",
+        code: "3080",
+        display: "1.7mg Semaglutide 2.5 mg/mL + Glycine 5 mg/mL 3 mL"
+      }
+    ]
+  },
+  // Specific administration guidelines for this dose variation
+  administrationGuidelines: [
+    {
+      dosage: [
+        {
+          dosage: [
+            {
+              patientInstruction: "Inject Semaglutide 1.7mg (0.70mL or units) subcutaneously once weekly"
+            }
+          ],
+          type: {
+            coding: [
+              {
+                code: "maintenance",
+                display: "maintenance"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  productType: [
+    {
+      coding: [
+        {
+          system: "medication-type-coding-system",
+          code: "compound",
+          display: "Compound"
+        }
+      ]
+    }
+  ],
+  // Child medication references its parent
+  relatedMedicationKnowledge: [
+    {
+      type: {
+        coding: [
+          {
+            system: "compounded-medication-family",
+            code: "parent",
+            display: "parent"
+          }
+        ]
+      },
+      reference: [
+        {
+          reference: "MedicationKnowledge/<parent-id>",
+          display: "Semaglutide 2.5 mg/mL + Glycine 5 mg/mL"
+        }
+      ]
+    }
+  ]
+}
+```
+
+</details>
+
+### Key Considerations for Parent-Child Compounds
+
+**Parent Medication Features:**
+- Contains the complete ingredient list with base concentrations
+- Uses `relatedMedicationKnowledge` with type "child" to reference dose variations
+- Typically lacks specific administration guidelines (handled by children)
+- Serves as the master template for the compound family
+
+**Child Medication Features:**
+- References parent using `relatedMedicationKnowledge` with type "parent"
+- Contains specific volume amounts and administration instructions
+- Includes dose-specific coding and display names
+- May include additional metadata like days supply and patient instructions
+
+**Benefits of This Approach:**
+- Centralizes ingredient management in the parent
+- Allows for easy addition of new dose variations
+- Maintains clear relationships between related compounds
+- Supports efficient formulary navigation and management
+
+<details>
+  <summary>Example: Traditional Single Compounded Medication</summary>
 
 ```ts
 {
@@ -372,6 +601,14 @@ The `MedicationKnowledge.amount` field indicates the total amount of the compoun
 Advanced implementations might want to model structured relationships between medications. For example, administrators might want to link [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources representing generic and branded medications, to aid in fulfillment (see [Branded vs. Generic Medications](#branded-vs-generic-medications))
 
 Relationships between drugs in the formulary are modeled using the `MedicationKnowledge.relatedMedicationKnowledge` field. The type of each relationship is specified by `MedicationKnowledge.relatedMedicationKnowledge.type`.
+
+Common relationship types include:
+
+- **Parent-Child**: Used for compound families where a parent contains the base formula and children represent dose variations
+- **Generic-Branded**: Links generic and branded versions of the same medication
+- **Therapeutic Equivalents**: Medications that can be substituted for one another
+
+Custom relationship type systems can be defined for organization-specific needs, such as the "compounded-medication-family" system shown in the compound examples above.
 
 Refer to the [RxNORM relationship codes](https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix1.html) for an example code system of relationships between drugs.
 

@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { MedplumClient, SNOMED } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
 

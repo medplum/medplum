@@ -553,6 +553,22 @@
       "definition": "The User-Agent request header as sent by the client.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "pictureUrl",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.pictureUrl",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional picture URL from the external identity provider.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
-import { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
+import type { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 
 export interface PlanDefinitionApplyFormProps {
   readonly planDefinition: PlanDefinition;

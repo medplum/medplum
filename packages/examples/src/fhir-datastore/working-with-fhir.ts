@@ -1,4 +1,6 @@
-/* eslint-disable no-duplicate-imports */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+/* eslint-disable import/no-duplicates */
 
 // start-block core-imports
 import { MedplumClient, UCUM } from '@medplum/core';
@@ -6,21 +8,21 @@ import fetch from 'node-fetch';
 
 // end-block core-imports
 // start-block patient-imports
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
 // end-block patient-imports
 // start-block service-request-imports
 import { createReference } from '@medplum/core';
-import { ServiceRequest } from '@medplum/fhirtypes';
+import type { ServiceRequest } from '@medplum/fhirtypes';
 
 // end-block service-request-imports
 // start-block observation-imports
-import { Observation } from '@medplum/fhirtypes';
+import type { Observation } from '@medplum/fhirtypes';
 
 // end-block observation-imports
 // start-block report-imports
-import { DiagnosticReport } from '@medplum/fhirtypes';
+import type { DiagnosticReport } from '@medplum/fhirtypes';
 
 // end-block report-imports
 // start-block api-keys

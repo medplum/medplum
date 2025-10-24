@@ -1,8 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LoadingOverlay } from '@mantine/core';
 import {
-  MedplumClient,
   Operator,
-  SearchRequest,
   capitalize,
   formatCodeableConcept,
   formatSearchQuery,
@@ -10,8 +10,10 @@ import {
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
-import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { MedplumClient, SearchRequest } from '@medplum/core';
+import type { Practitioner } from '@medplum/fhirtypes';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { NavbarLink } from '@medplum/react';
 import {
   IconCategory,
   IconChecklist,
@@ -24,7 +26,8 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';

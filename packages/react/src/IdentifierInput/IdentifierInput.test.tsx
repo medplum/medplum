@@ -1,4 +1,6 @@
-import { Identifier } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Identifier } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { IdentifierInput } from './IdentifierInput';
 

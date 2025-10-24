@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SubscriptionEmitter, generateId } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import 'jest-websocket-mock';
-import { JSX, ReactNode, StrictMode, useCallback, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { StrictMode, useCallback, useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { UseSubscriptionOptions, useSubscription } from './useSubscription';
+import type { UseSubscriptionOptions } from './useSubscription';
+import { useSubscription } from './useSubscription';
 
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 

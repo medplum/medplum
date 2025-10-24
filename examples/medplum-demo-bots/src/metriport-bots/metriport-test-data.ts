@@ -1,5 +1,7 @@
-import { Bundle, Organization, Patient } from '@medplum/fhirtypes';
-import { PatientDTO } from '@metriport/api-sdk';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Bundle, Organization, Patient } from '@medplum/fhirtypes';
+import type { PatientDTO } from '@metriport/api-sdk';
 
 /* Medplum resources */
 

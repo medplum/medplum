@@ -82,7 +82,7 @@ We believe this initial support for MCP will spark incredible innovation. We can
 
 * Open [Claude](https://claude.ai/) and log in, you'll need to be on a paid plan to add integrations
 * Navigate to the [settings page](https://claude.ai/settings/profile) in the bottom left and then click on "Add Integration" on the Organization Integrations page.
-* In the diaglog that opens input "Medplum" for the **Integration Name**, and "https://api.medplum.com/mcp/sse" for the **Integration URL** and click Add
+* In the diaglog that opens input "Medplum" for the **Integration Name**, and "https://api.medplum.com/mcp/stream" for the **Integration URL** and click Add
 * Back on the Organization integrations page, you'll see a button to **Connect**, click on it and it will redirect you to Medplum where you should authenticate
 * You'll be redirected to the Integrations page where 
 * Create a [New Chat](https://claude.ai/new) in Claude and paste the following

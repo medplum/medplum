@@ -6,6 +6,9 @@ concurrency:
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+
 jobs:
   build_agent_win64:
     runs-on: windows-latest
@@ -20,16 +23,20 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install NSIS
         run: choco install nsis
+
+      - name: Add NSIS to PATH
+        run: echo "C:\Program Files (x86)\NSIS" >> $GITHUB_PATH
+        shell: bash
 
       - name: Install Wget
         run: choco install wget
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -41,7 +48,7 @@ jobs:
         run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -53,7 +60,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash
         shell: bash
@@ -66,7 +73,7 @@ jobs:
         run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: find-signtool
         with:
           result-encoding: string
@@ -126,7 +133,7 @@ jobs:
           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
           path: packages/agent/medplum-agent-installer-*
@@ -144,16 +151,16 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -165,7 +172,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash
         shell: bash
@@ -180,6 +187,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash
@@ -200,7 +209,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-x64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-x64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64.tar.gz
@@ -218,16 +227,16 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           cache-name: cache-node-modules
         with:
@@ -239,7 +248,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash
         shell: bash
@@ -254,6 +263,8 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash
@@ -274,7 +285,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-arm64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64.tar.gz

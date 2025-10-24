@@ -1,12 +1,27 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
-import { MedplumRedisConfig } from './config/types';
+import type { MedplumRedisConfig } from './config/types';
+import { getLogger } from './logger';
 
 let redis: Redis | undefined = undefined;
 let redisSubscribers: Set<Redis> | undefined = undefined;
 
 export function initRedis(config: MedplumRedisConfig): void {
-  redis = new Redis(config);
+  redis = new Redis({
+    ...config,
+    reconnectOnError: (err) => {
+      if (err.message.includes('READONLY')) {
+        // Reconnect and retry if the connected instance got marked as read-only;
+        // this happens during Redis service updates when the cluster fails over
+        // between primary and replica instances
+        return 2;
+      }
+      getLogger().warn('Unhandled Redis error', err);
+      return false; // Do not reconnect on other errors
+    },
+  });
 }
 
 export async function closeRedis(): Promise<void> {

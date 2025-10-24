@@ -1,5 +1,7 @@
-import { MedplumClient } from '@medplum/core';
-import { Coverage } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import type { Coverage } from '@medplum/fhirtypes';
 
 /**
  * Creates a self-pay coverage for a patient

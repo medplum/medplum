@@ -1,9 +1,12 @@
-import { fetchVersionManifest, ReleaseManifest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ReleaseManifest } from '@medplum/core';
+import { fetchVersionManifest } from '@medplum/core';
 import { createWriteStream } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
-import streamWeb from 'node:stream/web';
+import type streamWeb from 'node:stream/web';
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
 export const UPGRADER_LOG_PATH = resolve(

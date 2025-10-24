@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -223,4 +225,9 @@ export interface Login {
    * The User-Agent request header as sent by the client.
    */
   userAgent?: string;
+
+  /**
+   * Optional picture URL from the external identity provider.
+   */
+  pictureUrl?: string;
 }

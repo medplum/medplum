@@ -1,5 +1,9 @@
-import { Button, ButtonProps } from '@mantine/core';
-import { JSX, useContext } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ButtonProps } from '@mantine/core';
+import { Button } from '@mantine/core';
+import type { JSX } from 'react';
+import { useContext } from 'react';
 import { FormContext } from './Form.context';
 
 export type SubmitButtonProps = Omit<ButtonProps, 'type' | 'loading'>;

@@ -1,5 +1,8 @@
-import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getCodeBySystem, normalizeErrorString } from '@medplum/core';
+import type { BotEvent, MedplumClient, PatchOperation } from '@medplum/core';
+import type { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 

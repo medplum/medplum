@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
-import { JSX, ReactNode, Suspense, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
 import classes from './AppShell.module.css';
 import { Header } from './Header';
-import { Navbar, NavbarMenu } from './Navbar';
+import type { NavbarMenu } from './Navbar';
+import { Navbar } from './Navbar';
 
 export interface AppShellProps {
   readonly logo: ReactNode;

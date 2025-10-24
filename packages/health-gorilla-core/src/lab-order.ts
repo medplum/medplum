@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, deepClone, formatCoding, generateId, isReference, SNOMED } from '@medplum/core';
-import {
+import type {
   Bundle,
   Coverage,
   Extension,
@@ -21,18 +23,15 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
-import {
+import type {
   BillingInformation,
-  BillToOptions,
   DiagnosisCodeableConcept,
-  isBillTo,
-  isPriority,
   LabOrderServiceRequest,
   LabOrderTestMetadata,
   LabOrganization,
-  PRIORITY_VALUES,
   TestCoding,
 } from './types';
+import { BillToOptions, isBillTo, isPriority, PRIORITY_VALUES } from './types';
 
 export type LabOrderInputs = {
   /** `Patient` the tests are ordered for. This must be a reference to an existing `Patient` resource. */

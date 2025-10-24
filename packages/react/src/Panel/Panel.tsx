@@ -1,6 +1,9 @@
-import { Paper, PaperProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { PaperProps } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import cx from 'clsx';
-import { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import classes from './Panel.module.css';
 
 export interface PanelProps extends PaperProps {

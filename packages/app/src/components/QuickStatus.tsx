@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { NativeSelect } from '@mantine/core';
-import { Reference, ValueSet } from '@medplum/fhirtypes';
+import type { Reference, ValueSet } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import classes from './QuickStatus.module.css';
 
 export interface QuickStatusProps {

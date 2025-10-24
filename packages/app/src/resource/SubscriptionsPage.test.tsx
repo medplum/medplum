@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { Bot, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Subscription } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
 

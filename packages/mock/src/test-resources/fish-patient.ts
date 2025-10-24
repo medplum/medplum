@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, deepClone } from '@medplum/core';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Patient, StructureDefinition } from '@medplum/fhirtypes';
 
 export type ProfileStructureDefinition = StructureDefinition & {
   url: string;

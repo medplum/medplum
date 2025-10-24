@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -139,6 +141,12 @@ export interface User {
    * Shared secret for MFA authenticator applications.
    */
   mfaSecret?: string;
+
+  /**
+   * Whether the user is required to complete MFA enrollment. If true, the
+   * user must complete MFA enrollment before they can log in.
+   */
+  mfaRequired?: boolean;
 
   /**
    * Whether the user has completed MFA enrollment.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   getReferenceString,
   getStatus,
@@ -5,20 +8,21 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
-  SearchRequest,
-  WithId,
 } from '@medplum/core';
-import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import type { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
-import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
+import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
+import type { WorkerInitializer } from './utils';
 import {
   addVerboseQueueLogging,
   isJobActive,
@@ -26,7 +30,6 @@ import {
   moveToDelayedAndThrow,
   queueRegistry,
   updateAsyncJobOutput,
-  WorkerInitializer,
 } from './utils';
 
 /*

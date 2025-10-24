@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
@@ -5,7 +7,7 @@ import {
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
-import { MedplumClient } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import fetch from 'node-fetch';
 import { spawnSync } from 'node:child_process';

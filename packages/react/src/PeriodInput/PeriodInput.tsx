@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group } from '@mantine/core';
-import { Period } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useState } from 'react';
+import type { Period } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface PeriodInputProps extends ComplexTypeInputProps<Period> {}
 

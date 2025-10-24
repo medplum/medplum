@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { CardContainer } from '../components/CardContainer';
@@ -19,13 +22,18 @@ export default function EnterprisePage(): JSX.Element {
               Medplum is a platform with powerful primitives and pre-built integrations that scales to meet the needs of
               your organization.
             </p>
-            <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
               <div>Book a demo</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-            </a>
+            </Link>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
+            <img
+              src="/img/hero/hero-custom-apps-and-portals-square.webp"
+              alt="Medplum Enterprise"
+              width="450"
+              height="450"
+            />
           </div>
         </Jumbotron>
         <Section>
@@ -105,7 +113,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Okta"
               title="Identity, security"
               imgUrl="/img/blog/okta-logo.png"
-              webUrl="/docs/auth/methods/domain-level-identity-providers"
+              webUrl="/docs/auth/domain-level-identity-providers"
             />
             <ProfileCard
               name="Azure SSO"
@@ -117,7 +125,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Google SSO"
               title="Identity, security"
               imgUrl="/img/blog/google-logo.jpeg"
-              webUrl="/docs/auth/methods/google-auth"
+              webUrl="/docs/auth/google-auth"
             />
           </CardContainer>
         </Section>
@@ -215,10 +223,10 @@ export default function EnterprisePage(): JSX.Element {
               Medplum Enterprise includes a two week workshop with team training, integrations planning, documentation
               and setup. The materials are customized to the specific needs of your implementation.
             </p>
-            <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
               <div>Book Now</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-            </a>
+            </Link>
           </div>
           <div className={styles.heroImage}>
             <img src="/img/blog/workshop.svg" alt="Medplum robot coding" width="488" height="384" />

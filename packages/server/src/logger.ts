@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LogLevel, Logger } from '@medplum/core';
 import { requestContextStore } from './request-context-store';
 

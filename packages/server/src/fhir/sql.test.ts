@@ -1,12 +1,19 @@
-import { Client } from 'pg';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Client, PoolClient } from 'pg';
+import type { CTE, Operator } from './sql';
 import {
   Column,
   Condition,
+  Constant,
+  InsertQuery,
   Negation,
-  Operator,
   SelectQuery,
   SqlBuilder,
+  UnionAllBuilder,
+  UpdateQuery,
   ValuesQuery,
+  isValidTableName,
   periodToRangeString,
 } from './sql';
 
@@ -153,6 +160,65 @@ describe('SqlBuilder', () => {
       );
     });
 
+    test('Select with subquery', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Condition(new Column(joinName, 'id'), '=', new Column('MyJoinTable', 'id'));
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('INNER JOIN', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" INNER JOIN (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON "T1"."id" = "MyJoinTable"."id"'
+      );
+    });
+
+    test('Select with simple lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('LEFT JOIN LATERAL', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" LEFT JOIN LATERAL (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON true'
+      );
+    });
+
+    test('Select with realistic lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('Patient')
+        .column('id')
+        .join(
+          'LEFT JOIN LATERAL',
+          new SelectQuery('HumanName')
+            .column('resourceId')
+            .column('name')
+            .where(new Column('HumanName', 'resourceId'), '=', new Column('Patient', 'id'))
+            .orderBy(new Column('HumanName', 'resourceId'), false)
+            .limit(1),
+          joinName,
+          joinOnExpression
+        )
+        .orderBy(new Column('T1', 'name'), false)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "Patient"."id" FROM "Patient" LEFT JOIN LATERAL (SELECT "HumanName"."resourceId", "HumanName"."name" FROM "HumanName" WHERE "HumanName"."resourceId" = "Patient"."id" ORDER BY "HumanName"."resourceId" LIMIT 1) AS "T1" ON true ORDER BY "T1"."name"'
+      );
+    });
+
     test('Select distinct on sorting', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable')
@@ -174,16 +240,16 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
-    test('Select where like', () => {
+    test('Select where lower like', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'LIKE', 'x').buildSql(sql);
+      new SelectQuery('MyTable').column('id').where('name', 'LOWER_LIKE', 'x').buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") LIKE $1');
     });
 
-    test('Select where not like', () => {
+    test('Select where ilike', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
-      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+      new SelectQuery('MyTable').column('id').where('name', 'ILIKE', 'x').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" ILIKE $1');
     });
 
     test('Select missing columns', () => {
@@ -213,6 +279,12 @@ describe('SqlBuilder', () => {
 
       await sql.execute(conn);
       expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+    });
+
+    test('Empty insert is no-op', async () => {
+      const db = { query: jest.fn() } as unknown as PoolClient;
+      await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
+      expect(db.query).not.toHaveBeenCalled();
     });
 
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {
@@ -250,4 +322,61 @@ describe('SqlBuilder', () => {
       );
     });
   });
+
+  describe('UnionAllBuilder', () => {
+    test('multiple queries', () => {
+      const unionAllBuilder = new UnionAllBuilder();
+      unionAllBuilder.add(new SelectQuery('MyTable').column('id').column('my_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe('(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable")');
+
+      unionAllBuilder.add(new SelectQuery('MyOtherTable').column('id').column('my_other_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable")'
+      );
+
+      unionAllBuilder.add(new SelectQuery('MyThirdTable').column('id').column('my_third_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable") UNION ALL (SELECT "MyThirdTable"."id", "MyThirdTable"."my_third_table_col" FROM "MyThirdTable")'
+      );
+    });
+  });
+
+  describe('UpdateQuery', () => {
+    test('Simple Update', () => {
+      const sql = new SqlBuilder();
+      const update = new UpdateQuery('MyTable', ['id', 'name']);
+      update.set('id', 123);
+      update.buildSql(sql);
+      expect(sql.toString()).toBe('UPDATE "MyTable" SET "id" = $1 RETURNING "MyTable"."id", "MyTable"."name"');
+      expect(sql.getValues()).toStrictEqual([123]);
+    });
+
+    test('with CTE and RETURNING', () => {
+      const cteQuery = new SelectQuery('MyTable').column('id').column('name').where('projectId', '=', null).limit(10);
+      const cte: CTE = {
+        name: 'MyCTE',
+        expr: cteQuery,
+      };
+
+      const sql = new SqlBuilder();
+      const update = new UpdateQuery('MyTable', ['id']);
+      update.from(cte);
+      update.set('id', 123);
+      update.set('name', 'new-name');
+      update.where(new Column('MyCTE', 'id'), '=', new Column('MyTable', 'id'));
+      update.buildSql(sql);
+      expect(sql.toString()).toBe(
+        'WITH "MyCTE" AS (SELECT "MyTable"."id", "MyTable"."name" FROM "MyTable" WHERE "MyTable"."projectId" IS NULL LIMIT 10) UPDATE "MyTable" SET "id" = $1, "name" = $2 FROM "MyCTE" WHERE "MyCTE"."id" = "MyTable"."id" RETURNING "MyTable"."id"'
+      );
+      expect(sql.getValues()).toStrictEqual([123, 'new-name']);
+    });
+  });
+});
+
+test('isValidTableName', () => {
+  expect(isValidTableName('Observation')).toStrictEqual(true);
+  expect(isValidTableName('Observation_History')).toStrictEqual(true);
+  expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
+  expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidTableName('Observation History')).toStrictEqual(false);
 });

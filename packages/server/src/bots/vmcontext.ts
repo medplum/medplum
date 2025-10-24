@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   createReference,
@@ -6,7 +8,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Binary, Reference } from '@medplum/fhirtypes';
+import type { Binary, Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
@@ -14,7 +16,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
-import { BotExecutionContext, BotExecutionResult } from './types';
+import type { BotExecutionContext, BotExecutionResult } from './types';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
@@ -59,6 +61,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       bot: createReference(bot),
       baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
       accessToken: request.accessToken,
+      requester: request.requester,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets: request.secrets,

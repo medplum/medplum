@@ -50,16 +50,8 @@
       "destination": "/docs/access/access-policies"
     },
     {
-      "source": "/docs/auth/authentication-integration-patterns",
-      "destination": "/docs/auth/methods"
-    },
-    {
-      "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
-      "destination": "/docs/auth/methods/:page*"
-    },
-    {
       "source": "/docs/auth/okta-auth",
-      "destination": "/docs/auth/methods/domain-level-identity-providers"
+      "destination": "/docs/auth/domain-level-identity-providers"
     },
     {
       "source": "/docs/sdk/modules",
@@ -84,6 +76,62 @@
     {
       "source": "/careers/solutions-engineer",
       "destination": "/careers/forward-deployed-engineer"
+    },
+    {
+      "source": "/docs/auth/user-management-guide",
+      "destination": "/docs/user-management"
+    },
+    {
+      "source": "/docs/auth/methods",
+      "destination": "/docs/auth"
+    },
+    {
+      "source": "/docs/auth/methods/oauth-auth-code",
+      "destination": "/docs/auth/medplum-as-idp"
+    },
+    {
+      "source": "/docs/auth/methods/client-credentials",
+      "destination": "/docs/auth/client-credentials"
+    },
+    {
+      "source": "/docs/auth/methods/google-auth",
+      "destination": "/docs/auth/google-auth"
+    },
+    {
+      "source": "/docs/auth/methods/domain-level-identity-providers",
+      "destination": "/docs/auth/domain-level-identity-providers"
+    },
+    {
+      "source": "/docs/auth/methods/external-identity-providers",
+      "destination": "/docs/auth/external-identity-providers"
+    },
+    {
+      "source": "/docs/auth/methods/external-ids",
+      "destination": "/docs/user-management/external-ids"
+    },
+    {
+      "source": "/docs/auth/methods/on-behalf-of",
+      "destination": "/docs/auth/on-behalf-of"
+    },
+    {
+      "source": "/docs/auth/methods/token-exchange",
+      "destination": "/docs/auth/token-exchange"
+    },
+    {
+      "source": "/docs/auth/project-vs-server-scoped-users",
+      "destination": "/docs/user-management/project-vs-server-scoped-users"
+    },
+    {
+      "source": "/docs/auth/custom-emails",
+      "destination": "/docs/user-management/custom-emails"
+    },
+    {
+      "source": "/docs/auth/open-patient-registration",
+      "destination": "/docs/user-management/open-patient-registration"
+    },
+    {
+      "source": "/docs/graphql/basic-queries",
+      "destination": "/docs/graphql"
     }
   ]
 }

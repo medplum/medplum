@@ -1,10 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, LoadingOverlay, Stack, Table, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { forbidden, formatSearchQuery, normalizeErrorString, Operator, SearchRequest, WithId } from '@medplum/core';
-import { AsyncJob, Resource } from '@medplum/fhirtypes';
+import type { SearchRequest, WithId } from '@medplum/core';
+import { forbidden, formatSearchQuery, normalizeErrorString, Operator } from '@medplum/core';
+import type { AsyncJob, Resource } from '@medplum/fhirtypes';
 import { Container, MedplumLink, OperationOutcomeAlert, Panel, SearchControl, useMedplum } from '@medplum/react';
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { startAsyncJobAsync } from './SuperAdminStartAsyncJob';
 

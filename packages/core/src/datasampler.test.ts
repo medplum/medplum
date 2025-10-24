@@ -1,4 +1,6 @@
-import { Bundle, Observation } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Bundle, Observation } from '@medplum/fhirtypes';
 import { LOINC, SNOMED, UCUM } from './constants';
 import { DataSampler, expandSampledObservation, summarizeObservations } from './datasampler';
 

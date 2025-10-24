@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
   Button,
@@ -10,16 +12,15 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
   DEFAULT_SEARCH_COUNT,
-  Filter,
-  SearchRequest,
   deepEquals,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -31,7 +32,8 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, JSX, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, JSX, MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -41,6 +43,7 @@ import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilter
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
+import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
@@ -478,16 +481,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             value={getPage(memoizedSearch)}
             total={getTotalPages(memoizedSearch, lastResult)}
             onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
-            getControlProps={(control) => {
-              switch (control) {
-                case 'previous':
-                  return { 'aria-label': 'Previous page' };
-                case 'next':
-                  return { 'aria-label': 'Next page' };
-                default:
-                  return {};
-              }
-            }}
+            getControlProps={getPaginationControlProps}
           />
         </Center>
       )}

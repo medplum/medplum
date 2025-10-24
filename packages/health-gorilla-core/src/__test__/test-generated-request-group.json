@@ -1,18 +1,14 @@
 {
   "resourceType": "RequestGroup",
   "meta": {
-    "profile": [
-      "https://healthgorilla.com/fhir/StructureDefinition/hg-order"
-    ]
+    "profile": ["https://healthgorilla.com/fhir/StructureDefinition/hg-order"]
   },
   "contained": [
     {
       "resourceType": "Account",
       "status": "active",
       "meta": {
-        "profile": [
-          "https://healthgorilla.com/fhir/StructureDefinition/hg-order-account"
-        ]
+        "profile": ["https://healthgorilla.com/fhir/StructureDefinition/hg-order-account"]
       },
       "type": {
         "coding": [
@@ -80,22 +76,15 @@
           "use": "official",
           "text": "Amisha S Bhakta, PA",
           "family": "Bhakta",
-          "given": [
-            "Amisha",
-            "S"
-          ],
-          "suffix": [
-            "PA"
-          ]
+          "given": ["Amisha", "S"],
+          "suffix": ["PA"]
         }
       ],
       "address": [
         {
           "use": "work",
           "text": "444 8th St, San Francisco, CA 94103",
-          "line": [
-            "444 8th St"
-          ],
+          "line": ["444 8th St"],
           "city": "San Francisco",
           "state": "CA",
           "postalCode": "94103",
@@ -227,9 +216,7 @@
       "resourceType": "Patient",
       "name": [
         {
-          "given": [
-            "Five"
-          ],
+          "given": ["Five"],
           "family": "Testpatient"
         }
       ],
@@ -251,9 +238,7 @@
         {
           "use": "home",
           "type": "physical",
-          "line": [
-            "4775 Crown Blvd"
-          ],
+          "line": ["4775 Crown Blvd"],
           "city": "Dallas",
           "state": "TX",
           "postalCode": "75063",
@@ -289,9 +274,7 @@
       "resourceType": "Patient",
       "name": [
         {
-          "given": [
-            "Five"
-          ],
+          "given": ["Five"],
           "family": "Testpatient"
         }
       ],
@@ -313,9 +296,7 @@
         {
           "use": "home",
           "type": "physical",
-          "line": [
-            "4775 Crown Blvd"
-          ],
+          "line": ["4775 Crown Blvd"],
           "city": "Dallas",
           "state": "TX",
           "postalCode": "75063",

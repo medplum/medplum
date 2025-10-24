@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -5,17 +8,18 @@ import {
   getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import { getSystemRepo, Repository } from '../repo';
+import type { Repository } from '../repo';
+import { getSystemRepo } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -98,5 +102,7 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
       });
     }
     await deployLambda(latestBot, codeToDeploy as string);
+  } else if (latestBot.runtimeVersion === 'fission') {
+    await deployFissionBot(latestBot, codeToDeploy as string);
   }
 }

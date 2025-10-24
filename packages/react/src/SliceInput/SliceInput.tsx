@@ -1,19 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
-import {
-  ElementsContextType,
-  ExtendedInternalSchemaElement,
-  SliceDefinitionWithTypes,
-  buildElementsContext,
-  getPropertyDisplayName,
-  isEmpty,
-  isPopulated,
-} from '@medplum/core';
-import { JSX, MouseEvent, useContext, useMemo, useState } from 'react';
+import type { ElementsContextType, ExtendedInternalSchemaElement, SliceDefinitionWithTypes } from '@medplum/core';
+import { buildElementsContext, getPropertyDisplayName, isEmpty, isPopulated } from '@medplum/core';
+import type { JSX, MouseEvent } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';

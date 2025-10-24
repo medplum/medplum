@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Account,
   Address,
   Appointment,
@@ -114,6 +116,14 @@ describe('FHIR resource validation', () => {
       birthDate: 'Aug 14, 1949',
     };
     expect(() => validateResource(invalidFormat)).toThrow();
+  });
+
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
   });
 
   test('Invalid numeric value', () => {
@@ -304,6 +314,81 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(typesBundle)).not.toThrow();
     expect(() => validateResource(resourcesBundle)).not.toThrow();
     expect(() => validateResource(medplumBundle)).not.toThrow();
+  });
+
+  test('StructureDefinition with differential', () => {
+    const sd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://fhir.de/StructureDefinition/informationrecipient',
+      name: 'ExtensionInformationRecipient',
+      status: 'active',
+      kind: 'complex-type',
+      abstract: false,
+      context: [
+        {
+          type: 'element',
+          expression: 'Composition',
+        },
+      ],
+      type: 'Extension',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Extension',
+      derivation: 'constraint',
+      differential: {
+        element: [
+          {
+            id: 'Extension.extension',
+            path: 'Extension.extension',
+            max: '0',
+          },
+          {
+            id: 'Extension.url',
+            path: 'Extension.url',
+            fixedUri: 'http://fhir.de/StructureDefinition/informationrecipient',
+          },
+          {
+            id: 'Extension.value[x]',
+            path: 'Extension.value[x]',
+            slicing: {
+              discriminator: [
+                {
+                  type: 'type',
+                  path: '$this',
+                },
+              ],
+              ordered: false,
+              rules: 'open',
+            },
+            min: 1,
+            type: [
+              {
+                code: 'Reference',
+                targetProfile: [
+                  'http://hl7.org/fhir/StructureDefinition/Practitioner',
+                  'http://hl7.org/fhir/StructureDefinition/Device',
+                  'http://hl7.org/fhir/StructureDefinition/Patient',
+                  'http://hl7.org/fhir/StructureDefinition/RelatedPerson',
+                  'http://hl7.org/fhir/StructureDefinition/PractitionerRole',
+                  'http://hl7.org/fhir/StructureDefinition/Organization',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'Extension.value[x]:valueReference',
+            path: 'Extension.value[x]',
+            sliceName: 'valueReference',
+            min: 1,
+            max: '1',
+            type: [
+              {
+                code: 'Reference',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    expect(() => validateResource(sd)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {

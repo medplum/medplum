@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   EventTarget,
   OperationOutcomeError,
@@ -9,7 +11,7 @@ import {
   parseSearchRequest,
   singularize,
 } from '@medplum/core';
-import {
+import type {
   CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
   OperationOutcome,
@@ -17,11 +19,14 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
-import { Operation } from 'rfc6902';
-import { LogEvent, processBatch } from './batch';
+import type { Operation } from 'rfc6902';
+import type { LogEvent } from './batch';
+import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from './repo';
-import { HttpMethod, RouteResult, Router } from './urlrouter';
+import type { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
+import { RepositoryMode } from './repo';
+import type { HttpMethod, RouteResult } from './urlrouter';
+import { Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -185,7 +190,9 @@ async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise
 // Read resource history
 async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const bundle = await repo.readHistory(resourceType as ResourceType, id);
+  const offset = parseIntegerQueryParam(req.query, '_offset');
+  const limit = parseIntegerQueryParam(req.query, '_count');
+  const bundle = await repo.readHistory(resourceType as ResourceType, id, { offset, limit });
   return [allOk, bundle];
 }
 
@@ -363,6 +370,17 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+function parseIntegerQueryParam(query: Record<string, string | string[] | undefined>, key: string): number | undefined {
+  const value = query[key];
+  let strValue: string | undefined;
+  if (Array.isArray(value)) {
+    strValue = value[value.length - 1];
+  } else {
+    strValue = value;
+  }
+  return strValue ? parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

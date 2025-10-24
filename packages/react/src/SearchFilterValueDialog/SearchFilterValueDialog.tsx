@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Grid, Modal } from '@mantine/core';
-import { Filter } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
-import { JSX, useState } from 'react';
+import type { Filter } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 

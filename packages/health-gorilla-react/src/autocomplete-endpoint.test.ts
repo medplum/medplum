@@ -1,12 +1,15 @@
-import { allOk, forbidden, MedplumClient } from '@medplum/core';
-import { Questionnaire } from '@medplum/fhirtypes';
-import {
-  HEALTH_GORILLA_SYSTEM,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { allOk, forbidden } from '@medplum/core';
+import type { Questionnaire } from '@medplum/fhirtypes';
+import type {
   HGAutocompleteBotInput,
   HGAutocompleteBotResponse,
   LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
+import { HEALTH_GORILLA_SYSTEM } from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { getAutocompleteSearchFunction } from './autocomplete-endpoint';

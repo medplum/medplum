@@ -1,5 +1,7 @@
-import { Hl7Message } from '@medplum/core';
-import { Hl7Connection } from './connection';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Hl7Message } from '@medplum/core';
+import type { Hl7Connection } from './connection';
 
 export class Hl7MessageEvent extends Event {
   readonly connection: Hl7Connection;

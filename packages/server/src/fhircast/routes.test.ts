@@ -1,22 +1,16 @@
-import {
-  ContentType,
-  CurrentContext,
-  FhircastEventContext,
-  FhircastEventPayload,
-  WithId,
-  createFhircastMessagePayload,
-  generateId,
-  isOperationOutcome,
-} from '@medplum/core';
-import { DiagnosticReport, Project } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CurrentContext, FhircastEventContext, FhircastEventPayload, WithId } from '@medplum/core';
+import { ContentType, createFhircastMessagePayload, generateId, isOperationOutcome } from '@medplum/core';
+import type { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
-import { ChainableCommander } from 'ioredis';
+import type { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
+import type { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';
@@ -42,7 +36,7 @@ class MockChainableCommander {
   }
 }
 
-describe('FHIRCast routes', () => {
+describe('FHIRcast routes', () => {
   let app: express.Express;
   let config: MedplumServerConfig;
   let server: Server;
@@ -68,7 +62,7 @@ describe('FHIRCast routes', () => {
     tokenForAnotherProject = _accessToken2;
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8517, resolve);
     });
   });
 
@@ -569,7 +563,7 @@ describe('FHIRCast routes', () => {
   test('Get context', async () => {
     const topic = randomUUID();
     let res: any;
-    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
+    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
     res = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);

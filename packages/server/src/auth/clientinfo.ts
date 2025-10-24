@@ -1,10 +1,11 @@
-import { Request, RequestHandler, Response } from 'express';
-import { asyncWrap } from '../async';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Request, RequestHandler, Response } from 'express';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClientApplication } from '../oauth/utils';
 
-export const clientInfoHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const clientInfoHandler: RequestHandler = async (req: Request, res: Response) => {
   const { clientId } = req.params;
   const systemRepo = getSystemRepo();
   const client = await getClientApplication(clientId);
@@ -14,4 +15,4 @@ export const clientInfoHandler: RequestHandler = asyncWrap(async (req: Request, 
       logo: client.signInForm?.logo,
     })
   );
-});
+};

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
-import { List, RiskAssessment } from '@medplum/fhirtypes';
+import type { List, RiskAssessment } from '@medplum/fhirtypes';
 // end-block imports
 
 const dedupeAssessment: RiskAssessment =

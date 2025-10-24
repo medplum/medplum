@@ -1,6 +1,9 @@
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm } from '@medplum/react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 
 export function PatientIntakeQuestionnairePage(): JSX.Element {
   const [isSubmitted, setIsSubmitted] = useState(false);

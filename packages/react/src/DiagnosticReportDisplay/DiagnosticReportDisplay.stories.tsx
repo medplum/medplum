@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, deepClone } from '@medplum/core';
-import { Observation, Reference, Specimen } from '@medplum/fhirtypes';
+import type { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
-import { JSX, useEffect, useState } from 'react';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   HealthGorillaDiagnosticReport,

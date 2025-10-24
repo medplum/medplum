@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block coreImports
-import { BotEvent, MedplumClient } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
 // end-block coreImports
 // start-block sftpImport
 import Client from 'ssh2-sftp-client';

@@ -1,4 +1,6 @@
-import { AuditEvent, Subscription } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AuditEvent, Subscription } from '@medplum/fhirtypes';
 
 export const ExampleSubscription: Subscription = {
   resourceType: 'Subscription',

@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
-import { DomainConfiguration } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { DomainConfiguration } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';

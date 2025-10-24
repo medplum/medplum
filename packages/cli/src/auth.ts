@@ -1,15 +1,13 @@
-import {
-  ContentType,
-  getDisplayString,
-  MEDPLUM_CLI_CLIENT_ID,
-  MedplumClient,
-  normalizeErrorString,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { ContentType, getDisplayString, MEDPLUM_CLI_CLIENT_ID, normalizeErrorString } from '@medplum/core';
 import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
-import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, Profile, saveProfile } from './utils';
+import type { Profile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, saveProfile } from './utils';
 
 const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
@@ -87,6 +85,7 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
         res.end(`Error: ${normalizeErrorString(err)}`);
       } finally {
         server.close();
+        process.exit(0);
       }
     } else {
       res.writeHead(404, { 'Content-Type': ContentType.TEXT });

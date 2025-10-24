@@ -1,10 +1,19 @@
-import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { evalFhirPath } from '../fhirpath/parse';
-import { isPeriod } from '../fhirpath/utils';
-import { PropertyType, globalSchema } from '../types';
-import { isString } from '../utils';
-import { SearchParameterType, getSearchParameterDetails } from './details';
-import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Period, Resource } from '@medplum/fhirtypes';
+import { evalFhirPathTyped } from '../fhirpath/parse';
+import { toPeriod, toTypedValue } from '../fhirpath/utils';
+import type { TypedValue } from '../types';
+import { globalSchema } from '../types';
+import type { SearchableToken } from './ir';
+import {
+  convertToSearchableDates,
+  convertToSearchableReferences,
+  convertToSearchableStrings,
+  convertToSearchableTokens,
+} from './ir';
+import type { Filter, SearchRequest } from './search';
+import { Operator, splitSearchOnComma } from './search';
 
 /**
  * Determines if the resource matches the search request.
@@ -38,19 +47,20 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   if (!searchParam) {
     return false;
   }
+  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
   if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-    return matchesMissingOrPresent(resource, filter, searchParam);
+    return matchesMissingOrPresent(typedValues, filter);
   }
   switch (searchParam.type) {
     case 'reference':
-      return matchesReferenceFilter(resource, filter, searchParam);
+      return matchesReferenceFilter(typedValues, filter);
     case 'string':
     case 'uri':
-      return matchesStringFilter(resource, filter, searchParam);
+      return matchesStringFilter(typedValues, filter);
     case 'token':
-      return matchesTokenFilter(resource, filter, searchParam);
+      return matchesTokenFilter(typedValues, filter);
     case 'date':
-      return matchesDateFilter(resource, filter, searchParam);
+      return matchesDateFilter(typedValues, filter);
     default:
       // Unknown search parameter or search parameter type
       // Default fail the check
@@ -58,27 +68,25 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   }
 }
 
-function matchesMissingOrPresent(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource);
-  const exists = values.length > 0;
+function matchesMissingOrPresent(typedValues: TypedValue[], filter: Filter): boolean {
+  const exists = typedValues.length > 0;
   const desired =
     (filter.operator === Operator.MISSING && filter.value === 'false') ||
     (filter.operator === Operator.PRESENT && filter.value === 'true');
   return desired === exists;
 }
 
-function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource) as (Reference | string)[];
+function matchesReferenceFilter(typedValues: TypedValue[], filter: Filter): boolean {
   const negated = isNegated(filter.operator);
 
-  if (filter.value === '' && values.length === 0) {
+  if (filter.value === '' && typedValues.length === 0) {
     // If the filter operator is "equals", then the filter matches.
     // If the filter operator is "not equals", then the filter does not match.
     return filter.operator === Operator.EQUALS;
   }
 
   // Normalize the values array into reference strings
-  const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
+  const references = convertToSearchableReferences(typedValues);
 
   for (const filterValue of splitSearchOnComma(filter.value)) {
     let match = references.includes(filterValue);
@@ -98,43 +106,13 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
   return negated;
 }
 
-function matchesTokenFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const details = getSearchParameterDetails(resource.resourceType, searchParam);
-  if (details.type === SearchParameterType.BOOLEAN) {
-    return matchesBooleanFilter(resource, filter, searchParam);
-  } else {
-    return matchesStringFilter(resource, filter, searchParam, true);
-  }
-}
-
-function matchesBooleanFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource);
-  const expected = filter.value === 'true';
-  const result = values.includes(expected);
-  return isNegated(filter.operator) ? !result : result;
-}
-
-function matchesStringFilter(
-  resource: Resource,
-  filter: Filter,
-  searchParam: SearchParameter,
-  asToken?: boolean
-): boolean {
-  const details = getSearchParameterDetails(resource.resourceType, searchParam);
-  const searchParamElementType = details.elementDefinitions?.[0]?.type?.[0]?.code;
-  const resourceValues = evalFhirPath(searchParam.expression as string, resource);
+function matchesTokenFilter(typedValues: TypedValue[], filter: Filter): boolean {
+  const resourceValues = convertToSearchableTokens(typedValues);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      let match;
-      if (searchParamElementType === PropertyType.Identifier) {
-        match = matchesTokenIdentifierValue(resourceValue as Identifier, filter.operator, filterValue);
-      } else if (searchParamElementType === PropertyType.CodeableConcept) {
-        match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
-      } else {
-        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
-      }
+      const match = matchesTokenValue(resourceValue, filterValue);
       if (match) {
         return !negated;
       }
@@ -145,31 +123,7 @@ function matchesStringFilter(
   return negated;
 }
 
-function matchesStringValue(
-  resourceValue: unknown,
-  operator: Operator,
-  filterValue: string,
-  asToken?: boolean
-): boolean {
-  if (asToken && filterValue.includes('|')) {
-    const [system, code] = filterValue.split('|');
-    return (
-      matchesStringValue(resourceValue, operator, system, false) &&
-      (!code || matchesStringValue(resourceValue, operator, code, false))
-    );
-  }
-  let str = '';
-  if (resourceValue) {
-    if (typeof resourceValue === 'string') {
-      str = resourceValue;
-    } else if (typeof resourceValue === 'object') {
-      str = JSON.stringify(resourceValue);
-    }
-  }
-  return str.toLowerCase().includes(filterValue.toLowerCase());
-}
-
-function matchesTokenIdentifierValue(resourceValue: Identifier, operator: Operator, filterValue: string): boolean {
+function matchesTokenValue(resourceValue: SearchableToken, filterValue: string): boolean {
   if (filterValue.includes('|')) {
     const [system, value] = filterValue.split('|').map((s) => s.toLowerCase());
     if (!system && !value) {
@@ -188,47 +142,13 @@ function matchesTokenIdentifierValue(resourceValue: Identifier, operator: Operat
   return resourceValue.value?.toLowerCase() === filterValue.toLowerCase();
 }
 
-function matchesTokenCodeableConceptValue(
-  resourceValue: CodeableConcept,
-  _operator: Operator,
-  filterValue: string
-): boolean {
-  if (filterValue.includes('|')) {
-    const [system, code] = filterValue.split('|').map((s) => s.toLowerCase());
-    if (!system && !code) {
-      return false;
-    } else if (!system) {
-      // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has no system property
-      return resourceValue.coding?.some((coding) => !coding.system && coding.code?.toLowerCase() === code) ?? false;
-    }
-
-    // [parameter]=[system]|: any element where the value of [system] matches the system property of the Identifier or Coding
-    // [parameter]=[system]|[code]: the value of [code] matches a Coding.code or Identifier.value, and the value of [system] matches the system property of the Identifier or Coding
-    return (
-      resourceValue.coding?.some(
-        (coding) => coding.system?.toLowerCase() === system && (!code || coding.code?.toLowerCase() === code)
-      ) ?? false
-    );
-  }
-
-  // [parameter]=[code]: the value of [code] matches a Coding.code or Identifier.value irrespective of the value of the system property
-  return (
-    resourceValue.text?.toLowerCase() === filterValue.toLowerCase() ||
-    (resourceValue.coding?.some((coding) => coding.code?.toLowerCase() === filterValue.toLowerCase()) ?? false)
-  );
-}
-
-function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const resourceValues = evalFhirPath(searchParam.expression as string, resource);
+function matchesStringFilter(typedValues: TypedValue[], filter: Filter): boolean {
+  const resourceValues = convertToSearchableStrings(typedValues);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesDateValue(
-        buildDateTimeColumn(resourceValue),
-        filter.operator,
-        buildDateTimeColumn(filterValue) as string
-      );
+      const match = matchesStringValue(resourceValue, filterValue);
       if (match) {
         return !negated;
       }
@@ -239,54 +159,61 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   return negated;
 }
 
-function matchesDateValue(resourceValue: string | undefined, operator: Operator, filterValue: string): boolean {
+function matchesStringValue(resourceValue: string, filterValue: string): boolean {
+  return resourceValue.toLowerCase().includes(filterValue.toLowerCase());
+}
+
+function matchesDateFilter(typedValues: TypedValue[], filter: Filter): boolean {
+  const resourceValues = convertToSearchableDates(typedValues);
+  const filterValues = splitSearchOnComma(filter.value);
+  const negated = isNegated(filter.operator);
+  for (const resourceValue of resourceValues) {
+    for (const filterValue of filterValues) {
+      const match = matchesDateValue(resourceValue, filter.operator, filterValue);
+      if (match) {
+        return !negated;
+      }
+    }
+  }
+  // If "not equals" and no matches, then return true
+  // If "equals" and no matches, then return false
+  return negated;
+}
+
+function matchesDateValue(resourceValue: Period, operator: Operator, filterValue: string): boolean {
   if (!resourceValue) {
     return false;
   }
+  const filterPeriod = toPeriod(filterValue);
+  if (!filterPeriod) {
+    return false;
+  }
+
+  const resourceStart = resourceValue.start ?? '0000';
+  const resourceEnd = resourceValue.end ?? '9999';
+  const filterStart = filterPeriod.start as string;
+  const filterEnd = filterPeriod.end as string;
+
   switch (operator) {
-    case Operator.STARTS_AFTER:
-    case Operator.GREATER_THAN:
-      return resourceValue > filterValue;
-    case Operator.GREATER_THAN_OR_EQUALS:
-      return resourceValue >= filterValue;
-    case Operator.ENDS_BEFORE:
-    case Operator.LESS_THAN:
-      return resourceValue < filterValue;
-    case Operator.LESS_THAN_OR_EQUALS:
-      return resourceValue <= filterValue;
+    case Operator.APPROXIMATELY:
     case Operator.EQUALS:
-    case Operator.NOT_EQUALS:
-      return resourceValue === filterValue;
+    case Operator.NOT_EQUALS: // Negation handled in the caller
+      return resourceStart < filterEnd && resourceEnd > filterStart;
+    case Operator.LESS_THAN:
+      return resourceStart < filterStart;
+    case Operator.GREATER_THAN:
+      return resourceEnd > filterEnd;
+    case Operator.LESS_THAN_OR_EQUALS:
+      return resourceStart <= filterEnd;
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return resourceEnd >= filterStart;
+    case Operator.STARTS_AFTER:
+      return resourceStart > filterEnd;
+    case Operator.ENDS_BEFORE:
+      return resourceEnd < filterStart;
     default:
       return false;
   }
-}
-
-/**
- * Builds the column value for a date/time parameter.
- * Tries to parse the date string.
- * Silently ignores failure.
- * @param value - The FHIRPath result.
- * @returns The date/time string if parsed; undefined otherwise.
- */
-function buildDateTimeColumn(value: unknown): string | undefined {
-  if (isString(value)) {
-    try {
-      const date = new Date(value);
-      return date.toISOString();
-    } catch (err) {
-      console.debug('Failed to parse date', value, err);
-    }
-  } else if (isPeriod(value)) {
-    // Can be a Period
-    if ('start' in value) {
-      return buildDateTimeColumn(value.start);
-    }
-    if ('end' in value) {
-      return buildDateTimeColumn(value.end);
-    }
-  }
-  return undefined;
 }
 
 function isNegated(operator: Operator): boolean {

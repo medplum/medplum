@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Text } from '@mantine/core';
 import { createReference } from '@medplum/core';
-import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import type { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { usePatient } from '../../hooks/usePatient';
 import { defaultSoapNoteQuestionnaire } from './SoapNote.questionnaire';
 

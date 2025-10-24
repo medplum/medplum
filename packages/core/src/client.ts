@@ -1,7 +1,6 @@
-// PKCE auth based on:
-// https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
-
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AccessPolicy,
   Agent,
   Attachment,
@@ -11,6 +10,7 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
+  ClientApplication,
   Communication,
   Device,
   DocumentReference,
@@ -20,11 +20,13 @@ import {
   Media,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   ProjectSetting,
   Reference,
+  RelatedPerson,
   Resource,
   ResourceType,
   SearchParameter,
@@ -40,16 +42,19 @@ import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
+import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
-import {
+import type {
   CurrentContext,
-  FhircastConnection,
   FhircastEventContext,
   FhircastEventName,
   FhircastEventVersionOptional,
   FhircastEventVersionRequired,
   PendingSubscriptionRequest,
   SubscriptionRequest,
+} from './fhircast';
+import {
+  FhircastConnection,
   assertContextVersionOptional,
   createFhircastMessagePayload,
   isContextVersionRequired,
@@ -71,15 +76,14 @@ import {
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ClientStorage, IClientStorage } from './storage';
-import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import type { IClientStorage } from './storage';
+import { ClientStorage } from './storage';
+import type { SubscriptionEmitter } from './subscriptions';
+import { SubscriptionManager } from './subscriptions';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
+import type { CodeChallengeMethod, ProfileResource, QueryTypes, WithId } from './utils';
 import {
-  CodeChallengeMethod,
-  ProfileResource,
-  QueryTypes,
-  WithId,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -119,7 +123,7 @@ export interface MedplumClientOptions {
   /**
    * Base server URL.
    *
-   * Default value is https://api.medplum.com/
+   * Default value is `https://api.medplum.com/`
    *
    * Use this to point to a custom Medplum deployment.
    */
@@ -128,7 +132,7 @@ export interface MedplumClientOptions {
   /**
    * OAuth2 authorize URL.
    *
-   * Default value is baseUrl + "/oauth2/authorize".
+   * Default value is `baseUrl + "/oauth2/authorize"`.
    *
    * Can be specified as absolute URL or relative to baseUrl.
    *
@@ -139,7 +143,7 @@ export interface MedplumClientOptions {
   /**
    * FHIR URL path.
    *
-   * Default value is "fhir/R4/".
+   * Default value is `fhir/R4/`.
    *
    * Can be specified as absolute URL or relative to baseUrl.
    *
@@ -150,7 +154,7 @@ export interface MedplumClientOptions {
   /**
    * OAuth2 token URL.
    *
-   * Default value is baseUrl + "/oauth2/token".
+   * Default value is `baseUrl + "/oauth2/token"`.
    *
    * Can be specified as absolute URL or relative to baseUrl.
    *
@@ -161,7 +165,7 @@ export interface MedplumClientOptions {
   /**
    * OAuth2 logout URL.
    *
-   * Default value is baseUrl + "/oauth2/logout".
+   * Default value is `baseUrl + "/oauth2/logout"`.
    *
    * Can be specified as absolute URL or relative to baseUrl.
    *
@@ -211,7 +215,7 @@ export interface MedplumClientOptions {
   /**
    * Number of resources to store in the cache.
    *
-   * Default value is 1000.
+   * Default value is `1000`.
    *
    * Consider using this for performance of displaying Patient or Practitioner resources.
    */
@@ -220,13 +224,13 @@ export interface MedplumClientOptions {
   /**
    * The length of time in milliseconds to cache resources.
    *
-   * Default value is 60000 (60 seconds).
+   * Default value is `60000` (60 seconds).
    *
    * Cache time of zero disables all caching.
    *
    * For any individual request, the cache behavior can be overridden by setting the cache property on request options.
    *
-   * See: https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
+   * See: {@link https://developer.mozilla.org/en-US/docs/Web/API/Request/cache}
    */
   cacheTime?: number;
 
@@ -235,7 +239,7 @@ export interface MedplumClientOptions {
    *
    * Auto batching attempts to group multiple requests together into a single batch request.
    *
-   * Default value is 0, which disables auto batching.
+   * Default value is `0`, which disables auto batching.
    */
   autoBatchTime?: number;
 
@@ -244,14 +248,14 @@ export interface MedplumClientOptions {
    *
    * This is the amount of time before the access token expires that the client will attempt to refresh the token.
    *
-   * Default value is 300000 (5 minutes).
+   * Default value is `300000` (5 minutes).
    */
   refreshGracePeriod?: number;
 
   /**
    * Fetch implementation.
    *
-   * Default is window.fetch (if available).
+   * Default is `window.fetch` (if available).
    *
    * For Node.js applications, consider the 'node-fetch' package.
    */
@@ -260,7 +264,7 @@ export interface MedplumClientOptions {
   /**
    * Storage implementation.
    *
-   * Default is window.localStorage (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
+   * Default is `window.localStorage` (if available), this is the common implementation for use in the browser, or an in-memory storage implementation.  If using Medplum on a server it may be useful to provide a custom storage implementation, for example using redis, a database or a file based storage.  Medplum CLI is an an example of `FileSystemStorage`, for reference.
    */
   storage?: IClientStorage;
 
@@ -464,7 +468,9 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
+  readonly enrollQrCode?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -502,6 +508,7 @@ export interface BotEvent<T = unknown> {
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
 }
@@ -517,6 +524,8 @@ export interface InviteRequest {
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
   upsert?: boolean;
+  forceNewMembership?: boolean;
+  mfaRequired?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
@@ -595,7 +604,7 @@ export interface CreateDocumentReferenceOptions extends CreateBinaryOptions {
  */
 export interface CreatePdfOptions extends Omit<CreateBinaryOptions, 'data' | 'contentType'> {
   /**
-   * The PDF document definition. See https://pdfmake.github.io/docs/0.1/document-definition-object/
+   * The PDF document definition. See {@link https://pdfmake.github.io/docs/0.1/document-definition-object/}
    */
   readonly docDefinition: TDocumentDefinitions;
 
@@ -608,6 +617,11 @@ export interface CreatePdfOptions extends Omit<CreateBinaryOptions, 'data' | 'co
    * Optional pdfmake custom font dictionary.
    */
   readonly fonts?: TFontDictionary;
+}
+
+export interface ReadHistoryOptions {
+  readonly count?: number;
+  readonly offset?: number;
 }
 
 /**
@@ -693,9 +707,9 @@ interface RequestState {
 
 /**
  * OAuth 2.0 Grant Type Identifiers
- * Standard identifiers: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
- * JWT bearer extension: https://datatracker.ietf.org/doc/html/rfc7523
- * Token exchange extension: https://datatracker.ietf.org/doc/html/rfc8693
+ * Standard identifiers: {@link https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types}
+ * JWT bearer extension: {@link https://datatracker.ietf.org/doc/html/rfc7523}
+ * Token exchange extension: {@link https://datatracker.ietf.org/doc/html/rfc8693}
  */
 export const OAuthGrantType = {
   ClientCredentials: 'client_credentials',
@@ -708,7 +722,7 @@ export type OAuthGrantType = (typeof OAuthGrantType)[keyof typeof OAuthGrantType
 
 /**
  * OAuth 2.0 Token Type Identifiers
- * See: https://datatracker.ietf.org/doc/html/rfc8693#name-token-type-identifiers
+ * See {@link https://datatracker.ietf.org/doc/html/rfc8693#name-token-type-identifiers | RFC 8693 Section 3.1} for full details.
  */
 export const OAuthTokenType = {
   /** Indicates that the token is an OAuth 2.0 access token issued by the given authorization server. */
@@ -739,7 +753,7 @@ export type OAuthTokenAuthMethod = (typeof OAuthTokenAuthMethod)[keyof typeof OA
 
 /**
  * OAuth 2.0 Client Authentication Methods
- * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+ * See {@link https://datatracker.ietf.org/doc/html/rfc7523#section-2.2 | RFC 7523 Section 2.2} for full details.
  */
 export const OAuthClientAssertionType = {
   /** Using JWTs for Client Authentication */
@@ -757,7 +771,7 @@ interface SessionDetails {
 
 /**
  * ValueSet $expand operation parameters.
- * See: https://hl7.org/fhir/r4/valueset-operation-expand.html
+ * See {@link https://hl7.org/fhir/r4/valueset-operation-expand.html | FHIR ValueSet $expand Operation Parameters} for full details.
  */
 export interface ValueSetExpandParams {
   url?: string;
@@ -798,7 +812,7 @@ export type MedplumClientEventMap = {
  *   6. Searching
  *   7. Making GraphQL queries
  *
- * The client can also be used to integrate with other FHIR servers. For an example, see the Epic Connection Demo Bot [here](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic).
+ * The client can also be used to integrate with other FHIR servers. For an example, see the {@link https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic | Epic Connection Demo Bot}.
  *
  * @example
  * Here is a quick example of how to use the client:
@@ -904,7 +918,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
     this.cacheTime =
-      options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
+      options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
     if (this.cacheTime > 0) {
       this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     } else {
@@ -1045,7 +1059,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   clear(): void {
     this.storage.clear();
-    if (typeof window !== 'undefined') {
+    if (isBrowserEnvironment()) {
       sessionStorage.clear();
     }
     this.clearActiveLogin();
@@ -1313,7 +1327,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
-   * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
+   * See {@link https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions | Google Sign-In Credential Response} for full details.
    * @category Authentication
    * @param loginRequest - Login request including Google credential response.
    * @param options - Optional fetch options.
@@ -1369,7 +1383,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The user profile resource if available.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | undefined> {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(locationUtils.getSearch());
     const code = urlParams.get('code');
     if (!code) {
       await this.requestAuthorization(loginParams);
@@ -1384,7 +1398,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   signOutWithRedirect(): void {
-    window.location.assign(this.logoutUrl);
+    locationUtils.assign(this.logoutUrl);
   }
 
   /**
@@ -1407,7 +1421,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (pkceEnabled) {
       loginRequest = await this.ensureCodeChallenge(baseLogin);
     }
-    window.location.assign(
+    locationUtils.assign(
       this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest, pkceEnabled)
     );
   }
@@ -1542,7 +1556,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * const patients = medplum.search('Patient', '_summary=count');
    * ```
    *
-   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   * See {@link https://www.hl7.org/fhir/search.html | FHIR search} for full details.
    * @category Search
    * @param resourceType - The FHIR resource type.
    * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1580,7 +1594,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * The return value is the resource, if available; otherwise, undefined.
    *
-   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   * See {@link https://www.hl7.org/fhir/search.html | FHIR search} for full details.
    * @category Search
    * @param resourceType - The FHIR resource type.
    * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1622,7 +1636,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * The return value is an array of resources.
    *
-   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   * See {@link https://www.hl7.org/fhir/search.html | FHIR search} for full details.
    * @category Search
    * @param resourceType - The FHIR resource type.
    * @param query - Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1647,11 +1661,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Creates an
-   * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
+   * {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator | async generator}
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
    * the array of resources on each page. Searches using _offset based pagination are limited to 10,000 records.
    * For larger result sets, _cursor based pagination should be used instead.
-   * See: https://www.medplum.com/docs/search/paginated-search#cursor-based-pagination
+   *
+   * See {@link https://www.medplum.com/docs/search/paginated-search#cursor-based-pagination | the docs} for more information.
    *
    * @example
    *
@@ -1942,19 +1957,28 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(history);
    * ```
    *
-   * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
+   * See the {@link https://www.hl7.org/fhir/http.html#history | FHIR "history" operation} for full details.
    * @category Read
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param options - Optional fetch options.
+   * @param options - Optional history options.
+   * @param requestOptions - Optional fetch options.
    * @returns Promise to the resource history.
    */
   readHistory<RT extends ResourceType>(
     resourceType: RT,
     id: string,
-    options?: MedplumRequestOptions
+    options?: ReadHistoryOptions,
+    requestOptions?: MedplumRequestOptions
   ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history'), options);
+    const url = this.fhirUrl(resourceType, id, '_history');
+    if (options?.count) {
+      url.searchParams.set('_count', options.count.toString());
+    }
+    if (options?.offset) {
+      url.searchParams.set('_offset', options.offset.toString());
+    }
+    return this.get(url.toString(), requestOptions);
   }
 
   /**
@@ -1968,7 +1992,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(version);
    * ```
    *
-   * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
+   * See the {@link https://www.hl7.org/fhir/http.html#vread | FHIR "vread" operation} for full details.
    * @category Read
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
@@ -1996,7 +2020,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(bundle);
    * ```
    *
-   * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
+   * See the {@link https://hl7.org/fhir/operation-patient-everything.html | FHIR "patient-everything" operation} for full details.
    * @category Read
    * @param id - The Patient Id
    * @param options - Optional fetch options.
@@ -2017,9 +2041,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(bundle);
    * ```
    *
-   * See International Patient Summary Implementation Guide: https://build.fhir.org/ig/HL7/fhir-ips/index.html
+   * See the {@link https://build.fhir.org/ig/HL7/fhir-ips/index.html | International Patient Summary Implementation Guide} for full details.
    *
-   * See Patient summary operation: https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
+   * See the {@link https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html | Patient summary operation} for full details.
    *
    * @param id - The Patient ID.
    * @param options - Optional fetch options.
@@ -2048,7 +2072,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.id);
    * ```
    *
-   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   * See the {@link https://www.hl7.org/fhir/http.html#create | FHIR "create" operation} for full details.
    * @category Create
    * @param resource - The FHIR resource to create.
    * @param options - Optional fetch options.
@@ -2096,7 +2120,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
    *
-   * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
+   * See the {@link https://www.hl7.org/fhir/http.html#create | FHIR "conditional create" operation} for full details.
    * @category Create
    * @param resource - The FHIR resource to create.
    * @param query - The search query for an equivalent resource (should not include resource type or "?").
@@ -2173,7 +2197,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result);
    * ```
    *
-   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   * See the {@link https://www.hl7.org/fhir/http.html#create | FHIR "create" operation} for full details.
    * @category Create
    * @param createBinaryOptions -The binary options. See `CreateBinaryOptions` for full details.
    * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
@@ -2267,7 +2291,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.id);
    * ```
    *
-   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   * See the {@link https://www.hl7.org/fhir/http.html#create | FHIR "create" operation} for full details.
    *
    * @category Create
    * @param createBinaryOptions -The binary options. See `CreateBinaryOptions` for full details.
@@ -2382,7 +2406,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
       }
 
-      xhr.send(data);
+      xhr.send(data as XMLHttpRequestBodyInit);
     });
   }
 
@@ -2403,7 +2427,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.id);
    * ```
    *
-   * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
+   * See the {@link https://pdfmake.github.io/docs/0.1/document-definition-object/ | pdfmake document definition} for full details.
    * @category Media
    * @param createPdfOptions - The PDF creation options. See `CreatePdfOptions` for full details.
    * @param requestOptions - Optional fetch options.
@@ -2508,7 +2532,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.meta.versionId);
    * ```
    *
-   * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
+   * See the {@link https://www.hl7.org/fhir/http.html#update | FHIR "update" operation} for full details.
    * @category Write
    * @param resource - The FHIR resource to update.
    * @param options - Optional fetch options.
@@ -2548,9 +2572,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * console.log(result.meta.versionId);
    * ```
    *
-   * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#patch
+   * See the {@link https://www.hl7.org/fhir/http.html#patch | FHIR "update" operation} for full details.
    *
-   * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
+   * See the {@link https://tools.ietf.org/html/rfc6902 | JSONPatch specification} for full details.
    * @category Write
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
@@ -2581,7 +2605,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * await medplum.deleteResource('Patient', '123');
    * ```
    *
-   * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
+   * See the {@link https://www.hl7.org/fhir/http.html#delete | FHIR "delete" operation} for full details.
    * @category Delete
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
@@ -2607,7 +2631,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * });
    * ```
    *
-   * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
+   * See the {@link https://www.hl7.org/fhir/resource-operation-validate.html | FHIR "$validate" operation} for full details.
    * @param resource - The FHIR resource.
    * @param options - Optional fetch options.
    * @returns The validate operation outcome.
@@ -2685,7 +2709,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * });
    * ```
    *
-   * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
+   * See the {@link https://hl7.org/fhir/http.html#transaction | FHIR "batch/transaction" section} for full details.
    * @category Batch
    * @param bundle - The FHIR batch/transaction bundle.
    * @param options - Optional fetch options.
@@ -2729,7 +2753,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * });
    * ```
    *
-   * See options here: https://nodemailer.com/extras/mailcomposer/
+   * See the {@link https://nodemailer.com/extras/mailcomposer/ | nodemailer MailComposer options} for full details.
    * @category Media
    * @param email - The MailComposer options.
    * @param options - Optional fetch options.
@@ -2778,9 +2802,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * );
    * ```
    *
-   * See the GraphQL documentation for more details: https://graphql.org/learn/
+   * See the {@link https://graphql.org/learn/ | GraphQL documentation} for more details.
    *
-   * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
+   * See the {@link https://www.hl7.org/fhir/graphql.html | FHIR GraphQL documentation} for FHIR specific details.
    * @category Read
    * @param query - The GraphQL query.
    * @param operationName - Optional GraphQL operation name.
@@ -3178,12 +3202,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
+   * Performs Bulk Data Export operation request flow. See the {@link https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export | FHIR "Bulk Data Export"} for full details.
    * @param exportLevel - Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
    * @param resourceTypes - A string of comma-delimited FHIR resource types.
    * @param since - Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
    * @param options - Optional fetch options.
-   * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
+   * @returns Bulk Data Response containing links to Bulk Data files. See the {@link https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status | "Response - Complete Status"} for full details.
    */
   async bulkExport(
     //eslint-disable-next-line default-param-last
@@ -3207,7 +3231,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Starts an async request following the FHIR "Asynchronous Request Pattern".
-   * See: https://hl7.org/fhir/r4/async.html
+   *
+   * See the {@link https://hl7.org/fhir/r4/async.html | FHIR "Asynchronous Request Pattern"} for full details.
+   *
    * @param url - The URL to request.
    * @param options - Optional fetch options.
    * @returns The response body.
@@ -3474,7 +3500,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   private setCurrentRateLimit(res: Response): void {
-    const rateLimitHeader = res.headers?.get('ratelimit');
+    // Handle cases where response might not have headers property (e.g., in tests)
+    if (!res?.headers || typeof res.headers.get !== 'function') {
+      return;
+    }
+    const rateLimitHeader = res.headers.get('ratelimit');
     if (rateLimitHeader) {
       this.currentRateLimits = rateLimitHeader;
     }
@@ -3709,11 +3739,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
-    const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-    sessionStorage.setItem('codeChallenge', codeChallenge);
-
-    return { codeChallengeMethod: 'S256', codeChallenge };
+    try {
+      const arrayHash = await encryptSHA256(codeVerifier);
+      const codeChallenge = arrayBufferToBase64(arrayHash)
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replaceAll('=', '');
+      return { codeChallengeMethod: 'S256', codeChallenge };
+    } catch (err) {
+      console.warn("Failed to hash code verifier. Falling back to 'plain' code challenge method", err);
+      return { codeChallengeMethod: 'plain', codeChallenge: codeVerifier };
+    }
   }
 
   /**
@@ -3728,11 +3764,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId ?? (this.clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? getWindowOrigin());
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri ?? locationUtils.getOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
     url.searchParams.set('scope', loginRequest.scope ?? 'openid profile');
-    window.location.assign(url.toString());
+    locationUtils.assign(url.toString());
   }
 
   /**
@@ -3748,7 +3784,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       grant_type: OAuthGrantType.AuthorizationCode,
       code,
       client_id: loginParams?.clientId ?? this.clientId ?? '',
-      redirect_uri: loginParams?.redirectUri ?? getWindowOrigin(),
+      redirect_uri: loginParams?.redirectUri ?? locationUtils.getOrigin(),
     };
 
     if (typeof sessionStorage !== 'undefined') {
@@ -3815,7 +3851,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * await medplum.searchResources('Patient')
    * ```
    *
-   * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+   * See {@link https://datatracker.ietf.org/doc/html/rfc6749#section-4.4 | RFC 6749 Section 4.4} for full details.
    *
    * @category Authentication
    * @param clientId - The client ID.
@@ -3843,7 +3879,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * await medplum.searchResources('Patient')
    * ```
    *
-   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.1
+   * See {@link https://datatracker.ietf.org/doc/html/rfc7523#section-2.1 | RFC 7523 Section 2.1} for full details.
    *
    * @category Authentication
    * @param clientId - The client ID.
@@ -3865,7 +3901,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Starts a new OAuth2 JWT assertion flow.
    *
-   * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
+   * See {@link https://datatracker.ietf.org/doc/html/rfc7523#section-2.2 | RFC 7523 Section 2.2} for full details.
    *
    * @category Authentication
    * @param jwt - The JWT assertion.
@@ -4052,7 +4088,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Makes a POST request to the tokens endpoint.
-   * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+   * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
    * @param params - Token parameters.
    * @returns The user profile resource.
    */
@@ -4103,7 +4139,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Verifies the tokens received from the auth server.
    * Validates the JWT against the JWKS.
-   * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+   * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
    * @param tokens - The token response.
    * @returns Promise to complete.
    */
@@ -4160,7 +4196,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         // On storage clear (key === null) or profile change (key === 'activeLogin', and profile in 'activeLogin' is different)
         // Refresh the page to ensure the active login is up to date.
         if (e.key === null) {
-          window.location.reload();
+          locationUtils.reload();
         } else if (e.key === 'activeLogin') {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
@@ -4168,7 +4204,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
             oldState?.profile.reference !== newState?.profile.reference ||
             !this.checkSessionDetailsMatchLogin(newState)
           ) {
-            window.location.reload();
+            locationUtils.reload();
           } else if (newState) {
             this.setAccessToken(newState.accessToken, newState.refreshToken);
           } else {
@@ -4281,18 +4317,6 @@ function getDefaultFetch(): FetchLike {
     throw new Error('Fetch not available in this environment');
   }
   return globalThis.fetch.bind(globalThis);
-}
-
-/**
- * Returns the base URL for the current page.
- * @returns The window origin string.
- * @category HTTP
- */
-function getWindowOrigin(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  return window.location.protocol + '//' + window.location.host + '/';
 }
 
 /**

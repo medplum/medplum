@@ -1,5 +1,8 @@
-import { BotEvent, getExtensionValue, MedplumClient } from '@medplum/core';
-import { Appointment, Extension } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getExtensionValue } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Appointment, Extension } from '@medplum/fhirtypes';
 
 // Zoom extension URLs
 const ZOOM_MEETING_EXTENSION_URL = 'https://medplum.com/zoom';

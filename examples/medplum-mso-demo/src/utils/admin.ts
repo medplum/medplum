@@ -1,4 +1,7 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { normalizeErrorString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 

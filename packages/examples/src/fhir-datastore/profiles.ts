@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumClient, validateResource } from '@medplum/core';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Patient, StructureDefinition } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 

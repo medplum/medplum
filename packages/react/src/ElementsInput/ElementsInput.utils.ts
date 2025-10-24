@@ -1,4 +1,7 @@
-import { ElementsContextType, ExtendedInternalSchemaElement, isPopulated } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType, ExtendedInternalSchemaElement } from '@medplum/core';
+import { isPopulated } from '@medplum/core';
 import { createContext } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 

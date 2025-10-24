@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
-import { Dropzone, FileWithPath } from '@mantine/dropzone';
+import type { FileWithPath } from '@mantine/dropzone';
+import { Dropzone } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
-import { JSX, useCallback, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 

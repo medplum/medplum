@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * This is a generated file
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "Coding" ADD COLUMN IF NOT EXISTS "isSynonym" BOOLEAN');

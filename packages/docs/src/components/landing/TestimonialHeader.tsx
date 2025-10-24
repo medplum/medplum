@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import { JSX } from 'react';
 import styles from './TestimonialHeader.module.css';
 
@@ -17,9 +18,9 @@ export function TestimonialHeader(props: TestimonialHeaderProps): JSX.Element {
         <div className={styles.testimonialTitle}>{props.title}</div>
       </div>
       {props.twitter && (
-        <a href={props.twitter} className={styles.testimonialLink}>
+        <Link href={props.twitter} className={styles.testimonialLink}>
           <img src="/img/icons/twitter-icon.svg" loading="lazy" alt="Twitter icon" className={styles.testimonialIcon} />
-        </a>
+        </Link>
       )}
     </div>
   );

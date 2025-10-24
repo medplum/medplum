@@ -1,8 +1,12 @@
-import { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
-import WS from 'jest-websocket-mock';
-import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager, resourceMatchesSubscriptionCriteria } from '.';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import { WS } from 'jest-websocket-mock';
+import type { SubscriptionEventMap } from '.';
+import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
+import { Logger, LogLevel } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
@@ -1160,7 +1164,7 @@ describe('SubscriptionManager', () => {
 });
 
 describe('resourceMatchesSubscriptionCriteria', () => {
-  it('should return true for a resource that matches the criteria', async () => {
+  test('should return true for a resource that matches the criteria', async () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
       status: 'active',
@@ -1206,5 +1210,201 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       }),
     });
     expect(result2).toBe(true);
+  });
+
+  describe('Account matching logic', () => {
+    const ORGANIZATION_ONE = { reference: 'Organization/123' };
+    const ORGANIZATION_TWO = { reference: 'Organization/456' };
+    const ORGANIZATION_THREE = { reference: 'Organization/789' };
+    const ORGANIZATION_FOUR = { reference: 'Organization/999' };
+
+    test.each([
+      {
+        description:
+          'should return true when subscription has meta.account and resource has matching account in meta.accounts even if meta.account differs',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE],
+        },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts and resource has matching account in meta.accounts',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE] },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts but resource has no matching accounts in meta.accounts',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_FOUR] },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { account: ORGANIZATION_TWO },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts and resource has no meta.accounts but non-matching meta.account',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: { account: ORGANIZATION_THREE },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return false when subscription has meta.accounts but resource has neither meta.accounts nor meta.account',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        resourceMeta: {},
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.accounts with single account and resource has matching meta.account',
+        subscriptionMeta: { accounts: [ORGANIZATION_ONE] },
+        resourceMeta: { account: ORGANIZATION_ONE },
+        shouldMatch: true,
+      },
+      {
+        description: 'should return false when subscription has empty meta.accounts array',
+        subscriptionMeta: { accounts: [], account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_TWO },
+        shouldMatch: false,
+      },
+      {
+        description: 'should return true when subscription has meta.account and resource has matching meta.account',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_ONE },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has non-matching meta.account',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { account: ORGANIZATION_TWO },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts but subscription account matches one in the combined list',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and subscription account matches the resource meta.account',
+        subscriptionMeta: { account: ORGANIZATION_TWO },
+        resourceMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and no match in combined list',
+        subscriptionMeta: { account: ORGANIZATION_FOUR },
+        resourceMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        shouldMatch: false,
+      },
+      {
+        description:
+          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts but resource account matches one in combined list',
+        subscriptionMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        resourceMeta: { account: ORGANIZATION_ONE },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and resource account matches subscription meta.account',
+        subscriptionMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        resourceMeta: { account: ORGANIZATION_TWO },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and no match',
+        subscriptionMeta: {
+          account: ORGANIZATION_TWO,
+          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
+        },
+        resourceMeta: { account: ORGANIZATION_FOUR },
+        shouldMatch: false,
+      },
+      {
+        description: 'should return true when neither subscription nor resource have account metadata',
+        subscriptionMeta: {},
+        resourceMeta: {},
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return true when subscription has meta.account and resource has matching account in meta.accounts',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE] },
+        shouldMatch: true,
+      },
+      {
+        description:
+          'should return false when subscription has meta.account and resource has non-matching accounts in meta.accounts',
+        subscriptionMeta: { account: ORGANIZATION_ONE },
+        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_THREE] },
+        shouldMatch: false,
+      },
+    ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
+      const log = jest.fn();
+
+      const subscription: Subscription = {
+        id: '123',
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'test subscription',
+        criteria: 'Communication',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'Bot/123',
+        },
+        meta: subscriptionMeta,
+      };
+
+      const matches = await resourceMatchesSubscriptionCriteria({
+        resource: {
+          id: '123',
+          resourceType: 'Communication',
+          status: 'in-progress',
+          meta: resourceMeta,
+        },
+        subscription,
+        context: { interaction: 'create' },
+        getPreviousResource: async () => undefined,
+        logger: new Logger(log, undefined, LogLevel.DEBUG),
+      });
+
+      expect(matches).toStrictEqual(shouldMatch);
+      if (!shouldMatch) {
+        expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
+      } else {
+        expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
+      }
+    });
   });
 });

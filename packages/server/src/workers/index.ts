@@ -1,14 +1,17 @@
-import { BackgroundJobContext, WithId } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
-import { MedplumServerConfig } from '../config/types';
-import { globalLogger } from '../logger';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, WithId } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
+import type { MedplumServerConfig } from '../config/types';
+import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { addCronJobs, initCronWorker } from './cron';
 import { addDownloadJobs, initDownloadWorker } from './download';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
 import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
-import { queueRegistry, WorkerInitializer } from './utils';
+import type { WorkerInitializer } from './utils';
+import { queueRegistry } from './utils';
 
 /**
  * Initializes all background workers.
@@ -50,7 +53,33 @@ export async function addBackgroundJobs(
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
 ): Promise<void> {
-  await addSubscriptionJobs(resource, previousVersion, context);
-  await addDownloadJobs(resource, context);
-  await addCronJobs(resource, previousVersion, context);
+  try {
+    await addSubscriptionJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding subscription jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await addDownloadJobs(resource, context);
+  } catch (err) {
+    getLogger().error('Error adding download jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await addCronJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding cron jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
 }

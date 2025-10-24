@@ -1,6 +1,9 @@
-import { evalFhirPath, getReferenceString, getSearchParameter, WithId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { evalFhirPath, getReferenceString, getSearchParameter } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   CompartmentDefinition,
   CompartmentDefinitionResource,
   Patient,

@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   ConceptMap,
   ExtractResource,
   ResourceType,
@@ -14,8 +16,9 @@ import {
 import { generateId } from '../crypto';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
-import { TypedValue } from '../types';
-import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
+import type { TypedValue } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { tryGetDataType } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
 /**

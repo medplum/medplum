@@ -1,5 +1,7 @@
-import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { InternalSchemaElement } from './typeschema/types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import type { InternalSchemaElement } from './typeschema/types';
 import { getPathDifference, splitN } from './utils';
 
 export interface ExtendedInternalSchemaElement extends InternalSchemaElement {

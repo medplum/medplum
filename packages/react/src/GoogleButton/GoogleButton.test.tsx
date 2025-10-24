@@ -1,20 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { locationUtils } from '@medplum/core';
 import { getGoogleClientId } from './GoogleButton.utils';
 
 describe('GoogleButton', () => {
   test('googleClientId', () => {
-    expect(getGoogleClientId('foo')).toBeDefined();
+    expect(getGoogleClientId('foo')).toStrictEqual('foo');
 
-    Object.defineProperty(window, 'location', {
-      value: {
-        protocol: 'https:',
-        host: 'app.medplum.com',
-      },
-    });
+    locationUtils.getOrigin = () => 'https://app.medplum.com';
     process.env.GOOGLE_AUTH_ORIGINS = 'https://app.medplum.com';
     process.env.GOOGLE_CLIENT_ID = 'foo';
-    expect(getGoogleClientId(undefined)).toBeDefined();
+    expect(getGoogleClientId(undefined)).toStrictEqual('foo');
 
-    window.location.host = 'evil.com';
+    locationUtils.getOrigin = () => 'https://evil.com';
     expect(getGoogleClientId(undefined)).toBeUndefined();
   });
 });

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Center, Checkbox, Group, Stack, Title } from '@mantine/core';
-import { LoginAuthenticationResponse } from '@medplum/core';
+import type { LoginAuthenticationResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { Fragment } from 'react/jsx-runtime';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';

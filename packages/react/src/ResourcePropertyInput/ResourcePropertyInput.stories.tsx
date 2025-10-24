@@ -1,8 +1,12 @@
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
-import { Extension } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import type { Extension } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
-import { Meta } from '@storybook/react';
-import { JSX, useCallback } from 'react';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { useCallback } from 'react';
 import { Document } from '../Document/Document';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 

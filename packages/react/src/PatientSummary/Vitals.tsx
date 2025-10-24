@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Modal, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
-import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
+import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { CollapsibleSection } from './CollapsibleSection';

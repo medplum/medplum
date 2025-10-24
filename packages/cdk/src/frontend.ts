@@ -1,15 +1,16 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
+import type { aws_iam as iam, aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import {
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   Duration,
-  aws_iam as iam,
   aws_cloudfront_origins as origins,
   RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_route53_targets as targets,
-  aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
@@ -149,7 +150,7 @@ export class FrontEnd extends Construct {
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(this.appBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.appBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

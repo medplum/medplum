@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { Operator, SearchRequest, parseSearchRequest } from './search';
+import type { SearchRequest } from './search';
+import { Operator, parseSearchRequest } from './search';
 
 describe('Search parser', () => {
   beforeAll(() => {

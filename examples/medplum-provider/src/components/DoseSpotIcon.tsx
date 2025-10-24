@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Indicator, Tooltip } from '@mantine/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { useMedplumNavigate } from '@medplum/react';
 import { IconPrescription } from '@tabler/icons-react';
-import { JSX, useCallback } from 'react';
+import { useCallback } from 'react';
+import type { JSX } from 'react';
 
 export function DoseSpotIcon(): JSX.Element {
   const navigate = useMedplumNavigate();

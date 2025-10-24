@@ -1,7 +1,10 @@
-import { Operator, SearchRequest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchFilterEditor } from './SearchFilterEditor';
 

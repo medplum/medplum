@@ -1,8 +1,13 @@
-import { formatSearchQuery, getReferenceString, Operator, ProfileResource } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconClipboardCheck, IconFileImport, IconMail, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
-import { NavigateFunction, Route, Routes, useNavigate } from 'react-router';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
+import { Route, Routes, useNavigate } from 'react-router';
+import type { NavigateFunction } from 'react-router';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';

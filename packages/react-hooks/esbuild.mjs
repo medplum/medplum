@@ -1,12 +1,14 @@
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* global process */
-/* eslint no-console: "off" */
+/* global console */
 
 import dotenv from 'dotenv';
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const options = {
   entryPoints: ['./src/index.ts'],

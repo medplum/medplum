@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { convertCcdaToXml, convertFhirToCcda } from '@medplum/ccda';
 import { allOk, ContentType } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, OperationDefinition } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Binary, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getPatientSummary, operation as patientSummaryOperation, PatientSummaryParameters } from './patientsummary';
+import type { PatientSummaryParameters } from './patientsummary';
+import { getPatientSummary, operation as patientSummaryOperation } from './patientsummary';
 import { parseInputParameters } from './utils/parameters';
 
 export const operation = {

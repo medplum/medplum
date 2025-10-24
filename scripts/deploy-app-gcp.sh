@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # GCP USAGE: (requires gcloud cli to be installed and authenticated)
-# npm ci --maxsockets 1 --include dev && npm run build:fast
+# npm ci --include dev && npm run build:fast
 # APP_BUCKET=medplum-static-assets ./scripts/deploy-app-gcp.sh
 
 if [[ -z "${APP_BUCKET}" ]]; then

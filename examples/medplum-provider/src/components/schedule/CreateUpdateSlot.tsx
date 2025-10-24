@@ -1,11 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireResponse,
+  Reference,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { Event } from 'react-big-calendar';
+import type { JSX } from 'react';
+import type { Event } from 'react-big-calendar';
 
 interface CreateUpdateSlotProps {
   readonly schedule: Schedule;

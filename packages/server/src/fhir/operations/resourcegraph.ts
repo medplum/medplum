@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -10,11 +13,9 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
@@ -24,7 +25,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 
 type ResourceCache = Record<string, WithId<Resource>>;
 

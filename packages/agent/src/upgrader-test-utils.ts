@@ -1,17 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ReleaseManifest } from '@medplum/core';
 
 export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
   let count = 0;
 
   const manifest = {
-    tag_name: `v${version ?? '3.1.6'}`,
+    tag_name: `v${version ?? '4.2.4'}`,
     assets: [
       {
-        name: `medplum-agent-${version ?? '3.1.6'}-linux'`,
+        name: `medplum-agent-${version ?? '4.2.4'}-linux'`,
         browser_download_url: 'https://example.com/linux',
       },
       {
-        name: `medplum-agent-installer-${version ?? '3.1.6'}-windows.exe`,
+        name: `medplum-agent-installer-${version ?? '4.2.4'}-windows.exe`,
         browser_download_url: 'https://example.com/win32',
       },
     ],

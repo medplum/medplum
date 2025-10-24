@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ColorSchemeScript, MantineProvider } from '@mantine/core';
 import type { Metadata } from 'next';
-import { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import Root from './root';
 import { theme } from './theme';
 

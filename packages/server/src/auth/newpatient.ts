@@ -1,6 +1,9 @@
-import { badRequest, createReference, OperationOutcomeError, WithId } from '@medplum/core';
-import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
+import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';

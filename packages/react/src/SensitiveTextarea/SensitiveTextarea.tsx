@@ -1,8 +1,12 @@
-import { ActionIcon, Flex, Textarea, TextareaProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TextareaProps } from '@mantine/core';
+import { ActionIcon, Flex, Textarea } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { IconCopy } from '@tabler/icons-react';
-import { JSX, RefAttributes, useRef, useState } from 'react';
+import type { JSX, RefAttributes } from 'react';
+import { useRef, useState } from 'react';
 
 export interface SensitiveTextareaProps extends TextareaProps, RefAttributes<HTMLTextAreaElement> {}
 

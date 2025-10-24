@@ -1,23 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CurrentContext, FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  CurrentContext,
-  FhircastMessagePayload,
   generateId,
   getReferenceString,
   serializeFhircastSubscriptionRequest,
-  WithId,
 } from '@medplum/core';
-import { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
-import express, { Express } from 'express';
+import type { DiagnosticReport, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
+import type { Express } from 'express';
+import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { Server } from 'node:http';
+import type { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { initTestAuth, withTestContext } from '../test.setup';
 
@@ -36,7 +37,7 @@ describe('FHIRcast WebSocket', () => {
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
-        server.listen(0, 'localhost', 511, resolve);
+        server.listen(0, 'localhost', 8518, resolve);
       });
     });
 
@@ -786,11 +787,11 @@ describe('FHIRcast WebSocket', () => {
     beforeAll(async () => {
       app = express();
       config = await loadTestConfig();
-      config.heartbeatMilliseconds = 100;
+      config.heartbeatMilliseconds = 300;
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
-        server.listen(0, 'localhost', 511, resolve);
+        server.listen(0, 'localhost', 8519, resolve);
       });
     });
 
@@ -894,8 +895,10 @@ describe('FHIRcast WebSocket', () => {
                 await once(ws, 'message');
                 const endTime = Date.now();
 
-                // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 100ms
-                expect(endTime - startTime).toBeGreaterThanOrEqual(80);
+                // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 300ms
+                // Because our tests run in very unstable conditions on GitHub, we give a lot of tolerance since the pinned CPU
+                // can result in very early firing
+                expect(endTime - startTime).toBeGreaterThanOrEqual(150);
               })
               // We're just expecting the two calls we already caught in the above exec
               .expectJson((obj) => {

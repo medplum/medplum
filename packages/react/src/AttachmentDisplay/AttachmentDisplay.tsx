@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
-import { Attachment } from '@medplum/fhirtypes';
+import type { Attachment } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 
 export interface AttachmentDisplayProps {

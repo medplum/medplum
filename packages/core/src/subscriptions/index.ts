@@ -1,18 +1,18 @@
-import { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
-import { Logger } from '../logger';
+import type { Logger } from '../logger';
 import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId, WithId } from '../utils';
-import {
-  IReconnectingWebSocket,
-  IReconnectingWebSocketCtor,
-  ReconnectingWebSocket,
-} from '../websockets/reconnecting-websocket';
+import type { ProfileResource, WithId } from '../utils';
+import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
+import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
+import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
 const DEFAULT_PING_INTERVAL_MS = 5_000;
 
@@ -513,11 +513,6 @@ export async function resourceMatchesSubscriptionCriteria({
   getPreviousResource,
   logger,
 }: ResourceMatchesSubscriptionCriteria): Promise<boolean> {
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger?.debug('Ignore resource in different account compartment');
-    return false;
-  }
-
   if (!matchesChannelType(subscription, logger)) {
     logger?.debug(`Ignore subscription without recognized channel type`);
     return false;
@@ -554,7 +549,29 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  return matchesSearchRequest(resource, searchRequest);
+  if (!matchesSearchRequest(resource, searchRequest)) {
+    return false;
+  }
+
+  const subscriptionAccounts = extractAccountReferences(subscription.meta) ?? [];
+  const resourceAccounts = extractAccountReferences(resource.meta) ?? [];
+
+  if (subscriptionAccounts.length) {
+    // Check if there is any common account between the subscription and the resource
+    if (
+      !subscriptionAccounts.some((subAccount) =>
+        resourceAccounts.some((resAccount) => resAccount.reference === subAccount.reference)
+      )
+    ) {
+      logger?.debug('Subscription suppressed due to mismatched accounts', {
+        subscriptionId: subscription.id,
+        resource: getReferenceString(resource),
+      });
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**

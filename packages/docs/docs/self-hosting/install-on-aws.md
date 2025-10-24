@@ -43,6 +43,7 @@ At a high level, the process of installing Medplum on AWS includes:
 The resulting AWS configuration will look like the following:
 
 ![Medplum AWS Architecture](./medplum-aws-architecture.png)
+*Diagram current as of 7/21/2025*
 
 <p>Use this video guide as you follow the instructions:</p>
 <div className="responsive-iframe-wrapper">

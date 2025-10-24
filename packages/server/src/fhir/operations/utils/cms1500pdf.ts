@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   formatAddress,
   formatCodeableConcept,
@@ -6,9 +8,9 @@ import {
   getDisplayString,
   HTTP_HL7_ORG,
 } from '@medplum/core';
-import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import path from 'path';
-import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
 
 const PAGE_WIDTH = 612;

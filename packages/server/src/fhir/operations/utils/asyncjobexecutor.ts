@@ -1,7 +1,10 @@
-import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
-import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, accepted } from '@medplum/core';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
@@ -10,7 +13,8 @@ import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
-import { Repository, getSystemRepo } from '../../repo';
+import type { Repository } from '../../repo';
+import { getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -121,7 +125,7 @@ export class AsyncJobExecutor {
     }
   }
 
-  async failJob(repo: Repository, err?: Error): Promise<AsyncJob> {
+  async failJob(repo: Repository, err?: Error, output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -137,18 +141,22 @@ export class AsyncJobExecutor {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
+      output: output ?? this.resource.output,
     };
     if (err) {
-      failedJob.output = {
+      failedJob.output ??= {
         resourceType: 'Parameters',
-        parameter:
-          err instanceof OperationOutcomeError
-            ? [{ name: 'outcome', resource: err.outcome }]
-            : [
-                { name: 'error', valueString: err.message },
-                { name: 'stack', valueString: err.stack },
-              ],
       };
+      failedJob.output.parameter ??= [];
+
+      if (err instanceof OperationOutcomeError) {
+        failedJob.output.parameter.push({ name: 'outcome', resource: err.outcome });
+      } else {
+        failedJob.output.parameter.push(
+          { name: 'error', valueString: err.message },
+          { name: 'stack', valueString: err.stack }
+        );
+      }
     }
     return repo.updateResource<AsyncJob>(failedJob);
   }

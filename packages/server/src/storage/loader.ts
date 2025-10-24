@@ -1,11 +1,13 @@
-import { Binary } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary } from '@medplum/fhirtypes';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
-import { BinaryStorage } from './types';
+import type { BinaryStorage } from './types';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 

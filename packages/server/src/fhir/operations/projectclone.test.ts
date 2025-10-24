@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, getReferenceString, isUUID, LOINC, Operator, streamToBuffer } from '@medplum/core';
-import {
+import type {
   Binary,
   Bot,
   BundleEntry,

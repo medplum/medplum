@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import { Option } from 'commander';
-import { Stats } from 'node:fs';
+import type { Stats } from 'node:fs';
 import { Writable } from 'node:stream';
-import tar, { Unpack } from 'tar';
+import type { Unpack } from 'tar';
+import tar from 'tar';
 import { getCodeContentType, MedplumCommand, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({

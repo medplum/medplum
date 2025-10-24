@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isResourceType } from '@medplum/core';
-import {
+import type {
   Account,
   CarePlan,
   Communication,

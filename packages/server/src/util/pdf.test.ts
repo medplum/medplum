@@ -1,4 +1,6 @@
-import { TDocumentDefinitions } from 'pdfmake/interfaces';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { createPdf } from './pdf';
 
 describe('createPdf', () => {

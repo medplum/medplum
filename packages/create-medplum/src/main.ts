@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

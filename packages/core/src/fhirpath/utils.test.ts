@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Questionnaire } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue } from '../types';
-import { indexStructureDefinitionBundle, InternalSchemaElement } from '../typeschema/types';
+import type { Bundle, Period, Questionnaire } from '@medplum/fhirtypes';
+import type { TypedValue } from '../types';
+import { PropertyType } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -314,11 +318,14 @@ describe('FHIRPath utils', () => {
   });
 
   test('getTypedPropertyValueWithSchema with primitive extensions', () => {
+    const primitiveValue = 'Johnny';
+    const primitiveExtension = { url: 'http://example.com', valueBoolean: true };
     const humanName = {
-      given: ['John', 'Johnny'],
-      _given: [{ extension: [{ url: 'http://example.com', valueBoolean: true }] }],
+      given: ['John', primitiveValue],
+      _given: [null, { extension: [primitiveExtension] }],
     };
-    const given: InternalSchemaElement = {
+
+    const elementSchema: InternalSchemaElement = {
       description: '',
       path: 'HumanName.given',
       min: 0,
@@ -326,57 +333,103 @@ describe('FHIRPath utils', () => {
       isArray: true,
       type: [{ code: 'string' }],
     };
-    getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', given);
-    expect(humanName.given).toStrictEqual(expect.arrayContaining(['John', 'Johnny']));
-    // with primitive extensions, array values can be changed into a `String` type which has a typeof 'object'
-    // ensure the original input array values is not mutated as such
+
+    // Extract elements with and without primitive extensions
+    const results = getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', elementSchema);
+
+    expect(results).toHaveLength(2);
+    const [simple, extended] = results as TypedValue[];
+    expect(simple).toStrictEqual({ type: 'string', value: 'John' });
+    expect(extended).toStrictEqual({
+      type: 'string',
+      value: expect.objectContaining(Object.assign('', primitiveValue, { extension: [primitiveExtension] })),
+    });
+
+    // Check that values look correct when access "normally"
+    expect(extended.value.valueOf()).toBe('Johnny');
+    expect(extended.value.extension).toStrictEqual([primitiveExtension]);
+
+    // With primitive extensions, array values can be changed into a `String` wrapper type which has a typeof 'object';
+    // need to ensure the original input array values are not mutated as such
     expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);
+
+    // If extension only is specified, should still extract
+    const results2 = getTypedPropertyValueWithSchema(
+      { type: 'HumanName', value: { _given: [{ extension: [primitiveExtension] }] } },
+      'given',
+      elementSchema
+    );
+    expect(results2).toHaveLength(1);
+    const [extensionOnly] = results2 as TypedValue[];
+    expect(extensionOnly).toStrictEqual({
+      type: 'string',
+      value: expect.objectContaining(Object.assign('', { extension: [primitiveExtension] })),
+    });
   });
 
-  test('isDateString', () => {
-    expect(isDateString(undefined)).toBe(false);
-    expect(isDateString(null)).toBe(false);
-    expect(isDateString('')).toBe(false);
-    expect(isDateString('x')).toBe(false);
-    expect(isDateString('2020')).toBe(true);
-    expect(isDateString('2020-01')).toBe(true);
-    expect(isDateString('2020-01-01')).toBe(true);
-    expect(isDateString('2020-01-01T')).toBe(false);
+  test.each<[any, boolean]>([
+    [undefined, false],
+    [null, false],
+    ['', false],
+    ['x', false],
+    ['2020', true],
+    ['2020-01', true],
+    ['2020-01-01', true],
+    ['2020-01-01T12:34:56Z', false],
+    ['2020-01-01T12:34:56.789Z', false],
+  ])('isDateString', (input, expected) => {
+    expect(isDateString(input)).toBe(expected);
   });
 
-  test('isDateTimeString', () => {
-    expect(isDateTimeString(undefined)).toBe(false);
-    expect(isDateTimeString(null)).toBe(false);
-    expect(isDateTimeString('')).toBe(false);
-    expect(isDateTimeString('x')).toBe(false);
-    expect(isDateTimeString('2020')).toBe(true);
-    expect(isDateTimeString('2020-01')).toBe(true);
-    expect(isDateTimeString('2020-01-01')).toBe(true);
-    expect(isDateTimeString('2020-01-01T12:34:56Z')).toBe(true);
+  test.each<[any, boolean]>([
+    [undefined, false],
+    [null, false],
+    ['', false],
+    ['x', false],
+    ['2020', true],
+    ['2020-01', true],
+    ['2020-01-01', true],
+    ['2020-01-01T12:34:56Z', true],
+    ['2020-01-01T12:34:56.7Z', true],
+    ['2020-01-01T12:34:56.789Z', true],
+    ['2020-01-01T12:34:56+01:30', true],
+    ['2020-01-01T12:34:56.7+01:30', true],
+    ['2020-01-01T12:34:56.789+01:30', true],
+  ])('isDateTimeString(%p)', (input, expected) => {
+    expect(isDateTimeString(input)).toBe(expected);
   });
 
-  test('toPeriod', () => {
-    expect(toPeriod(undefined)).toBeUndefined();
-    expect(toPeriod(null)).toBeUndefined();
-    expect(toPeriod('')).toBeUndefined();
-    expect(toPeriod('x')).toBeUndefined();
-    expect(toPeriod({})).toBeUndefined();
-    expect(toPeriod('2020-01-01')).toMatchObject({
-      start: '2020-01-01T00:00:00.000Z',
-      end: '2020-01-01T23:59:59.999Z',
-    });
-    expect(toPeriod('2020-01-01T12:34:56.000Z')).toMatchObject({
-      start: '2020-01-01T12:34:56.000Z',
-      end: '2020-01-01T12:34:56.000Z',
-    });
-    expect(
-      toPeriod({
-        start: '2020-01-01T12:34:56.000Z',
-        end: '2020-01-01T12:34:56.999Z',
-      })
-    ).toMatchObject({
-      start: '2020-01-01T12:34:56.000Z',
-      end: '2020-01-01T12:34:56.999Z',
-    });
+  test.each<[any, Period | undefined]>([
+    [undefined, undefined],
+    [null, undefined],
+    ['', undefined],
+    ['x', undefined],
+    [{}, undefined],
+    ['2020-01-01', { start: '2020-01-01T00:00:00.000Z', end: '2020-01-01T23:59:59.999Z' }],
+    ['2025-05-25T15:55:55Z', { start: '2025-05-25T15:55:55.000Z', end: '2025-05-25T15:55:55.999Z' }],
+    ['2025-05-25T15:55:55.7Z', { start: '2025-05-25T15:55:55.700Z', end: '2025-05-25T15:55:55.799Z' }],
+    ['2020-01-01T12:34:56.000Z', { start: '2020-01-01T12:34:56.000Z', end: '2020-01-01T12:34:56.000Z' }],
+    ['2025-05-25T15:55:55+01:30', { start: '2025-05-25T14:25:55.000Z', end: '2025-05-25T14:25:55.999Z' }],
+    ['2025-05-25T15:55:55.7+01:30', { start: '2025-05-25T14:25:55.700Z', end: '2025-05-25T14:25:55.799Z' }],
+    ['2020-01-01T12:34:56.000+01:30', { start: '2020-01-01T11:04:56.000Z', end: '2020-01-01T11:04:56.000Z' }],
+    [
+      { start: '2020-01-01T12:34:56.000Z', end: '2020-01-01T12:34:56.999Z' },
+      { start: '2020-01-01T12:34:56.000Z', end: '2020-01-01T12:34:56.999Z' },
+    ],
+    // Normalize date strings with time zone offsets
+    ['2020-01-01T12:34:56.000+01:00', { start: '2020-01-01T11:34:56.000Z', end: '2020-01-01T11:34:56.000Z' }],
+    // Normalize periods with time zone offsets
+    [
+      { start: '2020-01-01T12:34:56.000+01:00', end: '2020-01-01T12:34:56.999+01:00' },
+      { start: '2020-01-01T11:34:56.000Z', end: '2020-01-01T11:34:56.999Z' },
+    ],
+    // Extend year to valid dates
+    ['2020', { start: '2020-01-01T00:00:00.000Z', end: '2020-12-31T23:59:59.999Z' }],
+  ])('toPeriod(%p)', (input, expected) => {
+    if (expected) {
+      expect(toPeriod(input)).toMatchObject(expected);
+    } else {
+      expect(toPeriod(input)).toBeUndefined();
+    }
   });
 });

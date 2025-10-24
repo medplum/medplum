@@ -1,5 +1,8 @@
-import { ContentType, createReference, WithId } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
@@ -16,8 +18,9 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
-import { ContentType, createReference, getReferenceString, LOINC, WithId } from '@medplum/core';
-import {
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, LOINC } from '@medplum/core';
+import type {
   Bundle,
   CarePlan,
   ClinicalImpression,

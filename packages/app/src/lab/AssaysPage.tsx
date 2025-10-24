@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
 import { capitalize, formatRange, sortStringArray } from '@medplum/core';
-import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
+import type { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Loading, RangeDisplay, useSearchResources } from '@medplum/react';
-import { Fragment, JSX } from 'react';
+import type { JSX } from 'react';
+import { Fragment } from 'react';
 
 export function AssaysPage(): JSX.Element {
   const [assays] = useSearchResources('ObservationDefinition', '_count=100');

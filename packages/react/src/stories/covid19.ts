@@ -1,5 +1,8 @@
-import { LOINC, SNOMED, UCUM, WithId, createReference, getReferenceString } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { LOINC, SNOMED, UCUM, createReference, getReferenceString } from '@medplum/core';
+import type {
   ActivityDefinition,
   ObservationDefinition,
   PlanDefinition,

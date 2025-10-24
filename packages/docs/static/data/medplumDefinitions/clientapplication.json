@@ -316,7 +316,23 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Optional redirect URI used when redirecting a client back to the client application.",
+      "definition": "@deprecated This field is deprecated. Use redirectUris instead.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "redirectUris",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ClientApplication.redirectUris",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional redirect URI array used when redirecting a client back to the client application.",
       "comment": "",
       "inherited": false
     },

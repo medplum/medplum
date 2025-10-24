@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import { ChatModal, ChatModalProps } from './ChatModal';
+import type { ChatModalProps } from './ChatModal';
+import { ChatModal } from './ChatModal';
 
 describe('ChatModal', () => {
   let defaultMedplum: MockClient;

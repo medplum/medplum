@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { MouseEvent, SyntheticEvent } from 'react';
+import type { MouseEvent, SyntheticEvent } from 'react';
 
 /**
  * Kills a browser event.

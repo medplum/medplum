@@ -1,6 +1,9 @@
-import { Reference, Resource } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer/parse';
-import { PropertyType, TypedValue, isResource } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { Atom, AtomContext } from '../fhirlexer/parse';
+import type { TypedValue } from '../types';
+import { PropertyType, isResource } from '../types';
 import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
@@ -1298,7 +1301,13 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   replaceMatches: (context: AtomContext, input: TypedValue[], regexAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
-      (str, pattern, substition) => str.replaceAll(new RegExp(pattern as string, 'g'), substition as string),
+      (str, pattern, substition) =>
+        str.replaceAll(
+          new RegExp(pattern as string, 'g'),
+          // The substition string may contain ${...} placeholders. Replace them with $<...>
+          // See https://build.fhir.org/ig/HL7/FHIRPath/#replacematchesregex--string-substitution-string--string
+          (substition as string).replaceAll(/\$\{(\w+)\}/g, '$<$1>')
+        ),
       context,
       input,
       regexAtom,
@@ -1504,10 +1513,22 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
    * @param context - The evaluation context.
    * @param input - The input collection.
+   * @param argsAtoms - Optional arguments: (precision: Integer)
    * @returns A collection containing the result.
    */
-  round: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return applyMathFunc(Math.round, context, input);
+  round: (context: AtomContext, input: TypedValue[], ...argsAtoms: Atom[]): TypedValue[] => {
+    return applyMathFunc(
+      (n, precision: unknown = 0) => {
+        if (typeof precision !== 'number' || precision < 0) {
+          throw new Error('Invalid precision provided to round()');
+        }
+        const exp = Math.pow(10, precision);
+        return Math.round(n * exp) / exp;
+      },
+      context,
+      input,
+      ...argsAtoms
+    );
   },
 
   /**
@@ -1885,7 +1906,9 @@ function applyStringFunc<T>(
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  const result = func(value, ...argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value));
+
+  const args = argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value);
+  const result = func(value, ...args);
   if (result === undefined) {
     return [];
   }

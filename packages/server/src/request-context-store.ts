@@ -1,6 +1,8 @@
-import { Logger } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Logger } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
-import { FhirRateLimiter } from './fhirquota';
+import type { FhirRateLimiter } from './fhir/fhirquota';
 
 export interface IRequestContext extends Disposable {
   readonly requestId: string;

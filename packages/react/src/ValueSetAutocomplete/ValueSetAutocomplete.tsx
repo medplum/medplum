@@ -1,14 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import { ValueSetExpandParams } from '@medplum/core';
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { ValueSetExpandParams } from '@medplum/core';
+import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck } from '@tabler/icons-react';
-import { forwardRef, JSX, useCallback } from 'react';
-import {
-  AsyncAutocomplete,
-  AsyncAutocompleteOption,
-  AsyncAutocompleteProps,
-} from '../AsyncAutocomplete/AsyncAutocomplete';
+import type { JSX } from 'react';
+import { forwardRef, useCallback } from 'react';
+import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {

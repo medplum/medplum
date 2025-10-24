@@ -59501,6 +59501,7 @@
           "description": "A list of optional features that are enabled for the project.",
           "items": {
             "enum": [
+              "ai",
               "aws-comprehend",
               "aws-textract",
               "bots",
@@ -59971,8 +59972,15 @@
           "$ref": "#/definitions/uri"
         },
         "redirectUri": {
-          "description": "Optional redirect URI used when redirecting a client back to the client application.",
+          "description": "@deprecated This field is deprecated. Use redirectUris instead.",
           "$ref": "#/definitions/uri"
+        },
+        "redirectUris": {
+          "description": "Optional redirect URI array used when redirecting a client back to the client application.",
+          "items": {
+            "$ref": "#/definitions/uri"
+          },
+          "type": "array"
         },
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",
@@ -60098,6 +60106,10 @@
         "mfaSecret": {
           "description": "Shared secret for MFA authenticator applications.",
           "$ref": "#/definitions/string"
+        },
+        "mfaRequired": {
+          "description": "Whether the user is required to complete MFA enrollment. If true, the user must complete MFA enrollment before they can log in.",
+          "$ref": "#/definitions/boolean"
         },
         "mfaEnrolled": {
           "description": "Whether the user has completed MFA enrollment.",
@@ -60245,6 +60257,10 @@
         },
         "userAgent": {
           "description": "The User-Agent request header as sent by the client.",
+          "$ref": "#/definitions/string"
+        },
+        "pictureUrl": {
+          "description": "Optional picture URL from the external identity provider.",
           "$ref": "#/definitions/string"
         }
       },
@@ -60440,10 +60456,22 @@
         "qi": {
           "description": "The first CRT coefficient.",
           "$ref": "#/definitions/string"
+        },
+        "x": {
+          "description": "The x coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "y": {
+          "description": "The y coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "crv": {
+          "description": "The cryptographic curve identifier (e.g., \u0027P-256\u0027, \u0027P-384\u0027, \u0027P-521\u0027).",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
-      "required": ["resourceType"]
+      "required": ["resourceType", "alg", "kty"]
     },
     "Bot": {
       "description": "Bot account for automated actions.",
@@ -60510,7 +60538,7 @@
         },
         "runtimeVersion": {
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
-          "enum": ["awslambda", "vmcontext"]
+          "enum": ["awslambda", "vmcontext", "fission"]
         },
         "timeout": {
           "description": "The maximum allowed execution time of the bot in seconds.",

@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, TextInput } from '@mantine/core';
-import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
-import { JSX, useContext, useMemo, useRef, useState } from 'react';
+import type { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 

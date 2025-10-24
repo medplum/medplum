@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
+import type { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';

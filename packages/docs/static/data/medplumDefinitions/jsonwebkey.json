@@ -184,7 +184,7 @@
         }
       ],
       "path": "JsonWebKey.alg",
-      "min": 0,
+      "min": 1,
       "max": "1",
       "short": "",
       "definition": "The specific cryptographic algorithm used with the key.",
@@ -200,7 +200,7 @@
         }
       ],
       "path": "JsonWebKey.kty",
-      "min": 0,
+      "min": 1,
       "max": "1",
       "short": "",
       "definition": "The family of cryptographic algorithms used with the key.",
@@ -412,6 +412,54 @@
       "max": "1",
       "short": "",
       "definition": "The first CRT coefficient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "x",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.x",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The x coordinate of the elliptic curve point (base64url encoded).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "y",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.y",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The y coordinate of the elliptic curve point (base64url encoded).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "crv",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.crv",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The cryptographic curve identifier (e.g., 'P-256', 'P-384', 'P-521').",
       "comment": "",
       "inherited": false
     }

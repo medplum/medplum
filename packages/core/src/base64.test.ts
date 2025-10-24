@@ -1,12 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './base64';
 
-const originalWindow = globalThis.window;
-const originalBuffer = globalThis.Buffer;
+// Mock the environment module
+jest.mock('./environment');
+
+import * as environment from './environment';
+
+const mockEnvironment = environment as jest.Mocked<typeof environment>;
 
 describe('Base64', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
   test('Browser', () => {
-    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
-    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
+    // Mock browser environment
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getWindow.mockReturnValue(window as any);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -22,8 +34,10 @@ describe('Base64', () => {
   });
 
   test('Node.js', () => {
-    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
-    Object.defineProperty(globalThis, 'window', { get: () => undefined });
+    // Mock Node.js environment
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(true);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -39,8 +53,9 @@ describe('Base64', () => {
   });
 
   test('Error', () => {
-    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
-    Object.defineProperty(globalThis, 'window', { get: () => undefined });
+    // Mock environment with neither browser nor Node.js
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
 
     expect(() => encodeBase64('Hello world')).toThrow('Unable to encode base64');
     expect(() => decodeBase64('SGVsbG8gd29ybGQ=')).toThrow('Unable to decode base64');
@@ -53,14 +68,15 @@ describe('Base64URL', () => {
   const unicodeString = '👋🌍';
   const unicodeStringBase64Url = '8J-Ri_CfjI0';
 
-  afterEach(() => {
-    Object.defineProperty(globalThis, 'Buffer', { value: originalBuffer, configurable: true });
-    Object.defineProperty(globalThis, 'window', { value: originalWindow, configurable: true });
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
   test('Browser', () => {
-    Object.defineProperty(globalThis, 'Buffer', { value: undefined, configurable: true });
-    Object.defineProperty(globalThis, 'window', { value: originalWindow, configurable: true });
+    // Mock browser environment
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getWindow.mockReturnValue(window as any);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);
@@ -72,8 +88,10 @@ describe('Base64URL', () => {
   });
 
   test('Node.js', () => {
-    Object.defineProperty(globalThis, 'Buffer', { value: originalBuffer, configurable: true });
-    Object.defineProperty(globalThis, 'window', { value: undefined, configurable: true });
+    // Mock Node.js environment
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(true);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);

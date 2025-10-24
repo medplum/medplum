@@ -1,4 +1,6 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcome } from '@medplum/fhirtypes';
 
 export interface BaseInputProps {
   /** The path identifying the related element definition and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */

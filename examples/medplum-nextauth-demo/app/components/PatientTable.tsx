@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 'use client';
 
 import { Table } from '@mantine/core';
-import { Bundle, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Patient } from '@medplum/fhirtypes';
 import React from 'react';
 
 type PatientTableProps = {

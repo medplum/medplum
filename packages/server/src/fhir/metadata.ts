@@ -1,14 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalTypeSchema } from '@medplum/core';
 import {
   concatUrls,
   ContentType,
   getAllDataTypes,
   getSearchParameters,
   HTTP_TERMINOLOGY_HL7_ORG,
-  InternalTypeSchema,
   isResourceType,
   MEDPLUM_VERSION,
 } from '@medplum/core';
-import {
+import type {
   CapabilityStatement,
   CapabilityStatementRest,
   CapabilityStatementRestResource,
@@ -18,7 +20,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.

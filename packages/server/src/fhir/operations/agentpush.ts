@@ -1,13 +1,9 @@
-import {
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  ContentType,
-  OperationOutcomeError,
-  badRequest,
-} from '@medplum/core';
-import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitRequest, AgentTransmitResponse } from '@medplum/core';
+import { ContentType, OperationOutcomeError, badRequest } from '@medplum/core';
+import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { getAgentForRequest, getDevice, publishAgentRequest } from './utils/agentutils';
@@ -30,8 +26,10 @@ const MAX_WAIT_TIMEOUT = 55000;
  * First reads the agent and makes sure it is valid and the user has access to it.
  * Then pushes the message to the agent channel.
  * Returns the outcome of the agent execution.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const agentPushHandler = asyncWrap(async (req: Request, res: Response) => {
+export const agentPushHandler = async (req: Request, res: Response): Promise<void> => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
       const [outcome, agentResponse] = await pushToAgent(req);
@@ -54,7 +52,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
       .type(agentResponse.contentType)
       .send(agentResponse.body);
   }
-});
+};
 
 async function pushToAgent(req: Request): Promise<[OperationOutcome] | [OperationOutcome, AgentTransmitResponse]> {
   const { repo } = getAuthenticatedContext();

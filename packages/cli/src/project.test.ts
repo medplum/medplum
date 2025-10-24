@@ -1,5 +1,7 @@
-import { MedplumClient } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import type { Project } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import fs from 'node:fs';
 import { main } from '.';

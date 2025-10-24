@@ -1,10 +1,12 @@
-import { Binary } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
-import Mail from 'nodemailer/lib/mailer';
+import type Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
-import { MedplumSmtpConfig } from '../config/types';
-import { Repository } from '../fhir/repo';
+import type { MedplumSmtpConfig } from '../config/types';
+import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { getFromAddress } from './utils';

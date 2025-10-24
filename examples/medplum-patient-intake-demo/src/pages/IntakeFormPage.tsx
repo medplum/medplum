@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useCallback, useContext } from 'react';
+import { useCallback, useContext } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { Loading } from '../components/Loading';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';

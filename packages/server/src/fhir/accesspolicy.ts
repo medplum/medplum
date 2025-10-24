@@ -1,12 +1,8 @@
-import {
-  ProfileResource,
-  WithId,
-  createReference,
-  isResource,
-  projectAdminResourceTypes,
-  resolveId,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { createReference, isResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
@@ -16,7 +12,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
@@ -32,9 +28,12 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { project, login, membership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const membership = onBehalfOfMembership ?? realMembership;
+  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
+  const project = await systemRepo.readReference(membership.project);
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -45,7 +44,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
-    const linkedProjectsOrError = await getSystemRepo().readReferences<Project>(linkedProjectRefs);
+    const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
       if (isResource(linkedProjectOrError)) {
@@ -61,10 +60,10 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: membership.profile as Reference,
+    author: realMembership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
-    projectAdmin: onBehalfOfMembership ? onBehalfOfMembership.admin : membership.admin,
+    projectAdmin: membership.admin,
     accessPolicy,
     strictMode: project.strictMode,
     extendedMode,

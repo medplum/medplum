@@ -1,5 +1,8 @@
-import { ContentType, createReference, lazy, WithId } from '@medplum/core';
-import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference, lazy } from '@medplum/core';
+import type { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: WithId<Organization> = {
   resourceType: 'Organization',

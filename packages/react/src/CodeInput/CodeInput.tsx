@@ -1,6 +1,10 @@
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { JSX, useState } from 'react';
-import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useState } from 'react';
+import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
   readonly defaultValue?: string;

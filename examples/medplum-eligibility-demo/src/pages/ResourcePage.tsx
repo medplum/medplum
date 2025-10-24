@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Flex, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { UpdateCoverageEligibilityStatus } from '../components/actions/UpdateCoverageEligibilityStatus';
 import { cleanResource } from '../components/utils';

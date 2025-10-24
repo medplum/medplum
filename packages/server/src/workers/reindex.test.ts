@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   createReference,
   LogLevel,
@@ -5,7 +7,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
 } from '@medplum/core';
-import {
+import type {
   AsyncJob,
   ImmunizationEvaluation,
   Parameters,
@@ -24,6 +26,7 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
+import type { ReindexJobData } from './reindex';
 import {
   addReindexJob,
   getReindexQueue,
@@ -31,7 +34,6 @@ import {
   prepareReindexJobData,
   REINDEX_WORKER_VERSION,
   ReindexJob,
-  ReindexJobData,
 } from './reindex';
 import { queueRegistry } from './utils';
 

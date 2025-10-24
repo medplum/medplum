@@ -2,18 +2,17 @@
 sidebar_position: 1100
 ---
 
-# Testing Emails with Mailtrap
+# Testing emails with Mailtrap Email Sandbox
 
-[Mailtrap.io](https://mailtrap.io/) provides a simple way to test outbound emails from your self-hosted SMTP server without sending them to real recipients. Instead, Mailtrap captures emails in a test inbox where you can review them.
+[Mailtrap.io](https://mailtrap.io/)  is an email platform for developer and product teams who need high inboxing rates and fast email delivery. It offers a flexible email API and a reliable SMTP service for developers to send transactional and bulk emails.
 
-Testing emails in a local development environment typically requires complex email authentication setup ([SPF](https://en.wikipedia.org/wiki/Sender_Policy_Framework), [DKIM](https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail), [DMARC](https://en.wikipedia.org/wiki/DMARC)). Mailtrap eliminates this complexity by providing a sandboxed environment to verify email content and functionality.
+Also, Mailtrap provides a built-in Email Sandbox, which acts as a dummy SMTP server, capturing all outgoing emails. Teams can use it to catch test emails in an Email Sandbox, then inspect content, layout, HTML, and plain text versions. This way, they can make sure emails function correctly and fix any potential errors before messages reach real users.
 
 ## Prerequisites
 
 1. Create a [Mailtrap account](https://mailtrap.io/register/signup?ref=header)
-2. In the Mailtrap dashboard, select "Email Testing" from the left navigation
-3. Click "Inboxes" and then select your inbox
-4. In the Integration tab, find your SMTP credentials which include:
+2. In the Mailtrap dashboard, select "Sandboxes" from the left navigation and then select your sandbox
+4. In the Integration tab, find your SMTP credentials, which include:
    - Host (sandbox.smtp.mailtrap.io)
    - Port (choose from available options: 25, 465, 587, or 2525)
    - Username

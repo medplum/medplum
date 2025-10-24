@@ -1,8 +1,11 @@
-import { InternalSchemaElement } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { ResourceArrayInput, ResourceArrayInputProps } from './ResourceArrayInput';
+import type { ResourceArrayInputProps } from './ResourceArrayInput';
+import { ResourceArrayInput } from './ResourceArrayInput';
 
 const medplum = new MockClient();
 

@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
-import { Duplex, Readable } from 'stream';
+import type { Duplex } from 'stream';
+import { Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';

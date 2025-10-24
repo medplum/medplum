@@ -1,19 +1,25 @@
-import {
-  badRequest,
-  createReference,
-  OperationOutcomeError,
-  Operator,
-  ProfileResource,
-  resolveId,
-  WithId,
-} from '@medplum/core';
-import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
+import type {
+  ContactPoint,
+  Login,
+  OperationOutcome,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { Handler, NextFunction, Request, Response } from 'express';
+import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { authenticator } from 'otplib';
+import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
@@ -81,6 +87,16 @@ export async function createProjectMembership(
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+  if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
+    const accountName = `Medplum - ${user.email}`;
+    const issuer = 'medplum.com';
+    const secret = user.mfaSecret as string;
+    const otp = authenticator.keyuri(accountName, issuer, secret);
+    res.json({ login: login.id, mfaEnrollRequired: true, enrollUri: otp, enrollQrCode: await toDataURL(otp) });
+    return;
+  }
+
   if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     res.json({ login: login.id, mfaRequired: true });
     return;

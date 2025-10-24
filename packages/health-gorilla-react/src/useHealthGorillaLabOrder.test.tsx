@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   createReference,
   deepClone,
@@ -7,7 +9,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   Coverage,
   Location,
@@ -17,17 +19,12 @@ import {
   Reference,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import {
-  DiagnosisCodeableConcept,
-  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
-  HEALTH_GORILLA_SYSTEM,
-  LabOrganization,
-  TestCoding,
-} from '@medplum/health-gorilla-core';
+import type { DiagnosisCodeableConcept, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import { HEALTH_GORILLA_AUTHORIZED_BY_EXT, HEALTH_GORILLA_SYSTEM } from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook } from '@testing-library/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 import {
@@ -36,14 +33,11 @@ import {
   REQUIRED_AOE_TEST,
   RWS_AOE_TEST,
 } from './autocomplete-endpoint.test';
+import type { HealthGorillaLabOrderState, UseHealthGorillaLabOrderReturn } from './HealthGorillaLabOrderContext';
 import { HealthGorillaLabOrderProvider } from './HealthGorillaLabOrderProvider';
 import { expectToBeDefined } from './test-utils';
-import {
-  HealthGorillaLabOrderState,
-  useHealthGorillaLabOrder,
-  UseHealthGorillaLabOrderOptions,
-  UseHealthGorillaLabOrderReturn,
-} from './useHealthGorillaLabOrder';
+import type { UseHealthGorillaLabOrderOptions } from './useHealthGorillaLabOrder';
+import { useHealthGorillaLabOrder } from './useHealthGorillaLabOrder';
 import { useHealthGorillaLabOrderContext } from './useHealthGorillaLabOrderContext';
 
 const DIAGNOSES = [

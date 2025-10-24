@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG, deepClone } from '@medplum/core';
-import { Device, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Device, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpson } from '../simpsons';
 import StructureDefinitionList from './uscore-v5.0.1-structuredefinitions.json';
 

@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Indicator, Tooltip } from '@mantine/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface NotificationIconProps {
   readonly iconComponent: JSX.Element;

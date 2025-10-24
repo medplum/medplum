@@ -1,5 +1,7 @@
-import { Ratio } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Ratio } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 
 export interface RatioDisplayProps {

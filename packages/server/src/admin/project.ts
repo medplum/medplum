@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import type { ProjectMembership } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
-import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -25,7 +27,7 @@ projectAdminRouter.post(
     body('email').isEmail().withMessage('Valid email address is required'),
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
-  asyncWrap(async (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
@@ -47,109 +49,89 @@ projectAdminRouter.post(
 
     await setPassword(user, req.body.password as string);
     sendOutcome(res, allOk);
-  })
+  }
 );
 
-projectAdminRouter.post('/:projectId/bot', createBotValidator, asyncWrap(createBotHandler));
-projectAdminRouter.post('/:projectId/client', createClientValidator, asyncWrap(createClientHandler));
-projectAdminRouter.post('/:projectId/invite', inviteValidator, asyncWrap(inviteHandler));
+projectAdminRouter.post('/:projectId/bot', createBotValidator, createBotHandler);
+projectAdminRouter.post('/:projectId/client', createClientValidator, createClientHandler);
+projectAdminRouter.post('/:projectId/invite', inviteValidator, inviteHandler);
 
 /**
  * Handles requests to "/admin/projects/{projectId}"
  * Returns project metadata and a list of members.
  */
-projectAdminRouter.get(
-  '/:projectId',
-  asyncWrap(async (req: Request, res: Response) => {
-    const project = getAuthenticatedContext().project;
-    return res.status(200).json({
-      project: {
-        id: project.id,
-        name: project.name,
-        secret: project.secret,
-        site: project.site,
-      },
-    });
-  })
-);
+projectAdminRouter.get('/:projectId', async (req: Request, res: Response) => {
+  const project = getAuthenticatedContext().project;
+  return res.status(200).json({
+    project: {
+      id: project.id,
+      name: project.name,
+      secret: project.secret,
+      site: project.site,
+    },
+  });
+});
 
-projectAdminRouter.post(
-  '/:projectId/secrets',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const result = await ctx.repo.updateResource({
-      ...ctx.project,
-      secret: req.body,
-    });
+projectAdminRouter.post('/:projectId/secrets', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const result = await ctx.repo.updateResource({
+    ...ctx.project,
+    secret: req.body,
+  });
 
-    res.json(result);
-  })
-);
+  res.json(result);
+});
 
-projectAdminRouter.post(
-  '/:projectId/sites',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const result = await ctx.repo.updateResource({
-      ...ctx.project,
-      site: req.body,
-    });
+projectAdminRouter.post('/:projectId/sites', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const result = await ctx.repo.updateResource({
+    ...ctx.project,
+    site: req.body,
+  });
+  res.json(result);
+});
 
-    res.json(result);
-  })
-);
+projectAdminRouter.get('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { membershipId } = req.params;
+  const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  if (membership.project?.reference !== getReferenceString(ctx.project)) {
+    sendOutcome(res, forbidden);
+    return;
+  }
+  res.json(membership);
+});
 
-projectAdminRouter.get(
-  '/:projectId/members/:membershipId',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { membershipId } = req.params;
-    const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(res, forbidden);
-      return;
-    }
-    res.json(membership);
-  })
-);
+projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { membershipId } = req.params;
+  const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  if (membership.project?.reference !== getReferenceString(ctx.project)) {
+    sendOutcome(res, forbidden);
+    return;
+  }
+  const resource = req.body;
+  if (resource?.resourceType !== 'ProjectMembership' || resource.id !== membershipId) {
+    sendOutcome(res, forbidden);
+    return;
+  }
+  const result = await ctx.repo.updateResource(resource);
+  res.json(result);
+});
 
-projectAdminRouter.post(
-  '/:projectId/members/:membershipId',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { membershipId } = req.params;
-    const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(res, forbidden);
-      return;
-    }
-    const resource = req.body;
-    if (resource?.resourceType !== 'ProjectMembership' || resource.id !== membershipId) {
-      sendOutcome(res, forbidden);
-      return;
-    }
-    const result = await ctx.repo.updateResource(resource);
-    res.json(result);
-  })
-);
+projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const { membershipId } = req.params;
+  const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  if (membership.project?.reference !== getReferenceString(ctx.project)) {
+    sendOutcome(res, forbidden);
+    return;
+  }
 
-projectAdminRouter.delete(
-  '/:projectId/members/:membershipId',
-  asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const { membershipId } = req.params;
-    const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(res, forbidden);
-      return;
-    }
-
-    if (ctx.project.owner?.reference === membership.user?.reference) {
-      sendOutcome(res, badRequest('Cannot delete the owner of the project'));
-      return;
-    }
-
-    await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
-    sendOutcome(res, allOk);
-  })
-);
+  if (ctx.project.owner?.reference === membership.user?.reference) {
+    sendOutcome(res, badRequest('Cannot delete the owner of the project'));
+    return;
+  }
+  await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
+  sendOutcome(res, allOk);
+});

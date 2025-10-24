@@ -1,7 +1,9 @@
-import { createReference } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, locationUtils } from '@medplum/core';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SmartAppLaunchLink } from './SmartAppLaunchLink';
@@ -18,12 +20,9 @@ describe('SmartAppLaunchLink', () => {
   }
 
   test('Happy path', async () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        assign: jest.fn(),
-      },
-      writable: true,
-    });
+    // const assignSpy = jest.spyOn(locationUtils, 'assign').mockImplementation(() => undefined);
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
 
     setup(
       <SmartAppLaunchLink
@@ -41,10 +40,10 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('My SmartAppLaunchLink'));
     });
 
-    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
-    expect(window.location.assign).toHaveBeenCalled();
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    expect(mockAssign).toHaveBeenCalled();
 
-    const url = (window.location.assign as jest.Mock).mock.calls[0][0];
+    const url = mockAssign.mock.calls[0][0];
     expect(url).toContain('https://example.com');
     expect(url).toContain('launch=');
     expect(url).toContain('iss=');

@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { deepClone } from '@medplum/core';
-import { ObservationDefinition } from '@medplum/fhirtypes';
+import type { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
+import type { ReferenceRangeEditorProps } from './ReferenceRangeEditor';
+import { ReferenceRangeEditor } from './ReferenceRangeEditor';
 
 const medplum = new MockClient();
 

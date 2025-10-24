@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconBuildingCommunity,
@@ -11,7 +13,8 @@ import {
   IconUser,
   IconUserPlus,
 } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { ClinicPage } from './pages/AllClinicsPage';
 import { CommunicationPage } from './pages/CommunicationsListPage';

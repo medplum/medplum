@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
-import { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
-import { asyncWrap } from '../async';
+import type { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { executeBot } from '../bots/execute';
 import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
@@ -9,37 +11,11 @@ import { getSystemRepo } from '../fhir/repo';
 import { sendBinaryResponse } from '../fhir/response';
 
 /**
- * Allowed signature headers are:
- *
- *   - `X-Signature` - standard generic signature header
- *   - `X-HMAC-Signature` - standard HMAC signature header
- *      - See: https://consensus.stoplight.io/docs/fax-services/1c4979f1d8ca0-fax-inbound-notification
- *   - `X-Cal-Signature-256` - Cal.com specific signature header
- *      - See: https://cal.com/docs/developing/guides/automation/webhooks
- *   - `X-Twilio-Email-Event-Webhook-Signature` - Twilio SendGrid specific signature header
- *     - See: https://www.twilio.com/docs/sendgrid/for-developers/tracking-events/getting-started-event-webhook-security-features
- *   - `X-Twilio-Signature` - Twilio specific signature header
- *     - See: https://www.twilio.com/docs/usage/webhooks/webhooks-security
- */
-const SIGNATURE_HEADERS = [
-  'x-signature',
-  'x-hmac-signature',
-  'x-cal-signature-256',
-  'x-twilio-email-event-webhook-signature',
-  'x-twilio-signature',
-];
-
-/**
  * Handles HTTP requests for anonymous webhooks.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
-  // At least one of the allowed signature headers must be present
-  const hasSignatureHeader = SIGNATURE_HEADERS.some((header) => req.header(header));
-  if (!hasSignatureHeader) {
-    res.status(403).send('Missing required signature header');
-    return;
-  }
-
+export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
   const systemRepo = getSystemRepo();
   const id = req.params.id;
   const runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
@@ -90,7 +66,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   } else {
     res.status(getStatus(outcome)).contentType(getResponseContentType(req)).send(responseBody);
   }
-});
+};
 
 export const webhookRouter = Router();
 webhookRouter.post('/:id', webhookHandler);

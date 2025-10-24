@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   CodeSystem,
+  CodeSystemProperty,
   CodeableConcept,
   Coding,
   ValueSet,
@@ -10,11 +14,17 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
-import { Column, SelectQuery } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
+import { hydrateCodeSystemProperties } from './expand';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { addPropertyFilter, findAncestor, findTerminologyResource } from './utils/terminology';
+import {
+  addPropertyFilter,
+  findAncestor,
+  findTerminologyResource,
+  getParentProperty,
+  selectCoding,
+} from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
@@ -91,7 +101,7 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     );
   }
 
-  const candidates = codings.filter((c) => c.system === include.system);
+  const candidates = codings.filter((c) => c.system === include.system && c.code) as (Coding & { code: string })[];
   if (!candidates.length) {
     return undefined;
   }
@@ -100,8 +110,14 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
+    const { repo } = getAuthenticatedContext();
+    const db = repo.getDatabaseClient(DatabaseMode.READER);
+    await hydrateCodeSystemProperties(db, codeSystem);
+
     for (const coding of candidates) {
-      const filterResults = await Promise.all(include.filter.map((filter) => satisfies(coding, filter, codeSystem)));
+      const filterResults = await Promise.all(
+        include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
+      );
       if (filterResults.every((r) => r)) {
         return coding;
       }
@@ -114,39 +130,43 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
 }
 
 async function satisfies(
-  coding: Coding,
+  code: string,
   filter: ValueSetComposeIncludeFilter,
-  codeSystem: CodeSystem
+  codeSystem: WithId<CodeSystem>
 ): Promise<boolean> {
   const { logger, repo } = getAuthenticatedContext();
-  let query = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where(new Column('Coding', 'system'), '=', codeSystem.id)
-    .where(new Column('Coding', 'code'), '=', coding.code);
+  const db = repo.getDatabaseClient(DatabaseMode.READER);
+  let query = selectCoding(codeSystem.id, code);
 
   switch (filter.op) {
     case '=':
-      query = addPropertyFilter(query, filter.property, '=', filter.value);
+    case 'in': {
+      const property = codeSystem.property?.find((p) => p.code === filter.property);
+      if (!property?.id) {
+        return false;
+      }
+      query = addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
       break;
-    case 'in':
-      query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','));
-      break;
+    }
     case 'is-a':
-    case 'descendent-of':
+    case 'descendent-of': {
       if (filter.op !== 'is-a') {
         query.where('code', '!=', filter.value);
       }
 
       // Recursively find parents until one matches
-      query = findAncestor(query, codeSystem, filter.value);
+      const parentProperty = getParentProperty(codeSystem);
+      if (!parentProperty.id) {
+        return false;
+      }
+      query = findAncestor(query, codeSystem, parentProperty as WithId<CodeSystemProperty>, filter.value);
       break;
+    }
     default:
       logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const results = await query.execute(db);
   return results.length > 0;
 }

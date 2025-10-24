@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
+import type { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode } from '../database';
-import { Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 /**

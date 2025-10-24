@@ -1,4 +1,6 @@
-import { Context, JSX } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Context, JSX } from 'react';
 
 export function maybeWrapWithContext<T>(
   ContextProvider: Context<T>['Provider'],

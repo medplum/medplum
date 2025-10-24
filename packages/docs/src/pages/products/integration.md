@@ -93,6 +93,6 @@ Below is a system diagram that shows, at a high level all of the systems working
 
 - [Sample bots](https://github.com/medplum/medplum-demo-bots) these are a quickstart for building your integrations
 - [Bot tutorials](/docs/bots)
-- [Authentication, Authorization and Identity](/docs/auth)
+- [Authentication, Authorization and Identity](/docs/auth/)
 - [Compliance Portal](/docs/compliance)
 - [All Epic FHIR Endpoints](https://open.epic.com/MyApps/Endpoints)

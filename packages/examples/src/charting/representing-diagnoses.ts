@@ -1,4 +1,6 @@
-import { Condition, ValueSet } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Condition, ValueSet } from '@medplum/fhirtypes';
 
 const sampleCondition: Condition =
   // start-block sampleCondition

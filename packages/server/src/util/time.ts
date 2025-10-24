@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export type TimeUnit = 'ns' | 'µs' | 'ms' | 's';
 
 const PREFIXES: TimeUnit[] = ['ns', 'µs', 'ms', 's'];

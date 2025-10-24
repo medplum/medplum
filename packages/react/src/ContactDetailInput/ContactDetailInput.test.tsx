@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { ContactDetail } from '@medplum/fhirtypes';
+import type { ContactDetail } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ContactDetailInput } from './ContactDetailInput';
 

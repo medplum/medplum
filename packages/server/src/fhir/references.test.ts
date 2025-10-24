@@ -1,13 +1,17 @@
-import { createReference, WithId } from '@medplum/core';
-import { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Login, Patient, Project, Questionnaire, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
+import type { ReferenceTableRow } from './lookups/reference';
+import { ReferenceTable } from './lookups/reference';
 import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {
@@ -29,7 +33,10 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.checkReferencesOnWrite = true;
+      await getSystemRepo().updateResource({
+        ...project,
+        checkReferencesOnWrite: true,
+      });
 
       const authState: AuthState = {
         login: {} as Login,
@@ -82,6 +89,7 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
+      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -97,8 +105,11 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.checkReferencesOnWrite = true;
-      project.link = [{ project: createReference(project2) }];
+      const updatedProject = await systemRepo.updateResource({
+        ...project,
+        checkReferencesOnWrite: true,
+        link: [{ project: createReference(project2) }],
+      });
 
       const repo2 = await getRepoForLogin({
         login: {} as Login,
@@ -114,7 +125,7 @@ describe('Reference checks', () => {
       let repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: updatedProject,
         userConfig: {} as UserConfiguration,
       });
       const patient = await repo.createResource({
@@ -123,12 +134,15 @@ describe('Reference checks', () => {
       });
       expect(patient.link?.[0]?.other).toStrictEqual(createReference(patient2));
 
-      // Unlink Project and vaerify that access is revoked
-      project.link = undefined;
+      // Unlink Project and verify that access is revoked
+      const unlinkedProject = await systemRepo.updateResource({
+        ...updatedProject,
+        link: undefined,
+      });
       repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: unlinkedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(
@@ -247,7 +261,32 @@ describe('Reference checks', () => {
         ],
       };
 
+      const questionnaire: Questionnaire = {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'group-id',
+            type: 'group',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
+                extension: [{ url: 'template', valueReference: { reference: '#template' } }],
+              },
+            ],
+            item: [
+              {
+                linkId: 'nested-item',
+                type: 'string',
+                text: 'A nested question',
+              },
+            ],
+          },
+        ],
+      };
+
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await expect(repo.createResource<Questionnaire>(questionnaire)).resolves.toBeDefined();
     }));
 
   test('Resources with identical references', () => {

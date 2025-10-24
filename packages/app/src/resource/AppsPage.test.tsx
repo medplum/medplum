@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { forbidden, OperationOutcomeError } from '@medplum/core';
+import { forbidden, locationUtils, OperationOutcomeError } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
@@ -40,13 +42,7 @@ describe('AppsPage', () => {
   });
 
   test('Patient Smart App Launch', async () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        pathname: '/Patient/123/apps',
-        assign: jest.fn(),
-      },
-      writable: true,
-    });
+    locationUtils.assign = jest.fn();
 
     await setup('/Patient/123/apps');
     expect(await screen.findByText('Apps')).toBeInTheDocument();
@@ -57,17 +53,11 @@ describe('AppsPage', () => {
       fireEvent.click(screen.getByText('Inferno Client'));
     });
 
-    expect(window.location.assign).toHaveBeenCalled();
+    expect(locationUtils.assign).toHaveBeenCalled();
   });
 
   test('Encounter Smart App Launch', async () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        pathname: '/Encounter/123/apps',
-        assign: jest.fn(),
-      },
-      writable: true,
-    });
+    locationUtils.assign = jest.fn();
 
     await setup('/Encounter/123/apps');
     expect(await screen.findByText('Apps')).toBeInTheDocument();
@@ -78,7 +68,7 @@ describe('AppsPage', () => {
       fireEvent.click(screen.getByText('Inferno Client'));
     });
 
-    expect(window.location.assign).toHaveBeenCalled();
+    expect(locationUtils.assign).toHaveBeenCalled();
   });
 
   test('Access denied to ClientApplications', async () => {

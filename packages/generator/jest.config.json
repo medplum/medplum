@@ -1,5 +1,8 @@
 {
   "testEnvironment": "node",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },

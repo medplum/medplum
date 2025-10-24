@@ -1,13 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest, isString, isUUID, Operator } from '@medplum/core';
-import { Project, ResourceType, User } from '@medplum/fhirtypes';
+import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import type { JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
-import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import type { GoogleCredentialClaims } from '../oauth/utils';
+import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -130,6 +134,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
+    pictureUrl: claims.picture,
   });
   await sendLoginResult(res, login);
 }

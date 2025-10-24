@@ -1,5 +1,8 @@
-import { createReference, WithId } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type {
   AccessPolicy,
   ClientApplication,
   IdentityProvider,
@@ -7,10 +10,11 @@ import {
   ProjectMembership,
   Reference,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -39,11 +43,14 @@ export interface CreateClientRequest {
   readonly project: Project;
   readonly name: string;
   readonly description?: string;
-  readonly redirectUri?: string;
+  readonly redirectUris?: string[];
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
   readonly accessTokenLifetime?: string;
   readonly refreshTokenLifetime?: string;
+
+  /** @deprecated Use redirectUris instead */
+  readonly redirectUri?: string;
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
@@ -58,6 +65,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     secret: generateSecret(32),
     description: request.description,
     redirectUri: request.redirectUri,
+    redirectUris: request.redirectUris,
     identityProvider: request.identityProvider,
     accessTokenLifetime: request.accessTokenLifetime,
     refreshTokenLifetime: request.refreshTokenLifetime,

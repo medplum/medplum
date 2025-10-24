@@ -1,10 +1,13 @@
-import { ContentType, WithId, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
-import { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
+import type { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';

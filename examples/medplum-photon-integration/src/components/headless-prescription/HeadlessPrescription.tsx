@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
-import { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
+import type { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { PrescriptionTable } from './PrescriptionTable';
 
 interface HeadlessPrescriptionProps {

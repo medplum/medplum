@@ -1,7 +1,11 @@
-import { Quantity } from '@medplum/fhirtypes';
-import { LRUCache } from '../cache';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
-import { PropertyType, TypedValue } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Quantity } from '@medplum/fhirtypes';
+import type { LRUCache } from '../cache';
+import type { Atom, InfixParselet, Parser, PrefixParselet } from '../fhirlexer/parse';
+import { ParserBuilder } from '../fhirlexer/parse';
+import type { TypedValue } from '../types';
+import { PropertyType } from '../types';
 import {
   AndAtom,
   ArithemticOperatorAtom,

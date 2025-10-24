@@ -1,11 +1,22 @@
-import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  CopyObjectCommand,
+  CreateMultipartUploadCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  UploadPartCommand,
+} from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import { sdkStreamMixin } from '@smithy/util-stream';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { Request } from 'express';
-import internal, { Readable } from 'stream';
+import type { Request } from 'express';
+import type internal from 'stream';
+import { Readable } from 'stream';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
@@ -27,6 +38,34 @@ describe('Storage', () => {
   test('Undefined binary storage', () => {
     initBinaryStorage('binary');
     expect(() => getBinaryStorage()).toThrow();
+  });
+
+  test('Multipart upload with Express Request stream succeeds', async () => {
+    initBinaryStorage('s3:foo');
+    const storage = getBinaryStorage();
+
+    const binary = {
+      resourceType: 'Binary',
+      id: '123',
+      meta: {
+        versionId: '456',
+      },
+    } as Binary;
+
+    const req = new Readable() as Request;
+    const fiveMbAndABit = 5 * 1024 * 1024 + 10;
+    const oneKb = 'a'.repeat(1024);
+    for (let i = 0; i < fiveMbAndABit; i += 1024) {
+      req.push(Buffer.from(oneKb));
+    }
+    req.push(null);
+    (req as any).path = '/';
+    (req as any).headers = {};
+
+    mockS3Client.on(CreateMultipartUploadCommand).resolves({ UploadId: 'mock-upload-id' });
+    mockS3Client.on(UploadPartCommand).resolves({ ETag: 'mock-etag' });
+
+    await expect(storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req)).resolves.toBeUndefined();
   });
 
   test('S3 storage', async () => {

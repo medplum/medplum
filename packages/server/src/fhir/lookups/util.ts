@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getSearchParameters } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * Derives an "identifier" search parameter from a reference search parameter.

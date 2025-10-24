@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { getMissingRequiredQuestionnaireItems, questionnaireItemIterator } from './aoe';
 
 const AoeTestingLinkIds = [

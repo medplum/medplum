@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useContext } from 'react';
-import { BlockAvailabilityEvent } from '../../bots/core/block-availability';
+import { useContext } from 'react';
+import type { JSX } from 'react';
+import type { BlockAvailabilityEvent } from '../../bots/core/block-availability';
 import { ScheduleContext } from '../../Schedule.context';
 
 interface BlockAvailabilityProps {

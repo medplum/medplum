@@ -1,5 +1,8 @@
-import { BotEvent, MedplumClient, createReference, getDisplayString } from '@medplum/core';
-import { Appointment, Reference, Patient, Practitioner, Bundle } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getDisplayString } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Appointment, Reference, Patient, Practitioner, Bundle } from '@medplum/fhirtypes';
 
 /**
  * Helper function to send an appointment reminder.

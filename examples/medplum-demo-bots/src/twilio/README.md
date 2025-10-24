@@ -38,7 +38,7 @@ At a high level, the integration has the following components:
    }
    ```
 
-2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above.
+2. Create a [ClientApplication](https://www.medplum.com/docs/auth/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above.
 
 3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) your [Bot](https://www.medplum.com/docs/bots/bot-basics) using the code in this repository as a base.
 
@@ -57,7 +57,7 @@ At a high level, the integration has the following components:
    ```url
    https://api.medplum.com/webhook/<project-membership-id>
    ```
-   
+
 Replace `<project-membership-id>` with the ID of the project membership for your bot.
 
 4. Set the HTTP method to `POST`.
@@ -66,7 +66,7 @@ Replace `<project-membership-id>` with the ID of the project membership for your
 
 This bot provides a foundation for voice call handling. You can extend it to:
 
-- Route calls based on caller ID or time of day  
+- Route calls based on caller ID or time of day
 - Integrate with Medplum `Patient` resources for personalized greetings
 - Log call details as FHIR `Communication` resources
 - Implement interactive voice response (IVR) menus

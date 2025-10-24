@@ -1,4 +1,6 @@
-import { MedplumClient } from './client';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from './client';
 import { ContentType } from './contenttype';
 
 export class MedplumKeyValueClient {

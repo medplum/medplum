@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -13,7 +15,7 @@ import {
   Timing,
   TimingRepeat,
 } from '@medplum/fhirtypes';
-import { TypedValue } from './types';
+import type { TypedValue } from './types';
 import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {
@@ -54,7 +56,7 @@ export function typedValueToString(typedValue: TypedValue | undefined): string {
     case 'Reference':
       return formatReferenceString(typedValue.value);
     default:
-      return typedValue.value.toString();
+      return typedValue.value?.toString() ?? '';
   }
 }
 

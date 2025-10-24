@@ -1,4 +1,5 @@
-/// <reference types="vite/client" />
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 

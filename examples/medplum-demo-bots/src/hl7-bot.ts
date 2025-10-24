@@ -1,5 +1,7 @@
-import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Hl7Message> {
   const input = event.input as Hl7Message;

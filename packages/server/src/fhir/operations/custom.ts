@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, getExtension, isOperationOutcome, Operator } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bot, OperationDefinition, Reference } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Bot, OperationDefinition, Reference } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
 import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo, Repository } from '../repo';
+import type { Repository } from '../repo';
+import { getSystemRepo } from '../repo';
 import { buildOutputParameters } from './utils/parameters';
 
 export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
@@ -65,6 +68,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
+    requester: ctx.membership.profile,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.headers?.['content-type'] as string,
     headers: req.headers,

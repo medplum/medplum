@@ -1,6 +1,9 @@
-import { GoogleCredentialResponse } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { GoogleCredentialResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createScriptTag } from '../utils/script';
 
 interface GoogleApi {

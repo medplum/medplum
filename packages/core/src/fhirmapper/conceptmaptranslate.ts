@@ -1,5 +1,9 @@
-import { CodeableConcept, Coding, ConceptMap, ConceptMapGroup, OperationOutcome } from '@medplum/fhirtypes';
-import { OperationOutcomeError, badRequest, isOperationOutcome } from '../outcomes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeableConcept, Coding, ConceptMap, ConceptMapGroup } from '@medplum/fhirtypes';
+import { OperationOutcomeError, badRequest } from '../outcomes';
+import type { TypedValue } from '../types';
+import { append } from '../utils';
 
 export interface ConceptMapTranslateParameters {
   url?: string;
@@ -14,6 +18,15 @@ export interface ConceptMapTranslateParameters {
 export interface ConceptMapTranslateMatch {
   equivalence?: string;
   concept?: Coding;
+  property?: ConceptMapTranslateMatchAttribute[];
+  dependsOn?: ConceptMapTranslateMatchAttribute[];
+  product?: ConceptMapTranslateMatchAttribute[];
+  source?: string;
+}
+
+export interface ConceptMapTranslateMatchAttribute {
+  key: string;
+  value: TypedValue;
 }
 
 export interface ConceptMapTranslateOutput {
@@ -27,11 +40,7 @@ export function conceptMapTranslate(map: ConceptMap, params: ConceptMapTranslate
     throw new OperationOutcomeError(badRequest('ConceptMap does not specify a mapping group', 'ConceptMap.group'));
   }
 
-  const sourceCodes = constructSourceSet(params);
-  if (isOperationOutcome(sourceCodes)) {
-    throw new OperationOutcomeError(sourceCodes);
-  }
-
+  const sourceCodes = indexConceptMapCodings(params);
   const matches = translateCodes(
     sourceCodes,
     params.targetsystem ? map.group.filter((g) => g.target === params.targetsystem) : map.group
@@ -45,39 +54,29 @@ export function conceptMapTranslate(map: ConceptMap, params: ConceptMapTranslate
   };
 }
 
-function constructSourceSet(params: ConceptMapTranslateParameters): Record<string, string[]> | OperationOutcome {
+export function indexConceptMapCodings(params: ConceptMapTranslateParameters): Record<string, string[]> {
+  const results: Record<string, string[]> = Object.create(null);
   if (params.code && !params.coding && !params.codeableConcept) {
-    if (params.system === undefined) {
-      return badRequest(`Missing required 'system' input parameter with 'code' parameter`);
+    if (!params.system) {
+      throw new OperationOutcomeError(badRequest(`System parameter must be provided with code`));
     }
-    return { [params.system]: [params.code] };
+    results[params.system] = [params.code];
   } else if (params.coding && !params.code && !params.codeableConcept) {
-    return { [params.coding.system ?? '']: [params.coding.code ?? ''] };
-  } else if (params.codeableConcept && !params.code && !params.coding) {
-    return indexCodes(params.codeableConcept);
-  } else if (params.code || params.coding || params.codeableConcept) {
-    return badRequest('Ambiguous input: multiple source codings provided');
-  } else {
-    return badRequest(
-      `No source provided: 'code'+'system', 'coding', or 'codeableConcept' input parameter is required`
-    );
-  }
-}
-
-function indexCodes(concept: CodeableConcept): Record<string, string[]> {
-  const result: Record<string, string[]> = Object.create(null);
-  if (!concept.coding?.length) {
-    return result;
-  }
-
-  for (const { system, code } of concept.coding) {
-    if (!code) {
-      continue;
+    if (params.coding.code) {
+      results[params.coding.system ?? ''] = [params.coding.code];
     }
-    const key = system ?? '';
-    result[key] = result[key] ? [...result[key], code] : [code];
+  } else if (params.codeableConcept && !params.code && !params.coding) {
+    for (const { system, code } of params.codeableConcept.coding ?? []) {
+      if (code) {
+        results[system ?? ''] = append(results[system ?? ''], code);
+      }
+    }
+  } else if (params.code || params.coding || params.codeableConcept) {
+    throw new OperationOutcomeError(badRequest('Ambiguous input: multiple source codings provided'));
+  } else {
+    throw new OperationOutcomeError(badRequest('Source Coding (system + code) must be specified'));
   }
-  return result;
+  return results;
 }
 
 function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMapGroup[]): ConceptMapTranslateMatch[] {

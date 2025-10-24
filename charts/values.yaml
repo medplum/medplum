@@ -10,12 +10,14 @@ global:
     # type: "aws:region:parameterName"
     # type: "gcp:projectId:secretId"
     # type: "azure:keyVaultURL:secretName"
-    type: "env"  # Default to env
+    type: 'env' # Default to env
 
 serviceAccount:
   annotations:
-    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
-    # azure.workload.identity/client-id: "7f644391-4b27-4f76-8427-17bae90d7ee8" # Azure Managed Identity Client ID
+    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
+    # iam.gke.io/gcp-service-account: ""
+    # Set your Azure Managed Identity Client ID for Azure workload identity
+    # azure.workload.identity/client-id: ""
 
 namespace: medplum
 
@@ -29,19 +31,49 @@ deployment:
     #   value: '*'
   resources:
     requests:
-      memory: "1Gi"
+      memory: '1Gi'
+      cpu: '500m'
     limits:
-      memory: "2Gi"
+      memory: '2Gi'
+      cpu: '1000m'
   autoscaling:
     enabled: true
   # Structure this deployment.sidecar value as if you were adding the container
   # to the Deployment's spec.template.spec.containers key.
   sidecars: []
 
+# Security contexts for pods and containers
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# Pod Disruption Budget settings
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # Alternative: maxUnavailable: 1
+
 service: {}
 
 ingress:
   deploy: true
-  domain: [MY_DOMAIN] # Your domain name
-  tlsSecretName: [TLS_SECRET_NAME] # Azure only
-  
+  # Set your domain name (e.g., medplum.example.com)
+  domain: ''
+  # Set your TLS secret name (Azure only)
+  tlsSecretName: ''

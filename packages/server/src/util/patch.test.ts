@@ -1,4 +1,6 @@
-import { Operation } from 'rfc6902';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Operation } from 'rfc6902';
 import { patchObject } from './patch';
 
 describe('Patch utils', () => {

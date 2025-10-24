@@ -1,11 +1,16 @@
-import { BackgroundJobContext, ContentType, createReference, WithId } from '@medplum/core';
-import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, WithId } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
+import type { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { findProjectMembership, queueRegistry, WorkerInitializer } from './utils';
+import type { WorkerInitializer } from './utils';
+import { findProjectMembership, queueRegistry } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;

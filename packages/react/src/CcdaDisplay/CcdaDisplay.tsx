@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
-import { JSX, useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { exportJsonFile, sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';

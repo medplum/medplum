@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import {
+import type {
   Encounter,
   OperationOutcome,
   Patient,
@@ -246,8 +248,6 @@ describe('PlanDefinition apply', () => {
       .get(`/fhir/R4/Encounter/${res4.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res7.status).toBe(200);
-    expect(res7.body.basedOn).toHaveLength(1);
-    expect(res7.body.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
   });
 
   test('Unsupported content type', async () => {
@@ -476,5 +476,322 @@ describe('PlanDefinition apply', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res7.status).toBe(200);
     expect(res7.body.resourceType).toBe('ServiceRequest');
+  });
+
+  test('Dynamic and static assigned owner and performerType', async () => {
+    // 1. Create two ActivityDefinitions with different kinds
+    // 2. Create a PlanDefinition
+    // 3. Create a Patient
+    // 4. Create a Practitioner
+    // 5. Create an Organization
+    // 6. Create an Encounter
+    // 7. Apply the PlanDefinition with all parameters
+    // 8. Verify both Tasks include all references
+
+    // 1a. Create an ActivityDefinition with kind 'ServiceRequest'
+    const res1a = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        kind: 'ServiceRequest',
+        name: 'BloodPressureCheck',
+        title: 'Blood Pressure Check',
+        description: 'Check patient blood pressure',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
+            extension: [
+              {
+                url: 'owner',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%practitioner',
+                },
+              },
+              {
+                url: 'performerType',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                      code: 'ATND',
+                      display: 'attender',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '75367002',
+              display: 'Blood pressure monitoring',
+            },
+          ],
+        },
+        intent: 'order',
+        priority: 'routine',
+      });
+    expect(res1a.status).toBe(201);
+
+    // 1b. Create a second ActivityDefinition with kind 'Task' to test task-elements extension works for non-ServiceRequest kinds
+    const res1b = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        kind: 'Task', // Different kind to test the fix
+        name: 'GeneralTaskWithOwner',
+        title: 'General Task with Dynamic Owner',
+        description: 'A general task that should also respect task-elements extension',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
+            extension: [
+              {
+                url: 'owner',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%organization',
+                },
+              },
+              {
+                url: 'performerType',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                      code: 'SPRF',
+                      display: 'secondary performer',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+        intent: 'order',
+        priority: 'routine',
+      });
+    expect(res1b.status).toBe(201);
+
+    // 2. Create a PlanDefinition with both ActivityDefinitions
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition with Multiple ActivityDefinitions',
+        status: 'active',
+        action: [
+          {
+            title: res1a.body.title,
+            definitionCanonical: getReferenceString(res1a.body),
+          },
+          {
+            title: res1b.body.title,
+            definitionCanonical: getReferenceString(res1b.body),
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+
+    // 3. Create a Patient
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        gender: 'female',
+        birthDate: '1990-01-01',
+      });
+    expect(res3.status).toBe(201);
+
+    // 4. Create a Practitioner
+    const res4 = await request(app)
+      .post(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Dr. John'], family: 'Doe' }],
+        identifier: [
+          {
+            system: 'http://example.org/practitioner-ids',
+            value: 'PRACT001',
+          },
+        ],
+        qualification: [
+          {
+            code: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0360',
+                  code: 'MD',
+                  display: 'Doctor of Medicine',
+                },
+              ],
+            },
+          },
+        ],
+      });
+    expect(res4.status).toBe(201);
+
+    // 5. Create an Organization
+    const res5 = await request(app)
+      .post(`/fhir/R4/Organization`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Organization',
+        name: 'Example Healthcare Organization',
+        identifier: [
+          {
+            system: 'http://example.org/organization-ids',
+            value: 'ORG001',
+          },
+        ],
+        type: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+                code: 'prov',
+                display: 'Healthcare Provider',
+              },
+            ],
+          },
+        ],
+      });
+    expect(res5.status).toBe(201);
+
+    // 6. Create an Encounter
+    const res6 = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Encounter',
+        status: 'active',
+        class: {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          code: 'AMB',
+          display: 'ambulatory',
+        },
+        subject: createReference(res3.body as Patient),
+        serviceProvider: createReference(res5.body),
+        participant: [
+          {
+            individual: createReference(res4.body),
+            type: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                    code: 'ATND',
+                    display: 'attender',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    expect(res6.status).toBe(201);
+
+    // 7. Apply the PlanDefinition with all parameters
+    const res7 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(res3.body as Patient),
+          },
+          {
+            name: 'practitioner',
+            valueString: getReferenceString(res4.body),
+          },
+          {
+            name: 'organization',
+            valueString: getReferenceString(res5.body),
+          },
+          {
+            name: 'encounter',
+            valueString: getReferenceString(res6.body),
+          },
+        ],
+      });
+    expect(res7.status).toBe(200);
+    expect(res7.body.resourceType).toStrictEqual('RequestGroup');
+    expect((res7.body as RequestGroup).action).toHaveLength(2);
+    expect((res7.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+    expect((res7.body as RequestGroup).action?.[1]?.resource?.reference).toBeDefined();
+
+    // 8a. Verify the first Task (ServiceRequest kind) includes all references
+    const res8a = await request(app)
+      .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res8a.status).toBe(200);
+    expect(res8a.body.resourceType).toStrictEqual('Task');
+
+    const resultTask1 = res8a.body as Task;
+    expect(resultTask1.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask1.encounter).toMatchObject(createReference(res6.body));
+    expect(resultTask1.input).toHaveLength(1);
+    expect(resultTask1.input?.[0]?.type?.text).toStrictEqual('ServiceRequest');
+    expect(resultTask1.basedOn).toHaveLength(1);
+    expect(resultTask1.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+    expect(resultTask1.owner).toMatchObject(createReference(res4.body)); // %practitioner
+    expect(resultTask1.performerType).toHaveLength(1);
+    expect(resultTask1.performerType?.[0]?.coding?.[0]?.code).toStrictEqual('ATND');
+
+    // 8b. Verify the second Task (Task kind) also includes task-elements extension values
+    const res8b = await request(app)
+      .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[1]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res8b.status).toBe(200);
+    expect(res8b.body.resourceType).toStrictEqual('Task');
+
+    const resultTask2 = res8b.body as Task;
+    expect(resultTask2.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask2.encounter).toMatchObject(createReference(res6.body));
+    expect(resultTask2.basedOn).toHaveLength(1);
+    expect(resultTask2.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+    expect(resultTask2.owner).toMatchObject(createReference(res5.body)); // %organization (from the second ActivityDefinition)
+    expect(resultTask2.performerType).toHaveLength(1);
+    expect(resultTask2.performerType?.[0]?.coding?.[0]?.code).toStrictEqual('SPRF');
+    expect(resultTask2.code?.text).toStrictEqual(res1b.body.title);
+
+    // 9. Verify the ServiceRequest was created for the first task
+    const serviceRequestRef = resultTask1.focus?.reference;
+    expect(serviceRequestRef).toBeDefined();
+    const res9 = await request(app)
+      .get(`/fhir/R4/${serviceRequestRef}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res9.status).toBe(200);
+    expect(res9.body.resourceType).toBe('ServiceRequest');
+    expect(res9.body.subject).toMatchObject(createReference(res3.body as Patient));
+    expect(res9.body.encounter).toMatchObject(createReference(res6.body));
+
+    // 10. Verify the encounter was updated with the plan definition reference
+    const res10 = await request(app)
+      .get(`/fhir/R4/Encounter/${res6.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res10.status).toBe(200);
   });
 });

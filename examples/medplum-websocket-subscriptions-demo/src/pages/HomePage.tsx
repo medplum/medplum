@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Accordion, Button, Group, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import { Bundle, Communication, Parameters, Patient, Practitioner, Subscription } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Patient, Practitioner, Subscription } from '@medplum/fhirtypes';
 import { HomerSimpson, MargeSimpson } from '@medplum/mock';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { JSX, useState } from 'react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { BundleDisplay } from '../components/BundleDisplay';
 
 /**

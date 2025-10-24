@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { ConceptMap, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { ConceptMap, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -183,6 +185,20 @@ describe('ConceptMap $translate', () => {
     });
   });
 
+  test('Allows GET request', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ConceptMap/$translate?url=${conceptMap.url}&system=${system}&code=${code}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(res.status).toBe(200);
+
+    const output = (res.body as Parameters).parameter;
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
+    const matches = output?.filter((p) => p.name === 'match');
+    expect(matches).toHaveLength(2);
+  });
+
   test('Lookup by source ValueSet', async () => {
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/$translate`)
@@ -327,11 +343,7 @@ describe('ConceptMap $translate', () => {
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: { text: `Missing required 'system' input parameter with 'code' parameter` },
-        },
-      ],
+      issue: [{ details: { text: 'System parameter must be provided with code' } }],
     });
   });
 
@@ -374,13 +386,7 @@ describe('ConceptMap $translate', () => {
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: {
-            text: `No source provided: 'code'+'system', 'coding', or 'codeableConcept' input parameter is required`,
-          },
-        },
-      ],
+      issue: [{ details: { text: 'Source Coding (system + code) must be specified' } }],
     });
   });
 
@@ -609,15 +615,10 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code } }],
       });
-    expect(res2.status).toBe(400);
-    expect(res2.body).toMatchObject({
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: { text: 'ConceptMap does not specify a mapping group' },
-          expression: ['ConceptMap.group'],
-        },
-      ],
+    expect(res2.status).toBe(200);
+    expect(res2.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: false }],
     });
   });
 });

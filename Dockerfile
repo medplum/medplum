@@ -1,5 +1,5 @@
 # This is the main production Dockerfile.
-# It depends on medplum-server.tar.gz which is created by scripts/deploy-server.sh.
+# It depends on medplum-server.tar.gz which is created by scripts/build-docker-server.sh.
 # This is a production ready image.
 # It does not include any development dependencies.
 
@@ -21,7 +21,7 @@ WORKDIR /usr/src/medplum
 ADD ./medplum-server.tar.gz ./
 
 # Install dependencies, create non-root user, and set permissions in one layer
-RUN npm ci --maxsockets 1 && \
+RUN npm ci && \
   groupadd -r medplum && \
   useradd -r -g medplum medplum && \
   chown -R medplum:medplum /usr/src/medplum

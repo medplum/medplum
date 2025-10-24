@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   Anchor,
   AppShell,
@@ -29,7 +31,7 @@ import {
   IconFingerprint,
   IconNotification,
 } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { Logo } from '../../components/Logo';
 import classes from './Header.module.css';

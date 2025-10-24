@@ -1,5 +1,8 @@
-import { getReferenceString, ProfileResource } from '@medplum/core';
-import { Login, ProjectMembership } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';

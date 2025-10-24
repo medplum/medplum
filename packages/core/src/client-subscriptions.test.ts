@@ -1,8 +1,12 @@
-import { Parameters, Patient } from '@medplum/fhirtypes';
-import WS from 'jest-websocket-mock';
-import { FetchLike, MedplumClient } from './client';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Parameters, Patient } from '@medplum/fhirtypes';
+import { WS } from 'jest-websocket-mock';
+import type { FetchLike } from './client';
+import { MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
-import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
+import type { SubscriptionEventMap } from './subscriptions';
+import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
 import { sleep } from './utils';
 

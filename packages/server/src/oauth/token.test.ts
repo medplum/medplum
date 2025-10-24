@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
@@ -8,11 +11,10 @@ import {
   OAuthTokenType,
   parseJWTPayload,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import type { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import express from 'express';
-import { generateKeyPair, jwtVerify, SignJWT } from 'jose';
+import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -21,7 +23,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
@@ -282,7 +284,7 @@ describe('OAuth2 Token', () => {
         name: 'Bad Client',
         description: 'Bad Client',
         secret: '',
-        redirectUri: 'https://example.com',
+        redirectUris: ['https://example.com'],
       })
     );
 
@@ -853,6 +855,45 @@ describe('OAuth2 Token', () => {
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid refresh token',
+    });
+  });
+
+  test('Refresh token failed for no refresh_secret claim', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+    const refreshToken = res2.body.refresh_token;
+
+    const decodedToken = decodeJwt(refreshToken);
+    decodedToken['refresh_secret'] = undefined;
+    const invalidRefreshToken = new SignJWT(decodedToken);
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: invalidRefreshToken,
     });
     expect(res3.status).toBe(400);
     expect(res3.body).toMatchObject({

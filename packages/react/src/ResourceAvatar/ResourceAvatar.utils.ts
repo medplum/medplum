@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export function getInitials(input: string): string {
   const words = input.split(' ').filter(Boolean);
   if (words.length > 1) {

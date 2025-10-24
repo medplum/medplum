@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   CloudWatchLogsClient,
   CreateLogGroupCommand,
   CreateLogStreamCommand,
   PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { loadTestConfig } from '../config/loader';
 import { waitFor } from '../test.setup';

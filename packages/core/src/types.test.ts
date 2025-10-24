@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -12,8 +14,8 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
+import type { TypedValue } from './types';
 import {
-  TypedValue,
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
@@ -108,6 +110,7 @@ describe('Type Utils', () => {
   });
 
   test('isReference', () => {
+    // Basic reference validation (no resourceType parameter)
     expect(isReference(undefined)).toBe(false);
     expect(isReference(null)).toBe(false);
     expect(isReference('Patient')).toBe(false);
@@ -115,6 +118,39 @@ describe('Type Utils', () => {
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
     expect(isReference({ reference: 'Patient/123' })).toBe(true);
     expect(isReference({ reference: { value: '123' } })).toBe(false);
+
+    // Test with resourceType parameter - matching cases
+    expect(isReference({ reference: 'Patient/123' }, 'Patient')).toBe(true);
+    expect(isReference({ reference: 'Observation/456' }, 'Observation')).toBe(true);
+    expect(isReference({ reference: 'Organization/789' }, 'Organization')).toBe(true);
+    expect(isReference({ reference: 'Practitioner/abc' }, 'Practitioner')).toBe(true);
+
+    // Test with resourceType parameter - non-matching cases
+    expect(isReference({ reference: 'Patient/123' }, 'Observation')).toBe(false);
+    expect(isReference({ reference: 'Observation/456' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: 'AppointmentResponse/789' }, 'Appointment')).toBe(false);
+
+    // Test with resourceType parameter - edge cases
+    expect(isReference({ reference: 'Patient' }, 'Patient')).toBe(false); // no ID or query parameters
+    expect(isReference({ reference: 'Patient?name=John' }, 'Patient')).toBe(true); // query parameters
+    expect(isReference({ reference: 'Patient/123?version=1' }, 'Patient')).toBe(true); // ID with query
+
+    // Test case sensitivity
+    expect(isReference({ reference: 'patient/123' }, 'Patient')).toBe(false);
+
+    // Test partial matches (should not match)
+    expect(isReference({ reference: 'MyPatient/123' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: 'PatientData/123' }, 'Patient')).toBe(false);
+
+    // Test invalid reference values with resourceType
+    expect(isReference(undefined, 'Patient')).toBe(false);
+    expect(isReference(null, 'Patient')).toBe(false);
+    expect(isReference({}, 'Patient')).toBe(false);
+    expect(isReference({ reference: { value: '123' } }, 'Patient')).toBe(false);
+
+    // Test empty and malformed references
+    expect(isReference({ reference: '' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: '/' }, 'Patient')).toBe(false);
   });
 
   test.each<[TypedValue, string]>([

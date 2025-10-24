@@ -1,4 +1,6 @@
-import { CodeableConcept } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeableConcept } from '@medplum/fhirtypes';
 
 const tylenol: CodeableConcept =
   // start-block tylenol-example

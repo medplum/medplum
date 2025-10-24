@@ -1,5 +1,8 @@
-import { ContentType, encodeBase64Url, getReferenceString, ProfileResource, WithId } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -170,6 +173,23 @@ describe('External auth', () => {
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
       fhirUser: `Practitioner?identifier=${npi}`,
+    });
+    const res = await request(app)
+      .get(`/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res.status).toBe(200);
+  });
+
+  test('Success by absolute URL', async () => {
+    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ ok: true }),
+    }));
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      fhirUser: `https://external.idp/fhir/Practitioner?identifier=${npi}`,
     });
     const res = await request(app)
       .get(`/oauth2/userinfo`)

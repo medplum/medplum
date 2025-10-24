@@ -1,5 +1,8 @@
-import { Filter, getReferenceString, Operator, parseReference, SearchRequest } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getReferenceString, Operator, parseReference } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
+import type {
   Communication,
   Encounter,
   EncounterParticipant,

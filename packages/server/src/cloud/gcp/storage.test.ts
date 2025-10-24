@@ -1,4 +1,6 @@
-import { Binary } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
 import { GoogleCloudStorage } from './storage';
 

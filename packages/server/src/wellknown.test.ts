@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isUUID } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
@@ -29,21 +31,34 @@ describe('Well Known', () => {
       expect(key.kid).toBeDefined();
       expect(key.kid.length).toStrictEqual(36); // kid should be a UUID
       expect(isUUID(key.kid)).toStrictEqual(true);
-      expect(key.alg).toStrictEqual('RS256');
-      expect(key.kty).toStrictEqual('RSA');
+      expect(key.alg).toMatch(/^(RS256|ES256)$/);
+      expect(key.kty).toMatch(/^(RSA|EC)$/);
       expect(key.use).toStrictEqual('sig');
 
-      // Make sure public key properties are there
-      expect(key.e).toBeDefined();
-      expect(key.n).toBeDefined();
+      if (key.kty === 'EC') {
+        // Make sure public key properties are there
+        expect(key.x).toBeDefined();
+        expect(key.y).toBeDefined();
+        expect(key.crv).toBeDefined();
 
-      // Make sure private key properties are *NOT* there
-      expect(key.d).toBeUndefined();
-      expect(key.p).toBeUndefined();
-      expect(key.q).toBeUndefined();
-      expect(key.dp).toBeUndefined();
-      expect(key.dq).toBeUndefined();
-      expect(key.qi).toBeUndefined();
+        // Make sure private key properties are *NOT* there
+        expect(key.d).toBeUndefined();
+        expect(key.x5c).toBeUndefined();
+        expect(key.x5t).toBeUndefined();
+        expect(key.x5t256).toBeUndefined();
+      } else if (key.kty === 'RSA') {
+        // Make sure public key properties are there
+        expect(key.e).toBeDefined();
+        expect(key.n).toBeDefined();
+
+        // Make sure private key properties are *NOT* there
+        expect(key.d).toBeUndefined();
+        expect(key.p).toBeUndefined();
+        expect(key.q).toBeUndefined();
+        expect(key.dp).toBeUndefined();
+        expect(key.dq).toBeUndefined();
+        expect(key.qi).toBeUndefined();
+      }
     }
   });
 
@@ -76,10 +91,31 @@ describe('Well Known', () => {
   test('Get /.well-known/oauth-protected-resource', async () => {
     const res = await request(app).get('/.well-known/oauth-protected-resource');
     expect(res.status).toBe(200);
+    expect(res.body.resource).toBeDefined();
     expect(res.body.issuer).toBeDefined();
     expect(res.body.authorization_servers).toBeDefined();
     expect(res.body.scopes_supported).toBeDefined();
     expect(res.body.bearer_methods_supported).toBeDefined();
     expect(res.body.introspection_endpoint).toBeDefined();
+  });
+
+  test('Protected resource with custom request', async () => {
+    const res = await request(app).get(
+      '/.well-known/oauth-protected-resource?resource=http://localhost:8103/fhir/R4/Patient/123'
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.resource).toBe('http://localhost:8103/fhir/R4/Patient/123');
+  });
+
+  test('Protected resource with invalid resource', async () => {
+    const res = await request(app).get('/.well-known/oauth-protected-resource?resource=https://example.com/invalid');
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid resource URL');
+  });
+
+  test('Protected resource with resource array', async () => {
+    const res = await request(app).get('/.well-known/oauth-protected-resource?resource=a&resource=b&resource=c');
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid resource URL');
   });
 });

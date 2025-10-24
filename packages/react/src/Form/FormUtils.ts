@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Parses an HTML form and returns the result as a JavaScript object.
  * @param form - The HTML form element.

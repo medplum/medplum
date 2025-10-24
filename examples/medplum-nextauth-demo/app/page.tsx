@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { PatientTable } from '@/app/components/PatientTable';
 import { Container } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
-import { Bundle, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Patient } from '@medplum/fhirtypes';
 import { getServerSession } from 'next-auth/next';
 import React, { Suspense } from 'react';
 import { options } from './api/auth/[...nextauth]/options';

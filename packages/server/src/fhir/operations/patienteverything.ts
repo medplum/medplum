@@ -1,16 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
-  Filter,
+  append,
   flatMapFilter,
   getReferenceString,
   isReference,
   isResource,
   Operator,
   sortStringArray,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
@@ -21,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';
@@ -76,38 +78,56 @@ export async function getPatientEverything(
   params?: PatientEverythingParameters
 ): Promise<Bundle<WithId<Resource>>> {
   // First get all compartment resources
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = params?._type ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
-  types.push('Patient');
-  sortStringArray(types);
-
-  const filters: Filter[] = [
-    {
-      code: '_compartment',
-      operator: Operator.EQUALS,
-      value: getReferenceString(patient),
-    },
-  ];
-
-  if (params?._since) {
-    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params._since });
-  }
-
-  // Get initial bundle of compartment resources
-  const bundle = await repo.search({
-    resourceType: 'Patient',
-    types,
-    filters,
-    count: params?._count ?? defaultMaxResults,
+  const search: Partial<SearchRequest> = {
+    types: params?._type,
+    count: params?._count,
     offset: params?._offset,
-  });
+  };
+  if (params?._since) {
+    search.filters = append(search.filters, {
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params._since,
+    });
+  }
+  const bundle = await searchPatientCompartment(repo, patient, search);
 
   // Filter by requested date range
   filterByCareDate(bundle, params?.start, params?.end);
 
-  // Recursively resolve references
+  // Recursively resolve references to resources not in the official compartment, but
+  // which should be included for completeness
   await addResolvedReferences(repo, bundle.entry);
+  bundle.entry = removeDuplicateEntries(bundle.entry);
   return bundle;
+}
+
+export async function searchPatientCompartment(
+  repo: Repository,
+  target: WithId<Resource>,
+  search?: Partial<SearchRequest>
+): Promise<Bundle<WithId<Resource>>> {
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  const types = search?.types ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  types.push(target.resourceType);
+  sortStringArray(types);
+
+  const filters = search?.filters ?? [];
+  filters.push({
+    code: '_compartment',
+    operator: Operator.EQUALS,
+    value: getReferenceString(target),
+  });
+
+  // Get initial bundle of compartment resources
+  return repo.search({
+    resourceType: target.resourceType,
+    types,
+    filters,
+    count: search?.count ?? defaultMaxResults,
+    offset: search?.offset,
+    sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure that pagination works correctly
+  });
 }
 
 /**
@@ -174,4 +194,26 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
     }
   }
   return foundReferences;
+}
+
+/**
+ * Removes duplicate entries from the given list of bundle entries.
+ * @param entries - The bundle entries.
+ * @returns The deduplicated bundle entries.
+ */
+function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
+  if (!entries) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const resource = entry.resource as WithId<Resource>;
+    const ref = getReferenceString(resource);
+    if (seen.has(ref)) {
+      return false;
+    } else {
+      seen.add(ref);
+      return true;
+    }
+  });
 }

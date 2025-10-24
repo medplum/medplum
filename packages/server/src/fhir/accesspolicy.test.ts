@@ -1,15 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   createReference,
+  encodeBase64,
   getReferenceString,
   LOINC,
   normalizeErrorString,
   Operator,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AccessPolicyResource,
+  Binary,
   ClientApplication,
   Condition,
   Login,
@@ -323,6 +327,59 @@ describe('AccessPolicy', () => {
       expect(readPatient.meta?.accounts).toHaveLength(1);
       expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
     }));
+
+  test.each<'resource.compartment' | 'resource.criteria'>(['resource.compartment', 'resource.criteria'])(
+    'AccessPolicy.%s with compartment for Binary',
+    (compartmentsPath) =>
+      withTestContext(async () => {
+        const orgId = randomUUID();
+        const orgRef = 'Organization/' + orgId;
+        const binaryResource: AccessPolicyResource = {
+          resourceType: 'Binary',
+        };
+        const accessPolicy: AccessPolicy = {
+          resourceType: 'AccessPolicy',
+          compartment: {
+            reference: orgRef,
+          },
+          resource: [binaryResource],
+        };
+
+        if (compartmentsPath === 'resource.compartment') {
+          binaryResource.compartment = {
+            reference: orgRef,
+          };
+        } else {
+          binaryResource.criteria = 'Binary?_compartment=' + orgRef;
+        }
+
+        const repo = new Repository({
+          extendedMode: true,
+          accessPolicy,
+          author: {
+            reference: 'Practitioner/1',
+          },
+        });
+
+        const binary = await repo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: 'application/pdf',
+          data: encodeBase64('test'),
+        });
+        expect(binary.meta?.account?.reference).toStrictEqual(orgRef);
+        expect(binary.meta?.accounts).toContainEqual({ reference: orgRef });
+        expect(binary.meta?.accounts).toHaveLength(1);
+        expect(binary.meta?.compartment).toContainEqual({ reference: orgRef });
+        expect(binary.meta?.compartment).toHaveLength(1);
+
+        const readBinary = await repo.readResource('Binary', binary.id);
+        expect(readBinary.meta?.account?.reference).toStrictEqual(orgRef);
+        expect(readBinary.meta?.accounts).toContainEqual({ reference: orgRef });
+        expect(readBinary.meta?.accounts).toHaveLength(1);
+        expect(readBinary.meta?.compartment).toContainEqual({ reference: orgRef });
+        expect(readBinary.meta?.compartment).toHaveLength(1);
+      })
+  );
 
   test('Merge access policy account override and resource accounts', () =>
     withTestContext(async () => {
@@ -709,7 +766,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           account: {
             reference: account,
@@ -816,7 +873,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
       });
       expect(clientApplication).toBeDefined();
 
@@ -2028,6 +2085,25 @@ describe('AccessPolicy', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      const patient4 = await adminRepo.updateResource<Patient>({
+        ...patient3,
+        meta: {
+          security: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
+              code: 'N',
+            },
+          ],
+          tag: [
+            {
+              system: 'http://example.com',
+              code: 'example-tag',
+            },
+          ],
+        },
+      });
+      expect(patient4.meta?.accounts).toBeUndefined(); //accounts were overwritten
 
       // Remove patient accounts as project admin
       // Project admin should be allowed to clear accounts

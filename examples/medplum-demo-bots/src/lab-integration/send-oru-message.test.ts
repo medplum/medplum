@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   LOINC,
@@ -5,10 +7,10 @@ import {
   createReference,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
 } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   DiagnosticReport,
   Observation,
@@ -23,7 +25,7 @@ import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOruMessage, handler } from './send-oru-message';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_HOST: { name: 'SFTP_HOST', valueString: 'example.server.transfer.us-east-1.amazonaws.com' },

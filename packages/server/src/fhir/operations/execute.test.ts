@@ -1,13 +1,8 @@
-import {
-  ContentType,
-  Operator,
-  WithId,
-  badRequest,
-  createReference,
-  getReferenceString,
-  parseJWTPayload,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
+import type {
   AsyncJob,
   AuditEvent,
   Bot,

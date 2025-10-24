@@ -4,18 +4,18 @@
   top: 0;
   bottom: 0;
   width: 48px;
-  
+
   z-index: 1;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
 }
 
-[data-mantine-color-scheme='dark'] .gradient  {
+[data-mantine-color-scheme='dark'] .gradient {
   background: linear-gradient(to right, transparent, var(--mantine-color-dark-8));
 }
 
-[data-mantine-color-scheme='light'] .gradient  {
+[data-mantine-color-scheme='light'] .gradient {
   background: linear-gradient(to right, transparent, var(--mantine-color-white));
 }
 
@@ -34,11 +34,11 @@
   transition: opacity 0.2s;
 }
 
-[data-mantine-color-scheme='dark'] .container  {
+[data-mantine-color-scheme='dark'] .container {
   background: var(--mantine-color-dark-8);
 }
 
-[data-mantine-color-scheme='light'] .container  {
+[data-mantine-color-scheme='light'] .container {
   background: var(--mantine-color-white);
 }
 

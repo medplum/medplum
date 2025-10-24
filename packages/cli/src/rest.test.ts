@@ -1,5 +1,8 @@
-import { createReference, MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';

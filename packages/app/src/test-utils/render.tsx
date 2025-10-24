@@ -1,17 +1,22 @@
-/* eslint-disable react-refresh/only-export-components */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Sets up MantineProvider for all tests
 // See: https://mantine.dev/guides/jest/
 
 import { MantineProvider } from '@mantine/core';
-import { MedplumClient } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, RenderResult, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
-import userEvent, { UserEvent } from '@testing-library/user-event';
-import { ReactNode } from 'react';
+import type { RenderResult } from '@testing-library/react';
+import { act, fireEvent, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
+import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
-export { act, fireEvent, RenderResult, screen, userEvent, UserEvent, waitFor };
+export { act, fireEvent, screen, userEvent, waitFor };
+export type { RenderResult, UserEvent };
 
 const theme = {};
 

@@ -130,6 +130,11 @@
         "content": "complete",
         "concept": [
           {
+            "code": "ai",
+            "display": "AI",
+            "definition": "AI"
+          },
+          {
             "code": "aws-comprehend",
             "display": "AWS Comprehend",
             "definition": "AWS Comprehend"
@@ -212,6 +217,11 @@
             "code": "vmcontext",
             "display": "VM Context",
             "definition": "VM Context"
+          },
+          {
+            "code": "fission",
+            "display": "Fission",
+            "definition": "Fission"
           }
         ]
       }

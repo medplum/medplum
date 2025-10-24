@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import type { Binary } from '@medplum/fhirtypes';
+import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { BaseBinaryStorage } from '../../storage/base';
-import { BinarySource } from '../../storage/types';
+import type { BinarySource } from '../../storage/types';
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.
@@ -29,7 +31,7 @@ export class S3Storage extends BaseBinaryStorage {
    * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
    * However, PutObjectCommand does not support streaming.
    *
-   * We now use the @aws-sdk/lib-storage package.
+   * We now use the `@aws-sdk/lib-storage` package.
    *
    * Learn more:
    * https://github.com/aws/aws-sdk-js-v3/blob/main/UPGRADING.md#s3-multipart-upload

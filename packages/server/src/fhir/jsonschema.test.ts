@@ -1,5 +1,7 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { DiagnosticReport, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError } from '@medplum/core';
+import type { DiagnosticReport, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { validateResourceWithJsonSchema } from './jsonschema';
 
 describe('FHIR JSONSchema', () => {

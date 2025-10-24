@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -9,32 +12,34 @@ import {
   OperationOutcomeError,
   resolveId,
   serverError,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import {
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
   AuditEvent,
   Bot,
   Login,
   OperationOutcome,
-  Organization,
   Parameters,
   Project,
   ProjectMembership,
   ProjectSetting,
   Reference,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, buildTracingExtension } from '../context';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { AuthenticatedRequestContext } from '../context';
+import { buildTracingExtension } from '../context';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { AuditEventOutcome, logAuditEvent } from '../util/auditevent';
 import { createAuditEventEntities, findProjectMembership } from '../workers/utils';
-import { BotExecutionRequest, BotExecutionResult } from './types';
+import type { BotExecutionRequest, BotExecutionResult } from './types';
+
+const defaultOutputLength = 10 * 1024; // 10 KiB
 
 /**
  * Returns the bot's project membership.
@@ -47,7 +52,7 @@ import { BotExecutionRequest, BotExecutionResult } from './types';
 export async function getBotProjectMembership(
   ctx: AuthenticatedRequestContext,
   bot: WithId<Bot>
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   if (bot.runAsUser) {
     // If the bot is configured to run as the user, then use the current user's membership
     return ctx.membership;
@@ -297,7 +302,7 @@ export async function createAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const { bot, runAs } = request;
+  const { bot, runAs, requester, input, subscription, agent, device } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -318,40 +323,43 @@ export async function createAuditEvent(
       end: new Date().toISOString(),
     },
     recorded: new Date().toISOString(),
-    type: {
-      code: 'execute',
-    },
+    type: { system: 'https://medplum.com/CodeSystem/audit-event', code: 'execute' },
     agent: [
       {
-        type: {
-          text: 'bot',
-        },
+        who: requester as Reference<ProfileResource>,
+        requestor: true,
+      },
+      {
+        who: runAs.profile as Reference<ProfileResource>,
         requestor: false,
       },
     ],
-    source: {
-      observer: createReference(bot) as Reference as Reference<Organization>,
-    },
-    entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
+    source: { observer: createReference(bot) },
+    entity: createAuditEventEntities(bot, input, subscription, agent, device),
     outcome,
+    outcomeDesc,
     extension: buildTracingExtension(),
   };
 
   const config = getConfig();
-  const destination = bot.auditEventDestination ?? ['resource'];
-  if (destination.includes('resource')) {
-    const systemRepo = getSystemRepo();
-    const maxDescLength = config.maxBotLogLengthForResource ?? 10 * 1024;
-    await systemRepo.createResource<AuditEvent>({
-      ...auditEvent,
-      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
-    });
+  for (const destination of bot.auditEventDestination ?? ['resource']) {
+    switch (destination) {
+      case 'resource':
+        await getSystemRepo().createResource<AuditEvent>({
+          ...auditEvent,
+          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultOutputLength),
+        });
+        break;
+      case 'log':
+        logAuditEvent({
+          ...auditEvent,
+          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultOutputLength),
+        });
+        break;
+    }
   }
-  if (destination.includes('log')) {
-    const maxDescLength = config.maxBotLogLengthForLogs ?? 10 * 1024;
-    logAuditEvent({
-      ...auditEvent,
-      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
-    });
-  }
+}
+
+function tail(str: string, n: number): string {
+  return str.substring(str.length - n);
 }

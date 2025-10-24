@@ -31,7 +31,7 @@ Create your [Medplum Access Policy](https://www.medplum.com/docs/access/access-p
 }
 ```
 
-Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
+Create a [ClientApplication](https://www.medplum.com/docs/auth/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
 
 Create your [Bot](https://www.medplum.com/docs/bots/bot-basics) and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code using the sample in this repository as a base, build and deploy your bot. Apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project).
 

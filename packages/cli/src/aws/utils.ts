@@ -1,11 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Stack, StackResource, StackSummary } from '@aws-sdk/client-cloudformation';
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   paginateListStacks,
-  Stack,
-  StackResource,
-  StackSummary,
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';

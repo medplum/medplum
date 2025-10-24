@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Modal, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 interface CreateCoverageModalProps {

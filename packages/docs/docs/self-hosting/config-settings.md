@@ -324,6 +324,8 @@ The fully qualified base URL of the binary storage. This should be the CDK confi
 
 The AWS key ID of the CloudFront signing key that you created before.
 
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
+
 **Created by:** `cdk`
 **Default:** None
 
@@ -331,12 +333,16 @@ The AWS key ID of the CloudFront signing key that you created before.
 
 The private key of the CloudFront signing key.
 
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
+
 **Created by:** `init`
 **Default:** None
 
 ### signingKeyPassphrase (required)
 
 The passphrase of the CloudFront signing key.
+
+See [/docs/self-hosting/presigned-urls] to setup presigned URLs.
 
 **Created by:** `init`
 **Default:** None
@@ -614,6 +620,12 @@ Limit for the rate at which requests can be sent to or processed by the server. 
 Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/rate-limits).
 
 **Default:** `60/minute`
+
+### defaultFhirQuota
+
+Limit for the total number of FHIR request that can be sent to to processed by the server. For more default see the [Rate Limit docs](/docs/rate-limits)
+
+**Default:** `50000`
 
 :::tip Local Config
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_

@@ -36,7 +36,7 @@ Payer FHIR servers offer an extremely variable API experience and implementing a
 Flexpa takes advantage of several important features of Medplum’s FHIR implementation:
 
 - [Self-hosting](/docs/self-hosting)
-- [Multi-tenant through Projects](/docs/auth/user-management-guide#background-user-model)
+- [Multi-tenant through Projects](/docs/user-management#background-user-model)
 - [Update as Create](/docs/sdk/core.medplumclient.createresourceifnoneexist)
 - Client assigned IDs
 - [Batch](/docs/fhir-datastore/fhir-batch-requests) transactions

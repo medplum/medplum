@@ -1,13 +1,9 @@
-import {
-  HTTP_HL7_ORG,
-  InternalTypeSchema,
-  buildElementsContext,
-  isProfileLoaded,
-  loadDataType,
-  tryGetProfile,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalTypeSchema } from '@medplum/core';
+import { HTTP_HL7_ORG, buildElementsContext, isProfileLoaded, loadDataType, tryGetProfile } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import type { StructureDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 

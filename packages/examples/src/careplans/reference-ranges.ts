@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { LOINC, MedplumClient, UCUM, createReference, findObservationInterval } from '@medplum/core';
-import { Observation, ObservationDefinition, Patient } from '@medplum/fhirtypes';
+import type { Observation, ObservationDefinition, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 

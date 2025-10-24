@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Card, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { SimpleTask } from './SimpleTask';
@@ -15,22 +17,17 @@ import { TaskServiceRequest } from './TaskServiceRequest';
 
 interface TaskPanelProps {
   task: Task;
+  enabled?: boolean;
   onUpdateTask: (task: Task) => void;
 }
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
-  const { task, onUpdateTask } = props;
+  const { task, enabled = true, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
 
   const onActionButtonClicked = async (): Promise<void> => {
-    if (task.status === 'ready' || task.status === 'requested') {
-      // Task status is Ready or Requested. Action will mark as complete.
-      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
-    } else {
-      // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`)?.catch(console.error);
-    }
+    navigate(`Task/${task.id}`)?.catch(console.error);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
@@ -90,17 +87,23 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
-        {task.focus?.reference?.startsWith('Questionnaire/') && (
-          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
-        )}
-        {task.focus?.reference?.startsWith('ServiceRequest/') && (
-          <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
-        )}
+        <Stack p="md">
+          {task.focus?.reference?.startsWith('Questionnaire/') && (
+            <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
+          )}
+          {task.focus?.reference?.startsWith('ServiceRequest/') && (
+            <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
+          )}
 
-        {!task.focus?.reference?.startsWith('ServiceRequest/') &&
-          !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
-
-        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
+          {!task.focus?.reference?.startsWith('ServiceRequest/') &&
+            !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
+        </Stack>
+        <TaskStatusPanel
+          task={task}
+          enabled={enabled}
+          onActionButtonClicked={onActionButtonClicked}
+          onChangeStatus={onChangeStatus}
+        />
       </Stack>
     </Card>
   );

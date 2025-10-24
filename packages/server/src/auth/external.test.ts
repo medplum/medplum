@@ -1,5 +1,8 @@
-import { OAuthTokenAuthMethod, WithId } from '@medplum/core';
-import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { OAuthTokenAuthMethod } from '@medplum/core';
+import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -531,7 +534,7 @@ describe('External', () => {
       // Update client application with external auth
       const client2 = await systemRepo.updateResource<ClientApplication>({
         ...client,
-        redirectUri,
+        redirectUris: [redirectUri],
         identityProvider: {
           authorizeUrl: 'https://example.com/oauth2/authorize',
           tokenUrl: 'https://example.com/oauth2/token',

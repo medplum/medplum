@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Flex, Group, Menu, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
+import type {
   ChargeItem,
   Claim,
   ClaimDiagnosis,
@@ -12,8 +14,9 @@ import {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
-import { VisitDetailsPanel } from '../../components/Encounter/VisitDetailsPanel';
+import { useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { VisitDetailsPanel } from '../../components/encounter/VisitDetailsPanel';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 import { useMedplum } from '@medplum/react';
@@ -118,11 +121,14 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   };
 
-  const handleDiagnosisChange = async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-    const updatedEncounter = { ...encounter, diagnosis };
-    setEncounter(updatedEncounter);
-    await debouncedUpdateResource(updatedEncounter);
-  };
+  const handleDiagnosisChange = useCallback(
+    async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+      const updatedEncounter = { ...encounter, diagnosis };
+      setEncounter(updatedEncounter);
+      await debouncedUpdateResource(updatedEncounter);
+    },
+    [encounter, setEncounter, debouncedUpdateResource]
+  );
 
   const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
     try {
@@ -257,17 +263,31 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         />
       )}
 
-      {chargeItems && <ChargeItemList chargeItems={chargeItems} updateChargeItems={updateChargeItems} />}
+      {chargeItems && (
+        <ChargeItemList
+          patient={patient}
+          encounter={encounter}
+          chargeItems={chargeItems}
+          updateChargeItems={updateChargeItems}
+        />
+      )}
     </Stack>
   );
 };
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {
-    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10`);
+    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
     return {
       diagnosisCodeableConcept: {
-        coding: icd10Coding ? [icd10Coding] : [],
+        coding: icd10Coding
+          ? [
+              {
+                ...icd10Coding,
+                system: `${HTTP_HL7_ORG}/fhir/sid/icd-10`,
+              },
+            ]
+          : [],
       },
       sequence: index + 1,
       type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
