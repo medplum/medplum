@@ -5,6 +5,7 @@ import type { UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
@@ -211,5 +212,70 @@ describe('Me', () => {
     expect(res.body.accessPolicy).toBeDefined();
     expect(res.body.accessPolicy.basedOn).toBeDefined();
     expect(res.body.accessPolicy.basedOn).toMatchObject([createReference(accessPolicy)]);
+  });
+
+  test('Get user memberships', async () => {
+    const email = `alice${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { project, membership, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Memberships in /auth/me Part 1',
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    // Get the user profile the initial memberships
+    const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res1.status).toBe(200);
+    expect(res1.body).toBeDefined();
+    expect(res1.body.security.memberships).toHaveLength(1);
+    expect(res1.body.security.memberships[0]).toMatchObject({
+      resourceType: 'ProjectMembership',
+      id: membership.id,
+    });
+
+    // Create an additional ProjectMembership for the same user in the same project
+    const inviteResponse = await inviteUser({
+      project,
+      email,
+      password,
+      resourceType: 'Practitioner',
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      sendEmail: false,
+      forceNewMembership: true,
+    });
+    expect(inviteResponse).toBeDefined();
+
+    // Reload the user profile with the new user memberships
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2.status).toBe(200);
+    expect(res2.body).toBeDefined();
+    expect(res2.body.security.memberships).toHaveLength(2);
+
+    // Register a totally separate project
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Memberships in /auth/me Part 2',
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    // Reload, should only see the 2 memberships from the original project
+    const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res3.status).toBe(200);
+    expect(res3.body).toBeDefined();
+    expect(res3.body.security.memberships).toHaveLength(2);
   });
 });
