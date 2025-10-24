@@ -135,8 +135,8 @@ export class AsyncJobExecutor {
           completedDataVersion
         );
         updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
-        await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
       });
+      await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
       return updatedJob;
     } else {
       return repo.updateResource<AsyncJob>(updatedJob);

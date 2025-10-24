@@ -218,7 +218,7 @@ describe('Me', () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { project, membership, accessToken } = await withTestContext(() =>
+    const { project, projectShardId, membership, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -243,6 +243,7 @@ describe('Me', () => {
     // Create an additional ProjectMembership for the same user in the same project
     const inviteResponse = await inviteUser({
       project,
+      projectShardId,
       email,
       password,
       resourceType: 'Practitioner',

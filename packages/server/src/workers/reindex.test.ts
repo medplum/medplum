@@ -22,7 +22,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getShardSystemRepo, getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -39,12 +39,13 @@ import { queueRegistry } from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
+  let projectShardId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = (await createTestProject({ withRepo: true })).repo;
+    ({ repo, projectShardId } = await createTestProject({ withRepo: true }));
   });
 
   afterEach(() => {
@@ -67,7 +68,7 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      await addReindexJob('test-shard-id', ['MedicinalProductManufactured'], asyncJob);
+      await addReindexJob(projectShardId, ['MedicinalProductManufactured'], asyncJob);
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
@@ -127,7 +128,7 @@ describe('Reindex Worker', () => {
       }
 
       const jobData = prepareReindexJobData(
-        'test-shard-id',
+        projectShardId,
         ['ImmunizationEvaluation'],
         asyncJob.id,
         parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`)
@@ -171,7 +172,7 @@ describe('Reindex Worker', () => {
       });
 
       const resourceTypes = ['PaymentNotice', 'MedicinalProductManufactured'] as ResourceType[];
-      const jobData = prepareReindexJobData('test-shard-id', resourceTypes, asyncJob.id);
+      const jobData = prepareReindexJobData(projectShardId, resourceTypes, asyncJob.id);
 
       const systemRepo = getSystemRepo(undefined, jobData.shardId);
       const reindexJob = new ReindexJob(systemRepo);
@@ -229,7 +230,7 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      const jobData = prepareReindexJobData('test-shard-id', ['ValueSet'], asyncJob.id);
+      const jobData = prepareReindexJobData(projectShardId, ['ValueSet'], asyncJob.id);
 
       const systemRepo = getSystemRepo(undefined, jobData.shardId);
       const reindexJob = new ReindexJob(systemRepo);
@@ -275,7 +276,7 @@ describe('Reindex Worker', () => {
         'MedicinalProductContraindication',
       ];
 
-      const jobData = prepareReindexJobData('test-shard-id', resourceTypes, asyncJob.id);
+      const jobData = prepareReindexJobData(projectShardId, resourceTypes, asyncJob.id);
       const systemRepo = getSystemRepo(undefined, jobData.shardId);
       await expect(new ReindexJob(systemRepo).execute(undefined, jobData)).resolves.toBe('finished');
 
@@ -340,7 +341,7 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['Patient', 'Practitioner'] as ResourceType[];
       const searchFilter = parseSearchRequest(`Person?identifier=${idSystem}|${mrn}&gender=unknown`);
 
-      const jobData = prepareReindexJobData('test-shard-id', resourceTypes, asyncJob.id, searchFilter);
+      const jobData = prepareReindexJobData(projectShardId, resourceTypes, asyncJob.id, searchFilter);
 
       const systemRepo = getSystemRepo(undefined, jobData.shardId);
       await new ReindexJob(systemRepo).execute(undefined, jobData);
@@ -370,7 +371,7 @@ describe('Reindex Worker', () => {
       const idSystem = 'http://example.com/mrn';
       const mrn = randomUUID();
 
-      const shardId = 'test-shard-id';
+      const shardId = projectShardId;
       const systemRepo = getSystemRepo(undefined, shardId);
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
@@ -434,7 +435,7 @@ describe('Reindex Worker', () => {
     [undefined, 2],
   ])('Reindex with maxResourceVersion %s', (maxResourceVersion, expectedCount) =>
     withTestContext(async () => {
-      const shardId = 'test-shard-id';
+      const shardId = projectShardId;
       const systemRepo = getSystemRepo(undefined, shardId);
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
@@ -512,7 +513,7 @@ describe('Reindex Worker', () => {
 
       const idSystem = 'http://example.com/mrn';
       const mrn = randomUUID();
-      const shardId = 'test-shard-id';
+      const shardId = projectShardId;
 
       let asyncJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -564,14 +565,15 @@ describe('Reindex Worker', () => {
 
 describe('Job cancellation', () => {
   let repo: Repository;
-  const shardId = 'test-shard-id';
-  const systemRepo = getSystemRepo(undefined, shardId);
+  let projectShardId: string;
+  let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = (await createTestProject({ withRepo: true })).repo;
+    ({ repo, projectShardId } = await createTestProject({ withRepo: true }));
+    systemRepo = getShardSystemRepo(projectShardId);
   });
 
   afterAll(async () => {
@@ -587,7 +589,7 @@ describe('Job cancellation', () => {
         request: '/admin/super/reindex',
       });
 
-      const jobData = prepareReindexJobData(shardId, ['MedicinalProductContraindication'], asyncJob.id);
+      const jobData = prepareReindexJobData(projectShardId, ['MedicinalProductContraindication'], asyncJob.id);
       const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
       expect(result).toStrictEqual('interrupted');
 
@@ -611,7 +613,7 @@ describe('Job cancellation', () => {
       });
 
       // Job will start up with the uncancelled version of the resource
-      const jobData = prepareReindexJobData(shardId, ['MedicinalProductContraindication'], originalJob.id);
+      const jobData = prepareReindexJobData(projectShardId, ['MedicinalProductContraindication'], originalJob.id);
 
       // Should be a no-op due to cancellation
       const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
@@ -640,7 +642,7 @@ describe('Job cancellation', () => {
       const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
       const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
 
-      const jobData = prepareReindexJobData(shardId, ['MedicinalProductContraindication'], originalJob.id);
+      const jobData = prepareReindexJobData(projectShardId, ['MedicinalProductContraindication'], originalJob.id);
       const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
       // job.token generally gets set deep in the internals of bullmq, but we mock the module
       job.token = jobToken;
@@ -702,7 +704,7 @@ describe('Job cancellation', () => {
       // temporarily set to {} to appease typescript since it gets set within the withTestContext callback
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData('test-shard-id', ['MedicinalProductContraindication'], originalJob.id);
+        jobData = prepareReindexJobData(projectShardId, ['MedicinalProductContraindication'], originalJob.id);
       });
 
       // `as any` since it's a readonly property
@@ -785,7 +787,7 @@ describe('Job cancellation', () => {
         .mockReturnValueOnce(Promise.resolve(cancelledJob));
 
       // Job will start up with the uncancelled version of the resource
-      const jobData = prepareReindexJobData('test-shard-id', ['MedicinalProductContraindication'], originalJob.id);
+      const jobData = prepareReindexJobData(projectShardId, ['MedicinalProductContraindication'], originalJob.id);
 
       // Should not override the cancellation status
       const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
