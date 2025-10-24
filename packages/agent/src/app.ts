@@ -280,7 +280,7 @@ export class App {
               const dbMsg = command.callback
                 ? this.hl7DurableQueue.getMessageByCallback(command.callback)
                 : this.hl7DurableQueue.getMessageByRemote(command.remote);
-              if (dbMsg && dbMsg.status === 'sent') {
+              if (dbMsg?.status === 'sent') {
                 // Update durable queue with response
                 this.hl7DurableQueue.markAsResponseQueued(dbMsg.id, command.body);
                 this.trySendToHl7Connection();
