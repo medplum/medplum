@@ -204,14 +204,16 @@ describe('HL7 Server', () => {
   }, 10000);
 
   test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
-    let connectionCloseCalled = false;
+    const state = {
+      connectionCloseCalled: false,
+    };
 
     const server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         connection.send(message.buildAck());
       });
       connection.addEventListener('close', () => {
-        connectionCloseCalled = true;
+        state.connectionCloseCalled = true;
       });
     });
 
@@ -241,7 +243,7 @@ describe('HL7 Server', () => {
     // Advance timers by 5 seconds - connection should still be open
     jest.advanceTimersByTime(5000);
     await Promise.resolve();
-    expect(connectionCloseCalled).toBe(false);
+    expect(state.connectionCloseCalled).toBe(false);
 
     // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
     jest.advanceTimersByTime(5000);
@@ -252,11 +254,13 @@ describe('HL7 Server', () => {
     // Wait for the server to finish stopping
     await stopPromise;
 
-    // Sleep for 0ms to allow the close event to be processed on next tick
-    await sleep(0);
+    // Sleep to allow the close event to be processed on next tick
+    for (let i = 0; i < 100 && !state.connectionCloseCalled; i++) {
+      await sleep(1);
+    }
 
     // The forceDrainTimeout should have triggered and closed the connection
-    expect(connectionCloseCalled).toBe(true);
+    expect(state.connectionCloseCalled).toBe(true);
 
     // Clean up
     await client.close().catch(() => {
