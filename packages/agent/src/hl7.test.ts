@@ -723,6 +723,9 @@ describe('HL7', () => {
       await sleep(20);
     }
 
+    // Size is zero again since we cleared out the pools
+    expect(app.hl7Clients.size).toStrictEqual(0);
+
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -744,7 +747,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(3);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     wsClient.send(
       Buffer.from(
@@ -767,7 +770,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(4);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // Set the config back to keepAlive !== true
     const updatedAgent2 = await medplum.updateResource({
@@ -945,15 +948,15 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // After stopping the server (and therefore closing the connection),
     // We should no longer have an open client to the given server
     await hl7Server.stop();
-    while (app.hl7Clients.size !== 0) {
+    while (app.hl7Clients.get('mllp://localhost:57001')?.size() !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     await app.stop();
     mockServer.stop();
@@ -1072,7 +1075,7 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // An error happened
     const hl7ClientPool = app.hl7Clients.get('mllp://localhost:57001');
@@ -1088,10 +1091,16 @@ describe('HL7', () => {
 
     // We should no longer have an open client to the given server
     // Since an error has occurred
-    while (app.hl7Clients.size !== 0) {
+    while (app.hl7Clients.get('mllp://localhost:57001')?.size() !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
+      )
+    );
 
     // Set the socket to timeout on inactivity since we are not going to manually close the connection
     mode = 'TIMEOUT';
@@ -1119,17 +1128,11 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     await hl7Server.stop();
     await app.stop();
     mockServer.stop();
-
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
-      )
-    );
 
     console.log = originalConsoleLog;
   });

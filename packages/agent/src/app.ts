@@ -27,7 +27,6 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
-import { Hl7Client } from '@medplum/hl7';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -345,9 +344,9 @@ export class App {
     const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
-    // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
-    if (!keepAlive && this.hl7Clients.size !== 0) {
-      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
+    // If the keepAlive setting changed, we need to reset the pools we have
+    if (this.keepAlive !== keepAlive) {
+      const results = await Promise.allSettled(this.hl7Clients.values().map((pool) => pool.closeAll()));
       for (const result of results) {
         if (result.status === 'rejected') {
           this.log.error(normalizeErrorString(result.reason));
@@ -966,14 +965,6 @@ export class App {
         keepAlive: this.keepAlive,
         maxClientsPerRemote: this.maxClientsPerRemote,
         log: this.log,
-        createClient: (options) => new Hl7Client(options),
-        onEmpty: () => {
-          // Remove the pool from the map when it becomes empty
-          if (this.keepAlive) {
-            this.hl7Clients.delete(message.remote);
-            this.log.info(`Client pool for remote '${message.remote}' is now empty and has been removed`);
-          }
-        },
       });
       this.hl7Clients.set(message.remote, pool);
       this.log.info(`Client pool created for remote '${message.remote}'`, {
@@ -992,10 +983,12 @@ export class App {
 
     this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
 
+    let errorOccurred = false;
+
     // Get a client from the pool
     pool
       .getClient()
-      .then((client) => {
+      .then(async (client) => {
         return client
           .sendAndWait(requestMsg)
           .then((response) => {
@@ -1022,24 +1015,12 @@ export class App {
               body: normalizeErrorString(err),
             } satisfies AgentTransmitResponse);
 
-            if (this.keepAlive) {
-              // On error in keepAlive mode, close the client and remove it from the pool
-              pool.removeClient(client);
-              client.close().catch((err) => {
-                this.log.error(normalizeErrorString(err));
-              });
-            }
+            // We mark that an error occurred so we can decide to force close the client or not below
+            errorOccurred = true;
           })
           .finally(() => {
             // Release the client back to the pool
-            pool.releaseClient(client);
-
-            if (!this.keepAlive) {
-              // In non-keepAlive mode, close the client after use
-              client.close().catch((err) => {
-                this.log.error(normalizeErrorString(err));
-              });
-            }
+            pool.releaseClient(client, this.keepAlive && errorOccurred);
           });
       })
       .catch((err) => {

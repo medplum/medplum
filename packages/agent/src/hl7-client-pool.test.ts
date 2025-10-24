@@ -1,8 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, Logger, sleep } from '@medplum/core';
-import { Hl7Client, Hl7Server } from '@medplum/hl7';
+// @ts-expect-error The __ functions are only exported for testing
+// eslint-disable-next-line import/named
+import { Hl7Server, __getCtorCallCount, __resetCtorCallCount } from '@medplum/hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
+
+jest.mock('@medplum/hl7', () => {
+  const actual = jest.requireActual('@medplum/hl7');
+  let ctorCallCount = 0;
+  return {
+    ...actual,
+    Hl7Client: jest.fn().mockImplementation(function (...args) {
+      ctorCallCount++;
+      return new actual.Hl7Client(...args);
+    }),
+    __getCtorCallCount: (): number => {
+      return ctorCallCount;
+    },
+    __resetCtorCallCount: (): void => {
+      ctorCallCount = 0;
+    },
+  };
+});
 
 describe('Hl7ClientPool', () => {
   let server: Hl7Server;
@@ -10,21 +30,25 @@ describe('Hl7ClientPool', () => {
 
   beforeAll(() => {
     server = new Hl7Server((connection) => {
-      connection.addEventListener('message', async ({ message }) => {
-        await connection.send(message.buildAck());
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
       });
     });
     server.start(port);
   });
 
+  beforeEach(() => {
+    __resetCtorCallCount();
+  });
+
   afterAll(async () => {
     await server.stop();
+    jest.unmock('@medplum/hl7');
   });
 
   describe('keepAlive mode', () => {
     test('Reuses a single client when maxClientsPerRemote is 1', async () => {
       const log = new Logger(() => undefined);
-      const createClientSpy = jest.fn((options) => new Hl7Client(options));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
@@ -32,19 +56,18 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 1,
         log,
-        createClient: createClientSpy,
       });
 
       // First request
       const client1 = await pool.getClient();
-      expect(createClientSpy).toHaveBeenCalledTimes(1);
+      expect(__getCtorCallCount()).toStrictEqual(1);
 
       // Release the client
       pool.releaseClient(client1);
 
       // Second request should reuse the same client
       const client2 = await pool.getClient();
-      expect(createClientSpy).toHaveBeenCalledTimes(1);
+      expect(__getCtorCallCount()).toStrictEqual(1);
       expect(client2).toBe(client1);
 
       pool.releaseClient(client2);
@@ -53,7 +76,6 @@ describe('Hl7ClientPool', () => {
 
     test('Creates multiple clients up to maxClientsPerRemote', async () => {
       const log = new Logger(() => undefined);
-      const createClientSpy = jest.fn((options) => new Hl7Client(options));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
@@ -61,7 +83,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 3,
         log,
-        createClient: createClientSpy,
       });
 
       // Get 3 clients without releasing
@@ -69,7 +90,7 @@ describe('Hl7ClientPool', () => {
       const client2 = await pool.getClient();
       const client3 = await pool.getClient();
 
-      expect(createClientSpy).toHaveBeenCalledTimes(3);
+      expect(__getCtorCallCount()).toStrictEqual(3);
       expect(pool.size()).toBe(3);
 
       // Release all clients
@@ -82,7 +103,6 @@ describe('Hl7ClientPool', () => {
 
     test('Waits when maxClientsPerRemote is reached', async () => {
       const log = new Logger(() => undefined);
-      const createClientSpy = jest.fn((options) => new Hl7Client(options));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
@@ -90,7 +110,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 2,
         log,
-        createClient: createClientSpy,
       });
 
       // Get 2 clients (max)
@@ -131,7 +150,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 1,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       const msg = Hl7Message.parse(
@@ -155,7 +173,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 3,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       // Get multiple clients
@@ -173,7 +190,6 @@ describe('Hl7ClientPool', () => {
   describe('Non-keepAlive mode', () => {
     test('Creates new clients each time', async () => {
       const log = new Logger(() => undefined);
-      const createClientSpy = jest.fn((options) => new Hl7Client(options));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
@@ -181,19 +197,18 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClientsPerRemote: 10,
         log,
-        createClient: createClientSpy,
       });
 
       // First request
       const client1 = await pool.getClient();
-      expect(createClientSpy).toHaveBeenCalledTimes(1);
+      expect(__getCtorCallCount()).toStrictEqual(1);
 
       // Release and get another
       pool.releaseClient(client1);
       const client2 = await pool.getClient();
 
       // Should have created a second client
-      expect(createClientSpy).toHaveBeenCalledTimes(2);
+      expect(__getCtorCallCount()).toStrictEqual(2);
       expect(pool.size()).toBe(1); // Only one tracked (first was released)
 
       pool.releaseClient(client2);
@@ -202,7 +217,6 @@ describe('Hl7ClientPool', () => {
 
     test('Enforces maxClientsPerRemote limit', async () => {
       const log = new Logger(() => undefined);
-      const createClientSpy = jest.fn((options) => new Hl7Client(options));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
@@ -210,7 +224,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClientsPerRemote: 2,
         log,
-        createClient: createClientSpy,
       });
 
       // Get 2 clients (max)
@@ -250,7 +263,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClientsPerRemote: 10,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       const client = await pool.getClient();
@@ -273,7 +285,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 3,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       // Create 3 clients
@@ -297,7 +308,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 1,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       // Get the only client
@@ -324,7 +334,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClientsPerRemote: 3,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       // Send 5 concurrent requests with max 3 clients
@@ -364,7 +373,6 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClientsPerRemote: 3,
         log,
-        createClient: (options) => new Hl7Client(options),
       });
 
       // Send 5 concurrent requests with max 3 clients

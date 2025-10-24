@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
-import type { Hl7Client } from '@medplum/hl7';
+import { normalizeErrorString } from '@medplum/core';
+import { Hl7Client } from '@medplum/hl7';
 
 export interface Hl7ClientPoolOptions {
   host: string;
@@ -10,8 +11,6 @@ export interface Hl7ClientPoolOptions {
   keepAlive: boolean;
   maxClientsPerRemote: number;
   log: ILogger;
-  createClient: (options: { host: string; port: number; encoding?: string; keepAlive: boolean }) => Hl7Client;
-  onEmpty?: () => void;
 }
 
 export interface PooledClient {
@@ -32,13 +31,12 @@ export class Hl7ClientPool {
   private readonly keepAlive: boolean;
   private readonly maxClientsPerRemote: number;
   private readonly log: ILogger;
-  private readonly createClient: Hl7ClientPoolOptions['createClient'];
-  private readonly onEmpty?: () => void;
   private readonly clients = new Map<Hl7Client, PooledClient>();
   private readonly waitQueue: {
     resolve: (client: Hl7Client) => void;
     reject: (err: Error) => void;
   }[] = [];
+  private closingPromise: Promise<void> | undefined;
 
   constructor(options: Hl7ClientPoolOptions) {
     this.host = options.host;
@@ -47,8 +45,6 @@ export class Hl7ClientPool {
     this.keepAlive = options.keepAlive;
     this.maxClientsPerRemote = options.maxClientsPerRemote;
     this.log = options.log;
-    this.createClient = options.createClient;
-    this.onEmpty = options.onEmpty;
   }
 
   /**
@@ -59,6 +55,9 @@ export class Hl7ClientPool {
    * @returns Promise that resolves with an HL7 client
    */
   async getClient(): Promise<Hl7Client> {
+    if (this.closingPromise) {
+      throw new Error('Cannot get new client, pool is closing');
+    }
     if (this.keepAlive) {
       return this.getKeepAliveClient();
     } else {
@@ -66,25 +65,32 @@ export class Hl7ClientPool {
     }
   }
 
+  private closeAndRemoveClient(client: Hl7Client): void {
+    client.close().catch((err) => {
+      this.log.error(normalizeErrorString(err));
+    });
+    this.removeClient(client);
+  }
+
   /**
    * Releases a client back to the pool.
    * In keepAlive mode, marks the client as available.
    * In non-keepAlive mode, removes the client from tracking.
    *
-   * @param client - The client to release
+   * @param client - The client to release.
+   * @param forceClose - Optional boolean on whether to force the client to close its connect and be removed from the pool. Defaults to `false`.
    */
-  releaseClient(client: Hl7Client): void {
+  releaseClient(client: Hl7Client, forceClose = false): void {
     if (!this.clients.has(client)) {
       return;
     }
 
-    if (this.keepAlive) {
-      (this.clients.get(client) as PooledClient).inUse = false;
-      // Try to satisfy any waiting requests
-      this.processWaitQueue();
+    // If forcing the connection closed OR not in keepAlive mode,
+    // We should close the client and remove it from the pool
+    if (forceClose || !this.keepAlive) {
+      this.closeAndRemoveClient(client);
     } else {
-      // Remove the client from the pool
-      this.clients.delete(client);
+      (this.clients.get(client) as PooledClient).inUse = false;
       // Try to satisfy any waiting requests
       this.processWaitQueue();
     }
@@ -100,20 +106,20 @@ export class Hl7ClientPool {
 
     // Try to satisfy any waiting requests
     this.processWaitQueue();
-
-    // If pool is now empty and in keepAlive mode, notify parent
-    if (this.clients.size === 0 && this.keepAlive && this.onEmpty) {
-      this.onEmpty();
-    }
   }
 
   /**
    * Closes all clients in the pool.
    */
   async closeAll(): Promise<void> {
-    const closePromises = this.clients.keys().map((client) => client.close());
+    // If we are already closing the pool, return the existing closing promise
+    if (this.closingPromise) {
+      await this.closingPromise;
+      return;
+    }
 
     // Reject all waiting requests
+    // We need to reject them before closing connections, otherwise we risk the closed connections opening slots for these requests
     while (this.waitQueue.length > 0) {
       const waiter = this.waitQueue.shift();
       if (waiter) {
@@ -121,7 +127,18 @@ export class Hl7ClientPool {
       }
     }
 
-    await Promise.all(closePromises);
+    const closePromises = Array.from(this.clients.keys()).map((client) => client.close());
+
+    this.closingPromise = new Promise<void>((resolve, reject) => {
+      Promise.all(closePromises)
+        .then(() => resolve())
+        .catch(reject);
+    });
+
+    // We wait for the closing promise to resolve
+    await this.closingPromise;
+    // Then we finally remove the closing promise
+    this.closingPromise = undefined;
   }
 
   /**
@@ -188,7 +205,7 @@ export class Hl7ClientPool {
    * @returns a new Hl7Client.
    */
   private createAndTrackClient(): Hl7Client {
-    const client = this.createClient({
+    const client = new Hl7Client({
       host: this.host,
       port: this.port,
       encoding: this.encoding,
@@ -206,14 +223,16 @@ export class Hl7ClientPool {
     client.addEventListener('close', () => {
       this.removeClient(client);
       if (this.keepAlive) {
-        this.log.info(`Persistent connection closed for ${this.host}:${this.port}`);
+        this.log.info(`Persistent connection to remote 'mllp://${this.host}:${this.port}' closed`);
       }
     });
 
     client.addEventListener('error', (event) => {
-      this.removeClient(client);
+      this.closeAndRemoveClient(client);
       if (this.keepAlive) {
-        this.log.error(`Persistent connection error for ${this.host}:${this.port}: ${event.error}`);
+        this.log.error(
+          `Persistent connection to remote 'mllp://${this.host}:${this.port}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
+        );
       }
     });
 
