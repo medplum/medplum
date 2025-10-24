@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
+import { Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
 import { Hl7Server } from '@medplum/hl7';
@@ -149,15 +149,18 @@ export class AgentHl7ChannelConnection {
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
       this.channel.channelLog.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
-      this.channel.app.addToWebSocketQueue({
-        type: 'agent:transmit:request',
-        accessToken: 'placeholder',
-        channel: this.channel.getDefinition().name as string,
-        remote: this.remote,
-        contentType: ContentType.HL7_V2,
-        body: event.message.toString(),
-        callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
-      });
+      const callback = `Agent/${this.channel.app.agentId}-${randomUUID()}`;
+
+      // Store in durable queue
+      this.channel.app.hl7DurableQueue.addMessage(
+        event.message,
+        this.channel.getDefinition().name as string,
+        this.remote,
+        callback
+      );
+
+      // Trigger processing
+      this.channel.app.startWebSocketWorker();
     } catch (err) {
       this.channel.log.error(`HL7 error occurred - check channel logs`);
       this.channel.channelLog.error(`HL7 error: ${normalizeErrorString(err)}`);
