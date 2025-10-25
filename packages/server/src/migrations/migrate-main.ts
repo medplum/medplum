@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { FileBuilder, isMain } from '@medplum/core';
+import { FileBuilder } from '@medplum/core';
 import { readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Client } from 'pg';
@@ -92,7 +92,7 @@ function getVersionFromFilename(filename: string): number {
   return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
 }
 
-if (isMain(import.meta)) {
+if (import.meta.main) {
   main().catch((reason) => {
     console.error(reason);
     process.exit(1);

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isMain, MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
+import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import dotenv from 'dotenv';
 import { agent } from './agent';
@@ -141,7 +141,7 @@ export async function run(): Promise<void> {
   await main(process.argv);
 }
 
-if (isMain(import.meta)) {
+if (import.meta.main) {
   run().catch((err) => {
     console.error('Unhandled error:', normalizeErrorString(err));
     process.exit(1);
