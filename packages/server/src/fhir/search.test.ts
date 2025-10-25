@@ -5225,4 +5225,39 @@ describe('systemRepo', () => {
       );
       expect(result2.entry?.length).toStrictEqual(0);
     }));
+
+  describe('invalid operators and modifiers', () => {
+    test.each([
+      // special search params
+      ['Patient?_id:in=123', 'Invalid modifier'],
+      ['Patient?_id:not-in=123', 'Invalid modifier'],
+      ['Patient?_lastUpdated:in=2025-10-15', 'Invalid modifier'],
+      ['Patient?_lastUpdated:not-in=2025-10-15', 'Invalid modifier'],
+      ['Patient?_deleted:in=true', 'Invalid modifier'],
+      ['Patient?_deleted:not-in=true', 'Invalid modifier'],
+      ['Patient?_project:in=123', 'Invalid modifier'],
+      ['Patient?_project:not-in=123', 'Invalid modifier'],
+      ['Patient?_compartment:in=123', 'Invalid modifier'],
+      ['Patient?_compartment:not-in=123', 'Invalid modifier'],
+      // boolean
+      ['Patient?active:in=true', 'Invalid modifier'],
+      ['Patient?active:not-in=true', 'Invalid modifier'],
+      // reference
+      ['Patient?general-practitioner:in=123', 'Invalid modifier'],
+      ['Patient?general-practitioner:not-in=123', 'Invalid modifier'],
+      // token column
+      ['Patient?identifier:in=123', 'Invalid modifier'],
+      ['Patient?identifier:not-in=123', 'Invalid modifier'],
+      // lookup table
+      ['Patient?name:in=123', 'Invalid modifier'],
+      ['Patient?name:not-in=123', 'Invalid modifier'],
+    ])(':in and :not-in for %s', (searchString, expectedError) =>
+      withTestContext(async () => {
+        await expect(async () => {
+          const searchRequest = parseSearchRequest(searchString);
+          await systemRepo.search(searchRequest);
+        }).rejects.toThrow(expectedError);
+      })
+    );
+  });
 });

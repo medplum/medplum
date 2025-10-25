@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule } from '@medplum/core';
-import { badRequest, Operator as FhirOperator, OperationOutcomeError, splitN, splitSearchOnComma } from '@medplum/core';
+import {
+  badRequest,
+  Operator as FhirOperator,
+  invalidSearchOperator,
+  OperationOutcomeError,
+  splitN,
+  splitSearchOnComma,
+} from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
@@ -234,14 +241,10 @@ export function buildTokenColumnsSearchFilter(
     case FhirOperator.ABOVE:
     case FhirOperator.BELOW:
     case FhirOperator.OF_TYPE:
-      throw new OperationOutcomeError(
-        badRequest(`Search filter '${filter.operator}' not supported for ${param.id ?? param.code}`)
-      );
+      throw new OperationOutcomeError(invalidSearchOperator(filter.operator, param.id ?? param.code));
     default: {
       filter.operator satisfies never;
-      throw new OperationOutcomeError(
-        badRequest(`Search filter '${filter.operator}' not supported for ${param.id ?? param.code}`)
-      );
+      throw new OperationOutcomeError(invalidSearchOperator(filter.operator, param.id ?? param.code));
     }
   }
 }
