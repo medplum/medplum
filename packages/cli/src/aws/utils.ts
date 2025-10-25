@@ -1,11 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Stack, StackResource, StackSummary } from '@aws-sdk/client-cloudformation';
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
-  ListStacksCommand,
-  Stack,
-  StackResource,
-  StackSummary,
+  paginateListStacks,
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
@@ -13,8 +13,10 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { normalizeErrorString } from '@medplum/core';
-import { readdirSync } from 'fs';
 import fetch from 'node-fetch';
+import { readdirSync } from 'node:fs';
+import * as semver from 'semver';
+import { getConfigFileName } from '../utils';
 import { checkOk, print } from './terminal';
 
 export interface MedplumStackDetails {
@@ -41,12 +43,46 @@ export const tagKey = 'medplum:environment';
  * @returns List of AWS CloudFormation stacks.
  */
 export async function getAllStacks(): Promise<(StackSummary & { StackName: string })[]> {
-  const listResult = await cloudFormationClient.send(new ListStacksCommand({}));
-  return (
-    (listResult.StackSummaries?.filter((s) => s.StackName && s.StackStatus !== 'DELETE_COMPLETE') as (StackSummary & {
-      StackName: string;
-    })[]) || []
+  const listResult = [] as StackSummary[];
+  const paginator = paginateListStacks(
+    { client: cloudFormationClient },
+    {
+      StackStatusFilter: [
+        'CREATE_COMPLETE',
+        'CREATE_FAILED',
+        'CREATE_IN_PROGRESS',
+        'DELETE_FAILED',
+        'DELETE_IN_PROGRESS',
+        'IMPORT_COMPLETE',
+        'IMPORT_IN_PROGRESS',
+        'IMPORT_ROLLBACK_COMPLETE',
+        'IMPORT_ROLLBACK_FAILED',
+        'IMPORT_ROLLBACK_IN_PROGRESS',
+        'REVIEW_IN_PROGRESS',
+        'ROLLBACK_COMPLETE',
+        'ROLLBACK_FAILED',
+        'ROLLBACK_IN_PROGRESS',
+        'UPDATE_COMPLETE',
+        'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_FAILED',
+        'UPDATE_IN_PROGRESS',
+        'UPDATE_ROLLBACK_COMPLETE',
+        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_ROLLBACK_FAILED',
+        'UPDATE_ROLLBACK_IN_PROGRESS',
+      ],
+    }
   );
+
+  for await (const page of paginator) {
+    if (page.StackSummaries) {
+      for (const stack of page.StackSummaries) {
+        listResult.push(stack);
+      }
+    }
+  }
+
+  return listResult as (StackSummary & { StackName: string })[];
 }
 
 /**
@@ -220,6 +256,10 @@ export async function getServerVersions(from?: string): Promise<string[]> {
   const versions = json.map((release) =>
     release.tag_name.startsWith('v') ? release.tag_name.slice(1) : release.tag_name
   );
+
+  // Sort in descending order
+  versions.sort((a, b) => semver.compare(b, a));
+
   return from ? versions.slice(0, versions.indexOf(from)) : versions;
 }
 
@@ -291,9 +331,21 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
  * Prints a "config not found" message to stdout.
  * Includes helpful debugging information such as available configs.
  * @param tagName - Medplum stack tag name.
+ * @param options - Additional command line options.
  */
-export async function printConfigNotFound(tagName: string): Promise<void> {
-  console.log(`Config not found: ${tagName}`);
+export function printConfigNotFound(tagName: string, options?: Record<string, any>): void {
+  console.log(`Config not found: ${tagName} (${getConfigFileName(tagName, options)})`);
+
+  if (options) {
+    const entries = Object.entries(options);
+    if (entries.length > 0) {
+      console.log('Additional options:');
+      for (const [key, value] of entries) {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+  }
+
   console.log();
 
   let files: any[] = readdirSync('.', { withFileTypes: true });

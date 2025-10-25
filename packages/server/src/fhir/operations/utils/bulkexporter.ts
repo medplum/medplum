@@ -1,17 +1,21 @@
-import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import { Repository, systemRepo } from '../../repo';
+import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
-import { getBinaryStorage } from '../../storage';
+import { getBinaryStorage } from '../../../storage/loader';
+import type { Repository } from '../../repo';
+import { getSystemRepo } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
 class BulkFileWriter {
-  readonly binary: Binary;
+  readonly binary: WithId<Binary>;
   private readonly stream: PassThrough;
   private readonly writerPromise: Promise<void>;
 
-  constructor(binary: Binary) {
+  constructor(binary: WithId<Binary>) {
     this.binary = binary;
 
     const filename = `export.ndjson`;
@@ -31,21 +35,17 @@ class BulkFileWriter {
 
 export class BulkExporter {
   readonly repo: Repository;
-  readonly since: string | undefined;
-  readonly types: string[];
-  private resource: BulkDataExport | undefined;
+  private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet = new Set<string>();
 
-  constructor(repo: Repository, since: string | undefined, types: string[] = []) {
+  constructor(repo: Repository) {
     this.repo = repo;
-    this.since = since;
-    this.types = types;
   }
 
-  async start(url: string): Promise<BulkDataExport> {
-    this.resource = await this.repo.createResource<BulkDataExport>({
-      resourceType: 'BulkDataExport',
+  async start(url: string): Promise<WithId<AsyncJob>> {
+    this.resource = await this.repo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
@@ -66,7 +66,7 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
@@ -76,16 +76,7 @@ export class BulkExporter {
     }
   }
 
-  async writeResource(resource: Resource): Promise<void> {
-    if (this.types.length > 0 && !this.types.includes(resource.resourceType)) {
-      return;
-    }
-    if (resource.resourceType === 'AuditEvent') {
-      return;
-    }
-    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
-      return;
-    }
+  async writeResource(resource: WithId<Resource>): Promise<void> {
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);
@@ -94,7 +85,7 @@ export class BulkExporter {
     }
   }
 
-  async close(project: Project): Promise<BulkDataExport> {
+  async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Export muse be started before calling close()');
     }
@@ -103,18 +94,33 @@ export class BulkExporter {
       await writer.close();
     }
 
-    // Update the BulkDataExport
-    return systemRepo.updateResource<BulkDataExport>({
-      ...this.resource,
-      meta: {
-        project: project.id,
-      },
-      status: 'completed',
-      transactionTime: new Date().toISOString(),
-      output: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        type: resourceType as ResourceType,
-        url: getReferenceString(writer.binary),
+    // Update the AsyncJob
+    const systemRepo = getSystemRepo();
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id);
+    if (asyncJob.status !== 'cancelled') {
+      return systemRepo.updateResource<AsyncJob>({
+        ...this.resource,
+        meta: {
+          project: project.id,
+        },
+        status: 'completed',
+        transactionTime: new Date().toISOString(),
+        output: this.formatOutput(),
+      });
+    }
+    return this.resource;
+  }
+
+  formatOutput(): Parameters {
+    return {
+      resourceType: 'Parameters',
+      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
+        name: 'output',
+        part: [
+          { name: 'type', valueCode: resourceType },
+          { name: 'url', valueUri: getReferenceString(writer.binary) },
+        ],
       })),
-    });
+    };
   }
 }

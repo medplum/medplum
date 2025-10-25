@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import styles from './Card.module.css';
 
 export interface CardProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Card(props: CardProps): JSX.Element {

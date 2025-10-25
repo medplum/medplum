@@ -1,11 +1,7 @@
 ---
 slug: medplum-mitre-talk
 title: Medplum Talk at MITRE OHS
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore]
 ---
 
@@ -13,11 +9,15 @@ tags: [interop, fhir-datastore]
 
 [MITRE](https://www.mitre.org/) Open Health Solutions is a leader in healthcare open source and are the makers of [Inferno](https://inferno.healthit.gov/), [Synthea](https://synthea.mitre.org/) and more - which are tools we use all the time here.
 
+<!-- truncate -->
+
 Medplum gave a talk at MITRE last fall, that was [recently released](https://youtu.be/D_S7EKe-S5E), and this post contains an annotated transcript and clips, as well as some updates as the talk was last fall, shortly after Medplum's public launch. Transcript has been lightly edited for clarity.
 
 ## Medplum Intro and Team Story
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -51,7 +51,9 @@ Our experience is also informed by building many applications that are in the he
 
 ## Healthcare Developer Pain Points
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -79,7 +81,9 @@ So that leads me to the next part, which is our approach, how we've thought abou
 
 ## System Overview
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _3 minutes_
 
@@ -101,19 +105,21 @@ We support a bunch of data types and we have a [streamlined developer kit](/docs
 
 So there's really no DevOps from the perspective of the developer. They're just writing their code and hooking it up. And this is a big productivity win. And people bring their own code here. We have some partners who have written their own integrations and we also provide some built-in integrations.
 
-So that's part of the customer experience. We also have [access policies](/docs/access/access-policies) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/access/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
+So that's part of the customer experience. We also have [access policies](/docs/access/access-policies) and [identity](/docs/user-management), literacy in general on FHIR and [SMART-on-FHIR](/docs/access/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
 
-And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/methods/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
+And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
 
 ## Traditional Healthcare Applications
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 1 minute
 
 So this is, this is the Medplum overview. And I'll just like compare and contrast that with traditional software healthcare software, which is like a full stack SaaS application that exposes some interfaces. In this model, it's hard to program a system like this. The developer experiences is poor.
 
-Systems that we've built like this tend to be **brittle and slow**, and introp is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
+Systems that we've built like this tend to be **brittle and slow**, and interop is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
 
 And it could be an effective developer model to get more productivity, leverage, better interop, and just reduce the investment overall and have better tooling and story. So that's kind of the thinking. So I'll summarize it here. So our approach, you know, interoperability is the product not an afterthought.
 
@@ -121,7 +127,9 @@ So the, I'll emphasize that. It's very common to have a SaaS app with an API sof
 
 ## Developer Experience and Open Source
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _4 minutes_
 
@@ -143,7 +151,9 @@ We are early in our open source life, so I'm really excited for the chance to me
 
 ## Business Model
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _1 minute_
 
@@ -157,7 +167,9 @@ And again, this is a model that is, is modeled after GitLab and their very succe
 
 ## Demos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _10 minutes_
 
@@ -215,7 +227,7 @@ This is just a, you know, diagnostic report we have if you search in our, our re
 
 Finally, I'll move on to the documentation. So we invest a lot in our docs and we absolutely, we want feedback. So if anybody is just looks at the docs, they find something they don't. File a GitHub issue. We're happy to talk about it. It's the subject matter for, and the subject matter is very dense.
 
-So like, it's a, it is a tough job to really document it in a way that makes sense for users, but we are working on it. One thing I'll point out here is that we have [sophisticated search](/search). As very popular. And so like, oh, how do I [invite a user](/docs/auth/user-management-guide)? Okay, great. Or, you know, I want to look at observation.
+So like, it's a, it is a tough job to really document it in a way that makes sense for users, but we are working on it. One thing I'll point out here is that we have [sophisticated search](/search). As very popular. And so like, oh, how do I [invite a user](/docs/user-management)? Okay, great. Or, you know, I want to look at observation.
 
 And documentation is all [in GitHub](https://github.com/medplum/medplum/tree/main/packages/docs), so if you ever wanted to contribute to, to documentation, write some tutorials we would absolutely welcome that. And this is part of our open source project, so again, can just go there. Great. And I think you know, we have our, our core repo and would have our, our lots of tooling and build associated with it.
 

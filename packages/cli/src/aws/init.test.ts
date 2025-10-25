@@ -1,26 +1,51 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
-import { CloudFrontClient, CreatePublicKeyCommand, PublicKey } from '@aws-sdk/client-cloudfront';
+import type { PublicKey } from '@aws-sdk/client-cloudfront';
+import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
-import { readFileSync, unlinkSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
-import readline from 'readline';
+import { randomUUID } from 'node:crypto';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import readline from 'node:readline';
 import { main } from '../index';
 import { mockReadline } from './test.utils';
 
-jest.mock('readline');
+jest.mock('node:readline');
 jest.mock('node-fetch');
 
 describe('init command', () => {
+  const configFiles = new Set<string>();
+
+  function refConfigFile(path: string): string {
+    configFiles.add(path);
+    return path;
+  }
+
+  function cleanupConfigFile(path: string): void {
+    if (existsSync(path)) {
+      unlinkSync(path);
+    }
+    configFiles.delete(path);
+  }
+
   beforeAll(() => {
     mockClient(CloudFormationClient);
     mockClient(ECSClient);
     mockClient(S3Client);
+  });
+
+  afterAll(() => {
+    for (const file of configFiles.values()) {
+      cleanupConfigFile(file);
+    }
+    // We add a special case for `medplum.foo.config.server.json` since that is the output config file from these tests
+    cleanupConfigFile('medplum.foo.config.server.json');
   });
 
   beforeEach(() => {
@@ -65,7 +90,7 @@ describe('init command', () => {
   });
 
   test('Init tool success', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -122,11 +147,11 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Overwrite existing file', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
     writeFileSync(filename, '{}', 'utf8');
 
     readline.createInterface = jest.fn(() =>
@@ -185,7 +210,7 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Invalid AWS credentials', async () => {
@@ -196,7 +221,7 @@ describe('init command', () => {
     acmClient.on(ListCertificatesCommand).rejects(new Error('Invalid region'));
     acmClient.on(RequestCertificateCommand).rejects(new Error('Invalid region'));
 
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     console.log = jest.fn();
 
@@ -258,11 +283,11 @@ describe('init command', () => {
       appSslCertArn: 'TODO',
       storageSslCertArn: 'TODO',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Bring your own database', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -318,11 +343,11 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Do not request SSL certs', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -376,11 +401,11 @@ describe('init command', () => {
       appSslCertArn: 'TODO',
       storageSslCertArn: 'TODO',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Existing SSL certificates', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -437,11 +462,11 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Handle empty support email', async () => {
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -498,7 +523,7 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('Existing parameter values', async () => {
@@ -510,7 +535,7 @@ describe('init command', () => {
     });
     ssmClient.on(PutParameterCommand).resolves({});
 
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
@@ -576,7 +601,7 @@ describe('init command', () => {
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 
   test('No AWS credentials', async () => {
@@ -586,7 +611,8 @@ describe('init command', () => {
     const cloudFrontClient = mockClient(CloudFrontClient);
     cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
 
-    const filename = `test-${randomUUID()}.json`;
+    const filename = refConfigFile(`test-${randomUUID()}.json`);
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y', // Yes, proceed without AWS credentials
@@ -639,6 +665,6 @@ describe('init command', () => {
       appSslCertArn: 'TODO',
       storageSslCertArn: 'TODO',
     });
-    unlinkSync(filename);
+    cleanupConfigFile(filename);
   });
 });

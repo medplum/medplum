@@ -1,0 +1,250 @@
+{
+  "title": "combinations",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1"],
+  "resources": [
+    {
+      "id": "pt1",
+      "resourceType": "Patient"
+    },
+    {
+      "id": "pt2",
+      "resourceType": "Patient"
+    },
+    {
+      "id": "pt3",
+      "resourceType": "Patient"
+    }
+  ],
+  "tests": [
+    {
+      "title": "select",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        },
+        {
+          "id": "pt2"
+        },
+        {
+          "id": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "column + select",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "column_id",
+                "type": "id"
+              }
+            ],
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "select_id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "column_id": "pt1",
+          "select_id": "pt1"
+        },
+        {
+          "column_id": "pt2",
+          "select_id": "pt2"
+        },
+        {
+          "column_id": "pt3",
+          "select_id": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "sibling select",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id_1",
+                "type": "id"
+              }
+            ]
+          },
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id_2",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id_1": "pt1",
+          "id_2": "pt1"
+        },
+        {
+          "id_1": "pt2",
+          "id_2": "pt2"
+        },
+        {
+          "id_1": "pt3",
+          "id_2": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "sibling select inside a select",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "id_1",
+                    "type": "id"
+                  }
+                ]
+              },
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "id_2",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id_1": "pt1",
+          "id_2": "pt1"
+        },
+        {
+          "id_1": "pt2",
+          "id_2": "pt2"
+        },
+        {
+          "id_1": "pt3",
+          "id_2": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "column + select, with where",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "column_id",
+                "type": "id"
+              }
+            ],
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "select_id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "id = 'pt1'"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "column_id": "pt1",
+          "select_id": "pt1"
+        }
+      ]
+    },
+    {
+      "title": "unionAll + forEach + column + select",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        },
+        {
+          "id": "pt2"
+        },
+        {
+          "id": "pt3"
+        }
+      ]
+    }
+  ]
+}

@@ -1,17 +1,17 @@
 ---
 slug: ro-case-study
 title: At Home Diagnostics - Ro Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore, compliance, case-study]
 ---
 
 # Ro Case Study: At Home Lab Diagnostics
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/q-22Y7Ox2jY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+<iframe src="https://www.youtube.com/embed/q-22Y7Ox2jY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
+<!-- truncate -->
 
 ## Introduction
 
@@ -20,7 +20,7 @@ tags: [interop, fhir-datastore, compliance, case-study]
 ## Medplum Solutions Used
 
 1. [Lab Network](/solutions/lab) - sending lab orders and receiving diagnostic reports across lab sites
-2. [Provider Portal and FHIR API](/solutions#provider-portal-and-fhir-api) - allow data access with controls, to practitioners and applications
+2. [Provider Portal and FHIR API](/solutions) - allow data access with controls, to practitioners and applications
 
 ## Challenges Faced
 
@@ -32,4 +32,3 @@ The workflow requires tight coordination and real-time synchronization between m
 
 - [How It Works](https://ro.co/weight-loss/#timelineSection-l2o3qWi7TYyp0Txr0ckO8) from the patient perspective
 - [Press Release](https://www.fiercehealthcare.com/tech/ro-scoops-up-at-home-testing-startup-kit-heels-workpath-modern-fertility-acquisitions)
-- [Technical Documentation](https://docs.kit.com/docs/overview)

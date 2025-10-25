@@ -1,4 +1,7 @@
-import { TimeUnit, formatDuration } from './time';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TimeUnit } from './time';
+import { formatDuration } from './time';
 
 describe('Time utils', () => {
   test.each([
@@ -16,6 +19,6 @@ describe('Time utils', () => {
     [0.123, 'ms', '123 µs'], // reversing magnitude change
     [1.235e-6, 's', '1.24 µs'], // reverse magnitude change 2
   ])('formatDuration(%d, %s) === "%s"', (t, unit, expected) => {
-    expect(formatDuration(t, unit as TimeUnit)).toEqual(expected);
+    expect(formatDuration(t, unit as TimeUnit)).toStrictEqual(expected);
   });
 });

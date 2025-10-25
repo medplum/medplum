@@ -1,10 +1,12 @@
-import { Login } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Login } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { sendLoginCookie } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginCookie } from './utils';
 
 /*
  * The profile handler is used during login when a user has multiple profiles.
@@ -17,6 +19,7 @@ export const profileValidator = makeValidationMiddleware([
 ]);
 
 export async function profileHandler(req: Request, res: Response): Promise<void> {
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   // Update the login

@@ -1,6 +1,10 @@
-import { MemoizedFhirPathTable, FhirPathTableField } from '@medplum/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { FhirPathTableField } from '@medplum/react';
+import { MemoizedFhirPathTable } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 export function SmartSearchPage(): JSX.Element | null {
   const navigate = useNavigate();
@@ -26,10 +30,10 @@ export function SmartSearchPage(): JSX.Element | null {
       checkboxesEnabled={true}
       query={query}
       fields={fields}
-      onClick={(e) => navigate(`/${resourceType}/${e.resource.id}`)}
+      onClick={(e) => navigate(`/${resourceType}/${e.resource.id}`)?.catch(console.error)}
       onAuxClick={(e) => window.open(`/${resourceType}/${e.resource.id}`, '_blank')}
       onBulk={(ids: string[]) => {
-        navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`);
+        navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
       }}
     />
   );

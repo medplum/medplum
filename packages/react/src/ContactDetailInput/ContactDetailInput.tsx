@@ -1,16 +1,26 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, TextInput } from '@mantine/core';
-import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
-import { useRef, useState } from 'react';
+import type { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 
 export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element {
-  const [contactPoint, setContactDetail] = useState(props.defaultValue);
+  const [contactDetail, setContactDetail] = useState(props.defaultValue);
 
-  const ref = useRef<ContactDetail>();
-  ref.current = contactPoint;
+  const ref = useRef<ContactDetail>(contactDetail);
+  ref.current = contactDetail;
+
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [nameProps, telecomProps] = useMemo(
+    () => ['name', 'telecom'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   function setContactDetailWrapper(newValue: ContactDetail): void {
     setContactDetail(newValue);
@@ -38,17 +48,19 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   return (
     <Group gap="xs" grow wrap="nowrap">
       <TextInput
+        disabled={props.disabled || nameProps?.readonly}
         data-testid={props.name + '-name'}
         name={props.name + '-name'}
         placeholder="Name"
         style={{ width: 180 }}
-        defaultValue={contactPoint?.name}
+        defaultValue={contactDetail?.name}
         onChange={(e) => setName(e.currentTarget.value)}
       />
       <ContactPointInput
+        disabled={props.disabled || telecomProps?.readonly}
         name={props.name + '-telecom'}
         path={props.path + '.telecom'}
-        defaultValue={contactPoint?.telecom?.[0]}
+        defaultValue={contactDetail?.telecom?.[0]}
         onChange={setTelecom}
         outcome={props.outcome}
       />

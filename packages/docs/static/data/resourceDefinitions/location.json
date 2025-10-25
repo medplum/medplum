@@ -767,6 +767,12 @@
       "type": "token",
       "description": "A code for the type of location",
       "expression": "Location.type"
+    },
+    {
+      "name": "physical-type",
+      "type": "token",
+      "description": "The physical type of the Location resource",
+      "expression": "Location.physicalType"
     }
   ]
 }

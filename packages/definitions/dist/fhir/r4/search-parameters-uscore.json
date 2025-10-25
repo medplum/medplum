@@ -1,0 +1,350 @@
+{
+  "resourceType": "Bundle",
+  "id": "usCoreSearchParams",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-careteam-role",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-careteam-role",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-careteam-role",
+        "version": "5.0.1",
+        "name": "USCoreCareTeamRole",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns CareTeam resources with a participant role matching the specified code.",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "role",
+        "base": ["CareTeam"],
+        "type": "token",
+        "expression": "CareTeam.participant.role",
+        "xpath": "f:CareTeam/f:participant/f:role/@value",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-condition-asserted-date",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-condition-asserted-date",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-condition-asserted-date",
+        "version": "5.0.1",
+        "name": "USCoreConditionAssertedDate",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns conditions with an [assertedDate extension](http://hl7.org/fhir/StructureDefinition/condition-assertedDate) matching the specified date (dateTime).",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "asserted-date",
+        "base": ["Condition"],
+        "type": "date",
+        "expression": "Condition.extension.where(url = 'http://hl7.org/fhir/StructureDefinition/condition-assertedDate').valueDateTime",
+        "xpath": "f:Condition/f:extension[@url='http://hl7.org/fhir/StructureDefinition/condition-assertedDate']/f:valueDateTime/@value",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "SHOULD" }
+          ]
+        },
+        "comparator": ["eq", "ne", "gt", "ge", "lt", "le", "sa", "eb", "ap"],
+        "_comparator": [
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "SHALL" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "SHALL" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "SHALL" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "SHALL" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+            ]
+          },
+          {
+            "extension": [
+              { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-encounter-discharge-disposition",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-encounter-discharge-disposition",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-encounter-discharge-disposition",
+        "version": "5.0.1",
+        "name": "USCoreEncounterDischargeDisposition",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns encounters with an discharge-disposition matching the specified code.",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "discharge-disposition",
+        "base": ["Encounter"],
+        "type": "token",
+        "expression": "Encounter.hospitalization.dischargeDisposition",
+        "xpath": "f:Encounter/f:hospitalization/f:dischargeDisposition/@value",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-ethnicity",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-ethnicity",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-ethnicity",
+        "version": "5.0.1",
+        "name": "USCoreEthnicity",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns patients with an ethnicity extension matching the specified code.",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "ethnicity",
+        "base": ["Patient"],
+        "type": "token",
+        "expression": "Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity').extension.value.code",
+        "xpath": "f:Patient/f:extension[@url='http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity']/f:extension/f:valueCoding/f:code/@value",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-goal-description",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-goal-description",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-goal-description",
+        "version": "5.0.1",
+        "name": "USCoreGoalDescription",
+        "status": "active",
+        "experimental": false,
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "**The code or text describing the goal**\n**NOTE**: This US Core SearchParameter definition extends the usage context of the\n[Conformance expectation extension](http://hl7.org/fhir/R4/extension-capabilitystatement-expectation.html)\n - multipleAnd\n - multipleOr\n - comparator\n - modifier\n - chain",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "description",
+        "base": ["Goal"],
+        "type": "token",
+        "expression": "Goal.description",
+        "xpath": "f:Goal/f:description",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-patient-gender-identity",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-patient-gender-identity",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-patient-gender-identity",
+        "version": "5.0.1",
+        "name": "USCorePatientGenderIdentity",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns patients with an gender-identity extension matching the specified code.",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "gender-identity",
+        "base": ["Patient"],
+        "type": "token",
+        "expression": "Patient.extension.where(url='http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity').value.coding.code",
+        "xpath": "f:Patient/f:extension[@url='http://hl7.org/fhir/StructureDefinition/patient-genderIdentity']/f:extension/f:valueCoding/f:code/@value xpathUsage: normal",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/us/core/SearchParameter/us-core-race",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "us-core-race",
+        "url": "http://hl7.org/fhir/us/core/SearchParameter/us-core-race",
+        "version": "5.0.1",
+        "name": "USCoreRace",
+        "status": "active",
+        "date": "2022-04-14",
+        "publisher": "HL7 International - Cross-Group Projects",
+        "contact": [
+          {
+            "name": "HL7 International - Cross-Group Projects",
+            "telecom": [
+              { "system": "url", "value": "http://www.hl7.org/Special/committees/cgp" },
+              { "system": "email", "value": "cgp@lists.HL7.org" }
+            ]
+          }
+        ],
+        "description": "Returns patients with a race extension matching the specified code.",
+        "jurisdiction": [{ "coding": [{ "system": "urn:iso:std:iso:3166", "code": "US" }] }],
+        "code": "race",
+        "base": ["Patient"],
+        "type": "token",
+        "expression": "Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race').extension.value.code",
+        "xpath": "f:Patient/f:extension[@url='http://hl7.org/fhir/us/core/StructureDefinition/us-core-race']/f:extension/f:valueCoding/f:code/@value",
+        "xpathUsage": "normal",
+        "multipleOr": true,
+        "_multipleOr": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        },
+        "multipleAnd": true,
+        "_multipleAnd": {
+          "extension": [
+            { "url": "http://hl7.org/fhir/StructureDefinition/capabilitystatement-expectation", "valueCode": "MAY" }
+          ]
+        }
+      }
+    }
+  ]
+}

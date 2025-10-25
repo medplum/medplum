@@ -1,7 +1,10 @@
-import { MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '../test-utils/render';
-import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
+import { act, render, screen } from '../test-utils/render';
+import type { AttachmentDisplayProps } from './AttachmentDisplay';
+import { AttachmentDisplay } from './AttachmentDisplay';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
@@ -52,7 +55,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.jpg',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-image'));
+    expect(await screen.findByTestId('attachment-image')).toBeInTheDocument();
   });
 
   test('Renders video', async () => {
@@ -62,7 +65,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.mp4',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-video'));
+    expect(await screen.findByTestId('attachment-video')).toBeInTheDocument();
   });
 
   test('Renders PDF', async () => {
@@ -72,7 +75,21 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.pdf',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-pdf'));
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders plain text', async () => {
+    await setup({
+      value: { contentType: 'text/plain', url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL' },
+    });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders JSON', async () => {
+    await setup({ value: { contentType: 'application/json', url: 'https://example.com/test.json' } });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
@@ -80,11 +97,11 @@ describe('AttachmentDisplay', () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
         title: 'test.txt',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('test.txt')).toBeInTheDocument();
   });
 
@@ -92,10 +109,34 @@ describe('AttachmentDisplay', () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders XML', async () => {
+    await setup({
+      value: {
+        contentType: ContentType.XML,
+        url: 'https://example.com/note.xml',
+        title: 'note.xml',
+      },
+    });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('note.xml')).toBeInTheDocument();
+  });
+
+  test('Renders C-CDA', async () => {
+    await setup({
+      value: {
+        contentType: ContentType.CDA_XML,
+        url: 'https://example.com/c-cda.xml',
+        title: 'c-cda.xml',
+      },
+    });
+    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(screen.getByText('c-cda.xml')).toBeInTheDocument();
   });
 });

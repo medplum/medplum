@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
   Form,
@@ -12,8 +14,9 @@ import {
   OperationOutcomeAlert,
   useMedplum,
 } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getConfig } from './config';
 
 export function ResetPasswordPage(): JSX.Element {
@@ -32,7 +35,6 @@ export function ResetPasswordPage(): JSX.Element {
   return (
     <Document width={450}>
       <Form
-        style={{ maxWidth: 400 }}
         onSubmit={async (formData: Record<string, string>) => {
           let recaptchaToken = '';
           if (recaptchaSiteKey) {
@@ -47,7 +49,7 @@ export function ResetPasswordPage(): JSX.Element {
       >
         <Stack gap="lg" mb="xl" align="center">
           <Logo size={32} />
-          <Title>Medplum Password Reset</Title>
+          <Title>Password Reset</Title>
         </Stack>
         <Stack gap="xl">
           <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} />
@@ -62,7 +64,13 @@ export function ResetPasswordPage(): JSX.Element {
                 error={getErrorsForInput(outcome, 'email')}
               />
               <Group justify="space-between" mt="xl" wrap="nowrap">
-                <Anchor component="button" type="button" color="dimmed" onClick={() => navigate('/register')} size="xs">
+                <Anchor
+                  component="button"
+                  type="button"
+                  color="dimmed"
+                  onClick={() => navigate('/register')?.catch(console.error)}
+                  size="xs"
+                >
                   Register
                 </Anchor>
                 <Button type="submit">Reset password</Button>

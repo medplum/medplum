@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Grid, Paper, Skeleton, Tabs, Title } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString, resolveId } from '@medplum/core';
-import { Patient, Task } from '@medplum/fhirtypes';
+import type { Patient, Task } from '@medplum/fhirtypes';
 import {
   DefaultResourceTimeline,
   Document,
@@ -10,7 +12,8 @@ import {
   useMedplumNavigate,
 } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 import { TaskActions } from '../components/actions/TaskActions';
 import { NotesPage } from './NotesPage';
 
@@ -87,29 +90,18 @@ export function TaskPage(): JSX.Element {
 }
 
 interface PatientProfileProps {
-  patient?: Patient;
+  readonly patient?: Patient;
 }
 
 function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
-  return (
-    <>
-      {patient ? (
-        <PatientSummary
-          patient={patient}
-          background="url(https://images.unsplash.com/photo-1535961652354-923cb08225a7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bmF0dXJlJTIwc21hbGx8ZW58MHwwfDB8fHww&auto=format&fit=crop&w=800&q=60)"
-        />
-      ) : (
-        <Skeleton visible={true} height={100} />
-      )}
-    </>
-  );
+  return <>{patient ? <PatientSummary patient={patient} /> : <Skeleton visible={true} height={100} />}</>;
 }
 
 interface TaskDetailsProps {
-  task: Task;
-  tabs: string[];
-  currentTab: string;
-  handleTabChange: (newTab: string | null) => void;
+  readonly task: Task;
+  readonly tabs: string[];
+  readonly currentTab: string;
+  readonly handleTabChange: (newTab: string | null) => void;
 }
 
 function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
@@ -139,8 +131,8 @@ function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsPro
 }
 
 interface ActionsProps {
-  task: Task;
-  onTaskChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onTaskChange: (updatedTask: Task) => void;
 }
 
 function Actions({ task, onTaskChange }: ActionsProps): JSX.Element {

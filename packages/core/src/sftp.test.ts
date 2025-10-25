@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Readable } from 'stream';
 import { streamToBuffer } from './sftp';
 
@@ -8,7 +10,7 @@ describe('sftp', () => {
     const expectedBuffer = Buffer.from(input);
 
     const result = await streamToBuffer(stream);
-    expect(result).toEqual(expectedBuffer);
+    expect(result).toStrictEqual(expectedBuffer);
   });
 
   test('Empty Readable stream', async () => {
@@ -16,7 +18,7 @@ describe('sftp', () => {
     const expectedBuffer = Buffer.from('');
 
     const result = await streamToBuffer(stream);
-    expect(result).toEqual(expectedBuffer);
+    expect(result).toStrictEqual(expectedBuffer);
   });
 
   test('Error event and reject with an error', async () => {

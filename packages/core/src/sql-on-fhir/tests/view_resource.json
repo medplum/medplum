@@ -1,0 +1,92 @@
+{
+  "title": "view_resource",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1", "3.0.2"],
+  "resources": [
+    {
+      "id": "pt1",
+      "resourceType": "Patient"
+    },
+    {
+      "id": "pt2",
+      "resourceType": "Patient"
+    },
+    {
+      "id": "ob1",
+      "resourceType": "Observation",
+      "code": {
+        "text": "code"
+      },
+      "status": "final"
+    }
+  ],
+  "tests": [
+    {
+      "title": "only pts",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        },
+        {
+          "id": "pt2"
+        }
+      ]
+    },
+    {
+      "title": "only obs",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "ob1"
+        }
+      ]
+    },
+    {
+      "title": "resource not specified",
+      "view": {
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expectError": true
+    }
+  ]
+}

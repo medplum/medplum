@@ -1,4 +1,6 @@
-import readline from 'readline';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import readline from 'node:readline';
 
 let terminal: readline.Interface;
 

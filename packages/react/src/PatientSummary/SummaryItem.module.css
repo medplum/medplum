@@ -1,0 +1,73 @@
+.gradient {
+  position: absolute;
+  right: 28px;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+[data-mantine-color-scheme='dark'] .gradient {
+  background: linear-gradient(to right, transparent, var(--mantine-color-dark-8));
+}
+
+[data-mantine-color-scheme='light'] .gradient {
+  background: linear-gradient(to right, transparent, var(--mantine-color-white));
+}
+
+.container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+[data-mantine-color-scheme='dark'] .container {
+  background: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .container {
+  background: var(--mantine-color-white);
+}
+
+.chevron {
+  position: static;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.2s;
+  opacity: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item:hover .gradient,
+.item:hover .container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.item {
+  position: relative;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.itemText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

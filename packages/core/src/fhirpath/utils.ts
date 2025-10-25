@@ -1,7 +1,11 @@
-import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize, isEmpty } from '../utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import type { TypedValue } from '../types';
+import { PropertyType, getElementDefinition, isResource } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { validationRegexes } from '../typeschema/validation';
+import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -32,6 +36,10 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.Quantity, value };
   } else if (isResource(value)) {
     return { type: value.resourceType, value };
+  } else if (isCodeableConcept(value)) {
+    return { type: PropertyType.CodeableConcept, value };
+  } else if (isCoding(value)) {
+    return { type: PropertyType.Coding, value };
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
@@ -58,6 +66,11 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
   }
 }
 
+export interface GetTypedPropertyValueOptions {
+  /** (optional) URL of a resource profile for type resolution */
+  profileUrl?: string;
+}
+
 /**
  * Returns the value of the property and the property type.
  * Some property definitions support multiple types.
@@ -66,16 +79,21 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
  * This function returns the value and the type.
  * @param input - The base context (FHIR resource or backbone element).
  * @param path - The property path.
+ * @param options - (optional) Additional options
  * @returns The value of the property and the property type.
  */
-export function getTypedPropertyValue(input: TypedValue, path: string): TypedValue[] | TypedValue | undefined {
+export function getTypedPropertyValue(
+  input: TypedValue,
+  path: string,
+  options?: GetTypedPropertyValueOptions
+): TypedValue[] | TypedValue | undefined {
   if (!input.value) {
     return undefined;
   }
 
-  const elementDefinition = getElementDefinition(input.type, path);
+  const elementDefinition = getElementDefinition(input.type, path, options?.profileUrl);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -83,13 +101,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param value - The base context (FHIR resource or backbone element).
+ * @param typedValue - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValueWithSchema(
-  value: TypedValue['value'],
+  typedValue: TypedValue,
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
@@ -114,6 +132,7 @@ export function getTypedPropertyValueWithSchema(
   // Therefore, cannot only check for endsWith('[x]') since FHIRPath uses this code path
   // with a path of 'value' and expects Choice of Types treatment
 
+  const value = typedValue.value;
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
@@ -125,30 +144,31 @@ export function getTypedPropertyValueWithSchema(
   let resultType = 'undefined';
   let primitiveExtension: Extension[] | undefined = undefined;
 
-  if (element.path.endsWith('[x]')) {
-    const elementBasePath = (element.path.split('.').pop() as string).replace('[x]', '');
-    for (const type of types) {
-      const candidatePath = elementBasePath + capitalize(type.code);
-      resultValue = value[candidatePath];
-      primitiveExtension = value['_' + candidatePath];
-      if (resultValue !== undefined || primitiveExtension !== undefined) {
-        resultType = type.code;
-        break;
-      }
+  const lastPathSegmentIndex = element.path.lastIndexOf('.');
+  const lastPathSegment = element.path.substring(lastPathSegmentIndex + 1);
+  for (const type of types) {
+    const candidatePath = lastPathSegment.replace('[x]', capitalize(type.code));
+    resultValue = value[candidatePath];
+    primitiveExtension = value['_' + candidatePath];
+    if (resultValue !== undefined || primitiveExtension !== undefined) {
+      resultType = type.code;
+      break;
     }
-  } else {
-    console.assert(types.length === 1, 'Expected single type', element.path);
-    resultValue = value[path];
-    resultType = types[0].code;
-    primitiveExtension = value['_' + path];
   }
 
   // When checking for primitive extensions, we must use the "resolved" path.
   // In the case of [x] choice-of-type, the type must be resolved to a single type.
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
+      // Slice to avoid mutating the array in the input value
+      resultValue = resultValue.slice();
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
+      }
+    } else if (!resultValue && Array.isArray(primitiveExtension)) {
+      resultValue = primitiveExtension.slice();
+      for (let i = 0; i < primitiveExtension.length; i++) {
+        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
       }
     } else {
       resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
@@ -185,7 +205,7 @@ function toTypedValueWithType(value: any, type: string): TypedValue {
  * @param path - The property path.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithoutSchema(
+export function getTypedPropertyValueWithoutSchema(
   typedValue: TypedValue,
   path: string
 ): TypedValue[] | TypedValue | undefined {
@@ -194,9 +214,15 @@ function getTypedPropertyValueWithoutSchema(
     return undefined;
   }
 
-  let result: any = undefined;
+  let result: TypedValue[] | TypedValue | undefined = undefined;
+
   if (path in input) {
-    result = (input as { [key: string]: unknown })[path];
+    const propertyValue = (input as { [key: string]: unknown })[path];
+    if (Array.isArray(propertyValue)) {
+      result = propertyValue.map(toTypedValue);
+    } else {
+      result = toTypedValue(propertyValue);
+    }
   } else {
     // Only support property names that would be valid types
     // Examples:
@@ -204,25 +230,30 @@ function getTypedPropertyValueWithoutSchema(
     // value + valueDecimal = ok, because "decimal" is valid
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
-    //eslint-disable-next-line guard-for-in
-    for (const propertyType in PropertyType) {
-      const propertyName = path + capitalize(propertyType);
+    const trimmedPath = path.endsWith('[x]') ? path.substring(0, path.length - 3) : path;
+    for (const propertyType of Object.values(PropertyType)) {
+      const propertyName = trimmedPath + capitalize(propertyType);
       if (propertyName in input) {
-        result = (input as { [key: string]: unknown })[propertyName];
+        const propertyValue = (input as { [key: string]: unknown })[propertyName];
+        if (Array.isArray(propertyValue)) {
+          result = propertyValue.map((v) => ({ type: propertyType, value: v }));
+        } else {
+          result = { type: propertyType, value: propertyValue };
+        }
         break;
       }
     }
   }
 
-  if (isEmpty(result)) {
+  if (Array.isArray(result)) {
+    if (result.length === 0 || isEmpty(result[0])) {
+      return undefined;
+    }
+  } else if (isEmpty(result)) {
     return undefined;
   }
 
-  if (Array.isArray(result)) {
-    return result.map(toTypedValue);
-  } else {
-    return toTypedValue(result);
-  }
+  return result;
 }
 
 /**
@@ -270,6 +301,22 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
     return booleanToTypedValue(false);
   }
   return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquals(val, y[index]))));
+}
+
+/**
+ * Determines if two arrays are not equal according to FHIRPath equality rules.
+ * @param x - The first array.
+ * @param y - The second array.
+ * @returns FHIRPath true if the arrays are not equal.
+ */
+export function fhirPathArrayNotEquals(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 || y.length === 0) {
+    return [];
+  }
+  if (x.length !== y.length) {
+    return booleanToTypedValue(true);
+  }
+  return booleanToTypedValue(x.some((val, index) => !toJsBoolean(fhirPathEquals(val, y[index]))));
 }
 
 /**
@@ -390,16 +437,26 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     return false;
   }
 
-  switch (desiredType) {
+  let cleanType = desiredType;
+
+  if (cleanType.startsWith('System.')) {
+    cleanType = cleanType.substring('System.'.length);
+  }
+
+  if (cleanType.startsWith('FHIR.')) {
+    cleanType = cleanType.substring('FHIR.'.length);
+  }
+
+  switch (cleanType) {
     case 'Boolean':
       return typeof value === 'boolean';
     case 'Decimal':
     case 'Integer':
       return typeof value === 'number';
     case 'Date':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(value);
+      return isDateString(value);
     case 'DateTime':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(value);
+      return isDateTimeString(value);
     case 'Time':
       return typeof value === 'string' && !!/^T\d/.exec(value);
     case 'Period':
@@ -407,8 +464,26 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && value?.resourceType === desiredType;
+      return typedValue.type === cleanType || (typeof value === 'object' && value?.resourceType === cleanType);
   }
+}
+
+/**
+ * Returns true if the input value is a YYYY-MM-DD date string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date string.
+ */
+export function isDateString(input: unknown): input is string {
+  return typeof input === 'string' && !!validationRegexes.date.exec(input);
+}
+
+/**
+ * Returns true if the input value is a YYYY-MM-DDThh:mm:ss.sssZ date/time string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date/time string.
+ */
+export function isDateTimeString(input: unknown): input is string {
+  return typeof input === 'string' && !!validationRegexes.dateTime.exec(input);
 }
 
 /**
@@ -418,7 +493,56 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
  * @returns True if the input is a period.
  */
 export function isPeriod(input: unknown): input is Period {
-  return !!(input && typeof input === 'object' && 'start' in input);
+  return !!(
+    input &&
+    typeof input === 'object' &&
+    (('start' in input && isDateTimeString(input.start)) || ('end' in input && isDateTimeString(input.end)))
+  );
+}
+
+/**
+ * Tries to convert an unknown input value to a Period object.
+ * @param input - Unknown input value.
+ * @returns A Period object or undefined.
+ */
+export function toPeriod(input: unknown): Period | undefined {
+  if (!input) {
+    return undefined;
+  }
+
+  if (isDateString(input) || isDateTimeString(input)) {
+    return {
+      start: dateStringToInstantString(input, '0000-01-01T00:00:00.000'),
+      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999'),
+    };
+  }
+
+  if (isPeriod(input)) {
+    return {
+      start: input.start ? dateStringToInstantString(input.start, '0000-01-01T00:00:00.000') : undefined,
+      end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999') : undefined,
+    };
+  }
+
+  return undefined;
+}
+
+function dateStringToInstantString(input: string, fill: string): string {
+  // For any input with a time zone offset, we need to normalize it to "Z" time zone.
+  // The time zone offset is valid, but for this function to work as expected, we need to normalize.
+  // Note that the "+" or "-" comes after the seconds, so we must check after the "T" character.
+  let timezone = 'Z';
+  const tzDelimiter = Math.max(input.indexOf('+', 10), input.indexOf('-', 10));
+  if (tzDelimiter > -1) {
+    timezone = input.substring(tzDelimiter);
+    input = input.substring(0, tzDelimiter);
+  } else if (input.endsWith('Z')) {
+    input = input.substring(0, input.length - 1);
+  }
+
+  // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
+  const instant = input + fill.substring(input.length) + timezone;
+  return new Date(instant).toISOString();
 }
 
 /**
@@ -479,6 +603,13 @@ function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
   return target;
 }
 
+/**
+ * For primitive string, number, boolean, the return value will be the corresponding
+ * `String`, `Number`, or `Boolean` version of the type.
+ * @param target - The value to have `source` properties assigned to.
+ * @param source - An object to be assigned to `target`.
+ * @returns The `target` value with the properties of `source` assigned to it.
+ */
 function safeAssign(target: any, source: any): any {
   delete source.__proto__; //eslint-disable-line no-proto
   delete source.constructor;

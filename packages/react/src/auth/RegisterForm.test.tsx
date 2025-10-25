@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { randomUUID, webcrypto } from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
-import { TextEncoder } from 'util';
+import type { GoogleCredentialResponse } from '@medplum/core';
+import { allOk, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { RegisterForm, RegisterFormProps } from './RegisterForm';
+import { randomUUID, webcrypto } from 'crypto';
+import { MemoryRouter } from 'react-router';
+import { TextEncoder } from 'util';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import type { RegisterFormProps } from './RegisterForm';
+import { RegisterForm } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
 
@@ -193,7 +197,7 @@ describe('RegisterForm', () => {
       fireEvent.click(screen.getByText('Create account'));
     });
 
-    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
+    expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
@@ -243,7 +247,7 @@ describe('RegisterForm', () => {
       fireEvent.click(screen.getByText('Create account'));
     });
 
-    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
+    expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
@@ -347,7 +351,7 @@ describe('RegisterForm', () => {
       });
     });
 
-    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
+    expect(await screen.findByText('Sign in with Google')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));

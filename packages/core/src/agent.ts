@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { LogMessage } from './logger';
+
 export interface BaseAgentMessage {
   type: string;
   callback?: string;
@@ -27,6 +31,7 @@ export interface AgentHeartbeatRequest extends BaseAgentRequestMessage {
 
 export interface AgentHeartbeatResponse extends BaseAgentMessage {
   type: 'agent:heartbeat:response';
+  version: string;
 }
 
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
@@ -42,14 +47,56 @@ export interface AgentTransmitResponse extends BaseAgentMessage {
   channel?: string;
   remote: string;
   contentType: string;
+  statusCode?: number;
   body: string;
 }
 
-export type AgentMessage =
-  | AgentError
+export interface AgentReloadConfigRequest extends BaseAgentRequestMessage {
+  type: 'agent:reloadconfig:request';
+}
+
+export interface AgentReloadConfigResponse extends BaseAgentMessage {
+  type: 'agent:reloadconfig:response';
+  statusCode: number;
+}
+
+export interface AgentUpgradeRequest extends BaseAgentRequestMessage {
+  type: 'agent:upgrade:request';
+  version?: string;
+  force?: boolean;
+}
+
+export interface AgentUpgradeResponse extends BaseAgentMessage {
+  type: 'agent:upgrade:response';
+  statusCode: number;
+}
+
+export interface AgentLogsRequest extends BaseAgentRequestMessage {
+  type: 'agent:logs:request';
+  limit?: number;
+}
+
+export interface AgentLogsResponse extends BaseAgentMessage {
+  type: 'agent:logs:response';
+  statusCode: number;
+  logs: LogMessage[];
+}
+
+export type AgentRequestMessage =
   | AgentConnectRequest
-  | AgentConnectResponse
   | AgentHeartbeatRequest
-  | AgentHeartbeatResponse
   | AgentTransmitRequest
-  | AgentTransmitResponse;
+  | AgentReloadConfigRequest
+  | AgentUpgradeRequest
+  | AgentLogsRequest;
+
+export type AgentResponseMessage =
+  | AgentConnectResponse
+  | AgentHeartbeatResponse
+  | AgentTransmitResponse
+  | AgentReloadConfigResponse
+  | AgentUpgradeResponse
+  | AgentLogsResponse
+  | AgentError;
+
+export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

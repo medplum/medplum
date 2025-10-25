@@ -1,16 +1,23 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import express from 'express';
-import { systemRepo } from '../../repo';
-import { AsyncJobExecutor } from './asyncjobexecutor';
 import { initApp, shutdownApp } from '../../../app';
-import { loadTestConfig } from '../../../config';
-import { withTestContext } from '../../../test.setup';
-
-const app = express();
+import { loadTestConfig } from '../../../config/loader';
+import { initTestAuth, waitForAsyncJob, withTestContext } from '../../../test.setup';
+import { getSystemRepo } from '../../repo';
+import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+
+    accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
@@ -38,7 +45,9 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
+
+      await waitForAsyncJob(exec.getContentLocation('http://example.com/'), app, accessToken);
     }));
 
   test('start with error', () =>
@@ -48,14 +57,14 @@ describe('AsyncJobExecutor', () => {
       const callback = jest.fn();
 
       try {
-        await exec.start(async () => {
+        exec.start(async () => {
           callback();
         });
       } catch (err) {
         expect((err as Error).message).toBe('AsyncJob missing');
       }
 
-      expect(callback).not.toBeCalled();
+      expect(callback).not.toHaveBeenCalled();
     }));
 
   test('run', () =>
@@ -70,7 +79,7 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
     }));
 
   test('run with error', async () => {
@@ -86,7 +95,7 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
   test('getContentLocation', () =>
@@ -114,6 +123,6 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 });

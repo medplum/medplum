@@ -1,0 +1,7 @@
+[data-mantine-color-scheme='dark'] .planDefinition {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .planDefinition {
+  background-color: var(--mantine-color-gray-1);
+}

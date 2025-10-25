@@ -1,0 +1,832 @@
+{
+  "title": "union",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1", "3.0.2"],
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "pt1",
+      "telecom": [
+        {
+          "value": "t1.1",
+          "system": "phone"
+        },
+        {
+          "value": "t1.2",
+          "system": "fax"
+        },
+        {
+          "value": "t1.3",
+          "system": "email"
+        }
+      ],
+      "contact": [
+        {
+          "telecom": [
+            {
+              "value": "t1.c1.1",
+              "system": "pager"
+            }
+          ]
+        },
+        {
+          "telecom": [
+            {
+              "value": "t1.c2.1",
+              "system": "url"
+            },
+            {
+              "value": "t1.c2.2",
+              "system": "sms"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt2",
+      "telecom": [
+        {
+          "value": "t2.1",
+          "system": "phone"
+        },
+        {
+          "value": "t2.2",
+          "system": "fax"
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt3",
+      "contact": [
+        {
+          "telecom": [
+            {
+              "value": "t3.c1.1",
+              "system": "email"
+            },
+            {
+              "value": "t3.c1.2",
+              "system": "pager"
+            }
+          ]
+        },
+        {
+          "telecom": [
+            {
+              "value": "t3.c2.1",
+              "system": "sms"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt4"
+    }
+  ],
+  "tests": [
+    {
+      "title": "basic",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          },
+          {
+            "unionAll": [
+              {
+                "forEach": "telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              },
+              {
+                "forEach": "contact.telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "tel": "t1.1",
+          "sys": "phone",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.2",
+          "sys": "fax",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.3",
+          "sys": "email",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c1.1",
+          "sys": "pager",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c2.1",
+          "sys": "url",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c2.2",
+          "sys": "sms",
+          "id": "pt1"
+        },
+        {
+          "tel": "t2.1",
+          "sys": "phone",
+          "id": "pt2"
+        },
+        {
+          "tel": "t2.2",
+          "sys": "fax",
+          "id": "pt2"
+        },
+        {
+          "tel": "t3.c1.1",
+          "sys": "email",
+          "id": "pt3"
+        },
+        {
+          "tel": "t3.c1.2",
+          "sys": "pager",
+          "id": "pt3"
+        },
+        {
+          "tel": "t3.c2.1",
+          "sys": "sms",
+          "id": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "unionAll + column",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEach": "telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              },
+              {
+                "forEach": "contact.telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "tel": "t1.1",
+          "sys": "phone",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.2",
+          "sys": "fax",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.3",
+          "sys": "email",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c1.1",
+          "sys": "pager",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c2.1",
+          "sys": "url",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.c2.2",
+          "sys": "sms",
+          "id": "pt1"
+        },
+        {
+          "tel": "t2.1",
+          "sys": "phone",
+          "id": "pt2"
+        },
+        {
+          "tel": "t2.2",
+          "sys": "fax",
+          "id": "pt2"
+        },
+        {
+          "tel": "t3.c1.1",
+          "sys": "email",
+          "id": "pt3"
+        },
+        {
+          "tel": "t3.c1.2",
+          "sys": "pager",
+          "id": "pt3"
+        },
+        {
+          "tel": "t3.c2.1",
+          "sys": "sms",
+          "id": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "duplicates",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEach": "telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              },
+              {
+                "forEach": "telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "tel": "t1.1",
+          "sys": "phone",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.2",
+          "sys": "fax",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.3",
+          "sys": "email",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.1",
+          "sys": "phone",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.2",
+          "sys": "fax",
+          "id": "pt1"
+        },
+        {
+          "tel": "t1.3",
+          "sys": "email",
+          "id": "pt1"
+        },
+        {
+          "tel": "t2.1",
+          "sys": "phone",
+          "id": "pt2"
+        },
+        {
+          "tel": "t2.2",
+          "sys": "fax",
+          "id": "pt2"
+        },
+        {
+          "tel": "t2.1",
+          "sys": "phone",
+          "id": "pt2"
+        },
+        {
+          "tel": "t2.2",
+          "sys": "fax",
+          "id": "pt2"
+        }
+      ]
+    },
+    {
+      "title": "empty results",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEach": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "forEach": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": []
+    },
+    {
+      "title": "empty with forEachOrNull",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEachOrNull": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "forEachOrNull": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "given": null,
+          "id": "pt1"
+        },
+        {
+          "given": null,
+          "id": "pt1"
+        },
+        {
+          "given": null,
+          "id": "pt2"
+        },
+        {
+          "given": null,
+          "id": "pt2"
+        },
+        {
+          "given": null,
+          "id": "pt3"
+        },
+        {
+          "given": null,
+          "id": "pt3"
+        },
+        {
+          "given": null,
+          "id": "pt4"
+        },
+        {
+          "given": null,
+          "id": "pt4"
+        }
+      ]
+    },
+    {
+      "title": "forEachOrNull and forEach",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEach": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "forEachOrNull": "name",
+                "column": [
+                  {
+                    "name": "given",
+                    "path": "given",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "given": null,
+          "id": "pt1"
+        },
+        {
+          "given": null,
+          "id": "pt2"
+        },
+        {
+          "given": null,
+          "id": "pt3"
+        },
+        {
+          "given": null,
+          "id": "pt4"
+        }
+      ]
+    },
+    {
+      "title": "nested",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ],
+            "unionAll": [
+              {
+                "forEach": "telecom[0]",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "unionAll": [
+                  {
+                    "forEach": "telecom[0]",
+                    "column": [
+                      {
+                        "name": "tel",
+                        "path": "value",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "forEach": "contact.telecom[0]",
+                    "column": [
+                      {
+                        "name": "tel",
+                        "path": "value",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "tel": "t1.1"
+        },
+        {
+          "id": "pt1",
+          "tel": "t1.1"
+        },
+        {
+          "id": "pt1",
+          "tel": "t1.c1.1"
+        },
+        {
+          "id": "pt2",
+          "tel": "t2.1"
+        },
+        {
+          "id": "pt2",
+          "tel": "t2.1"
+        },
+        {
+          "id": "pt3",
+          "tel": "t3.c1.1"
+        }
+      ]
+    },
+    {
+      "title": "one empty operand",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          },
+          {
+            "unionAll": [
+              {
+                "forEach": "telecom.where(false)",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              },
+              {
+                "forEach": "contact.telecom",
+                "column": [
+                  {
+                    "name": "tel",
+                    "path": "value",
+                    "type": "string"
+                  },
+                  {
+                    "name": "sys",
+                    "path": "system",
+                    "type": "code"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "sys": "pager",
+          "tel": "t1.c1.1"
+        },
+        {
+          "id": "pt1",
+          "sys": "url",
+          "tel": "t1.c2.1"
+        },
+        {
+          "id": "pt1",
+          "sys": "sms",
+          "tel": "t1.c2.2"
+        },
+        {
+          "id": "pt3",
+          "sys": "email",
+          "tel": "t3.c1.1"
+        },
+        {
+          "id": "pt3",
+          "sys": "pager",
+          "tel": "t3.c1.2"
+        },
+        {
+          "id": "pt3",
+          "sys": "sms",
+          "tel": "t3.c2.1"
+        }
+      ]
+    },
+    {
+      "title": "column mismatch",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "unionAll": [
+              {
+                "column": [
+                  {
+                    "name": "a",
+                    "path": "id",
+                    "type": "id"
+                  },
+                  {
+                    "name": "b",
+                    "path": "id",
+                    "type": "id"
+                  }
+                ]
+              },
+              {
+                "column": [
+                  {
+                    "name": "a",
+                    "path": "id",
+                    "type": "id"
+                  },
+                  {
+                    "name": "c",
+                    "path": "id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expectError": true
+    },
+    {
+      "title": "column order mismatch",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "unionAll": [
+              {
+                "column": [
+                  {
+                    "name": "a",
+                    "path": "id",
+                    "type": "id"
+                  },
+                  {
+                    "name": "b",
+                    "path": "id",
+                    "type": "id"
+                  }
+                ]
+              },
+              {
+                "column": [
+                  {
+                    "name": "b",
+                    "path": "id",
+                    "type": "id"
+                  },
+                  {
+                    "name": "a",
+                    "path": "id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expectError": true
+    }
+  ]
+}

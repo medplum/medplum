@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { RXNORM, createReference } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './patient-medication-questionnaire';
@@ -10,6 +12,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const quesionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
+    url: 'https://medplum.com/Questionnaire/common-medications-questionnaire',
     name: 'Common Medications Questionnaire',
     title: 'A Questionnaire for Patients to fill out pre-visit',
     status: 'active',
@@ -127,12 +130,17 @@ test('Success', async () => {
         ],
       },
     ],
-    questionnaire: createReference(questionnaire).reference,
+    questionnaire: questionnaire.url,
     subject: createReference(HomerSimpson),
     source: createReference(DrAliceSmith),
     authored: '2023-03-19T18:07:45.750Z',
     status: 'completed',
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBe(true);
 });

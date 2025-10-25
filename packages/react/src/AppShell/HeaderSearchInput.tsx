@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
-import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { forwardRef, useCallback } from 'react';
-import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import classes from './HeaderSearchInput.module.css';
-import { Group, Text } from '@mantine/core';
+import type { AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import classes from './HeaderSearchInput.module.css';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
 
@@ -27,8 +31,8 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
 }
 
 export interface HeaderSearchInputProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
 }
 
 export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
@@ -72,8 +76,8 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(
-  ({ resource, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<HeaderSearchTypes>>(
+  ({ resource, active: _active, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
     let helpText: string | undefined = undefined;
 
     if (resource.resourceType === 'Patient') {

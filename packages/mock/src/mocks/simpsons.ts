@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, SNOMED, UCUM, createReference } from '@medplum/core';
-import {
+import type {
   Address,
   Communication,
   DiagnosticReport,
@@ -346,7 +348,7 @@ export const HomerMedia: Media = {
   encounter: createReference(HomerEncounter),
   content: {
     contentType: ContentType.TEXT,
-    url: 'https://example.com/test.txt',
+    url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
   },
 };
 
@@ -359,6 +361,7 @@ export const HomerObservation1: Observation = {
     display: 'Homer Simpson',
   },
   code: {
+    coding: [{ code: 'test', system: 'http://example.com' }],
     text: 'Test 1',
   },
   valueString: 'test',

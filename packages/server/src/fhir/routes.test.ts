@@ -1,16 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
-import { Meta, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { initTestAuth, withTestContext } from '../test.setup';
+import { loadTestConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
+import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;
-let testPatient: Patient;
+let legacyJsonResponseAccessToken: string;
+let searchOnReaderAccessToken: string;
+let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
 
@@ -19,24 +25,38 @@ describe('FHIR Routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth();
+    legacyJsonResponseAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
+    });
+    searchOnReaderAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] },
+    });
 
-    const res = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Patient',
-        name: [
-          {
-            given: ['Alice'],
-            family: 'Smith',
-          },
-        ],
-      });
-    expect(res.status).toBe(201);
-    testPatient = res.body as Patient;
-    patientId = testPatient.id as string;
-    patientVersionId = (testPatient.meta as Meta).versionId as string;
+    for (const token of [accessToken, searchOnReaderAccessToken]) {
+      const res = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Patient',
+          name: [
+            {
+              given: ['Alice'],
+              family: 'Smith',
+            },
+          ],
+        });
+      expect(res.status).toBe(201);
+      if (token === accessToken) {
+        testPatient = res.body as WithId<Patient>;
+        patientId = testPatient.id;
+        patientVersionId = (testPatient.meta as Meta).versionId as string;
+      }
+    }
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -46,7 +66,7 @@ describe('FHIR Routes', () => {
   test('Get CapabilityStatement anonymously', async () => {
     const res = await request(app).get(`/fhir/R4/metadata`);
     expect(res.status).toBe(200);
-    expect(res.body.resourceType).toEqual('CapabilityStatement');
+    expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
   });
 
   test('Get CapabilityStatement authenticated', async () => {
@@ -54,7 +74,7 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.resourceType).toEqual('CapabilityStatement');
+    expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
   });
 
   test('Get versions anonymously', async () => {
@@ -66,18 +86,23 @@ describe('FHIR Routes', () => {
   test('Get SMART-on-FHIR configuration', async () => {
     const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
+    expect(res.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
 
     // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
-    expect(res.body.authorization_endpoint).toBeDefined();
-    expect(res.body.grant_types_supported).toBeDefined();
-    expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.authorization_endpoint).toMatch(/\/oauth2\/authorize$/);
+    expect(res.body.grant_types_supported).toEqual(
+      expect.arrayContaining(['authorization_code', 'refresh_token', 'client_credentials'])
+    );
+    expect(res.body.token_endpoint).toMatch(/\/oauth2\/token$/);
     expect(res.body.capabilities).toBeDefined();
-    expect(res.body.code_challenge_methods_supported).toBeDefined();
+    expect(res.body.code_challenge_methods_supported).toEqual(expect.arrayContaining(['S256']));
+
+    // Additional fields
+    expect(res.body.introspection_endpoint).toMatch(/\/oauth2\/introspect$/);
 
     const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
     expect(res2.status).toBe(200);
-    expect(res2.headers['content-type']).toEqual('application/json; charset=utf-8');
+    expect(res2.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
   });
 
   test('Invalid JSON', async () => {
@@ -89,49 +114,33 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Create batch', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
-    expect(res.status).toBe(200);
-  });
+  test.each<['standard' | 'legacy']>([['standard'], ['legacy']])(
+    'Create resource success with %s FHIR JSON response format',
+    async (jsonFormat) => {
+      const patientToCreate: Patient = { resourceType: 'Patient', identifier: [] };
+      const token = jsonFormat === 'standard' ? accessToken : legacyJsonResponseAccessToken;
 
-  test('Create batch wrong content type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.TEXT)
-      .send('hello');
-    expect(res.status).toBe(400);
-  });
-
-  test('Create batch wrong resource type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
-    expect(res.status).toBe(400);
-  });
-
-  test('Create resource success', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
-    expect(res.body.resourceType).toEqual('Patient');
-    expect(res.headers.location).toContain('Patient');
-    expect(res.headers.location).toContain(res.body.id);
-    const patient = res.body;
-    const res2 = await request(app)
-      .get(`/fhir/R4/Patient/` + patient.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-  });
+      const res = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patientToCreate);
+      expect(res.status).toBe(201);
+      expect(res.body.resourceType).toStrictEqual('Patient');
+      expect(res.headers.location).toContain('Patient');
+      expect(res.headers.location).toContain(res.body.id);
+      const patient = res.body;
+      const res2 = await request(app)
+        .get(`/fhir/R4/Patient/` + patient.id)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res2.status).toBe(200);
+      if (jsonFormat === 'standard') {
+        expect(patient.identifier).toBeUndefined();
+      } else {
+        expect(patient.identifier).toStrictEqual([]);
+      }
+    }
+  );
 
   test('Create resource invalid resource type', async () => {
     const res = await request(app)
@@ -160,11 +169,19 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Read resourcex', async () => {
+  test('Read resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+  });
+
+  test('Read resource _pretty', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}?_pretty=true`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.text).toStrictEqual(JSON.stringify(res.body, undefined, 2));
   });
 
   test('Read resource invalid UUID', async () => {
@@ -194,14 +211,18 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Prefer', 'return=minimal');
     expect(res.status).toBe(200);
-    expect(res.text).toEqual('');
+    expect(res.text).toStrictEqual('');
   });
 
   test('Read resource history', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}/_history`)
+      .query({ _count: 2, _offset: '0' })
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toBeDefined();
+    expect(bundle.entry).toHaveLength(1);
   });
 
   test('Read resource history invalid UUID', async () => {
@@ -285,7 +306,7 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send(patient);
     expect(res2.status).toBe(200);
-    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
+    expect(res2.body.meta.versionId).toStrictEqual(patient.meta.versionId);
   });
 
   test('Update resource not modified with empty strings', async () => {
@@ -312,7 +333,7 @@ describe('FHIR Routes', () => {
         },
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
+    expect(res2.body.meta.versionId).toStrictEqual(patient.meta.versionId);
   });
 
   test('Update resource invalid', async () => {
@@ -346,6 +367,38 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(400);
+  });
+
+  test('Update resource with precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"' + patient.meta?.versionId + '"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(200);
+  });
+
+  test('Update resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(412);
   });
 
   test('Delete resource', async () => {
@@ -428,11 +481,108 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(200);
   });
 
-  test('Search', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+  describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
+    test('Search', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res.status).toBe(200);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search by POST', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient/_search`)
+        .set('Authorization', 'Bearer ' + token)
+        .type('form');
+      expect(res.status).toBe(200);
+      const result = res.body as Bundle;
+      expect(result.type).toStrictEqual('searchset');
+      expect(result.entry?.length).toBeGreaterThan(0);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search multiple resource types with _type', async () =>
+      withTestContext(async () => {
+        const { accessToken } = await createTestProject({
+          withAccessToken: true,
+          project:
+            repoMode === 'reader' ? { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] } : undefined,
+        });
+
+        const res1 = await request(app)
+          .post('/fhir/R4/Patient')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({ resourceType: 'Patient' });
+        expect(res1.status).toBe(201);
+
+        const res2 = await request(app)
+          .post('/fhir/R4/Observation')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { text: 'test' },
+            subject: { reference: `Patient/${res1.body.id}` },
+          });
+        expect(res2.status).toBe(201);
+
+        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+        const res3 = await request(app)
+          .get('/fhir/R4?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res3.status).toBe(200);
+
+        const patient = res1.body;
+        const obs = res2.body;
+        const bundle = res3.body;
+
+        expect(bundle.entry?.length).toBe(2);
+        expect(bundleContains(bundle, patient)).toBeTruthy();
+        expect(bundleContains(bundle, obs)).toBeTruthy();
+
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+
+        // Also verify that trailing slash works
+        const res4 = await request(app)
+          .get('/fhir/R4/?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res4.status).toBe(200);
+        const bundle2 = res4.body;
+        expect(bundle2.entry?.length).toBe(2);
+        expect(bundleContains(bundle2, patient)).toBeTruthy();
+        expect(bundleContains(bundle2, obs)).toBeTruthy();
+      }));
   });
 
   test('Search invalid resource', async () => {
@@ -447,15 +597,7 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/ServiceRequest?basedOn=ServiceRequest/123`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
-  });
-
-  test('Search by POST', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/_search`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .type('form');
-    expect(res.status).toBe(200);
+    expect(res.body.issue[0].details.text).toStrictEqual('Unknown search parameter: basedOn');
   });
 
   test('Validate create success', async () => {
@@ -515,5 +657,100 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(200);
+
+    // Resend with verbose=true
+    const res2 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ verbose: true });
+    expect(res2.status).toBe(200);
+
+    // Resend with subscription option
+    const res3 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ subscription: 'Subscription/123' });
+    expect(res3.status).toBe(200);
+  });
+
+  test('ProjectMembership with null access policy', async () =>
+    withTestContext(async () => {
+      const adminRegistration = await createTestProject({
+        membership: { admin: true },
+        withRepo: true,
+        withAccessToken: true,
+      });
+      expect(adminRegistration).toBeDefined();
+
+      const normalRegistration = await addTestUser(adminRegistration.project);
+      expect(normalRegistration).toBeDefined();
+
+      const membership = normalRegistration.membership;
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + adminRegistration.accessToken);
+      expect(res1.status).toBe(200);
+
+      const res2 = await request(app)
+        .get(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + normalRegistration.accessToken);
+      expect(res2.status).toBe(403);
+
+      const res3 = await request(app)
+        .put(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + normalRegistration.accessToken)
+        .send({ ...membership, accessPolicy: undefined });
+      expect(res3.status).toBe(403);
+    }));
+
+  test('Set accounts on create', async () => {
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Organization')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Organization' });
+    expect(res1.status).toBe(201);
+
+    const account = res1.body as Organization;
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Questionnaire')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Questionnaire',
+        meta: { accounts: [{ reference: getReferenceString(account) }] },
+        title: 'Questionnaire A.1',
+        status: 'active',
+        item: [
+          {
+            linkId: '1',
+            text: 'How would you rate your overall experience?',
+            type: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  system: 'http://example.org/rating',
+                  code: '5',
+                  display: 'Excellent',
+                },
+              },
+            ],
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.meta?.accounts?.length).toBe(1);
+    expect(res2.body.meta?.accounts?.[0].reference).toBe(getReferenceString(account));
+
+    // There should be 2 compartments:
+    // 1: the project
+    // 2: the account organization
+    const compartments = res2.body.meta?.compartment as Reference[];
+    expect(compartments.length).toBe(2);
+    expect(compartments.find((c) => c.reference === getReferenceString(project))).toBeDefined();
+    expect(compartments.find((c) => c.reference === getReferenceString(account))).toBeDefined();
   });
 });

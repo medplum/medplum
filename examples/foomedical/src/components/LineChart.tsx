@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ChartData } from 'chart.js';
 import { lazy, Suspense } from 'react';
+import type { JSX } from 'react';
 
 const lineChartOptions = {
   responsive: true,
@@ -16,7 +19,7 @@ const lineChartOptions = {
 };
 
 interface LineChartProps {
-  chartData: ChartData<'line', number[]>;
+  readonly chartData: ChartData<'line', number[]>;
 }
 
 const AsyncLine = lazy(async () => {

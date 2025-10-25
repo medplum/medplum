@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export interface Marker {
   index: number;
   line: number;
@@ -27,6 +29,17 @@ const STANDARD_UNITS = [
   'millisecond',
   'milliseconds',
 ];
+
+const ESCAPE_MAP: Record<string, string> = {
+  "'": "'",
+  '"': '"',
+  '`': '`',
+  r: '\r',
+  n: '\n',
+  t: '\t',
+  f: '\f',
+  '\\': '\\',
+};
 
 export interface TokenizerOptions {
   dateTimeLiterals?: boolean;
@@ -93,12 +106,8 @@ export class Tokenizer {
       return this.consumeSingleLineComment();
     }
 
-    if (c === "'" || c === '"') {
+    if (c === "'" || c === '"' || c === '`') {
       return this.consumeString(c);
-    }
-
-    if (c === '`') {
-      return this.consumeBacktickSymbol();
     }
 
     if (c === '@') {
@@ -115,6 +124,10 @@ export class Tokenizer {
 
     if ((c === '$' || c === '%') && /\w/.exec(next)) {
       return this.consumeSymbol();
+    }
+
+    if ((c === '$' || c === '%') && (next === "'" || next === '"' || next === '`')) {
+      return this.consumeQuotedSymbol(next);
     }
 
     return this.consumeOperator();
@@ -141,22 +154,61 @@ export class Tokenizer {
 
   private consumeString(endChar: string): Token {
     this.advance();
-    const result = this.buildToken(
-      'String',
-      this.consumeWhile(() => this.prev() === '\\' || this.curr() !== endChar)
-    );
+    let str = '';
+    let char: string;
+    while ((char = this.consumeChar(endChar))) {
+      str += char;
+    }
+    const result = this.buildToken(endChar === '`' ? 'Symbol' : 'String', str);
     this.advance();
     return result;
   }
 
-  private consumeBacktickSymbol(): Token {
+  private consumeChar(endChar: string): string {
+    const char1 = this.curr();
+
+    if (char1 === '\\') {
+      this.advance();
+      const char2 = this.curr();
+      const escaped = ESCAPE_MAP[char2];
+      if (escaped !== undefined) {
+        this.advance();
+        return escaped;
+      }
+      if (char2 === 'u') {
+        this.advance();
+        const hex = /^[0-9a-fA-F]{4}$/.exec(this.str.substring(this.pos.index, this.pos.index + 4))?.[0];
+        if (!hex) {
+          // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
+          // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+          return 'u';
+        }
+        this.advance();
+        this.advance();
+        this.advance();
+        this.advance();
+        return String.fromCodePoint(parseInt(hex, 16));
+      }
+      // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
+      // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.
+      return this.consumeChar(endChar); // Skip backslash and consume next character
+    }
+
+    if (char1 === endChar || !char1) {
+      return ''; // No more characters to consume
+    }
+
     this.advance();
-    const result = this.buildToken(
-      'Symbol',
-      this.consumeWhile(() => this.curr() !== '`')
-    );
-    this.advance();
-    return result;
+    return char1;
+  }
+
+  private consumeQuotedSymbol(endChar: string): Token {
+    this.mark();
+    const start = this.pos.index;
+    this.advance(); // Consume "$" or "%"
+    this.consumeString(endChar);
+    const value = this.str.substring(start, this.pos.index);
+    return this.buildToken('Symbol', value);
   }
 
   private consumeDateTime(): Token {
@@ -165,7 +217,11 @@ export class Tokenizer {
     const start = this.pos.index;
     this.consumeWhile(() => /[\d-]/.exec(this.curr()));
 
+    let foundTime = false;
+    let foundTimeZone = false;
+
     if (this.curr() === 'T') {
+      foundTime = true;
       this.advance();
       this.consumeWhile(() => /[\d:]/.exec(this.curr()));
 
@@ -175,14 +231,31 @@ export class Tokenizer {
       }
 
       if (this.curr() === 'Z') {
+        foundTimeZone = true;
         this.advance();
       } else if (this.curr() === '+' || this.curr() === '-') {
+        foundTimeZone = true;
         this.advance();
         this.consumeWhile(() => /[\d:]/.exec(this.curr()));
       }
     }
 
-    return this.buildToken('DateTime', this.str.substring(start, this.pos.index));
+    if (this.pos.index === start) {
+      throw new Error('Invalid DateTime literal');
+    }
+
+    let value = this.str.substring(start, this.pos.index);
+    if (value.endsWith('T')) {
+      // The date/time string ended with a "T", which is valid FHIRPath, but not valid ISO8601.
+      // Strip the "T" and treat as a date.
+      value = value.substring(0, value.length - 1);
+    } else if (!value.startsWith('T') && foundTime && !foundTimeZone) {
+      // FHIRPath spec says timezone is optional: https://build.fhir.org/ig/HL7/FHIRPath/#datetime
+      // The FHIRPath test suite expects the timezone to be "Z" if not specified.
+      // See: https://github.com/HL7/FHIRPath/blob/master/tests/r4/tests-fhir-r4.xml
+      value += 'Z';
+    }
+    return this.buildToken('DateTime', value);
   }
 
   private consumeNumber(): Token {
@@ -246,10 +319,6 @@ export class Tokenizer {
 
   private curr(): string {
     return this.str[this.pos.index];
-  }
-
-  private prev(): string {
-    return this.str[this.pos.index - 1] ?? '';
   }
 
   private peek(): string {

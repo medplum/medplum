@@ -1,5 +1,7 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { DiagnosticReport, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError } from '@medplum/core';
+import type { DiagnosticReport, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { validateResourceWithJsonSchema } from './jsonschema';
 
 describe('FHIR JSONSchema', () => {
@@ -20,8 +22,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('name');
     }
   });
 
@@ -35,8 +37,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('fakeProperty');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('fakeProperty');
     }
   });
 
@@ -46,8 +48,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code');
     }
   });
 
@@ -57,8 +59,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('name');
     }
   });
 
@@ -68,8 +70,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('name[0]');
     }
   });
 
@@ -79,8 +81,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0].given[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('name[0].given[0]');
     }
   });
 
@@ -108,10 +110,10 @@ describe('FHIR JSONSchema', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.length).toBe(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('identifier[0].system');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('name[1].given[1]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('identifier[0].system');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('name[1].given[1]');
     }
   });
 
@@ -140,8 +142,8 @@ describe('FHIR JSONSchema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('item[0].item[0].item[0].item[0].item');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('item[0].item[0].item[0].item[0].item');
     }
   });
 });

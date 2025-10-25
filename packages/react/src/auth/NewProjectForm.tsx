@@ -1,15 +1,20 @@
-import { Anchor, Button, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
-import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import type { LoginAuthenticationResponse } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '@medplum/react-hooks';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
-  login: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
@@ -17,7 +22,6 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={async (formData: Record<string, string>) => {
         try {
           props.handleAuthResponse(
@@ -42,7 +46,7 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
           placeholder="My Project"
           required={true}
           autoFocus={true}
-          error={getErrorsForInput(outcome, 'firstName')}
+          error={getErrorsForInput(outcome, 'projectName')}
         />
         <Text c="dimmed" size="xs">
           By clicking submit you agree to the Medplum{' '}
@@ -52,7 +56,7 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         </Text>
       </Stack>
       <Group justify="flex-end" mt="xl" wrap="nowrap">
-        <Button type="submit">Create project</Button>
+        <SubmitButton>Create project</SubmitButton>
       </Group>
     </Form>
   );

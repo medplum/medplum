@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Collapse, Flex, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { TypedValue, getTypedPropertyValue } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Task } from '@medplum/fhirtypes';
+import { getTypedPropertyValue } from '@medplum/core';
+import type { TypedValue } from '@medplum/core';
+import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourcePropertyDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { TaskCellProps } from './TaskList';
+import type { JSX } from 'react';
+import type { TaskCellProps } from './TaskList';
 
 export function QuestionnaireTask(props: TaskCellProps): JSX.Element {
   const [submitted, setSubmitted] = useState(false);
@@ -39,10 +43,10 @@ export function QuestionnaireTask(props: TaskCellProps): JSX.Element {
 }
 
 function QuestionnaireModal(props: {
-  task: Task;
-  questionnaire: Questionnaire;
-  setSubmitted: (submit: boolean) => void;
-  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
+  readonly task: Task;
+  readonly questionnaire: Questionnaire;
+  readonly setSubmitted: (submit: boolean) => void;
+  readonly handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
   const [open, setOpen] = useState(false);
 
@@ -64,10 +68,10 @@ function QuestionnaireModal(props: {
 }
 
 function QuestionnaireQuickAction(props: {
-  task: Task;
-  questionnaire: Questionnaire;
-  setSubmitted: (submit: boolean) => void;
-  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
+  readonly task: Task;
+  readonly questionnaire: Questionnaire;
+  readonly setSubmitted: (submit: boolean) => void;
+  readonly handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
   return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={props.handleSubmit} />;
 }

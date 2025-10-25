@@ -1,4 +1,6 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
 import {
   aws_cloudtrail as cloudtrail,
   aws_cloudwatch as cloudwatch,

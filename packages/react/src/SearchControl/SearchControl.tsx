@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
   Button,
@@ -10,15 +12,15 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
-  Bundle,
-  OperationOutcome,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+  DEFAULT_SEARCH_COUNT,
+  deepEquals,
+  formatSearchQuery,
+  isDataTypeLoaded,
+  normalizeOperationOutcome,
+} from '@medplum/core';
+import type { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -30,15 +32,18 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, MouseEvent, memo, useCallback, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, JSX, MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
+import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
-import { isCheckboxCell, killEvent } from '../utils/dom';
+import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
+import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
@@ -73,33 +78,32 @@ export class SearchClickEvent extends Event {
 }
 
 export interface SearchControlProps {
-  search: SearchRequest;
-  userConfig?: UserConfiguration;
-  checkboxesEnabled?: boolean;
-  hideToolbar?: boolean;
-  hideFilters?: boolean;
-  onLoad?: (e: SearchLoadEvent) => void;
-  onChange?: (e: SearchChangeEvent) => void;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onNew?: () => void;
-  onExport?: () => void;
-  onExportCsv?: () => void;
-  onExportTransactionBundle?: () => void;
-  onDelete?: (ids: string[]) => void;
-  onPatch?: (ids: string[]) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly search: SearchRequest;
+  readonly checkboxesEnabled?: boolean;
+  readonly hideToolbar?: boolean;
+  readonly hideFilters?: boolean;
+  readonly onLoad?: (e: SearchLoadEvent) => void;
+  readonly onChange?: (e: SearchChangeEvent) => void;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onNew?: () => void;
+  readonly onExport?: () => void;
+  readonly onExportCsv?: () => void;
+  readonly onExportTransactionBundle?: () => void;
+  readonly onDelete?: (ids: string[]) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
-  searchResponse?: Bundle;
-  selected: { [id: string]: boolean };
-  fieldEditorVisible: boolean;
-  filterEditorVisible: boolean;
-  filterDialogVisible: boolean;
-  exportDialogVisible: boolean;
-  filterDialogFilter?: Filter;
-  filterDialogSearchParam?: SearchParameter;
+  readonly searchResponse?: Bundle;
+  readonly selected: { [id: string]: boolean };
+  readonly fieldEditorVisible: boolean;
+  readonly filterEditorVisible: boolean;
+  readonly filterDialogVisible: boolean;
+  readonly exportDialogVisible: boolean;
+  readonly filterDialogFilter?: Filter;
+  readonly filterDialogSearchParam?: SearchParameter;
+  readonly dialogOpenTime?: number;
 }
 
 /**
@@ -111,9 +115,14 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
-  const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
+
+  const [memoizedSearch, setMemoizedSearch] = useState(search);
+
+  if (!deepEquals(search, memoizedSearch)) {
+    setMemoizedSearch(search);
+  }
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -126,17 +135,19 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'accurate';
+  const total = memoizedSearch.total ?? 'accurate';
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
-
       medplum
-        .search(
-          search.resourceType as ResourceType,
-          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
-          options
+        .requestSchema(memoizedSearch.resourceType as ResourceType)
+        .then(() =>
+          medplum.search(
+            memoizedSearch.resourceType as ResourceType,
+            formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
+            options
+          )
         )
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
@@ -146,10 +157,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         })
         .catch((reason) => {
           setState({ ...stateRef.current, searchResponse: undefined });
-          setOutcome(reason);
+          setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, search, totalType, onLoad]
+    [medplum, memoizedSearch, total, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -233,7 +244,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     killEvent(e);
 
-    const isAux = e.button === 1 || e.ctrlKey || e.metaKey;
+    const isAux = isAuxClick(e);
 
     if (!isAux && props.onClick) {
       props.onClick(new SearchClickEvent(resource, e));
@@ -248,15 +259,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
 
-  useEffect(() => {
-    setLoadingSchema(props.search.resourceType);
-    medplum
-      .requestSchema(props.search.resourceType as ResourceType)
-      .catch(console.error)
-      .finally(() => setLoadingSchema(undefined));
-  }, [medplum, props.search.resourceType]);
+  if (outcome) {
+    return <OperationOutcomeAlert outcome={outcome} />;
+  }
 
-  if (!isDataTypeLoaded(props.search.resourceType) || loadingSchema === props.search.resourceType) {
+  if (!isDataTypeLoaded(memoizedSearch.resourceType)) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
@@ -265,8 +272,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = getFieldDefinitions(search);
-  const resourceType = search.resourceType;
+  const fields = getFieldDefinitions(memoizedSearch);
+  const resourceType = memoizedSearch.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
@@ -286,7 +293,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconColumns size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Fields
             </Button>
@@ -295,7 +302,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconFilter size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Filters
             </Button>
@@ -317,7 +324,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 color={buttonColor}
                 leftSection={<IconTableExport size={iconSize} />}
                 onClick={
-                  props.onExport ? props.onExport : () => setState({ ...stateRef.current, exportDialogVisible: true })
+                  props.onExport
+                    ? props.onExport
+                    : () => setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
                 }
               >
                 Export...
@@ -348,9 +357,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Group>
           <Group gap={2}>
             {lastResult && (
-              <Text size="xs" c="dimmed">
-                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-                {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+              <Text size="xs" c="dimmed" data-testid="count-display">
+                {getStart(memoizedSearch, lastResult).toLocaleString()}-
+                {getEnd(memoizedSearch, lastResult).toLocaleString()}
+                {lastResult.total !== undefined &&
+                  ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
             <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
@@ -388,7 +399,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     </UnstyledButton>
                   </Menu.Target>
                   <SearchPopupMenu
-                    search={props.search}
+                    search={memoizedSearch}
                     searchParams={field.searchParams}
                     onPrompt={(searchParam, filter) => {
                       setState({
@@ -396,6 +407,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         filterDialogVisible: true,
                         filterDialogSearchParam: searchParam,
                         filterDialogFilter: filter,
+                        dialogOpenTime: Date.now(),
                       });
                     }}
                     onChange={(result) => {
@@ -415,7 +427,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     <FilterDescription
                       resourceType={resourceType}
                       searchParams={field.searchParams}
-                      filters={props.search.filters}
+                      filters={memoizedSearch.filters}
                     />
                   )}
                 </Table.Th>
@@ -454,7 +466,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           )}
         </Table.Tbody>
       </Table>
-      {resources?.length === 0 && (
+      {!resources?.length && (
         <Container>
           <Center style={{ height: 150 }}>
             <Text size="xl" c="dimmed">
@@ -463,32 +475,19 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Center>
         </Container>
       )}
-      {lastResult?.total !== undefined && lastResult.total > 0 && (
+      {lastResult && (
         <Center m="md" p="md">
           <Pagination
-            value={getPage(search)}
-            total={getTotalPages(search, lastResult.total)}
-            onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
-            getControlProps={(control) => {
-              switch (control) {
-                case 'previous':
-                  return { 'aria-label': 'Previous page' };
-                case 'next':
-                  return { 'aria-label': 'Next page' };
-                default:
-                  return {};
-              }
-            }}
+            value={getPage(memoizedSearch)}
+            total={getTotalPages(memoizedSearch, lastResult)}
+            onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
+            getControlProps={getPaginationControlProps}
           />
         </Center>
       )}
-      {outcome && (
-        <div data-testid="search-error">
-          <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
-        </div>
-      )}
       <SearchFieldEditor
-        search={props.search}
+        key={`search-field-editor-${state.dialogOpenTime}`}
+        search={memoizedSearch}
         visible={stateRef.current.fieldEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
@@ -505,7 +504,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterEditor
-        search={props.search}
+        key={`search-filter-editor-${state.dialogOpenTime}`}
+        search={memoizedSearch}
         visible={stateRef.current.filterEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
@@ -522,6 +522,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchExportDialog
+        key={`search-export-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.exportDialogVisible}
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
@@ -533,7 +534,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterValueDialog
-        key={state.filterDialogSearchParam?.code}
+        key={`search-filter-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.filterDialogVisible}
         title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
@@ -541,7 +542,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         filter={state.filterDialogFilter}
         defaultValue=""
         onOk={(filter) => {
-          emitSearchChange(addFilter(props.search, filter.code, filter.operator, filter.value));
+          emitSearchChange(addFilter(memoizedSearch, filter.code, filter.operator, filter.value));
           setState({
             ...stateRef.current,
             filterDialogVisible: false,
@@ -558,7 +559,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 }
 
-export const MemoizedSearchControl = memo(SearchControl);
+/**
+ * @deprecated
+ *
+ * The memoization `MemoizedSearchControl` provides has been merged into `SearchControl`. Previously the memoization was done via HOC but
+ * it was proven that this wasn't effective for a large number of use cases, especially when:
+ * 1. `search` was an inline static object, which would trigger the memo to recompute on every re-render of the parent component
+ * 2. Any of the callbacks, such as `onClick` were not memoized via `useCallback`, which would result in the recomputation as well
+ *
+ * Scenario 1 also retriggered the effect that runs `loadResults` on change of the `search`, which was less than desirable.
+ *
+ * The memoization is now accomplished via checking deep equality of the incoming `search` prop in the body of the component, and setting a memoized
+ * state whenever the incoming and current memoized value are not deeply equal. See: https://github.com/medplum/medplum/pull/5023
+ */
+export const MemoizedSearchControl = SearchControl;
 
 interface FilterDescriptionProps {
   readonly resourceType: string;
@@ -589,15 +603,28 @@ function getPage(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
-function getTotalPages(search: SearchRequest, total: number): number {
+function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
+  const total = getTotal(search, lastResult);
   return Math.ceil(total / pageSize);
 }
 
-function getStart(search: SearchRequest, total: number): number {
-  return Math.min(total, (search.offset ?? 0) + 1);
+function getStart(search: SearchRequest, lastResult: Bundle): number {
+  return Math.min(getTotal(search, lastResult), (search.offset ?? 0) + 1);
 }
 
-function getEnd(search: SearchRequest, total: number): number {
-  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
+function getEnd(search: SearchRequest, lastResult: Bundle): number {
+  return Math.max(getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1, 0);
+}
+
+function getTotal(search: SearchRequest, lastResult: Bundle): number {
+  let total = lastResult.total;
+  if (total === undefined) {
+    // If the total is not specified, then we have to estimate it
+    total =
+      (search.offset ?? 0) +
+      (lastResult.entry?.length ?? 0) +
+      (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
+  }
+  return total;
 }

@@ -1,9 +1,7 @@
-import {
-  getTypedPropertyValue,
-  getTypedPropertyValueWithSchema,
-  InternalSchemaElement,
-  TypedValue,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement, TypedValue } from '@medplum/core';
+import { getTypedPropertyValue, getTypedPropertyValueWithSchema } from '@medplum/core';
 
 /**
  * Returns the value of the property and the property type.
@@ -13,10 +11,11 @@ import {
  * This function returns the value and the type.
  * @param context - The base context (usually a FHIR resource).
  * @param path - The property path.
+ * @param profileUrl - The property path.
  * @returns The value of the property and the property type.
  */
-export function getValueAndType(context: TypedValue, path: string): [any, string] {
-  const typedResult = getTypedPropertyValue(context, path);
+export function getValueAndType(context: TypedValue, path: string, profileUrl?: string): [any, string] {
+  const typedResult = getTypedPropertyValue(context, path, { profileUrl });
   if (!typedResult) {
     return [undefined, 'undefined'];
   }
@@ -34,17 +33,17 @@ export function getValueAndType(context: TypedValue, path: string): [any, string
  * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
  * According to the spec, there can only be one property for a given element definition.
  * This function returns the value and the type.
- * @param value - The base context (usually a FHIR resource).
+ * @param typedValue - The base context (usually a FHIR resource).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
 export function getValueAndTypeFromElement(
-  value: TypedValue['value'],
+  typedValue: TypedValue,
   path: string,
   element: InternalSchemaElement
 ): [any, string] {
-  const typedResult = getTypedPropertyValueWithSchema(value, path, element);
+  const typedResult = getTypedPropertyValueWithSchema(typedValue, path, element);
   if (!typedResult) {
     return [undefined, 'undefined'];
   }

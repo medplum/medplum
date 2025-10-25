@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { Bundle, BundleEntry, Meta } from '@medplum/fhirtypes';
+import type { Bundle, Meta } from '@medplum/fhirtypes';
 import { diff } from './diff';
 
 export interface BlameRow {
@@ -11,13 +13,17 @@ export interface BlameRow {
 
 export function blame(history: Bundle): BlameRow[] {
   // Convert to array of array of lines
-  const versions = (history.entry as BundleEntry[])
+  const versions = (history.entry ?? [])
     .filter((entry) => !!entry.resource)
     .map((entry) => ({
       meta: entry.resource?.meta as Meta,
       lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[],
     }))
     .sort((a, b) => (a.meta.lastUpdated as string).localeCompare(b.meta.lastUpdated as string));
+
+  if (!versions.length) {
+    return [];
+  }
 
   // Start with array of lines from the first version
   const table: BlameRow[] = versions[0].lines.map((line) => ({

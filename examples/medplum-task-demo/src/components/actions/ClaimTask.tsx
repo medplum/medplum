@@ -1,14 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, MedplumClient, PatchOperation } from '@medplum/core';
-import { Practitioner, Task } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import type { Practitioner, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import type { JSX } from 'react';
 
 interface ClaimTaskProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function ClaimTask(props: ClaimTaskProps): JSX.Element {
@@ -40,7 +44,7 @@ export function ClaimTask(props: ClaimTaskProps): JSX.Element {
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: 'Another user modified this task.',
+        message: normalizeErrorString(error),
       });
     }
 

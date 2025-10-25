@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group } from '@mantine/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface ResourceBadgeProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceBadge(props: ResourceBadgeProps): JSX.Element {

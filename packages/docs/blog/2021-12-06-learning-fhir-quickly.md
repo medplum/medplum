@@ -8,6 +8,8 @@ You can use Medplum as a tool to help you learn FHIR quickly.
 
 Fast Healthcare Interoperability Resources (FHIR) specification is a data standard for healthcare that defines how information can be exchanged between systems. (Read more about what FHIR is and it's philosophy and history [here](http://www.hl7.org/fhir/overview.html))
 
+<!-- truncate -->
+
 Major healthcare platforms such as Epic and Cerner, as well as big tech - Apple, Google, etc. support FHIR in various capacities, making it increasingly popular.
 
 FHIR is very powerful and expressive, but that can make it hard to understand. It can feel intimidating, even for those with a healthcare background and a lot of domain expertise.

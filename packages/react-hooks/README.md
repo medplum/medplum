@@ -6,9 +6,10 @@ Most users will want the full Medplum React Component Library, `@medplum/react`.
 
 ## Key Features
 
-- `useMedplum` - handles shared global instance of `MedplumClient`
+- [`useMedplum`](#usemedplum) - handles shared global instance of `MedplumClient`
 - `useResource` - reads a resource by ID or reference with intelligent caching
 - `useSearch` - performs a FHIR search with intelligent state management
+- [`useSubscription`](#usesubscription) - subscribes to a FHIR search criteria and calls a given callback upon receiving a relevant notification
 
 ## Installation
 
@@ -63,25 +64,48 @@ export function MyComponent() {
 ```ts
 interface MedplumContext {
   medplum: MedplumClient;
-  navigate: MepdlumNavigateFunction;
+  navigate: MedplumNavigateFunction;
   profile?: ProfileResource;
   loading: boolean;
 }
 ```
 
 ### Using `loading` to know when `MedplumClient` initialization is done
+
 You can use the `loading` property from `useMedplumContext()` to know when `MedplumClient` has finished initialization successfully. `loading` is updated asynchronously so it will usually start as `false` and change to `true` once the client has finished its initialization.
 
 ```tsx
 function MyComponent(): JSX.Element {
   const { loading } = useMedplumContext();
-  return loading ? (
-    <Spinner />
-  ) : (
-    <div>Loaded!</div>
-  );
+  return loading ? <Spinner /> : <div>Loaded!</div>;
 }
 ```
+
+## `useSubscription`
+
+`useSubscription` creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the given callback when an event notification is triggered by a resource interaction over a WebSocket connection.
+
+Subscriptions created with this hook are lightweight, share a single WebSocket connection, and are automatically untracked and cleaned up when the containing component is no longer mounted.
+
+```tsx
+function MyComponent(): JSX.Element {
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useSubscription('Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', (bundle: Bundle) => {
+    console.log('Received a message from Practitioner/abc-123!');
+    handleNotificationBundle(bundle); // Do something with the bundle
+    setNotificationCount((s) => s + 1);
+  });
+
+  return <div>Notifications received: {notificationCount}</div>;
+}
+```
+
+See also: [`useSubscription` docs](https://www.medplum.com/docs/react/use-subscription)
+
+### Usage within `Expo` app
+
+Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum-expo-polyfills)
 
 ## About Medplum
 
@@ -89,4 +113,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2023
+Apache 2.0. Copyright &copy; Medplum 2025

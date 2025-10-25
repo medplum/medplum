@@ -839,6 +839,12 @@
       "type": "reference",
       "description": "Focus of message",
       "expression": "Communication.subject"
+    },
+    {
+      "name": "topic",
+      "type": "token",
+      "description": "Description of the purpose/content",
+      "expression": "Communication.topic"
     }
   ]
 }

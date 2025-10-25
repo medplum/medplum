@@ -1,6 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Logger } from '@medplum/core';
 import {
   allOk,
   badRequest,
+  ContentType,
+  deepClone,
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
@@ -8,40 +13,46 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
-import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
-import {
+import type {
+  ArgumentNode,
   ASTNode,
   ASTVisitor,
   DocumentNode,
-  execute,
   ExecutionResult,
-  GraphQLError,
+  FieldNode,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
+  GraphQLOutputType,
+  GraphQLResolveInfo,
+  OperationDefinitionNode,
+  ValidationContext,
+} from 'graphql';
+import {
+  execute,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
+  Kind,
   parse,
   specifiedRules,
   validate,
-  ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
+import type { FhirRepository } from '../repo';
+import { RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
+import type { GraphQLContext } from './utils';
 import {
+  applyMaxCount,
   buildSearchArgs,
-  getDepth,
-  GraphQLContext,
   invalidRequest,
   isFieldRequested,
   parseSearchArgs,
@@ -60,11 +71,16 @@ const introspectionResults = new LRUCache<ExecutionResult>();
  * This should be initialized at server startup.
  */
 let rootSchema: GraphQLSchema | undefined;
+
 interface ConnectionResponse {
   count?: number;
   offset?: number;
   pageSize?: number;
   edges?: ConnectionEdge[];
+  first?: string;
+  previous?: string;
+  next?: string;
+  last?: string;
 }
 
 interface ConnectionEdge {
@@ -80,12 +96,14 @@ interface ConnectionEdge {
  * @param req - The request details.
  * @param repo - The current user FHIR repository.
  * @param router - The router for router options.
+ * @param options - Additional route options.
  * @returns The response.
  */
 export async function graphqlHandler(
   req: FhirRequest,
   repo: FhirRepository,
-  router: FhirRouter
+  router: FhirRouter,
+  options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
@@ -95,12 +113,12 @@ export async function graphqlHandler(
   let document: DocumentNode;
   try {
     document = parse(query);
-  } catch (err) {
+  } catch (_err) {
     return [badRequest('GraphQL syntax error.')];
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule];
+  const validationRules = [...specifiedRules, MaxDepthRule(router, req.config?.graphqlMaxDepth), QueryCostRule(router)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -111,20 +129,32 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
+  if (!options?.batch && !includesMutations(query)) {
+    repo.setMode(RepositoryMode.READER);
+  }
+
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
 
   let result: any = introspection && introspectionResults.get(query);
   if (!result) {
+    const contextValue: GraphQLContext = {
+      repo,
+      config: req.config,
+      dataLoader,
+      searchCount: 0,
+      searchDataLoaders: Object.create(null),
+    };
+
     result = await execute({
       schema,
       document,
-      contextValue: { repo, dataLoader },
+      contextValue,
       operationName,
       variableValues: variables,
     });
   }
 
-  return [allOk, result];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**
@@ -138,6 +168,15 @@ export async function graphqlHandler(
  */
 function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
+}
+
+/**
+ * Returns true if the query includes mutations.
+ * @param query - The GraphQL query.
+ * @returns True if the query includes mutations.
+ */
+function includesMutations(query: string): boolean {
+  return query.includes('mutation');
 }
 
 export function getRootSchema(): GraphQLSchema {
@@ -297,16 +336,21 @@ async function resolveByConnectionApi(
   if (isFieldRequested(info, 'count')) {
     searchRequest.total = 'accurate';
   }
+  if (!isFieldRequested(info, 'edges')) {
+    searchRequest.count = 0;
+  }
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
   const bundle = await ctx.repo.search(searchRequest);
   return {
     count: bundle.total,
-    offset: searchRequest.offset || 0,
-    pageSize: searchRequest.count || DEFAULT_SEARCH_COUNT,
+    offset: searchRequest.offset ?? 0,
+    pageSize: searchRequest.count ?? DEFAULT_SEARCH_COUNT,
     edges: bundle.entry?.map((e) => ({
       mode: e.search?.mode,
       score: e.search?.score,
       resource: e.resource as Resource,
     })),
+    next: getNextCursor(bundle),
   };
 }
 
@@ -350,17 +394,16 @@ async function resolveByCreate(
   info: GraphQLResolveInfo
 ): Promise<any> {
   const fieldName = info.fieldName;
-  // 'Create.length'=== 6 && 'Update.length' === 6
-  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Create'.length) as ResourceType;
   const resourceArgs = args.res;
   if (resourceArgs.resourceType !== resourceType) {
-    return [badRequest('Invalid resourceType')];
+    throw new OperationOutcomeError(badRequest('Invalid resourceType'));
   }
-  const resource = await ctx.repo.createResource(resourceArgs as Resource);
-  return resource;
+  // We have to deep clone the args before we try to make them into a resource, since the args are parsed from the request
+  // as objects with a null prototype (via Object.create(null)), which means that tree of objects have no `valueOf` method which
+  // we need for evalFhirPath to work properly
+  return ctx.repo.createResource(deepClone(resourceArgs) as Resource);
 }
-
-// Mutation Resolvers
 
 /**
  * GraphQL resolver function for update requests.
@@ -379,18 +422,19 @@ async function resolveByUpdate(
   info: GraphQLResolveInfo
 ): Promise<any> {
   const fieldName = info.fieldName;
-  // 'Create.length'=== 6 && 'Update.length' === 6
-  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
   const resourceArgs = args.res;
   const resourceId = args.id;
   if (resourceArgs.resourceType !== resourceType) {
-    return [badRequest('Invalid resourceType')];
+    throw new OperationOutcomeError(badRequest('Invalid resourceType'));
   }
   if (resourceId !== resourceArgs.id) {
-    return [badRequest('Incorrect ID')];
+    throw new OperationOutcomeError(badRequest('Invalid ID'));
   }
-  const resource = await ctx.repo.updateResource(resourceArgs as Resource);
-  return resource;
+  // We have to deep clone the args before we try to make them into a resource, since the args are parsed from the request
+  // as objects with a null prototype (via Object.create(null)), which means that tree of objects have no `valueOf` method which
+  // we need for evalFhirPath to work properly
+  return ctx.repo.updateResource(deepClone(resourceArgs) as Resource);
 }
 
 /**
@@ -414,31 +458,224 @@ async function resolveByDelete(
   await ctx.repo.deleteResource(resourceType, args.id);
 }
 
+const DEFAULT_MAX_DEPTH = 12;
+
 /**
  * Custom GraphQL rule that enforces max depth constraint.
- * @param context - The validation context.
- * @returns An ASTVisitor that validates the maximum depth rule.
+ * @param router - The FHIR router.
+ * @param maxDepth - The maximum allowed depth.
+ * @returns A function that is an ASTVisitor that validates the maximum depth rule.
  */
-const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
-  Field(
-    /** The current node being visiting. */
-    node: any,
-    /** The index or key to this node from the parent node or Array. */
-    _key: string | number | undefined,
-    /** The parent immediately above this node, which may be an Array. */
-    _parent: ASTNode | readonly ASTNode[] | undefined,
-    /** The key path to get to this node from the root node. */
-    path: readonly (string | number)[]
-  ): any {
-    const depth = getDepth(path);
-    const maxDepth = 12;
-    if (depth > maxDepth) {
-      const fieldName = node.name.value;
-      context.reportError(
-        new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
-          nodes: node,
-        })
-      );
+const MaxDepthRule =
+  (router: FhirRouter, maxDepth: number = DEFAULT_MAX_DEPTH) =>
+  (context: ValidationContext): ASTVisitor =>
+    new MaxDepthVisitor(context, router, maxDepth);
+
+type DepthRecord = { depth: number; node?: FieldNode };
+
+class MaxDepthVisitor {
+  private readonly context: ValidationContext;
+  private readonly maxDepth: number;
+  private readonly fragmentDepths: Record<string, DepthRecord>;
+  private readonly router: FhirRouter;
+
+  constructor(context: ValidationContext, router: FhirRouter, maxDepth: number) {
+    this.context = context;
+    this.router = router;
+    this.fragmentDepths = Object.create(null);
+    this.maxDepth = maxDepth;
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    const result = this.getDepth(...node.selectionSet.selections);
+    if (result.depth > this.maxDepth) {
+      // this.context.reportError(
+      //   new GraphQLError(
+      //     `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
+      //     {
+      //       nodes: result.node,
+      //     }
+      //   )
+      // );
+      this.router.log('warn', 'Query max depth too high', {
+        depth: result.depth,
+        limit: this.maxDepth,
+        query: node.loc?.source?.body,
+      });
     }
-  },
-});
+  }
+
+  /**
+   * Returns the depth of the GraphQL node in a query.
+   * We use field depth as the representation of depth: the number of concrete fields (not counting fragment expansions)
+   * @param nodes - The AST nodes.
+   * @returns The maximum "depth" of the nodes.
+   */
+  private getDepth(...nodes: ASTNode[]): DepthRecord {
+    let deepest: DepthRecord = { depth: -1 };
+    for (const node of nodes) {
+      let current: DepthRecord = { depth: 0 };
+      if (node.kind === Kind.FIELD) {
+        if (node.selectionSet?.selections) {
+          current = this.getDepth(...node.selectionSet.selections);
+          current.depth += 1;
+        } else {
+          current = { depth: 0, node }; // Leaf field node
+        }
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedDepth = this.fragmentDepths[fragmentName];
+
+        if (cachedDepth) {
+          current = cachedDepth;
+        } else if (fragment) {
+          current = this.getDepth(...fragment.selectionSet.selections);
+          this.fragmentDepths[fragmentName] = current;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        current = this.getDepth(...node.selectionSet.selections);
+      }
+
+      if (current.depth > this.maxDepth) {
+        return current; // Short circuit, no need to keep computing
+      }
+      if (current.depth > deepest.depth) {
+        deepest = current;
+      }
+    }
+
+    return deepest;
+  }
+}
+
+const DEFAULT_MAX_COST = 10_000;
+
+type QueryCostRuleOptions = {
+  logger?: Logger;
+  maxCost?: number;
+  debug?: boolean;
+};
+
+const QueryCostRule =
+  (router: FhirRouter, options?: QueryCostRuleOptions) =>
+  (context: ValidationContext): ASTVisitor =>
+    new QueryCostVisitor(context, router, options) as ASTVisitor;
+
+class QueryCostVisitor {
+  private readonly context: ValidationContext;
+  private readonly maxCost: number;
+  private readonly debug: boolean;
+  private readonly router: FhirRouter;
+  private readonly fragmentCosts: Record<string, number>;
+
+  constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
+    this.context = context;
+    this.maxCost = options?.maxCost ?? DEFAULT_MAX_COST;
+    this.debug = options?.debug ?? false;
+    this.router = router;
+    this.fragmentCosts = Object.create(null);
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    let cost = 0;
+    for (const child of node.selectionSet.selections) {
+      const startTime = performance.now();
+      const childCost = this.calculateCost(child);
+      cost += childCost;
+      this.log(child.kind, 'node has final cost', childCost, '(', performance.now() - startTime, 'ms)');
+
+      if (cost > this.maxCost) {
+        // this.context.reportError(
+        //   new GraphQLError('Query too complex', {
+        //     extensions: { cost, limit: this.maxCost },
+        //   })
+        // );
+        this.router.log('warn', 'GraphQL query too complex', {
+          cost,
+          limit: this.maxCost,
+          query: node.loc?.source?.body,
+        });
+      }
+    }
+  }
+
+  private calculateCost(...nodes: ASTNode[]): number {
+    let cost = 0;
+    for (const node of nodes) {
+      if (node.kind === Kind.FIELD && node.selectionSet) {
+        let baseCost = 0;
+        let branchingFactor = 1;
+        if (isSearchField(node)) {
+          this.log('Found search field', node.name.value);
+          baseCost = 8;
+          branchingFactor = this.getCount(node.arguments) ?? 20;
+        } else if (isLinkedResource(node)) {
+          this.log('Found linked resource');
+          baseCost = 1;
+          branchingFactor = 2;
+        }
+
+        const fieldCost = baseCost + branchingFactor * this.calculateCost(...node.selectionSet.selections);
+        if (fieldCost) {
+          this.log('Field', node.name.value, 'costs', fieldCost);
+        }
+        cost += fieldCost;
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedCost = this.fragmentCosts[fragmentName];
+
+        if (cachedCost !== undefined) {
+          this.log('Fragment', fragmentName, 'costs', cachedCost, '(cached)');
+          cost += cachedCost;
+        } else if (fragment) {
+          const fragmentCost = this.calculateCost(...fragment.selectionSet.selections);
+          this.fragmentCosts[fragmentName] = fragmentCost;
+          this.log('Fragment', fragmentName, 'costs', fragmentCost);
+          cost += fragmentCost;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        const fragmentCost = this.calculateCost(...node.selectionSet.selections);
+        this.log('Inline fragment on', node.typeCondition?.name.value, 'costs', fragmentCost);
+        cost += fragmentCost;
+      }
+
+      if (cost > this.maxCost) {
+        return cost; // Short circuit return, no need to keep processing
+      }
+    }
+
+    return cost;
+  }
+
+  getCount(args?: readonly ArgumentNode[]): number | undefined {
+    const countArg = args?.find((arg) => arg.name.value === '_count');
+    if (countArg?.value.kind === Kind.INT) {
+      return parseInt(countArg.value.value, 10);
+    }
+    return undefined;
+  }
+
+  log(...args: any[]): void {
+    if (this.debug) {
+      console.log(...args);
+    }
+  }
+}
+
+function isSearchField(node: FieldNode): boolean {
+  return node.name.value.endsWith('List');
+}
+
+function isLinkedResource(node: FieldNode): boolean {
+  return node.name.value === 'resource';
+}
+
+function getNextCursor(bundle: Bundle): string | undefined {
+  const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+  if (!link) {
+    return undefined;
+  }
+  return new URL(link).searchParams.get('_cursor') || undefined;
+}

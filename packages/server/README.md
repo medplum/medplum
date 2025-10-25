@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- Node 16
-- npm 7
-- Postgres 12
-- Redis 6
+- Node.js 20+
+- npm 10+
+- Postgres 13+
+- Redis 6+
 
 ## Database
 
@@ -33,6 +33,20 @@ GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
 
 ```
 npm run dev
+```
+
+## Running tests
+
+Before running tests for the first time on a clean database, you first need to seed your test database with the required foundational resources, such as `StructureDefinition`s, `ValueSet`s, `SearchParameter`s, and the default admin account resources. To do this run the command:
+
+```bash
+npm run test:seed
+```
+
+After waiting for the seed test to complete, you can then run the rest of the server tests by running:
+
+```bash
+npm run test
 ```
 
 ## Production build

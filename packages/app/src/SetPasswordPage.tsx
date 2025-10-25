@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
   Form,
@@ -11,8 +13,9 @@ import {
   getIssuesForExpression,
   useMedplum,
 } from '@medplum/react';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function SetPasswordPage(): JSX.Element {
   const { id, secret } = useParams() as { id: string; secret: string };
@@ -25,7 +28,6 @@ export function SetPasswordPage(): JSX.Element {
     <Document width={450}>
       <OperationOutcomeAlert issues={issues} />
       <Form
-        style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
           if (formData.password !== formData.confirmPassword) {
             setOutcome(badRequest('Passwords do not match', 'confirmPassword'));

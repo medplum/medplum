@@ -1,19 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Stack, Title } from '@mantine/core';
-import { Task } from '@medplum/fhirtypes';
+import type { Task } from '@medplum/fhirtypes';
 import { Loading, useResource } from '@medplum/react';
-import { AddNote } from './AddNote';
+import type { JSX } from 'react';
 import { AddDueDate } from './AddDueDate';
-import { UpdateBusinessStatus } from './UpdateBusinessStatus';
-import { AssignTask } from './AssignTask';
+import { AddNote } from './AddNote';
 import { AssignRole } from './AssignRole';
+import { AssignTask } from './AssignTask';
 import { ClaimTask } from './ClaimTask';
+import { CompleteTask } from './CompleteTask';
 import { DeleteTask } from './DeleteTask';
 import { PauseResumeTask } from './PauseResumeTask';
-import { CompleteTask } from './CompleteTask';
+import { UpdateBusinessStatus } from './UpdateBusinessStatus';
 
 interface TaskActionsProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function TaskActions(props: TaskActionsProps): JSX.Element {

@@ -1,9 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  OperationOutcome,
+  ProjectMembership,
+  Reference,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';

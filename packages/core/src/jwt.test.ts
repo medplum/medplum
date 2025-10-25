@@ -1,4 +1,7 @@
-import { isJwt, isMedplumAccessToken, tryGetJwtExpiration } from './jwt';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createFakeJwt } from './client-test-utils';
+import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 
 describe('JWT utils', () => {
   test('isJwt', () => {
@@ -18,8 +21,10 @@ describe('JWT utils', () => {
     expect(tryGetJwtExpiration(createFakeJwt({}))).toBe(undefined);
     expect(tryGetJwtExpiration(createFakeJwt({ exp: 0 }))).toBe(0);
   });
-});
 
-function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
-}
+  test('parseJWTPayload', () => {
+    const claims = { exp: 1234567890, login_id: 'test-login-id' };
+    const payload = parseJWTPayload(createFakeJwt(claims));
+    expect(payload).toMatchObject(claims);
+  });
+});

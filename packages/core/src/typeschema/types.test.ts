@@ -1,21 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { TypedValue } from '../types';
+import { LOINC } from '../constants';
+import type { TypedValue } from '../types';
+import type { InternalSchemaElement, InternalTypeSchema, SlicingRules } from './types';
 import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SlicingRules,
   getDataType,
   indexStructureDefinitionBundle,
   isProfileLoaded,
+  loadDataType,
   parseStructureDefinition,
   subsetResource,
   tryGetDataType,
   tryGetProfile,
 } from './types';
-import { LOINC } from '../constants';
 
 describe('FHIR resource and data type representations', () => {
   beforeAll(() => {
@@ -28,7 +29,7 @@ describe('FHIR resource and data type representations', () => {
     const profile = parseStructureDefinition(sd);
 
     expect(profile.name).toBe('Patient');
-    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+    expect(profile.innerTypes.map((t) => t.name).sort()).toStrictEqual([
       'PatientCommunication',
       'PatientContact',
       'PatientLink',
@@ -40,7 +41,7 @@ describe('FHIR resource and data type representations', () => {
     const profile = parseStructureDefinition(sd);
 
     expect(profile.name).toBe('USCoreBloodPressureProfile');
-    expect(profile.constraints?.map((c) => c.key).sort()).toEqual([
+    expect(profile.constraints?.map((c) => c.key).sort()).toStrictEqual([
       'dom-2',
       'dom-3',
       'dom-4',
@@ -50,7 +51,7 @@ describe('FHIR resource and data type representations', () => {
       'obs-7',
       'vs-2',
     ]);
-    expect(profile.elements['status'].binding?.valueSet).toEqual(
+    expect(profile.elements['status'].binding?.valueSet).toStrictEqual(
       'http://hl7.org/fhir/ValueSet/observation-status|4.0.1'
     );
     expect(profile.elements['code'].pattern).toMatchObject<TypedValue>({
@@ -89,6 +90,8 @@ describe('FHIR resource and data type representations', () => {
           },
           min: 1,
           max: 1,
+          description: 'A code that classifies the general type of observation being made.',
+          type: [{ code: 'CodeableConcept' }],
         },
       ],
       ordered: false,
@@ -97,7 +100,7 @@ describe('FHIR resource and data type representations', () => {
       min: 2,
       max: Number.POSITIVE_INFINITY,
     });
-    expect(profile.elements['component'].constraints?.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
+    expect(profile.elements['component'].constraints?.map((c) => c.key).sort()).toStrictEqual(['ele-1', 'vs-3']);
     expect(profile.elements['component'].slicing).toMatchObject<SlicingRules>({
       discriminator: [{ type: 'pattern', path: 'code' }],
       slices: [
@@ -121,6 +124,8 @@ describe('FHIR resource and data type representations', () => {
           },
           min: 1,
           max: 1,
+          description: 'Used when reporting component observation such as systolic and diastolic blood pressure.',
+          type: [{ code: 'ObservationComponent' }],
         },
         {
           name: 'diastolic',
@@ -142,6 +147,8 @@ describe('FHIR resource and data type representations', () => {
           },
           min: 1,
           max: 1,
+          description: 'Used when reporting component observation such as systolic and diastolic blood pressure.',
+          type: [{ code: 'ObservationComponent' }],
         },
       ],
       ordered: false,
@@ -164,7 +171,7 @@ describe('FHIR resource and data type representations', () => {
         'value[x]': expect.objectContaining({}),
       },
     });
-    expect([...(profile.summaryProperties as Set<string>)].sort()).toEqual([
+    expect([...(profile.summaryProperties as Set<string>)].sort()).toStrictEqual([
       'basedOn',
       'code',
       'component',
@@ -187,14 +194,14 @@ describe('FHIR resource and data type representations', () => {
 
     // http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type
     // 'http://hl7.org/fhirpath/System.String' transformed into 'id'
-    expect(profile.elements['id'].type[0].code).toEqual('id');
+    expect(profile.elements['id'].type[0].code).toStrictEqual('id');
   });
 
   test('Nested BackboneElement parsing', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'capability-statement.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
-    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+    expect(profile.innerTypes.map((t) => t.name).sort()).toStrictEqual([
       'CapabilityStatementDocument',
       'CapabilityStatementImplementation',
       'CapabilityStatementMessaging',
@@ -212,7 +219,7 @@ describe('FHIR resource and data type representations', () => {
 
     const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
     const restProperties = Object.keys(rest?.elements ?? {});
-    expect(restProperties.sort()).toEqual([
+    expect(restProperties.sort()).toStrictEqual([
       'compartment',
       'documentation',
       'extension',
@@ -348,20 +355,82 @@ describe('FHIR resource and data type representations', () => {
   test('Indexing structure definitions related to a profile', () => {
     const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure';
     const profileName = 'USCoreBloodPressureProfile';
+    const profileType = 'Observation';
 
     expect(isProfileLoaded(profileUrl)).toBe(false);
     expect(tryGetProfile(profileUrl)).toBeUndefined();
-    expect(tryGetDataType(profileName)).toBeUndefined();
-    expect(tryGetDataType(profileName, profileUrl)).toBeUndefined();
 
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
-    expect(sd.url).toEqual(profileUrl);
-    expect(sd.name).toEqual(profileName);
-    indexStructureDefinitionBundle([sd], profileUrl);
+    expect(sd.url).toStrictEqual(profileUrl);
+    expect(sd.name).toStrictEqual(profileName);
+    expect(sd.type).toStrictEqual(profileType);
+    indexStructureDefinitionBundle([sd]);
 
     expect(isProfileLoaded(profileUrl)).toBe(true);
     expect(tryGetProfile(profileUrl)).toBeDefined();
-    expect(tryGetDataType(profileName)).toBeUndefined(); // expect undefined since profileUrl argument not provided
-    expect(tryGetDataType(profileName, profileUrl)).toBeDefined();
+    expect(tryGetDataType(profileType, profileUrl)).toBeDefined();
+  });
+
+  test('Quantity profiles', () => {
+    const quantity = getDataType('Quantity');
+    expect(quantity).toBeDefined();
+    expect(quantity.name).toStrictEqual('Quantity');
+    expect(quantity.type).toStrictEqual('Quantity');
+
+    const simpleQuantity = getDataType('SimpleQuantity');
+    expect(simpleQuantity).toBeDefined();
+    expect(simpleQuantity.name).toStrictEqual('SimpleQuantity');
+    expect(simpleQuantity.type).toStrictEqual('Quantity');
+
+    const moneyQuantity = getDataType('MoneyQuantity');
+    expect(moneyQuantity).toBeDefined();
+    expect(moneyQuantity.name).toStrictEqual('MoneyQuantity');
+    expect(moneyQuantity.type).toStrictEqual('Quantity');
+  });
+
+  test('Name conflict', () => {
+    const patient1 = getDataType('Patient');
+    expect(patient1).toBeDefined();
+
+    // Index the C-CDA Patient profile
+    // Based on https://github.com/HL7/CDA-core-sd/blob/master/input/resources/Patient.xml
+    // Note that "name" is set to "Patient", which could be inconflict with the FHIR Patient.
+    // Note that "type" is not "Patient", which means that this is a different patient type.
+    loadDataType({
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/Patient',
+      name: 'Patient',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/Patient',
+      snapshot: {
+        element: [
+          {
+            path: 'Patient',
+          },
+        ],
+      },
+    });
+    const patient2 = getDataType('http://hl7.org/cda/stds/core/StructureDefinition/Patient');
+    expect(patient2).toBeDefined();
+    expect(patient2?.name).toStrictEqual('Patient');
+
+    // The original Patient profile should still be accessible
+    const patient3 = getDataType('Patient');
+    expect(patient3).toBeDefined();
+    expect(patient3).toStrictEqual(patient1);
+  });
+
+  test('Profile with 2 subsequent sliced properties', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'subsequent-sliced-profile.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.name).toBe('BePractitionerRole');
+
+    expect(profile.elements['code']).toBeDefined();
+    expect(profile.elements['code'].slicing?.slices.length).toBe(2);
+    expect(profile.elements['specialty']).toBeDefined();
+    expect(profile.elements['specialty'].slicing?.slices.length).toBe(1);
   });
 });

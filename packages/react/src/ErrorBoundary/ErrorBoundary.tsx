@@ -1,15 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
-import { normalizeErrorString } from '@medplum/core';
+import { locationUtils, normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
 export interface ErrorBoundaryProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 export interface ErrorBoundaryState {
-  error?: Error;
-  lastLocation: string;
+  readonly error?: Error;
+  readonly lastLocation: string;
 }
 
 /**
@@ -17,34 +20,34 @@ export interface ErrorBoundaryState {
  * See: https://reactjs.org/docs/error-boundaries.html
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState;
+  readonly state: ErrorBoundaryState;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { lastLocation: window.location.toString() };
+    this.state = { lastLocation: locationUtils.getLocation() };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error, lastLocation: window.location.toString() };
+    return { error, lastLocation: locationUtils.getLocation() };
   }
 
-  componentDidUpdate(_prevProps: Readonly<ErrorBoundaryProps>, _prevState: Readonly<ErrorBoundaryState>): void {
-    if (window.location.toString() !== this.state.lastLocation) {
+  componentDidUpdate(_prevProps: ErrorBoundaryProps, _prevState: ErrorBoundaryState): void {
+    if (locationUtils.getLocation() !== this.state.lastLocation) {
       this.setState({
-        lastLocation: window.location.toString(),
+        lastLocation: locationUtils.getLocation(),
         error: undefined,
       });
     }
   }
 
-  shouldComponentUpdate(nextProps: Readonly<ErrorBoundaryProps>, nextState: Readonly<ErrorBoundaryState>): boolean {
+  shouldComponentUpdate(nextProps: ErrorBoundaryProps, nextState: ErrorBoundaryState): boolean {
     if (this.props.children !== nextProps.children) {
       return true;
     }
     if (nextState.error && !this.state.error) {
       return true;
     }
-    if (this.state.lastLocation !== window.location.toString()) {
+    if (this.state.lastLocation !== locationUtils.getLocation()) {
       return true;
     }
     return false;

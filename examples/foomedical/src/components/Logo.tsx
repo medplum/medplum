@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { useMantineTheme } from '@mantine/core';
+import type { JSX } from 'react';
 
 export interface LogoProps {
-  width: number;
+  readonly width: number;
 }
 
 export function Logo(props: LogoProps): JSX.Element {

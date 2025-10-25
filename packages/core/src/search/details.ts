@@ -1,36 +1,40 @@
-import { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
-import { Atom } from '../fhirlexer/parse';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import type { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
   BooleanInfixOperatorAtom,
   DotAtom,
+  FhirPathAtom,
   FunctionAtom,
   IndexerAtom,
   IsAtom,
   UnionAtom,
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
-import { PropertyType, getElementDefinition, globalSchema } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize } from '../utils';
+import { getElementDefinition, globalSchema, PropertyType } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { lazy } from '../utils';
 
-export enum SearchParameterType {
-  BOOLEAN = 'BOOLEAN',
-  NUMBER = 'NUMBER',
-  QUANTITY = 'QUANTITY',
-  TEXT = 'TEXT',
-  REFERENCE = 'REFERENCE',
-  CANONICAL = 'CANONICAL',
-  DATE = 'DATE',
-  DATETIME = 'DATETIME',
-  PERIOD = 'PERIOD',
-  UUID = 'UUID',
-}
+export const SearchParameterType = {
+  BOOLEAN: 'BOOLEAN',
+  NUMBER: 'NUMBER',
+  QUANTITY: 'QUANTITY',
+  TEXT: 'TEXT',
+  REFERENCE: 'REFERENCE',
+  CANONICAL: 'CANONICAL',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  PERIOD: 'PERIOD',
+  UUID: 'UUID',
+} as const;
+export type SearchParameterType = (typeof SearchParameterType)[keyof typeof SearchParameterType];
 
 export interface SearchParameterDetails {
-  readonly columnName: string;
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
+  readonly parsedExpression: FhirPathAtom;
   readonly array?: boolean;
 }
 
@@ -63,7 +67,11 @@ export function getSearchParameterDetails(resourceType: string, searchParam: Sea
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
-  const typeSchema = globalSchema.types[resourceType];
+  let typeSchema = globalSchema.types[resourceType];
+  if (!typeSchema) {
+    typeSchema = {};
+    globalSchema.types[resourceType] = typeSchema;
+  }
   if (!typeSchema.searchParamsDetails) {
     typeSchema.searchParamsDetails = {};
   }
@@ -72,7 +80,6 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
-  const columnName = convertCodeToColumnName(code);
   const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
 
   const builder: SearchParameterDetailsBuilder = {
@@ -83,17 +90,47 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
   for (const expression of expressions) {
     const atomArray = flattenAtom(expression);
+    const flattenedExpression = lazy(() => atomArray.join('.'));
+
     if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
       builder.propertyTypes.add('boolean');
+    } else if (searchParam.code.endsWith(':identifier')) {
+      // This is a derived "identifier" search parameter
+      // See `deriveIdentifierSearchParameter`
+      builder.propertyTypes.add('Identifier');
+    } else if (
+      // To support US Core Patient search parameters without needing profile-aware logic,
+      // assume expressions for `Extension.value[x].code` and `Extension.value[x].coding.code`
+      // are of type `code`. Otherwise, crawling the Extension.value[x] element definition without
+      // access to the type narrowing specified in the profiles would be inconclusive.
+      flattenedExpression().endsWith('extension.value.code') ||
+      flattenedExpression().endsWith('extension.value.coding.code')
+    ) {
+      builder.array = true;
+      builder.propertyTypes.clear();
+      builder.propertyTypes.add('code');
     } else {
-      crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
+      crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
+    }
+
+    // To support US Core "us-core-condition-asserted-date" search parameter without
+    // needing profile-aware logic, ensure extensions with a dateTime value are not
+    // treated as arrays since Mepdlum search functionality does not yet support datetime arrays.
+    // This would be the result if the http://hl7.org/fhir/StructureDefinition/condition-assertedDate
+    // extension were parsed since it specifies a cardinality of 0..1.
+    if (flattenedExpression().endsWith('extension.valueDateTime')) {
+      builder.array = false;
+      builder.propertyTypes.clear();
+      builder.propertyTypes.add('dateTime');
     }
   }
 
   const result: SearchParameterDetails = {
-    columnName,
     type: getSearchParameterType(searchParam, builder.propertyTypes),
-    elementDefinitions: builder.elementDefinitions,
+    elementDefinitions: builder.elementDefinitions
+      .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
+      .filter((ed) => ed.type && ed.type.length > 0),
+    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);
@@ -131,8 +168,18 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
+  const nextAtom = atoms[nextIndex];
+
   if (elementDefinition.isArray && !hasArrayIndex) {
     details.array = true;
+  }
+
+  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
+    // This is the 2nd to last atom in the expression
+    // And the last atom is an "as" expression
+    details.elementDefinitions.push(elementDefinition);
+    details.propertyTypes.add(nextAtom.right.toString());
+    return;
   }
 
   if (nextIndex >= atoms.length) {
@@ -163,6 +210,11 @@ function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom
     return;
   }
 
+  if (functionAtom.name === 'ofType') {
+    builder.propertyTypes.add(functionAtom.args[0].toString());
+    return;
+  }
+
   if (functionAtom.name === 'resolve') {
     // Handle .resolve().resourceType
     builder.propertyTypes.add('string');
@@ -181,15 +233,6 @@ function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom
 
 function isBackboneElement(propertyType: string): boolean {
   return propertyType === 'Element' || propertyType === 'BackboneElement';
-}
-
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code - The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set<string>): SearchParameterType {
@@ -236,13 +279,29 @@ export function getExpressionForResourceType(resourceType: string, expression: s
   return atoms.map((atom) => atom.toString()).join(' | ');
 }
 
+export function getParsedExpressionForResourceType(resourceType: string, expression: string): FhirPathAtom {
+  const atoms: Atom[] = [];
+  const fhirPathExpression = parseFhirPath(expression);
+  buildExpressionsForResourceType(resourceType, fhirPathExpression.child, atoms);
+
+  if (atoms.length === 0) {
+    return fhirPathExpression;
+  }
+
+  let result: Atom = atoms[0];
+  for (let i = 1; i < atoms.length; i++) {
+    result = new UnionAtom(result, atoms[i]);
+  }
+  return new FhirPathAtom('<original-not-available>', result);
+}
+
 function buildExpressionsForResourceType(resourceType: string, atom: Atom, result: Atom[]): void {
   if (atom instanceof UnionAtom) {
     buildExpressionsForResourceType(resourceType, atom.left, result);
     buildExpressionsForResourceType(resourceType, atom.right, result);
   } else {
     const str = atom.toString();
-    if (str.startsWith(resourceType + '.')) {
+    if (str.includes(resourceType + '.')) {
       result.push(atom);
     }
   }

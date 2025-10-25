@@ -1,0 +1,204 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0",
+      "request": { "method": "PUT", "url": "Patient?name=homer" },
+      "resource": {
+        "resourceType": "Patient",
+        "active": true,
+        "name": [{ "family": "Simpson", "given": ["Homer"] }],
+        "gender": "male"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:edce39eb-cb45-4739-ac55-ac896d804913",
+      "request": { "method": "PUT", "url": "Patient?name=bart" },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://example.com/mrn",
+            "value": "22222"
+          }
+        ],
+        "active": true,
+        "name": [{ "family": "Simpson", "given": ["Bart"] }],
+        "gender": "male"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:f65d6583-0716-4d29-ba4b-9b4661e9de56",
+      "request": { "method": "PUT", "url": "Patient?name=marge" },
+      "resource": {
+        "resourceType": "Patient",
+        "active": true,
+        "name": [{ "family": "Simpson", "given": ["Marge"] }],
+        "gender": "female"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+      "request": { "method": "PUT", "url": "Organization?identifier=blue-cross" },
+      "resource": {
+        "resourceType": "Organization",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/insurance-orgs",
+            "value": "blue-cross"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ],
+        "name": "Independence Blue Cross Blue Shield"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d2b8fe3e-82bf-4435-8503-9f6a30136bea",
+      "request": { "method": "PUT", "url": "Coverage?identifier=homer-simpson" },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "system": "http://example.com/coverages",
+            "value": "homer-simpson"
+          }
+        ],
+        "status": "active",
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c074d0c8-9df0-4530-9146-9c3b79667091",
+      "request": { "method": "PUT", "url": "Coverage?identifier=bart-simpson" },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "system": "http://example.com/coverages",
+            "value": "bart-simpson"
+          }
+        ],
+        "status": "active",
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:edce39eb-cb45-4739-ac55-ac896d804913", "display": "Bart Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "child",
+              "display": "Child"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b75a9447-2892-442f-bf1c-207b4e95d767",
+      "request": { "method": "PUT", "url": "Coverage?identifier=marge-simpson" },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "system": "http://example.com/coverages",
+            "value": "marge-simpson"
+          }
+        ],
+        "status": "active",
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:f65d6583-0716-4d29-ba4b-9b4661e9de56", "display": "Marge Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "spouse",
+              "display": "Spouse"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748",
+      "request": { "method": "PUT", "url": "Patient?name=john" },
+      "resource": {
+        "resourceType": "Patient",
+        "active": true,
+        "name": [{ "family": "Smith", "given": ["John"] }],
+        "gender": "male",
+        "birthDate": "1990-08-30",
+        "telecom": [{ "system": "phone", "value": "888-555-8439", "use": "mobile" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8ce6ce90-63f0-454b-8e7a-d869465eb862",
+      "request": { "method": "PUT", "url": "Coverage?identifier=john-smith" },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "system": "http://example.com/coverages",
+            "value": "john-smith"
+          }
+        ],
+        "status": "active",
+        "beneficiary": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748", "display": "John Smith" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
+        "subscriber": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748", "display": "John Smith" },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

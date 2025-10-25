@@ -1,7 +1,10 @@
-import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 /**
  * React Hook providing helpers to create a FHIR resource.
@@ -32,6 +35,12 @@ export function useCreateResource<T extends Resource>(
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));
         }
+        showNotification({
+          color: 'red',
+          message: normalizeErrorString(err),
+          autoClose: false,
+          styles: { description: { whiteSpace: 'pre-line' } },
+        });
       });
   };
 

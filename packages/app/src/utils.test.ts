@@ -1,41 +1,6 @@
-import { exportJsonFile, partition } from './utils';
-
-let jsonFile: any;
-describe('JSON File Download', () => {
-  beforeEach(() => {
-    jsonFile = {
-      entry: [
-        {
-          fullUrl: 'medplum.com',
-          resource: {
-            meta: {},
-            id: '123',
-            resourceType: 'Patient',
-          },
-        },
-        {
-          fullUrl: 'app.medplum.com/123',
-          resource: {
-            meta: {
-              id: '123',
-            },
-            id: '456',
-            resourceType: 'Patient',
-          },
-        },
-      ],
-    };
-  });
-
-  test('download a JSON file', () => {
-    URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
-    URL.revokeObjectURL = jest.fn();
-
-    exportJsonFile(jsonFile.entry);
-
-    expect(URL.revokeObjectURL).toBeCalled();
-  });
-});
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { partition } from './utils';
 
 interface SpecialThing {
   type: 'special';
@@ -63,10 +28,10 @@ describe('partition', () => {
     const specialOutput: SpecialThing[] = results[0];
     const anyOutput: any[] = results[1];
 
-    expect(specialOutput.length).toEqual(specialThings.length);
-    expect(specialOutput).toEqual(expect.arrayContaining(specialThings));
+    expect(specialOutput.length).toStrictEqual(specialThings.length);
+    expect(specialOutput).toStrictEqual(expect.arrayContaining(specialThings));
 
-    expect(anyOutput.length).toEqual(notSpecialThings.length);
-    expect(anyOutput).toEqual(expect.arrayContaining(notSpecialThings));
+    expect(anyOutput.length).toStrictEqual(notSpecialThings.length);
+    expect(anyOutput).toStrictEqual(expect.arrayContaining(notSpecialThings));
   });
 });

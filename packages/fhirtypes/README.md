@@ -1,6 +1,6 @@
 # Medplum FHIR Type Definitions
 
-This library contains [TypeScript](https://www.typescriptlang.org/) type definitions for all [R4 types](https://www.hl7.org/fhir/valueset-resource-types.html).
+This library contains [TypeScript](https://www.typescriptlang.org/) type definitions for all [R4 types](https://hl7.org/fhir/R4/valueset-resource-types.html).
 
 ## Installation
 
@@ -30,7 +30,7 @@ import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
   resourceType: 'Patient',
-  name: 'George Wasington',
+  name: 'George Washington',
 };
 ```
 
@@ -64,4 +64,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2023
+Apache 2.0. Copyright &copy; Medplum 2025

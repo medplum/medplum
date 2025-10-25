@@ -1,0 +1,359 @@
+{
+  "title": "basic",
+  "description": "basic view definition",
+  "fhirVersion": ["5.0.0", "4.0.1", "3.0.2"],
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "pt1",
+      "name": [
+        {
+          "family": "F1"
+        }
+      ],
+      "active": true
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt2",
+      "name": [
+        {
+          "family": "F2"
+        }
+      ],
+      "active": false
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt3"
+    }
+  ],
+  "tests": [
+    {
+      "title": "basic attribute",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        },
+        {
+          "id": "pt2"
+        },
+        {
+          "id": "pt3"
+        }
+      ]
+    },
+    {
+      "title": "boolean attribute with false",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "active",
+                "path": "active",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "active": true
+        },
+        {
+          "id": "pt2",
+          "active": false
+        },
+        {
+          "id": "pt3",
+          "active": null
+        }
+      ]
+    },
+    {
+      "title": "two columns",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "last_name",
+                "path": "name.family.first()",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "last_name": "F1"
+        },
+        {
+          "id": "pt2",
+          "last_name": "F2"
+        },
+        {
+          "id": "pt3",
+          "last_name": null
+        }
+      ]
+    },
+    {
+      "title": "two selects with columns",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          },
+          {
+            "column": [
+              {
+                "name": "last_name",
+                "path": "name.family.first()",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "last_name": "F1"
+        },
+        {
+          "id": "pt2",
+          "last_name": "F2"
+        },
+        {
+          "id": "pt3",
+          "last_name": null
+        }
+      ]
+    },
+    {
+      "title": "where - 1",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "active.exists() and active = true"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        }
+      ]
+    },
+    {
+      "title": "where - 2",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "active.exists() and active = false"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt2"
+        }
+      ]
+    },
+    {
+      "title": "where returns non-boolean for some cases",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "active"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        }
+      ]
+    },
+    {
+      "title": "where as expr - 1",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "name.family.exists() and name.family = 'F2'"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt2"
+        }
+      ]
+    },
+    {
+      "title": "where as expr - 2",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ],
+        "where": [
+          {
+            "path": "name.family.exists() and name.family = 'F1'"
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1"
+        }
+      ]
+    },
+    {
+      "title": "select & column",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "c_id",
+                "type": "id"
+              }
+            ],
+            "select": [
+              {
+                "column": [
+                  {
+                    "path": "id",
+                    "name": "s_id",
+                    "type": "id"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "c_id": "pt1",
+          "s_id": "pt1"
+        },
+        {
+          "c_id": "pt2",
+          "s_id": "pt2"
+        },
+        {
+          "c_id": "pt3",
+          "s_id": "pt3"
+        }
+      ]
+    }
+  ]
+}

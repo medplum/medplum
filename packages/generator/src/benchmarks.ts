@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { indexStructureDefinitionBundle, validateResource } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { BenchEvent } from 'tinybench';
 import { Bench } from 'tinybench';
 
 const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
@@ -22,8 +25,8 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
     const b = new Bench({
       iterations: 100,
     });
-    b.addEventListener('error', (err: Error) => {
-      throw err;
+    b.addEventListener('error', (_evt: BenchEvent) => {
+      throw new Error('Benchmark error');
     });
     await bench.fn(b);
     printBenchmarkResults(b, bench.title);

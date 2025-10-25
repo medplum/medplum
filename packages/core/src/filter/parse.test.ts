@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Operator } from '../search/search';
 import { parseFilterParameter } from './parse';
 import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
@@ -5,7 +7,6 @@ import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from '
 describe('_filter Parameter parser', () => {
   test('Simple comparison', () => {
     const result = parseFilterParameter('name co "pet"');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
@@ -16,7 +17,6 @@ describe('_filter Parameter parser', () => {
 
   test('Negation', () => {
     const result = parseFilterParameter('not (name co "pet")');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterNegation);
 
     const negation = result as FhirFilterNegation;
@@ -30,7 +30,6 @@ describe('_filter Parameter parser', () => {
 
   test('And connective', () => {
     const result = parseFilterParameter('given eq "peter" and birthdate ge 2014-10-10');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -40,7 +39,7 @@ describe('_filter Parameter parser', () => {
 
     const left = connective.left as FhirFilterComparison;
     expect(left.path).toBe('given');
-    expect(left.operator).toBe(Operator.EQUALS);
+    expect(left.operator).toBe(Operator.EXACT);
     expect(left.value).toBe('peter');
 
     const right = connective.right as FhirFilterComparison;
@@ -51,7 +50,6 @@ describe('_filter Parameter parser', () => {
 
   test('Or connective', () => {
     const result = parseFilterParameter('given eq "peter" or birthdate ge 2014-10-10');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -61,7 +59,7 @@ describe('_filter Parameter parser', () => {
 
     const left = connective.left as FhirFilterComparison;
     expect(left.path).toBe('given');
-    expect(left.operator).toBe(Operator.EQUALS);
+    expect(left.operator).toBe(Operator.EXACT);
     expect(left.value).toBe('peter');
 
     const right = connective.right as FhirFilterComparison;
@@ -72,7 +70,6 @@ describe('_filter Parameter parser', () => {
 
   test('Top level parentheses', () => {
     const result = parseFilterParameter('(given ne "alice" and given ne "bob")');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -92,7 +89,6 @@ describe('_filter Parameter parser', () => {
 
   test('Nested expressions', () => {
     const result = parseFilterParameter('given eq "alice" or (given eq "peter" and birthdate ge 2014-10-10)');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -102,7 +98,7 @@ describe('_filter Parameter parser', () => {
 
     const first = connective1.left as FhirFilterComparison;
     expect(first.path).toBe('given');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('alice');
 
     const connective2 = connective1.right as FhirFilterConnective;
@@ -112,7 +108,7 @@ describe('_filter Parameter parser', () => {
 
     const second = connective2.left as FhirFilterComparison;
     expect(second.path).toBe('given');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('peter');
 
     const third = connective2.right as FhirFilterComparison;
@@ -123,7 +119,6 @@ describe('_filter Parameter parser', () => {
 
   test('Nested connectives', () => {
     const result = parseFilterParameter('(status eq preliminary and code eq 123) or (status eq final and code eq 456)');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -143,22 +138,22 @@ describe('_filter Parameter parser', () => {
 
     const first = connective2.left as FhirFilterComparison;
     expect(first.path).toBe('status');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('preliminary');
 
     const second = connective2.right as FhirFilterComparison;
     expect(second.path).toBe('code');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('123');
 
     const third = connective3.left as FhirFilterComparison;
     expect(third.path).toBe('status');
-    expect(third.operator).toBe(Operator.EQUALS);
+    expect(third.operator).toBe(Operator.EXACT);
     expect(third.value).toBe('final');
 
     const fourth = connective3.right as FhirFilterComparison;
     expect(fourth.path).toBe('code');
-    expect(fourth.operator).toBe(Operator.EQUALS);
+    expect(fourth.operator).toBe(Operator.EXACT);
     expect(fourth.value).toBe('456');
   });
 
@@ -166,7 +161,6 @@ describe('_filter Parameter parser', () => {
     const result = parseFilterParameter(
       '(status eq preliminary and code eq 123) or (not (status eq preliminary) and code eq 456)'
     );
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -186,40 +180,38 @@ describe('_filter Parameter parser', () => {
 
     const first = connective2.left as FhirFilterComparison;
     expect(first.path).toBe('status');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('preliminary');
 
     const second = connective2.right as FhirFilterComparison;
     expect(second.path).toBe('code');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('123');
 
     const negation = connective3.left as FhirFilterNegation;
     const third = negation.child as FhirFilterComparison;
     expect(third.path).toBe('status');
-    expect(third.operator).toBe(Operator.EQUALS);
+    expect(third.operator).toBe(Operator.EXACT);
     expect(third.value).toBe('preliminary');
 
     const fourth = connective3.right as FhirFilterComparison;
     expect(fourth.path).toBe('code');
-    expect(fourth.operator).toBe(Operator.EQUALS);
+    expect(fourth.operator).toBe(Operator.EXACT);
     expect(fourth.value).toBe('456');
   });
 
   test('Observation with system and code', () => {
     const result = parseFilterParameter('code eq http://loinc.org|1234-5');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
     expect(comp.path).toBe('code');
-    expect(comp.operator).toBe(Operator.EQUALS);
+    expect(comp.operator).toBe(Operator.EXACT);
     expect(comp.value).toBe('http://loinc.org|1234-5');
   });
 
   test('Identifier search', () => {
     const result = parseFilterParameter('performer identifier https://example.com/1234');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
@@ -228,12 +220,15 @@ describe('_filter Parameter parser', () => {
     expect(comp.value).toBe('https://example.com/1234');
   });
 
+  test('Starts with', () => {
+    const result = parseFilterParameter('name sw ali');
+    expect(result).toBeInstanceOf(FhirFilterComparison);
+
+    const comp = result as FhirFilterComparison;
+    expect(comp.operator).toEqual(Operator.STARTS_WITH);
+  });
+
   test('Unsupported search operator', () => {
-    try {
-      parseFilterParameter('name sw ali');
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Invalid operator: sw');
-    }
+    expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
   });
 });

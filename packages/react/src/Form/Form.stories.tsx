@@ -1,9 +1,13 @@
-import { Button, NativeSelect, Stack } from '@mantine/core';
-import { HumanName } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { NativeSelect, Stack } from '@mantine/core';
+import type { HumanName } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { Form } from './Form';
+import { SubmitButton } from './SubmitButton';
 
 export default {
   title: 'Medplum/Form',
@@ -22,9 +26,7 @@ export const Basic = (): JSX.Element => (
           defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
         />
         <NativeSelect name="appointment-type" data={['Sick', 'Well']} />
-        <Button type="submit" mt="sm">
-          Submit
-        </Button>
+        <SubmitButton mt="sm">Submit</SubmitButton>
       </Stack>
     </Form>
   </Document>

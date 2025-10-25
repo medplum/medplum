@@ -1,0 +1,182 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:97139871-af48-46af-a8b4-ed16fa8b6b6f",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?name=pregnancy-status-codes"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "http://example.com/pregnancy-status",
+        "name": "pregnancy-status-codes",
+        "title": "Pregnancy Status Codes",
+        "description": "These codes are used to indicate pregnancy status.",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "146799005",
+                  "display": "Possible pregnancy"
+                },
+                {
+                  "code": "60001007",
+                  "display": "Not pregnant (finding)"
+                },
+                {
+                  "code": "77386006",
+                  "display": "Pregnancy"
+                }
+              ]
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor",
+              "concept": [
+                {
+                  "code": "UNK",
+                  "display": "Unknown"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6abaa6c8-d822-46a4-b3a2-70639475e5ae",
+      "request": {
+        "method": "POST",
+        "url": "ValueSet",
+        "ifNoneExist": "url=http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "version": "0.0.0",
+        "url": "http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state",
+        "name": "us-core-usps-state",
+        "expansion": {
+          "timestamp": "2024-08-12T00:00:00.000Z",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/valueset-expansionSource",
+              "valueUri": "http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
+            }
+          ],
+          "contains": [
+            { "system": "https://www.usps.com/", "code": "AL", "display": "Alabama" },
+            { "system": "https://www.usps.com/", "code": "AK", "display": "Alaska" },
+            { "system": "https://www.usps.com/", "code": "AS", "display": "American Samoa" },
+            { "system": "https://www.usps.com/", "code": "AZ", "display": "Arizona" },
+            { "system": "https://www.usps.com/", "code": "AR", "display": "Arkansas" },
+            { "system": "https://www.usps.com/", "code": "CA", "display": "California" },
+            { "system": "https://www.usps.com/", "code": "CO", "display": "Colorado" },
+            { "system": "https://www.usps.com/", "code": "CT", "display": "Connecticut" },
+            { "system": "https://www.usps.com/", "code": "DE", "display": "Delaware" },
+            { "system": "https://www.usps.com/", "code": "DC", "display": "District of Columbia" },
+            { "system": "https://www.usps.com/", "code": "FM", "display": "Federated States of Micronesia" },
+            { "system": "https://www.usps.com/", "code": "FL", "display": "Florida" },
+            { "system": "https://www.usps.com/", "code": "GA", "display": "Georgia" },
+            { "system": "https://www.usps.com/", "code": "GU", "display": "Guam" },
+            { "system": "https://www.usps.com/", "code": "HI", "display": "Hawaii" },
+            { "system": "https://www.usps.com/", "code": "ID", "display": "Idaho" },
+            { "system": "https://www.usps.com/", "code": "IL", "display": "Illinois" },
+            { "system": "https://www.usps.com/", "code": "IN", "display": "Indiana" },
+            { "system": "https://www.usps.com/", "code": "IA", "display": "Iowa" },
+            { "system": "https://www.usps.com/", "code": "KS", "display": "Kansas" },
+            { "system": "https://www.usps.com/", "code": "KY", "display": "Kentucky" },
+            { "system": "https://www.usps.com/", "code": "LA", "display": "Louisiana" },
+            { "system": "https://www.usps.com/", "code": "ME", "display": "Maine" },
+            { "system": "https://www.usps.com/", "code": "MH", "display": "Marshall Islands" },
+            { "system": "https://www.usps.com/", "code": "MD", "display": "Maryland" },
+            { "system": "https://www.usps.com/", "code": "MA", "display": "Massachusetts" },
+            { "system": "https://www.usps.com/", "code": "MI", "display": "Michigan" },
+            { "system": "https://www.usps.com/", "code": "MN", "display": "Minnesota" },
+            { "system": "https://www.usps.com/", "code": "MS", "display": "Mississippi" },
+            { "system": "https://www.usps.com/", "code": "MO", "display": "Missouri" },
+            { "system": "https://www.usps.com/", "code": "MT", "display": "Montana" },
+            { "system": "https://www.usps.com/", "code": "NE", "display": "Nebraska" },
+            { "system": "https://www.usps.com/", "code": "NV", "display": "Nevada" },
+            { "system": "https://www.usps.com/", "code": "NH", "display": "New Hampshire" },
+            { "system": "https://www.usps.com/", "code": "NJ", "display": "New Jersey" },
+            { "system": "https://www.usps.com/", "code": "NM", "display": "New Mexico" },
+            { "system": "https://www.usps.com/", "code": "NY", "display": "New York" },
+            { "system": "https://www.usps.com/", "code": "NC", "display": "North Carolina" },
+            { "system": "https://www.usps.com/", "code": "ND", "display": "North Dakota" },
+            { "system": "https://www.usps.com/", "code": "MP", "display": "Northern Mariana Islands" },
+            { "system": "https://www.usps.com/", "code": "OH", "display": "Ohio" },
+            { "system": "https://www.usps.com/", "code": "OK", "display": "Oklahoma" },
+            { "system": "https://www.usps.com/", "code": "OR", "display": "Oregon" },
+            { "system": "https://www.usps.com/", "code": "PW", "display": "Palau" },
+            { "system": "https://www.usps.com/", "code": "PA", "display": "Pennsylvania" },
+            { "system": "https://www.usps.com/", "code": "PR", "display": "Puerto Rico" },
+            { "system": "https://www.usps.com/", "code": "RI", "display": "Rhode Island" },
+            { "system": "https://www.usps.com/", "code": "SC", "display": "South Carolina" },
+            { "system": "https://www.usps.com/", "code": "SD", "display": "South Dakota" },
+            { "system": "https://www.usps.com/", "code": "TN", "display": "Tennessee" },
+            { "system": "https://www.usps.com/", "code": "TX", "display": "Texas" },
+            { "system": "https://www.usps.com/", "code": "UT", "display": "Utah" },
+            { "system": "https://www.usps.com/", "code": "VT", "display": "Vermont" },
+            { "system": "https://www.usps.com/", "code": "VI", "display": "Virgin Islands" },
+            { "system": "https://www.usps.com/", "code": "VA", "display": "Virginia" },
+            { "system": "https://www.usps.com/", "code": "WA", "display": "Washington" },
+            { "system": "https://www.usps.com/", "code": "WV", "display": "West Virginia" },
+            { "system": "https://www.usps.com/", "code": "WI", "display": "Wisconsin" },
+            { "system": "https://www.usps.com/", "code": "WY", "display": "Wyoming" },
+            {
+              "system": "https://www.usps.com/",
+              "code": "AE",
+              "display": "Armed Forces Europe, the Middle East, and Canada"
+            },
+            { "system": "https://www.usps.com/", "code": "AP", "display": "Armed Forces Pacific" },
+            { "system": "https://www.usps.com/", "code": "AA", "display": "Armed Forces Americas (except Canada)" }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:183a569a-7f6d-41f9-97d8-57691fbc2876",
+      "request": {
+        "method": "POST",
+        "url": "ValueSet",
+        "ifNoneExist": "url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "version": "0.0.0",
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38",
+        "name": "smoking-status",
+        "title": "Smoking Status",
+        "expansion": {
+          "timestamp": "2024-08-12T00:00:00.000Z",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/valueset-expansionSource",
+              "valueUri": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
+            }
+          ],
+          "contains": [
+            { "system": "http://snomed.info/sct", "code": "266919005", "display": "Never smoked tobacco" },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "266927001",
+              "display": "Tobacco smoking consumption unknown"
+            },
+            { "system": "http://snomed.info/sct", "code": "428041000124106", "display": "Occasional tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "428061000124105", "display": "Light tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "428071000124103", "display": "Heavy tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "449868002", "display": "Smokes tobacco daily" },
+            { "system": "http://snomed.info/sct", "code": "77176002", "display": "Smoker" },
+            { "system": "http://snomed.info/sct", "code": "8517006", "display": "Ex-smoker" }
+          ]
+        }
+      }
+    }
+  ]
+}

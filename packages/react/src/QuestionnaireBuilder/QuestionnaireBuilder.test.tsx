@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import type { QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import { QuestionnaireBuilder } from './QuestionnaireBuilder';
 
 const medplum = new MockClient();
 
@@ -119,7 +121,46 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Handles submit with required items', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.string,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.integer,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q3',
+            type: QuestionnaireItemType.date,
+            required: true,
+            text: 'q3',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Handles AutoSave', async () => {
@@ -144,7 +185,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Add item'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Question 1'));
@@ -154,14 +195,14 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getAllByText('Remove')[0]);
     });
 
-    expect(onSubmit).toBeCalledTimes(2);
+    expect(onSubmit).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add group'));
     });
 
     // Shouldn't autosave when adding a group
-    expect(onSubmit).toBeCalledTimes(2);
+    expect(onSubmit).toHaveBeenCalledTimes(2);
   });
 
   test('Sets ids', async () => {
@@ -195,7 +236,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     const result = onSubmit.mock.calls[0][0];
     expect(result.item[0].id).toBeDefined();
     expect(result.item[0].answerOption[0].id).toBeDefined();
@@ -236,7 +277,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -276,13 +317,13 @@ describe('QuestionnaireBuilder', () => {
     });
 
     // Should not submit without autosave flag
-    expect(onSubmit).not.toBeCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -330,7 +371,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -385,7 +426,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -428,7 +469,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -477,7 +518,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       title: 'Renamed',
@@ -569,7 +610,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -658,7 +699,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -784,7 +825,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -842,7 +883,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -908,7 +949,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -982,7 +1023,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -1063,7 +1104,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [

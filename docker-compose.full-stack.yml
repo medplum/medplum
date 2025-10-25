@@ -1,0 +1,121 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=medplum
+      - POSTGRES_PASSWORD=medplum
+    command:
+      # We use command line args instead of a postgres.conf to avoid additional setup out of the box
+      - 'postgres'
+      - '-c'
+      - 'listen_addresses=*'
+      - '-c'
+      - 'statement_timeout=60000'
+      - '-c'
+      - 'default_transaction_isolation=REPEATABLE READ'
+      - '-c'
+      - 'shared_preload_libraries=pg_stat_statements,auto_explain'
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U medplum']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: always
+    command: redis-server --requirepass medplum
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'medplum', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Medplum server container
+  medplum-server:
+    image: medplum/medplum-server:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '8103:8103'
+    volumes:
+      # Conditionally define a volume for a `medplum.config.json` if one is specified by the MEDPLUM_CONFIG_PATH env var
+      - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
+    entrypoint: >
+      sh -c "
+      if [ -n '${MEDPLUM_CONFIG_PATH}' ]; then
+        echo 'Config file found, running with custom config'
+        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js file:$MEDPLUM_CONFIG_PATH
+      else
+        echo 'No config file found, running with default env settings'
+        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
+      fi
+      "
+    environment:
+      MEDPLUM_PORT: 8103
+      MEDPLUM_BASE_URL: 'http://localhost:8103/'
+      MEDPLUM_APP_BASE_URL: 'http://localhost:3000/'
+      MEDPLUM_STORAGE_BASE_URL: 'http://localhost:8103/storage/'
+
+      MEDPLUM_DATABASE_HOST: 'postgres'
+      MEDPLUM_DATABASE_PORT: 5432
+      MEDPLUM_DATABASE_DBNAME: 'medplum'
+      MEDPLUM_DATABASE_USERNAME: 'medplum'
+      MEDPLUM_DATABASE_PASSWORD: 'medplum'
+
+      MEDPLUM_REDIS_HOST: 'redis'
+      MEDPLUM_REDIS_PORT: 6379
+      MEDPLUM_REDIS_PASSWORD: 'medplum'
+
+      MEDPLUM_BINARY_STORAGE: 'file:./binary/'
+      MEDPLUM_SUPPORT_EMAIL: '\"Medplum\" <support@medplum.com>'
+      MEDPLUM_GOOGLE_CLIENT_ID: '397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com'
+      MEDPLUM_GOOGLE_CLIENT_SECRET: ''
+      MEDPLUM_RECAPTCHA_SITE_KEY: '6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq'
+      MEDPLUM_RECAPTCHA_SECRET_KEY: '6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL'
+      MEDPLUM_MAX_JSON_SIZE: '1mb'
+      MEDPLUM_MAX_BATCH_SIZE: '50mb'
+      MEDPLUM_BOT_LAMBDA_ROLE_ARN: ''
+      MEDPLUM_BOT_LAMBDA_LAYER_NAME: 'medplum-bot-layer'
+      MEDPLUM_VM_CONTEXT_BOTS_ENABLED: 'true'
+      MEDPLUM_DEFAULT_BOT_RUNTIME_VERSION: 'vmcontext'
+      MEDPLUM_ALLOWED_ORIGINS: '*'
+      MEDPLUM_INTROSPECTION_ENABLED: 'true'
+      MEDPLUM_SHUTDOWN_TIMEOUT_MILLISECONDS: 30000
+
+    healthcheck:
+      test:
+        # We use Node's fetch for healthcheck because this image doesn't have a curl or wget installed
+        [
+          'CMD',
+          'node',
+          '-e',
+          'fetch("http://localhost:8103/healthcheck").then(r => r.json()).then(console.log).catch(() => { process.exit(1); })',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Medplum app container (web UI)
+  medplum-app:
+    image: medplum/medplum-app:latest
+    restart: always
+    depends_on:
+      medplum-server:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
+      interval: 10s
+      timeout: 5s
+      retries: 5

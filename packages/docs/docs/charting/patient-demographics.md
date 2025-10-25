@@ -79,6 +79,7 @@ The [integration](/docs/integration) section has details on querying the exchang
 - [US Core Patient Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html)
 - [US Core Patient](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) react component on Storybook
 - [ONC Certification for Medplum](/docs/compliance/onc)
+- [(a)(5) User Testing Video](https://youtu.be/NcxFl-GJ9Mc) on Youtube
 
 :::caution
 

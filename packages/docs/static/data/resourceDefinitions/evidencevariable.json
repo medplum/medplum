@@ -596,10 +596,10 @@
         }
       ],
       "path": "EvidenceVariable.characteristic",
-      "min": 1,
+      "min": 0,
       "max": "*",
-      "short": "What defines the members of the evidence element",
-      "definition": "A characteristic that defines the members of the evidence element. Multiple characteristics are applied with \"and\" semantics.",
+      "short": "A defining factor of the EvidenceVariable",
+      "definition": "A defining factor of the EvidenceVariable. Multiple characteristics are applied with \"and\" semantics.",
       "comment": "Characteristics can be defined flexibly to accommodate different use cases for membership criteria, ranging from simple codes, all the way to using an expression language to express the criteria.",
       "inherited": false
     },
@@ -633,7 +633,7 @@
       "min": 0,
       "max": "*",
       "short": "Additional content defined by implementations",
-      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
       "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
       "inherited": true,
       "base": "Element"
@@ -651,17 +651,33 @@
       "min": 0,
       "max": "*",
       "short": "Extensions that cannot be ignored even if unrecognized",
-      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
       "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
       "inherited": true,
       "base": "BackboneElement"
+    },
+    {
+      "name": "linkId",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.linkId",
+      "min": 0,
+      "max": "1",
+      "short": "Label for internal linking",
+      "definition": "Label used for when a characteristic refers to another characteristic.",
+      "comment": "",
+      "inherited": false
     },
     {
       "name": "description",
       "depth": 2,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "markdown"
         }
       ],
       "path": "EvidenceVariable.characteristic.description",
@@ -673,61 +689,19 @@
       "inherited": false
     },
     {
-      "name": "definition[x]",
+      "name": "note",
       "depth": 2,
       "types": [
         {
-          "datatype": "Reference",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "canonical"
-        },
-        {
-          "datatype": "CodeableConcept",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Expression",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "DataRequirement",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "TriggerDefinition",
+          "datatype": "Annotation",
           "documentLocation": "datatype"
         }
       ],
-      "referenceTypes": [
-        {
-          "datatype": "Group",
-          "documentLocation": "resource"
-        }
-      ],
-      "path": "EvidenceVariable.characteristic.definition[x]",
-      "min": 1,
-      "max": "1",
-      "short": "What code or expression defines members?",
-      "definition": "Define members of the evidence element using Codes (such as condition, medication, or observation), Expressions ( using an expression language such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis onset in the last year).",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "usageContext",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "UsageContext",
-          "documentLocation": "datatype"
-        }
-      ],
-      "path": "EvidenceVariable.characteristic.usageContext",
+      "path": "EvidenceVariable.characteristic.note",
       "min": 0,
       "max": "*",
-      "short": "What code/value pairs define members?",
-      "definition": "Use UsageContext to define the members of the population, such as Age Ranges, Genders, Settings.",
+      "short": "Used for footnotes or explanatory notes",
+      "definition": "A human-readable string to clarify or explain concepts about the characteristic.",
       "comment": "",
       "inherited": false
     },
@@ -742,69 +716,611 @@
       "path": "EvidenceVariable.characteristic.exclude",
       "min": 0,
       "max": "1",
-      "short": "Whether the characteristic includes or excludes members",
-      "definition": "When true, members with this characteristic are excluded from the element.",
+      "short": "Whether the characteristic is an inclusion criterion or exclusion criterion",
+      "definition": "When true, this characteristic is an exclusion criterion. In other words, not matching this characteristic definition is equivalent to meeting this criterion.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "participantEffective[x]",
+      "name": "definitionReference",
       "depth": 2,
       "types": [
         {
-          "datatype": "dateTime"
-        },
-        {
-          "datatype": "Period",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Duration",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Timing",
+          "datatype": "Reference",
           "documentLocation": "datatype"
         }
       ],
-      "path": "EvidenceVariable.characteristic.participantEffective[x]",
+      "referenceTypes": [
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Evidence",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionReference",
       "min": 0,
       "max": "1",
-      "short": "What time period do participants cover",
-      "definition": "Indicates what effective period the study covers.",
+      "short": "Defines the characteristic (without using type and value) by a Reference",
+      "definition": "Defines the characteristic using a Reference.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "timeFromStart",
+      "name": "definitionCanonical",
       "depth": 2,
       "types": [
         {
-          "datatype": "Duration",
-          "documentLocation": "datatype"
+          "datatype": "canonical"
         }
       ],
-      "path": "EvidenceVariable.characteristic.timeFromStart",
+      "path": "EvidenceVariable.characteristic.definitionCanonical",
       "min": 0,
       "max": "1",
-      "short": "Observation time from study start",
-      "definition": "Indicates duration from the participant's study entry.",
+      "short": "Defines the characteristic (without using type and value) by a Canonical",
+      "definition": "Defines the characteristic using Canonical.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "groupMeasure",
+      "name": "definitionCodeableConcept",
       "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionCodeableConcept",
+      "min": 0,
+      "max": "1",
+      "short": "Defines the characteristic (without using type and value) by a CodeableConcept",
+      "definition": "Defines the characteristic using CodeableConcept.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definitionExpression",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionExpression",
+      "min": 0,
+      "max": "1",
+      "short": "Defines the characteristic (without using type and value) by an expression",
+      "definition": "Defines the characteristic using Expression.",
+      "comment": "When another element provides a definition of the characteristic, the definitionExpression content SHALL match the definition (only adding technical concepts necessary for implementation) without changing the meaning.",
+      "inherited": false
+    },
+    {
+      "name": "definitionId",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionId",
+      "min": 0,
+      "max": "1",
+      "short": "Defines the characteristic (without using type and value) by an id",
+      "definition": "Defines the characteristic using id.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definitionByTypeAndValue",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue",
+      "min": 0,
+      "max": "1",
+      "short": "Defines the characteristic using type and value",
+      "definition": "Defines the characteristic using both a type and value[x] elements.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.type",
+      "min": 1,
+      "max": "1",
+      "short": "Expresses the type of characteristic",
+      "definition": "Used to express the type of characteristic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "method",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.method",
+      "min": 0,
+      "max": "*",
+      "short": "Method for how the characteristic value was determined",
+      "definition": "Method for how the characteristic value was determined.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "device",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DeviceMetric",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.device",
+      "min": 0,
+      "max": "1",
+      "short": "Device used for determining characteristic",
+      "definition": "Device used for determining characteristic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "id"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.value[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Defines the characteristic when coupled with characteristic.type",
+      "definition": "Defines the characteristic when paired with characteristic.type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "offset",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByTypeAndValue.offset",
+      "min": 0,
+      "max": "1",
+      "short": "Reference point for valueQuantity or valueRange",
+      "definition": "Defines the reference point for comparison when valueQuantity or valueRange is not compared to zero.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definitionByCombination",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination",
+      "min": 0,
+      "max": "1",
+      "short": "Used to specify how two or more characteristics are combined",
+      "definition": "Defines the characteristic as a combination of two or more characteristics.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "code",
+      "depth": 3,
       "types": [
         {
           "datatype": "code"
         }
       ],
-      "path": "EvidenceVariable.characteristic.groupMeasure",
+      "path": "EvidenceVariable.characteristic.definitionByCombination.code",
+      "min": 1,
+      "max": "1",
+      "short": "all-of | any-of | at-least | at-most | statistical | net-effect | dataset",
+      "definition": "Used to specify if two or more characteristics are combined with OR or AND.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "threshold",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "positiveInt"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination.threshold",
       "min": 0,
       "max": "1",
-      "short": "mean | median | mean-of-mean | mean-of-median | median-of-mean | median-of-median",
-      "definition": "Indicates how elements are aggregated within the study effective period.",
+      "short": "Provides the value of \"n\" when \"at-least\" or \"at-most\" codes are used",
+      "definition": "Provides the value of \"n\" when \"at-least\" or \"at-most\" codes are used.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "characteristic",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definitionByCombination.characteristic",
+      "min": 1,
+      "max": "*",
+      "short": "A defining factor of the characteristic",
+      "definition": "A defining factor of the characteristic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instances[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.instances[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Number of occurrences meeting the characteristic",
+      "definition": "Number of occurrences meeting the characteristic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "duration[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.duration[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Length of time in which the characteristic is met",
+      "definition": "Length of time in which the characteristic is met.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "timeFromEvent",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent",
+      "min": 0,
+      "max": "*",
+      "short": "Timing in which the characteristic is determined",
+      "definition": "Timing in which the characteristic is determined.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "description",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.description",
+      "min": 0,
+      "max": "1",
+      "short": "Human readable description",
+      "definition": "Human readable description.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "note",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.note",
+      "min": 0,
+      "max": "*",
+      "short": "Used for footnotes or explanatory notes",
+      "definition": "A human-readable string to clarify or explain concepts about the timeFromEvent.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "event[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "id"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.event[x]",
+      "min": 0,
+      "max": "1",
+      "short": "The event used as a base point (reference point) in time",
+      "definition": "The event used as a base point (reference point) in time.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "quantity",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.quantity",
+      "min": 0,
+      "max": "1",
+      "short": "Used to express the observation at a defined amount of time before or after the event",
+      "definition": "Used to express the observation at a defined amount of time before or after the event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "range",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromEvent.range",
+      "min": 0,
+      "max": "1",
+      "short": "Used to express the observation within a period before and/or after the event",
+      "definition": "Used to express the observation within a period before and/or after the event.",
       "comment": "",
       "inherited": false
     }
@@ -941,6 +1457,12 @@
       "type": "composite",
       "description": "A use context type and value assigned to the evidence variable",
       "expression": "EvidenceVariable.useContext"
+    },
+    {
+      "name": "characteristic-type",
+      "type": "token",
+      "description": "The evidence variable characteristic type",
+      "expression": "EvidenceVariable.characteristic.definitionCodeableConcept | EvidenceVariable.characteristic.definitionByTypeAndValue.type"
     }
   ]
 }

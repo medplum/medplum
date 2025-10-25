@@ -36,7 +36,7 @@ npm i -D postcss postcss-preset-mantine
 While not strictly required, Medplum recommends using [React Router](https://reactrouter.com/) for client side routing. Medplum uses React Router version 6+.
 
 ```bash
-npm i -D react-router-dom
+npm i -D react-router
 ```
 
 And then finally you can install Medplum React components:
@@ -113,7 +113,7 @@ import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { App } from './App';
 
 const medplum = new MedplumClient({

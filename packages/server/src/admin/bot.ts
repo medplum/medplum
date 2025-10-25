@@ -1,11 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { Readable } from 'stream';
-import { Repository, systemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
+import { getBinaryStorage } from '../storage/loader';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const createBotValidator = makeValidationMiddleware([
@@ -38,7 +43,7 @@ export interface CreateBotRequest {
   readonly runtimeVersion?: 'awslambda' | 'vmcontext';
 }
 
-export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
+export async function createBot(repo: Repository, request: CreateBotRequest): Promise<WithId<Bot>> {
   const filename = 'index.ts';
   const contentType = ContentType.TYPESCRIPT;
   const binary = await repo.createResource<Binary>({
@@ -54,7 +59,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     resourceType: 'Bot',
     name: request.name,
     description: request.description,
-    runtimeVersion: request.runtimeVersion ?? 'awslambda',
+    runtimeVersion: request.runtimeVersion ?? getConfig().defaultBotRuntimeVersion,
     sourceCode: {
       contentType,
       title: filename,
@@ -62,6 +67,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     },
   });
 
+  const systemRepo = getSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,

@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, List, Stack, Text, Title } from '@mantine/core';
-import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
-import {
+import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
+import type {
   Annotation,
   DiagnosticReport,
   Observation,
@@ -11,6 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -22,14 +25,16 @@ import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './DiagnosticReportDisplay.module.css';
 
 export interface DiagnosticReportDisplayProps {
-  value?: DiagnosticReport | Reference<DiagnosticReport>;
-  hideObservationNotes?: boolean;
-  hideSpecimenInfo?: boolean;
+  readonly value?: DiagnosticReport | Reference<DiagnosticReport>;
+  readonly hideObservationNotes?: boolean;
+  readonly hideSpecimenInfo?: boolean;
+  readonly hideSubject?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
   hideObservationNotes: false,
   hideSpecimenInfo: false,
+  hideSubject: false,
 } as DiagnosticReportDisplayProps;
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -66,7 +71,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   return (
     <Stack>
       <Title>Diagnostic Report</Title>
-      <DiagnosticReportHeader value={diagnosticReport} />
+      <DiagnosticReportHeader value={diagnosticReport} hideSubject={props.hideSubject} />
       {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
@@ -77,13 +82,14 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 }
 
 interface DiagnosticReportHeaderProps {
-  value: DiagnosticReport;
+  readonly value: DiagnosticReport;
+  readonly hideSubject?: boolean;
 }
 
-function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
+function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
   return (
     <Group mt="md" gap={30}>
-      {value.subject && (
+      {value.subject && !hideSubject && (
         <div>
           <Text size="xs" tt="uppercase" c="dimmed">
             Subject
@@ -120,7 +126,7 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
           <Text size="xs" tt="uppercase" c="dimmed">
             Status
           </Text>
-          <Text>{capitalize(value.status)}</Text>
+          <StatusBadge status={value.status} />
         </div>
       )}
     </Group>
@@ -153,9 +159,9 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
 }
 
 export interface ObservationTableProps {
-  value?: Observation[] | Reference<Observation>[];
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
@@ -184,9 +190,9 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
 }
 
 interface ObservationRowGroupProps {
-  value?: Observation[] | Reference<Observation>[];
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
@@ -205,9 +211,9 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
 }
 
 interface ObservationRowProps {
-  value: Observation | Reference<Observation>;
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value: Observation | Reference<Observation>;
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
@@ -252,7 +258,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           )}
         </td>
         <td>
-          {observation.performer?.map((performer) => <ReferenceDisplay key={performer.reference} value={performer} />)}
+          {observation.performer?.map((performer) => (
+            <ReferenceDisplay key={performer.reference} value={performer} />
+          ))}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>
@@ -277,7 +285,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
 }
 
 interface ObservationValueDisplayProps {
-  value?: Observation | ObservationComponent;
+  readonly value?: Observation | ObservationComponent;
 }
 
 function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Element | null {
@@ -286,7 +294,7 @@ function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Eleme
 }
 
 interface ReferenceRangeProps {
-  value?: ObservationReferenceRange[];
+  readonly value?: ObservationReferenceRange[];
 }
 
 function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {

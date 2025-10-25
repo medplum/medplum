@@ -1,15 +1,18 @@
-import { GraphiQLPlugin } from '@graphiql/react';
-import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { GraphiQLPlugin } from '@graphiql/react';
+import type { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
-import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
+import { MedplumClient, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import '@medplum/react/styles.css';
-import GraphiQL from 'graphiql';
-import 'graphiql/graphiql.css';
+import { GraphiQL } from 'graphiql';
+import 'graphiql/style.css';
+import type { JSX } from 'react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'regenerator-runtime/runtime.js';
 import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
@@ -61,11 +64,11 @@ const theme = createTheme({
   },
 });
 
-function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+async function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
     const config = getConfig().introspectionUrl;
     if (config) {
-      return fetch(config).then((res) => res.json());
+      return (await fetch(config)).json();
     }
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
@@ -125,7 +128,7 @@ function tryEncodeBase64(value: string | null | undefined): string {
   }
   try {
     return encodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }
@@ -136,7 +139,7 @@ function tryDecodeBase64(value: string | null): string {
   }
   try {
     return decodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }
@@ -147,8 +150,8 @@ export function App(): JSX.Element {
     <GraphiQL
       fetcher={fetcher}
       defaultQuery={HELP_TEXT}
-      query={parameters.query || undefined}
-      variables={parameters.variables || undefined}
+      initialQuery={parameters.query || undefined}
+      initialVariables={parameters.variables || undefined}
       operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}

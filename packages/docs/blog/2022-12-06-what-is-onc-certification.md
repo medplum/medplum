@@ -1,11 +1,7 @@
 ---
 slug: what-is-onc-certification
 title: What is ONC Certification?
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [compliance, billing]
 ---
 
@@ -14,6 +10,8 @@ tags: [compliance, billing]
 ![ONC Certification graphic](/img/blog/onc-certification.png)
 
 The [Office of the National Coordinator for Health Information Technology (ONC) certification](/docs/compliance/onc) is a program that ensures that electronic health records (EHRs) meet certain standards for interoperability and security. It is designed to help healthcare providers adopt and use EHRs more effectively, and to promote the widespread adoption of EHRs as a means of improving the quality and efficiency of healthcare. To be certified, an EHR must meet a set of standards and criteria that have been developed by the ONC in collaboration with other organizations and stakeholders in the healthcare industry. These standards cover a range of areas, including the exchange of health information([g10](/docs/compliance/onc)), patient access to their own health data (also [g10](/docs/compliance/onc)), and the protection of sensitive health information([d1](/docs/compliance/onc),[d13](/docs/compliance/onc),[g12](/docs/compliance/onc)). By achieving ONC certification, EHRs can demonstrate that they meet these standards and are ready for use in a wide variety of healthcare settings.
+
+<!-- truncate -->
 
 From a technical perspective - **the most important thing to understand about the certification is that it requires FHIR API access - for patients _and_ practitioners.**
 

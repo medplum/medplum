@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './stripe-create-invoice';
@@ -179,6 +181,11 @@ test('Create Invoice', async () => {
   };
   const contentType = 'application/json';
 
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBeDefined();
 });

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
   ContentType,
@@ -7,15 +9,16 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
-import { CodeChallengeMethod, tryLogin } from '../oauth/utils';
+import { getLogger, globalLogger } from '../logger';
+import { getClientRedirectUri } from '../oauth/clients';
+import type { CodeChallengeMethod } from '../oauth/utils';
+import { getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -48,7 +51,13 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const body = JSON.parse(state) as ExternalAuthState;
+  let body: ExternalAuthState;
+  try {
+    body = JSON.parse(state);
+  } catch (_err) {
+    sendOutcome(res, badRequest('Invalid state'));
+    return;
+  }
 
   const { idp, client } = await getIdentityProvider(body);
   if (!idp) {
@@ -61,9 +70,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let email: string | undefined = undefined;
   let externalId: string | undefined = undefined;
   if (idp.useSubject) {
-    externalId = userInfo.sub as string;
+    externalId = userInfo.sub as string | undefined;
+    if (!externalId) {
+      sendOutcome(res, badRequest('External token does not contain subject'));
+      return;
+    }
   } else {
-    email = userInfo.email as string;
+    email = (userInfo.email as string | undefined)?.toLowerCase();
+    if (!email) {
+      sendOutcome(res, badRequest('External token does not contain email address'));
+      return;
+    }
   }
 
   if (body.domain && !email?.endsWith('@' + body.domain)) {
@@ -95,13 +112,26 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  if (login.membership && body.redirectUri && client?.redirectUri) {
-    if (!body.redirectUri.startsWith(client.redirectUri)) {
+  if (login.membership && body.redirectUri && client) {
+    // Get the redirect URI from the client application
+    // Note that we're currently allowing partial matches for external auth.
+    // This is generally NOT recommended by the OAuth spec.
+    // However, we need to support it here for backwards compatibility with existing clients.
+    const redirectUri = getClientRedirectUri(client, body.redirectUri, true);
+    if (!redirectUri) {
       sendOutcome(res, badRequest('Invalid redirect URI'));
       return;
     }
-    const redirectUrl = new URL(body.redirectUri);
-    redirectUrl.searchParams.set('login', login.id as string);
+    const exactRedirectUri = getClientRedirectUri(client, redirectUri);
+    if (!exactRedirectUri) {
+      getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
+        clientId: client.id,
+        requestedUri: body.redirectUri,
+        partialMatchUri: redirectUri,
+      });
+    }
+    const redirectUrl = new URL(redirectUri);
+    redirectUrl.searchParams.set('login', login.id);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());
     return;
@@ -109,7 +139,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   const signInPage = login.launch ? 'oauth' : 'signin';
   const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
-  redirectUrl.searchParams.set('login', login.id as string);
+  redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
   if (login.codeChallenge) {
@@ -129,8 +159,11 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 async function getIdentityProvider(
   state: ExternalAuthState
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
+  let idp: IdentityProvider | undefined;
+  let client: ClientApplication | undefined;
+
   if (state.clientId) {
-    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
+    client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
       return { idp: client.identityProvider, client };
     }
@@ -139,11 +172,11 @@ async function getIdentityProvider(
   if (state.domain) {
     const domainConfig = await getDomainConfiguration(state.domain);
     if (domainConfig?.identityProvider) {
-      return { idp: domainConfig.identityProvider };
+      idp = domainConfig.identityProvider;
     }
   }
 
-  return {};
+  return { idp, client };
 }
 
 /**

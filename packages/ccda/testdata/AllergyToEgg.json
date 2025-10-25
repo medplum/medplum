@@ -1,0 +1,235 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Allergies, Adverse Reactions and Alerts",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "48765-2"
+                }
+              ]
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Allergen</th><th>Reaction</th><th>Reaction Severity</th><th>Documentation Date</th><th>Start Date</th></tr></thead><tbody><tr ID=\"allergy5\"><td ID=\"allergy5allergen\">Egg</td><td ID=\"allergy5reaction\">Hives</td><td ID=\"allergy5reactionseverity\">Moderate</td><td>Jan 4 2014</td><td>1998</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "AllergyIntolerance/0fffb34f-c1e0-47c2-92af-c414a3ff21ec",
+                "display": "Eggs (edible)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "b0ff47f4-ff49-43ee-8e46-43db7b57d986",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "99999999"
+          }
+        ],
+        "name": [
+          {
+            "family": "Seven",
+            "given": ["Henry"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "555-555-1002"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207Q00000X",
+                "display": "Allopathic & Osteopathic Physicians; Family Medicine"
+              }
+            ],
+            "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "b0ff47f4-ff49-43ee-8e46-43db7b57d986",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "99999999"
+          }
+        ],
+        "name": [
+          {
+            "family": "Seven",
+            "given": ["Henry"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "555-555-1002"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207Q00000X",
+                "display": "Allopathic & Osteopathic Physicians; Family Medicine"
+              }
+            ],
+            "text": "Allopathic & Osteopathic Physicians; Family Medicine"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "0fffb34f-c1e0-47c2-92af-c414a3ff21ec",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "type": "allergy",
+        "category": ["food"],
+        "patient": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "recorder": {
+          "reference": "Practitioner/b0ff47f4-ff49-43ee-8e46-43db7b57d986",
+          "display": "Henry Seven"
+        },
+        "recordedDate": "2014-01-04T12:35:06-0500",
+        "onsetDateTime": "1998-01-01T00:00:00Z",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#allergy5"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "102263004",
+              "display": "Eggs (edible)"
+            }
+          ],
+          "text": "Eggs (edible)",
+          "extension": [
+            {
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "valueString": "#allergy5allergen"
+            }
+          ]
+        },
+        "reaction": [
+          {
+            "id": "d89ce431-e0f1-4f8d-a81f-489b6ed91f09",
+            "manifestation": [
+              {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "247472004",
+                    "display": "Wheal"
+                  }
+                ],
+                "text": "Wheal",
+                "extension": [
+                  {
+                    "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                    "valueString": "#allergy5reaction"
+                  }
+                ]
+              }
+            ],
+            "severity": "moderate",
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#allergy5reactionseverity"
+              }
+            ]
+          }
+        ],
+        "asserter": {
+          "reference": "Practitioner/b0ff47f4-ff49-43ee-8e46-43db7b57d986",
+          "display": "Henry Seven"
+        }
+      }
+    }
+  ]
+}

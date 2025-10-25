@@ -1,17 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import cx from 'clsx';
 import { Fragment } from 'react';
-import { NavLink } from 'react-router-dom';
+import type { JSX } from 'react';
+import { NavLink } from 'react-router';
 import classes from './SideMenu.module.css';
 
 export interface SubMenuProps {
-  name: string;
-  href: string;
+  readonly name: string;
+  readonly href: string;
 }
 
 export interface SideMenuProps {
-  title: string;
-  menu: { name: string; href: string; subMenu?: SubMenuProps[] }[];
+  readonly title: string;
+  readonly menu: { name: string; href: string; subMenu?: SubMenuProps[] }[];
 }
 
 export function SideMenu(props: SideMenuProps): JSX.Element {

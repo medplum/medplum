@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block core-imports
-import fetch from 'node-fetch';
 import { MedplumClient } from '@medplum/core';
+import fetch from 'node-fetch';
 
 // end-block core-imports
 

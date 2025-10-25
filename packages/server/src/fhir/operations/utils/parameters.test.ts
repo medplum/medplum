@@ -1,17 +1,18 @@
-import { allOk, created, indexStructureDefinitionBundle } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Observation,
   OperationDefinition,
-  OperationOutcome,
   Parameters,
   ParametersParameter,
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { withTestContext } from '../../../test.setup';
-import { parseInputParameters, parseParameters, sendOutputParameters } from './parameters';
+import type { Request } from 'express';
+import { parse } from 'qs';
+import { buildOutputParameters, parseInputParameters, parseParameters } from './parameters';
 
 describe('FHIR Parameters parsing', () => {
   test('Read Parameters', () => {
@@ -52,7 +53,11 @@ const opDef: OperationDefinition = {
   parameter: [
     { name: 'singleIn', use: 'in', min: 0, max: '1', type: 'string' },
     { name: 'requiredIn', use: 'in', min: 1, max: '1', type: 'boolean' },
-    { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    { name: 'numeric', use: 'in', min: 0, max: '1', type: 'integer' },
+    { name: 'fractional', use: 'in', min: 0, max: '1', type: 'decimal' },
+    { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'string' },
+    { name: 'complexIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    { name: 'resource', use: 'in', min: 0, max: '1', type: 'Resource' },
     {
       name: 'partsIn',
       use: 'in',
@@ -68,209 +73,366 @@ const opDef: OperationDefinition = {
   ],
 };
 
-describe('Operation Input Parameters parsing', () => {
+const NestedOutputOperation: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'nested-output',
+  status: 'active',
+  kind: 'operation',
+  code: 'nested-output',
+  system: true,
+  type: false,
+  instance: false,
+  parameter: [
+    {
+      use: 'out',
+      name: 'outer',
+      min: 0,
+      max: '1',
+      part: [
+        { use: 'out', name: 'outerName', type: 'string', min: 1, max: '1' },
+        {
+          use: 'out',
+          name: 'repeatable',
+          min: 1,
+          max: '*',
+          part: [
+            {
+              use: 'out',
+              name: 'requiredString',
+              type: 'string',
+              min: 1,
+              max: '1',
+            },
+            {
+              use: 'out',
+              name: 'requiredInteger',
+              type: 'integer',
+              min: 1,
+              max: '1',
+            },
+            {
+              use: 'out',
+              name: 'optionalDecimal',
+              type: 'decimal',
+              min: 0,
+              max: '1',
+            },
+            {
+              use: 'out',
+              name: 'optionalString',
+              type: 'string',
+              min: 0,
+              max: '1',
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+describe('Operation Input/Output Parameters', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json'));
   });
 
-  test.each<[ParametersParameter[], Record<string, any>]>([
-    [[{ name: 'requiredIn', valueBoolean: true }], { requiredIn: true, singleIn: undefined, multiIn: [], partsIn: [] }],
-    [
+  describe('Operation Input Parameters parsing', () => {
+    test.each<[ParametersParameter[], Record<string, any>]>([
       [
-        { name: 'requiredIn', valueBoolean: false },
-        { name: 'singleIn', valueString: 'Hi!' },
+        [{ name: 'requiredIn', valueBoolean: true }],
+        { requiredIn: true, singleIn: undefined, multiIn: [], complexIn: [], partsIn: [] },
       ],
-      { requiredIn: false, singleIn: 'Hi!', multiIn: [], partsIn: [] },
-    ],
-    [
       [
-        { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
+        [
+          { name: 'requiredIn', valueBoolean: false },
+          { name: 'singleIn', valueString: 'Hi!' },
+        ],
+        { requiredIn: false, singleIn: 'Hi!', multiIn: [], complexIn: [], partsIn: [] },
       ],
-      { requiredIn: true, multiIn: [{ reference: 'Patient/test' }], singleIn: undefined, partsIn: [] },
-    ],
-    [
       [
-        { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
-        { name: 'multiIn', valueReference: { reference: 'Patient/example' } },
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
+        ],
+        { requiredIn: true, complexIn: [{ reference: 'Patient/test' }], multiIn: [], singleIn: undefined, partsIn: [] },
       ],
-      {
-        requiredIn: true,
-        multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
-        singleIn: undefined,
-        partsIn: [],
-      },
-    ],
-    [
       [
-        { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
-        { name: 'singleIn', valueString: 'Hello!' },
-        { name: 'multiIn', valueReference: { reference: 'Patient/example' } },
-      ],
-      {
-        requiredIn: true,
-        singleIn: 'Hello!',
-        multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
-        partsIn: [],
-      },
-    ],
-    [
-      [
-        { name: 'requiredIn', valueBoolean: true },
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
+          { name: 'complexIn', valueReference: { reference: 'Patient/example' } },
+        ],
         {
-          name: 'partsIn',
-          part: [
-            { name: 'foo', valueString: 'baz' },
-            { name: 'bar', valueBoolean: false },
-          ],
+          requiredIn: true,
+          complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+          multiIn: [],
+          singleIn: undefined,
+          partsIn: [],
         },
       ],
-      {
-        requiredIn: true,
-        partsIn: [{ foo: 'baz', bar: false }],
-        singleIn: undefined,
-        multiIn: [],
-      },
-    ],
-    [
       [
-        { name: 'requiredIn', valueBoolean: true },
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          { name: 'resource', resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] } },
+        ],
         {
-          name: 'partsIn',
-          part: [{ name: 'foo', valueString: 'baz' }],
+          requiredIn: true,
+          resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] },
+          singleIn: undefined,
+          multiIn: [],
+          complexIn: [],
+          partsIn: [],
         },
       ],
-      {
-        requiredIn: true,
-        partsIn: [{ foo: 'baz' }],
-        singleIn: undefined,
-        multiIn: [],
-      },
-    ],
-  ])('Read input Parameters', (params, expected) => {
-    const req: Request = {
-      body: {
-        resourceType: 'Parameters',
-        parameter: params,
-      },
-    } as unknown as Request;
-    expect(parseInputParameters(opDef, req)).toEqual(expected);
-  });
+      [
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
+          { name: 'singleIn', valueString: 'Hello!' },
+          { name: 'complexIn', valueReference: { reference: 'Patient/example' } },
+        ],
+        {
+          requiredIn: true,
+          singleIn: 'Hello!',
+          complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+          multiIn: [],
+          partsIn: [],
+        },
+      ],
+      [
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          {
+            name: 'partsIn',
+            part: [
+              { name: 'foo', valueString: 'baz' },
+              { name: 'bar', valueBoolean: false },
+            ],
+          },
+        ],
+        {
+          requiredIn: true,
+          partsIn: [{ foo: 'baz', bar: false }],
+          singleIn: undefined,
+          multiIn: [],
+          complexIn: [],
+        },
+      ],
+      [
+        [
+          { name: 'requiredIn', valueBoolean: true },
+          {
+            name: 'partsIn',
+            part: [{ name: 'foo', valueString: 'baz' }],
+          },
+        ],
+        {
+          requiredIn: true,
+          partsIn: [{ foo: 'baz' }],
+          singleIn: undefined,
+          multiIn: [],
+          complexIn: [],
+        },
+      ],
+    ])('Read input Parameters', (params, expected) => {
+      const req: Request = {
+        body: {
+          resourceType: 'Parameters',
+          parameter: params,
+        },
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toEqual(expected);
+    });
 
-  test('Read raw JSON as fallback', () => {
-    const req: Request = {
-      body: {
+    test('Read raw JSON as fallback', () => {
+      const req: Request = {
+        body: {
+          requiredIn: false,
+          singleIn: 'Yo',
+          complexIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
+          extraneous: 4,
+        },
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toEqual({
         requiredIn: false,
         singleIn: 'Yo',
-        multiIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
-        extraneous: 4,
-      },
-    } as unknown as Request;
-    expect(parseInputParameters(opDef, req)).toEqual({
-      requiredIn: false,
-      singleIn: 'Yo',
-      multiIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
-    });
-  });
-
-  test.each<[Parameters | Record<string, any>, string]>([
-    [{}, `Expected at least 1 value(s) for required input parameter 'requiredIn'`],
-    [
-      { resourceType: 'Parameters', parameter: [] },
-      'Expected 1 value(s) for input parameter requiredIn, but 0 provided',
-    ],
-    [
-      {
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'requiredIn', valueBoolean: true },
-          { name: 'requiredIn', valueBoolean: false },
-        ],
-      },
-      'Expected 1 value(s) for input parameter requiredIn, but 2 provided',
-    ],
-    [{ requiredIn: [true, false] }, 'Expected 1 value(s) for input parameter requiredIn, but 2 provided'],
-    [
-      {
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'requiredIn', valueBoolean: false },
-          { name: 'singleIn', valueString: 'a' },
-          { name: 'singleIn', valueString: 'b' },
-        ],
-      },
-      'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
-    ],
-    [
-      { requiredIn: false, singleIn: ['a', 'b'] },
-      'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
-    ],
-  ])('Throws error on incorrect argument counts: %j', (body, errorMsg) => {
-    const req: Request = { body } as unknown as Request;
-    expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
-  });
-
-  test.each<[Parameters, string]>([
-    [
-      {
-        resourceType: 'Parameters',
-        parameter: [{ name: 'requiredIn', valueBoolean: 'Hi!' }],
-      } as unknown as Parameters,
-      'Invalid JSON type: expected boolean, but got string (Parameters.parameter.value[x])',
-    ],
-    [
-      { resourceType: 'Parameters', parameter: [{ valueQuantity: { value: 5 } }] } as unknown as Parameters,
-      'Missing required property (Parameters.parameter.name)',
-    ],
-  ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
-    const req: Request = { body: parameters } as unknown as Request;
-    expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
-  });
-});
-
-describe('Send Operation output Parameters', () => {
-  const res = {
-    set: jest.fn(),
-    status: jest.fn(),
-    json: jest.fn(),
-  } as unknown as Response;
-
-  beforeEach(() => {
-    jest.resetAllMocks();
-    (res.status as jest.Mock).mockReturnThis();
-  });
-
-  test('Single required parameter', async () => {
-    await sendOutputParameters(opDef, res, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' } });
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith<[Parameters]>({
-      resourceType: 'Parameters',
-      parameter: [{ name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } }],
-    });
-  });
-
-  test('Optional output parameter', async () => {
-    await sendOutputParameters(opDef, res, created, {
-      singleOut: { value: 20.2, unit: 'kg/m^2' },
-      multiOut: [{ reference: 'Observation/height' }, { reference: 'Observation/weight' }],
+        complexIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
+      });
     });
 
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith<[Parameters]>({
-      resourceType: 'Parameters',
-      parameter: [
-        { name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } },
-        { name: 'multiOut', valueReference: { reference: 'Observation/height' } },
-        { name: 'multiOut', valueReference: { reference: 'Observation/weight' } },
+    test.each<[Parameters | Record<string, any>, string]>([
+      [{}, `Expected at least 1 value(s) for required input parameter 'requiredIn'`],
+      [
+        { resourceType: 'Parameters', parameter: [] },
+        'Expected 1 value(s) for input parameter requiredIn, but 0 provided',
       ],
+      [
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'requiredIn', valueBoolean: true },
+            { name: 'requiredIn', valueBoolean: false },
+          ],
+        },
+        'Expected 1 value(s) for input parameter requiredIn, but 2 provided',
+      ],
+      [{ requiredIn: [true, false] }, 'Expected 1 value(s) for input parameter requiredIn, but 2 provided'],
+      [
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'requiredIn', valueBoolean: false },
+            { name: 'singleIn', valueString: 'a' },
+            { name: 'singleIn', valueString: 'b' },
+          ],
+        },
+        'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
+      ],
+      [
+        { requiredIn: false, singleIn: ['a', 'b'] },
+        'Expected 0..1 value(s) for input parameter singleIn, but 2 provided',
+      ],
+    ])('Throws error on incorrect argument counts: %j', (body, errorMsg) => {
+      const req: Request = { body } as unknown as Request;
+      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+    });
+
+    test.each<[Parameters, string]>([
+      [
+        {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'requiredIn', valueBoolean: 'Hi!' }],
+        } as unknown as Parameters,
+        'Invalid JSON type: expected boolean, but got string (Parameters.parameter[0].value[x])',
+      ],
+      [
+        { resourceType: 'Parameters', parameter: [{ valueQuantity: { value: 5 } }] } as unknown as Parameters,
+        'Missing required property (Parameters.parameter[0].name)',
+      ],
+    ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
+      const req: Request = { body: parameters } as unknown as Request;
+      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+    });
+
+    test('Parses query string parameters as correct type', () => {
+      const req: Request = {
+        method: 'GET',
+        query: parse('requiredIn=true&numeric=100&fractional=3.14159'),
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, numeric: 100, fractional: 3.14159 });
+    });
+
+    test('Allows passing multiple instances of same query parameter', () => {
+      const req: Request = {
+        method: 'GET',
+        query: parse('multiIn=foo&requiredIn=true&multiIn=bar'),
+      } as unknown as Request;
+      expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, multiIn: ['foo', 'bar'] });
+    });
+
+    test.each<[string, string]>([
+      [
+        'requiredIn=true&complexIn={"reference":"Patient/foo"}',
+        'Complex parameter complexIn (Reference) cannot be passed via query string',
+      ],
+      ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter 'numeric'`],
+      ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter 'fractional'`],
+      ['requiredIn=1', `Invalid value '1' provided for boolean parameter 'requiredIn'`],
+    ])('Throws on invalid query string parameters: %s', (query, errorMsg) => {
+      const req: Request = { method: 'GET', query: parse(query) } as unknown as Request;
+      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
     });
   });
 
-  test('Return resource output', () =>
-    withTestContext(async () => {
+  describe('Send Operation output Parameters', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    test('Single required parameter', async () => {
+      const parameters = buildOutputParameters(opDef, { singleOut: { value: 20.2, unit: 'kg/m^2' } });
+      expect(parameters).toMatchObject({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } }],
+      });
+    });
+
+    test('Optional output parameter', async () => {
+      const parameters = buildOutputParameters(opDef, {
+        singleOut: { value: 20.2, unit: 'kg/m^2' },
+        multiOut: [{ reference: 'Observation/height' }, { reference: 'Observation/weight' }],
+      });
+      expect(parameters).toMatchObject({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } },
+          { name: 'multiOut', valueReference: { reference: 'Observation/height' } },
+          { name: 'multiOut', valueReference: { reference: 'Observation/weight' } },
+        ],
+      });
+    });
+
+    test('Nested output repeatable parameter', () => {
+      const parameters = buildOutputParameters(NestedOutputOperation, {
+        outer: {
+          outerName: 'outer',
+          repeatable: [
+            { requiredString: 'foo', requiredInteger: 1 },
+            { requiredString: 'bar', requiredInteger: 2, optionalDecimal: 3.14 },
+          ],
+        },
+      });
+      expect(parameters).toMatchObject({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'outer',
+            part: [
+              { name: 'outerName', valueString: 'outer' },
+              {
+                name: 'repeatable',
+                part: [
+                  { name: 'requiredString', valueString: 'foo' },
+                  { name: 'requiredInteger', valueInteger: 1 },
+                ],
+              },
+              {
+                name: 'repeatable',
+                part: [
+                  { name: 'requiredString', valueString: 'bar' },
+                  { name: 'requiredInteger', valueInteger: 2 },
+                  { name: 'optionalDecimal', valueDecimal: 3.14 },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    test('Nested output repeatable parameter with missing required', () => {
+      expect(() =>
+        buildOutputParameters(NestedOutputOperation, {
+          outer: {
+            outerName: 'someName',
+            repeatable: [{ requiredString: 'foo' }],
+          },
+        })
+      ).toThrow("Expected 1 or more values for output parameter 'requiredInteger', got 0");
+    });
+
+    test('Nested output repeatable parameter with too many values', () => {
+      expect(() =>
+        buildOutputParameters(NestedOutputOperation, {
+          outer: {
+            outerName: 'someName',
+            repeatable: [{ requiredInteger: 1, requiredString: ['foo', 'bar'] }],
+          },
+        })
+      ).toThrow("Expected at most 1 values for output parameter 'requiredString', got 2");
+    });
+
+    test('Return resource output', () => {
       const resourceReturnOp: OperationDefinition = {
         ...opDef,
         parameter: [{ name: 'return', use: 'out', type: 'Observation', min: 1, max: '1' }],
@@ -286,109 +448,52 @@ describe('Send Operation output Parameters', () => {
           unit: 'kg/m^2',
         },
       } as Observation;
-      await sendOutputParameters(resourceReturnOp, res, allOk, obs);
+      const output = buildOutputParameters(resourceReturnOp, obs);
+      expect(output).toMatchObject(obs);
+    });
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(obs);
-    }));
-
-  test('Returns error on non-resource', () =>
-    withTestContext(async () => {
+    test('Returns error on non-resource', () => {
       const resourceReturnOp: OperationDefinition = {
         ...opDef,
         parameter: [{ name: 'return', use: 'out', type: 'Observation', min: 1, max: '1' }],
       };
       const ref = { reference: 'Observation/bmi' } as Reference;
-      await sendOutputParameters(resourceReturnOp, res, allOk, ref);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
-        expect.objectContaining({
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              severity: 'error',
-              code: 'exception',
-              details: { text: 'Internal server error' },
-              diagnostics: 'Error: Expected Observation output, but got unexpected object',
-            },
-          ],
-        })
+      expect(() => buildOutputParameters(resourceReturnOp, ref)).toThrow(
+        'Expected Observation output, but got unexpected object'
       );
-    }));
+    });
 
-  test('Returns error on incorrect resource type', () =>
-    withTestContext(async () => {
+    test('Returns error on incorrect resource type', () => {
       const resourceReturnOp: OperationDefinition = {
         ...opDef,
         parameter: [{ name: 'return', use: 'out', type: 'Observation', min: 1, max: '1' }],
       };
       const patient = { resourceType: 'Patient' } as Patient;
-      await sendOutputParameters(resourceReturnOp, res, allOk, patient);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
-        expect.objectContaining({
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              severity: 'error',
-              code: 'exception',
-              details: { text: 'Internal server error' },
-              diagnostics: 'Error: Expected Observation output, but got unexpected object',
-            },
-          ],
-        })
+      expect(() => buildOutputParameters(resourceReturnOp, patient)).toThrow(
+        'Expected Observation output, but got unexpected object'
       );
-    }));
+    });
 
-  test('Missing required parameter', () =>
-    withTestContext(async () => {
-      await sendOutputParameters(opDef, res, allOk, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } });
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
-        expect.objectContaining({
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              severity: 'error',
-              code: 'exception',
-              details: { text: 'Internal server error' },
-              diagnostics: "Error: Expected 1 or more values for output parameter 'singleOut', got 0",
-            },
-          ],
-        })
+    test('Missing required parameter', () => {
+      expect(() => buildOutputParameters(opDef, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } })).toThrow(
+        `Expected 1 or more values for output parameter 'singleOut', got 0`
       );
-    }));
+    });
 
-  test('Omits extraneous parameters', async () => {
-    await sendOutputParameters(opDef, res, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' }, extraOut: 'foo' });
+    test('Omits extraneous parameters', async () => {
+      const parameters = buildOutputParameters(opDef, { singleOut: { value: 20.2, unit: 'kg/m^2' }, extraOut: 'foo' });
+      expect(parameters).toMatchObject({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } }],
+      });
+    });
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith<[Parameters]>({
-      resourceType: 'Parameters',
-      parameter: [{ name: 'singleOut', valueQuantity: { value: 20.2, unit: 'kg/m^2' } }],
+    test('Returns error on invalid output', () => {
+      expect(() => buildOutputParameters(opDef, { singleOut: { reference: 'Observation/foo' } })).toThrow(
+        'Invalid additional property "reference" (Parameters.parameter[0].value[x].reference)'
+      );
     });
   });
-
-  test('Returns error on invalid output', () =>
-    withTestContext(async () => {
-      await sendOutputParameters(opDef, res, allOk, { singleOut: { reference: 'Observation/foo' } });
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
-        expect.objectContaining({
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              severity: 'error',
-              code: 'exception',
-              details: { text: 'Internal server error' },
-              diagnostics: 'Error: Invalid additional property "reference" (Parameters.parameter.value[x].reference)',
-            },
-          ],
-        })
-      );
-    }));
 });

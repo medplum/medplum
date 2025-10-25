@@ -1,16 +1,21 @@
-import { ContentType, deepClone } from '@medplum/core';
-import { Binary, Bundle, Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
+import type { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
-import { systemRepo } from './repo';
+import { Repository, getSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
 describe('URL rewrite', () => {
+  const systemRepo = getSystemRepo();
   let config: MedplumServerConfig;
-  let binary: Binary;
+  let binary: WithId<Binary>;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -201,7 +206,7 @@ describe('URL rewrite', () => {
       photo: [
         {
           contentType: 'image/jpeg',
-          url: `${config.storageBaseUrl}${binary.id}`,
+          url: concatUrls(config.storageBaseUrl, binary.id),
         },
       ],
     };
@@ -236,5 +241,77 @@ describe('URL rewrite', () => {
     const url2 = (result.entry?.[1]?.resource as Practitioner).photo?.[0]?.url;
     expect(url1).toBeDefined();
     expect(url1).toBe(url2);
+  });
+
+  test('Security context', async () => {
+    const patient = await withTestContext(() => systemRepo.createResource<Patient>({ resourceType: 'Patient' }));
+
+    const binaryWithSecurityContext = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        securityContext: createReference(patient),
+      })
+    );
+
+    const media = await withTestContext(() =>
+      systemRepo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: { url: getReferenceString(binaryWithSecurityContext) },
+      })
+    );
+
+    // Repo1: Can read both Binary and Patient
+    // This should successfully rewrite the binary to a presigned URL
+    const repo1 = new Repository({
+      author: createReference(patient),
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
+      },
+    });
+    const result1 = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo1, media);
+    expect(result1.content?.url).not.toBe(`Binary/${binaryWithSecurityContext.id}`);
+    expect(result1.content?.url).toContain('Expires=');
+
+    // Repo2: Can only read Binary, not Patient
+    // This should not rewrite the binary to a presigned URL
+    const repo2 = new Repository({
+      author: createReference(patient),
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }],
+      },
+    });
+    const result2 = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo2, media);
+    expect(result2.content?.url).toBe(`Binary/${binaryWithSecurityContext.id}`);
+    expect(result2.content?.url).not.toContain('Expires=');
+
+    // Repo3: AccessPolicy limits to specific Patient
+    // This should successfully rewrite the binary to a presigned URL
+    const repo3 = new Repository({
+      author: createReference(patient),
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient', criteria: `Patient?_id=${patient.id}` }],
+      },
+    });
+    const result3 = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo3, media);
+    expect(result3.content?.url).not.toBe(`Binary/${binaryWithSecurityContext.id}`);
+    expect(result3.content?.url).toContain('Expires=');
+
+    // Repo3: AccessPolicy limits to different Patient
+    // This should not rewrite the binary to a presigned URL
+    const repo4 = new Repository({
+      author: createReference(patient),
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient', criteria: `Patient?_id=${randomUUID()}` }],
+      },
+    });
+    const result4 = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo4, media);
+    expect(result4.content?.url).toBe(`Binary/${binaryWithSecurityContext.id}`);
+    expect(result4.content?.url).not.toContain('Expires=');
   });
 });

@@ -1,0 +1,67 @@
+From 9e726c03073f6820dc725baeee6f810d8d202ea8 Mon Sep 17 00:00:00 2001
+From: maddyli <maddy@medplum.com>
+Date: Tue, 15 Apr 2025 10:33:41 -0700
+Subject: [PATCH] Add Recommendations to Medication-related Resources
+
+---
+ packages/docs/docs/api/fhir/resources/medication.mdx          | 2 ++
+ packages/docs/docs/api/fhir/resources/medicationdispense.mdx  | 2 ++
+ packages/docs/docs/api/fhir/resources/medicationknowledge.mdx | 2 ++
+ packages/docs/docs/api/fhir/resources/medicationrequest.mdx   | 2 ++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/packages/docs/docs/api/fhir/resources/medication.mdx b/packages/docs/docs/api/fhir/resources/medication.mdx
+index db125c58d..d35e94a8f 100644
+--- a/packages/docs/docs/api/fhir/resources/medication.mdx
++++ b/packages/docs/docs/api/fhir/resources/medication.mdx
+@@ -13,6 +13,8 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+ 
+ This resource is primarily used for the identification and definition of a medication for the purposes of prescribing, dispensing, and administering a medication as well as for making statements about medication use. Refer to the [US Core Medication profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medication.html).
+ 
++At Medplum, we encourage using [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) rather than `Medication`. For more information, see [Modeling a Formulary](https://www.medplum.com/docs/medications/formulary).
++
+ <Tabs queryString="section">
+   <TabItem value="schema" label="Schema" default>
+ 
+diff --git a/packages/docs/docs/api/fhir/resources/medicationdispense.mdx b/packages/docs/docs/api/fhir/resources/medicationdispense.mdx
+index 7201b7b02..0e7eb35e8 100644
+--- a/packages/docs/docs/api/fhir/resources/medicationdispense.mdx
++++ b/packages/docs/docs/api/fhir/resources/medicationdispense.mdx
+@@ -13,6 +13,8 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+ 
+ Indicates that a medication product is to be or has been dispensed for a named person/patient. This includes a description of the medication product (supply) provided and the instructions for administering the medication. The medication dispense is the result of a pharmacy system responding to a medication order.
+ 
++For Medplum best practices on using the `MedicationDispense` resource, please refer to [Representing Prescriptions and Medication Orders](https://www.medplum.com/docs/medications/representing-prescriptions-and-medication-orders).
++
+ <Tabs queryString="section">
+   <TabItem value="schema" label="Schema" default>
+ 
+diff --git a/packages/docs/docs/api/fhir/resources/medicationknowledge.mdx b/packages/docs/docs/api/fhir/resources/medicationknowledge.mdx
+index b3c9cc8cb..4eae1938a 100644
+--- a/packages/docs/docs/api/fhir/resources/medicationknowledge.mdx
++++ b/packages/docs/docs/api/fhir/resources/medicationknowledge.mdx
+@@ -13,6 +13,8 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+ 
+ Information about a medication that is used to support knowledge.
+ 
++For Medplum best practices on using the `MedicationKnowledge` resource, please refer to [Modeling a Formulary](https://www.medplum.com/docs/medications/formulary).
++
+ <Tabs queryString="section">
+   <TabItem value="schema" label="Schema" default>
+ 
+diff --git a/packages/docs/docs/api/fhir/resources/medicationrequest.mdx b/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
+index fd4386afe..b44c79acd 100644
+--- a/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
++++ b/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
+@@ -13,6 +13,8 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+ 
+ An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called "MedicationRequest" rather than "MedicationPrescription" or "MedicationOrder" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns. Refer to the [US Core Medication Request profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medicationrequest.html).
+ 
++For Medplum best practices on using the `MedicationRequest` resource, please refer to [Representing Prescriptions and Medication Orders](https://www.medplum.com/docs/medications/representing-prescriptions-and-medication-orders).
++
+ <Tabs queryString="section">
+   <TabItem value="schema" label="Schema" default>
+ 
+-- 
+2.39.5 (Apple Git-154)
+

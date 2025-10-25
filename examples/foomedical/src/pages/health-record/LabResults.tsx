@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { formatDate, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconChevronRight } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';
 
@@ -20,7 +23,7 @@ export function LabResults(): JSX.Element {
       <InfoSection title="Lab Results">
         <Stack gap={0}>
           {reports.map((report) => (
-            <InfoButton key={report.id} onClick={() => navigate(`./${report.id}`)}>
+            <InfoButton key={report.id} onClick={() => navigate(`./${report.id}`)?.catch(console.error)}>
               <div>
                 <Text fw={500} mb={4}>
                   {formatDate(report.meta?.lastUpdated as string)}

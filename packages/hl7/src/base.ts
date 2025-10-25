@@ -1,8 +1,11 @@
-import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Hl7CloseEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
 
 export interface Hl7EventMap {
   message: Hl7MessageEvent;
   error: Hl7ErrorEvent;
+  close: Hl7CloseEvent;
 }
 
 export abstract class Hl7Base extends EventTarget {

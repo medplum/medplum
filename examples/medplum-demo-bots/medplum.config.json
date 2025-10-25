@@ -83,6 +83,42 @@
       "id": "",
       "source": "./src/bots-with-shared-library/goodbye-patient.ts",
       "dist": "./dist/bots-with-shared-library/welcome-patient.js"
+    },
+    {
+      "name": "demo-slack-bot",
+      "id": "",
+      "source": "./src/slack-bots/demo-slack-bot.ts",
+      "dist": "./dist/slack-bots/demo-slack-bot.js"
+    },
+    {
+      "name": "cms-1500-pdf",
+      "id": "",
+      "source": "src/billing-bots/cms-1500-pdf.ts",
+      "dist": "dist/billing-bots/cms-1500-pdf.js"
+    },
+    {
+      "name": "epic-query-patient",
+      "id": "",
+      "source": "src/epic/epic-query-patient.ts",
+      "dist": "dist/epic/epic-query-patient.js"
+    },
+    {
+      "name": "metriport-patient-bot",
+      "id": "",
+      "source": "src/metriport-bots/metriport-patient-bot.ts",
+      "dist": "dist/metriport-bots/metriport-patient-bot.js"
+    },
+    {
+      "name": "metriport-consolidated-data-webhook",
+      "id": "",
+      "source": "src/metriport-bots/metriport-consolidated-data-webhook.ts",
+      "dist": "dist/metriport-bots/metriport-consolidated-data-webhook.js"
+    },
+    {
+      "name": "twilio-voice-webhook",
+      "id": "",
+      "source": "src/twilio/voice-webhook.ts",
+      "dist": "dist/twilio/voice-webhook.js"
     }
   ]
 }

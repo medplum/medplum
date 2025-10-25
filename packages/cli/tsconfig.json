@@ -1,8 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "lib": ["esnext"]
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "outDir": "dist/types",
+    "noEmit": false,
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*.ts"]
 }

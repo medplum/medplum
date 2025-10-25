@@ -1,17 +1,22 @@
-import { ContentType, createReference } from '@medplum/core';
-import { BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType } from '@medplum/core';
+import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { loadTestConfig } from '../../config/loader';
+import type { FileSystemStorage } from '../../storage/filesystem';
+import { getBinaryStorage } from '../../storage/loader';
+import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 import { exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
-const app = express();
-
 describe('Export', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -22,10 +27,7 @@ describe('Export', () => {
   });
 
   test('Success', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
-
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ membership: { admin: true } });
     expect(accessToken).toBeDefined();
 
     const res1 = await request(app)
@@ -81,20 +83,17 @@ describe('Export', () => {
       Object.values(output)
         .map((ex) => ex.type)
         .sort()
-    ).toEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
+    ).toStrictEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
-    const dataRes = await request(app)
-      .get(outputLocation.pathname + outputLocation.search)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(dataRes.status).toBe(200);
+    const outputContent = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(outputLocation);
 
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
-    const resourceJSON = dataRes.text.trim().split('\n');
+    const resourceJSON = outputContent.trim().split('\n');
     expect(resourceJSON).toHaveLength(1);
-    expect(JSON.parse(resourceJSON[0])?.subject?.reference).toEqual(`Patient/${res1.body.id}`);
+    expect(JSON.parse(resourceJSON[0])?.subject?.reference).toStrictEqual(`Patient/${res1.body.id}`);
   });
 
   test('System Export Accepted with GET', async () => {
@@ -127,43 +126,35 @@ describe('Export', () => {
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
-  test('exportResourceType iterating through paginated search results', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
-    const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
-    const patient: Patient = await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [
-        {
-          family: 'Smith',
-          given: ['John'],
+  test('exportResourceType iterating through paginated search results', async () =>
+    withTestContext(async () => {
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'preliminary',
+        subject: { reference: 'Patient/123' },
+        code: {
+          text: 'patient observation 1',
         },
-      ],
-    });
+      });
 
-    await systemRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      status: 'preliminary',
-      subject: createReference(patient),
-      code: {
-        text: 'patient observation 1',
-      },
-    });
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'preliminary',
+        subject: { reference: 'Patient/123' },
+        code: {
+          text: 'patient observation 2',
+        },
+      });
 
-    await systemRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      status: 'preliminary',
-      subject: createReference(patient),
-      code: {
-        text: 'patient observation 2',
-      },
-    });
-    await exporter.start('http://example.com');
+      const exporter = new BulkExporter(systemRepo);
+      const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
+      await exporter.start('http://example.com');
 
-    await exportResourceType(exporter, 'Observation', 1);
-    const bulkDataExport = await exporter.close(project);
-    expect(bulkDataExport.status).toBe('completed');
-    expect(exportWriteResourceSpy).toHaveBeenCalled();
-  });
+      const { project } = await createTestProject();
+      expect(project).toBeDefined();
+      await exportResourceType(exporter, 'Observation', 1);
+      const bulkDataExport = await exporter.close(project);
+      expect(bulkDataExport.status).toBe('completed');
+      expect(exportWriteResourceSpy).toHaveBeenCalled();
+    }));
 });

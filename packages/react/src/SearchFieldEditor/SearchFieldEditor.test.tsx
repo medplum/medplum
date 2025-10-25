@@ -1,4 +1,6 @@
-import { SearchRequest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchFieldEditor } from './SearchFieldEditor';
@@ -40,7 +42,7 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).not.toBeCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   test('Modal onClose called when overlay clicked while dropdown NOT open', async () => {
@@ -59,6 +61,6 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).toBeCalled();
+    expect(onCancel).toHaveBeenCalled();
   });
 });

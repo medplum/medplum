@@ -1,32 +1,9 @@
-import {
-  CloudWatchLogsClient,
-  CreateLogGroupCommand,
-  CreateLogStreamCommand,
-  PutLogEventsCommand,
-} from '@aws-sdk/client-cloudwatch-logs';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LogLevel } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { globalLogger } from './logger';
 
 describe('Global Logger', () => {
-  let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
-
-  beforeEach(() => {
-    mockCloudWatchLogsClient = mockClient(CloudWatchLogsClient);
-
-    mockCloudWatchLogsClient.on(CreateLogGroupCommand).resolves({});
-    mockCloudWatchLogsClient.on(CreateLogStreamCommand).resolves({});
-    mockCloudWatchLogsClient.on(PutLogEventsCommand).resolves({
-      nextSequenceToken: '',
-      rejectedLogEventsInfo: {},
-    });
-  });
-
-  afterEach(() => {
-    mockCloudWatchLogsClient.restore();
-  });
-
   test('Debug', () => {
     console.log = jest.fn();
 

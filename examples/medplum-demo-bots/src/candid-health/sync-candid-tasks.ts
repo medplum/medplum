@@ -1,4 +1,7 @@
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
 import fetch from 'node-fetch';
 
 const CANDID_API_URL = 'https://api-staging.joincandidhealth.com/api/v1/';
@@ -76,9 +79,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           authorString: note.author_name,
           time: note.created_at,
         })),
-        encounter: {
-          reference: createReference(encounter) as string,
-        },
+        encounter: createReference(encounter),
       },
       'identifier=' + candidTask.task_id
     );

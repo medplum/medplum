@@ -7,7 +7,19 @@ set -e
 set -x
 
 # Set node options
-export NODE_OPTIONS='--max-old-space-size=5120'
+export NODE_OPTIONS='--max-old-space-size=8192'
+
+# Clear old code coverage data
+rm -rf coverage
+mkdir -p coverage/packages
+mkdir -p coverage/combined
+
+# Seed the database
+# This is a special "test" which runs all of the seed logic, such as setting up structure definitions
+# On a normal developer machine, this is run only rarely when setting up a new database
+# This test must be run first, and cannot be run concurrently with other tests
+SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- --coverage
+cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
 # Test
 # Run them separately because code coverage is resource intensive
@@ -20,34 +32,14 @@ done
 
 for dir in `ls examples`; do
   if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir
+    npx turbo run test --filter=./examples/$dir
   fi
 done
 
-
-# Combine test coverage
-rm -rf coverage
-mkdir -p coverage/packages
-mkdir -p coverage/combined
-
-PACKAGES=(
-  "agent"
-  "app"
-  "cdk"
-  "cli"
-  "core"
-  "expo-polyfills"
-  "fhir-router"
-  "health-gorilla"
-  "hl7"
-  "mock"
-  "react"
-  "react-hooks"
-  "server"
-)
-
-for package in ${PACKAGES[@]}; do
-  cp "packages/$package/coverage/coverage-final.json" "coverage/packages/coverage-$package.json"
+# Find all coverage-final.json files in packages subdirectories
+for coverage_file in packages/*/coverage/coverage-final.json; do
+  package=$(echo "$coverage_file" | sed -E 's/packages\/([^/]+)\/coverage.*/\1/')
+  cp "$coverage_file" "coverage/packages/coverage-$package.json"
 done
 
 npx nyc merge coverage/packages coverage/combined/coverage.json

@@ -1,16 +1,18 @@
-import { Quantity } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Quantity } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuantityInput } from './QuantityInput';
 
 describe('QuantityInput', () => {
   test('Renders', () => {
-    render(<QuantityInput name="a" defaultValue={{ value: 123, unit: 'mg' }} />);
+    render(<QuantityInput path="" name="a" defaultValue={{ value: 123, unit: 'mg' }} />);
     expect(screen.getByDisplayValue('123')).toBeDefined();
     expect(screen.getByDisplayValue('mg')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
-    render(<QuantityInput name="a" />);
+    render(<QuantityInput path="" name="a" />);
     expect(screen.getByPlaceholderText('Value')).toBeDefined();
     expect(screen.getByPlaceholderText('Unit')).toBeDefined();
   });
@@ -18,7 +20,7 @@ describe('QuantityInput', () => {
   test('Set value', async () => {
     let lastValue: Quantity | undefined = undefined;
 
-    render(<QuantityInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<QuantityInput path="" name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), {
@@ -39,7 +41,7 @@ describe('QuantityInput', () => {
   test('Set value with comparator', async () => {
     let lastValue: Quantity | undefined = undefined;
 
-    render(<QuantityInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<QuantityInput path="" name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('a-comparator'), {
@@ -64,7 +66,7 @@ describe('QuantityInput', () => {
   });
 
   test('Set value with wheel', async () => {
-    render(<QuantityInput name="a" defaultValue={{ value: 2.3, unit: 'ng' }} />);
+    render(<QuantityInput path="" name="a" defaultValue={{ value: 2.3, unit: 'ng' }} />);
 
     const valueInput = screen.getByPlaceholderText('Value');
     fireEvent.wheel(valueInput, {
@@ -78,7 +80,7 @@ describe('QuantityInput', () => {
   });
 
   test('Disable wheel', async () => {
-    render(<QuantityInput name="a" disableWheel defaultValue={{ value: 2.3, unit: 'ng' }} />);
+    render(<QuantityInput path="" name="a" disableWheel defaultValue={{ value: 2.3, unit: 'ng' }} />);
 
     const valueInput = screen.getByPlaceholderText('Value');
 

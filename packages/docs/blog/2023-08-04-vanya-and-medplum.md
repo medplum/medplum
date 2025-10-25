@@ -1,17 +1,15 @@
 ---
 slug: vanya-and-medplum
 title: Vanya for Browsing Data on Medplum's FHIR Server
-authors:
-  name: Cody Ebberson
-  title: Medplum Core Team
-  url: https://github.com/codyebberson
-  image_url: https://github.com/codyebberson.png
+authors: cody
 tags: [auth, case-study]
 ---
 
 # Vanya for Browsing Data on Medplum's FHIR Server
 
 [Darren Devitt](https://www.linkedin.com/in/darrendevitt/), a respected FHIR expert, has recently released an alpha version of a new tool called [Vanya](https://vanyalabs.com/). Similar to how Postman functions for API requests, Vanya is designed specifically for browsing data on FHIR servers.
+
+<!-- truncate -->
 
 I've taken some time to test Vanya with Medplum's FHIR server, and I want to share the setup process, some tricks I've found useful, and a brief overview of my experience.
 
@@ -29,7 +27,7 @@ Vanya requires authentication as an HTTP header. For my testing, I used a "Basic
 
 You can use a tool such as [DebugBear](https://www.debugbear.com/basic-auth-header-generator) to generate a Basic auth header from a client ID and client secret.
 
-Or, if you prefer, you can use the OAuth2 client_credentials flow with the client ID and client secret to get an access token. See our [guide on Client Credentials](/docs/auth/methods/client-credentials) for step-by-step instructions.
+Or, if you prefer, you can use the OAuth2 client_credentials flow with the client ID and client secret to get an access token. See our [guide on Client Credentials](/docs/auth/client-credentials) for step-by-step instructions.
 
 Once you have a Basic auth token or a Bearer token, add it to the Vanya HTTP headers:
 

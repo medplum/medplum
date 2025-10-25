@@ -32,11 +32,11 @@ The Medplum billing and payments implementation is a standards compliant impleme
 | Organization                | [View All](https://app.medplum.com/Organization)                | [Create New](https://app.medplum.com/Organization/new)      | [API](/docs/api/fhir/resources/organization)                |
 | MoneyQuantity               | FHIR Datatype                                                   | Create via API or workflow                                  | [Reference](/docs/api/fhir/datatypes/moneyquantity)         |
 
-## Demos and Tutorials
+## Related Reading
 
-- [Sample Insurance Eligibility Check](/docs/bots/insurance-eligibility-check)
+- [Billing Documentation](/docs/billing) - including creating CMS 1500 and Superbills
 - [Foo Medical Billing Page](https://foomedical.com/account/membership-and-billing) sample patient portal with financial data.
-- [Provider Demo](https://provider.foomedical.com) including credential management.
+- [Provider Demo](https://provider.medplum.com) includes credential management.
 
 ## Integration Reference
 

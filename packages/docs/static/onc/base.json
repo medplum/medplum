@@ -1,0 +1,115 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "total": 2,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://www.medplum.com/onc/base.json"
+    }
+  ],
+  "entry": [
+    {
+      "fullUrl": "https://www.medplum.com/Endpoint/medplum",
+      "resource": {
+        "resourceType": "Endpoint",
+        "id": "medplum",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: example</p></div>"
+        },
+        "status": "active",
+        "connectionType": {
+          "system": "http://terminology.hl7.org/CodeSystem/endpoint-connection-type",
+          "code": "hl7-fhir-rest",
+          "display": "HL7 FHIR"
+        },
+        "name": "Medplum Endpoint",
+        "managingOrganization": {
+          "reference": "Organization/medplum",
+          "display": "Medplum"
+        },
+        "payloadType": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/endpoint-payload-type",
+                "code": "any",
+                "display": "Any"
+              }
+            ]
+          }
+        ],
+        "payloadMimeType": ["application/fhir+json"],
+        "address": "https://api.medplum.com/fhir/R4"
+      },
+      "search": {
+        "mode": "match",
+        "score": 1
+      }
+    },
+    {
+      "fullUrl": "https://www.medplum.com/Organization/medplum",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "medplum",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: example</p></div>"
+        },
+        "name": "Medplum",
+        "telecom": [
+          {
+            "system": "phone",
+            "use": "work",
+            "value": "+1-415-900-9122"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "both",
+            "line": ["2477 Sutter St"],
+            "city": "San Francisco",
+            "state": "California",
+            "postalCode": "94115"
+          }
+        ],
+        "contact": [
+          {
+            "purpose": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/contactentity-type",
+                  "code": "ADMIN",
+                  "display": "Administrative"
+                }
+              ]
+            },
+            "name": {
+              "use": "official",
+              "given": ["Cody"],
+              "family": "Ebberson"
+            },
+            "address": {
+              "city": "San Francisco",
+              "state": "California",
+              "postalCode": "94115",
+              "line": ["2477 Sutter St"]
+            }
+          }
+        ],
+        "endpoint": [
+          {
+            "reference": "Endpoint/medplum",
+            "display": "Medplum Endpoint"
+          }
+        ]
+      },
+      "search": {
+        "mode": "match",
+        "score": 1
+      }
+    }
+  ]
+}

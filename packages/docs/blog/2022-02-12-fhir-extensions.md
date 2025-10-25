@@ -1,11 +1,7 @@
 ---
 slug: fhir-extensions-intro
 title: Extending Objects through FHIR Extensions
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 ---
 
 # FHIR Extensions are a way to add fields to FHIR objects
@@ -14,9 +10,11 @@ When working with customers to set up their apps and workflow we commonly get th
 
 **We need to track this extra data, but there is no field for it in the FHIR object. What should we do?**
 
+<!-- truncate -->
+
 FHIR Extensions are a relatively simple way to track extra fields associated with a FHIR objects, and Medplum supports versioning and API access for the extensions, just like we do for all FHIR objects.
 
-Here is the [FHIR Extentions official guide](https://www.hl7.org/fhir/extensibility.html).
+Here is the [FHIR Extensions official guide](https://www.hl7.org/fhir/extensibility.html).
 
 ## Design your Extension
 

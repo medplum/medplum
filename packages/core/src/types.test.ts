@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -12,45 +14,48 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
+import type { TypedValue } from './types';
 import {
-  TypedValue,
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
   getPathDisplayName,
   getPropertyDisplayName,
   isReference,
   isResource,
+  isTypedValue,
   stringifyTypedValue,
 } from './types';
 
 describe('Type Utils', () => {
   test('getPathDisplayName', () => {
-    expect(getPathDisplayName('Patient.id')).toEqual('ID');
-    expect(getPathDisplayName('Patient.name')).toEqual('Name');
-    expect(getPathDisplayName('Patient.birthDate')).toEqual('Birth Date');
-    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
-    expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
-    expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
-    expect(getPathDisplayName('Device.udiCarrier')).toEqual('UDI Carrier');
-    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toEqual('With A Single Character Word');
-    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toEqual('Carrier AIDC');
-    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toEqual('Carrier HRF');
-    expect(getPathDisplayName('Patient.digitAtEnd8')).toEqual('Digit At End 8');
-    expect(getPathDisplayName('Patient.8digitAtStart')).toEqual('8 Digit At Start');
-    expect(getPathDisplayName('Patient.digit8InMiddle')).toEqual('Digit 8 In Middle');
+    expect(getPathDisplayName('Patient.id')).toStrictEqual('ID');
+    expect(getPathDisplayName('Patient.name')).toStrictEqual('Name');
+    expect(getPathDisplayName('Patient.birthDate')).toStrictEqual('Birth Date');
+    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toStrictEqual('Manufacturer');
+    expect(getPathDisplayName('ClientApplication.jwksUri')).toStrictEqual('JWKS URI');
+    expect(getPathDisplayName('ClientApplication.redirectUri')).toStrictEqual('Redirect URI');
+    expect(getPathDisplayName('Device.udiCarrier')).toStrictEqual('UDI Carrier');
+    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toStrictEqual('With A Single Character Word');
+    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toStrictEqual('Carrier AIDC');
+    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toStrictEqual('Carrier HRF');
+    expect(getPathDisplayName('Patient.digitAtEnd8')).toStrictEqual('Digit At End 8');
+    expect(getPathDisplayName('Patient.8digitAtStart')).toStrictEqual('8 Digit At Start');
+    expect(getPathDisplayName('Patient.digit8InMiddle')).toStrictEqual('Digit 8 In Middle');
   });
 
   test('getPropertyDisplayName', () => {
-    expect(getPropertyDisplayName('_lastUpdated')).toEqual('Last Updated');
+    expect(getPropertyDisplayName('_lastUpdated')).toStrictEqual('Last Updated');
   });
 
   test('getElementDefinitionTypeName', () => {
-    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toEqual('string');
-    expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
-    expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
-      'PatientContact'
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toStrictEqual('string');
+    expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toStrictEqual(
+      'Address'
     );
-    expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toEqual(
+    expect(
+      getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })
+    ).toStrictEqual('PatientContact');
+    expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toStrictEqual(
       'TimingRepeat'
     );
 
@@ -64,7 +69,7 @@ describe('Type Utils', () => {
         base: { path: 'Questionnaire.item', min: 0, max: '*' },
         type: [{ code: 'Element' }],
       })
-    ).toEqual('QuestionnaireItem');
+    ).toStrictEqual('QuestionnaireItem');
   });
 
   test('getElementDefinitionFromElements', () => {
@@ -78,12 +83,21 @@ describe('Type Utils', () => {
     expect(getElementDefinitionFromElements(elements, 'value[x]')).toBeDefined();
     expect(getElementDefinitionFromElements(elements, 'value')).toBeDefined();
 
-    expect(getElementDefinitionFromElements(elements, 'value')).toEqual(
+    expect(getElementDefinitionFromElements(elements, 'value')).toStrictEqual(
       getElementDefinitionFromElements(elements, 'value[x]')
     );
 
     // shoudl NOT be found
     expect(getElementDefinitionFromElements(elements, 'notreal')).toBeUndefined();
+  });
+
+  test('isTypedValue', () => {
+    expect(isTypedValue(undefined)).toBe(false);
+    expect(isTypedValue(null)).toBe(false);
+    expect(isTypedValue('Patient')).toBe(false);
+    expect(isTypedValue({})).toBe(false);
+    expect(isTypedValue({ type: 'string', value: 'foo' })).toBe(true);
+    expect(isTypedValue({ type: 'string' })).toBe(false);
   });
 
   test('isResource', () => {
@@ -96,12 +110,47 @@ describe('Type Utils', () => {
   });
 
   test('isReference', () => {
+    // Basic reference validation (no resourceType parameter)
     expect(isReference(undefined)).toBe(false);
     expect(isReference(null)).toBe(false);
     expect(isReference('Patient')).toBe(false);
     expect(isReference({})).toBe(false);
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
     expect(isReference({ reference: 'Patient/123' })).toBe(true);
+    expect(isReference({ reference: { value: '123' } })).toBe(false);
+
+    // Test with resourceType parameter - matching cases
+    expect(isReference({ reference: 'Patient/123' }, 'Patient')).toBe(true);
+    expect(isReference({ reference: 'Observation/456' }, 'Observation')).toBe(true);
+    expect(isReference({ reference: 'Organization/789' }, 'Organization')).toBe(true);
+    expect(isReference({ reference: 'Practitioner/abc' }, 'Practitioner')).toBe(true);
+
+    // Test with resourceType parameter - non-matching cases
+    expect(isReference({ reference: 'Patient/123' }, 'Observation')).toBe(false);
+    expect(isReference({ reference: 'Observation/456' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: 'AppointmentResponse/789' }, 'Appointment')).toBe(false);
+
+    // Test with resourceType parameter - edge cases
+    expect(isReference({ reference: 'Patient' }, 'Patient')).toBe(false); // no ID or query parameters
+    expect(isReference({ reference: 'Patient?name=John' }, 'Patient')).toBe(true); // query parameters
+    expect(isReference({ reference: 'Patient/123?version=1' }, 'Patient')).toBe(true); // ID with query
+
+    // Test case sensitivity
+    expect(isReference({ reference: 'patient/123' }, 'Patient')).toBe(false);
+
+    // Test partial matches (should not match)
+    expect(isReference({ reference: 'MyPatient/123' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: 'PatientData/123' }, 'Patient')).toBe(false);
+
+    // Test invalid reference values with resourceType
+    expect(isReference(undefined, 'Patient')).toBe(false);
+    expect(isReference(null, 'Patient')).toBe(false);
+    expect(isReference({}, 'Patient')).toBe(false);
+    expect(isReference({ reference: { value: '123' } }, 'Patient')).toBe(false);
+
+    // Test empty and malformed references
+    expect(isReference({ reference: '' }, 'Patient')).toBe(false);
+    expect(isReference({ reference: '/' }, 'Patient')).toBe(false);
   });
 
   test.each<[TypedValue, string]>([
@@ -149,6 +198,6 @@ describe('Type Utils', () => {
     [{ type: 'Age', value: { code: 'a', system: UCUM, value: 34.9 } as Quantity }, `34.9|${UCUM}|a`],
   ])('formatTypedValue()', (value, expected) => {
     const actual = stringifyTypedValue(value);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 });

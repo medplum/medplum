@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
@@ -19,7 +21,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -29,7 +31,7 @@ describe('Resource $graph', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    defaultAccessToken = await initTestAuth({ strictMode: false });
+    defaultAccessToken = await initTestAuth({ project: { strictMode: false } });
   });
 
   afterAll(async () => {
@@ -132,7 +134,7 @@ describe('Resource $graph', () => {
 
       const bundle = await getResourceGraph(patient, graphName);
       expect(bundle.entry).toHaveLength(1);
-      expect(bundle.entry?.[0]?.resource?.resourceType).toEqual('Patient');
+      expect(bundle.entry?.[0]?.resource?.resourceType).toStrictEqual('Patient');
     });
 
     test('Malformed Target', async () => {

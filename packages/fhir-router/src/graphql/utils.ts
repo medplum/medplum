@@ -1,30 +1,27 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
-  Filter,
+  DEFAULT_MAX_SEARCH_COUNT,
+  DEFAULT_SEARCH_COUNT,
   getReferenceString,
   getSearchParameters,
   Operator,
   parseSearchRequest,
-  SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
-import {
-  GraphQLBoolean,
-  GraphQLError,
-  GraphQLFieldConfigArgumentMap,
-  GraphQLFloat,
-  GraphQLID,
-  GraphQLInt,
-  GraphQLResolveInfo,
-  GraphQLScalarType,
-  GraphQLString,
-  Kind,
-} from 'graphql';
-import { FhirRepository } from '../repo';
+import type { GraphQLError, GraphQLFieldConfigArgumentMap, GraphQLResolveInfo, GraphQLScalarType } from 'graphql';
+import { GraphQLBoolean, GraphQLFloat, GraphQLID, GraphQLInt, GraphQLString, Kind } from 'graphql';
+import type { FhirRequestConfig } from '../fhirrouter';
+import type { FhirRepository } from '../repo';
 
 export interface GraphQLContext {
   repo: FhirRepository;
+  config?: FhirRequestConfig;
   dataLoader: DataLoader<Reference, Resource>;
+  searchCount: number;
+  searchDataLoaders: Record<string, DataLoader<Filter, Resource[]>>;
 }
 
 export const typeCache: Record<string, GraphQLScalarType | undefined> = {
@@ -58,7 +55,11 @@ export const typeCache: Record<string, GraphQLScalarType | undefined> = {
   'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
 
-export function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
+function parseSearchArgsWithReference(
+  resourceType: ResourceType,
+  source: any,
+  args: Record<string, string>
+): { searchRequest: SearchRequest; referenceFilter: Filter | undefined } {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
     // _reference is a required field for reverse lookup searches
@@ -68,7 +69,7 @@ export function parseSearchArgs(resourceType: ResourceType, source: any, args: R
     referenceFilter = {
       code: reference,
       operator: Operator.EQUALS,
-      value: getReferenceString(source as Resource),
+      value: getReferenceString(source),
     };
   }
 
@@ -77,15 +78,26 @@ export function parseSearchArgs(resourceType: ResourceType, source: any, args: R
 
   // Parse the search request
   const searchRequest = parseSearchRequest(resourceType, args);
+  return { searchRequest, referenceFilter };
+}
 
-  // If a reverse lookup filter was specified,
-  // add it to the search request.
+function addFilter(searchRequest: SearchRequest, filter: Filter): void {
+  const existingFilters = searchRequest.filters || [];
+  searchRequest.filters = [filter, ...existingFilters];
+}
+
+export function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
+
   if (referenceFilter) {
-    const existingFilters = searchRequest.filters || [];
-    searchRequest.filters = [referenceFilter, ...existingFilters];
+    addFilter(searchRequest, referenceFilter);
   }
 
   return searchRequest;
+}
+
+export function applyMaxCount(searchRequest: SearchRequest, maxCount: number | undefined): void {
+  searchRequest.count = Math.min(searchRequest.count ?? DEFAULT_SEARCH_COUNT, maxCount ?? DEFAULT_MAX_SEARCH_COUNT);
 }
 
 export function graphQLFieldToFhirParam(code: string): string {
@@ -96,6 +108,22 @@ export function fhirParamToGraphQLField(code: string): string {
   return code.replaceAll('-', '_');
 }
 
+function sortedStringify(obj: any): string {
+  const customReplacer = (key: any, value: any): any => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.keys(value)
+        .sort((a, b) => a.localeCompare(b))
+        .reduce((sorted: any, key: string) => {
+          sorted[key] = value[key];
+          return sorted;
+        }, {});
+    }
+    return value;
+  };
+
+  return JSON.stringify(obj, customReplacer);
+}
+
 /**
  * GraphQL data loader for search requests.
  * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
@@ -104,7 +132,7 @@ export function fhirParamToGraphQLField(code: string): string {
  * @param args - The GraphQL search arguments.
  * @param ctx - The GraphQL context.
  * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
- * @returns Promise to read the resoures for the query.
+ * @returns Promise to read the resources for the query.
  */
 export async function resolveBySearch(
   source: any,
@@ -112,11 +140,47 @@ export async function resolveBySearch(
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
+  ctx.searchCount++;
+  if (ctx.config?.graphqlMaxSearches && ctx.searchCount > ctx.config.graphqlMaxSearches) {
+    throw new Error('Maximum number of searches exceeded');
+  }
+
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
-  const searchRequest = parseSearchArgs(resourceType, source, args);
-  const bundle = await ctx.repo.search(searchRequest);
-  return bundle.entry?.map((e) => e.resource as Resource);
+
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
+
+  const maxBatchSize = ctx.config?.graphqlBatchedSearchSize ?? 0;
+  if (maxBatchSize === 0 || !referenceFilter) {
+    if (referenceFilter) {
+      addFilter(searchRequest, referenceFilter);
+    }
+    const bundle = await ctx.repo.search(searchRequest);
+    return bundle.entry?.map((e) => e.resource as Resource);
+  }
+
+  const hash = sortedStringify(searchRequest);
+  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest, maxBatchSize));
+  return dl.load(referenceFilter);
+}
+
+function buildResolveBySearchDataLoader(
+  repo: FhirRepository,
+  searchRequest: SearchRequest,
+  maxBatchSize: number
+): DataLoader<Filter, Resource[]> {
+  return new DataLoader<Filter, Resource[]>(
+    async (filters) => {
+      const results = await repo.searchByReference(
+        searchRequest,
+        filters[0].code,
+        filters.map((f) => f.value)
+      );
+      return filters.map((filter) => results[filter.value]);
+    },
+    { maxBatchSize }
+  );
 }
 
 export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
@@ -146,6 +210,10 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
       description:
         ' The _filter parameter provides a syntax for expressing a set of query expressions on the underlying resources.',
     },
+    _cursor: {
+      type: GraphQLString,
+      description: 'The _cursor parameter is used to retrieve the next page of results from a previous search.',
+    },
   };
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {
@@ -159,17 +227,6 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
     }
   }
   return args;
-}
-
-/**
- * Returns the depth of the GraphQL node in a query.
- * We use "selections" as the representation of depth.
- * As a rough approximation, it's the number of indentations in a well formatted query.
- * @param path - The GraphQL node path.
- * @returns The "depth" of the node.
- */
-export function getDepth(path: readonly (string | number)[]): number {
-  return path.filter((p) => p === 'selections').length;
 }
 
 /**

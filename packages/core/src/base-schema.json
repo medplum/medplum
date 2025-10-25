@@ -617,9 +617,7 @@
         "type": [
           {
             "code": "canonical",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
           }
         ]
       },
@@ -630,9 +628,7 @@
           },
           {
             "code": "Reference",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/Group"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
           }
         ]
       },
@@ -672,6 +668,136 @@
         "type": [
           {
             "code": "DataRequirementSort"
+          }
+        ]
+      }
+    }
+  },
+  "DataRequirementCodeFilter": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "path": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "searchParam": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "valueSet": {
+        "type": [
+          {
+            "code": "canonical",
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
+          }
+        ]
+      },
+      "code": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Coding"
+          }
+        ]
+      }
+    }
+  },
+  "DataRequirementDateFilter": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "path": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "searchParam": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "value[x]": {
+        "type": [
+          {
+            "code": "dateTime"
+          },
+          {
+            "code": "Period"
+          },
+          {
+            "code": "Duration"
+          }
+        ]
+      }
+    }
+  },
+  "DataRequirementSort": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "path": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "direction": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
           }
         ]
       }
@@ -842,9 +968,7 @@
         "type": [
           {
             "code": "Quantity",
-            "profile": [
-              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-            ]
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
           }
         ]
       },
@@ -852,9 +976,58 @@
         "type": [
           {
             "code": "Quantity",
-            "profile": [
-              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-            ]
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
+          }
+        ]
+      }
+    }
+  },
+  "DosageDoseAndRate": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "type": {
+        "type": [
+          {
+            "code": "CodeableConcept"
+          }
+        ]
+      },
+      "dose[x]": {
+        "type": [
+          {
+            "code": "Range"
+          },
+          {
+            "code": "Quantity",
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
+          }
+        ]
+      },
+      "rate[x]": {
+        "type": [
+          {
+            "code": "Ratio"
+          },
+          {
+            "code": "Range"
+          },
+          {
+            "code": "Quantity",
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
           }
         ]
       }
@@ -1677,6 +1850,544 @@
       }
     }
   },
+  "ElementDefinitionSlicingDiscriminator": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "type": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "path": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionSlicing": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "discriminator": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "ElementDefinitionSlicingDiscriminator"
+          }
+        ]
+      },
+      "description": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "ordered": {
+        "type": [
+          {
+            "code": "boolean"
+          }
+        ]
+      },
+      "rules": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionBase": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "path": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "min": {
+        "min": 1,
+        "type": [
+          {
+            "code": "unsignedInt"
+          }
+        ]
+      },
+      "max": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionType": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "code": {
+        "min": 1,
+        "type": [
+          {
+            "code": "uri"
+          }
+        ]
+      },
+      "profile": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "canonical",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/StructureDefinition",
+              "http://hl7.org/fhir/StructureDefinition/ImplementationGuide"
+            ]
+          }
+        ]
+      },
+      "targetProfile": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "canonical",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/StructureDefinition",
+              "http://hl7.org/fhir/StructureDefinition/ImplementationGuide"
+            ]
+          }
+        ]
+      },
+      "aggregation": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "versioning": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionExample": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "label": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "value[x]": {
+        "min": 1,
+        "type": [
+          {
+            "code": "base64Binary"
+          },
+          {
+            "code": "boolean"
+          },
+          {
+            "code": "canonical"
+          },
+          {
+            "code": "code"
+          },
+          {
+            "code": "date"
+          },
+          {
+            "code": "dateTime"
+          },
+          {
+            "code": "decimal"
+          },
+          {
+            "code": "id"
+          },
+          {
+            "code": "instant"
+          },
+          {
+            "code": "integer"
+          },
+          {
+            "code": "markdown"
+          },
+          {
+            "code": "oid"
+          },
+          {
+            "code": "positiveInt"
+          },
+          {
+            "code": "string"
+          },
+          {
+            "code": "time"
+          },
+          {
+            "code": "unsignedInt"
+          },
+          {
+            "code": "uri"
+          },
+          {
+            "code": "url"
+          },
+          {
+            "code": "uuid"
+          },
+          {
+            "code": "Address"
+          },
+          {
+            "code": "Age"
+          },
+          {
+            "code": "Annotation"
+          },
+          {
+            "code": "Attachment"
+          },
+          {
+            "code": "CodeableConcept"
+          },
+          {
+            "code": "Coding"
+          },
+          {
+            "code": "ContactPoint"
+          },
+          {
+            "code": "Count"
+          },
+          {
+            "code": "Distance"
+          },
+          {
+            "code": "Duration"
+          },
+          {
+            "code": "HumanName"
+          },
+          {
+            "code": "Identifier"
+          },
+          {
+            "code": "Money"
+          },
+          {
+            "code": "Period"
+          },
+          {
+            "code": "Quantity"
+          },
+          {
+            "code": "Range"
+          },
+          {
+            "code": "Ratio"
+          },
+          {
+            "code": "Reference"
+          },
+          {
+            "code": "SampledData"
+          },
+          {
+            "code": "Signature"
+          },
+          {
+            "code": "Timing"
+          },
+          {
+            "code": "ContactDetail"
+          },
+          {
+            "code": "Contributor"
+          },
+          {
+            "code": "DataRequirement"
+          },
+          {
+            "code": "Expression"
+          },
+          {
+            "code": "ParameterDefinition"
+          },
+          {
+            "code": "RelatedArtifact"
+          },
+          {
+            "code": "TriggerDefinition"
+          },
+          {
+            "code": "UsageContext"
+          },
+          {
+            "code": "Dosage"
+          },
+          {
+            "code": "Meta"
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionConstraint": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "key": {
+        "min": 1,
+        "type": [
+          {
+            "code": "id"
+          }
+        ]
+      },
+      "requirements": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "severity": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "human": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "expression": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "xpath": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "source": {
+        "type": [
+          {
+            "code": "canonical",
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionBinding": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "strength": {
+        "min": 1,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "description": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "valueSet": {
+        "type": [
+          {
+            "code": "canonical",
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
+          }
+        ]
+      }
+    }
+  },
+  "ElementDefinitionMapping": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "identity": {
+        "min": 1,
+        "type": [
+          {
+            "code": "id"
+          }
+        ]
+      },
+      "language": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "map": {
+        "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "comment": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      }
+    }
+  },
   "Expression": {
     "elements": {
       "id": {
@@ -2040,9 +2751,7 @@
         "type": [
           {
             "code": "Reference",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/Organization"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
           }
         ]
       }
@@ -2156,9 +2865,7 @@
         "type": [
           {
             "code": "canonical",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
           }
         ]
       },
@@ -2192,7 +2899,22 @@
           }
         ]
       },
+      "onBehalfOf": {
+        "type": [
+          {
+            "code": "Reference"
+          }
+        ]
+      },
       "account": {
+        "type": [
+          {
+            "code": "Reference"
+          }
+        ]
+      },
+      "accounts": {
+        "max": 9007199254740991,
         "type": [
           {
             "code": "Reference"
@@ -2342,9 +3064,7 @@
         "type": [
           {
             "code": "canonical",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
           }
         ]
       }
@@ -2681,9 +3401,7 @@
         "type": [
           {
             "code": "Quantity",
-            "profile": [
-              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-            ]
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
           }
         ]
       },
@@ -2691,9 +3409,7 @@
         "type": [
           {
             "code": "Quantity",
-            "profile": [
-              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-            ]
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
           }
         ]
       }
@@ -2843,9 +3559,7 @@
         "type": [
           {
             "code": "canonical",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/Resource"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
           }
         ]
       }
@@ -2873,9 +3587,7 @@
         "type": [
           {
             "code": "Quantity",
-            "profile": [
-              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
-            ]
+            "profile": ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]
           }
         ]
       },
@@ -3074,6 +3786,39 @@
       }
     }
   },
+  "SubstanceAmountReferenceRange": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "lowLimit": {
+        "type": [
+          {
+            "code": "Quantity"
+          }
+        ]
+      },
+      "highLimit": {
+        "type": [
+          {
+            "code": "Quantity"
+          }
+        ]
+      }
+    }
+  },
   "Timing": {
     "elements": {
       "id": {
@@ -3123,6 +3868,139 @@
       }
     }
   },
+  "TimingRepeat": {
+    "elements": {
+      "id": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "extension": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Extension"
+          }
+        ]
+      },
+      "bounds[x]": {
+        "type": [
+          {
+            "code": "Duration"
+          },
+          {
+            "code": "Range"
+          },
+          {
+            "code": "Period"
+          }
+        ]
+      },
+      "count": {
+        "type": [
+          {
+            "code": "positiveInt"
+          }
+        ]
+      },
+      "countMax": {
+        "type": [
+          {
+            "code": "positiveInt"
+          }
+        ]
+      },
+      "duration": {
+        "type": [
+          {
+            "code": "decimal"
+          }
+        ]
+      },
+      "durationMax": {
+        "type": [
+          {
+            "code": "decimal"
+          }
+        ]
+      },
+      "durationUnit": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "frequency": {
+        "type": [
+          {
+            "code": "positiveInt"
+          }
+        ]
+      },
+      "frequencyMax": {
+        "type": [
+          {
+            "code": "positiveInt"
+          }
+        ]
+      },
+      "period": {
+        "type": [
+          {
+            "code": "decimal"
+          }
+        ]
+      },
+      "periodMax": {
+        "type": [
+          {
+            "code": "decimal"
+          }
+        ]
+      },
+      "periodUnit": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "dayOfWeek": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "timeOfDay": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "time"
+          }
+        ]
+      },
+      "when": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "offset": {
+        "type": [
+          {
+            "code": "unsignedInt"
+          }
+        ]
+      }
+    }
+  },
   "TriggerDefinition": {
     "elements": {
       "id": {
@@ -3162,9 +4040,7 @@
           },
           {
             "code": "Reference",
-            "targetProfile": [
-              "http://hl7.org/fhir/StructureDefinition/Schedule"
-            ]
+            "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Schedule"]
           },
           {
             "code": "date"
@@ -3348,157 +4224,6 @@
         "type": [
           {
             "code": "code"
-          }
-        ]
-      }
-    }
-  },
-  "MetadataResource": {
-    "elements": {
-      "id": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "meta": {
-        "type": [
-          {
-            "code": "Meta"
-          }
-        ]
-      },
-      "implicitRules": {
-        "type": [
-          {
-            "code": "uri"
-          }
-        ]
-      },
-      "language": {
-        "type": [
-          {
-            "code": "code"
-          }
-        ]
-      },
-      "text": {
-        "type": [
-          {
-            "code": "Narrative"
-          }
-        ]
-      },
-      "contained": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "Resource"
-          }
-        ]
-      },
-      "extension": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "Extension"
-          }
-        ]
-      },
-      "modifierExtension": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "Extension"
-          }
-        ]
-      },
-      "url": {
-        "type": [
-          {
-            "code": "uri"
-          }
-        ]
-      },
-      "version": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "name": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "title": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "status": {
-        "min": 1,
-        "type": [
-          {
-            "code": "code"
-          }
-        ]
-      },
-      "experimental": {
-        "type": [
-          {
-            "code": "boolean"
-          }
-        ]
-      },
-      "date": {
-        "type": [
-          {
-            "code": "dateTime"
-          }
-        ]
-      },
-      "publisher": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "contact": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "ContactDetail"
-          }
-        ]
-      },
-      "description": {
-        "type": [
-          {
-            "code": "markdown"
-          }
-        ]
-      },
-      "useContext": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "UsageContext"
-          }
-        ]
-      },
-      "jurisdiction": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "CodeableConcept"
           }
         ]
       }

@@ -259,6 +259,18 @@
           "documentLocation": "resource"
         },
         {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
           "datatype": "Group",
           "documentLocation": "resource"
         }

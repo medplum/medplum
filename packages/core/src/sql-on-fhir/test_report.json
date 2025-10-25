@@ -1,0 +1,784 @@
+{
+  "basic.json": {
+    "tests": [
+      {
+        "name": "basic attribute",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "boolean attribute with false",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "two columns",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "two selects with columns",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where - 1",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where - 2",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where returns non-boolean for some cases",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where as expr - 1",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where as expr - 2",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "select & column",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "collection.json": {
+    "tests": [
+      {
+        "name": "fail when 'collection' is not true",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "collection = true",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "collection = false relative to forEach parent",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "collection = false relative to forEachOrNull parent",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "combinations.json": {
+    "tests": [
+      {
+        "name": "select",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "column + select",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "sibling select",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "sibling select inside a select",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "column + select, with where",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "unionAll + forEach + column + select",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "constant.json": {
+    "tests": [
+      {
+        "name": "constant in path",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "constant in forEach",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "constant in where element",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "constant in unionAll",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "integer constant",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "boolean constant",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "accessing an undefined constant",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "incorrect constant definition",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "constant_types.json": {
+    "tests": [
+      {
+        "name": "base64Binary",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "code",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "date",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "dateTime",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "decimal",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "id",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "instant",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "oid",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "positiveInt",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "time",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "unsignedInt",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "uri",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "url",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "uuid",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fhirpath.json": {
+    "tests": [
+      {
+        "name": "one element",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "two elements + first",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "collection",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "index[0]",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "index[1]",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "out of index",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "exists",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "nested exists",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "string join",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "string join: default separator",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fhirpath_numbers.json": {
+    "tests": [
+      {
+        "name": "add observation",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_boundary.json": {
+    "tests": [
+      {
+        "name": "decimal lowBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "decimal highBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "datetime lowBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "datetime highBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "date lowBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "date highBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "time lowBoundary",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "time highBoundary",
+        "result": {
+          "passed": false
+        }
+      }
+    ]
+  },
+  "fn_empty.json": {
+    "tests": [
+      {
+        "name": "empty names",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_extension.json": {
+    "tests": [
+      {
+        "name": "simple extension",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "nested extension",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_first.json": {
+    "tests": [
+      {
+        "name": "table level first()",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "table and field level first()",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_join.json": {
+    "tests": [
+      {
+        "name": "join with comma",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "join with empty value",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "join with no value - default to no separator",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_oftype.json": {
+    "tests": [
+      {
+        "name": "select string values",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "select integer values",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "fn_reference_keys.json": {
+    "tests": [
+      {
+        "name": "getReferenceKey result matches getResourceKey without type specifier",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "getReferenceKey result matches getResourceKey with right type specifier",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "getReferenceKey result matches getResourceKey with wrong type specifier",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "foreach.json": {
+    "tests": [
+      {
+        "name": "forEach: normal",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEachOrNull: basic",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEach: empty",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEach: two on the same level",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "forEach: two on the same level (empty result)",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEachOrNull: null case",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEach and forEachOrNull on the same level",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "nested forEach",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "nested forEach: select & column",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEachOrNull & unionAll on the same level",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "forEach & unionAll on the same level",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEach & unionAll & column & select on the same level",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEachOrNull & unionAll & column & select on the same level",
+        "result": {
+          "passed": false
+        }
+      }
+    ]
+  },
+  "logic.json": {
+    "tests": [
+      {
+        "name": "filtering with 'and'",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "filtering with 'or'",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "filtering with 'not'",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "union.json": {
+    "tests": [
+      {
+        "name": "basic",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "unionAll + column",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "duplicates",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "empty results",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "empty with forEachOrNull",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "forEachOrNull and forEach",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "nested",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "one empty operand",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "column mismatch",
+        "result": {
+          "passed": false
+        }
+      },
+      {
+        "name": "column order mismatch",
+        "result": {
+          "passed": false
+        }
+      }
+    ]
+  },
+  "validate.json": {
+    "tests": [
+      {
+        "name": "empty",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "missing resource",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "wrong fhirpath",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "wrong type in forEach",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where with path resolving to not boolean",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "view_resource.json": {
+    "tests": [
+      {
+        "name": "only pts",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "only obs",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "resource not specified",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  },
+  "where.json": {
+    "tests": [
+      {
+        "name": "simple where path with result",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path with no results",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path with greater than inequality",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path with less than inequality",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "multiple where paths",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path with an 'and' connector",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path with an 'or' connector",
+        "result": {
+          "passed": true
+        }
+      },
+      {
+        "name": "where path that evaluates to true when empty",
+        "result": {
+          "passed": true
+        }
+      }
+    ]
+  }
+}

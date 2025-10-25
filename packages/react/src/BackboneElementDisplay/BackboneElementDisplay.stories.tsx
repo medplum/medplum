@@ -1,5 +1,8 @@
-import { PatientContact } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { PatientContact } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 
@@ -11,6 +14,7 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <BackboneElementDisplay
+      path="Patient.contact"
       value={{
         type: 'PatientContact',
         value: {
@@ -28,6 +32,7 @@ export const Basic = (): JSX.Element => (
 export const IgnoreMissingValues = (): JSX.Element => (
   <Document>
     <BackboneElementDisplay
+      path="Patient.contact"
       value={{
         type: 'PatientContact',
         value: {

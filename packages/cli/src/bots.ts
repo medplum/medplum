@@ -1,22 +1,22 @@
-import { MedplumClient } from '@medplum/core';
-import { Command } from 'commander';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { createBot, deployBot, readBotConfigs, saveBot } from './utils';
+import { MedplumCommand, addSubcommand, createBot, deployBot, readBotConfigs, saveBot } from './utils';
 
-const botSaveCommand = createMedplumCommand('save');
-const botDeployCommand = createMedplumCommand('deploy');
-const botCreateCommand = createMedplumCommand('create');
+const botSaveCommand = new MedplumCommand('save');
+const botDeployCommand = new MedplumCommand('deploy');
+const botCreateCommand = new MedplumCommand('create');
 
-export const bot = new Command('bot')
-  .addCommand(botSaveCommand)
-  .addCommand(botDeployCommand)
-  .addCommand(botCreateCommand);
+export const bot = new MedplumCommand('bot');
+addSubcommand(bot, botSaveCommand);
+addSubcommand(bot, botDeployCommand);
+addSubcommand(bot, botCreateCommand);
 
 // Commands to deprecate
-export const saveBotDeprecate = createMedplumCommand('save-bot');
-export const deployBotDeprecate = createMedplumCommand('deploy-bot');
-export const createBotDeprecate = createMedplumCommand('create-bot');
+export const saveBotDeprecate = new MedplumCommand('save-bot');
+export const deployBotDeprecate = new MedplumCommand('deploy-bot');
+export const createBotDeprecate = new MedplumCommand('create-bot');
 
 botSaveCommand
   .description('Saving the bot')
@@ -49,14 +49,35 @@ botCreateCommand
 
 export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false): Promise<void> {
   const botConfigs = readBotConfigs(botName);
+  const errors = [] as Error[];
+  const errored = [] as string[];
+  let saved = 0;
+  let deployed = 0;
+
   for (const botConfig of botConfigs) {
-    const bot = await medplum.readResource('Bot', botConfig.id);
-    await saveBot(medplum, botConfig, bot);
-    if (deploy) {
-      await deployBot(medplum, botConfig, bot);
+    try {
+      const bot = await medplum.readResource('Bot', botConfig.id);
+      await saveBot(medplum, botConfig, bot);
+      saved++;
+      if (deploy) {
+        await deployBot(medplum, botConfig, bot);
+        deployed++;
+      }
+    } catch (err: unknown) {
+      errors.push(err as Error);
+      errored.push(`${botConfig.name} [${botConfig.id}]`);
     }
   }
-  console.log(`Number of bots deployed: ${botConfigs.length}`);
+
+  console.log(`Number of bots saved: ${saved}`);
+  console.log(`Number of bots deployed: ${deployed}`);
+  console.log(`Number of errors: ${errors.length}`);
+
+  if (errors.length) {
+    throw new Error(`${errors.length} bot(s) had failures. Bots with failures:\n\n    ${errored.join('\n    ')}`, {
+      cause: errors,
+    });
+  }
 }
 
 // Deprecate bot commands

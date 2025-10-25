@@ -1,13 +1,15 @@
-import { convertToTransactionBundle, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { convertToTransactionBundle } from '@medplum/core';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { prettyPrint } from './utils';
+import { MedplumCommand, prettyPrint } from './utils';
 
-export const deleteObject = createMedplumCommand('delete');
-export const get = createMedplumCommand('get');
-export const patch = createMedplumCommand('patch');
-export const post = createMedplumCommand('post');
-export const put = createMedplumCommand('put');
+export const deleteObject = new MedplumCommand('delete');
+export const get = new MedplumCommand('get');
+export const patch = new MedplumCommand('patch');
+export const post = new MedplumCommand('post');
+export const put = new MedplumCommand('put');
 
 deleteObject.argument('<url>', 'Resource/$id').action(async (url, options) => {
   const medplum = await createMedplumClient(options);
@@ -33,11 +35,15 @@ patch.arguments('<url> <body>').action(async (url, body, options) => {
   prettyPrint(await medplum.patch(cleanUrl(medplum, url), parseBody(body)));
 });
 
-post.arguments('<url> <body>').action(async (url, body, options) => {
-  const medplum = await createMedplumClient(options);
+post
+  .arguments('<url> <body>')
+  .option('--prefer-async', 'Sets the Prefer header to "respond-async"')
+  .action(async (url, body, options) => {
+    const medplum = await createMedplumClient(options);
 
-  prettyPrint(await medplum.post(cleanUrl(medplum, url), parseBody(body)));
-});
+    const headers = options.preferAsync ? { Prefer: 'respond-async' } : undefined;
+    prettyPrint(await medplum.post(cleanUrl(medplum, url), parseBody(body), undefined, { headers }));
+  });
 
 put.arguments('<url> <body>').action(async (url, body, options) => {
   const medplum = await createMedplumClient(options);
@@ -51,7 +57,7 @@ function parseBody(input: string | undefined): any {
   }
   try {
     return JSON.parse(input);
-  } catch (err) {
+  } catch (_err) {
     return input;
   }
 }

@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
+import { readFile } from 'fs/promises';
 // end-block imports
 
 const medplum = new MedplumClient();
@@ -72,7 +76,23 @@ curl 'https://api.medplum.com/fhir/R4' \
     ],
   }'
 // end-block simpleBatchCurl
+
+// start-block asyncBatchCurl
+curl 'https://api.medplum.com/fhir/R4' \
+  -X POST
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+  -H 'prefer: respond-async'
+  -d @large-bundle.json
+// end-block asyncBatchCurl
 */
+
+// TODO: Fix up this client function to have correct return type and/or handle polling AsyncJob internally
+// start-block asyncBatchTs
+await medplum.executeBatch(JSON.parse(await readFile('large-bundle.json', 'utf8')), {
+  headers: { prefer: 'respond-async' },
+});
+// end-block asyncBatchTs
 
 const batchCreate: Bundle =
   // start-block batchCreate
@@ -126,70 +146,6 @@ const batchCreate: Bundle =
   };
 // end-block batchCreate
 
-const upsert: Bundle =
-  // start-block upsert
-  {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry: [
-      // Create the patient if it doesn't exist
-      {
-        request: {
-          method: 'POST',
-          url: 'Patient',
-          ifNoneExist: 'identifier=http://example-hospital.org/mrns|234543',
-        },
-        // highlight-next-line
-        fullUrl: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-        resource: {
-          resourceType: 'Patient',
-          identifier: [
-            {
-              system: 'http://example-hospital.org/mrns',
-              value: '234543',
-            },
-          ],
-          name: [
-            {
-              family: 'Simpson',
-              given: ['Homer', 'Jay'],
-            },
-          ],
-          gender: 'male',
-          birthDate: '1956-05-12',
-        },
-      },
-      // Update the patient in-place
-      {
-        request: {
-          method: 'PUT',
-          // highlight-next-line
-          url: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-        },
-        resource: {
-          resourceType: 'Patient',
-          // highlight-next-line
-          id: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-          identifier: [
-            {
-              system: 'http://example-hospital.org/mrns',
-              value: '234543',
-            },
-          ],
-          name: [
-            {
-              family: 'Simpson',
-              given: ['Homer', 'Jay'],
-            },
-          ],
-          gender: 'male',
-          birthDate: '1956-05-12',
-        },
-      },
-    ],
-  };
-// end-block upsert
-
 const history: Bundle =
   // start-block historyEndpoint
   {
@@ -222,7 +178,7 @@ const internalReference: Bundle =
   // start-block internalReference
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         // highlight-next-line
@@ -276,11 +232,61 @@ const internalReference: Bundle =
   };
 // end-block internalReference
 
+const externalReference: Bundle =
+  // start-block externalReference
+  {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [
+      {
+        resource: {
+          resourceType: 'Patient',
+          name: [
+            {
+              prefix: ['Ms.'],
+              family: 'Doe',
+              given: ['Jane'],
+            },
+          ],
+          gender: 'female',
+          birthDate: '1970-01-01',
+          // highlight-next-line
+          generalPractitioner: [{ reference: 'Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|1234567893' }],
+        },
+        request: {
+          method: 'POST',
+          url: 'Patient',
+        },
+      },
+      {
+        resource: {
+          resourceType: 'Patient',
+          name: [
+            {
+              prefix: ['Mr.'],
+              family: 'Doe',
+              given: ['John'],
+            },
+          ],
+          gender: 'male',
+          birthDate: '1972-12-31',
+          // highlight-next-line
+          generalPractitioner: [{ reference: 'Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|1234567893' }],
+        },
+        request: {
+          method: 'POST',
+          url: 'Patient',
+        },
+      },
+    ],
+  };
+// end-block externalReference
+
 const conditional: Bundle =
   // start-block conditionalCreate
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         fullUrl: 'urn:uuid:4aac5fb6-c2ff-4851-b3cf-d66d63a82a17',
@@ -298,7 +304,7 @@ const conditional: Bundle =
           method: 'POST',
           url: 'Organization',
           // highlight-next-line
-          ifNoneExist: 'identifer=https://example-org.com/organizations|example-organization',
+          ifNoneExist: 'identifier=https://example-org.com/organizations|example-organization',
         },
       },
       {
@@ -385,4 +391,4 @@ patientsToCreate.push(
 await Promise.all(patientsToCreate);
 // end-block autobatchingCorrect
 
-console.log(batchCreate, upsert, history, internalReference, conditional);
+console.log(batchCreate, history, internalReference, externalReference, conditional);

@@ -1,18 +1,45 @@
-import { allOk, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
+  allOk,
+  append,
+  flatMapFilter,
+  getReferenceString,
+  isReference,
+  isResource,
+  Operator,
+  sortStringArray,
+} from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
   Patient,
+  Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
-import { Repository } from '../repo';
-import { sendResponse } from '../response';
+import type { Repository } from '../repo';
+import { getOperationDefinition } from './definitions';
+import { filterByCareDate } from './utils/caredate';
+import { parseInputParameters } from './utils/parameters';
+
+const operation = getOperationDefinition('Patient', 'everything');
+
+const defaultMaxResults = 1000;
+
+export interface PatientEverythingParameters {
+  start?: string;
+  end?: string;
+  _since?: string;
+  _count?: number;
+  _offset?: number;
+  _type?: ResourceType[];
+}
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -20,20 +47,21 @@ import { sendResponse } from '../response';
 /**
  * Handles a Patient everything request.
  * Searches for all resources related to the patient.
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
+export async function patientEverythingHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
+  const params = parseInputParameters<PatientEverythingParameters>(operation, req);
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
 
   // Then read all of the patient data
-  const bundle = await getPatientEverything(ctx.repo, patient);
+  const bundle = await getPatientEverything(ctx.repo, patient, params);
 
-  await sendResponse(res, allOk, bundle);
+  return [allOk, bundle];
 }
 
 /**
@@ -41,62 +69,151 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
  * Searches for all resources related to the patient.
  * @param repo - The repository.
  * @param patient - The root patient.
+ * @param params - The operation input parameters.
  * @returns The patient everything search result bundle.
  */
-export async function getPatientEverything(repo: Repository, patient: Patient): Promise<Bundle> {
-  const patientRef = getReferenceString(patient);
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const searches: SearchRequest[] = [];
-
-  // Build a list of searches
-  for (const resource of resourceList) {
-    const searchParams = resource.param;
-    if (!searchParams) {
-      continue;
-    }
-    for (const code of searchParams) {
-      searches.push({
-        resourceType: resource.code as ResourceType,
-        count: 1000,
-        filters: [
-          {
-            code,
-            operator: Operator.EQUALS,
-            value: patientRef,
-          },
-        ],
-      });
-    }
+export async function getPatientEverything(
+  repo: Repository,
+  patient: WithId<Patient>,
+  params?: PatientEverythingParameters
+): Promise<Bundle<WithId<Resource>>> {
+  // First get all compartment resources
+  const search: Partial<SearchRequest> = {
+    types: params?._type,
+    count: params?._count,
+    offset: params?._offset,
+  };
+  if (params?._since) {
+    search.filters = append(search.filters, {
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params._since,
+    });
   }
+  const bundle = await searchPatientCompartment(repo, patient, search);
 
-  // Execute all of the searches in parallel
-  // Some day we could do this in a single SQL query
-  const promises = searches.map((searchRequest) => repo.search(searchRequest));
-  const searchResults = await Promise.all(promises);
+  // Filter by requested date range
+  filterByCareDate(bundle, params?.start, params?.end);
 
-  // Build the result bundle
-  const entry: BundleEntry[] = [
-    {
-      fullUrl: `${getConfig().baseUrl}fhir/R4/Patient/${patient.id}`,
-      resource: patient,
-    },
-  ];
-  const resourceSet = new Set<string>([getReferenceString(patient)]);
-  for (const searchResult of searchResults) {
-    if (searchResult.entry) {
-      for (const e of searchResult.entry) {
-        const resourceRef = getReferenceString(e.resource as Resource);
-        if (!resourceSet.has(resourceRef)) {
-          resourceSet.add(resourceRef);
-          entry.push(e);
-        }
+  // Recursively resolve references to resources not in the official compartment, but
+  // which should be included for completeness
+  await addResolvedReferences(repo, bundle.entry);
+  bundle.entry = removeDuplicateEntries(bundle.entry);
+  return bundle;
+}
+
+export async function searchPatientCompartment(
+  repo: Repository,
+  target: WithId<Resource>,
+  search?: Partial<SearchRequest>
+): Promise<Bundle<WithId<Resource>>> {
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  const types = search?.types ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  types.push(target.resourceType);
+  sortStringArray(types);
+
+  const filters = search?.filters ?? [];
+  filters.push({
+    code: '_compartment',
+    operator: Operator.EQUALS,
+    value: getReferenceString(target),
+  });
+
+  // Get initial bundle of compartment resources
+  return repo.search({
+    resourceType: target.resourceType,
+    types,
+    filters,
+    count: search?.count ?? defaultMaxResults,
+    offset: search?.offset,
+    sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure that pagination works correctly
+  });
+}
+
+/**
+ * Recursively resolves references in the given resources.
+ * @param repo - The repository.
+ * @param entries - The initial resources to process.
+ */
+async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | undefined): Promise<void> {
+  const processedRefs = new Set<string>();
+  let page = entries;
+  while (page?.length) {
+    const references = processReferencesFromResources(page, processedRefs);
+    const resolved = await repo.readReferences(references);
+    page = flatMapFilter(resolved, (resource) =>
+      isResource(resource) ? { resource, search: { mode: 'include' } } : undefined
+    );
+    entries?.push(...page);
+  }
+}
+
+function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
+  const references = new Set<string>();
+  for (const entry of toProcess) {
+    const resource = entry.resource as WithId<Resource>;
+    const refString = getReferenceString(resource);
+    if (processedRefs.has(refString)) {
+      continue;
+    } else {
+      processedRefs.add(refString);
+    }
+
+    // Find all references in the resource
+    const candidateRefs = collectReferences(resource);
+    for (const reference of candidateRefs) {
+      if (!processedRefs.has(reference) && shouldResolveReference(reference)) {
+        references.add(reference);
       }
     }
   }
 
-  return {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry,
-  };
+  const result: Reference[] = [];
+  for (const reference of references) {
+    result.push({ reference });
+  }
+  return result;
+}
+
+// Most relevant resource types are already included in the Patient compartment, so
+// only references of select other types need to be resolved
+const allowedReferenceTypes = /^(Organization|Location|Practitioner|PractitionerRole|Medication|Device)\//;
+function shouldResolveReference(refString: string): boolean {
+  return allowedReferenceTypes.test(refString);
+}
+
+function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
+  for (const key in resource) {
+    if (resource[key] && typeof resource[key] === 'object') {
+      const value = resource[key];
+      if (isReference(value)) {
+        foundReferences.add(value.reference);
+      } else {
+        collectReferences(value, foundReferences);
+      }
+    }
+  }
+  return foundReferences;
+}
+
+/**
+ * Removes duplicate entries from the given list of bundle entries.
+ * @param entries - The bundle entries.
+ * @returns The deduplicated bundle entries.
+ */
+function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
+  if (!entries) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const resource = entry.resource as WithId<Resource>;
+    const ref = getReferenceString(resource);
+    if (seen.has(ref)) {
+      return false;
+    } else {
+      seen.add(ref);
+      return true;
+    }
+  });
 }

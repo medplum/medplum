@@ -1,15 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /* global console */
 /* global process */
-/* eslint no-console: "off" */
-/*eslint no-process-exit: "off"*/
+/* eslint no-process-exit: "off" */
 
+import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };
 import esbuild from 'esbuild';
-import { glob } from 'glob';
+import fastGlob from 'fast-glob';
 
 // Find all TypeScript files in your source directory
-const entryPoints = glob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
+const entryPoints = fastGlob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
 
-const external = ['form-data', 'node-fetch', 'pdfmake', 'ssh2', 'ssh2-sftp-client', 'dotenv', '@medplum/core'];
+const botLayerDeps = [...Object.keys(botLayer.dependencies), '@aws-sdk/client-*'];
 
 // Define the esbuild options
 const esbuildOptions = {
@@ -20,11 +22,12 @@ const esbuildOptions = {
   loader: {
     '.ts': 'ts', // Load TypeScript files
   },
-  resolveExtensions: ['.ts'],
-  external,
+  resolveExtensions: ['.ts', '.js'],
+  external: botLayerDeps,
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version
   tsconfig: 'tsconfig.json',
+  footer: { js: 'Object.assign(exports, module.exports);' }, // Required for VM Context Bots
 };
 
 // Build using esbuild

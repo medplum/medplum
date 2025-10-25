@@ -1,14 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
-import { Annotation } from '@medplum/fhirtypes';
+import type { Annotation } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useState } from 'react';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface AnnotationInputProps {
-  name: string;
-  defaultValue?: Annotation;
-  onChange?: (value: Annotation) => void;
-}
+export interface AnnotationInputProps extends ComplexTypeInputProps<Annotation> {}
 
 export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   const author = useMedplumProfile();
@@ -31,6 +31,7 @@ export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
 
   return (
     <TextInput
+      disabled={props.disabled}
       name={props.name}
       placeholder="Annotation text"
       defaultValue={value.text}

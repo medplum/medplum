@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ExampleWorkflowRequestGroup } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
@@ -12,8 +15,8 @@ import {
   Covid19RequestGroup,
   Covid19ReviewLabsTask,
 } from '../stories/covid19';
-import { RequestGroupDisplay } from './RequestGroupDisplay';
 import { withMockedDate } from '../stories/decorators';
+import { RequestGroupDisplay } from './RequestGroupDisplay';
 
 export default {
   title: 'Medplum/RequestGroupDisplay',

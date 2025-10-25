@@ -1,17 +1,19 @@
-import { RefObject } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX, Ref } from 'react';
 
 export interface BotRunnerProps {
-  className?: string;
-  iframeRef?: RefObject<HTMLIFrameElement>;
-  testId?: string;
-  minHeight?: string;
-  onChange?: (value: string) => void;
+  readonly className?: string;
+  readonly iframeRef?: Ref<HTMLIFrameElement>;
+  readonly testId?: string;
+  readonly minHeight?: string;
 }
 
 export function BotRunner(props: BotRunnerProps): JSX.Element {
   const url = `https://codeeditor.medplum.com/bot-runner.html`;
   return (
     <iframe
+      title="Bot Runner"
       frameBorder="0"
       src={url}
       className={props.className}

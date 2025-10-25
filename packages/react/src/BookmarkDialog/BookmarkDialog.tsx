@@ -1,26 +1,30 @@
-import { Button, Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import { deepClone, normalizeErrorString } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
+import type { UserConfiguration } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 
 interface BookmarkDialogProps {
-  pathname: string;
-  searchParams: URLSearchParams;
-  visible: boolean;
-  onOk: () => void;
-  onCancel: () => void;
-  defaultValue?: string;
+  readonly pathname: string;
+  readonly searchParams: URLSearchParams;
+  readonly visible: boolean;
+  readonly onOk: () => void;
+  readonly onCancel: () => void;
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
-  const config = medplum.getUserConfiguration() as UserConfiguration;
+  const config = medplum.getUserConfiguration() as WithId<UserConfiguration>;
 
   function submitHandler(formData: Record<string, string>): void {
     const { menuname, bookmarkname: name } = formData;
     const target = `${props.pathname}?${props.searchParams.toString()}`;
-    const newConfig = deepClone(config) as UserConfiguration;
+    const newConfig = deepClone(config);
     const menu = newConfig.menu?.find(({ title }) => title === menuname);
 
     menu?.link?.push({ name, target });
@@ -50,9 +54,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
           <SelectMenu config={config}></SelectMenu>
           <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="Bookmark Name" withAsterisk />
           <Group justify="flex-end">
-            <Button mt="sm" type="submit">
-              OK
-            </Button>
+            <SubmitButton mt="sm">OK</SubmitButton>
           </Group>
         </Stack>
       </Form>
@@ -61,7 +63,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
 }
 
 interface SelectMenuProps {
-  config: UserConfiguration | undefined;
+  readonly config: UserConfiguration | undefined;
 }
 
 function SelectMenu(props: SelectMenuProps): JSX.Element {

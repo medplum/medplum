@@ -1,4 +1,4 @@
-# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main)
+# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10900/badge?gold)](https://www.bestpractices.dev/projects/10900)
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
@@ -87,25 +87,25 @@ Here is a list of all the big technologies we use:
 ```sh
 medplum/
 ├── packages
-│   ├── agent        # On-premise agent
-│   ├── app          # Frontend web app
-│   ├── bot-layer    # AWS Lambda Layer for Bots
-│   ├── cdk          # AWS CDK infra as code
-│   ├── cli          # Command line interface
-│   ├── core         # Core shared library
-│   ├── definitions  # Data definitions
-│   ├── docs         # Documentation
-│   ├── examples     # Example code used in documentation
-│   ├── fhir-router  # FHIR URL router
-│   ├── fhirtypes    # FHIR TypeScript definitions
-│   ├── generator    # Code generator utilities
-│   ├── graphiql     # Preconfigured GraphiQL
-│   ├── hl7          # HL7 client and server
-│   ├── mock         # Mock FHIR data for testing
-│   ├── react        # React component library
-│   ├── react-hooks  # React hooks library
-│   └── server       # Backend API server
-└── scripts          # Helper bash scripts
+│   ├── agent           # On-premise agent
+│   ├── app             # Frontend web app
+│   ├── bot-layer       # AWS Lambda Layer for Bots
+│   ├── cdk             # AWS CDK infra as code
+│   ├── cli             # Command line interface
+│   ├── core            # Core shared library
+│   ├── definitions     # Data definitions
+│   ├── docs            # Documentation
+│   ├── examples        # Example code used in documentation
+│   ├── fhir-router     # FHIR URL router
+│   ├── fhirtypes       # FHIR TypeScript definitions
+│   ├── generator       # Code generator utilities
+│   ├── graphiql        # Preconfigured GraphiQL
+│   ├── hl7             # HL7 client and server
+│   ├── mock            # Mock FHIR data for testing
+│   ├── react           # React component library
+│   ├── react-hooks     # React hooks library
+│   └── server          # Backend API server
+└── scripts             # Helper bash scripts
 ```
 
 ## Thanks
@@ -118,7 +118,7 @@ Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testi
 
 [Apache 2.0](LICENSE.txt)
 
-Copyright &copy; Medplum 2023
+Copyright &copy; Medplum 2025
 
 FHIR&reg; is a registered trademark of HL7.
 

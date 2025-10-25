@@ -1,17 +1,20 @@
-import { badRequest, Operator } from '@medplum/core';
-import { Project, ResourceType, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { badRequest, isString, isUUID, Operator } from '@medplum/core';
+import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
-import { URL } from 'url';
-import { getConfig } from '../config';
+import type { JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
-import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { getSystemRepo } from '../fhir/repo';
+import type { GoogleCredentialClaims } from '../oauth/utils';
+import { getUserByEmail, tryLogin } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
-import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -51,7 +54,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 2) Implicit with clientId
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
-  let projectId = req.body.projectId as string | undefined;
+  let projectId = validateProjectId(req.body.projectId);
   const clientId = req.body.clientId;
   projectId = await getProjectIdByClientId(clientId, projectId);
 
@@ -101,12 +104,18 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('User not found'));
       return;
     }
+    if (getConfig().registerEnabled === false && (!projectId || projectId === 'new')) {
+      // Explicitly check for "false" because the config value may be undefined
+      sendOutcome(res, badRequest('Registration is disabled'));
+      return;
+    }
+    const systemRepo = getSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
       email: claims.email,
-      project: projectId ? { reference: 'Project/' + projectId } : undefined,
+      project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
   }
 
@@ -124,9 +133,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
-    allowNoMembership: req.body.createUser,
+    allowNoMembership: req.body.createUser || projectId === 'new',
+    pictureUrl: claims.picture,
   });
   await sendLoginResult(res, login);
+}
+
+function validateProjectId(inputProjectId: unknown): string | undefined {
+  return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
 function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
@@ -146,5 +160,6 @@ function getProjectsByGoogleClientId(googleClientId: string, projectId: string |
     });
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
 }

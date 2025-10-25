@@ -1,5 +1,8 @@
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import type {
   Address,
   Annotation,
   Attachment,
@@ -17,7 +20,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
+import type { ResourcePropertyInputProps } from './ResourcePropertyInput';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
 
@@ -30,7 +34,8 @@ const baseProperty: Omit<InternalSchemaElement, 'type'> = {
   path: '',
 };
 
-const defaultProps: Pick<ResourcePropertyInputProps, 'defaultValue' | 'outcome' | 'onChange'> = {
+const defaultProps: Pick<ResourcePropertyInputProps, 'path' | 'defaultValue' | 'outcome' | 'onChange'> = {
+  path: 'Resource.path',
   defaultValue: undefined,
   outcome: undefined,
   onChange: undefined,
@@ -283,14 +288,15 @@ describe('ResourcePropertyInput', () => {
       onChange,
     });
 
-    const el = screen.getByDisplayValue('{"url":"https://example.com","valueString":"foo"}');
+    expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument();
+    const el = screen.getByDisplayValue('foo');
     expect(el).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(el, { target: { value: '{"url":"https://example.com","valueString":"bar"}' } });
+      fireEvent.change(el, { target: { value: 'new value' } });
     });
 
-    expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
+    expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'new value' }]);
   });
 
   test('HumanName property', async () => {
@@ -512,9 +518,8 @@ describe('ResourcePropertyInput', () => {
     expect(comboboxes).toHaveLength(1);
     expect(comboboxes[0]).toBeInstanceOf(HTMLSelectElement);
 
-    const searchBoxes = screen.getAllByRole('searchbox');
-    expect(searchBoxes).toHaveLength(1);
-    expect(searchBoxes[0]).toBeInstanceOf(HTMLInputElement);
+    const searchBoxes = screen.queryAllByRole('searchbox');
+    expect(searchBoxes).toHaveLength(0);
   });
 
   test('Type selector', async () => {
@@ -622,6 +627,7 @@ describe('ResourcePropertyInput', () => {
     await setup({
       ...defaultProps,
       name: 'secret',
+      path: property.path,
       property,
       onChange,
     });

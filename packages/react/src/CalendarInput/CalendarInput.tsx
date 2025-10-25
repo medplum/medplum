@@ -1,18 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
-import { Slot } from '@medplum/fhirtypes';
+import type { Slot } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarInput.module.css';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 export interface CalendarInputProps {
-  slots: Slot[];
-  onChangeMonth: (date: Date) => void;
-  onClick: (date: Date) => void;
+  readonly slots: Slot[];
+  readonly onChangeMonth: (date: Date) => void;
+  readonly onClick: (date: Date) => void;
 }
 
 interface CalendarCell {
-  date: Date;
-  available: boolean;
+  readonly date: Date;
+  readonly available: boolean;
 }
 
 type OptionalCalendarCell = CalendarCell | undefined;
@@ -63,7 +66,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <Button disabled={!day.available} onClick={() => onClick(day.date)}>
+                    <Button variant="light" disabled={!day.available} onClick={() => onClick(day.date)}>
                       {day.date.getDate()}
                     </Button>
                   )}

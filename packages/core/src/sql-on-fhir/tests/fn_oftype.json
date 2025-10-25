@@ -1,0 +1,109 @@
+{
+  "title": "fn_oftype",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1"],
+  "resources": [
+    {
+      "resourceType": "Observation",
+      "id": "o1",
+      "code": {
+        "text": "code"
+      },
+      "status": "final",
+      "valueString": "foo"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o2",
+      "code": {
+        "text": "code"
+      },
+      "status": "final",
+      "valueInteger": 42
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o3",
+      "code": {
+        "text": "code"
+      },
+      "status": "final"
+    }
+  ],
+  "tests": [
+    {
+      "title": "select string values",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              },
+              {
+                "path": "value.ofType(string)",
+                "name": "string_value",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "string_value": "foo"
+        },
+        {
+          "id": "o2",
+          "string_value": null
+        },
+        {
+          "id": "o3",
+          "string_value": null
+        }
+      ]
+    },
+    {
+      "title": "select integer values",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              },
+              {
+                "path": "value.ofType(integer)",
+                "name": "integer_value",
+                "type": "integer"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "integer_value": null
+        },
+        {
+          "id": "o2",
+          "integer_value": 42
+        },
+        {
+          "id": "o3",
+          "integer_value": null
+        }
+      ]
+    }
+  ]
+}

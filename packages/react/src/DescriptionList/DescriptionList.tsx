@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import cx from 'clsx';
-import { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import classes from './DescriptionList.module.css';
 
 export interface DescriptionListProps {
-  children: ReactNode;
-  compact?: boolean;
+  readonly children: ReactNode;
+  readonly compact?: boolean;
 }
 
 export function DescriptionList(props: DescriptionListProps): JSX.Element {
@@ -13,8 +15,8 @@ export function DescriptionList(props: DescriptionListProps): JSX.Element {
 }
 
 export interface DescriptionListEntryProps {
-  term: string;
-  children: ReactNode;
+  readonly term: string;
+  readonly children: ReactNode;
 }
 
 export function DescriptionListEntry(props: DescriptionListEntryProps): JSX.Element {

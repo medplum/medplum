@@ -1,4 +1,36 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isStringArray } from './utils';
+
+export const AckCode = {
+  /** AA - Application Accept */
+  AA: 'AA',
+  /** AE - Application Error */
+  AE: 'AE',
+  /** AR - Application Reject */
+  AR: 'AR',
+  /** CA - Commit Accept */
+  CA: 'CA',
+  /** CE - Commit Error */
+  CE: 'CE',
+  /** CR - Commit Reject */
+  CR: 'CR',
+} as const;
+export type AckCode = keyof typeof AckCode;
+
+export interface Hl7AckOptions {
+  ackCode: AckCode;
+  errSegment?: Hl7Segment;
+}
+
+const TEXT_MSG_FOR_ACK_CODE = {
+  AA: 'OK',
+  AE: 'Application Error',
+  AR: 'Application Reject',
+  CA: 'Commit Accept',
+  CE: 'Commit Error',
+  CR: 'Commit Reject',
+} as Record<AckCode, string>;
 
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.
@@ -8,14 +40,28 @@ import { isStringArray } from './utils';
  * @see See this tutorial on MSH, and why it's a bad idea to use anything other than the default values: https://www.hl7soup.com/HL7TutorialMSH.html
  */
 export class Hl7Context {
+  readonly segmentSeparator: string;
+  readonly fieldSeparator: string;
+  readonly componentSeparator: string;
+  readonly repetitionSeparator: string;
+  readonly escapeCharacter: string;
+  readonly subcomponentSeparator: string;
+
   constructor(
-    public readonly segmentSeparator = '\r',
-    public readonly fieldSeparator = '|',
-    public readonly componentSeparator = '^',
-    public readonly repetitionSeparator = '~',
-    public readonly escapeCharacter = '\\',
-    public readonly subcomponentSeparator = '&'
-  ) {}
+    segmentSeparator = '\r',
+    fieldSeparator = '|',
+    componentSeparator = '^',
+    repetitionSeparator = '~',
+    escapeCharacter = '\\',
+    subcomponentSeparator = '&'
+  ) {
+    this.segmentSeparator = segmentSeparator;
+    this.fieldSeparator = fieldSeparator;
+    this.componentSeparator = componentSeparator;
+    this.repetitionSeparator = repetitionSeparator;
+    this.escapeCharacter = escapeCharacter;
+    this.subcomponentSeparator = subcomponentSeparator;
+  }
 
   /**
    * Returns the MSH-1 field value based on the configured separators.
@@ -116,9 +162,10 @@ export class Hl7Message {
 
   /**
    * Returns an HL7 "ACK" (acknowledgement) message for this message.
+   * @param options - The optional options to configure the "ACK" message.
    * @returns The HL7 "ACK" message.
    */
-  buildAck(): Hl7Message {
+  buildAck(options?: Hl7AckOptions): Hl7Message {
     const now = new Date();
     const msh = this.getSegment('MSH');
     const sendingApp = msh?.getField(3)?.toString() ?? '';
@@ -127,6 +174,7 @@ export class Hl7Message {
     const receivingFacility = msh?.getField(6)?.toString() ?? '';
     const controlId = msh?.getField(10)?.toString() ?? '';
     const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
+    const ackCode = options?.ackCode ?? 'AA';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -146,7 +194,8 @@ export class Hl7Message {
         ],
         this.context
       ),
-      new Hl7Segment(['MSA', 'AA', controlId, 'OK'], this.context),
+      new Hl7Segment(['MSA', ackCode, controlId, TEXT_MSG_FOR_ACK_CODE[ackCode]], this.context),
+      ...(options?.errSegment ? [options.errSegment] : []),
     ]);
   }
 
@@ -193,6 +242,53 @@ export class Hl7Message {
       context
     );
   }
+
+  /**
+   * Sets or replaces a segment at the specified index.
+   * Only allows MSH header to be replaced as first segment.
+   * If index is a number and is larger than the length of the segments array, it will be appended as the last segment.
+   * If the index is a string, replaces the first segment with that name.
+   * @param index - The segment index or name
+   * @param segment - The new segment to set
+   * @returns true if the segment was set, false otherwise
+   */
+  setSegment(index: number | string, segment: Hl7Segment): boolean {
+    // Special handling for MSH segment
+    if (segment.name === 'MSH') {
+      if (typeof index === 'number') {
+        if (index !== 0) {
+          return false; // MSH can only be the first segment
+        }
+      } else {
+        const existingIndex = this.segments.findIndex((s) => s.name === index);
+        if (existingIndex !== 0) {
+          return false; // MSH can only be the first segment
+        }
+      }
+    } else if (typeof index === 'number' && index === 0 && segment.name !== 'MSH') {
+      return false; // Cannot replace MSH segment with non-MSH segment
+    }
+
+    if (typeof index === 'number') {
+      if (index >= this.segments.length) {
+        // Append as last segment
+        this.segments.push(segment);
+        return true;
+      }
+      this.segments[index] = segment;
+      return true;
+    }
+
+    const existingIndex = this.segments.findIndex((s) => s.name === index);
+    if (existingIndex === 0 && segment.name !== 'MSH') {
+      return false; // Cannot replace MSH segment with non-MSH segment
+    }
+    if (existingIndex !== -1) {
+      this.segments[existingIndex] = segment;
+      return true;
+    }
+    return false;
+  }
 }
 
 /**
@@ -224,7 +320,7 @@ export class Hl7Segment {
    * Returns an HL7 field by index.
    * @param index - The HL7 field index.
    * @returns The HL7 field.
-   * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
+   * @deprecated Use getField() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
   get(index: number): Hl7Field {
     return this.fields[index];
@@ -304,6 +400,63 @@ export class Hl7Segment {
       context
     );
   }
+
+  /**
+   * Sets a field at the specified index. If that index does not exist, it will be added.
+   * Note that the index is 1-based, not 0-based.
+   * @param index - The field index
+   * @param field - The new field value
+   * @returns true if the field was set, false otherwise
+   */
+  setField(index: number, field: Hl7Field | string): boolean {
+    if (this.name === 'MSH') {
+      // MSH segments require special handling
+      if (index === 1) {
+        // MSH.1 is the field separator - cannot be changed
+        return false;
+      }
+      if (index === 2) {
+        // MSH.2 is the encoding characters - cannot be changed
+        return false;
+      }
+      if (index > 2) {
+        // MSH.3 through MSH.n are offset by 1
+        const actualIndex = index - 1;
+        // Add new fields if needed
+        while (this.fields.length <= actualIndex) {
+          this.fields.push(new Hl7Field([['']], this.context));
+        }
+        this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+        return true;
+      }
+    }
+
+    // Add new fields if needed
+    while (this.fields.length <= index) {
+      this.fields.push(new Hl7Field([['']], this.context));
+    }
+    this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    return true;
+  }
+
+  /**
+   * Sets a component value by field index and component index.
+   * This is a shortcut for `getField(field).setComponent(component, value)`.
+   * Note that both indices are 1-based, not 0-based.
+   * @param fieldIndex - The HL7 field index
+   * @param component - The component index
+   * @param value - The new component value
+   * @param subcomponent - Optional subcomponent index
+   * @param repetition - Optional repetition index
+   * @returns true if the component was set, false otherwise
+   */
+  setComponent(fieldIndex: number, component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    const field = this.getField(fieldIndex);
+    if (!field) {
+      return false;
+    }
+    return field.setComponent(component, value, subcomponent, repetition);
+  }
 }
 
 /**
@@ -379,6 +532,50 @@ export class Hl7Field {
       text.split(context.repetitionSeparator).map((r) => r.split(context.componentSeparator)),
       context
     );
+  }
+
+  /**
+   * Sets a component value at the specified indices.
+   * Note that the indices are 1-based, not 0-based.
+   * @param component - The component index
+   * @param value - The new component value
+   * @param subcomponent - Optional subcomponent index
+   * @param repetition - Optional repetition index
+   * @returns true if the component was set, false otherwise
+   */
+  setComponent(component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    if (component < 1) {
+      return false;
+    }
+
+    if (repetition >= this.components.length) {
+      // Add new repetitions if needed
+      while (this.components.length <= repetition) {
+        this.components.push(['']);
+      }
+    }
+
+    if (subcomponent !== undefined) {
+      if (subcomponent < 0) {
+        return false;
+      }
+      // Handle subcomponent setting
+      const currentValue = this.components[repetition][component - 1] || '';
+      const subcomponents = currentValue.split(this.context.subcomponentSeparator);
+
+      // Ensure we have enough subcomponents
+      while (subcomponents.length <= subcomponent) {
+        subcomponents.push('');
+      }
+
+      subcomponents[subcomponent] = value;
+      this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
+    } else {
+      // Handle regular component setting
+      this.components[repetition][component - 1] = value;
+    }
+
+    return true;
   }
 }
 

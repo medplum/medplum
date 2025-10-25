@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen, waitFor } from '../test-utils/render';
-import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
+import { MemoryRouter } from 'react-router';
+import { render, screen } from '../test-utils/render';
+import type { ResourceBadgeProps } from './ResourceBadge';
+import { ResourceBadge } from './ResourceBadge';
 
 const medplum = new MockClient();
 
@@ -28,7 +31,7 @@ describe('ResourceBadge', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
@@ -39,7 +42,7 @@ describe('ResourceBadge', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
@@ -49,7 +52,7 @@ describe('ResourceBadge', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });

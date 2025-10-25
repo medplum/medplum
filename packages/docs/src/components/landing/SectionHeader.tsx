@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import styles from './SectionHeader.module.css';
 
 export interface SectionHeaderProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function SectionHeader(props: SectionHeaderProps): JSX.Element {

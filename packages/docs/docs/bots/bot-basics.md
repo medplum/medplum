@@ -12,6 +12,12 @@ You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you 
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
+:::note Bots in Local Development
+
+If you want to run bots locally, you should use a VM Context. For more details see the [Running Bots Locally docs](/docs/bots/running-bots-locally).
+
+:::
+
 ## Example uses
 
 Consider some of these Bot use cases:
@@ -75,8 +81,8 @@ The following function arguments are available to the Bot code, to enable it to 
 
 | Name          | Type                                                                        | Description                                                                         |
 | ------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](../sdk/core.medplumclient)                               | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
-| `event`       | [BotEvent](../sdk/core.botevent)                                      | The event that object that triggered the Bot                                        |
+| `medplum`     | [MedplumClient](../sdk/core.medplumclient)                                  | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
+| `event`       | [BotEvent](../sdk/core.botevent)                                            | The event that object that triggered the Bot                                        |
 | `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
@@ -121,7 +127,7 @@ Because these properties may be undefined, we make heavy use of the Javascript [
 
 ## Deploying a Bot
 
-Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy your to run in production.
+Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy it to run in production.
 To deploy your bot, click the "Deploy" button.
 
 ![Deploy Button](/img/app/bots/deploy_button.png)
@@ -130,6 +136,25 @@ This works well for initial prototyping, but as you get closer to a production i
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
+
+### Creating and Deploying Bot from your IDE instead of Editor tab
+
+Alternatively, you can also write the code for a Bot and deploy from within your IDE.
+
+- [Create a Bot](https://app.medplum.com/admin/project) on Medplum and note its `id`. (All Bots in your account can be found [here](https://app.medplum.com/Bot))
+- Create a new typescript file (e.g. `my-bot.ts`) and copy the contents of `examples/hello-patient.ts` into your new file.
+- With the `id` of the Bot `id` in hand, add a section to `medplum.config.json` like so
+
+```json
+{
+  "name": "sample-account-setup",
+  "id": "<BOT_ID>",
+  "source": "src/examples/sample-account-setup.ts",
+  "dist": "dist/sample-account-setup.js"
+}
+```
+
+Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#deploying-your-bot)
 
 ## Executing a Bot
 
@@ -148,12 +173,15 @@ This will execute the most recently deployed version of your Bot, with the `even
 
 ![Execute from Editor](/img/app/bots/execute_from_editor.png)
 
+In the output panel at the bottom right you will see the string "true", indicating that the execution was a success. To see the results of the execution, navigate to the **Event** tab.
+(You may need to reload the page.) The **Outcome Desc** column will show the result of the console.log.
+
 ### _Using the `$execute` endpoint_
 
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
 
 ```bash
-curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
+curl -X POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
   --header 'Content-Type: <CONTENT_TYPE>' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
   --data '<INPUT_DATA>'
@@ -169,17 +197,17 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 #### `CONTENT_TYPE`
 
-| Content-Type                         | typeof `event.input`                      | Description                                                                                                                                                         |
-| ------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text/plain`                         | `string`                                  | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
-| `application/json`                   | `Record<string, any>`                     | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
-| `application/x-www-form-urlencoded ` | `Record<string, string>`                  | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
-| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)    | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#storing-data-resources) encoded as JSON                                                                             |
+| Content-Type                         | typeof `event.input`                   | Description                                                                                                                                                         |
+| ------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text/plain`                         | `string`                               | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
+| `application/json`                   | `Record<string, any>`                  | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
+| `application/x-www-form-urlencoded ` | `Record<string, string>`               | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
+| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources) | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#storing-data-resources) encoded as JSON                                                             |
 | `x-application/hl7-v2+er7`           | [`HL7Message`](../sdk/core.hl7message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 #### `ACCESS_TOKEN`
 
-This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/methods/client-credentials#connecting-to-the-service) for more information.
+This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/client-credentials#connecting-to-the-service) for more information.
 
 #### `INPUT_DATA`
 
@@ -215,13 +243,19 @@ Change "Criteria" field to `Patient`
 
 ![Subscription Criteria](/img/app/bots/subscription_criteria.png)
 
+:::warning Subscriptions on `AuditEvents`
+
+The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
+
+:::
+
 Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
 Because, Bots can be are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
 
 ![Subscription Channel](/img/app/bots/subscription_channel.png)
 
-Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYPE](#CONTENT_TYPE) field used by the `$execute` endpoint.
+Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYPE](#content_type) field used by the `$execute` endpoint.
 
 ![Subscription Payload](/img/app/bots/subscription_payload.png)
 
@@ -251,3 +285,12 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 ## Software Development Lifecycle
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
+
+
+## Medplum Lambda Bots Size Limits
+
+Medplum Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
+
+- **Maximum compressed size**: 50 MB
+
+These limits apply to your bot code and any extra dependencies you include. The [bot layer](/docs/bots/bot-lambda-layer) already provides many common dependencies (like `@medplum/core`, `node-fetch`, etc.).

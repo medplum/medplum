@@ -1,23 +1,34 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  CloudFormationClientResolvedConfig,
+  ServiceInputTypes as CloudFormationServiceInputTypes,
+  ServiceOutputTypes as CloudFormationServiceOutputTypes,
+} from '@aws-sdk/client-cloudformation';
 import {
   CloudFormationClient,
-  CloudFormationClientResolvedConfig,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
-  ServiceInputTypes,
-  ServiceOutputTypes,
 } from '@aws-sdk/client-cloudformation';
-import {
-  CloudFrontClient,
+import type {
   CloudFrontClientResolvedConfig,
-  CreateInvalidationCommand,
+  ServiceInputTypes as CloudFrontServiceInputTypes,
+  ServiceOutputTypes as CloudFrontServiceOutputTypes,
 } from '@aws-sdk/client-cloudfront';
-import { PutObjectCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
-import { AwsStub, mockClient } from 'aws-sdk-client-mock';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import type {
+  S3ClientResolvedConfig,
+  ServiceInputTypes as S3ServiceInputTypes,
+  ServiceOutputTypes as S3ServiceOutputTypes,
+} from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { AwsStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
-import fs from 'fs';
 import fetch from 'node-fetch';
-import { Readable, Writable } from 'stream';
+import fs from 'node:fs';
+import { Readable, Writable } from 'node:stream';
 import tar from 'tar';
 import { main } from '../index';
 
@@ -25,7 +36,7 @@ jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),
@@ -44,17 +55,31 @@ jest.mock('fs', () => ({
 jest.mock('node-fetch', () => jest.fn());
 
 jest.mock('tar', () => ({
-  x: jest.fn(),
+  extract: jest.fn(),
 }));
 
 const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
 
-let cfMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFormationClientResolvedConfig>;
-let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: AwsStub<
+  CloudFormationServiceInputTypes,
+  CloudFormationServiceOutputTypes,
+  CloudFormationClientResolvedConfig
+>;
+let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
+let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-app command', () => {
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
+
   beforeEach(() => {
+    jest.clearAllMocks();
     cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
@@ -134,11 +159,7 @@ describe('update-app command', () => {
     s3Mock = mockClient(S3Client);
     s3Mock.on(PutObjectCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient) as AwsStub<
-      ServiceInputTypes,
-      ServiceOutputTypes,
-      CloudFrontClientResolvedConfig
-    >;
+    cloudFrontMock = mockClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 
@@ -180,7 +201,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -209,7 +230,7 @@ describe('update-app command', () => {
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(1);
     expect(cloudFrontMock.calls()).toHaveLength(1);
   });
@@ -248,7 +269,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -277,7 +298,7 @@ describe('update-app command', () => {
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(0);
     expect(cloudFrontMock.calls()).toHaveLength(0);
   });
@@ -312,7 +333,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -336,15 +357,29 @@ describe('update-app command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
   });
 
   test('Update app config not found', async () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
 
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found: not-found');
+    await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
+  });
+
+  test('Update app config custom filename not found', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+
+    console.log = jest.fn();
+    await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found', '--file', 'foo.json'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (foo.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
   });
 
   test('Update app stack not found', async () => {
@@ -353,8 +388,11 @@ describe('update-app command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found: not-found');
+    await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
+    expect(processError).toHaveBeenCalledWith('Error: Stack not found: not-found\n');
   });
 
   test('Update app stack incomplete', async () => {
@@ -363,7 +401,9 @@ describe('update-app command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-app', 'incomplete']);
-    expect(console.log).toBeCalledWith('App bucket not found');
+    await expect(main(['node', 'index.js', 'aws', 'update-app', 'incomplete'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith('Error: App bucket not found for stack incomplete\n');
   });
 });

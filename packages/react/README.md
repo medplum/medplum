@@ -19,7 +19,6 @@ Note the following peer dependencies:
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [react](https://www.npmjs.com/package/react)
 - [react-dom](https://www.npmjs.com/package/react-dom)
-- [react-router-dom](https://www.npmjs.com/package/react-router-dom)
 
 Note the following optional peer dependencies:
 
@@ -87,4 +86,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2023
+Apache 2.0. Copyright &copy; Medplum 2025

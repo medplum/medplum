@@ -1,21 +1,38 @@
-import { Reference, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import {
+  PropertyType,
+  evalFhirPathTyped,
+  getSearchParameters,
+  isResource,
+  isUUID,
+  resolveId,
+  toTypedValue,
+} from '@medplum/core';
+import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
+import { InsertQuery } from '../sql';
+import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
-import { SelectQuery } from '../sql';
-import { compareArrays } from './util';
+
+export interface ReferenceTableRow extends LookupTableRow {
+  resourceId: string;
+  targetId: string;
+  code: string;
+}
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
-export class ReferenceTable extends LookupTable<Reference> {
+export class ReferenceTable extends LookupTable {
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
   }
 
   getColumnName(): string {
-    return '';
+    throw new Error('ReferenceTable.getColumnName not implemented');
   }
 
   /**
@@ -27,39 +44,49 @@ export class ReferenceTable extends LookupTable<Reference> {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    const values = getSearchReferences(resource);
-    const existing = await getExistingValues(client, this.getTableName(resource.resourceType), resource.id as string);
-    if (compareArrays(values, existing)) {
-      // Nothing changed
+  extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
+    getSearchReferences(result, resource);
+  }
+
+  /**
+   * Inserts reference values into the lookup table for a resource.
+   * @param client - The database client.
+   * @param resourceType - The resource type.
+   * @param values - The values to insert.
+   */
+  async insertValuesForResource(
+    client: Pool | PoolClient,
+    resourceType: ResourceType,
+    values: Record<string, any>[]
+  ): Promise<void> {
+    if (values.length === 0) {
       return;
     }
-    if (existing.length > 0) {
-      await this.deleteValuesForResource(client, resource);
-    }
-    await this.insertValuesForResource(client, resource.resourceType, values);
-  }
-}
+    const tableName = this.getTableName(resourceType);
 
-interface ReferenceRow {
-  resourceId: string;
-  targetId: string;
-  code: string;
+    // Reference lookup tables have a covering primary key, so a conflict means
+    // that the exact desired row already exists in the database
+    for (let i = 0; i < values.length; i += 10_000) {
+      const batchedValues = values.slice(i, i + 10_000);
+      const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
+      await insert.execute(client);
+    }
+  }
 }
 
 /**
  * Returns a list of all references in the resource to be inserted into the database.
  * This includes all values for any SearchParameter of `reference` type
+ * @param result - The array to which the references will be added.
  * @param resource - The resource being indexed.
- * @returns An array of all references from the resource to be inserted into the database.
  */
-function getSearchReferences(resource: Resource): ReferenceRow[] {
+function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
   const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
-    return [];
+    return;
   }
-  const result = new Map<string, ReferenceRow>();
+  const resultMap = new Map<string, ReferenceTableRow>();
   for (const searchParam of Object.values(searchParams)) {
     if (!isIndexed(searchParam)) {
       continue;
@@ -67,20 +94,39 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
 
     const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
     for (const value of typedValues) {
-      if (value.type !== PropertyType.Reference || !value.value.reference) {
-        continue;
+      if (value.type === PropertyType.Reference && value.value.reference) {
+        const targetId = resolveId(value.value);
+        if (targetId && isUUID(targetId)) {
+          addSearchReferenceResult(resultMap, resource, searchParam, targetId);
+        }
       }
-      const [_targetType, targetId] = value.value.reference.split('/', 2);
-      if (isUUID(targetId)) {
-        result.set(`${searchParam.code}|${targetId}`, {
-          resourceId: resource.id as string,
-          targetId: targetId,
-          code: searchParam.code as string,
-        });
+
+      if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+        addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
       }
     }
   }
-  return Array.from(result.values());
+  result.push(...resultMap.values());
+}
+
+/**
+ * Adds a search reference result to the result map.
+ * @param result - The result map to add the reference to.
+ * @param resource - The resource being indexed.
+ * @param searchParam - The search parameter.
+ * @param targetId - The target ID.
+ */
+function addSearchReferenceResult(
+  result: Map<string, ReferenceTableRow>,
+  resource: WithId<Resource>,
+  searchParam: SearchParameter,
+  targetId: string
+): void {
+  result.set(`${searchParam.code}|${targetId}`, {
+    resourceId: resource.id,
+    targetId: targetId,
+    code: searchParam.code as string,
+  });
 }
 
 /**
@@ -89,30 +135,9 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
  * @returns True if the search parameter is an "reference" parameter.
  */
 function isIndexed(searchParam: SearchParameter): boolean {
-  if (searchParam.type !== 'reference') {
-    return false;
-  } else if (searchParam.code?.endsWith(':identifier')) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Returns the existing list of indexed references.
- * @param client - The current database client.
- * @param tableName - The table to query.
- * @param resourceId - The FHIR resource ID.
- * @returns Promise for the list of indexed references.
- */
-async function getExistingValues(client: PoolClient, tableName: string, resourceId: string): Promise<ReferenceRow[]> {
-  return new SelectQuery(tableName)
-    .where('resourceId', '=', resourceId)
-    .execute(client)
-    .then((result) =>
-      result.map((row) => ({
-        code: row.code,
-        resourceId: row.resourceId,
-        targetId: row.targetId,
-      }))
-    );
+  return (
+    searchParam.type === 'reference' &&
+    searchParam.code !== '_compartment' && // Compartment search is a special internal case that is on the resource table
+    !searchParam.code.endsWith(':identifier') // Identifier search is a special internal case that is on the token table
+  );
 }

@@ -1,0 +1,104 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { MedplumClient, normalizeErrorString, parseLogLevel, sleep } from '@medplum/core';
+import { existsSync, readFileSync } from 'node:fs';
+import { App } from './app';
+import { RETRY_WAIT_DURATION_MS } from './constants';
+import { LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
+import type { AgentArgs } from './types';
+
+export async function agentMain(argv: string[]): Promise<App> {
+  let args: AgentArgs;
+  if (argv.length >= 6) {
+    args = readCommandLineArgs(argv);
+  } else if (argv.length === 3 && (argv[2] === '-h' || argv[2] === '--help')) {
+    console.log('Expected arguments:');
+    console.log('    baseUrl: The Medplum server base URL.');
+    console.log('    clientId: The OAuth client ID.');
+    console.log('    clientSecret: The OAuth client secret.');
+    console.log('    agentId: The Medplum agent ID.');
+    process.exit(0);
+  } else if (existsSync('agent.properties')) {
+    args = readPropertiesFile('agent.properties');
+  } else {
+    console.log('Missing arguments');
+    console.log('Arguments can be passed on the command line or in a properties file.');
+    console.log('Example with command line arguments:');
+    console.log('    node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
+    console.log('Example with properties file:');
+    console.log('    node medplum-agent.js');
+    process.exit(1);
+  }
+
+  if (!args.baseUrl || !args.clientId || !args.clientSecret || !args.agentId) {
+    console.log('Missing arguments');
+    console.log('Expected arguments:');
+    console.log('    baseUrl: The Medplum server base URL.');
+    console.log('    clientId: The OAuth client ID.');
+    console.log('    clientSecret: The OAuth client secret.');
+    console.log('    agentId: The Medplum agent ID.');
+    process.exit(1);
+  }
+
+  const { baseUrl, clientId, clientSecret, agentId } = args;
+
+  const medplum = new MedplumClient({ baseUrl, clientId });
+
+  let loggedIn = false;
+  while (!loggedIn) {
+    try {
+      await medplum.startClientLogin(clientId, clientSecret);
+      loggedIn = true;
+    } catch (err) {
+      console.error('Failed to login', { err: normalizeErrorString(err) });
+      console.log('Retrying login in 10 seconds...');
+      await sleep(RETRY_WAIT_DURATION_MS);
+    }
+  }
+
+  // Replace logger logLevels if top-level logLevel is specified
+  if (args.logLevel) {
+    args['logger.main.logLevel'] = args.logLevel;
+    args['logger.channel.logLevel'] = args.logLevel;
+  }
+
+  // Parse logger config before handing it to the app
+  const [fullConfig, warnings] = parseLoggerConfigFromArgs(args);
+
+  // Create loggers based on parsed config
+  const mainLogger = new WinstonWrapperLogger(fullConfig[LoggerType.MAIN], LoggerType.MAIN);
+  const channelLogger = new WinstonWrapperLogger(fullConfig[LoggerType.CHANNEL], LoggerType.CHANNEL);
+
+  // Log out config warnings before proceeding to initializing app
+  for (const warning of warnings) {
+    mainLogger.warn(warning);
+  }
+
+  const app = new App(medplum, agentId, args.logLevel ? parseLogLevel(args.logLevel) : undefined, {
+    mainLogger,
+    channelLogger,
+  });
+  await app.start();
+
+  process.on('SIGINT', async () => {
+    console.log('Gracefully shutting down from SIGINT (Ctrl-C)');
+    await app.stop();
+    process.exit();
+  });
+
+  return app;
+}
+
+function readCommandLineArgs(argv: string[]): AgentArgs {
+  const [_node, _script, baseUrl, clientId, clientSecret, agentId, logLevel] = argv;
+  return { baseUrl, clientId, clientSecret, agentId, logLevel };
+}
+
+function readPropertiesFile(fileName: string): AgentArgs {
+  return Object.fromEntries(
+    readFileSync(fileName)
+      .toString()
+      .split('\n')
+      .map((line) => line.split('=').map((s) => s.trim()))
+  );
+}

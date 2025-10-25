@@ -1,30 +1,28 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Table, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  formatDateTime,
-  formatHumanName,
-  getReferenceString,
-  normalizeErrorString,
-  ProfileResource,
-} from '@medplum/core';
-import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
+import type { ProfileResource } from '@medplum/core';
+import { formatDateTime, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface UserSession {
-  id: string;
-  lastUpdated: string;
-  authMethod: string;
-  remoteAddress: string;
-  browser?: string;
-  os?: string;
+  readonly id: string;
+  readonly lastUpdated: string;
+  readonly authMethod: string;
+  readonly remoteAddress: string;
+  readonly browser?: string;
+  readonly os?: string;
 }
 
 interface SecurityDetails {
-  profile: ProfileResource;
-  config: UserConfiguration;
-  security: {
+  readonly profile: ProfileResource;
+  readonly config: UserConfiguration;
+  readonly security: {
     mfaEnrolled: boolean;
     sessions: UserSession[];
   };
@@ -37,7 +35,7 @@ export function SecurityPage(): JSX.Element | null {
 
   useEffect(() => {
     medplum
-      .get('auth/me')
+      .get('auth/me', { cache: 'no-cache' })
       .then(setDetails)
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
@@ -102,12 +100,14 @@ export function SecurityPage(): JSX.Element | null {
       </Document>
       <Document>
         <Title>Password</Title>
-        <Button onClick={() => navigate('/changepassword')}>Change password</Button>
+        <Button onClick={() => navigate('/changepassword')?.catch(console.error)}>Change password</Button>
       </Document>
       <Document>
         <Title>Multi Factor Auth</Title>
         <p>Enrolled: {details.security.mfaEnrolled.toString()}</p>
-        {!details.security.mfaEnrolled && <Button onClick={() => navigate('/mfa')}>Enroll</Button>}
+        {!details.security.mfaEnrolled && (
+          <Button onClick={() => navigate('/mfa')?.catch(console.error)}>Enroll</Button>
+        )}
       </Document>
     </>
   );

@@ -1,11 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 'use client';
-
-import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
-import { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 const medplum = new MedplumClient({
   // Uncomment this to run against the server on your localhost
@@ -22,9 +22,5 @@ const medplum = new MedplumClient({
 });
 
 export default function Root(props: { children: ReactNode }): JSX.Element {
-  return (
-    <MantineProvider>
-      <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>
-    </MantineProvider>
-  );
+  return <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>;
 }

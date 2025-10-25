@@ -1,53 +1,65 @@
-import { tryGetDataType } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType } from '@medplum/core';
+import { buildElementsContext, tryGetDataType } from '@medplum/core';
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { BackboneElementContext, buildBackboneElementContext } from './BackboneElementInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
-export interface BackboneElementInputProps {
+export interface BackboneElementInputProps extends BaseInputProps {
   /** Type name the backbone element represents */
-  typeName: string;
+  readonly typeName: string;
   /** (optional) The contents of the resource represented by the backbone element */
-  defaultValue?: any;
-  /** (optional) OperationOutcome from the last attempted system action*/
-  outcome?: OperationOutcome;
+  readonly defaultValue?: any;
   /** (optional) callback function that is called when the value of the backbone element changes */
-  onChange?: (value: any) => void;
+  readonly onChange?: (value: any) => void;
   /** (optional) Profile URL of the structure definition represented by the backbone element */
-  profileUrl?: string;
+  readonly profileUrl?: string;
+  /**
+   * (optional) If provided, inputs specified in `accessPolicyResource.readonlyFields` are not editable
+   * and inputs specified in `accessPolicyResource.hiddenFields` are not shown.
+   */
+  readonly accessPolicyResource?: AccessPolicyResource;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
-  const { typeName } = props;
-  const [value, setValue] = useState<any>(props.defaultValue ?? {});
-  const backboneContext = useContext(BackboneElementContext);
-  const profileUrl = props.profileUrl ?? backboneContext.profileUrl;
-  const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
+  const [defaultValue] = useState(() => props.defaultValue ?? {});
+  const parentElementsContext = useContext(ElementsContext);
+  const profileUrl = props.profileUrl ?? parentElementsContext?.profileUrl;
+  const typeSchema = useMemo(() => tryGetDataType(props.typeName, profileUrl), [props.typeName, profileUrl]);
+  const type = typeSchema?.type ?? props.typeName;
 
-  const context = useMemo(() => {
-    return buildBackboneElementContext(typeSchema, profileUrl);
-  }, [typeSchema, profileUrl]);
+  const contextValue: ElementsContextType | undefined = useMemo(() => {
+    if (!typeSchema) {
+      return undefined;
+    }
+    return buildElementsContext({
+      parentContext: parentElementsContext,
+      elements: typeSchema.elements,
+      path: props.path,
+      profileUrl: typeSchema.url,
+      accessPolicyResource: props.accessPolicyResource,
+    });
+  }, [typeSchema, parentElementsContext, props.path, props.accessPolicyResource]);
 
   if (!typeSchema) {
-    return <div>{typeName}&nbsp;not implemented</div>;
+    return <div>{type}&nbsp;not implemented</div>;
   }
 
-  function setValueWrapper(newValue: any): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
-  }
-
-  return (
-    <BackboneElementContext.Provider value={context}>
-      <ElementsInput
-        type={typeSchema.type}
-        elements={typeSchema.elements}
-        defaultValue={value}
-        onChange={setValueWrapper}
-        outcome={props.outcome}
-      />
-    </BackboneElementContext.Provider>
+  return maybeWrapWithContext(
+    ElementsContext.Provider,
+    contextValue,
+    <ElementsInput
+      path={props.path}
+      valuePath={props.valuePath}
+      type={type}
+      defaultValue={defaultValue}
+      onChange={props.onChange}
+      outcome={props.outcome}
+    />
   );
 }

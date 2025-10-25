@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { badRequest } from '@medplum/core';
+import { badRequest, createReference } from '@medplum/core';
+import type { UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -7,7 +10,8 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -21,6 +25,7 @@ const app = express();
 describe('Set Password', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await initApp(app, config);
   });
 
@@ -104,6 +109,82 @@ describe('Set Password', () => {
       email,
       email_verified: true,
     });
+  });
+
+  test('UserSecurityRequest', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const usr = await withTestContext(async () =>
+      getSystemRepo().createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: {
+          project: project.id,
+        },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+      })
+    );
+
+    const res3 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res3.status).toBe(200);
+
+    // Make sure that the user can login with the new password
+    const res4 = await request(app).post('/auth/login').type('json').send({
+      email: email,
+      password: 'my-new-password',
+      scope: 'openid',
+    });
+    expect(res4.status).toBe(200);
+  });
+
+  test('UserSecurityRequest invalid type', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const usr = await withTestContext(async () =>
+      getSystemRepo().createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: {
+          project: project.id,
+        },
+        type: 'verify-email', // Invalid type
+        user: createReference(user),
+        secret: generateSecret(16),
+      })
+    );
+
+    const res3 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res3.status).toBe(400);
   });
 
   test('Wrong secret', async () => {

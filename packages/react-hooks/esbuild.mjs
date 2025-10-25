@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+/* global process */
 /* global console */
-/* eslint no-console: "off" */
 
 import dotenv from 'dotenv';
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -30,7 +33,10 @@ esbuild
     outfile: './dist/cjs/index.cjs',
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
-  .catch(console.error);
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 
 esbuild
   .build({
@@ -39,4 +45,7 @@ esbuild
     outfile: './dist/esm/index.mjs',
   })
   .then(() => writeFileSync('./dist/esm/package.json', '{"type": "module"}'))
-  .catch(console.error);
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

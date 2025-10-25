@@ -1,6 +1,17 @@
-import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
-import { isUUID } from './utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  Bundle,
+  BundleEntry,
+  DiagnosticReport,
+  Observation,
+  Patient,
+  Resource,
+  Specimen,
+} from '@medplum/fhirtypes';
+import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
+import { getDataType } from './typeschema/types';
+import { deepClone, isUUID } from './utils';
 
 let jsonFile: any;
 
@@ -70,7 +81,7 @@ describe('Bundle tests', () => {
     test('create a FHIR bundle from JSON File', () => {
       const transactionBundle = convertToTransactionBundle(jsonFile);
       const firstEntry = transactionBundle.entry?.[0];
-      expect(firstEntry?.request?.url).toEqual('Patient');
+      expect(firstEntry?.request?.url).toStrictEqual('Patient');
     });
   });
 
@@ -89,7 +100,10 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual(['Patient', 'DiagnosticReport']);
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
+        'Patient',
+        'DiagnosticReport',
+      ]);
     });
 
     test('reorders a bundle with a cycle', () => {
@@ -108,13 +122,13 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'ServiceRequest',
         'Specimen',
         'ServiceRequest',
         'Specimen',
       ]);
-      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toEqual(['POST', 'POST', 'PUT', 'PUT']);
+      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toStrictEqual(['POST', 'POST', 'PUT', 'PUT']);
     });
 
     test('Reorders Lab bundle', () => {
@@ -139,7 +153,7 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'Patient',
         'Observation',
         'ServiceRequest',
@@ -213,6 +227,108 @@ describe('Bundle tests', () => {
           },
         ],
       });
+    });
+
+    test('Remove empty resource.meta', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          project: '11111111-2222-3333-4444-555555555555',
+        },
+        active: true,
+      };
+
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Patient/00000000-0000-0000-0000-000000000000',
+            resource: patient,
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+
+      // meta.project will be removed
+      // so meta will be empty
+      // and therefore should be removed
+      expect(result?.entry?.[0]?.resource?.meta).toBeUndefined();
+    });
+
+    test('Preserve resource.meta', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          account: {
+            reference: 'Organization/33333333-3333-3333-3333-333333333333',
+            display: 'Organization #3',
+          },
+          accounts: [
+            {
+              reference: 'Organization/33333333-3333-3333-3333-333333333333',
+              display: 'Organization #3',
+            },
+          ],
+          author: {
+            reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
+            display: 'Doctor',
+          },
+          onBehalfOf: {
+            reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
+            display: 'Doctor',
+          },
+          compartment: [
+            {
+              reference: 'Project/11111111-2222-3333-4444-555555555555',
+            },
+            {
+              reference: 'Patient/00000000-0000-0000-0000-000000000000',
+            },
+          ],
+          extension: [{ url: 'https://example.com/Extension/meta-1', valueBoolean: true }],
+          id: 'some-id',
+          lastUpdated: '2024-02-14T21:47:11.777Z',
+          profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+          project: '11111111-2222-3333-4444-555555555555',
+          security: [{ system: 'http://hl7.org/fhir/v3/Confidentiality', code: 'N' }],
+          source: 'https://example.com/source',
+          tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
+          versionId: '55555555-5555-5555-5555-555555555555',
+        },
+        active: true,
+      };
+
+      const expected = deepClone(patient);
+      const meta = expected.meta;
+      if (meta === undefined) {
+        fail('Expected meta to be defined');
+      }
+
+      const removedKeys = ['project', 'versionId', 'lastUpdated', 'compartment', 'author'];
+      for (const key of Object.keys(getDataType('Meta').elements)) {
+        // make sure every possible element is defined in the test
+        expect((meta as any)[key]).toBeDefined();
+
+        if (removedKeys.includes(key)) {
+          delete (meta as any)[key];
+        }
+      }
+
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Patient/00000000-0000-0000-0000-000000000000',
+            resource: patient,
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
     });
   });
 
@@ -295,6 +411,129 @@ describe('Bundle tests', () => {
             },
           },
         ],
+      });
+    });
+  });
+
+  describe('findResourceById', () => {
+    test('Single resource', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('No matches', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Observation', '123');
+      expect(result).toBeUndefined();
+    });
+
+    test('Two resources, same type', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const patient2: Patient = {
+        resourceType: 'Patient',
+        id: '456',
+        name: [{ given: ['Jane'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: patient2 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types, same id', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        id: '123',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
       });
     });
   });

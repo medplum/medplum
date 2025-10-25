@@ -1,17 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TextInput } from '@mantine/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { ChangeEvent } from 'react';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import type { ChangeEvent, JSX } from 'react';
+import type { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
-export interface DateTimeInputProps {
-  name?: string;
-  placeholder?: string;
-  defaultValue?: string;
-  autoFocus?: boolean;
-  required?: boolean;
-  outcome?: OperationOutcome;
-  onChange?: (value: string) => void;
+export interface DateTimeInputProps extends PrimitiveTypeInputProps {
+  readonly label?: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: string;
+  readonly autoFocus?: boolean;
+  readonly outcome?: OperationOutcome;
+  readonly onChange?: (value: string) => void;
 }
 
 /**
@@ -27,11 +29,14 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
     <TextInput
       id={props.name}
       name={props.name}
+      label={props.label}
       data-autofocus={props.autoFocus}
-      data-testid={props.name}
+      data-testid={props['data-testid'] ?? props.name}
       placeholder={props.placeholder}
       required={props.required}
+      disabled={props.disabled}
       type={getInputType()}
+      step={1}
       defaultValue={convertIsoToLocal(props.defaultValue)}
       autoFocus={props.autoFocus}
       error={getErrorsForInput(props.outcome, props.name)}

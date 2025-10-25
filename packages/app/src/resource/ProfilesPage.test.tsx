@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { loadDataType } from '@medplum/core';
+import type { Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
@@ -13,9 +16,19 @@ const medplum = new MockClient();
 describe('ProfilesPage', () => {
   const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
   beforeAll(async () => {
+    const loadedProfileUrls: string[] = [];
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
-      await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      loadedProfileUrls.push(sd.url);
+      loadDataType(sd);
     }
+    medplum.requestProfileSchema = jest.fn((profileUrl) => {
+      if (loadedProfileUrls.includes(profileUrl)) {
+        return Promise.resolve();
+      } else {
+        throw new Error('unexpected profileUrl');
+      }
+    });
   });
 
   async function setup(url: string): Promise<void> {
@@ -35,7 +48,7 @@ describe('ProfilesPage', () => {
         </MedplumProvider>
       );
     });
-    await waitFor(() => screen.getByText('Available Patient profiles'));
+    expect(await screen.findByText('Available Patient profiles')).toBeInTheDocument();
   }
 
   test('Can add a profile to an empty resource', async () => {
@@ -61,7 +74,7 @@ describe('ProfilesPage', () => {
     expect(screen.queryByText('Species')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Update' }));
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();
@@ -92,6 +105,6 @@ describe('ProfilesPage', () => {
     });
 
     const updatedPatient = await medplum.readResource('Patient', patient.id as string);
-    expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(false);
+    expect(updatedPatient.meta?.profile).toEqual(undefined);
   });
 });

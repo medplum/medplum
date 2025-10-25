@@ -1,0 +1,29 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "fa6ad189-d8ce-4a76-aafc-98aaf1acc347",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "158965000",
+                "display": "Doctor"
+              }
+            ]
+          }
+        ],
+        "practitioner": "$practitioner"
+      },
+      "request": {
+        "method": "POST",
+        "url": "PractitionerRole",
+        "ifNoneExist": "practitioner=$practitionerReference"
+      }
+    }
+  ]
+}

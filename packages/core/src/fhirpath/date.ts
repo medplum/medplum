@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export function parseDateString(str: string): string {
   if (str.startsWith('T')) {
     // If a time string,
@@ -14,7 +16,7 @@ export function parseDateString(str: string): string {
   try {
     // Try to normalize to UTC
     return new Date(str).toISOString();
-  } catch (e) {
+  } catch (_err) {
     // Fallback to original input
     // This happens on unsupported time formats such as "2021-01-01T12"
     return str;

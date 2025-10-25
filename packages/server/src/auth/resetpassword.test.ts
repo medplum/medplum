@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
-import { DomainConfiguration, PasswordChangeRequest } from '@medplum/fhirtypes';
+import type { DomainConfiguration, UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -8,8 +10,8 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -17,13 +19,14 @@ jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
-const app = express();
-
 describe('Reset Password', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
   const testRecaptchaSecretKey = 'testrecaptchasecretkey';
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await initApp(app, config);
   });
 
@@ -431,10 +434,10 @@ describe('Reset Password', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1); // Ensure SESv2Client is called once
     expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
 
-    // Get newly created PasswordChangeRequest
-    const passwordChangeRequest = (await withTestContext(async () => {
-      const passwordChangeRequest = await systemRepo.searchOne<PasswordChangeRequest>({
-        resourceType: 'PasswordChangeRequest',
+    // Get newly created UserSecurityRequest
+    const userSecurityRequest = (await withTestContext(async () =>
+      systemRepo.searchOne<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
         filters: [
           {
             code: 'user',
@@ -442,12 +445,11 @@ describe('Reset Password', () => {
             value: getReferenceString(user),
           },
         ],
-      });
-      return passwordChangeRequest;
-    })) as PasswordChangeRequest;
+      })
+    )) as UserSecurityRequest;
 
-    // Verify PasswordChangeRequest redirectUri
-    expect(passwordChangeRequest.redirectUri).toBe('http://example.com');
+    // Verify UserSecurityRequest.redirectUri
+    expect(userSecurityRequest.redirectUri).toBe('http://example.com');
 
     // Verify email details
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];

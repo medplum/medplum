@@ -1,8 +1,11 @@
-import { createReference, ProfileResource } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { createProject } from '../fhir/operations/projectinit';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
 
@@ -25,12 +28,12 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   readonly accessToken: string;
-  readonly user: User;
-  readonly project: Project;
-  readonly login: Login;
-  readonly membership: ProjectMembership;
-  readonly profile: ProfileResource;
-  readonly client: ClientApplication;
+  readonly user: WithId<User>;
+  readonly project: WithId<Project>;
+  readonly login: WithId<Login>;
+  readonly membership: WithId<ProjectMembership>;
+  readonly profile: WithId<ProfileResource>;
+  readonly client: WithId<ClientApplication>;
 }
 
 /**
@@ -45,6 +48,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   let user = await getUserByEmailWithoutProject(email);
   if (!user) {
+    const systemRepo = getSystemRepo();
     user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName,
@@ -68,11 +72,13 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const { membership, client, project, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
+    user,
     {
       ...login,
-      membership: createReference(membership),
+      membership: createReference(membership as WithId<ProjectMembership>),
     },
-    createReference(profile)
+    createReference(profile as ProfileResource),
+    { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
   );
 
   return {
@@ -80,8 +86,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership,
-    profile,
+    membership: membership as WithId<ProjectMembership>,
+    profile: profile as WithId<ProfileResource>,
     client,
   };
 }

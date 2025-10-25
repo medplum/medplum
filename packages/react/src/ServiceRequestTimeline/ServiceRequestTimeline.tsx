@@ -1,15 +1,21 @@
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import type { ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
-export interface ServiceRequestTimelineProps {
-  serviceRequest: ServiceRequest | Reference<ServiceRequest>;
+export interface ServiceRequestTimelineProps extends Pick<ResourceTimelineProps<ServiceRequest>, 'getMenu'> {
+  readonly serviceRequest: ServiceRequest | Reference<ServiceRequest>;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
+  const { serviceRequest, ...rest } = props;
   return (
     <ResourceTimeline
-      value={props.serviceRequest}
+      value={serviceRequest}
       loadTimelineResources={async (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
         const ref = `${resourceType}/${id}`;
         const _count = 100;
@@ -40,6 +46,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
         issued: new Date().toISOString(),
         content,
       })}
+      {...rest}
     />
   );
 }

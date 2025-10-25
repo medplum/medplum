@@ -1,6 +1,8 @@
-import { isResource } from '@medplum/core';
-import { Request, Response } from 'express';
-import { JSONSchema4 } from 'json-schema';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { isResourceWithId } from '@medplum/core';
+import type { Request, Response } from 'express';
+import type { JSONSchema4 } from 'json-schema';
 import type {
   ComponentsObject,
   OpenAPIObject,
@@ -9,27 +11,26 @@ import type {
   SchemaObject,
   TagObject,
 } from 'openapi3-ts/oas31';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
 type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };
-
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
-let cachedSpec: any;
+let cachedSpec: OpenAPIObjectWithPaths;
 
 export function openApiHandler(_req: Request, res: Response): void {
   res.status(200).json(getSpec());
 }
 
-function getSpec(): any {
+function getSpec(): OpenAPIObjectWithPaths {
   if (!cachedSpec) {
     cachedSpec = buildSpec();
   }
   return cachedSpec;
 }
 
-function buildSpec(): any {
+function buildSpec(): OpenAPIObjectWithPaths {
   const result = buildBaseSpec();
   const definitions = getJsonSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
@@ -526,5 +527,5 @@ function buildPatchPath(): any {
 
 function isResourceType(definition: JSONSchema4): boolean {
   const props = definition.properties;
-  return !!(isResource(props) && 'id' in props && 'meta' in props);
+  return !!(isResourceWithId(props) && 'meta' in props);
 }

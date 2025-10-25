@@ -1,7 +1,10 @@
-import { Reference } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer/parse';
-import { PropertyType, TypedValue, isResource } from '../types';
-import { calculateAge } from '../utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { Atom, AtomContext } from '../fhirlexer/parse';
+import type { TypedValue } from '../types';
+import { PropertyType, isResource } from '../types';
+import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
@@ -34,7 +37,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
   empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return booleanToTypedValue(input.length === 0);
+    return booleanToTypedValue(input.length === 0 || input.every((e) => isEmpty(e.value)));
   },
 
   /**
@@ -67,7 +70,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (criteria) {
       return booleanToTypedValue(input.filter((e) => toJsBoolean(criteria.eval(context, [e]))).length > 0);
     } else {
-      return booleanToTypedValue(input.length > 0);
+      return booleanToTypedValue(input.length > 0 && input.every((e) => !isEmpty(e.value)));
     }
   },
 
@@ -171,8 +174,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#subsetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements.
+   * @returns True if all items in the input collection are members of the other collection.
    */
-  subsetOf: stub,
+  subsetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    if (input.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(input.every((e) => otherArray.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns true if all items in the collection passed as the other argument are members of
@@ -184,8 +202,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#supersetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements.
+   * @returns True if all items in the other collection are members of the input collection.
    */
-  supersetOf: stub,
+  supersetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    if (input.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(otherArray.every((e) => input.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns the integer count of the number of items in the input collection.
@@ -281,7 +314,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   select: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.map((e) => criteria.eval(context, [e])).flat();
+    return input.map((e) => criteria.eval({ parent: context, variables: { $this: e } }, [e])).flat();
   },
 
   /**
@@ -438,7 +471,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!result.some((e) => e.value === value.value) && otherArray.some((e) => e.value === value.value)) {
@@ -464,7 +497,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!otherArray.some((e) => e.value === value.value)) {
@@ -497,7 +530,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return removeDuplicates([...input, ...otherArray]);
   },
 
@@ -518,7 +551,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return [...input, ...otherArray];
   },
 
@@ -1268,7 +1301,13 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   replaceMatches: (context: AtomContext, input: TypedValue[], regexAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
-      (str, pattern, substition) => str.replaceAll(pattern as string, substition as string),
+      (str, pattern, substition) =>
+        str.replaceAll(
+          new RegExp(pattern as string, 'g'),
+          // The substition string may contain ${...} placeholders. Replace them with $<...>
+          // See https://build.fhir.org/ig/HL7/FHIRPath/#replacematchesregex--string-substitution-string--string
+          (substition as string).replaceAll(/\$\{(\w+)\}/g, '$<$1>')
+        ),
       context,
       input,
       regexAtom,
@@ -1295,6 +1334,41 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   toChars: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return applyStringFunc((str) => (str ? str.split('') : undefined), context, input);
+  },
+
+  /*
+   * Additional string functions
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#additional-string-functions
+   * STU Note: the contents of this section are Standard for Trial Use (STU)
+   */
+
+  encode: stub,
+  decode: stub,
+  escape: stub,
+  unescape: stub,
+  trim: stub,
+  split: stub,
+
+  /**
+   * The join function takes a collection of strings and joins them into a single string, optionally using the given separator.
+   *
+   * If the input is empty, the result is empty.
+   *
+   * If no separator is specified, the strings are directly concatenated.
+   *
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#joinseparator-string--string
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param separatorAtom - Optional separator atom.
+   * @returns The joined string.
+   */
+  join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
+    const separator = separatorAtom?.eval(context, getRootInput(context))[0]?.value ?? '';
+    if (typeof separator !== 'string') {
+      throw new Error('Separator must be a string.');
+    }
+    return [{ type: PropertyType.string, value: input.map((i) => i.value?.toString() ?? '').join(separator) }];
   },
 
   /*
@@ -1439,10 +1513,22 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
    * @param context - The evaluation context.
    * @param input - The input collection.
+   * @param argsAtoms - Optional arguments: (precision: Integer)
    * @returns A collection containing the result.
    */
-  round: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return applyMathFunc(Math.round, context, input);
+  round: (context: AtomContext, input: TypedValue[], ...argsAtoms: Atom[]): TypedValue[] => {
+    return applyMathFunc(
+      (n, precision: unknown = 0) => {
+        if (typeof precision !== 'number' || precision < 0) {
+          throw new Error('Invalid precision provided to round()');
+        }
+        const exp = Math.pow(10, precision);
+        return Math.round(n * exp) / exp;
+      },
+      context,
+      input,
+      ...argsAtoms
+    );
   },
 
   /**
@@ -1726,6 +1812,81 @@ export const functions: Record<string, FhirPathFunction> = {
       value: value.value?.resourceType === expectedResourceType,
     }));
   },
+
+  /*
+   * SQL-on-FHIR utilities
+   */
+
+  /**
+   * Returns an opaque value to be used as the primary key for the row associated with the resource.
+   *
+   * In many cases the value may just be the resource id, but exceptions are described below.
+   * This function is used in tandem with getReferenceKey(), which returns an equal value from references that point to this resource.
+   *
+   * The returned KeyType is implementation dependent, but must be a FHIR primitive type that can be used for efficient joins in the
+   * system’s underlying data storage. Integers, strings, UUIDs, and other primitive types are appropriate.
+   *
+   * See: https://build.fhir.org/ig/FHIR/sql-on-fhir-v2/StructureDefinition-ViewDefinition.html#getresourcekey--keytype
+   *
+   * @param _context - The evaluation context.
+   * @param input - The input collection.
+   * @returns The resource key.
+   */
+  getResourceKey: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    const resource = input[0].value as Resource;
+    if (!resource?.id) {
+      return [];
+    }
+    return [{ type: PropertyType.id, value: resource.id }];
+  },
+
+  /**
+   * Returns an opaque value that represents the database key of the row being referenced.
+   *
+   * The value returned must be equal to the getResourceKey() value returned on the resource itself.
+   *
+   * Users may pass an optional resource type (e.g., Patient or Observation) to indicate the expected type that the reference should point to.
+   * The getReferenceKey() will return an empty collection (effectively null since FHIRPath always returns collections) if the reference is not of the expected type.
+   * For example, Observation.subject.getReferenceKey(Patient) would return a row key if the subject is a Patient, or the empty collection (i.e., {}) if it is not.
+   *
+   * The returned KeyType is implementation dependent, but must be a FHIR primitive type that can be used for efficient joins in the systems underlying data storage.
+   * Integers, strings, UUIDs, and other primitive types are appropriate.
+   *
+   * See: https://build.fhir.org/ig/FHIR/sql-on-fhir-v2/StructureDefinition-ViewDefinition.html#getreferencekeyresource-type-specifier--keytype
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param typeAtom - Optional expected resource type.
+   * @returns The reference key.
+   */
+  getReferenceKey: (context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
+    const reference = input[0].value as Reference;
+    if (!reference?.reference) {
+      return [];
+    }
+
+    let typeName = '';
+    if (typeAtom instanceof SymbolAtom) {
+      typeName = typeAtom.name;
+    }
+    if (typeName && !reference.reference.startsWith(typeName + '/')) {
+      return [];
+    }
+
+    return [{ type: PropertyType.id, value: resolveId(reference) }];
+  },
+
+  extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
+    const url = urlAtom.eval(context, input)[0].value as string;
+    const resource = input?.[0]?.value;
+    if (resource) {
+      const extension = getExtension(resource, url);
+      if (extension) {
+        return [{ type: PropertyType.Extension, value: extension }];
+      }
+    }
+    return [];
+  },
 };
 
 /*
@@ -1745,7 +1906,9 @@ function applyStringFunc<T>(
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  const result = func(value, ...argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value));
+
+  const args = argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value);
+  const result = func(value, ...args);
   if (result === undefined) {
     return [];
   }
@@ -1786,4 +1949,12 @@ function validateInput(input: TypedValue[], count: number): TypedValue[] {
     }
   }
   return input;
+}
+
+function getRootInput(context: AtomContext): [TypedValue] {
+  let last = context;
+  while (last.parent?.variables.$this) {
+    last = last.parent;
+  }
+  return [last.variables.$this];
 }

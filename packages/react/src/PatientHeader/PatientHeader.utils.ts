@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient } from '@medplum/fhirtypes';
+
+export function getDefaultColor(patient: Patient): string | undefined {
+  if (patient.gender === 'male') {
+    return 'blue';
+  }
+  if (patient.gender === 'female') {
+    return 'pink';
+  }
+  return undefined;
+}

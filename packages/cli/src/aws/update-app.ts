@@ -1,16 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
-import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
-import { tmpdir } from 'os';
-import { join, sep } from 'path';
-import { pipeline } from 'stream/promises';
+import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, sep } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateAppOptions {
+  file?: string;
+  toVersion?: string;
   dryrun?: boolean;
+  tarPath?: string;
 }
 
 /**
@@ -19,23 +24,29 @@ export interface UpdateAppOptions {
  * @param options - The update options.
  */
 export async function updateAppCommand(tag: string, options: UpdateAppOptions): Promise<void> {
-  const config = readConfig(tag);
+  const config = readConfig(tag, options);
   if (!config) {
-    await printConfigNotFound(tag);
-    return;
+    printConfigNotFound(tag, options);
+    throw new Error(`Config not found: ${tag}`);
   }
   const details = await getStackByTag(tag);
   if (!details) {
     await printStackNotFound(tag);
-    return;
+    throw new Error(`Stack not found: ${tag}`);
   }
   const appBucket = details.appBucket;
   if (!appBucket) {
-    console.log('App bucket not found');
-    return;
+    throw new Error(`App bucket not found for stack ${tag}`);
   }
 
-  const tmpDir = await downloadNpmPackage('@medplum/app', 'latest');
+  let tmpDir: string;
+
+  if (options.tarPath) {
+    tmpDir = options.tarPath;
+  } else {
+    const version = options?.toVersion ?? 'latest';
+    tmpDir = await downloadNpmPackage('@medplum/app', version);
+  }
 
   // Replace variables in the app
   replaceVariables(tmpDir, {

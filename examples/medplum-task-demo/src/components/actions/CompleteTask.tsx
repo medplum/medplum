@@ -1,13 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { PatchOperation } from '@medplum/core';
-import { Task } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
+import type { PatchOperation } from '@medplum/core';
+import type { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import type { JSX } from 'react';
 
 interface CompleteTaskProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function CompleteTask({ task, onChange }: CompleteTaskProps): JSX.Element {
@@ -33,7 +37,7 @@ export function CompleteTask({ task, onChange }: CompleteTaskProps): JSX.Element
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: 'Another user modified this task.',
+        message: normalizeErrorString(error),
       });
     }
   };

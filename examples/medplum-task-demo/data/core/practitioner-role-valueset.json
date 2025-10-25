@@ -1,6 +1,6 @@
 {
   "resourceType": "ValueSet",
-  "id": "7869c2b5-77a3-428b-9088-0401e3632c87",
+  "id": "urn:uuid:7869c2b5-77a3-428b-9088-0401e3632c87",
   "url": "http://medplum.com/medplum-task-demo/practitioner-role-codes",
   "name": "Practitioner Role Codes",
   "title": "Practitioner Role Codes",

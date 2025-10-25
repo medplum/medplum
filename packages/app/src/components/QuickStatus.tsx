@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { NativeSelect } from '@mantine/core';
-import { Reference, ValueSet } from '@medplum/fhirtypes';
+import type { Reference, ValueSet } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
+import type { JSX } from 'react';
 import classes from './QuickStatus.module.css';
 
 export interface QuickStatusProps {
-  valueSet: Reference<ValueSet> | ValueSet;
-  defaultValue?: string;
-  onChange: (newStatus: string) => void;
+  readonly valueSet: Reference<ValueSet> | ValueSet;
+  readonly defaultValue?: string;
+  readonly onChange: (newStatus: string) => void;
 }
 
 export function QuickStatus(props: QuickStatusProps): JSX.Element | null {

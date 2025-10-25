@@ -1,26 +1,35 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { DocumentReference } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<DocumentReference> {
   console.log(event);
 
   // Generate the PDF
   const binary = await medplum.createPdf({
-    content: [
-      'First paragraph',
-      'Another paragraph, this time a little bit longer to make sure, this line will be divided into at least two lines',
-    ],
-  });
-
-  // Create a Media, representing an attachment
-  const media = await medplum.createResource({
-    resourceType: 'Media',
-    status: 'completed',
-    content: {
-      contentType: 'application/pdf',
-      url: 'Binary/' + binary.id,
-      title: 'report.pdf',
+    docDefinition: {
+      content: [
+        'First paragraph',
+        'Another paragraph, this time a little bit longer to make sure, this line will be divided into at least two lines',
+      ],
     },
   });
 
-  return media;
+  // Create a Media, representing an attachment
+  const documentReference = await medplum.createResource({
+    resourceType: 'DocumentReference',
+    status: 'current',
+    content: [
+      {
+        attachment: {
+          contentType: 'application/pdf',
+          url: 'Binary/' + binary.id,
+          title: 'report.pdf',
+        },
+      },
+    ],
+  });
+
+  return documentReference;
 }

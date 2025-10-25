@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatDateTime } from '@medplum/core';
-import { Reference, Specimen } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
-import { InfoBar } from './InfoBar';
+import type { Reference, Specimen } from '@medplum/fhirtypes';
+import { InfoBar, useResource } from '@medplum/react';
+import type { JSX } from 'react';
 
 export interface SpecimenHeaderProps {
-  specimen: Specimen | Reference<Specimen>;
+  readonly specimen: Specimen | Reference<Specimen>;
 }
 
 export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {

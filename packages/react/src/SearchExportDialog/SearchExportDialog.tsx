@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Modal, Text } from '@mantine/core';
+import type { JSX } from 'react';
 
 interface SearchExportDialogProps {
-  visible: boolean;
-  exportCsv?: () => void;
-  exportTransactionBundle?: () => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly exportCsv?: () => void;
+  readonly exportTransactionBundle?: () => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element | null {
@@ -26,9 +29,9 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
 }
 
 interface ExportButtonProps {
-  text: string;
-  exportLogic: () => void;
-  onCancel: () => void;
+  readonly text: string;
+  readonly exportLogic: () => void;
+  readonly onCancel: () => void;
 }
 
 export function ExportButton(props: ExportButtonProps): JSX.Element {

@@ -1,23 +1,28 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
-import { ReactNode, Suspense, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
 import classes from './AppShell.module.css';
 import { Header } from './Header';
-import { Navbar, NavbarMenu } from './Navbar';
+import type { NavbarMenu } from './Navbar';
+import { Navbar } from './Navbar';
 
 export interface AppShellProps {
-  logo: ReactNode;
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  headerSearchDisabled?: boolean;
-  version?: string;
-  menus?: NavbarMenu[];
-  children: ReactNode;
-  displayAddBookmark?: boolean;
-  resourceTypeSearchDisabled?: boolean;
+  readonly logo: ReactNode;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly headerSearchDisabled?: boolean;
+  readonly version?: string;
+  readonly menus?: NavbarMenu[];
+  readonly children: ReactNode;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
+  readonly notifications?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -27,7 +32,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
 
   useEffect(() => {
     function eventListener(): void {
-      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
+      showNotification({ id: 'offline', color: 'red', message: 'No connection to server', autoClose: false });
     }
     medplum.addEventListener('offline', eventListener);
     return () => medplum.removeEventListener('offline', eventListener);
@@ -71,6 +76,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           logo={props.logo}
           version={props.version}
           navbarToggle={toggleNavbar}
+          notifications={props.notifications}
         />
       )}
       {profile && navbarOpen ? (

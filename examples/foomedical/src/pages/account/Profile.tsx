@@ -1,23 +1,70 @@
-import { Box, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
-import { formatAddress, formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
-import { HumanName, Patient } from '@medplum/fhirtypes';
-import { Form, ResourceAvatar, useMedplumProfile } from '@medplum/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Button, InputLabel, LoadingOverlay, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
+import type { Address, HumanName, Patient } from '@medplum/fhirtypes';
+import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import type { JSX } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Profile(): JSX.Element | null {
-  const profile = useMedplumProfile() as Patient;
+  const medplum = useMedplum();
+  const [profile, setProfile] = useState<Patient>(medplum.getProfile() as Patient);
+  const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState<Address>(profile.address?.[0] || {});
+
+  async function handleProfileEdit(formData: Record<string, string>): Promise<void> {
+    setLoading(true);
+    const newProfile: Patient = {
+      ...profile,
+      name: [
+        {
+          use: 'official',
+          given: [formData.givenName],
+          family: formData.familyName,
+        },
+      ],
+      birthDate: formData.birthDate,
+      gender: formData.gender as Patient['gender'],
+      address: [address],
+    };
+    const updatedProfile = await medplum
+      .updateResource(newProfile)
+      .then((profile) => {
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Profile edited',
+        });
+        window.scrollTo(0, 0);
+        return profile;
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+    if (updatedProfile) {
+      setProfile(updatedProfile as Patient);
+    }
+    setLoading(false);
+  }
+
   return (
-    <Box p="xl">
-      <Form
-        onSubmit={(formData: Record<string, string>) => {
-          console.log('formData', formData);
-        }}
-      >
+    <Box p="xl" pos="relative">
+      <LoadingOverlay visible={loading} />
+      <Form onSubmit={handleProfileEdit}>
         <Stack align="center">
           <ResourceAvatar size={200} radius={100} value={profile} />
           <Title order={2}>{formatHumanName(profile.name?.[0] as HumanName)}</Title>
           <InfoSection title="Personal Information">
-            <Box p="xl" w={500}>
+            <Box p="xl">
               <Stack>
                 <TextInput
                   label="First Name"
@@ -36,18 +83,33 @@ export function Profile(): JSX.Element | null {
                   data={['', 'female', 'male', 'other', 'unknown']}
                 />
                 <TextInput label="Birth Date" name="birthDate" type="date" defaultValue={profile.birthDate} />
+                <Button type="submit" mr="auto">
+                  Save
+                </Button>
               </Stack>
             </Box>
           </InfoSection>
           <InfoSection title="Contact Information">
-            <Box p="xl" w={500}>
+            <Box p="xl">
               <Stack>
                 <TextInput
                   label="Email"
                   name="email"
                   defaultValue={profile.telecom?.find((t) => t.system === 'email')?.value}
+                  disabled
                 />
-                <TextInput label="Address" name="address" defaultValue={formatAddress(profile.address?.[0] || {})} />
+                <Stack gap={0}>
+                  <InputLabel htmlFor="address">Address</InputLabel>
+                  <AddressInput
+                    name="address"
+                    path="Patient.address"
+                    defaultValue={address}
+                    onChange={(address) => setAddress(address)}
+                  />
+                </Stack>
+                <Button type="submit" mr="auto">
+                  Save
+                </Button>
               </Stack>
             </Box>
           </InfoSection>

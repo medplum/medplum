@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Login } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { param } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
-import { sendLoginResult } from './utils';
+import { getSystemRepo } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginResult } from './utils';
 
 /*
  * The status handler gets an in-process login status.
@@ -15,6 +17,8 @@ import { makeValidationMiddleware } from '../util/validator';
 export const statusValidator = makeValidationMiddleware([param('login').isUUID().withMessage('Login ID is required')]);
 
 export async function statusHandler(req: Request, res: Response): Promise<void> {
+  const systemRepo = getSystemRepo();
+
   const loginId = req.params.login;
   const login = await systemRepo.readResource<Login>('Login', loginId);
 

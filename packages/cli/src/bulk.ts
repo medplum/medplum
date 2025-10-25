@@ -1,17 +1,19 @@
-import { MedplumClient } from '@medplum/core';
-import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
-import { Command } from 'commander';
-import { createReadStream, writeFile } from 'fs';
-import { resolve } from 'path';
-import { createInterface } from 'readline';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
+import { createReadStream, writeFile } from 'node:fs';
+import { resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { getUnsupportedExtension, prettyPrint } from './utils';
+import { MedplumCommand, addSubcommand, getUnsupportedExtension, prettyPrint } from './utils';
 
-const bulkExportCommand = createMedplumCommand('export');
-const bulkImportCommand = createMedplumCommand('import');
+const bulkExportCommand = new MedplumCommand('export');
+const bulkImportCommand = new MedplumCommand('import');
 
-export const bulk = new Command('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
+export const bulk = new MedplumCommand('bulk');
+addSubcommand(bulk, bulkExportCommand);
+addSubcommand(bulk, bulkImportCommand);
 
 bulkExportCommand
   .option(
@@ -30,7 +32,7 @@ bulkExportCommand
   .action(async (options) => {
     const { exportLevel, types, since, targetDirectory } = options;
     const medplum = await createMedplumClient(options);
-    const response = await medplum.bulkExport(exportLevel, types, since);
+    const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
@@ -62,7 +64,7 @@ bulkImportCommand
     const path = resolve(targetDirectory ?? process.cwd(), fileName);
     const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest, 10), medplum, addExtensionsForMissingValues);
+    await importFile(path, Number.parseInt(numResourcesPerRequest, 10), medplum, addExtensionsForMissingValues);
   });
 
 async function importFile(
@@ -71,7 +73,7 @@ async function importFile(
   medplum: MedplumClient,
   addExtensionsForMissingValues: boolean
 ): Promise<void> {
-  let entries = [] as BundleEntry[];
+  let entries: BundleEntry[] = [];
   const fileStream = createReadStream(path);
   const rl = createInterface({
     input: fileStream,

@@ -1,31 +1,34 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, AppShell as MantineAppShell, ScrollArea, Space, Text } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import { Fragment, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
+import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
+import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import classes from './Navbar.module.css';
 
 export interface NavbarLink {
-  icon?: JSX.Element;
-  label?: string;
-  href: string;
+  readonly icon?: JSX.Element;
+  readonly label?: string;
+  readonly href: string;
 }
 
 export interface NavbarMenu {
-  title?: string;
-  links?: NavbarLink[];
+  readonly title?: string;
+  readonly links?: NavbarLink[];
 }
 
 export interface NavbarProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  menus?: NavbarMenu[];
-  closeNavbar: () => void;
-  displayAddBookmark?: boolean;
-  resourceTypeSearchDisabled?: boolean;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly menus?: NavbarMenu[];
+  readonly closeNavbar: () => void;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -58,6 +61,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 key={window.location.pathname}
                 name="resourceType"
                 placeholder="Resource Type"
+                maxValues={0}
                 onChange={(newValue) => navigateResourceType(newValue)}
               />
             </MantineAppShell.Section>
@@ -73,7 +77,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                     active={link.href === activeLink?.href}
                     onClick={(e) => onLinkClick(e, link.href)}
                   >
-                    <NavLinkIcon to={link.href} icon={link.icon} />
+                    <NavLinkIcon icon={link.icon} />
                     <span>{link.label}</span>
                   </NavbarLink>
                 ))}
@@ -107,10 +111,10 @@ export function Navbar(props: NavbarProps): JSX.Element {
 }
 
 interface NavbarLinkProps {
-  to: string;
-  active: boolean;
-  onClick: MouseEventHandler;
-  children: ReactNode;
+  readonly to: string;
+  readonly active: boolean;
+  readonly onClick: MouseEventHandler;
+  readonly children: ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
@@ -126,8 +130,7 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
 }
 
 interface NavLinkIconProps {
-  to: string;
-  icon?: JSX.Element;
+  readonly icon?: JSX.Element;
 }
 
 function NavLinkIcon(props: NavLinkIconProps): JSX.Element {

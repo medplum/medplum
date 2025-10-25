@@ -1,13 +1,20 @@
-import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Attachment, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useCallback } from 'react';
+import type { ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
-export interface PatientTimelineProps {
-  patient: Patient | Reference<Patient>;
+export interface PatientTimelineProps extends Pick<ResourceTimelineProps<Patient>, 'getMenu'> {
+  readonly patient: Patient | Reference<Patient>;
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
+  const { patient, ...rest } = props;
+
   const loadTimelineResources = useCallback((medplum: MedplumClient, resourceType: ResourceType, id: string) => {
     const ref = `${resourceType}/${id}`;
     const _count = 100;
@@ -25,7 +32,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
 
   return (
     <ResourceTimeline
-      value={props.patient}
+      value={patient}
       loadTimelineResources={loadTimelineResources}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
@@ -43,6 +50,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
         issued: new Date().toISOString(),
         content,
       })}
+      {...rest}
     />
   );
 }

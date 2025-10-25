@@ -1,19 +1,22 @@
-import { ValueSetExpandParams } from '@medplum/core';
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Group, Text } from '@mantine/core';
+import type { ValueSetExpandParams } from '@medplum/core';
+import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback } from 'react';
-import {
-  AsyncAutocomplete,
-  AsyncAutocompleteOption,
-  AsyncAutocompleteProps,
-} from '../AsyncAutocomplete/AsyncAutocomplete';
+import { IconCheck } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { forwardRef, useCallback } from 'react';
+import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
-  binding: string | undefined;
-  creatable?: boolean;
-  clearable?: boolean;
-  expandParams?: Partial<ValueSetExpandParams>;
+  readonly binding: string | undefined;
+  readonly creatable?: boolean;
+  readonly clearable?: boolean;
+  readonly expandParams?: Partial<ValueSetExpandParams>;
+  readonly withHelpText?: boolean;
 }
 
 function toKey(element: ValueSetExpansionContains): string {
@@ -53,7 +56,7 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, ...rest } = props;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
@@ -65,10 +68,11 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
           ...expandParams,
           url: binding,
           filter: input,
+          count: 10,
         },
         { signal }
       );
-      const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
+      const valueSetElements = valueSet.expansion?.contains ?? [];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
         if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
@@ -89,6 +93,25 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
+      itemComponent={withHelpText ? ItemComponent : undefined}
     />
   );
 }
+
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<ValueSetExpansionContains>>(
+  ({ label, resource, active, ...others }: AsyncAutocompleteOption<ValueSetExpansionContains>, ref) => {
+    return (
+      <div ref={ref} {...others}>
+        <Group wrap="nowrap" gap="xs">
+          {active && <IconCheck size={12} />}
+          <div>
+            <Text>{label}</Text>
+            <Text size="xs" c="dimmed">
+              {`${resource.system}#${resource.code}`}
+            </Text>
+          </div>
+        </Group>
+      </div>
+    );
+  }
+);

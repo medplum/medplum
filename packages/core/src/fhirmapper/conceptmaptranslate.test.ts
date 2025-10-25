@@ -1,5 +1,8 @@
-import { ConceptMap } from '@medplum/fhirtypes';
-import { ConceptMapTranslateMatch, ConceptMapTranslateParameters, conceptMapTranslate } from './conceptmaptranslate';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ConceptMap } from '@medplum/fhirtypes';
+import type { ConceptMapTranslateMatch, ConceptMapTranslateParameters } from './conceptmaptranslate';
+import { conceptMapTranslate } from './conceptmaptranslate';
 
 const system = 'http://example.com/private-codes';
 const code = 'FSH';
@@ -45,7 +48,7 @@ describe('ConceptMap $translate', () => {
     ['with CodeableConcept', { codeableConcept: { coding: [{ system, code }] } }],
   ])('Success %s', async (_format, params) => {
     const output = conceptMapTranslate(conceptMap, params);
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(2);
@@ -72,7 +75,7 @@ describe('ConceptMap $translate', () => {
       targetsystem: 'http://loinc.org',
       coding: { system, code },
     });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(1);
@@ -88,12 +91,12 @@ describe('ConceptMap $translate', () => {
 
   test('No match', async () => {
     const output = conceptMapTranslate(conceptMap, { coding: { system, code: 'BAD' } });
-    expect(output.result).toEqual(false);
+    expect(output.result).toStrictEqual(false);
   });
 
   test('Code without system', async () => {
     expect(() => conceptMapTranslate(conceptMap, { code: 'BAD' })).toThrow(
-      `Missing required 'system' input parameter with 'code' parameter`
+      'System parameter must be provided with code'
     );
   });
 
@@ -104,9 +107,7 @@ describe('ConceptMap $translate', () => {
   });
 
   test('No source coding', async () => {
-    expect(() => conceptMapTranslate(conceptMap, {})).toThrow(
-      `No source provided: 'code'+'system', 'coding', or 'codeableConcept' input parameter is required`
-    );
+    expect(() => conceptMapTranslate(conceptMap, {})).toThrow(`Source Coding (system + code) must be specified`);
   });
 
   test('Unmapped code handling', async () => {
@@ -148,7 +149,7 @@ describe('ConceptMap $translate', () => {
     };
 
     const output = conceptMapTranslate(conceptMap, { coding: { system, code } });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(2);
@@ -168,7 +169,7 @@ describe('ConceptMap $translate', () => {
 
   test('Handles empty CodeableConcept', async () => {
     const output = conceptMapTranslate(conceptMap, { codeableConcept: { text: 'Nebulous concept' } });
-    expect(output.result).toEqual(false);
+    expect(output.result).toStrictEqual(false);
   });
 
   test('Handles implicit system', async () => {
@@ -197,7 +198,7 @@ describe('ConceptMap $translate', () => {
     };
 
     const output = conceptMapTranslate(conceptMap, { codeableConcept: { coding: [{ code }] } });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(1);

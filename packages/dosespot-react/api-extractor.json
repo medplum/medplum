@@ -1,0 +1,7 @@
+{
+  "extends": "../../api-extractor.json",
+  "bundledPackages": [],
+  "compiler": {
+    "tsconfigFilePath": "<projectFolder>/tsconfig.build.json"
+  }
+}

@@ -1,19 +1,24 @@
-import { readJson } from '@medplum/definitions';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import type {
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
+  Location,
   Observation,
   Patient,
   Practitioner,
   QuestionnaireResponse,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchDefinition } from './search';
+import type { SearchRequest } from './search';
+import { Operator, parseSearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type
@@ -27,8 +32,9 @@ describe('Search matching', () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   test('Matches resource type', () => {
@@ -65,6 +71,18 @@ describe('Search matching', () => {
         { resourceType: 'Patient', filters: [{ code: 'unknown', operator: Operator.EQUALS, value: 'xyz' }] }
       )
     ).toBe(false);
+  });
+
+  test('Token filter', () => {
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'ProjectMembership', profile: { reference: 'Practitioner/abc123' }, project: {}, user: {} },
+        {
+          resourceType: 'ProjectMembership',
+          filters: [{ code: 'profile-type', operator: Operator.EQUALS, value: 'Practitioner' }],
+        }
+      )
+    ).toBe(true);
   });
 
   test('Boolean filter', () => {
@@ -122,7 +140,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation', subject: { reference: 'Patient/123' } } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: 'Patient/123' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;
@@ -144,7 +162,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation' } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: '' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: '' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;
@@ -308,25 +326,25 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(false);
 
@@ -335,26 +353,279 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
+      ).toBe(false);
+    });
+
+    test('Identifier filter value', () => {
+      const identifier = '1234567890';
+      const identifierSubstring = identifier.substring(0, 4);
+      const valueOnlyValue = 'code-only';
+      const resource: Patient = {
+        resourceType: 'Patient',
+        identifier: [
+          {
+            system: 'http://example.com',
+            value: identifier,
+          },
+          {
+            system: 'http://test.com',
+            value: identifier,
+          },
+          {
+            system: 'http://test.com',
+            value: 'foo',
+          },
+          {
+            value: valueOnlyValue,
+          },
+        ],
+      };
+
+      // system only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://bad.com|' }],
+        })
+      ).toBe(false);
+
+      // value only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + identifier }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + valueOnlyValue }],
+        })
+      ).toBe(true);
+
+      // system and value
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|foo' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [
+            { code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' + identifierSubstring },
+          ],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'bar' }],
+        })
+      ).toBe(false);
+    });
+
+    test('CodeableConcept filter value', () => {
+      const identifier = '12345-6';
+      const identifierSubstring = identifier.substring(0, 4);
+      const codeOnlyCode = 'code-only';
+      const resource: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        code: {
+          coding: [
+            {
+              system: 'http://example.com',
+              code: identifier,
+            },
+            {
+              system: 'http://test.com',
+              code: identifier,
+            },
+            {
+              system: 'http://test.com',
+              code: 'foo',
+            },
+            {
+              code: codeOnlyCode,
+            },
+          ],
+          text: 'test',
+        },
+      };
+
+      // system only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://bad.com|' }],
+        })
+      ).toBe(false);
+
+      // code only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + identifier }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + codeOnlyCode }],
+        })
+      ).toBe(true);
+
+      // system and code
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|foo' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.TEXT, value: 'test' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'bar' }],
+        })
       ).toBe(false);
     });
   });
@@ -517,6 +788,112 @@ describe('Search matching', () => {
     });
   });
 
+  describe('Period', () => {
+    describe('missing', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('invalid', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { start: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('start greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: {
+          period: {
+            start: '2025-05-15T12:00:00.000Z',
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('end greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { end: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+  });
+
   test('Compartments', () => {
     const resource1: Patient = {
       resourceType: 'Patient',
@@ -618,5 +995,136 @@ describe('Search matching', () => {
       filters: [{ code: 'organization', operator: Operator.MISSING, value: 'false' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(true);
+  });
+
+  test('Present', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'true' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
+
+    resource.managingOrganization = {
+      reference: 'Organization/FooMedical',
+    };
+    const search2: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
+    };
+    expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
+
+  test('Meta.tag', () => {
+    // This test demonstrates the bug where partial matching is incorrectly allowed
+    // for meta.tag searches when only exact matches should be permitted
+    const resource: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        tag: [
+          {
+            system: 'http://example.com/tags',
+            code: 'SENSITIVE',
+            display: 'Sensitive Patient Data',
+          },
+          {
+            system: 'http://example.com/tags',
+            code: 'VIP',
+            display: 'VIP Patient',
+          },
+          {
+            code: 'EMERGENCY', // tag without system
+          },
+        ],
+      },
+    };
+
+    // Should match exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match exact system|code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match system only (system|)
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|' }],
+      })
+    ).toBe(true);
+
+    // CURRENT BUG: This currently matches due to partial matching (SENS is substring of SENSITIVE)
+    // but should NOT match - only exact matches should be allowed for token searches
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENS' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // CURRENT BUG: This currently matches due to partial matching
+    // but should NOT match - only exact matches should be allowed
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'PATIENT' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // Should NOT match different exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(false);
+
+    // Should NOT match wrong system
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://other.com/tags|SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    // NOT_EQUALS tests
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(true);
+  });
+
+  test('Special not implemented', () => {
+    const resource: Location = {
+      resourceType: 'Location',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Location',
+      filters: [{ code: 'near', operator: Operator.EQUALS, value: 'foo' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
   });
 });

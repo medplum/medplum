@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Loader, Table } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ChangeEvent, MouseEvent, memo, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, JSX, MouseEvent } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
@@ -14,17 +17,17 @@ export interface FhirPathTableField {
 }
 
 export interface FhirPathTableProps {
-  resourceType: string;
-  query: string;
-  fields: FhirPathTableField[];
-  checkboxesEnabled?: boolean;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly resourceType: string;
+  readonly query: string;
+  readonly fields: FhirPathTableField[];
+  readonly checkboxesEnabled?: boolean;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 export interface SmartSearchResponse {
-  data: {
+  readonly data: {
     ResourceList: Resource[];
   };
 }
@@ -42,7 +45,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
   const [selected, setSelected] = useState<{ [id: string]: boolean }>({});
 
-  const responseRef = useRef<SmartSearchResponse>();
+  const responseRef = useRef<SmartSearchResponse>(response);
   responseRef.current = response;
 
   const selectedRef = useRef<{ [id: string]: boolean }>({});

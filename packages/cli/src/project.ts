@@ -1,18 +1,20 @@
-import { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
-import { Command, Option } from 'commander';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
+import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
+import { addSubcommand, MedplumCommand } from './utils';
 
-const projectListCommand = createMedplumCommand('list');
-const projectCurrentCommand = createMedplumCommand('current');
-const projectSwitchCommand = createMedplumCommand('switch');
-const projectInviteCommand = createMedplumCommand('invite');
+const projectListCommand = new MedplumCommand('list');
+const projectCurrentCommand = new MedplumCommand('current');
+const projectSwitchCommand = new MedplumCommand('switch');
+const projectInviteCommand = new MedplumCommand('invite');
 
-export const project = new Command('project')
-  .addCommand(projectListCommand)
-  .addCommand(projectCurrentCommand)
-  .addCommand(projectSwitchCommand)
-  .addCommand(projectInviteCommand);
+export const project = new MedplumCommand('project');
+addSubcommand(project, projectListCommand);
+addSubcommand(project, projectCurrentCommand);
+addSubcommand(project, projectSwitchCommand);
+addSubcommand(project, projectInviteCommand);
 
 projectListCommand.description('List of current projects').action(async (options) => {
   const medplum = await createMedplumClient(options);
@@ -62,7 +64,7 @@ projectInviteCommand
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    if (!login.project.reference) {
+    if (!login?.project?.reference) {
       throw new Error('No current project to invite user to');
     }
 
@@ -82,21 +84,16 @@ async function switchProject(medplum: MedplumClient, projectId: string): Promise
   const logins = medplum.getLogins();
   const login = logins.find((login: LoginState) => login.project.reference?.includes(projectId));
   if (!login) {
-    console.log(`Error: project ${projectId} not found. Make sure you are added as a user to this project`);
-  } else {
-    await medplum.setActiveLogin(login);
-    console.log(`Switched to project ${projectId}\n`);
+    throw new Error(`Project ${projectId} not found. Make sure you are added as a user to this project`);
   }
+  await medplum.setActiveLogin(login);
+  console.log(`Switched to project ${projectId}\n`);
 }
 
 async function inviteUser(projectId: string, inviteBody: InviteRequest, medplum: MedplumClient): Promise<void> {
-  try {
-    await medplum.invite(projectId, inviteBody);
-    if (inviteBody.sendEmail) {
-      console.log('Email sent');
-    }
-    console.log('See your users at https://app.medplum.com/admin/users');
-  } catch (err) {
-    console.log('Error while sending invite ' + err);
+  await medplum.invite(projectId, inviteBody);
+  if (inviteBody.sendEmail) {
+    console.log('Email sent');
   }
+  console.log('See your users at https://app.medplum.com/admin/users');
 }

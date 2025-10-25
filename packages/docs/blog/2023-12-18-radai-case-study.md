@@ -1,11 +1,7 @@
 ---
 slug: radai-case-study
 title: Rad AI Omni Reporting - Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [ai, interop, radiology, case-study]
 ---
 
@@ -13,9 +9,13 @@ tags: [ai, interop, radiology, case-study]
 
 Radiology is a bellwether for innovations in Healthcare IT due to the **time-sensitive** and **data-intensive workflow**. Naturally, radiology applications lead the way in adopting real-time functionality like [FHIRcast](https://fhircast.org/), a WebSockets-based protocol that enables development of highly interactive applications.
 
+<!-- truncate -->
+
 Today, we are showcasing the [Rad AI Omni Reporting](https://www.radai.com/omni-reporting) platform, with [FHIRcast support](/docs/fhircast) through Medplum’s open source FHIRcast hub.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/N5ZocZhdPZ0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/N5ZocZhdPZ0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 ### How does it work?
 
@@ -48,3 +48,7 @@ Founded in 2018 by the [youngest radiologist in U.S. history](https://www.radai.
 - [IRA Specification](https://profiles.ihe.net/RAD/IRA/)
 - [Omni Reporting](https://www.radai.com/news/rad-ai-to-unveil-next-generation-intelligent-radiology-reporting-solution-at-launch-event) Press Release
 - [Medplum FHIRcast](/docs/fhircast)
+- [IRA Demo Video](https://www.youtube.com/watch?v=Je5GMelw1-Q&t=110s) on YouTube
+- [The Evolution of Radiology Reporting: Embracing FHIRcast for Seamless Integration](https://www.radai.com/blogs/the-evolution-of-radiology-reporting-embracing-fhircast-for-seamless-integration) on Rad AI Blog
+- [FHIRcast Setup](https://app.radai.com/docs/fhircast/setup/)
+- [The Evolution of Radiology Reporting](https://eng.radai.com/p/the-evolution-of-radiology-reporting) on Rad AI Substack

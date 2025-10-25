@@ -1,16 +1,14 @@
 ---
 slug: understanding-fhir-questionnaires
 title: Understanding FHIR Questionnaires
-authors:
-  name: reshma
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 ---
 
 # Easy Custom Forms for Your Healthcare App
 
 At Medplum we know that customizable forms are critical for any healthcare app. Is it even a healthcare app without tons of forms?
+
+<!-- truncate -->
 
 To serve that need, we have created a Form builder similar to common tools like [SurveyMonkey](https://www.surveymonkey.com/) or [Google Forms](https://docs.google.com/forms) but based on the [FHIR Questionnaires](https://www.hl7.org/fhir/questionnaire.html).
 

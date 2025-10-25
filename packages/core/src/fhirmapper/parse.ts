@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   ConceptMap,
   StructureMap,
   StructureMapGroup,
@@ -10,7 +12,7 @@ import {
   StructureMapGroupRuleTargetParameter,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Atom, Parser } from '../fhirlexer/parse';
+import type { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
@@ -30,12 +32,15 @@ const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
 };
 
 class StructureMapParser {
+  readonly parser: Parser;
   readonly structureMap: Partial<StructureMap> = {
     resourceType: 'StructureMap',
     status: 'active',
   };
 
-  constructor(readonly parser: Parser) {}
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): StructureMap {
     while (this.parser.hasMore()) {
@@ -198,6 +203,12 @@ class StructureMapParser {
   }
 
   private parseRuleSources(): StructureMapGroupRuleSource[] {
+    if (this.parser.hasMore() && this.parser.peek()?.value === 'for') {
+      // The "for" keyword is optional
+      // It is not in the official grammar: https://build.fhir.org/mapping.g4
+      // But it is used in the examples: https://build.fhir.org/mapping-tutorial.html
+      this.parser.consume('Symbol', 'for');
+    }
     const sources = [this.parseRuleSource()];
     while (this.parser.hasMore() && this.parser.peek()?.value === ',') {
       this.parser.consume(',');
@@ -340,8 +351,11 @@ class StructureMapParser {
   private parseConceptMap(): void {
     this.parser.consume('Symbol', 'conceptmap');
 
-    const conceptMap = { resourceType: 'ConceptMap', status: 'active' } as Partial<ConceptMap>;
-    conceptMap.url = this.parser.consume('String').value;
+    const conceptMap: ConceptMap = {
+      resourceType: 'ConceptMap',
+      status: 'active',
+      url: '#' + this.parser.consume('String').value,
+    };
 
     this.parser.consume('{');
 

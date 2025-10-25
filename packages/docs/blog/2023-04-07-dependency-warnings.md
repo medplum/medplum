@@ -1,17 +1,15 @@
 ---
 slug: dependency-warnings
 title: Dependency Warnings
-authors:
-  name: Cody Ebberson
-  title: Medplum Core Team
-  url: https://github.com/codyebberson
-  image_url: https://github.com/codyebberson.png
+authors: cody
 tags: [self-host]
 ---
 
 # Dependency Warnings
 
 Today, we received a thoughtful email from an engineering leader who installed Medplum for the first time:
+
+<!-- truncate -->
 
 <blockquote>
 Cody,

@@ -1,10 +1,13 @@
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
-import { getProjectIdByClientId, sendLoginResult } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -40,6 +43,10 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.projectId === 'new',
+    origin: req.get('Origin'),
   });
+
+  getLogger().info('Login success', { email: req.body.email, projectId });
+
   await sendLoginResult(res, login);
 }

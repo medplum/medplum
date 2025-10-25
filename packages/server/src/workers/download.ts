@@ -1,13 +1,20 @@
-import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
-import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, TypedValue, WithId } from '@medplum/core';
+import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
+import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import { Readable } from 'stream';
-import { getConfig, MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
-import { globalLogger } from '../logger';
+import type { Readable } from 'stream';
+import { getConfig } from '../config/loader';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
+import { getLogger, globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
+import { parseTraceparent } from '../traceparent';
+import type { WorkerInitializer } from './utils';
+import { queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -21,28 +28,22 @@ import { globalLogger } from '../logger';
  */
 
 export interface DownloadJobData {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
+  readonly requestId?: string;
+  readonly traceId?: string;
 }
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
-let queue: Queue<DownloadJobData> | undefined = undefined;
-let worker: Worker<DownloadJobData> | undefined = undefined;
 
-/**
- * Initializes the download worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initDownloadWorker(config: MedplumServerConfig): void {
+export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<DownloadJobData>(queueName, {
+  const queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -53,30 +54,19 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<DownloadJobData>(queueName, execDownloadJob, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  const worker = new Worker<DownloadJobData>(
+    queueName,
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
 
-/**
- * Shuts down the download worker.
- * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
- */
-export async function closeDownloadWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the download queue instance.
@@ -84,7 +74,7 @@ export async function closeDownloadWorker(): Promise<void> {
  * @returns The download queue (if available).
  */
 export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -100,16 +90,30 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: Resource): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
+  if (!getConfig().autoDownloadEnabled) {
+    return;
+  }
+
+  const project = context?.project;
+  if (!project) {
+    return;
+  }
+
+  const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (isExternalUrl(attachment.url)) {
-      await addDownloadJobData({
-        resourceType: resource.resourceType,
-        id: resource.id as string,
-        url: attachment.url,
-      });
+    if (!isExternalUrl(attachment.url) || !isUrlAllowedByProject(project, attachment.url)) {
+      continue;
     }
+    await addDownloadJobData({
+      resourceType: resource.resourceType,
+      id: resource.id,
+      url: attachment.url,
+      requestId: ctx?.requestId,
+      traceId: ctx?.traceId,
+    });
   }
 }
 
@@ -126,6 +130,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
 function isExternalUrl(url: string | undefined): url is string {
   return !!(
     url &&
+    url.startsWith('https://') &&
     !url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/') &&
     !url.startsWith(getConfig().storageBaseUrl) &&
     !url.startsWith('Binary/')
@@ -133,16 +138,42 @@ function isExternalUrl(url: string | undefined): url is string {
 }
 
 /**
+ * Determines if a URL is allowed for auto-download.
+ * @param project - The project settings.
+ * @param url - The URL to check.
+ * @returns True if the URL is allowed for auto-download.
+ */
+function isUrlAllowedByProject(project: Project, url: string): boolean {
+  if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+    // If the project has auto-download disabled, then ignore all URLs.
+    return false;
+  }
+
+  const allowedUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadAllowedUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (allowedUrlPrefixes.length > 0 && !allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If allowed URLs are specified and the URL does not match an allowed prefix, then ignore it.
+    return false;
+  }
+
+  const ignoredUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If the URL matches an ignored prefix, then ignore it.
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Adds a download job to the queue.
  * @param job - The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
-  const ctx = getRequestContext();
-  ctx.logger.debug(`Adding Download job`);
+  const queue = getDownloadQueue();
   if (queue) {
     await queue.add(jobName, job);
-  } else {
-    ctx.logger.debug(`Download queue not initialized`);
   }
 }
 
@@ -150,13 +181,14 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * Executes a download job.
  * @param job - The download job details.
  */
-export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
-  const ctx = getRequestContext();
+export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
+  const log = getLogger();
   const { resourceType, id, url } = job.data;
 
-  let resource;
+  let resource: T;
   try {
-    resource = await systemRepo.readResource(resourceType, id);
+    resource = await systemRepo.readResource<T>(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     if (isGone(outcome)) {
@@ -171,11 +203,32 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     return;
   }
 
-  try {
-    ctx.logger.info('Requesting content at: ' + url);
-    const response = await fetch(url);
+  const projectId = resource.meta?.project;
+  if (!projectId) {
+    return;
+  }
 
-    ctx.logger.info('Received status: ' + response.status);
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  if (!isUrlAllowedByProject(project, url)) {
+    return;
+  }
+
+  const headers: HeadersInit = {};
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
+  }
+
+  try {
+    log.info('Requesting content at: ' + url);
+    const response = await fetch(url, {
+      headers,
+    });
+
+    log.info('Received status: ' + response.status);
     if (response.status >= 400) {
       throw new Error('Received status ' + response.status);
     }
@@ -187,6 +240,9 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
       contentType,
       meta: {
         project: resource.meta?.project,
+      },
+      securityContext: {
+        reference: `${resource.resourceType}/${resource.id}`,
       },
     });
     if (response.body === null) {
@@ -200,16 +256,16 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
-    ctx.logger.info('Downloaded content successfully');
-  } catch (ex) {
-    ctx.logger.info('Download exception: ' + ex);
+    log.info('Downloaded content successfully');
+  } catch (ex: any) {
+    log.info('Download exception: ' + ex, ex);
     throw ex;
   }
 }
 
 function getAttachments(resource: Resource): Attachment[] {
   const attachments: Attachment[] = [];
-  crawlResource(resource, {
+  crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
         if (propertyValue) {

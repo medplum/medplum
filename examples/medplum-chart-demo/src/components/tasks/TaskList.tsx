@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
-import { formatDate } from '@medplum/core';
-import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
+import { formatDate, normalizeErrorString } from '@medplum/core';
+import type { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   ErrorBoundary,
@@ -11,8 +13,9 @@ import {
   useResource,
 } from '@medplum/react';
 import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
-import { Fragment, ReactNode, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Fragment, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useParams } from 'react-router';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
 import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 
@@ -24,15 +27,15 @@ const focusIcons: Record<string, JSX.Element> = {
 };
 
 export interface TaskCellProps {
-  task: Task;
-  resource: Resource;
+  readonly task: Task;
+  readonly resource: Resource;
 }
 
 interface TaskItemProps {
-  task: Task;
-  resource: Resource;
-  profile?: Reference;
-  children?: ReactNode;
+  readonly task: Task;
+  readonly resource: Resource;
+  readonly profile?: Reference;
+  readonly children?: ReactNode;
 }
 
 export function TaskList(): JSX.Element | null {
@@ -162,7 +165,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
           const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
           setTitle(<>{questionnaire?.title} Response</>);
         } catch (err) {
-          setTitle(<>Response</>);
+          setTitle(<>{normalizeErrorString(err)}</>);
         }
       }
     }
@@ -174,7 +177,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
       fetchQuestionnaireTitle().catch(console.error);
     } else {
-      setTitle(<>{props.task.code}</>);
+      setTitle(<CodeableConceptDisplay value={props.task.code} />);
     }
   }, [props.resource, props.task, medplum]);
 

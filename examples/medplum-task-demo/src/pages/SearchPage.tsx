@@ -1,10 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, Operator, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { Operator, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
-import { getPopulatedSearch } from './utils';
+import { getPopulatedSearch } from '../utils/search-control';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
@@ -13,27 +17,15 @@ export function SearchPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>();
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
-  const [showTabs, setShowTabs] = useState<boolean>(() => {
-    const search = parseSearchDefinition(window.location.pathname + window.location.search);
-    return shouldShowTabs(search);
-  });
-
   const tabs = ['Active', 'Completed'];
-  const searchQuery = window.location.search;
-  const currentSearch = parseSearchDefinition(searchQuery);
-
+  const currentSearch = parseSearchRequest(window.location.toString());
   const currentTab = handleInitialTab(currentSearch);
 
   useEffect(() => {
-    const searchQuery = parseSearchDefinition(location.pathname + location.search);
-    setShowTabs(shouldShowTabs(searchQuery));
-  }, [location]);
-
-  useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
     if (!parsedSearch.resourceType) {
-      navigate('/Task');
+      navigate('/Task')?.catch(console.error);
       return;
     }
 
@@ -47,7 +39,7 @@ export function SearchPage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // If it doesn't, navigate to the correct URL
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -58,7 +50,7 @@ export function SearchPage(): JSX.Element {
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
-    navigate(`/Task${updatedSearchQuery}`);
+    navigate(`/Task${updatedSearchQuery}`)?.catch(console.error);
   };
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
@@ -67,7 +59,7 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
-      {showTabs ? (
+      {shouldShowTabs(search) ? (
         <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
           <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
             {tabs.map((tab) => (
@@ -79,24 +71,24 @@ export function SearchPage(): JSX.Element {
           <Tabs.Panel value="active">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
@@ -104,11 +96,11 @@ export function SearchPage(): JSX.Element {
       ) : (
         <SearchControl
           search={search}
-          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-          hideToolbar={true}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
+          hideToolbar={false}
           hideFilters={true}
           onChange={(e) => {
-            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
           }}
         />
       )}
@@ -144,10 +136,12 @@ function shouldShowTabs(search: SearchRequest): boolean {
     return true;
   }
 
-  for (const filter of search.filters) {
-    if (filter.code === 'performer') {
-      return false;
-    }
+  if (search.filters.some((filter) => filter.code === 'performer')) {
+    return false;
+  }
+
+  if (search.filters.some((filter) => filter.code === 'patient.address-state')) {
+    return false;
   }
 
   return true;

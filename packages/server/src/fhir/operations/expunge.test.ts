@@ -1,21 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, LOINC } from '@medplum/core';
-import { Observation, Patient } from '@medplum/fhirtypes';
+import type { Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { getClient } from '../../database';
+import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
-const app = express();
-let superAdminAccessToken: string;
-
 describe('Expunge', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let superAdminAccessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -49,6 +52,7 @@ describe('Expunge', () => {
     // Expect the patient to be in the "Patient" and "Patient_History" tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(true);
     expect(await existsInDatabase('Patient_History', patient.id)).toBe(true);
+    expect(await existsInLookupTable('HumanName', patient.id)).toBe(true);
 
     // Expunge the resource
     const res = await request(app)
@@ -62,10 +66,12 @@ describe('Expunge', () => {
     // Expect the patient to be removed from both tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(false);
     expect(await existsInDatabase('Patient_History', patient.id)).toBe(false);
+    // Also expect lookup table to be cleaned up
+    expect(await existsInLookupTable('HumanName', patient.id)).toBe(false);
   });
 
   test('Expunge project compartment', async () => {
-    const { project, client, membership } = await createTestProject();
+    const { project, client, membership } = await createTestProject({ withClient: true });
     expect(project).toBeDefined();
     expect(client).toBeDefined();
     expect(membership).toBeDefined();
@@ -104,7 +110,7 @@ describe('Expunge', () => {
 
   test('Expunger.expunge() expunges all resource types', async () => {
     //setup
-    const { project, client, membership } = await createTestProject();
+    const { project, client, membership } = await createTestProject({ withClient: true });
     expect(project).toBeDefined();
     expect(client).toBeDefined();
     expect(membership).toBeDefined();
@@ -145,7 +151,7 @@ describe('Expunge', () => {
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
     //execute
-    await new Expunger(systemRepo, project.id as string, 2).expunge();
+    await new Expunger(systemRepo, project.id, 2).expunge();
 
     //result
 
@@ -184,6 +190,17 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 }
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getClient());
+  const rows = await new SelectQuery(tableName)
+    .column('id')
+    .where('id', '=', id)
+    .execute(getDatabasePool(DatabaseMode.READER));
+  return rows.length > 0;
+}
+
+async function existsInLookupTable(tableName: string, id: string | undefined): Promise<boolean> {
+  const rows = await new SelectQuery(tableName)
+    .column('resourceId')
+    .where('resourceId', '=', id)
+    .execute(getDatabasePool(DatabaseMode.READER));
   return rows.length > 0;
 }

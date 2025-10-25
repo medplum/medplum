@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isResourceType } from '@medplum/core';
-import {
+import type {
   Account,
   CarePlan,
   Communication,
@@ -9,10 +11,10 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { withTestContext } from '../test.setup';
 import { getPatientCompartmentParams, getPatientResourceTypes, getPatients } from './patient';
-import { systemRepo } from './repo';
+import { getSystemRepo } from './repo';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -25,7 +27,7 @@ describe('FHIR Patient utils', () => {
   });
 
   test('getPatientCompartmentParams', () => {
-    expect(getPatientCompartmentParams('Observation')).toEqual(['subject', 'performer']);
+    expect(getPatientCompartmentParams('Observation')).toStrictEqual(['subject', 'performer']);
     expect(getPatientCompartmentParams('xxx')).toBeUndefined();
   });
 
@@ -35,14 +37,14 @@ describe('FHIR Patient utils', () => {
         resourceType: 'Account',
         subject: [] as Reference[],
       } as Account)
-    ).toEqual([]);
-    expect(getPatients({ resourceType: 'Account', subject: [{}] } as Account)).toEqual([]);
+    ).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Account', subject: [{}] } as Account)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Account',
         subject: [{ reference: 'Device/123' }],
       } as Account)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Account',
@@ -50,13 +52,13 @@ describe('FHIR Patient utils', () => {
       } as Account)
     ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatients({ resourceType: 'Observation' } as Observation)).toEqual([]);
+    expect(getPatients({ resourceType: 'Observation' } as Observation)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: undefined,
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
@@ -64,20 +66,20 @@ describe('FHIR Patient utils', () => {
         code: { text: 'abc' },
         subject: 'bad',
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: null,
       } as unknown as Observation)
-    ).toEqual([]);
-    expect(getPatients({ resourceType: 'Observation', subject: {} } as Observation)).toEqual([]);
+    ).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Observation', subject: {} } as Observation)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: { reference: 'Device/123' },
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
@@ -104,9 +106,9 @@ describe('FHIR Patient utils', () => {
       })
     ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatients({ resourceType: 'Patient' } as Patient)).toEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toEqual([]);
+    expect(getPatients({ resourceType: 'Patient' } as Patient)).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toStrictEqual([]);
     expect(getPatients({ resourceType: 'Patient', id: '123' } as Patient)).toMatchObject([
       { reference: 'Patient/123' },
     ]);
@@ -120,7 +122,7 @@ describe('FHIR Patient utils', () => {
       sender: { reference: 'Patient/456' },
       recipient: [{ reference: 'Patient/789' }],
     };
-    expect(getPatients(communication)).toMatchObject([
+    expect(sortReferenceArray(getPatients(communication))).toMatchObject([
       { reference: 'Patient/123' },
       { reference: 'Patient/456' },
       { reference: 'Patient/789' },
@@ -135,7 +137,10 @@ describe('FHIR Patient utils', () => {
       sender: { reference: 'Patient/123' },
       recipient: [{ reference: 'Patient/789' }],
     };
-    expect(getPatients(communication)).toMatchObject([{ reference: 'Patient/123' }, { reference: 'Patient/789' }]);
+    expect(sortReferenceArray(getPatients(communication))).toMatchObject([
+      { reference: 'Patient/123' },
+      { reference: 'Patient/789' },
+    ]);
   });
 
   test('Follow search params', () => {
@@ -155,6 +160,7 @@ describe('FHIR Patient utils', () => {
       // and that resource has a reference to a patient,
       // but the patient reference is an external patient ID,
       // we should silently ignore the patient reference
+      const systemRepo = getSystemRepo();
       const eob = await systemRepo.createResource<ExplanationOfBenefit>({
         resourceType: 'ExplanationOfBenefit',
         status: 'active',
@@ -207,3 +213,7 @@ describe('FHIR Patient utils', () => {
     });
   });
 });
+
+function sortReferenceArray<T extends Reference & { reference: string }>(input: T[]): T[] {
+  return input.sort((a, b) => a.reference.localeCompare(b.reference));
+}

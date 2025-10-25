@@ -31,7 +31,7 @@ Create your [Medplum Access Policy](https://www.medplum.com/docs/access/access-p
 }
 ```
 
-Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
+Create a [ClientApplication](https://www.medplum.com/docs/auth/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
 
 Create your [Bot](https://www.medplum.com/docs/bots/bot-basics) and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code using the sample in this repository as a base, build and deploy your bot. Apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project).
 
@@ -53,4 +53,4 @@ Once this endpoint is live, your bot will execute when those webhook events are 
 The Bot provided is a sample of how to capture a Stripe Invoice as a FHIR Invoice. In practice there are a few types of payment data that are useful to capture and synchronize. Below are some examples, though your implementation may vary based on your billing logic.
 
 1. [SubscriptionScheduleCreated](https://stripe.com/docs/api/subscription_schedules/object) - in this case it may make sense create an [Account](https://www.medplum.com/docs/api/fhir/resources/account) resource associated with the subscription and keep it updated as the subscription moves through its lifecycle (for example, is cancelled or upgraded)
-2. [PaymentIntentSuceeded](https://stripe.com/docs/api/payment_intents/object) - these are single payments, and may be useful to create a [PaymentNotice](https://www.medplum.com/docs/api/fhir/resources/paymentnotice) resource to track this item
+2. [PaymentIntentSucceeded](https://stripe.com/docs/api/payment_intents/object) - these are single payments, and may be useful to create a [PaymentNotice](https://www.medplum.com/docs/api/fhir/resources/paymentnotice) resource to track this item

@@ -1,15 +1,19 @@
-import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import type {
   BaseLoginRequest,
   GoogleCredentialResponse,
   GoogleLoginRequest,
   LoginAuthenticationResponse,
-  normalizeOperationOutcome,
 } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { locationUtils, normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useCallback, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
@@ -47,6 +51,8 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const issues = getIssuesForExpression(outcome, undefined);
 
   const isExternalAuth = useCallback(
     async (authMethod: any): Promise<boolean> => {
@@ -60,7 +66,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       });
       const url = new URL(authMethod.authorizeUrl);
       url.searchParams.set('state', state);
-      window.location.assign(url.toString());
+      locationUtils.assign(url.toString());
       return true;
     },
     [medplum, baseLoginRequest]
@@ -78,20 +84,25 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleGoogleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
-      const authResponse = await medplum.startGoogleLogin({
-        ...baseLoginRequest,
-        googleCredential: response.credential,
-      } as GoogleLoginRequest);
-      if (!(await isExternalAuth(authResponse))) {
-        handleAuthResponse(authResponse);
+      try {
+        const authResponse = await medplum.startGoogleLogin({
+          ...baseLoginRequest,
+          googleCredential: response.credential,
+        } as GoogleLoginRequest);
+        if (!(await isExternalAuth(authResponse))) {
+          handleAuthResponse(authResponse);
+        }
+      } catch (err) {
+        setOutcome(normalizeOperationOutcome(err));
       }
     },
     [medplum, baseLoginRequest, isExternalAuth, handleAuthResponse]
   );
 
   return (
-    <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
           <Group justify="center" p="xl" style={{ height: 70 }}>
@@ -108,17 +119,28 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           placeholder="name@domain.com"
           required={true}
           autoFocus={true}
+          error={getErrorsForInput(outcome, 'email')}
         />
       )}
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         <div>
           {onRegister && (
-            <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
+            <Anchor
+              component="button"
+              type="button"
+              c="dimmed"
+              onClick={onRegister}
+              size="xs"
+              data-dashlane-ignore="true"
+              data-lp-ignore="true"
+              data-no-autofill="true"
+              data-form-type="navigation"
+            >
               Register
             </Anchor>
           )}
         </div>
-        {!disableEmailAuth && <Button type="submit">Next</Button>}
+        {!disableEmailAuth && <SubmitButton>Next</SubmitButton>}
       </Group>
     </Form>
   );
@@ -152,7 +174,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   );
 
   return (
-    <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
       <OperationOutcomeAlert issues={issues} />
       <Stack gap="xl">
@@ -172,7 +194,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           </Anchor>
         )}
         <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
-        <Button type="submit">Sign in</Button>
+        <SubmitButton>Sign in</SubmitButton>
       </Group>
     </Form>
   );

@@ -1,16 +1,18 @@
-import { Money } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Money } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { MoneyInput } from './MoneyInput';
 
 describe('MoneyInput', () => {
   test('Renders', () => {
-    render(<MoneyInput name="a" defaultValue={{ value: 123, currency: 'USD' }} />);
+    render(<MoneyInput path="" name="a" defaultValue={{ value: 123, currency: 'USD' }} />);
     expect(screen.getByDisplayValue('123')).toBeDefined();
     expect(screen.getByDisplayValue('USD')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
-    render(<MoneyInput name="a" />);
+    render(<MoneyInput path="" name="a" />);
     expect(screen.getByPlaceholderText('Value')).toBeDefined();
     expect(screen.getByDisplayValue('USD')).toBeDefined();
   });
@@ -18,7 +20,7 @@ describe('MoneyInput', () => {
   test('Set value', async () => {
     let lastValue: Money | undefined = undefined;
 
-    render(<MoneyInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<MoneyInput path="" name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), {

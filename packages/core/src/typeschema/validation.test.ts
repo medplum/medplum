@@ -1,13 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Account,
+  Address,
   Appointment,
   AppointmentParticipant,
   Binary,
   Bundle,
+  CarePlan,
   CodeSystem,
   Condition,
+  Consent,
   DiagnosticReport,
+  DocumentReference,
   ElementDefinition,
   Encounter,
   Extension,
@@ -16,6 +22,7 @@ import {
   Media,
   MedicationRequest,
   Observation,
+  ObservationComponent,
   Patient,
   Questionnaire,
   QuestionnaireItem,
@@ -23,16 +30,18 @@ import {
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
+  Timing,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
+import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
-import { OperationOutcomeError } from '../outcomes';
+import { generateId } from '../crypto';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
-import { indexStructureDefinitionBundle } from './types';
-import { validateResource } from './validation';
+import { indexStructureDefinitionBundle, loadDataType } from './types';
+import { validateResource, validateTypedValue } from './validation';
 
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
@@ -40,6 +49,7 @@ describe('FHIR resource validation', () => {
   let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
+  let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
@@ -56,6 +66,9 @@ describe('FHIR resource validation', () => {
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
     );
     patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+    smokingStatusProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8')
+    );
   });
 
   test('Invalid resource', () => {
@@ -105,20 +118,20 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(invalidFormat)).toThrow();
   });
 
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
+  });
+
   test('Invalid numeric value', () => {
     const patientExtension: Patient = {
       resourceType: 'Patient',
       multipleBirthInteger: 4.2,
     };
     expect(() => validateResource(patientExtension)).toThrow();
-  });
-
-  test('Invalid extraneous property', () => {
-    const invalidFormat = {
-      resourceType: 'Patient',
-      foo: 'bar',
-    } as unknown as Patient;
-    expect(() => validateResource(invalidFormat)).toThrow();
   });
 
   test('Valid property name special cases', () => {
@@ -164,8 +177,8 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
   });
 
-  test('Valid resource under constraining profile', () => {
-    const observation: Observation = {
+  describe('US Core Blood Pressure profile', () => {
+    const VALID_BP: Observation = {
       resourceType: 'Observation',
       status: 'final',
       category: [
@@ -229,240 +242,153 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
+    test('Valid resource under constraining profile', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
+    });
 
-    expect(() => validateResource(observation, observationProfile)).not.toThrow();
-  });
+    test('Valid resource under constraining profile with additional non-constrained fields', () => {
+      const observation = deepClone(VALID_BP);
+      (observation as any).component[0].code.coding[0].display = 'this is not constrained';
+      expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
+    });
 
-  test('Valid resource under constraining profile with additional non-constrained fields', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
+    test('Invalid cardinality', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      observation.component?.splice(0, 1);
+      expect(() => validateResource(observation, { profile: observationProfile })).toThrow(
+        'Invalid number of values: expected 2..*, but found 1 (Observation.component)'
+      );
+    });
+
+    test('Extra component missing required properties', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      observation.component?.push({
+        dataAbsentReason: {
           coding: [
             {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              system: 'https://terminology.hl7.org/CodeSystem/data-absent-reason',
+              code: 'unknown',
             },
           ],
         },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-                display: 'Systolic blood pressure', // This is the extra content
-              },
-            ],
-          },
-        },
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+      } as ObservationComponent);
 
-    expect(() => validateResource(observation, observationProfile)).not.toThrow();
-  });
+      try {
+        validateResource(observation, { profile: observationProfile });
+        fail('Expected error');
+      } catch (err) {
+        const outcome = (err as OperationOutcomeError).outcome;
+        expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing required property');
+        expect(outcome.issue?.[0]?.expression).toStrictEqual(['Observation.component[2].code']);
+      }
+    });
 
-  test('Invalid cardinality', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        // Should have two components
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+    test('Invalid resource under pattern fields profile', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      (observation as any).code.coding[0].system = 'http://incorrect.system';
 
-    expect(() => validateResource(observation, observationProfile)).toThrow(
-      'Invalid number of values: expected 2..*, but found 1 (Observation.component)'
-    );
-  });
+      try {
+        validateResource(observation, { profile: observationProfile });
+        fail('Expected error');
+      } catch (err) {
+        const outcome = (err as OperationOutcomeError).outcome;
+        expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Value did not match expected pattern');
+        expect(outcome.issue?.[0]?.expression).toStrictEqual(['Observation.code']);
+      }
+    });
 
-  test('Invalid resource under pattern fields profile', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: 'http://incorrect.system',
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+    test('Invalid slice contents', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      (observation as any).component[1].code.coding[0].code = 'wrong code';
 
-    expect(() => validateResource(observation, observationProfile)).toThrow();
-  });
-
-  test('Invalid slice contents', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          code: {
-            coding: [
-              {
-                code: 'wrong code',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
-
-    expect(() => {
-      validateResource(observation, observationProfile);
-    }).toThrow(
-      `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
-    );
+      expect(() => {
+        validateResource(observation, { profile: observationProfile });
+      }).toThrow(
+        `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
+      );
+    });
   });
 
   test('StructureDefinition', () => {
     expect(() => validateResource(typesBundle)).not.toThrow();
     expect(() => validateResource(resourcesBundle)).not.toThrow();
     expect(() => validateResource(medplumBundle)).not.toThrow();
+  });
+
+  test('StructureDefinition with differential', () => {
+    const sd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://fhir.de/StructureDefinition/informationrecipient',
+      name: 'ExtensionInformationRecipient',
+      status: 'active',
+      kind: 'complex-type',
+      abstract: false,
+      context: [
+        {
+          type: 'element',
+          expression: 'Composition',
+        },
+      ],
+      type: 'Extension',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Extension',
+      derivation: 'constraint',
+      differential: {
+        element: [
+          {
+            id: 'Extension.extension',
+            path: 'Extension.extension',
+            max: '0',
+          },
+          {
+            id: 'Extension.url',
+            path: 'Extension.url',
+            fixedUri: 'http://fhir.de/StructureDefinition/informationrecipient',
+          },
+          {
+            id: 'Extension.value[x]',
+            path: 'Extension.value[x]',
+            slicing: {
+              discriminator: [
+                {
+                  type: 'type',
+                  path: '$this',
+                },
+              ],
+              ordered: false,
+              rules: 'open',
+            },
+            min: 1,
+            type: [
+              {
+                code: 'Reference',
+                targetProfile: [
+                  'http://hl7.org/fhir/StructureDefinition/Practitioner',
+                  'http://hl7.org/fhir/StructureDefinition/Device',
+                  'http://hl7.org/fhir/StructureDefinition/Patient',
+                  'http://hl7.org/fhir/StructureDefinition/RelatedPerson',
+                  'http://hl7.org/fhir/StructureDefinition/PractitionerRole',
+                  'http://hl7.org/fhir/StructureDefinition/Organization',
+                ],
+              },
+            ],
+          },
+          {
+            id: 'Extension.value[x]:valueReference',
+            path: 'Extension.value[x]',
+            sliceName: 'valueReference',
+            min: 1,
+            max: '1',
+            type: [
+              {
+                code: 'Reference',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    expect(() => validateResource(sd)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {
@@ -479,6 +405,10 @@ describe('FHIR resource validation', () => {
           // Missing system property
           value: '555-555-5555',
         },
+        {
+          system: 'email',
+          value: 'patient@example.com',
+        },
       ],
       gender: 'unknown',
       name: [
@@ -488,9 +418,113 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
-    expect(() => validateResource(patient, patientProfile)).toThrow(
-      new Error('Missing required property (Patient.telecom.system)')
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
+      new Error('Missing required property (Patient.telecom[0].system)')
     );
+  });
+
+  test('Profile with restriction on base type field', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '2106-3',
+                display: 'White',
+              },
+            },
+            {
+              url: 'detailed',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '1006-6',
+                display: 'Abenaki',
+              },
+            },
+            {
+              url: 'detailed',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '1053-8',
+                display: 'California Tribes',
+              },
+            },
+            {
+              url: 'text',
+              valueString: 'This is text',
+            },
+          ],
+        },
+        {
+          url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '446151000124109',
+                display: 'Identifies as male gender (finding)',
+              },
+            ],
+          },
+        },
+      ],
+      identifier: [
+        {
+          system: 'http://example.com',
+          value: 'foo',
+        },
+      ],
+      telecom: [
+        {
+          system: 'email',
+          value: 'patient@example.com',
+        },
+        {
+          system: 'email',
+          value: 'two@example.com',
+        },
+      ],
+      gender: 'unknown',
+      name: [
+        {
+          given: ['Test'],
+          family: 'Patient',
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
+  });
+
+  // This test is failing because we do not recursively validate extensions. In this case,
+  // US Core Race requires the `text` extension, so not having it should fail validation.
+  test.failing('Nested extensions are not yet validated', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['New'], family: 'User' }],
+      identifier: [{ system: 'http://names.io', value: 'new-user' }],
+      gender: 'male',
+      extension: [
+        {
+          url: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: { system: 'urn:oid:2.16.840.1.113883.6.238', code: '2106-3', display: 'White' },
+            },
+            //{
+            // url: 'text',
+            // valueString: 'This should be required',
+            //},
+          ],
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow();
   });
 
   test('Valid resource with nulls in primitive extension', () => {
@@ -708,7 +742,7 @@ describe('FHIR resource validation', () => {
       }
     }`) as Patient;
     expect(() => validateResource(patient)).not.toThrow();
-    expect('hi'.trim()).toEqual('hi');
+    expect('hi'.trim()).toStrictEqual('hi');
   });
 
   test('Slice on value type', () => {
@@ -745,7 +779,75 @@ describe('FHIR resource validation', () => {
         value: 130,
       },
     };
-    expect(() => validateResource(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
+    expect(() => validateResource(observation, { profile: bodyWeightProfile as StructureDefinition })).not.toThrow();
+  });
+
+  describe('Slice with pattern on $this', () => {
+    const healthConcernsProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__/us-core-condition-problems-health-concerns.json'), 'utf8')
+    ) as StructureDefinition;
+
+    const baseCondition: Condition = {
+      resourceType: 'Condition',
+      code: {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '102263004',
+            display: 'Eggs',
+          },
+        ],
+      },
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'],
+      },
+      subject: {
+        reference: 'Patient/6de16ccc-3ae2-49e0-b2d0-178a6c6de872',
+      },
+    };
+
+    test('Missing Condition.category', () => {
+      const conditionNoCategory = deepClone(baseCondition);
+      conditionNoCategory.category = undefined;
+      expect(() => validateResource(conditionNoCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
+    // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
+    // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
+    test.failing('Populated but missing required Condition.category', () => {
+      const conditionWrongCategory = deepClone(baseCondition);
+      conditionWrongCategory.category = [
+        {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-tags',
+              code: 'sdoh',
+              display: 'SDOH',
+            },
+          ],
+          text: 'Social Determinants Of Health',
+        },
+      ];
+      expect(() => validateResource(conditionWrongCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    test('Populated with valid Condition.category', () => {
+      const validCondition: Condition = deepClone(baseCondition);
+      validCondition.category = [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              code: 'problem-list-item',
+              display: 'Problem List Item',
+            },
+          ],
+          text: 'Problem List Item',
+        },
+      ];
+      expect(() => validateResource(validCondition, { profile: healthConcernsProfile })).not.toThrow();
+    });
   });
 
   test('validateResource', () => {
@@ -763,14 +865,14 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name');
     }
   });
 
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
-    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource)).toThrow(
+    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
       new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
     );
   });
@@ -782,10 +884,10 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('DiagnosticReport.status');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('DiagnosticReport.code');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('DiagnosticReport.status');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('DiagnosticReport.code');
     }
   });
 
@@ -795,8 +897,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name');
     }
   });
 
@@ -806,8 +908,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name[0]');
     }
   });
 
@@ -817,8 +919,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name[0].given[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name[0].given[0]');
     }
   });
 
@@ -846,10 +948,48 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.length).toBe(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.identifier[0].system');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Patient.name[1].given[1]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.identifier[0].system');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.name[1].given[1]');
+    }
+  });
+
+  test('Empty object', () => {
+    const p1: Patient = { resourceType: 'Patient', maritalStatus: { text: 'Single' } };
+    const p2: Patient = { resourceType: 'Patient', maritalStatus: {} };
+
+    expect(() => validateResource(p1)).not.toThrow();
+    expect(() => validateResource(p2)).not.toThrow();
+  });
+
+  test('Empty object in array element', () => {
+    const p1: Patient = { resourceType: 'Patient', address: [] };
+    const p3: Patient = { resourceType: 'Patient', address: [{}, { use: 'home' }, {}] };
+    const p2: Patient = { resourceType: 'Patient', address: [{}] };
+
+    expect(() => validateResource(p1)).not.toThrow();
+
+    try {
+      validateResource(p2);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(1);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+    }
+
+    try {
+      validateResource(p3);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.address[2]');
     }
   });
 
@@ -887,12 +1027,12 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.length).toEqual(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.code).toEqual('invariant');
+      expect(outcome.issue?.length).toStrictEqual(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid null value');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.code).toStrictEqual('invariant');
     }
   });
 
@@ -909,10 +1049,10 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Slot.start');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Slot.end');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Slot.start');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Slot.end');
     }
   });
 
@@ -920,12 +1060,10 @@ describe('FHIR resource validation', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
-    expect(() => validateResource(binary)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Binary.data)'
-    );
+    expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
     binary.data = '===';
-    expect(() => validateResource(binary)).toThrowError('Invalid base64Binary format');
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
@@ -935,7 +1073,7 @@ describe('FHIR resource validation', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.active = 123 as unknown as boolean;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected boolean, but got number (Patient.active)'
     );
 
@@ -950,12 +1088,12 @@ describe('FHIR resource validation', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.birthDate = 123 as unknown as string;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected string, but got number (Patient.birthDate)'
     );
 
     patient.birthDate = 'x';
-    expect(() => validateResource(patient)).toThrowError('Invalid date format');
+    expect(() => validateResource(patient)).toThrow('Invalid date format');
 
     patient.birthDate = '2000-01-01';
     expect(() => validateResource(patient)).not.toThrow();
@@ -965,12 +1103,12 @@ describe('FHIR resource validation', () => {
     const condition: Condition = { resourceType: 'Condition', subject: { reference: 'Patient/1' } };
 
     condition.recordedDate = 123 as unknown as string;
-    expect(() => validateResource(condition)).toThrowError(
+    expect(() => validateResource(condition)).toThrow(
       'Invalid JSON type: expected string, but got number (Condition.recordedDate)'
     );
 
     condition.recordedDate = 'x';
-    expect(() => validateResource(condition)).toThrowError('Invalid dateTime format');
+    expect(() => validateResource(condition)).toThrow('Invalid dateTime format');
 
     condition.recordedDate = '2022-02-02';
     expect(() => validateResource(condition)).not.toThrow();
@@ -986,15 +1124,15 @@ describe('FHIR resource validation', () => {
     const media: Media = { resourceType: 'Media', status: 'completed', content: { title: 'x' } };
 
     media.duration = 'x' as unknown as number;
-    expect(() => validateResource(media)).toThrowError(
+    expect(() => validateResource(media)).toThrow(
       'Invalid JSON type: expected number, but got string (Media.duration)'
     );
 
     media.duration = NaN;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = Infinity;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = 123.5;
     expect(() => validateResource(media)).not.toThrow();
@@ -1010,12 +1148,12 @@ describe('FHIR resource validation', () => {
     } as ImplementationGuide;
 
     ig.packageId = 123 as unknown as string;
-    expect(() => validateResource(ig)).toThrowError(
+    expect(() => validateResource(ig)).toThrow(
       'Invalid JSON type: expected string, but got number (ImplementationGuide.packageId)'
     );
 
     ig.packageId = '$';
-    expect(() => validateResource(ig)).toThrowError('Invalid id format');
+    expect(() => validateResource(ig)).toThrow('Invalid id format');
 
     ig.packageId = 'foo';
     expect(() => validateResource(ig)).not.toThrow();
@@ -1025,15 +1163,15 @@ describe('FHIR resource validation', () => {
     const obs: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'x' } };
 
     obs.issued = 123 as unknown as string;
-    expect(() => validateResource(obs)).toThrowError(
+    expect(() => validateResource(obs)).toThrow(
       'Invalid JSON type: expected string, but got number (Observation.issued)'
     );
 
     obs.issued = 'x';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02T12:00:00-04:00';
     expect(() => validateResource(obs)).not.toThrow();
@@ -1046,20 +1184,18 @@ describe('FHIR resource validation', () => {
     const sp: SubstanceProtein = { resourceType: 'SubstanceProtein' };
 
     sp.numberOfSubunits = 'x' as unknown as number;
-    expect(() => validateResource(sp)).toThrowError(
+    expect(() => validateResource(sp)).toThrow(
       'Invalid JSON type: expected number, but got string (SubstanceProtein.numberOfSubunits)'
     );
 
     sp.numberOfSubunits = NaN;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = Infinity;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 123.5;
-    expect(() => validateResource(sp)).toThrowError(
-      'Expected number to be an integer (SubstanceProtein.numberOfSubunits)'
-    );
+    expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
@@ -1069,14 +1205,21 @@ describe('FHIR resource validation', () => {
     const acct: Account = { resourceType: 'Account', status: 'active' };
 
     acct.name = 123 as unknown as string;
-    expect(() => validateResource(acct)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Account.name)'
-    );
+    expect(() => validateResource(acct)).toThrow('Invalid JSON type: expected string, but got number (Account.name)');
 
     acct.name = '    ';
-    expect(() => validateResource(acct)).toThrowError('String must contain non-whitespace content (Account.name)');
+    expect(() => validateResource(acct)).toThrow('String must contain non-whitespace content (Account.name)');
 
     acct.name = 'test';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'Invalid controls character \x00 \x01 \x0B \x1F are not allowed';
+    expect(() => validateResource(acct)).toThrow();
+
+    acct.name = 'Valid controls characters \x09 \x0A \x0D \x20 \x21 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'High unicode characters \uFFFF \u1234 are allowed';
     expect(() => validateResource(acct)).not.toThrow();
   });
 
@@ -1092,24 +1235,24 @@ describe('FHIR resource validation', () => {
     };
 
     appt.minutesDuration = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.minutesDuration)'
     );
 
     appt.minutesDuration = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 10;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1127,21 +1270,21 @@ describe('FHIR resource validation', () => {
     };
 
     appt.priority = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.priority)'
     );
 
     appt.priority = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1162,15 +1305,15 @@ describe('FHIR resource validation', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
 
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual(
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual(
         'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
       );
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Appointment');
 
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant.status');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toStrictEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Appointment.participant[0].status');
     }
   });
 
@@ -1200,7 +1343,7 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthBoolean: true })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
     expect(() =>
-      validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' } as unknown as Patient)
+      validateResource({ resourceType: 'Patient', multipleBirthString: 'xyz' } as unknown as Patient)
     ).toThrow();
   });
 
@@ -1331,7 +1474,7 @@ describe('FHIR resource validation', () => {
       status: 'finished',
       class: { code: 'foo' },
     };
-    expect(() => validateResource(e1, profile)).toThrow();
+    expect(() => validateResource(e1, { profile })).toThrow();
 
     const e2: Encounter = {
       resourceType: 'Encounter',
@@ -1339,7 +1482,7 @@ describe('FHIR resource validation', () => {
       class: { code: 'foo' },
       identifier: [{ system: 'http://example.com', value: '123' }],
     };
-    expect(() => validateResource(e2, profile)).not.toThrow();
+    expect(() => validateResource(e2, { profile })).not.toThrow();
 
     const e3: Encounter = {
       resourceType: 'Encounter',
@@ -1347,7 +1490,455 @@ describe('FHIR resource validation', () => {
       class: { code: 'foo' },
       identifier: [{ system: 'http://example.com', value: '456' }],
     };
-    expect(() => validateResource(e3, profile)).toThrow();
+    expect(() => validateResource(e3, { profile })).toThrow();
+  });
+
+  // TODO: Change this check from warning to error
+  // Duplicate entries for choice-of-type property is currently a warning
+  // We need to first log and track this, and notify customers of breaking changes
+  function expectOneWarning(resource: Resource, textContains: string): void {
+    const issues = validateResource(resource);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain(textContains);
+  }
+
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Conflicting choice of type properties';
+  const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
+
+  test('Multiple values for choice of type property', () => {
+    const carePlan: CarePlan = {
+      resourceType: 'CarePlan',
+      subject: {
+        reference: 'Patient/fdf33a83-08b0-4475-ae99-f5b6fec2f0f1',
+        display: 'Homer Simpson',
+      },
+      status: 'active',
+      intent: 'order',
+      activity: [
+        {
+          detail: {
+            status: 'in-progress',
+            scheduledPeriod: {
+              start: '2024-02-29T16:52:20.825Z',
+            },
+            scheduledTiming: {
+              repeat: {
+                period: 1,
+                periodUnit: 'd',
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+    expectOneWarning(carePlan, 'scheduledTiming');
+    expectOneWarning(carePlan, 'scheduledPeriod');
+  });
+
+  test('Valid choice of type properties with primitive extensions', () => {
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+      } as Patient)
+    ).toHaveLength(0);
+
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+
+    // check both orders of the properties
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+  });
+
+  test('Invalid choice of type properties with primitive extensions', () => {
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthBoolean: true,
+        multipleBirthInteger: 2,
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    // Primitive extension type mismatch, check both orders of the properties
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+        multipleBirthInteger: 2,
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
+  });
+
+  test('Reference type check', () => {
+    const docRef: DocumentReference = {
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { data: 'aGVsbG8gd29ybGQ=' } }],
+
+      // Note that "relatesTo.target" must be a Reference to a DocumentReference
+      // This reference to a Patient is invalid
+      relatesTo: [{ code: 'appends', target: { reference: 'Patient/123' } }],
+    };
+
+    // TODO: Change this check from warning to error
+    // Duplicate entries for choice-of-type property is currently a warning
+    // We need to first log and track this, and notify customers of breaking changes
+    const issues = validateResource(docRef);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference');
+  });
+
+  test('Contained reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: '#patient' },
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patient',
+          birthDate: '1949-08-14',
+        },
+      ],
+    };
+
+    // Contained references should not generate validation warnings
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: 'Patient?identifier=http://example.com/mrn|12345' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Invalid conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      // subject should reference a Patient, not an Organization
+      subject: { reference: 'Organization?identifier=http://example.com/id|123' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference');
+    expect(issues[0].details?.text).toContain('Organization');
+  });
+
+  test('Nested recursive properties', () => {
+    const consent: Consent = {
+      resourceType: 'Consent',
+      status: 'active',
+      scope: { text: 'test' },
+      category: [{ text: 'test' }],
+      policyRule: { text: 'test' },
+      provision: {
+        type: 'permit',
+        provision: [{ type: 'permit' }],
+      },
+    };
+    expect(() => validateResource(consent)).not.toThrow();
+  });
+
+  test('Validate BackboneElement', () => {
+    const address: Address = {
+      use: 'home',
+      type: 'both',
+      text: '123 Main St',
+      line: ['123 Main St'],
+      city: 'Springfield',
+      district: 'Springfield',
+      state: 'IL',
+      postalCode: '62704',
+      country: 'USA',
+    };
+    expect(() => validateTypedValue({ type: 'Address', value: address })).not.toThrow();
+
+    expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
+      'Invalid additional property "foo" (Address.foo)'
+    );
+  });
+
+  test('Element type code different than path', () => {
+    // ClinicalDocument.realmCode
+    // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/ClinicalDocument.xml
+    // Note that the type code is disconnected from the path
+    const csSd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+      name: 'ClinicalDocument',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+      snapshot: {
+        element: [
+          {
+            path: 'CS',
+          },
+          {
+            path: 'CS.code',
+            min: 0,
+            max: '1',
+            base: {
+              path: 'CD.code',
+              min: 0,
+              max: '1',
+            },
+            type: [{ code: 'code' }],
+          },
+        ],
+      },
+    };
+    loadDataType(csSd);
+
+    const clinicalDocumentSd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
+      name: 'ClinicalDocument',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
+      snapshot: {
+        element: [
+          {
+            path: 'ClinicalDocument',
+          },
+          {
+            path: 'ClinicalDocument.realmCode',
+            min: 0,
+            max: '*',
+            base: {
+              path: 'ClinicalDocument.realmCode',
+              min: 0,
+              max: '*',
+            },
+            type: [
+              {
+                code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    loadDataType(clinicalDocumentSd);
+
+    const typedValue1 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ code: 'foo' }] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ foo: 'bar' }] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid additional property "foo" (ClinicalDocument.realmCode[0].foo)'
+    );
+  });
+
+  test('Choice-of-type without [x]', () => {
+    // SubstanceAdministration.effectiveTime
+    // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/SubstanceAdministration.xml
+    // Note that there are multiple types for this property, but it does not have a [x] suffix
+    const sd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/SubstanceAdministration',
+      name: 'SubstanceAdministration',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/SubstanceAdministration',
+      snapshot: {
+        element: [
+          {
+            path: 'SubstanceAdministration',
+          },
+          {
+            path: 'SubstanceAdministration.effectiveTime',
+            min: 0,
+            max: '*',
+            base: {
+              path: 'SubstanceAdministration.effectiveTime',
+              min: 0,
+              max: '*',
+            },
+            type: [{ code: 'dateTime' }, { code: 'time' }],
+          },
+        ],
+      },
+    };
+    loadDataType(sd);
+
+    const typedValue1 = {
+      type: sd.type,
+      value: { effectiveTime: ['2022-02-02T12:00:00Z'] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: sd.type,
+      value: { effectiveTime: ['foo'] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid dateTime format (SubstanceAdministration.effectiveTime[0])'
+    );
+  });
+
+  test('Multiple codes in Timing.repeat.when', () => {
+    // Timing constraint "tim-9" had a bug in R4 that prevents multiple codes in "when"
+    // We are fixing by backporting the R5 constraint to R4
+    // R4 constraint: offset.empty() or (when.exists() and ((when in ('C' | 'CM' | 'CD' | 'CV')).not()))
+    // R5 constraint: offset.empty() or (when.exists() and when.select($this in ('C' | 'CM' | 'CD' | 'CV')).allFalse())
+
+    // As submitted by user
+    // See: https://github.com/medplum/medplum/issues/5378
+    const timing1: Timing = {
+      repeat: {
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['MORN', 'NOON', 'NIGHT'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing1 })).not.toThrow();
+
+    // Make sure that a bad code throws
+    const timing2: Timing = {
+      repeat: {
+        offset: 1,
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['C'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
+  });
+
+  test('Bundle constraint: bdl-8', () => {
+    // fullUrl not required in `Bundle.entry`
+    const noFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(noFullUrlBdl)).not.toThrow();
+
+    // If it does exist, no `_history` version
+    const validFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}`, resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(validFullUrlBdl)).not.toThrow();
+
+    // This should fail since it contains `_history`
+    const invalidFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}/_history/${generateId()}`,
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+    expect(() => validateResource(invalidFullUrlBdl)).toThrow(
+      new OperationOutcomeError(
+        validationError(
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+        )
+      )
+    );
+  });
+
+  test('US Core Smoking Status profile', () => {
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'social-history' }] },
+      ],
+      code: { coding: [{ system: LOINC, code: '72166-2' }] },
+      effectivePeriod: { start: '2020-01-01' },
+      valueCodeableConcept: { text: 'Pipe smoker' },
+      subject: { reference: 'urn:uuid:8c45961c-26fa-42d3-91e1-2d1acba74748' },
+    };
+
+    expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
   });
 });
 

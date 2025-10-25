@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+/* global process */
 /* global console */
-/* eslint no-console: "off" */
 
 import esbuild from 'esbuild';
-import { writeFileSync } from 'fs';
+import { writeFileSync } from 'node:fs';
 
 const options = {
   entryPoints: ['./src/main.ts'],
@@ -12,7 +15,6 @@ const options = {
   resolveExtensions: ['.js', '.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  external: ['iconv-lite', 'pdfmake'],
 };
 
 // The single executable application feature only supports running a single embedded CommonJS file.
@@ -25,4 +27,7 @@ esbuild
     outfile: './dist/cjs/index.cjs',
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
-  .catch(console.error);
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

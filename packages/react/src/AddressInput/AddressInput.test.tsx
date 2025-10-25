@@ -1,7 +1,9 @@
-import { Address } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Address } from '@medplum/fhirtypes';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AddressInput } from './AddressInput';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 const defaultProps: ComplexTypeInputProps<Address> = {
   name: 'a',
@@ -78,5 +80,26 @@ describe('AddressInput', () => {
       state: 'OR',
       postalCode: '97403',
     });
+  });
+
+  test('Remove 2nd line', async () => {
+    let lastValue: Address | undefined = undefined;
+
+    render(
+      <AddressInput
+        {...defaultProps}
+        defaultValue={{ line: ['line 1', 'line 2'] }}
+        onChange={(value) => (lastValue = value)}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Line 2'), {
+        target: { value: '' },
+      });
+    });
+
+    expect(lastValue).toBeDefined();
+    expect(lastValue).toMatchObject({ line: ['line 1'] });
   });
 });

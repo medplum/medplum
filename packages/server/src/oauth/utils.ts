@@ -1,18 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  Filter,
+  forbidden,
   getDateProperty,
   getReferenceString,
+  isJwt,
+  isString,
   OperationOutcomeError,
   Operator,
-  ProfileResource,
+  parseJWTPayload,
+  parseReference,
+  parseSearchRequest,
   resolveId,
   tooManyRequests,
-  unauthorized,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   ClientApplication,
   IdentityProvider,
@@ -25,23 +31,35 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { timingSafeEqual } from 'crypto';
-import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
+import { createHash } from 'crypto';
+import type { Request } from 'express';
+import type { IncomingMessage } from 'http';
+import type { JWTPayload, VerifyOptions } from 'jose';
+import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
+import assert from 'node:assert/strict';
+import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
-import { getRequestContext } from '../context';
-import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { systemRepo } from '../fhir/repo';
-import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
+import { getUserConfiguration } from '../auth/me';
+import { getConfig } from '../config/loader';
+import type { MedplumExternalAuthConfig } from '../config/types';
+import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
+import { getSystemRepo } from '../fhir/repo';
+import type { SmartScope } from '../fhir/smart';
+import { parseSmartScopes } from '../fhir/smart';
+import { getLogger } from '../logger';
+import { getRedis } from '../redis';
 import {
-  generateAccessToken,
-  generateIdToken,
-  generateRefreshToken,
-  generateSecret,
-  MedplumAccessTokenClaims,
-  verifyJwt,
-} from './keys';
-import { AuthState } from './middleware';
+  AuditEventOutcome,
+  createAuditEvent,
+  logAuditEvent,
+  LoginEvent,
+  UserAuthenticationEvent,
+} from '../util/auditevent';
+import { getStandardClientById } from './clients';
+import type { MedplumAccessTokenClaims } from './keys';
+import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
+import type { AuthState } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -54,6 +72,7 @@ export interface LoginRequest {
   readonly nonce: string;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
+  readonly membershipId?: string;
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
@@ -62,6 +81,9 @@ export interface LoginRequest {
   readonly remoteAddress?: string;
   readonly userAgent?: string;
   readonly allowNoMembership?: boolean;
+  readonly origin?: string;
+  readonly pictureUrl?: string;
+  readonly forceUseFirstMembership?: boolean;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -110,28 +132,31 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @param clientId - The client ID.
  * @returns The client application.
  */
-export async function getClient(clientId: string): Promise<ClientApplication> {
-  if (clientId === 'medplum-cli') {
-    return {
-      resourceType: 'ClientApplication',
-      id: 'medplum-cli',
-      redirectUri: 'http://localhost:9615',
-      pkceOptional: true,
-    };
+export async function getClientApplication(clientId: string): Promise<ClientApplication> {
+  const standardClient = getStandardClientById(clientId);
+  if (standardClient) {
+    return standardClient;
   }
+  const systemRepo = getSystemRepo();
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
 }
 
-export async function tryLogin(request: LoginRequest): Promise<Login> {
+export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   validateLoginRequest(request);
 
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    client = await getClient(request.clientId);
+    client = await getClientApplication(request.clientId);
+    if (client.allowedOrigin && request.origin) {
+      if (!client.allowedOrigin.some((o) => o === request.origin)) {
+        throw new OperationOutcomeError(badRequest('Invalid origin'));
+      }
+    }
   }
 
   validatePkce(request, client);
 
+  const systemRepo = getSystemRepo();
   let launch: SmartAppLaunch | undefined;
   if (request.launchId) {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
@@ -145,6 +170,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   }
 
   if (!user) {
+    getLogger().warn('tryLogin User not found', { ...request, password: undefined, codeChallenge: undefined });
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
@@ -170,19 +196,24 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     codeChallengeMethod: request.codeChallengeMethod,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
+    pictureUrl: request.pictureUrl,
   });
 
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getMembershipsForLogin(login);
+  let memberships = await getMembershipsForLogin(login);
+
+  if (request.membershipId) {
+    memberships = memberships.filter((m) => m.id === request.membershipId);
+  }
 
   if (memberships.length === 0 && !request.allowNoMembership) {
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
-  if (memberships.length === 1) {
-    return setLoginMembership(login, memberships[0].id as string);
+  if (memberships.length === 1 || request.forceUseFirstMembership) {
+    return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
   }
@@ -275,12 +306,13 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('Login already verified'));
   }
 
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
-  if (!user.mfaEnrolled) {
+  const secret = user.mfaSecret;
+  if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
@@ -299,7 +331,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
  * @param login - The login resource.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getMembershipsForLogin(login: Login): Promise<ProjectMembership[]> {
+export async function getMembershipsForLogin(login: Login): Promise<WithId<ProjectMembership>[]> {
   if (login.project?.reference === 'Project/new') {
     return [];
   }
@@ -324,6 +356,7 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
     });
   }
 
+  const systemRepo = getSystemRepo();
   let memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 100,
@@ -343,7 +376,10 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @param client - The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+export function getClientApplicationMembership(
+  client: WithId<ClientApplication>
+): Promise<WithId<ProjectMembership> | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -365,7 +401,7 @@ export function getClientApplicationMembership(client: ClientApplication): Promi
  * @param membershipId - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
+export async function setLoginMembership(login: Login, membershipId: string): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -379,14 +415,19 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Find the membership for the user
+  const systemRepo = getSystemRepo();
   let membership = undefined;
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch (err) {
+  } catch (_err) {
     throw new OperationOutcomeError(badRequest('Profile not found'));
   }
   if (membership.user?.reference !== login.user?.reference) {
     throw new OperationOutcomeError(badRequest('Invalid profile'));
+  }
+
+  if (membership.active === false) {
+    throw new OperationOutcomeError(badRequest('Profile not active'));
   }
 
   // Get the project
@@ -397,20 +438,57 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // Optionally update the profile picture from Google
+  if (
+    login.authMethod === 'google' &&
+    login.pictureUrl &&
+    project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
+  ) {
+    try {
+      const [resourceType, id] = parseReference(membership.profile);
+      await systemRepo.patchResource(resourceType, id, [
+        { op: 'test', path: '/photo', value: undefined },
+        { op: 'add', path: '/photo', value: [{ url: login.pictureUrl, contentType: 'image/jpeg' }] },
+      ]);
+    } catch (err) {
+      getLogger().warn('Failed to update profile picture', { err });
+    }
+  }
+
+  // TODO: Do we really need to check IP access rules inside this method?
+  // Or could this be done closer to call site?
+  // This method is used internally in a bunch of places that do not need to check IP access rules
+
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
 
-  logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
+  const auditEvent = createAuditEvent(
+    UserAuthenticationEvent,
+    LoginEvent,
+    project.id,
+    membership.profile,
+    login.remoteAddress,
+    AuditEventOutcome.Success
+  );
+  logAuditEvent(auditEvent);
 
   // Everything checks out, update the login
-  return systemRepo.updateResource<Login>({
+  const updatedLogin: Login = {
     ...login,
     membership: createReference(membership),
-    superAdmin: project.superAdmin,
-  });
+  };
+
+  if (project.superAdmin) {
+    // Disable refresh tokens for super admins
+    updatedLogin.refreshSecret = undefined;
+  }
+
+  return systemRepo.updateResource<Login>(updatedLogin);
 }
 
 /**
@@ -421,7 +499,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
  * @param login - The candidate login.
  * @param accessPolicy - The access policy for the login.
  */
-async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
+export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
   if (!login.remoteAddress || !accessPolicy?.ipAccessRule) {
     return;
   }
@@ -447,6 +525,24 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
+function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
+  // Ensure types match
+  if (candidate.permissionType !== existing.permissionType || candidate.resourceType !== existing.resourceType) {
+    return false;
+  }
+  // Scopes granted must be a subset
+  if (
+    candidate.scope.length > existing.scope.length ||
+    candidate.scope.split('').some((s) => !existing.scope.includes(s))
+  ) {
+    return false;
+  }
+  if (existing.criteria && candidate.criteria !== existing.criteria) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Sets the login scope.
  * Ensures that the scope is the same or a subset of the originally requested scope.
@@ -458,43 +554,44 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
-
   if (login.granted) {
     throw new OperationOutcomeError(badRequest('Login granted'));
   }
 
-  // Get existing scope
-  const existingScopes = login.scope?.split(' ') || [];
-
-  // Get submitted scope
-  const submittedScopes = scope.split(' ');
+  const existingScopes = parseSmartScopes(login.scope);
+  const submittedScopes = parseSmartScopes(scope);
 
   // If user requests any scope that is not in existing scope, then reject
-  for (const scope of submittedScopes) {
-    if (!existingScopes.includes(scope)) {
+  for (const candidate of submittedScopes) {
+    if (!existingScopes.some((existing) => matchesScope(existing, candidate))) {
       throw new OperationOutcomeError(badRequest('Invalid scope'));
     }
   }
 
   // Otherwise update scope
-  return systemRepo.updateResource<Login>({
-    ...login,
-    scope: submittedScopes.join(' '),
-  });
+  const systemRepo = getSystemRepo();
+  return systemRepo.updateResource<Login>({ ...login, scope });
 }
 
-export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {
-  const clientId = login.client && resolveId(login.client);
-  const userId = resolveId(login.user);
-  if (!userId) {
-    throw new OperationOutcomeError(badRequest('Login missing user'));
+export async function getAuthTokens(
+  user: WithId<User | ClientApplication>,
+  login: WithId<Login>,
+  profile: Reference<ProfileResource>,
+  options?: {
+    accessLifetime?: string;
+    refreshLifetime?: string;
   }
+): Promise<TokenResult> {
+  assert.equal(getReferenceString(user), login.user?.reference);
+
+  const clientId = login.client && resolveId(login.client);
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
   }
 
   if (!login.granted) {
+    const systemRepo = getSystemRepo();
     await systemRepo.updateResource<Login>({
       ...login,
       granted: true,
@@ -503,29 +600,36 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
 
   const idToken = await generateIdToken({
     client_id: clientId,
-    login_id: login.id as string,
+    login_id: login.id,
     fhirUser: profile.reference,
+    email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     aud: clientId,
-    sub: userId,
+    sub: user.id,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
 
-  const accessToken = await generateAccessToken({
-    client_id: clientId,
-    login_id: login.id as string,
-    sub: userId,
-    username: userId,
-    scope: login.scope as string,
-    profile: profile.reference as string,
-  });
+  const accessToken = await generateAccessToken(
+    {
+      client_id: clientId,
+      login_id: login.id,
+      sub: user.id,
+      username: user.id,
+      scope: login.scope as string,
+      profile: profile.reference as string,
+    },
+    { lifetime: options?.accessLifetime }
+  );
 
   const refreshToken = login.refreshSecret
-    ? await generateRefreshToken({
-        client_id: clientId,
-        login_id: login.id as string,
-        refresh_secret: login.refreshSecret,
-      })
+    ? await generateRefreshToken(
+        {
+          client_id: clientId,
+          login_id: login.id,
+          refresh_secret: login.refreshSecret,
+        },
+        options?.refreshLifetime
+      )
     : undefined;
 
   return {
@@ -536,6 +640,7 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
+  const systemRepo = getSystemRepo();
   await systemRepo.updateResource<Login>({
     ...login,
     revoked: true,
@@ -550,6 +655,7 @@ export async function revokeLogin(login: Login): Promise<void> {
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByExternalId(externalId: string, projectId: string): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   const membership = await systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -611,8 +717,9 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @param projectId - The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
-  const bundle = await systemRepo.search({
+export async function getUserByEmailInProject(email: string, projectId: string): Promise<WithId<User> | undefined> {
+  const systemRepo = getSystemRepo();
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -627,7 +734,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**
@@ -636,8 +743,9 @@ export async function getUserByEmailInProject(email: string, projectId: string):
  * @param email - The email string.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
-  const bundle = await systemRepo.search({
+export async function getUserByEmailWithoutProject(email: string): Promise<WithId<User> | undefined> {
+  const systemRepo = getSystemRepo();
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -652,7 +760,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**
@@ -692,21 +800,39 @@ function includeRefreshToken(request: LoginRequest): boolean {
   return scopeArray.includes('offline') || scopeArray.includes('offline_access');
 }
 
+export function normalizeUserInfoUrl(userInfoUrl: string): string {
+  const url = new URL(userInfoUrl);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Must use http or https protocol');
+  }
+  return url.toString();
+}
+
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
- * @param idp - The identity provider configuration.
+ * @param userInfoUrl - The user info URL from the identity provider configuration.
  * @param externalAccessToken - The external identity provider access token.
+ * @param idp - Optional identity provider configuration.
  * @returns The user info claims.
  */
 export async function getExternalUserInfo(
-  idp: IdentityProvider,
-  externalAccessToken: string
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
-  const ctx = getRequestContext();
+  const log = getLogger();
+
+  try {
+    userInfoUrl = normalizeUserInfoUrl(userInfoUrl);
+  } catch (err: unknown) {
+    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId, err });
+    throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
+  }
+
   let response;
   try {
-    response = await fetch(idp.userInfoUrl as string, {
+    response = await fetch(userInfoUrl, {
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
@@ -714,38 +840,33 @@ export async function getExternalUserInfo(
       },
     });
   } catch (err: any) {
-    ctx.logger.warn('Error while verifying external auth code', err);
+    log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    ctx.logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    log.warn('Auth rate limit exceeded', { url: userInfoUrl, clientId: idp?.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
   if (response.status !== 200) {
-    ctx.logger.warn('Failed to verify external authorization code', { status: response.status });
+    log.warn('Failed to verify external authorization code', { status: response.status });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
-  // Make sure content type is json
-  if (!response.headers.get('content-type')?.includes(ContentType.JSON)) {
-    let text = '';
-    try {
-      text = await response.text();
-    } catch (err: any) {
-      ctx.logger.debug('Failed to get response text', err);
-    }
-    ctx.logger.warn('Failed to verify external authorization code, non-JSON response', { text });
-    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
-  }
-
+  const contentType = response.headers.get('content-type');
   try {
-    return await response.json();
+    if (contentType?.includes(ContentType.JSON)) {
+      return await response.json();
+    } else if (contentType?.includes(ContentType.JWT)) {
+      return parseJWTPayload(await response.text());
+    }
   } catch (err: any) {
-    ctx.logger.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+
+  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
 }
 
 interface ValidationAssertion {
@@ -777,25 +898,290 @@ export async function verifyMultipleMatchingException(
 
 /**
  * Verifies the access token and returns the corresponding login, membership, and project.
+ * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
+ * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForAccessToken(accessToken: string): Promise<AuthState> {
-  const verifyResult = await verifyJwt(accessToken);
+export async function getLoginForAccessToken(
+  req: Request | undefined,
+  accessToken: string
+): Promise<AuthState | undefined> {
+  const externalAuthState = await tryExternalAuth(req, accessToken);
+  if (externalAuthState) {
+    return externalAuthState;
+  }
+
+  let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
+  try {
+    verifyResult = await verifyJwt(accessToken);
+  } catch (_err) {
+    return undefined;
+  }
+
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 
+  const systemRepo = getSystemRepo();
   let login = undefined;
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
-  } catch (err) {
-    throw new OperationOutcomeError(unauthorized);
+  } catch (_err) {
+    return undefined;
   }
 
   if (!login?.membership || login.revoked) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  return { login, membership, project, accessToken };
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const authState = { login, project, membership, userConfig, accessToken };
+  await tryAddOnBehalfOf(req, authState);
+  return authState;
+}
+
+/**
+ * Verifies the basic auth token and returns the corresponding login, membership, and project.
+ * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
+ * @param req - The incoming HTTP request.
+ * @param token - The basic auth token as provided by the client.
+ * @returns On success, returns the login, membership, and project. On failure, throws an error.
+ */
+export async function getLoginForBasicAuth(req: IncomingMessage, token: string): Promise<AuthState | undefined> {
+  const credentials = Buffer.from(token, 'base64').toString('ascii');
+  const [username, password] = credentials.split(':');
+  if (!username || !password) {
+    return undefined;
+  }
+
+  const systemRepo = getSystemRepo();
+  let client: WithId<ClientApplication>;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
+  } catch (_err) {
+    return undefined;
+  }
+
+  if (!timingSafeEqualStr(client.secret as string, password)) {
+    return undefined;
+  }
+
+  const membership = await getClientApplicationMembership(client);
+  if (!membership) {
+    return undefined;
+  }
+
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const login: Login = {
+    resourceType: 'Login',
+    user: createReference(client),
+    authMethod: 'client',
+    authTime: new Date().toISOString(),
+  };
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+
+  const authState: AuthState = { login, project, membership, userConfig };
+  await tryAddOnBehalfOf(req, authState);
+  return authState;
+}
+
+/**
+ * Tries to add the "on behalf of" user to the auth state.
+ * @param req - The incoming HTTP request.
+ * @param authState - The existing auth state.
+ */
+async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: AuthState): Promise<void> {
+  const onBehalfOfHeader = req?.headers?.['x-medplum-on-behalf-of'];
+  if (!onBehalfOfHeader || !isString(onBehalfOfHeader)) {
+    return;
+  }
+
+  if (!authState.membership.admin && !authState.project.superAdmin) {
+    throw new OperationOutcomeError(forbidden);
+  }
+
+  let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
+
+  const adminRepo = await getRepoForLogin(authState);
+
+  if (onBehalfOfHeader.startsWith('ProjectMembership/')) {
+    onBehalfOfMembership = await adminRepo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+  } else {
+    onBehalfOfMembership = await adminRepo.searchOne({
+      resourceType: 'ProjectMembership',
+      filters: [
+        { code: 'profile', operator: Operator.EQUALS, value: onBehalfOfHeader },
+        { code: 'project', operator: Operator.EQUALS, value: getReferenceString(authState.project) },
+      ],
+    });
+    if (!onBehalfOfMembership) {
+      throw new OperationOutcomeError(forbidden);
+    }
+  }
+
+  const onBehalfOf = await adminRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  authState.onBehalfOf = onBehalfOf;
+  authState.onBehalfOfMembership = onBehalfOfMembership;
+}
+
+/**
+ * Tries to authenticate the user using an external authentication provider.
+ * This function checks if the access token is a valid JWT and corresponds to an external authentication provider.
+ * If the token is valid, it retrieves the user's profile and project membership.
+ * If successful, it returns the auth state containing the login, project, membership, and user configuration.
+ * If the token is invalid or does not correspond to an external provider, it returns undefined.
+ *
+ * @param req - The incoming HTTP request.
+ * @param accessToken - The access token as provided by the client.
+ * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
+ */
+async function tryExternalAuth(req: Request | undefined, accessToken: string): Promise<AuthState | undefined> {
+  const externalAuthProviders = getConfig().externalAuthProviders;
+  if (!externalAuthProviders) {
+    // No external auth providers configured
+    return undefined;
+  }
+
+  if (!isJwt(accessToken)) {
+    // Not a JWT, so we cannot verify it
+    return undefined;
+  }
+
+  const claims = parseJWTPayload(accessToken);
+  const issuer = claims.iss as string;
+  const externalAuthConfig = externalAuthProviders.find((provider) => provider.issuer === issuer);
+  if (!externalAuthConfig) {
+    // Not a configured external auth provider
+    return undefined;
+  }
+
+  const systemRepo = getSystemRepo();
+  const redis = getRedis();
+  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
+  const cachedValue = await redis.get(redisKey);
+  let login: Login;
+  let project: WithId<Project> | undefined;
+  let membership: WithId<ProjectMembership> | undefined;
+
+  if (cachedValue) {
+    // Use cached login if available
+    login = JSON.parse(cachedValue) as Login;
+    membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
+    project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  } else {
+    // If not cached, try to authenticate the user with the external auth provider
+    const externalAuthState = await tryExternalAuthLogin(req, accessToken, claims, externalAuthConfig);
+    if (!externalAuthState) {
+      return undefined;
+    }
+    ({ login, project, membership } = externalAuthState);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+  }
+
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  return { login, project, membership, userConfig };
+}
+
+async function tryExternalAuthLogin(
+  req: Request | undefined,
+  accessToken: string,
+  claims: JWTPayload,
+  externalAuthConfig: MedplumExternalAuthConfig
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
+  // To ensure broad compatibility, we check for the FHIR user profile in two places:
+  // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
+  // that automatically place custom claims in an `ext` block.
+  const extensions = claims.ext as Record<string, unknown> | undefined;
+  const profileString = claims.fhirUser ?? extensions?.fhirUser;
+  if (!isString(profileString)) {
+    return undefined;
+  }
+
+  try {
+    await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
+  } catch (err: any) {
+    getLogger().warn('Failed to get external user info', err);
+    return undefined;
+  }
+
+  // Profile string can be either a reference or a search string
+  let searchRequest: SearchRequest<ProfileResource>;
+  const queryIndex = profileString.indexOf('?');
+  if (queryIndex > -1) {
+    // Search string can be either relative (e.g. `Patient?identifier=foo`),
+    // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
+    // Isolate the resource type and query string from any preceding URL parts
+    const startIndex = profileString.lastIndexOf('/', queryIndex);
+    searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
+  } else {
+    const [resourceType, id] = profileString.split('/');
+    searchRequest = {
+      resourceType: resourceType as ProfileResource['resourceType'],
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+    };
+  }
+
+  // Search for the profile
+  const systemRepo = getSystemRepo();
+  const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+  if (!profile) {
+    return undefined;
+  }
+
+  // Search for a ProjectMembership for the profile
+  const membership = await systemRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
+  });
+  if (!membership || membership.active === false) {
+    return undefined;
+  }
+
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'external',
+    project: membership.project,
+    membership: createReference(membership),
+    user: membership.user,
+    profileType: profile.resourceType,
+    authTime: new Date().toISOString(),
+    scope: isString(claims.scope) ? claims.scope : undefined,
+    nonce: isString(claims.nonce) ? claims.nonce : undefined,
+    remoteAddress: req?.ip,
+    userAgent: req?.get('User-Agent'),
+  });
+
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+
+  logAuditEvent(
+    createAuditEvent(
+      UserAuthenticationEvent,
+      LoginEvent,
+      project.id,
+      membership.profile,
+      login.remoteAddress,
+      AuditEventOutcome.Success
+    )
+  );
+
+  return { login, project, membership };
+}
+
+/**
+ * Returns the base64-url-encoded SHA256 hash of the code.
+ * The details around '+', '/', and '=' are important for compatibility.
+ * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
+ * See: packages/client/src/crypto.ts
+ * @param code - The input code.
+ * @returns The base64-url-encoded SHA256 hash.
+ */
+export function hashCode(code: string): string {
+  return createHash('sha256')
+    .update(code)
+    .digest()
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 }

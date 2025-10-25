@@ -1,39 +1,36 @@
-import { JsonInput } from '@mantine/core';
-import { InternalTypeSchema, stringify, tryGetProfile, isProfileLoaded } from '@medplum/core';
-import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { isPopulated, isProfileLoaded } from '@medplum/core';
+import type { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type ExtensionInputProps = ComplexTypeInputProps<Extension> & {
-  propertyType: ElementDefinitionType;
+  readonly propertyType: ElementDefinitionType;
 };
 
 export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [typeSchema, setTypeSchema] = useState<InternalTypeSchema | undefined>();
   const profileUrl: string | undefined = useMemo(() => {
-    if (!propertyType.profile || propertyType.profile.length === 0) {
+    if (!isPopulated(propertyType.profile)) {
       return undefined;
     }
 
     return propertyType.profile[0] satisfies string;
   }, [propertyType]);
+  const [loadingProfile, setLoadingProfile] = useState(profileUrl !== undefined);
 
   useEffect(() => {
     if (profileUrl) {
       setLoadingProfile(true);
       medplum
         .requestProfileSchema(profileUrl)
-        .then(() => {
-          const profile = tryGetProfile(profileUrl);
-          setLoadingProfile(false);
-          setTypeSchema(profile);
-        })
+        .then(() => setLoadingProfile(false))
         .catch((reason) => {
           setLoadingProfile(false);
           console.warn(reason);
@@ -41,23 +38,8 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
     }
   }, [medplum, profileUrl]);
 
-  function onChange(newValue: any): void {
-    if (props.onChange) {
-      console.log('Extension', newValue);
-      props.onChange(newValue);
-    }
-  }
-
-  if (!profileUrl) {
-    return <ExtensionJsonInput {...props} />;
-  }
-
   if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
     return <div>Loading...</div>;
-  }
-
-  if (!typeSchema) {
-    return <div>StructureDefinition for {profileUrl} not found</div>;
   }
 
   /*
@@ -75,26 +57,10 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   return (
     <BackboneElementInput
       profileUrl={profileUrl}
-      typeName={typeSchema.name}
+      path={props.path}
+      typeName="Extension"
       defaultValue={props.defaultValue}
-      onChange={onChange}
-    />
-  );
-}
-
-function ExtensionJsonInput(props: ExtensionInputProps): JSX.Element {
-  return (
-    <JsonInput
-      id={props.name}
-      name={props.name}
-      data-testid="extension-json-input"
-      defaultValue={stringify(props.defaultValue)}
-      deserialize={JSON.parse}
-      onChange={(newValue) => {
-        if (props.onChange) {
-          props.onChange(JSON.parse(newValue));
-        }
-      }}
+      onChange={props.onChange}
     />
   );
 }

@@ -1,4 +1,5 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -6,11 +7,10 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { loadTestConfig } from '../config/loader';
+import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
@@ -27,8 +27,6 @@ describe('Change Password', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
@@ -77,6 +75,22 @@ describe('Change Password', () => {
       });
 
     expect(res2.status).toBe(400);
+  });
+
+  test('Old password not set', async () => {
+    // This creates a ClientApplication user
+    const accessToken = await initTestAuth();
+
+    const res2 = await request(app)
+      .post('/auth/changepassword')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        oldPassword: 'foobarbang',
+        newPassword: 'password!@#123',
+      });
+
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Existing password not set', 'oldPassword'));
   });
 
   test('Incorrect old password', async () => {

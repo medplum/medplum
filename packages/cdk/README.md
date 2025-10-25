@@ -7,6 +7,8 @@ CDK scripts to setup the full stack:
 - Fargate for backend server
 - Aurora RDS for database
 
+![diagram](./medplum_stack.png)
+
 ### Install
 
 Medplum uses [npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces) for a monorepo configuration.

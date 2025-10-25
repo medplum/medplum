@@ -1,10 +1,17 @@
-import { Resource } from '@medplum/fhirtypes';
-import { MedplumServerConfig } from '../config';
-import { globalLogger } from '../logger';
-import { BackgroundJobContext } from './context';
-import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
-import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
-import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, WithId } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
+import type { MedplumServerConfig } from '../config/types';
+import { getLogger, globalLogger } from '../logger';
+import { initBatchWorker } from './batch';
+import { addCronJobs, initCronWorker } from './cron';
+import { addDownloadJobs, initDownloadWorker } from './download';
+import { initPostDeployMigrationWorker } from './post-deploy-migration';
+import { initReindexWorker } from './reindex';
+import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
+import type { WorkerInitializer } from './utils';
+import { queueRegistry } from './utils';
 
 /**
  * Initializes all background workers.
@@ -12,9 +19,19 @@ import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } 
  */
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
-  initSubscriptionWorker(config);
-  initDownloadWorker(config);
-  initCronWorker(config);
+  const initializers: WorkerInitializer[] = [
+    initSubscriptionWorker,
+    initDownloadWorker,
+    initCronWorker,
+    initReindexWorker,
+    initBatchWorker,
+    initPostDeployMigrationWorker,
+  ];
+
+  for (const initializer of initializers) {
+    const { name, queue, worker } = initializer(config);
+    queueRegistry.add(name, queue, worker);
+  }
   globalLogger.debug('Workers initialized');
 }
 
@@ -22,18 +39,47 @@ export function initWorkers(config: MedplumServerConfig): void {
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {
-  await closeSubscriptionWorker();
-  await closeDownloadWorker();
-  await closeCronWorker();
+  await Promise.all(queueRegistry.closeAll());
 }
 
 /**
  * Adds all background jobs for a given resource.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
-export async function addBackgroundJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
-  await addSubscriptionJobs(resource, context);
-  await addDownloadJobs(resource);
-  await addCronJobs(resource);
+export async function addBackgroundJobs(
+  resource: WithId<Resource>,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
+  try {
+    await addSubscriptionJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding subscription jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await addDownloadJobs(resource, context);
+  } catch (err) {
+    getLogger().error('Error adding download jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await addCronJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding cron jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
 }

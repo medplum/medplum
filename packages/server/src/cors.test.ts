@@ -1,5 +1,7 @@
-import { Request } from 'express';
-import { getConfig, loadTestConfig } from './config';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Request } from 'express';
+import { getConfig, loadTestConfig } from './config/loader';
 import { corsOptions } from './cors';
 
 describe('CORS', () => {
@@ -14,7 +16,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('No Origin', () => {
@@ -24,7 +26,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('Allow appBaseUrl', () => {
@@ -34,7 +36,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
     );
@@ -48,7 +50,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'https://example.com' })
     );
@@ -62,7 +64,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('Allowed origins ', () => {
@@ -73,7 +75,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'https://example.com' })
     );
@@ -87,6 +89,6 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 });

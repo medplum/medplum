@@ -84,7 +84,7 @@ Medplum uses [AWS Web Application Firewall](https://aws.amazon.com/waf/) as an a
 
 ## Application Security
 
-- Encryption - Data is encrypted in transit with TLS 1.2. Data is encrypted at rest with AES.
+- Encryption - Data is encrypted in transit with TLS 1.2 and 1.3. Data is encrypted at rest with AES.
 - Continuous Monitoring - Independent third-party penetration, threat, and vulnerability testing.
 - Data Handling - Medplum is in full compliance with GDPR and has support for data deletion.
 - SSO - User access controls with single sign on.
@@ -122,29 +122,81 @@ Medplum continuously monitors all services to track security best practices.
 
 ### SonarCloud
 
-[SonarCloud](https://observatory.mozilla.org/) is a cloud-based code quality and security service.
+[SonarCloud](https://sonarcloud.io/) is a cloud-based code quality and security service.
 
-<a href="https://sonarcloud.io/summary/new_code?id=medplum_medplum"><img src="/img/compliance/sonarcloud.png" alt="SonarCloud screenshot" width="500" /></a>
+<a href="https://sonarcloud.io/summary/new_code?id=medplum_medplum" target="_blank"><img src="/img/compliance/sonarcloud.png" alt="SonarCloud screenshot" width="500" /></a>
+
+https://sonarcloud.io/summary/new_code?id=medplum_medplum
 
 ### Mozilla Observatory
 
 [Mozilla Observatory](https://observatory.mozilla.org/) is a tool that is geared towards informing website owners of best practices for securing their sites.
 
-<a href="https://observatory.mozilla.org/analyze/api.medplum.com"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
-<a href="https://observatory.mozilla.org/analyze/app.medplum.com"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
+<a href="https://observatory.mozilla.org/analyze/api.medplum.com" target="_blank"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
+<a href="https://observatory.mozilla.org/analyze/app.medplum.com" target="_blank"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
+
+https://observatory.mozilla.org/analyze/api.medplum.com
 
 ### SSL Labs
 
 [SSL Labs](https://www.ssllabs.com/index.html) is an online service that performs a deep analysis of the configuration of any SSL web server on the public Internet.
 
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com"><img src="/img/compliance/ssllabs-api.png" alt="SSL Labs api.medplum.com screenshot" width="350" /></a>
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com"><img src="/img/compliance/ssllabs-app.png" alt="SSL Labs app.medplum.com screenshot" width="350" /></a>
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com" target="_blank"><img src="/img/compliance/ssllabs-api.png" alt="SSL Labs api.medplum.com screenshot" width="350" /></a>
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com" target="_blank"><img src="/img/compliance/ssllabs-app.png" alt="SSL Labs app.medplum.com screenshot" width="350" /></a>
+
+https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com
+
+### Socket
+
+[Socket](https://socket.dev/) is a security platform that specializes in analyzing and monitoring software dependencies throughout the development pipeline, with a particular focus on detecting malicious code and vulnerabilities in real-time during pull requests.
+
+<a href="https://socket.dev/npm/package/@medplum/core" target="_blank"><img src="/img/compliance/socket-dev.webp" alt="Socket screenshot" width="500" /></a>
+
+https://socket.dev/npm/package/@medplum/core
+
+### Docker Scout
+
+[Docker Scout](https://docs.docker.com/scout/) is a security solution that analyzes container images by creating a Software Bill of Materials (SBOM) and checking components against known vulnerabilities in real-time, helping organizations proactively identify and address security weaknesses in their containerized applications.
+
+<a href="https://hub.docker.com/r/medplum/medplum-server" target="_blank"><img src="/img/compliance/docker-scout.webp" alt="Docker Scout screenshot" width="500" /></a>
+
+https://hub.docker.com/r/medplum/medplum-server
 
 ### Security Scorecard
 
 [Security Scorecard](https://securityscorecard.com/) is an information security company that rates cybersecurity postures of corporate entities through completing scored analysis of cyber threat intelligence signals for the purposes of third party management and IT risk management.
 
-<a href="https://securityscorecard.com/security-rating/medplum.com?utm_medium=badge&utm_source=medplum.com&utm_campaign=seal-of-trust&utm_content=https://platform.securityscorecard.io/"><img src="/img/compliance/securityscorecard.png" alt="Security Scorecard Logo" width="200" /></a>
+<a href="https://securityscorecard.com/security-rating/medplum.com?utm_medium=badge&utm_source=medplum.com&utm_campaign=seal-of-trust&utm_content=https://platform.securityscorecard.io/" target="_blank"><img src="/img/compliance/securityscorecard.png" alt="Security Scorecard Logo" width="200" /></a>
+
+https://securityscorecard.com/security-rating/medplum.com
+
+### OpenSSF Scorecard
+
+[OpenSSF Scorecard](https://scorecard.dev/) is a tool that automatically checks a project's repository against a set of security best practices and assigns a risk score.
+
+<a href="https://scorecard.dev/viewer/?uri=github.com/medplum/medplum" target="_blank"><img src="/img/compliance/openssf-scorecard-screenshot.webp" alt="OpenSSF Scorecard screenshot" width="500" /></a>
+
+https://scorecard.dev/viewer/?uri=github.com/medplum/medplum
+
+### OpenSSF Best Practices
+
+[OpenSSF Best Practices](https://www.bestpractices.dev/en) is a badge program that allows open source projects to demonstrate their adherence to security-related best practices.
+
+<a href="https://www.bestpractices.dev/en/projects/10900" target="_blank"><img src="/img/compliance/openssf-best-practices-screenshot.webp" alt="OpenSSF Best Practices screenshot" width="500" /></a>
+
+https://www.bestpractices.dev/en/projects/10900
+
+### Snyk
+
+[Snyk](https://snyk.io/) is a comprehensive developer security platform that integrates security scanning across proprietary code, open source dependencies, container images, and cloud infrastructure, providing unified vulnerability detection and remediation capabilities throughout the development lifecycle.
+
+### GitHub CodeQL
+
+[CodeQL](https://codeql.github.com/) is a semantic code analysis engine that treats code as queryable data, allowing developers to write and run queries to identify potential vulnerabilities and their variants across an entire codebase.
+
+### GitHub Dependabot
+
+[GitHub Dependabot](https://github.com/dependabot) is an automated dependency management tool that continuously monitors repository dependencies, creating pull requests to update outdated packages and alerting developers to security vulnerabilities in their project's dependencies.
 
 ## Availability
 

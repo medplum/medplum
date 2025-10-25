@@ -1,9 +1,12 @@
-import { StackResource } from '@aws-sdk/client-cloudformation';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { StackResource } from '@aws-sdk/client-cloudformation';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand } from '@aws-sdk/client-s3';
 import { readConfig } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateBucketPoliciesOptions {
+  file?: string;
   dryrun?: boolean;
 }
 
@@ -28,16 +31,16 @@ interface PolicyStatement {
  * @param options - The update options.
  */
 export async function updateBucketPoliciesCommand(tag: string, options: UpdateBucketPoliciesOptions): Promise<void> {
-  const config = readConfig(tag);
+  const config = readConfig(tag, options);
   if (!config) {
-    await printConfigNotFound(tag);
-    return;
+    printConfigNotFound(tag, options);
+    throw new Error(`Config not found: ${tag}`);
   }
 
   const details = await getStackByTag(tag);
   if (!details) {
     await printStackNotFound(tag);
-    return;
+    throw new Error(`Stack not found: ${tag}`);
   }
 
   await updateBucketPolicy('App', details.appBucket, details.appDistribution, details.appOriginAccessIdentity, options);
@@ -61,26 +64,22 @@ export async function updateBucketPolicy(
   options: UpdateBucketPoliciesOptions
 ): Promise<void> {
   if (!bucketResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} bucket not found`);
-    return;
+    throw new Error(`${friendlyName} bucket not found`);
   }
 
   if (!distributionResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} distribution not found`);
-    return;
+    throw new Error(`${friendlyName} distribution not found`);
   }
 
   if (!oaiResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} OAI not found`);
-    return;
+    throw new Error(`${friendlyName} OAI not found`);
   }
 
   const bucketName = bucketResource.PhysicalResourceId;
   const oaiId = oaiResource.PhysicalResourceId;
   const bucketPolicy = await getPolicy(bucketName);
   if (policyHasStatement(bucketPolicy, bucketName, oaiId)) {
-    console.log(`${friendlyName} bucket already has policy statement`);
-    return;
+    throw new Error(`${friendlyName} bucket already has policy statement`);
   }
 
   addPolicyStatement(bucketPolicy, bucketName, oaiId);

@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -45,16 +47,12 @@ describe('InvitePage', () => {
 
   test('Renders', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -78,9 +76,7 @@ describe('InvitePage', () => {
 
   test('Submit with access policy', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -125,9 +121,7 @@ describe('InvitePage', () => {
 
   test('Invite patient', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Role'), {
@@ -153,9 +147,7 @@ describe('InvitePage', () => {
 
   test('Invite admin', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Role'), {
@@ -183,11 +175,39 @@ describe('InvitePage', () => {
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
+  test('Invite project scoped user', async () => {
+    await setup('/admin/invite');
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'Practitioner' },
+      });
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'Patty' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Practitioner' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'pattypractitioner@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Project scoped'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
   test('Do not send email', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -215,9 +235,7 @@ describe('InvitePage', () => {
 
   test('Show error with bad email', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {

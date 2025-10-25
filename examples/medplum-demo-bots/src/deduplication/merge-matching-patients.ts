@@ -1,13 +1,8 @@
-import {
-  BotEvent,
-  MedplumClient,
-  createReference,
-  deepClone,
-  getQuestionnaireAnswers,
-  getReferenceString,
-  resolveId,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, deepClone, getQuestionnaireAnswers, getReferenceString, resolveId } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
   Identifier,
   Patient,
   QuestionnaireResponse,
@@ -68,8 +63,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Read the source and target Patient resource
-  const targetPatient = (await medplum.readReference(targetReference)) as Patient;
-  const sourcePatient = (await medplum.readReference(srcReference)) as Patient;
+  const targetPatient = await medplum.readReference(targetReference);
+  const sourcePatient = await medplum.readReference(srcReference);
 
   const patients = linkPatientRecords(sourcePatient, targetPatient);
 
@@ -112,8 +107,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
 // start-block linkPatientRecords
 interface MergedPatients {
-  readonly src: Patient;
-  readonly target: Patient;
+  readonly src: WithId<Patient>;
+  readonly target: WithId<Patient>;
 }
 
 /**
@@ -123,7 +118,7 @@ interface MergedPatients {
  * @param target - The target patient record which will replace the source.
  * @returns - Object containing updated source and target patient records with their links.
  */
-export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
+export function linkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
   const targetLinks = targetCopy.link ?? [];
   targetLinks.push({ other: createReference(src), type: 'replaces' });
@@ -145,7 +140,7 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
  * @param target - The target patient marked as the master record.
  * @returns - Object containing updated source and target patient records with their links.
  */
-export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatients {
+export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
   const srcCopy = deepClone(src);
   // Filter out links from the target to the source
@@ -173,7 +168,11 @@ export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatie
  * @param fields - Optional additional fields to be merged.
  * @returns - Object containing the original source and the merged target patient records.
  */
-export function mergePatientRecords(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
+export function mergePatientRecords(
+  src: WithId<Patient>,
+  target: WithId<Patient>,
+  fields?: Partial<Patient>
+): MergedPatients {
   const targetCopy = deepClone(target);
   const mergedIdentifiers = targetCopy.identifier ?? [];
   const srcIdentifiers = src.identifier ?? [];
@@ -254,8 +253,8 @@ export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
  */
 export async function updateResourceReferences<T extends ResourceType>(
   medplum: MedplumClient,
-  sourcePatient: Patient,
-  targetPatient: Patient,
+  sourcePatient: WithId<Patient>,
+  targetPatient: WithId<Patient>,
   resourceType: T
 ): Promise<void> {
   // Search for clinical resources related to the source patient, by searching for all resources in the patient compartment

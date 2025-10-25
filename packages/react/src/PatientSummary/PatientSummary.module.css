@@ -1,0 +1,44 @@
+.panel {
+  height: 100%;
+}
+
+[data-mantine-color-scheme='dark'] .panel {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .panel {
+  background-color: var(--mantine-color-white);
+}
+
+.patientSummaryBadge {
+  cursor: pointer;
+}
+
+.patientSummaryAddButton {
+  opacity: 0;
+  transition: opacity 0.2s;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: none;
+  stroke-width: 1;
+}
+
+.patientSummaryHeader {
+  width: 100%;
+  cursor: default;
+}
+
+.patientSummaryHeader :global(.mantine-ActionIcon-root),
+.patientSummaryHeader :global(.mantine-Text-root) {
+  cursor: pointer;
+  margin: 0;
+}
+
+.patientSummaryCollapseIcon {
+  transition: transform 0.2s;
+}
+
+.patientSummaryCollapseIcon.collapsed {
+  transform: rotate(-90deg);
+}

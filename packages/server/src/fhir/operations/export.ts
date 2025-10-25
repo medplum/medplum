@@ -1,11 +1,21 @@
-import { accepted, getResourceTypes, protectedResourceTypes } from '@medplum/core';
-import { Project, ResourceType } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getConfig } from '../../config';
-import { sendOutcome } from '../outcomes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import {
+  accepted,
+  AccessPolicyInteraction,
+  concatUrls,
+  getResourceTypes,
+  Operator,
+  protectedResourceTypes,
+  singularize,
+} from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
+import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
 import { BulkExporter } from './utils/bulkexporter';
-import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles a bulk export request.
@@ -15,11 +25,11 @@ import { getAuthenticatedContext } from '../../context';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function bulkExportHandler(req: Request, res: Response): Promise<void> {
-  await startExport(req, res, 'System');
+export async function bulkExportHandler(req: FhirRequest): Promise<FhirResponse> {
+  return startExport(req, 'System');
 }
 
 /**
@@ -30,77 +40,70 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html#endpoint---all-patients
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function patientExportHandler(req: Request, res: Response): Promise<void> {
-  await startExport(req, res, 'Patient');
+export async function patientExportHandler(req: FhirRequest): Promise<FhirResponse> {
+  return startExport(req, 'Patient');
 }
 
-async function startExport(req: Request, res: Response, exportType: string): Promise<void> {
+async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const query = req.query as Record<string, string | undefined>;
-  const since = query._since;
-  const types = query._type?.split(',');
+  const since = singularize(req.query._since);
+  const types = singularize(req.query._type)?.split(',');
 
-  const exporter = new BulkExporter(ctx.repo, since);
-  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const exporter = new BulkExporter(ctx.repo);
+  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType)
+  exportResources(exporter, ctx.project, types, exportType, since)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }
 
 export async function exportResources(
   exporter: BulkExporter,
   project: Project,
   types: string[] | undefined,
-  exportLevel: string
+  exportLevel: string,
+  since?: string
 ): Promise<void> {
   const resourceTypes = getResourceTypesByExportLevel(exportLevel);
+  const pageSize = 1000;
 
   for (const resourceType of resourceTypes) {
-    if (!canBeExported(resourceType) || (types && !types.includes(resourceType))) {
+    if (
+      !canBeExported(resourceType) ||
+      (types && !types.includes(resourceType)) ||
+      !exporter.repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)
+    ) {
       continue;
     }
-    await exportResourceType(exporter, resourceType);
+    await exportResourceType(exporter, resourceType, pageSize, since);
   }
 
   // Close the exporter
   await exporter.close(project);
 }
 
-export async function exportResourceType(
+export async function exportResourceType<T extends Resource>(
   exporter: BulkExporter,
-  resourceType: ResourceType,
-  maxResources = 1000
+  resourceType: T['resourceType'],
+  count: number,
+  since?: string
 ): Promise<void> {
   const repo = exporter.repo;
-  let hasMore = true;
-  let offset = 0;
-  while (hasMore) {
-    const bundle = await repo.search({
-      resourceType,
-      count: maxResources,
-      offset,
-    });
-    if (!bundle.entry || bundle.entry.length === 0) {
-      break;
-    }
-
-    for (const entry of bundle.entry) {
-      if (entry.resource) {
-        await exporter.writeResource(entry.resource);
-      }
-    }
-
-    const linkNext = bundle.link?.find((b) => b.relation === 'next');
-    hasMore = !!linkNext;
-    offset += maxResources;
-  }
+  const searchRequest: SearchRequest<T> | undefined = {
+    resourceType,
+    count,
+    filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
+    sortRules: [{ code: '_lastUpdated', descending: false }],
+  };
+  await repo.processAllResources(searchRequest, async (resource) => {
+    await exporter.writeResource(resource);
+  });
 }
 
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
@@ -111,7 +114,16 @@ function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
   return getResourceTypes();
 }
 
-const unexportedResourceTypes = ['CodeSystem', 'SearchParameter', 'StructureDefinition', 'ValueSet', 'BulkDataExport'];
+const unexportedResourceTypes = [
+  'Binary',
+  'CodeSystem',
+  'SearchParameter',
+  'StructureDefinition',
+  'ValueSet',
+  'BulkDataExport',
+  'AsyncJob',
+  'AuditEvent',
+];
 
 function canBeExported(resourceType: string): boolean {
   return !unexportedResourceTypes.includes(resourceType) && !protectedResourceTypes.includes(resourceType);

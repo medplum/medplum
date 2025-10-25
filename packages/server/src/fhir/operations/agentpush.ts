@@ -1,20 +1,13 @@
-import {
-  AgentTransmitRequest,
-  allOk,
-  badRequest,
-  BaseAgentRequestMessage,
-  getReferenceString,
-  Operator,
-  parseSearchDefinition,
-} from '@medplum/core';
-import { Agent, Device } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { randomUUID } from 'node:crypto';
-import { asyncWrap } from '../../async';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitRequest, AgentTransmitResponse } from '@medplum/core';
+import { ContentType, OperationOutcomeError, badRequest } from '@medplum/core';
+import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+import { getAgentForRequest, getDevice, publishAgentRequest } from './utils/agentutils';
+import { sendAsyncResponse } from './utils/asyncjobexecutor';
 import { parseParameters } from './utils/parameters';
 
 export interface AgentPushParameters {
@@ -22,49 +15,79 @@ export interface AgentPushParameters {
   contentType: string;
   destination: string;
   waitForResponse?: boolean;
+  waitTimeout?: number;
 }
+
+const DEFAULT_WAIT_TIMEOUT = 10000;
+const MAX_WAIT_TIMEOUT = 55000;
 
 /**
  * Handles HTTP requests for the Agent $push operation.
  * First reads the agent and makes sure it is valid and the user has access to it.
  * Then pushes the message to the agent channel.
  * Returns the outcome of the agent execution.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const agentPushHandler = asyncWrap(async (req: Request, res: Response) => {
+export const agentPushHandler = async (req: Request, res: Response): Promise<void> => {
+  if (req.header('Prefer') === 'respond-async') {
+    await sendAsyncResponse(req, res, async () => {
+      const [outcome, agentResponse] = await pushToAgent(req);
+      return {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'outcome', resource: outcome },
+          ...(agentResponse ? [{ name: 'responseBody', valueString: agentResponse.body }] : []),
+        ],
+      } satisfies Parameters;
+    });
+  } else {
+    const [outcome, agentResponse] = await pushToAgent(req);
+    if (!agentResponse) {
+      sendOutcome(res, outcome);
+      return;
+    }
+    res
+      .status(agentResponse.statusCode ?? 200)
+      .type(agentResponse.contentType)
+      .send(agentResponse.body);
+  }
+};
+
+async function pushToAgent(req: Request): Promise<[OperationOutcome] | [OperationOutcome, AgentTransmitResponse]> {
   const { repo } = getAuthenticatedContext();
 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
-    return;
+    return [badRequest('Must specify agent ID or identifier')];
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
-  if (!params.body) {
-    sendOutcome(res, badRequest('Missing body parameter'));
-    return;
+
+  // TODO: Clean this up later by factoring out 'ping' into it's own operation
+  if (agent.status === 'off' && params.contentType !== ContentType.PING) {
+    return [badRequest("Agent is currently disabled. Agent.status is 'off'")];
   }
 
-  if (!params.contentType) {
-    sendOutcome(res, badRequest('Missing contentType parameter'));
-    return;
+  try {
+    validateParams(params);
+  } catch (err) {
+    return [(err as OperationOutcomeError).outcome];
   }
 
-  if (!params.destination) {
-    sendOutcome(res, badRequest('Missing destination parameter'));
-    return;
+  const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
+  if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
+    return [badRequest('Invalid wait timeout')];
   }
 
-  const device = await getDevice(repo, params.destination);
+  const device = await getDevice(repo, params);
   if (!device) {
-    sendOutcome(res, badRequest('Destination device not found'));
-    return;
+    return [badRequest('Destination device not found')];
   }
 
   if (!device.url) {
-    sendOutcome(res, badRequest('Destination device missing url'));
-    return;
+    return [badRequest('Destination device missing url')];
   }
 
   const message: AgentTransmitRequest = {
@@ -74,86 +97,38 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     body: params.body,
   };
 
-  // If not waiting for a response, publish and return
-  if (!params.waitForResponse) {
-    await publishMessage(agent, message);
-    sendOutcome(res, allOk);
-    return;
-  }
-
-  // Otherwise, open a new redis connection in "subscribe" state
-  message.callback = getReferenceString(agent) + '-' + randomUUID();
-
-  const redisSubscriber = getRedis().duplicate();
-  await redisSubscriber.subscribe(message.callback);
-  redisSubscriber.on('message', (_channel: string, message: string) => {
-    const response = JSON.parse(message);
-    res.status(200).type(response.contentType).send(response.body);
-    cleanup();
-  });
-
-  // Create a timer for 5 seconds for timeout
-  const timer = setTimeout(() => {
-    cleanup();
-    sendOutcome(res, badRequest('Timeout'));
-  }, 5000);
-
-  function cleanup(): void {
-    redisSubscriber.disconnect();
-    clearTimeout(timer);
-  }
-
   // Publish the message to the agent channel
-  await publishMessage(agent, message);
+  const [outcome, response] = await publishAgentRequest<AgentTransmitResponse>(
+    agent,
+    message,
+    params.waitForResponse ? { waitForResponse: true, timeout: waitTimeout } : undefined
+  );
+
+  if (!response) {
+    return [outcome];
+  }
+
+  if (response.type === 'agent:error' || (response?.statusCode && response?.statusCode >= 400)) {
+    return [badRequest(response.body)];
+  }
+
+  return [outcome, response];
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
-});
-
-/**
- * Returns the Agent for the execute request.
- * If using "/Agent/:id/$execute", then the agent ID is read from the path parameter.
- * If using "/Agent/$execute?identifier=...", then the agent is searched by identifier.
- * Otherwise, returns undefined.
- * @param req - The HTTP request.
- * @param repo - The repository.
- * @returns The agent, or undefined if not found.
- */
-async function getAgentForRequest(req: Request, repo: Repository): Promise<Agent | undefined> {
-  // Prefer to search by ID from path parameter
-  const { id } = req.params;
-  if (id) {
-    return repo.readResource<Agent>('Agent', id);
-  }
-
-  // Otherwise, search by identifier
-  const { identifier } = req.query;
-  if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Agent>({
-      resourceType: 'Agent',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
-  }
-
-  // If no agent ID or identifier, return undefined
-  return undefined;
 }
 
-async function getDevice(repo: Repository, destination: string): Promise<Device | undefined> {
-  if (destination.startsWith('Device/')) {
-    try {
-      return await repo.readReference<Device>({ reference: destination });
-    } catch (err) {
-      return undefined;
-    }
+function validateParams(params: AgentPushParameters): void {
+  if (!params.body) {
+    throw new OperationOutcomeError(badRequest('Missing body parameter'));
   }
-  if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchDefinition(destination));
-  }
-  return undefined;
-}
 
-async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
-  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  if (!params.contentType) {
+    throw new OperationOutcomeError(badRequest('Missing contentType parameter'));
+  }
+
+  if (!params.destination) {
+    throw new OperationOutcomeError(badRequest('Missing destination parameter'));
+  }
 }

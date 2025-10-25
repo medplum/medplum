@@ -1,30 +1,25 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import type { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
-import { executeBot } from '../fhir/operations/execute';
-import { systemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
-import { findProjectMembership } from './utils';
+import { executeBot } from '../bots/execute';
+import { getSystemRepo } from '../fhir/repo';
+import { getLogger, globalLogger } from '../logger';
+import type { WorkerInitializer } from './utils';
+import { findProjectMembership, queueRegistry } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const MAX_BOTS_PER_PAGE = 500;
 
 /*
  * The Cron worker inspects resources takes a bot,
  * if it has the Cron property, will add it as a repeatable
  * Cron job
  */
-// Repeatable is based on BullMQ docs https://docs.bullmq.io/guide/jobs/repeatable
-interface Repeatable {
-  repeat: {
-    pattern?: string;
-    every?: number;
-    limit?: number;
-  };
-  jobId?: string;
-}
 
 export interface CronJobData {
   readonly resourceType: string;
@@ -32,23 +27,13 @@ export interface CronJobData {
 }
 
 const queueName = 'CronQueue';
-const jobName = 'CronJobData';
 
-let queue: Queue<CronJobData> | undefined = undefined;
-let worker: Worker<CronJobData> | undefined = undefined;
-
-/**
- * Initializes the Cron worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initCronWorker(config: MedplumServerConfig): void {
+export const initCronWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<CronJobData>(queueName, {
+  const queue = new Queue<CronJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -59,30 +44,15 @@ export function initCronWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<CronJobData>(queueName, execBot, {
+  const worker = new Worker<CronJobData>(queueName, execBot, {
     ...defaultOptions,
     ...config.bullmq,
   });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
 
-/**
- * Shuts down the Cron worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeCronWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the Cron queue instance.
@@ -90,76 +60,85 @@ export async function closeCronWorker(): Promise<void> {
  * @returns The Cron queue (if available).
  */
 export function getCronQueue(): Queue<CronJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
+ * Updates the Cron job for the given resource.
+ * Only applies changes if the effective cron string has changed.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource, if available.
+ * @param context - The background job context.
  */
-export async function addCronJobs(resource: Resource): Promise<void> {
-  const ctx = getRequestContext();
+export async function addCronJobs(
+  resource: WithId<Resource>,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
+  const queue = queueRegistry.get(queueName);
+  if (!queue) {
+    // The queue is not available
+    return;
+  }
+
   if (resource.resourceType !== 'Bot') {
     // For now we have only the bot to execute on a timed job
     return;
   }
 
+  const logger = getLogger();
   const bot = resource;
+
   // Adding a new feature for project that allows users to add a cron
-  const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
-  if (!project.features?.includes('cron')) {
-    ctx.logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
+  const project = context?.project;
+  if (!project?.features?.includes('cron')) {
+    logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
     return;
   }
 
-  let cron;
-  // Validate the cron format
-  if (bot.cronTiming) {
-    cron = convertTimingToCron(bot.cronTiming);
-    if (!cron) {
-      ctx.logger.debug('cronTiming had the wrong format for a timed cron job');
-      return;
-    }
-  } else if (bot.cronString && isValidCron(bot.cronString)) {
-    cron = bot.cronString;
-  } else if (bot.cronString === '') {
-    await removeBullMQJobByKey(bot.id as string);
-    ctx.logger.debug(`no job for bot: ${bot.id}`);
+  const oldCronStr = getCronStringForBot(previousVersion as Bot);
+  const newCronStr = getCronStringForBot(bot);
+  logger.debug('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
+
+  if (oldCronStr === newCronStr) {
+    // No change in cron job
     return;
+  }
+
+  if (newCronStr) {
+    logger.info('Upsert cron job for bot', { botId: bot.id });
+    await queue.upsertJobScheduler(
+      bot.id,
+      {
+        pattern: newCronStr,
+      },
+      {
+        data: {
+          resourceType: bot.resourceType,
+          botId: bot.id,
+        },
+      }
+    );
   } else {
-    ctx.logger.debug('cronString had the wrong format for a timed cron job');
-    return;
+    logger.info('Removing cron job for bot', { botId: bot.id });
+    await queue.removeJobScheduler(bot.id);
   }
-
-  const cronObject = { repeat: { pattern: cron } };
-
-  // JobId and repeatable instructions
-  const jobOptions = { ...cronObject, jobId: bot.id };
-  await addCronJobData(
-    {
-      resourceType: bot.resourceType,
-      botId: bot.id as string,
-    },
-    jobOptions
-  );
 }
 
-/**
- * Adds a Cron job to the queue, and removes the previous job for bot
- * if it exists
- * @param job - The Cron job details.
- * @param repeatable - The repeat format that instructs BullMQ when to run the job
- */
-async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise<void> {
-  const ctx = getRequestContext();
-  // Check if there was a job previously for this bot, if there was, we remove it.
-  await removeBullMQJobByKey(job.botId);
-  ctx.logger.debug('Adding Cron job');
-  // Parameters of queue.add https://api.docs.bullmq.io/classes/Queue.html#add
-  if (queue) {
-    await queue.add(jobName, job, repeatable);
-  } else {
-    ctx.logger.debug('Cron queue not initialized');
+function getCronStringForBot(bot: Bot | undefined): string | undefined {
+  if (bot?.cronTiming) {
+    const timingStr = convertTimingToCron(bot.cronTiming);
+    if (timingStr) {
+      return timingStr;
+    }
   }
+
+  if (bot?.cronString && isValidCron(bot.cronString)) {
+    return bot.cronString;
+  }
+
+  // Otherwise, this is not a valid cron job
+  return undefined;
 }
 
 /**
@@ -206,6 +185,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
@@ -218,11 +198,31 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 }
 
 export async function removeBullMQJobByKey(botId: string): Promise<void> {
-  const previousJobs = (await queue?.getRepeatableJobs())?.filter((p) => p.id === botId) ?? [];
+  const queue = queueRegistry.get(queueName);
+  if (queue) {
+    await queue.removeJobScheduler(botId);
+  }
+}
 
-  // There likely should not be more than one repeatable job per bot id.
-  for (const p of previousJobs) {
-    await queue?.removeRepeatableByKey(p.key);
-    getRequestContext().logger.debug(`Found a previous job for bot ${botId}, updating...`);
+export async function reloadCronBots(): Promise<void> {
+  const queue = queueRegistry.get(queueName);
+  if (queue) {
+    // Clears all jobs from the cron queue, including active ones
+    await queue.obliterate({ force: true });
+
+    const systemRepo = getSystemRepo();
+
+    await systemRepo.processAllResources<Bot>(
+      { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
+      async (bot) => {
+        // If the bot has a cron, then add a scheduler for it
+        if (bot.cronString || bot.cronTiming) {
+          // We pass `undefined` as previous version to make sure that the latest cron string is used
+          const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+          await addCronJobs(bot, undefined, { project, interaction: 'update' });
+        }
+      },
+      { delayBetweenPagesMs: 1000 }
+    );
   }
 }

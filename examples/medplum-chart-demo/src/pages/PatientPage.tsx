@@ -1,26 +1,40 @@
-import { Flex, Loader } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
-import { PatientSummary, useResource } from '@medplum/react';
-import { Fragment } from 'react';
-import { useParams } from 'react-router-dom';
-import { SoapNote } from '../components/soapnote/SoapNote';
-import { TaskList } from '../components/tasks/TaskList';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Grid, Loader } from '@mantine/core';
+import type { Patient } from '@medplum/fhirtypes';
+import { PatientSummary, useMedplum } from '@medplum/react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
+import { PatientDetails } from '../components/PatientDetails';
 
 export function PatientPage(): JSX.Element {
+  const medplum = useMedplum();
   const { id } = useParams();
-  const patient = useResource<Patient>({ reference: `Patient/${id}` });
+  const [patient, setPatient] = useState<Patient>();
+
+  useEffect(() => {
+    if (id) {
+      medplum.readResource('Patient', id).then(setPatient).catch(console.error);
+    }
+  }, [medplum, id]);
+
+  function onPatientChange(patient: Patient): void {
+    setPatient(patient);
+  }
+
   if (!patient) {
     return <Loader />;
   }
 
   return (
-    <Fragment key={getReferenceString(patient)}>
-      <Flex gap="xs" justify="center" align="flex-start" direction="row">
+    <Grid>
+      <Grid.Col span={4}>
         <PatientSummary patient={patient} />
-        <TaskList />
-        <SoapNote />
-      </Flex>
-    </Fragment>
+      </Grid.Col>
+      <Grid.Col span={8}>
+        <PatientDetails patient={patient} onChange={onPatientChange} />
+      </Grid.Col>
+    </Grid>
   );
 }

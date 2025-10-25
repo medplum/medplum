@@ -1,14 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { AttachmentInput, AttachmentInputProps } from './AttachmentInput';
+import { act, fireEvent, render, screen } from '../test-utils/render';
+import type { AttachmentInputProps } from './AttachmentInput';
+import { AttachmentInput } from './AttachmentInput';
 
 const medplum = new MockClient();
 
 function setup(args?: AttachmentInputProps): void {
   render(
     <MedplumProvider medplum={medplum}>
-      <AttachmentInput name="test" {...args} />
+      <AttachmentInput path="" name="test" {...args} />
     </MedplumProvider>
   );
 }
@@ -25,6 +28,7 @@ describe('AttachmentInput', () => {
   test('Renders attachments', async () => {
     await act(async () => {
       await setup({
+        path: '',
         name: 'test',
         defaultValue: {
           contentType: 'image/jpeg',
@@ -34,7 +38,7 @@ describe('AttachmentInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByAltText('test.jpg'));
+    expect(await screen.findByAltText('test.jpg')).toBeInTheDocument();
   });
 
   test('Add attachment', async () => {
@@ -53,6 +57,7 @@ describe('AttachmentInput', () => {
   test('Remove attachment', async () => {
     await act(async () => {
       await setup({
+        path: '',
         name: 'test',
         defaultValue: {
           contentType: 'image/jpeg',
@@ -62,7 +67,7 @@ describe('AttachmentInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByAltText('test.jpg'));
+    expect(await screen.findByAltText('test.jpg')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Remove'));
@@ -75,6 +80,7 @@ describe('AttachmentInput', () => {
     const onChange = jest.fn();
 
     setup({
+      path: '',
       name: 'test',
       onChange,
     });

@@ -1,15 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Task } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import type { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
+import type { NavigateFunction } from 'react-router';
 
 interface DeleteTaskProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function DeleteTask(props: DeleteTaskProps): JSX.Element {
@@ -29,7 +34,7 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
         title: 'Success',
         message: 'Task deleted',
       });
-      navigate('/Task');
+      navigate('/Task')?.catch(console.error);
     } catch (error) {
       notifications.show({
         color: 'red',

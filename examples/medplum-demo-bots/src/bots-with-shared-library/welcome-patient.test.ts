@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { expect, test } from 'vitest';
 import { handler } from './welcome-patient';
-import { test, expect } from 'vitest';
-import { Patient } from '@medplum/fhirtypes';
 
 const medplum = new MockClient();
 
@@ -16,7 +18,12 @@ test('Welcome Patient', async () => {
     ],
   });
 
-  const welcomeMessage = await handler(medplum, { input: patient, secrets: {}, contentType: 'text/plain' });
+  const welcomeMessage = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input: patient,
+    secrets: {},
+    contentType: 'text/plain',
+  });
   expect(welcomeMessage).toBeDefined();
-  expect(welcomeMessage).toEqual('Welcome Marge Simpson');
+  expect(welcomeMessage).toStrictEqual('Welcome Marge Simpson');
 });

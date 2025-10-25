@@ -17529,6 +17529,43 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/DetectedIssue-status",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "DetectedIssue-status",
+      "extension" : [{
+        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+        "valueCode" : "trial-use"
+      }],
+      "url" : "http://hl7.org/fhir/SearchParameter/DetectedIssue-status",
+      "version" : "4.0.1",
+      "name" : "status",
+      "status" : "draft",
+      "experimental" : false,
+      "date" : "2019-11-01T09:29:23+11:00",
+      "publisher" : "Health Level Seven International (Orders and Observations)",
+      "contact" : [{
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://hl7.org/fhir"
+        }]
+      },
+      {
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://www.hl7.org/Special/committees/orders/index.cfm"
+        }]
+      }],
+      "description" : "The status of the detected issue",
+      "code" : "status",
+      "base" : ["DetectedIssue"],
+      "type" : "token",
+      "expression" : "DetectedIssue.status",
+      "xpath" : "f:DetectedIssue/f:status",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "http://hl7.org/fhir/SearchParameter/Device-device-name",
     "resource" : {
       "resourceType" : "SearchParameter",
@@ -39166,8 +39203,11 @@
       "xpathUsage" : "normal",
       "target" : ["Practitioner",
       "Group",
+      "Organization",
+      "CareTeam",
       "Device",
       "Patient",
+      "HealthcareService",
       "PractitionerRole",
       "RelatedPerson",
       "Location"]

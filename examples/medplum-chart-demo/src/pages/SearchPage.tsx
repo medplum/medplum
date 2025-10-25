@@ -1,16 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
-import {
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  parseSearchDefinition,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { useDisclosure } from '@mantine/hooks';
+import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
+import type { Filter, SearchRequest, SortRule } from '@medplum/core';
+import type { UserConfiguration } from '@medplum/fhirtypes';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { CreateEncounter } from '../components/actions/CreateEncounter';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -18,20 +17,29 @@ export function SearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [opened, handlers] = useDisclosure(false);
 
   useEffect(() => {
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
+    if (!parsedSearch.resourceType) {
+      // If there is no search, go to the Encounter search page by default
+      navigate('/Encounter')?.catch(console.error);
+      return;
+    }
+
+    // Populate the search with default values as necessary
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
     if (
+      // If the current url matches the search, set the search, otherwise navigate to the correct url
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
     ) {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -41,15 +49,18 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
-      <MemoizedSearchControl
-        checkboxesEnabled={true}
+      <CreateEncounter opened={opened} handlers={handlers} />
+      <SearchControl
+        checkboxesEnabled={false}
         search={search}
-        userConfig={medplum.getUserConfiguration()}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
+        hideFilters={true}
+        hideToolbar={search.resourceType !== 'Encounter'}
+        onNew={handlers.open}
       />
     </Paper>
   );
@@ -57,11 +68,9 @@ export function SearchPage(): JSX.Element {
 
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
-  const fields = search.fields ?? ['_id', '_lastUpdated'];
+  const fields = search.fields ?? getDefaultFields(search.resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
-  const offset = search.offset ?? 0;
-  const count = search.count ?? DEFAULT_SEARCH_COUNT;
 
   return {
     ...search,
@@ -69,8 +78,6 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
     fields,
     filters,
     sortRules,
-    offset,
-    count,
   };
 }
 
@@ -102,4 +109,17 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function getDefaultFields(resourceType: string): string[] {
+  switch (resourceType) {
+    case 'Encounter':
+      return ['class', 'type', 'subject', 'period'];
+    case 'Patient':
+      return ['name', 'gender', 'birthDate', '_lastUpdated'];
+    case 'Practitioner':
+      return ['name', '_lastUpdated'];
+    default:
+      return ['_id', '_lastUpdated'];
+  }
 }

@@ -1,6 +1,8 @@
-import { Anchor, Box, Button, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
-import {
+import type {
   Extension,
   Questionnaire,
   QuestionnaireItem,
@@ -8,28 +10,32 @@ import {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import {
+  getQuestionnaireItemReferenceTargetTypes,
+  isChoiceQuestion,
+  QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QuestionnaireItemType,
+  setQuestionnaireItemReferenceTargetTypes,
+  useMedplum,
+  useResource,
+} from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
-import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import type { JSX, MouseEvent, SyntheticEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
+import { SubmitButton } from '../Form/SubmitButton';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { killEvent } from '../utils/dom';
-import {
-  getQuestionnaireItemReferenceTargetTypes,
-  isChoiceQuestion,
-  QuestionnaireItemType,
-  setQuestionnaireItemReferenceTargetTypes,
-} from '../utils/questionnaire';
 import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
-  questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
-  onSubmit: (result: Questionnaire) => void;
-  autoSave?: boolean;
+  readonly questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
+  readonly onSubmit: (result: Questionnaire) => void;
+  readonly autoSave?: boolean;
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
@@ -87,23 +93,23 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setHoverKey={setHoverKey}
           onChange={handleChange}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
 }
 
 interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
-  item: T;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  isFirst?: boolean;
-  isLast?: boolean;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T, disableSubmit?: boolean) => void;
-  onRemove?: () => void;
-  onRepeatable?: (item: QuestionnaireItem) => void;
+  readonly item: T;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly isFirst?: boolean;
+  readonly isLast?: boolean;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (item: T, disableSubmit?: boolean) => void;
+  readonly onRemove?: () => void;
+  readonly onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
   onMoveDown?(): void;
 }
@@ -117,7 +123,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>();
+  const itemRef = useRef<T>(props.item);
   itemRef.current = props.item;
 
   function onClick(e: SyntheticEvent): void {
@@ -216,14 +222,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         ) : (
           <>
             {resource.title && <Title>{resource.title}</Title>}
-            {item.text && <div>{item.text}</div>}
+            {item.text && <div className={classes.preserveBreaks}>{item.text}</div>}
             {!isContainer && (
-              <QuestionnaireFormItem
-                item={item}
-                index={0}
-                onChange={() => undefined}
-                response={{ linkId: item.linkId }}
-              />
+              <QuestionnaireFormItem item={item} index={0} required={false} responseItem={{ linkId: item.linkId }} />
             )}
           </>
         )}
@@ -398,8 +399,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
@@ -455,10 +456,10 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
 }
 
 interface AnswerOptionsInputProps {
-  options: QuestionnaireItemAnswerOption[];
-  property: any;
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly options: QuestionnaireItemAnswerOption[];
+  readonly property: any;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
@@ -484,6 +485,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
               <ResourcePropertyInput
                 key={option.id}
                 name="value[x]"
+                path="Questionnaire.answerOption.value[x]"
                 property={props.property}
                 defaultPropertyType={propertyType}
                 defaultValue={propertyValue}
@@ -522,8 +524,8 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
 }
 
 interface ReferenceTypeProps {
-  item: QuestionnaireItem;
-  onChange: (updatedItem: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (updatedItem: QuestionnaireItem) => void;
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
@@ -648,7 +650,7 @@ function createPage(): QuestionnaireItem {
     text: `New Page`,
     extension: [
       {
-        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        url: QUESTIONNAIRE_ITEM_CONTROL_URL,
         valueCodeableConcept: {
           coding: [
             {

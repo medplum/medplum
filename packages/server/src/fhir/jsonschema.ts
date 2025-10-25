@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { checkForNull, createStructureIssue, OperationOutcomeError, validationError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { JSONSchema4, JSONSchema6 } from 'json-schema';
+import type { JSONSchema4, JSONSchema6 } from 'json-schema';
 
 /*
  * This file contains helper methods for using fhir.schema.json,

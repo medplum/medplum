@@ -1,17 +1,21 @@
-import { badRequest, ContentType } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
+import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
+import { json, Router, text, urlencoded } from 'express';
 import { rmSync } from 'fs';
 import http from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
-import { asyncWrap } from './async';
+import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
-import { getConfig, MedplumServerConfig } from './config';
-import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
+import { getConfig } from './config/loader';
+import type { MedplumServerConfig } from './config/types';
+import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -19,26 +23,36 @@ import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
-import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
-import { globalLogger } from './logger';
+import { keyValueRouter } from './keyvalue/routes';
+import { getLogger, globalLogger } from './logger';
+import { mcpRouter } from './mcp/routes';
+import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
+import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
-import { closeRateLimiter } from './ratelimit';
+import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
+import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
+import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
-import { storageRouter } from './storage';
+import { initServerRegistryHeartbeatListener } from './server-registry';
+import { initBinaryStorage } from './storage/loader';
+import { storageRouter } from './storage/routes';
+import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 
 let server: http.Server | undefined = undefined;
+
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 /**
  * Sets standard headers for all requests.
@@ -67,7 +81,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 
   // Disable browser features
   res.set(
-    'Permission-Policy',
+    'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
@@ -94,6 +108,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
  * @param next - The next handler.
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
+  closeRequestContext();
   if (res.headersSent) {
     next(err);
     return;
@@ -117,57 +132,66 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  try {
-    getRequestContext().logger.error('Unhandled error', err);
-  } catch {
-    globalLogger.error('Unhandled error', err);
+  if (err.type === 'stream.not.readable') {
+    // This is a common error when the client disconnects
+    // See: https://expressjs.com/en/resources/middleware/body-parser.html
+    // It is commonly associated with an AWS ALB disconnect status code 460
+    // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
+    getLogger().warn('Stream not readable', err);
+    sendOutcome(res, badRequest('Stream not readable'));
+    return;
   }
+  getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
+  if (process.env.NODE_ENV !== 'test') {
+    await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  }
+
+  if (config.logLevel) {
+    globalLogger.level = parseLogLevel(config.logLevel);
+  }
+
   await initAppServices(config);
   server = http.createServer(app);
   initWebSockets(server);
 
   app.set('etag', false);
-  app.set('trust proxy', true);
+  app.set('trust proxy', 1);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
+
+  // Add logging middleware immediately after setting up request context, to ensure that
+  // any errors in later middleware don't skip the request logging
+  if (config.logRequests) {
+    app.use(loggingMiddleware);
+  }
+
+  app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
-  app.use(
-    urlencoded({
-      extended: false,
-    })
-  );
-  app.use(
-    text({
-      type: [ContentType.TEXT, ContentType.HL7_V2],
-    })
-  );
-  app.use(
-    json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH],
-      limit: config.maxJsonSize,
-    })
-  );
+
+  // Handle async batch by enqueueing job
+  app.post('/fhir/R4', authenticateRequest, asyncBatchHandler(config));
+
+  app.use(urlencoded({ extended: false }));
+  app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
+  app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
       type: [ContentType.HL7_V2],
     })
   );
-
-  if (config.logRequests) {
-    app.use(loggingMiddleware);
-  }
+  app.use(defaultBodyParser());
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));
   apiRouter.get('/robots.txt', (_req, res) => res.type(ContentType.TEXT).send('User-agent: *\nDisallow: /'));
-  apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
+  apiRouter.get('/healthcheck', healthcheckHandler);
   apiRouter.get('/openapi.json', openApiHandler);
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
@@ -177,9 +201,15 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/fhir/R4/', fhirRouter);
   apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
   apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
+  apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
+  apiRouter.use('/webhook/', webhookRouter);
+
+  if (config.mcpEnabled) {
+    apiRouter.use('/mcp', mcpRouter);
+  }
 
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
@@ -188,30 +218,37 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
+  loadStructureDefinitions();
+  initRedis(config.redis);
+
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    loadStructureDefinitions();
-    initRedis(config.redis);
-    await initDatabase(config.database);
+    await initDatabase(config);
     await seedDatabase();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
     initHeartbeat(config);
+    initOtelHeartbeat();
+    initServerRegistryHeartbeatListener();
+    await maybeAutoRunPendingPostDeployMigration();
   });
 }
 
 export async function shutdownApp(): Promise<void> {
-  await closeWorkers();
-  await closeDatabase();
+  cleanupOtelHeartbeat();
   cleanupHeartbeat();
   await closeWebSockets();
-  closeRedis();
-  closeRateLimiter();
-
   if (server) {
-    server.close();
+    await new Promise((resolve) => {
+      (server as http.Server).close(resolve);
+    });
     server = undefined;
   }
+
+  await closeWorkers();
+  await closeDatabase();
+  await closeRedis();
+  closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;
@@ -224,25 +261,43 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   const ctx = getRequestContext();
   const start = new Date();
 
-  res.on('finish', () => {
-    const duration = new Date().getTime() - start.getTime();
-
-    let userProfile: string | undefined;
-    if (ctx instanceof AuthenticatedRequestContext) {
-      userProfile = ctx.profile.reference;
-    }
+  res.on('close', () => {
+    const duration = Date.now() - start.valueOf();
 
     ctx.logger.info('Request served', {
-      duration: `${duration} ms`,
+      durationMs: duration,
       ip: req.ip,
       method: req.method,
-      path: req.path,
-      profile: userProfile,
+      path: req.originalUrl,
       receivedAt: start,
-      status: res.statusCode,
+      // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
+      status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
+      mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
   });
 
   next();
 };
+
+export async function runMiddleware(
+  req: Request,
+  res: Response,
+  handler: (req: Request, res: Response, next: (err?: any) => void) => void
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    handler(req, res, (err) => (err ? reject(err) : resolve()));
+  });
+}
+
+/**
+ * Returns an Express middleware handler for ensuring req.body is not undefined. For backwards
+ * compatibility with Express v4. See ${@link https://github.com/expressjs/body-parser/commit/6cbc279dc875ba1801e9ee5849f3f64e5b42f6e1}
+ * @returns Express middleware request handler.
+ */
+function defaultBodyParser(): RequestHandler {
+  return function defaultParser(req: Request, _res: Response, next: NextFunction) {
+    req.body ??= {};
+    next();
+  };
+}

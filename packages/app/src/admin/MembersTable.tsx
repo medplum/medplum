@@ -1,13 +1,17 @@
-import { Operator, SearchRequest } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
-import { MemoizedSearchControl, useMedplum } from '@medplum/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
+import { SearchControl, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
-  resourceType: ResourceType;
-  fields: string[];
+  readonly resourceType: ResourceType;
+  readonly fields: string[];
 }
 
 export function MemberTable(props: MemberTableProps): JSX.Element {
@@ -25,9 +29,9 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   });
 
   return (
-    <MemoizedSearchControl
+    <SearchControl
       search={search}
-      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)}
+      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar

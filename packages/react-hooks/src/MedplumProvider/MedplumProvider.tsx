@@ -1,12 +1,24 @@
-import { MedplumClient } from '@medplum/core';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, MedplumClientEventMap } from '@medplum/core';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { MedplumNavigateFunction } from './MedplumProvider.context';
+import { reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
-  medplum: MedplumClient;
-  navigate?: MepdlumNavigateFunction;
-  children: ReactNode;
+  readonly medplum: MedplumClient;
+  readonly navigate?: MedplumNavigateFunction;
+  readonly children: ReactNode;
 }
+
+const EVENTS_TO_TRACK = [
+  'change',
+  'storageInitialized',
+  'storageInitFailed',
+  'profileRefreshing',
+  'profileRefreshed',
+] satisfies (keyof MedplumClientEventMap)[];
 
 /**
  * The MedplumProvider component provides Medplum context state.
@@ -23,33 +35,27 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
-    loading: !medplum.isInitialized,
+    loading: medplum.isLoading(),
   });
 
   useEffect(() => {
-    if (!medplum) {
-      return;
-    }
-    if (!medplum.isInitialized) {
-      setState((s) => ({ ...s, loading: true }));
-      medplum
-        .getInitPromise()
-        .then(() => setState((s) => ({ ...s, loading: false })))
-        .catch(console.error);
-    }
-  }, [medplum, medplum.isInitialized]);
-
-  useEffect(() => {
     function eventListener(): void {
-      setState({
-        ...state,
+      setState((s) => ({
+        ...s,
         profile: medplum.getProfile(),
-      });
+        loading: medplum.isLoading(),
+      }));
     }
 
-    medplum.addEventListener('change', eventListener);
-    return () => medplum.removeEventListener('change', eventListener);
-  }, [medplum, state]);
+    for (const event of EVENTS_TO_TRACK) {
+      medplum.addEventListener(event, eventListener);
+    }
+    return () => {
+      for (const event of EVENTS_TO_TRACK) {
+        medplum.removeEventListener(event, eventListener);
+      }
+    };
+  }, [medplum]);
 
   const medplumContext = useMemo(
     () => ({

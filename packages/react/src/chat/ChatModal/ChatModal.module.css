@@ -1,0 +1,28 @@
+.iconContainer {
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  z-index: 100px;
+}
+
+.icon {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+  box-shadow:
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.05),
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
+}
+
+.chatModalContainer {
+  position: fixed;
+  bottom: 3rem;
+  right: 0.5rem;
+  z-index: 100px;
+  width: 400px;
+  height: 450px;
+  max-height: 450px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  box-shadow:
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.05),
+    0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
+}

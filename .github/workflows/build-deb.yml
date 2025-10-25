@@ -1,0 +1,84 @@
+name: Build deb
+
+concurrency:
+  group: ci-build-deb-${{ github.sha }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build_deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build:fast
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
+      - name: Build Deb
+        shell: bash
+        run: ./scripts/build-deb.sh
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@cf7216d52fba1017929b4d7162fabe2b30af5b49 # v1.262.0
+        with:
+          ruby-version: '3.0'
+
+      - name: Install deb-s3
+        run: gem install deb-s3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
+
+      - name: Upload to APT repository
+        run: |
+          deb-s3 upload \
+            --bucket apt.medplum.com \
+            --prefix debian \
+            --component main \
+            --visibility nil \
+            --preserve-versions \
+            --sign=${{ secrets.MEDPLUM_GPG_KEY_ID }} \
+            --gpg-options="--passphrase-fd 0 --pinentry-mode loopback" \
+            --cache-control="max-age=300" \
+            medplum_*.deb \
+            < <(echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}")

@@ -1,30 +1,37 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '../test-utils/render';
-import { BackboneElementDisplay, BackboneElementDisplayProps } from './BackboneElementDisplay';
+import { MemoryRouter } from 'react-router';
+import { act, render, screen } from '../test-utils/render';
+import type { BackboneElementDisplayProps } from './BackboneElementDisplay';
+import { BackboneElementDisplay } from './BackboneElementDisplay';
 
 const medplum = new MockClient();
 
 describe('BackboneElementDisplay', () => {
-  function setup(args: BackboneElementDisplayProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <BackboneElementDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+  async function setup(args: BackboneElementDisplayProps): Promise<void> {
+    await act(async () =>
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <BackboneElementDisplay {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      )
     );
   }
 
-  test('Renders null', () => {
-    setup({
+  test('Renders null', async () => {
+    await setup({
+      path: 'Patient.contact',
       value: { type: 'PatientContact', value: null },
     });
   });
 
-  test('Renders value', () => {
-    setup({
+  test('Renders value', async () => {
+    await setup({
+      path: 'Patient.contact',
       value: {
         type: 'PatientContact',
         value: {
@@ -39,8 +46,9 @@ describe('BackboneElementDisplay', () => {
     expect(screen.getByText('Name')).toBeInTheDocument();
   });
 
-  test('Ignore missing properties', () => {
-    setup({
+  test('Ignore missing properties', async () => {
+    await setup({
+      path: 'Patient.contact',
       value: {
         type: 'PatientContact',
         value: {
@@ -52,8 +60,9 @@ describe('BackboneElementDisplay', () => {
     expect(screen.queryByText('Name')).not.toBeInTheDocument();
   });
 
-  test('Renders simple name', () => {
-    setup({
+  test('Renders simple name', async () => {
+    await setup({
+      path: 'Patient.contact',
       value: {
         type: 'PatientContact',
         value: {
@@ -64,8 +73,9 @@ describe('BackboneElementDisplay', () => {
     expect(screen.getByText('Simple Name')).toBeInTheDocument();
   });
 
-  test('Handles name object value', () => {
-    setup({
+  test('Handles name object value', async () => {
+    await setup({
+      path: 'Organization.contact',
       value: {
         type: 'OrganizationContact',
         value: {
@@ -79,8 +89,9 @@ describe('BackboneElementDisplay', () => {
     expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
-  test('Not implemented', () => {
-    setup({
+  test('Not implemented', async () => {
+    await setup({
+      path: 'Foo',
       value: {
         type: 'Foo',
         value: {

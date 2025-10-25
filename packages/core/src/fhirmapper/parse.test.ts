@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, StructureMap } from '@medplum/fhirtypes';
+import type { Bundle, StructureMap } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
@@ -112,7 +114,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toEqual("type = 'reference'");
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("(type = 'reference')");
   });
 
   test('Rule source list mode', () => {
@@ -124,7 +126,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toEqual('first');
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toStrictEqual('first');
   });
 
   test('Rule source default', () => {
@@ -599,7 +601,7 @@ describe('FHIR Mapping Language parser', () => {
                   context: 'src',
                   element: 'extension',
                   variable: 'ext',
-                  condition: "url = 'http://hl7.org/fhir/3.0/StructureDefinition/extension-ValueSet.extensible'",
+                  condition: "(url = 'http://hl7.org/fhir/3.0/StructureDefinition/extension-ValueSet.extensible')",
                 },
               ],
               rule: [
@@ -1637,7 +1639,7 @@ describe('FHIR Mapping Language parser', () => {
     foo
     `;
 
-    expect(() => parseMappingLanguage(input)).toThrowError('Unexpected token: foo');
+    expect(() => parseMappingLanguage(input)).toThrow('Unexpected token: foo');
   });
 
   test('Multiple imports', () => {
@@ -1663,7 +1665,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
     const result = parseMappingLanguage(input);
     expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.transform).toBe('evaluate');
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("src.value + '_test'");
+    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("(src.value + '_test')");
   });
 
   test('CCDA ConceptMaps', () => {
@@ -1697,7 +1699,7 @@ describe('FHIR Mapping Language parser', () => {
       {
         resourceType: 'ConceptMap',
         status: 'active',
-        url: 'cm-v3-administrative-gender',
+        url: '#cm-v3-administrative-gender',
         group: [
           {
             source: 'http://terminology.hl7.org/ValueSet/v3-AdministrativeGender',
@@ -1712,7 +1714,7 @@ describe('FHIR Mapping Language parser', () => {
       {
         resourceType: 'ConceptMap',
         status: 'active',
-        url: 'addressUse',
+        url: '#addressUse',
         group: [
           {
             source: 'http://terminology.hl7.org/ValueSet/v3-AddressUse',

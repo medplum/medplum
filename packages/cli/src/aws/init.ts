@@ -1,15 +1,13 @@
-import {
-  ACMClient,
-  CertificateSummary,
-  ListCertificatesCommand,
-  RequestCertificateCommand,
-  ValidationMethod,
-} from '@aws-sdk/client-acm';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CertificateSummary, ValidationMethod } from '@aws-sdk/client-acm';
+import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
-import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync } from 'fs';
+import type { MedplumInfraConfig } from '@medplum/core';
+import { normalizeErrorString } from '@medplum/core';
+import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { getConfigFileName, writeConfig } from '../utils';
 import { ask, checkOk, choose, chooseInt, closeTerminal, header, initTerminal, print, yesOrNo } from './terminal';
 import { getServerVersions, writeParameters } from './utils';
@@ -151,8 +149,8 @@ export async function initStackCommand(): Promise<void> {
 
   header('DATABASE INSTANCES');
   print('Medplum uses a relational database to store data.');
-  print('You can set up your own database,');
-  print('or Medplum can create a new RDS database as part of the CloudFormation stack.');
+  print('Medplum can create a new RDS database as part of the CloudFormation stack,');
+  print('or can set up your own database and enter the database name, username, and password.');
   if (await yesOrNo('Do you want to create a new RDS database as part of the CloudFormation stack?')) {
     print('Medplum will create a new RDS database as part of the CloudFormation stack.');
     print('');
@@ -203,7 +201,7 @@ export async function initStackCommand(): Promise<void> {
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
-  const signingKey = await generateSigningKey(config.stackName + 'SigningKey');
+  const signingKey = await generateSigningKey(config.region, config.stackName + 'SigningKey');
   if (signingKey) {
     config.signingKeyId = signingKey.keyId;
     config.storagePublicKey = signingKey.publicKey;
@@ -268,7 +266,7 @@ export async function initStackCommand(): Promise<void> {
   if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
     await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
   } else {
-    const serverConfigFileName = getConfigFileName(config.name, true);
+    const serverConfigFileName = getConfigFileName(config.name, { server: true });
     writeConfig(serverConfigFileName, serverParams);
     print('Skipping AWS Parameter Store.');
     print(`Writing values to local config file: ${serverConfigFileName}`);
@@ -419,10 +417,15 @@ async function requestCert(region: string, domain: string): Promise<string> {
  *   3. It must be a 2048-bit key pair.
  *
  * See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs
+ *
+ * @param region - The AWS region.
  * @param keyName - The key name.
  * @returns A new signing key.
  */
-async function generateSigningKey(keyName: string): Promise<
+async function generateSigningKey(
+  region: string,
+  keyName: string
+): Promise<
   | {
       keyId: string;
       publicKey: string;
@@ -447,7 +450,7 @@ async function generateSigningKey(keyName: string): Promise<
   });
 
   try {
-    const response = await new CloudFrontClient({}).send(
+    const response = await new CloudFrontClient({ region }).send(
       new CreatePublicKeyCommand({
         PublicKeyConfig: {
           Name: keyName,

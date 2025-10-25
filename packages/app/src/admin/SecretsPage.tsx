@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
-import { ProjectSecret } from '@medplum/fhirtypes';
+import type { InternalSchemaElement } from '@medplum/core';
+import { deepClone, getElementDefinition } from '@medplum/core';
+import type { ProjectSetting } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import { FormEvent, useEffect, useState } from 'react';
+import type { FormEvent, JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {
@@ -11,7 +15,7 @@ export function SecretsPage(): JSX.Element {
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
   const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
-  const [secrets, setSecrets] = useState<ProjectSecret[] | undefined>();
+  const [secrets, setSecrets] = useState<ProjectSetting[] | undefined>();
 
   useEffect(() => {
     medplum
@@ -48,6 +52,7 @@ export function SecretsPage(): JSX.Element {
       <ResourcePropertyInput
         property={getElementDefinition('Project', 'secret') as InternalSchemaElement}
         name="secret"
+        path="Project.secret"
         defaultValue={secrets}
         onChange={setSecrets}
         outcome={undefined}

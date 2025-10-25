@@ -1,11 +1,65 @@
 reshma:
   name: Reshma Khilnani
-  title: CEO
+  title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
 
 cody:
   name: Cody Ebberson
-  title: CTO
+  title: Medplum Core Team
   url: https://github.com/codyebberson
   image_url: https://github.com/codyebberson.png
+
+rahul:
+  name: Rahul Agarwal
+  title: Medplum Core Team
+  url: https://github.com/rahul1
+  image_url: https://github.com/rahul1.png
+
+mattlong:
+  name: Matt Long
+  title: Medplum Core Team
+  url: https://github.com/mattlong
+  image_url: https://github.com/mattlong.png
+
+jdjkelly:
+  name: Joshua Kelly
+  title: Flexpa CTO
+  url: https://github.com/jdjkelly
+  image_url: https://github.com/jdjkelly.png
+
+nckhell:
+  name: Nick Hellemans
+  title: Head of Product, Awell
+  url: https://github.com/nckhell/
+  image_url: https://github.com/nckhell.png
+
+andrewdilling:
+  name: Andrew Dilling
+  title: Head of Product, Chamber Cardio
+  url: https://github.com/andrewdilling
+  image_url: https://github.com/andrewdilling.png
+
+andrei-zudin:
+  name: Andrei Zudin
+  title: Head of Interoperability and Security, RhythmX
+  url: https://github.com/andrei-zudin
+  image_url: https://github.com/andrei-zudin.png
+  
+finnbergquist:
+  name: Finn Bergquist
+  title: Forward Deployed Engineer, Medplum
+  url: https://github.com/finnbergquist
+  image_url: https://github.com/finnbergquist.png
+
+ThatOneBro:
+  name: Derrick Farris
+  title: Founding Engineer, Medplum
+  url: https://github.com/ThatOneBro
+  image_url: https://github.com/ThatOneBro.png
+
+kerbearasaurus:
+  name: Kerry Weinberg
+  title: CEO, phenoml
+  url: https://github.com/kerbearasaurus
+  image_url: https://github.com/kerbearasaurus.png

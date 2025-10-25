@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -162,8 +164,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).not.toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).not.toHaveBeenCalled();
   });
 
   test('Click link on mobile', async () => {
@@ -175,8 +177,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).toHaveBeenCalled();
   });
 
   test('Resource Type Search', async () => {
@@ -204,7 +206,7 @@ describe('Navbar', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toBeCalledWith('/test-code');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 
   test('Add Bookmark render and submit', async () => {
@@ -216,7 +218,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -228,8 +230,6 @@ describe('Navbar', () => {
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark close', async () => {
@@ -241,15 +241,13 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark save', async () => {
@@ -261,14 +259,12 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 });

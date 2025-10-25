@@ -1,20 +1,30 @@
-import { getStatus, isAccepted } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { Response } from 'express';
-import { Result, ValidationError } from 'express-validator';
-import { getRequestContext } from '../context';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType, getStatus, isAccepted, isRedirect } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import type { Response } from 'express';
+import type { Result, ValidationError } from 'express-validator';
+import { randomUUID } from 'node:crypto';
+import { buildTracingExtension } from '../context';
 
 export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: randomUUID(),
-    issue: errors.array().map((error) => ({
-      severity: 'error',
-      code: 'invalid',
-      expression: getValidationErrorExpression(error),
-      details: { text: error.msg },
-    })),
+    issue: errors
+      .array()
+      .flatMap((error) => {
+        if (error.type === 'alternative') {
+          return error.nestedErrors;
+        }
+        return error;
+      })
+      .map((error) => ({
+        severity: 'error',
+        code: 'invalid',
+        expression: getValidationErrorExpression(error),
+        details: { text: error.msg },
+      })),
   };
 }
 
@@ -27,20 +37,20 @@ function getValidationErrorExpression(error: ValidationError): string[] | undefi
 }
 
 export function sendOutcome(res: Response, outcome: OperationOutcome): Response {
-  const ctx = getRequestContext();
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }
-  return res.status(getStatus(outcome)).json({
-    ...outcome,
-    extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-        extension: [
-          { url: 'requestId', valueUuid: ctx.requestId },
-          { url: 'traceId', valueUuid: ctx.traceId },
-        ],
-      },
-    ],
-  } as OperationOutcome);
+  if (isRedirect(outcome)) {
+    const uri = outcome.issue[0].details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+    if (uri) {
+      res.set('Location', uri);
+    }
+  }
+  return res
+    .status(getStatus(outcome))
+    .type(ContentType.FHIR_JSON)
+    .json({
+      ...outcome,
+      extension: buildTracingExtension(),
+    } as OperationOutcome);
 }

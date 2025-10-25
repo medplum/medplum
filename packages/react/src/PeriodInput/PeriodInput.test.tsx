@@ -1,4 +1,6 @@
-import { Period } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Period } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PeriodInput } from './PeriodInput';
 
@@ -7,19 +9,19 @@ const endDateTime = '2021-01-02T00:00:00.000Z';
 
 describe('PeriodInput', () => {
   test('Renders undefined value', () => {
-    render(<PeriodInput name="a" />);
+    render(<PeriodInput path="" name="a" />);
     expect(screen.getByPlaceholderText('Start')).toBeDefined();
     expect(screen.getByPlaceholderText('End')).toBeDefined();
   });
 
   test('Renders', () => {
-    render(<PeriodInput name="a" defaultValue={{ start: startDateTime, end: endDateTime }} />);
+    render(<PeriodInput path="" name="a" defaultValue={{ start: startDateTime, end: endDateTime }} />);
     expect(screen.getByPlaceholderText('Start')).toBeDefined();
     expect(screen.getByPlaceholderText('End')).toBeDefined();
   });
 
   test('Set value', async () => {
-    render(<PeriodInput name="a" />);
+    render(<PeriodInput path="" name="a" />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Start'), {
@@ -40,7 +42,7 @@ describe('PeriodInput', () => {
   test('Change event', async () => {
     let lastValue: Period | undefined = undefined;
 
-    render(<PeriodInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<PeriodInput path="" name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Start'), {

@@ -1,12 +1,14 @@
-import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
-import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { Pool } from 'pg';
-import { getClient } from '../../database';
-import { sendOutcome } from '../outcomes';
-import { InsertQuery, SelectQuery } from '../sql';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { requireSuperAdmin } from '../../admin/super';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import type { PoolClient } from 'pg';
+import { getAuthenticatedContext } from '../../context';
+import { Condition, InsertQuery, SelectQuery } from '../sql';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -20,7 +22,7 @@ const operation: OperationDefinition = {
   type: true,
   instance: false,
   parameter: [
-    { use: 'in', name: 'system', type: 'uri', min: 1, max: '1' },
+    { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
     {
       use: 'in',
@@ -44,7 +46,7 @@ export type ImportedProperty = {
 };
 
 export type CodeSystemImportParameters = {
-  system: string;
+  system?: string;
   concept?: Coding[];
   property?: ImportedProperty[];
 };
@@ -52,117 +54,133 @@ export type CodeSystemImportParameters = {
 /**
  * Handles a request to import codes and their properties into a CodeSystem.
  *
- * Endpoint - Project resource type
+ * Endpoint - CodeSystem resource type
  *   [fhir base]/CodeSystem/$import
  *
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function codeSystemImportHandler(req: Request, res: Response): Promise<void> {
-  const ctx = requireSuperAdmin();
+export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
+  const repo = getAuthenticatedContext().repo;
+  const isSuperAdmin = repo.isSuperAdmin();
+  if (!repo.isProjectAdmin() && !isSuperAdmin) {
+    return [forbidden];
+  }
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystems = await ctx.repo.searchResources<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: params.system }],
-  });
-  if (codeSystems.length === 0) {
-    sendOutcome(res, badRequest('No CodeSystem found with URL ' + params.system));
-    return;
-  } else if (codeSystems.length > 1) {
-    sendOutcome(res, badRequest('Ambiguous code system URI: ' + params.system));
-    return;
+
+  let codeSystem: WithId<CodeSystem>;
+  if (req.params.id) {
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+  } else if (params.system) {
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, {
+      ownProjectOnly: !isSuperAdmin,
+    });
+  } else {
+    return [badRequest('No code system specified')];
   }
-  const codeSystem = codeSystems[0];
 
   try {
-    await importCodeSystem(codeSystem, params.concept, params.property);
+    await repo.withTransaction(async (db) => {
+      await importCodeSystem(db, codeSystem, params.concept, params.property);
+    });
   } catch (err) {
-    sendOutcome(res, normalizeOperationOutcome(err));
-    return;
+    return [normalizeOperationOutcome(err)];
   }
-  await sendOutputParameters(operation, res, allOk, codeSystem);
+  return [allOk, buildOutputParameters(operation, codeSystem)];
 }
 
 export async function importCodeSystem(
-  codeSystem: CodeSystem,
+  db: PoolClient,
+  codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
   properties?: ImportedProperty[]
 ): Promise<void> {
-  const db = getClient();
-  await db.query('BEGIN');
   if (concepts?.length) {
-    for (const concept of concepts) {
-      const row = {
-        system: codeSystem.id,
-        code: concept.code,
-        display: concept.display,
-      };
-      const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
-      await query.execute(db);
-    }
+    const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
+      system: codeSystem.id,
+      code: c.code,
+      display: c.display,
+      isSynonym: false,
+    }));
+    const query = new InsertQuery('Coding', rows).mergeOnConflict(
+      ['system', 'code'],
+      new Condition('synonymOf', '=', null)
+    );
+    await query.execute(db);
   }
 
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
   }
-
-  await db.query(`COMMIT`);
 }
 
 async function processProperties(
   importedProperties: ImportedProperty[],
-  codeSystem: CodeSystem,
-  db: Pool
+  codeSystem: WithId<CodeSystem>,
+  db: PoolClient
 ): Promise<void> {
-  const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
+  const cache: Record<string, { id: number; property: CodeSystemProperty }> = Object.create(null);
+  const lookupCodes = new Set<string>();
   for (const imported of importedProperties) {
-    const codingId = (
-      await new SelectQuery('Coding')
-        .column('id')
-        .where('system', '=', codeSystem.id)
-        .where('code', '=', imported.code)
-        .execute(db)
-    )[0]?.id;
-    if (!codingId) {
+    const propertyCode = imported.property;
+    const cacheKey = codeSystem.url + '|' + propertyCode;
+    let { id: propId, property } = cache[cacheKey] ?? {};
+    if (!propId) {
+      [propId, property] = await resolveProperty(codeSystem, propertyCode, db);
+      cache[cacheKey] = { id: propId, property };
+    }
+
+    lookupCodes.add(imported.code);
+    if (property.type === 'code') {
+      lookupCodes.add(imported.value);
+    }
+  }
+
+  // Batch lookup all Codings with associated properties
+  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+  const rows: Record<string, any>[] = [];
+  const syonyms: Record<string, any>[] = [];
+  for (const imported of importedProperties) {
+    const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
+    if (!sourceCodingId) {
       throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
-    const propertyCode = imported.property;
-    const cacheKey = codeSystem.url + '|' + propertyCode;
-    let { id: propId, isRelationship } = cache[cacheKey] ?? {};
-    if (!propId) {
-      [propId, isRelationship] = await resolveProperty(codeSystem, propertyCode, db);
-      cache[cacheKey] = { id: propId, isRelationship };
-    }
-
-    const property: Record<string, any> = {
-      coding: codingId,
+    const { id: propId, property } = cache[`${codeSystem.url}|${imported.property}`] ?? {};
+    const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
+    rows.push({
+      coding: sourceCodingId,
       property: propId,
       value: imported.value,
-    };
+      target: property.type === 'code' && targetCodingId ? targetCodingId : null,
+    });
 
-    if (isRelationship) {
-      const targetId = (
-        await new SelectQuery('Coding')
-          .column('id')
-          .where('system', '=', codeSystem.id)
-          .where('code', '=', imported.value)
-          .execute(db)
-      )[0]?.id;
-      if (targetId) {
-        property.target = targetId;
-      }
+    if (property.uri === 'http://hl7.org/fhir/concept-properties#synonym') {
+      syonyms.push({
+        system: codeSystem.id,
+        code: imported.code,
+        display: imported.value,
+        isSynonym: true,
+        synonymOf: sourceCodingId,
+      });
     }
+  }
 
-    const query = new InsertQuery('Coding_Property', [property]).ignoreOnConflict();
+  const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
+  await query.execute(db);
+
+  if (syonyms.length) {
+    const query = new InsertQuery('Coding', syonyms).ignoreOnConflict();
     await query.execute(db);
   }
 }
 
-export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
-
-async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
+async function resolveProperty(
+  codeSystem: CodeSystem,
+  code: string,
+  db: PoolClient
+): Promise<[number, CodeSystemProperty]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
     if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {
@@ -171,7 +189,6 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): 
       throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
     }
   }
-  const isRelationship = prop.type === 'code';
 
   const knownProp = (
     await new SelectQuery('CodeSystem_Property')
@@ -181,7 +198,7 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): 
       .execute(db)
   )[0];
   if (knownProp) {
-    return [knownProp.id, isRelationship];
+    return [knownProp.id, prop];
   }
 
   const newProp = (
@@ -197,5 +214,5 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): 
       .returnColumn('id')
       .execute(db)
   )[0];
-  return [newProp.id, isRelationship];
+  return [newProp.id, prop];
 }

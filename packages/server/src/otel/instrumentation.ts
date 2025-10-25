@@ -1,13 +1,26 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import type { Span } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-import { Resource } from '@opentelemetry/resources';
-import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
+import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
+import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
+import type { MetricReader } from '@opentelemetry/sdk-metrics';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { SpanExporter } from '@opentelemetry/sdk-trace-base';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import type { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -28,10 +41,10 @@ export function initOpenTelemetry(): void {
     return;
   }
 
-  const resource = Resource.default().merge(
-    new Resource({
-      [SemanticResourceAttributes.SERVICE_NAME]: 'medplum',
-      [SemanticResourceAttributes.SERVICE_VERSION]: MEDPLUM_VERSION,
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
+      [ATTR_SERVICE_NAME]: 'medplum',
+      [ATTR_SERVICE_VERSION]: MEDPLUM_VERSION,
     })
   );
 
@@ -46,16 +59,68 @@ export function initOpenTelemetry(): void {
     traceExporter = new OTLPTraceExporter({ url: OTLP_TRACES_ENDPOINT });
   }
 
-  const instrumentations = [getNodeAutoInstrumentations()];
+  const instrumentations = [
+    new RuntimeNodeInstrumentation(),
+    new HttpInstrumentation({
+      applyCustomAttributesOnSpan: httpResponseHook,
+    }),
+
+    new PgInstrumentation({
+      enhancedDatabaseReporting: true,
+      requireParentSpan: true,
+      responseHook: pgResponseHook,
+    }),
+    new IORedisInstrumentation(),
+
+    new ExpressInstrumentation({
+      // In order to reduce the number of spans in traces sent to the backend, we omit
+      // some common middleware that don't contribute interesting information to the
+      // request timeline.  These generally take ~zero time to run and don't fail specifically
+      ignoreLayers: [
+        'expressInit',
+        'query',
+        'urlencodedParser',
+        'textParser',
+        'setupResponseInterceptors',
+        'standardHeaders',
+        'corsMiddleware',
+        'compression',
+      ].map((name) => `middleware - ${name}`),
+      ignoreLayersType: [ExpressLayerType.ROUTER],
+    }),
+    new GraphQLInstrumentation({
+      ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
+    }),
+    new DataloaderInstrumentation(),
+    new BullMQInstrumentation({
+      requireParentSpanForPublish: true,
+    }),
+  ];
 
   sdk = new NodeSDK({
     resource,
     instrumentations,
-    metricReader,
+    metricReaders: metricReader ? [metricReader] : undefined,
     traceExporter,
   });
-
   sdk.start();
+}
+
+export function httpResponseHook(
+  span: Span,
+  req: IncomingMessage | ClientRequest,
+  res: ServerResponse | IncomingMessage
+): void {
+  // All error traces are kept, but others may be sampled
+  const code = res.statusCode && res.statusCode < 500 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
+  span.setStatus({ code });
+  span.setAttribute('http.method', req.method ?? 'unknown');
+}
+
+export function pgResponseHook(span: Span, { data }: PgResponseHookInformation): void {
+  if (data.rowCount !== null) {
+    span.setAttribute('medplum.db.rowCount', data.rowCount);
+  }
 }
 
 export async function shutdownOpenTelemetry(): Promise<void> {

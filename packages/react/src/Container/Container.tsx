@@ -1,4 +1,8 @@
-import { ContainerProps, Container as MantineContainer } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ContainerProps } from '@mantine/core';
+import { Container as MantineContainer } from '@mantine/core';
+import type { JSX } from 'react';
 import classes from './Container.module.css';
 
 export function Container(props: ContainerProps): JSX.Element {

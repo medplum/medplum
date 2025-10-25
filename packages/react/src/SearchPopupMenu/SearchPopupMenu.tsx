@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import type { Filter, SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import {
   IconBleach,
   IconBleachOff,
@@ -17,9 +20,11 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import {
   addLastMonthFilter,
   addMissingFilter,
+  addNext24HoursFilter,
   addNextMonthFilter,
   addThisMonthFilter,
   addTodayFilter,
@@ -32,10 +37,10 @@ import {
 } from '../SearchControl/SearchUtils';
 
 export interface SearchPopupMenuProps {
-  search: SearchRequest;
-  searchParams?: SearchParameter[];
-  onPrompt: (searchParam: SearchParameter, filter: Filter) => void;
-  onChange: (definition: SearchRequest) => void;
+  readonly search: SearchRequest;
+  readonly searchParams?: SearchParameter[];
+  readonly onPrompt: (searchParam: SearchParameter, filter: Filter) => void;
+  readonly onChange: (definition: SearchRequest) => void;
 }
 
 export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null {
@@ -44,15 +49,15 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   }
 
   function onSort(searchParam: SearchParameter, desc: boolean): void {
-    onChange(setSort(props.search, searchParam.code as string, desc));
+    onChange(setSort(props.search, searchParam.code, desc));
   }
 
   function onClear(searchParam: SearchParameter): void {
-    onChange(clearFiltersOnField(props.search, searchParam.code as string));
+    onChange(clearFiltersOnField(props.search, searchParam.code));
   }
 
   function onPrompt(searchParam: SearchParameter, operator: Operator): void {
-    props.onPrompt(searchParam, { code: searchParam.code as string, operator, value: '' });
+    props.onPrompt(searchParam, { code: searchParam.code, operator, value: '' });
   }
 
   function onChange(definition: SearchRequest): void {
@@ -77,19 +82,19 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   return (
     <Menu.Dropdown>
       {props.searchParams.map((searchParam) => (
-        <Menu.Item key={searchParam.code}>{buildFieldNameString(searchParam.code as string)}</Menu.Item>
+        <Menu.Item key={searchParam.code}>{buildFieldNameString(searchParam.code)}</Menu.Item>
       ))}
     </Menu.Dropdown>
   );
 }
 
 interface SearchPopupSubMenuProps {
-  search: SearchRequest;
-  searchParam: SearchParameter;
-  onSort: (searchParam: SearchParameter, descending: boolean) => void;
-  onPrompt: (searchParam: SearchParameter, operator: Operator) => void;
-  onChange: (search: SearchRequest) => void;
-  onClear: (searchParam: SearchParameter) => void;
+  readonly search: SearchRequest;
+  readonly searchParam: SearchParameter;
+  readonly onSort: (searchParam: SearchParameter, descending: boolean) => void;
+  readonly onPrompt: (searchParam: SearchParameter, operator: Operator) => void;
+  readonly onChange: (search: SearchRequest) => void;
+  readonly onClear: (searchParam: SearchParameter) => void;
 }
 
 function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
@@ -102,9 +107,10 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
     case 'reference':
       return <ReferenceFilterSubMenu {...props} />;
     case 'string':
+      return <TextFilterSubMenu {...props} />;
     case 'token':
     case 'uri':
-      return <TextFilterSubMenu {...props} />;
+      return <TokenFilterSubMenu {...props} />;
     default:
       return <>Unknown search param type: {props.searchParam.type}</>;
   }
@@ -112,7 +118,7 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 
 function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
+  const code = searchParam.code;
   return (
     <Menu.Dropdown>
       <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
@@ -168,6 +174,12 @@ function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
         onClick={() => props.onChange(addYesterdayFilter(props.search, code))}
       >
         Yesterday
+      </Menu.Item>
+      <Menu.Item
+        leftSection={<IconCalendar size={14} />}
+        onClick={() => props.onChange(addNext24HoursFilter(props.search, code))}
+      >
+        Next 24 Hours
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item
@@ -294,9 +306,24 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   );
 }
 
+function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
+  const { searchParam } = props;
+  return (
+    <Menu.Dropdown>
+      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
+        Equals...
+      </Menu.Item>
+      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
+        Does not equal...
+      </Menu.Item>
+      <CommonMenuItems {...props} />
+    </Menu.Dropdown>
+  );
+}
+
 function CommonMenuItems(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
+  const code = searchParam.code;
   return (
     <>
       <Menu.Divider />

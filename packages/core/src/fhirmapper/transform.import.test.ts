@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, StructureMap } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
-import { structureMapTransform } from './transform';
+import { structureMapTransform, TransformMapCollection } from './transform';
 
 // Based on: https://github.com/Vermonster/fhir-kit-mapping-language/blob/master/test/engine/import.test.js
 // MIT License
@@ -28,10 +30,10 @@ describe('FHIR Mapper transform - import', () => {
       src.firstName as ss -> tgt.firstName = ss;
     }`);
 
-    const maps = new StructureMapCollection([map1, map2]);
+    const maps = new TransformMapCollection([map1, map2]);
 
     const input = [toTypedValue({ name: { firstName: 'Bob' } })];
-    const actual = structureMapTransform(map1, input, (url) => maps.get(url));
+    const actual = structureMapTransform(map1, input, maps);
     const expected = input;
     expect(actual).toMatchObject(expected);
   });
@@ -56,26 +58,11 @@ describe('FHIR Mapper transform - import', () => {
       src.lastName as ss -> tgt.lastName = ss;
     }`);
 
-    const maps = new StructureMapCollection([map1, map2, map3]);
+    const maps = new TransformMapCollection([map1, map2, map3]);
 
     const input = [toTypedValue({ name: { firstName: 'Bob', lastName: 'Smith' } })];
-    const actual = structureMapTransform(map1, input, (url) => maps.get(url));
+    const actual = structureMapTransform(map1, input, maps);
     const expected = input;
     expect(actual).toMatchObject(expected);
   });
 });
-
-class StructureMapCollection {
-  constructor(readonly maps: StructureMap[]) {}
-
-  get(url: string): StructureMap[] {
-    return this.maps.filter((map) => {
-      if (url.includes('*')) {
-        const parts = url.split('*')[0];
-        return map.url?.startsWith(parts[0]) && map.url.endsWith(parts[1]);
-      } else {
-        return map.url === url;
-      }
-    });
-  }
-}

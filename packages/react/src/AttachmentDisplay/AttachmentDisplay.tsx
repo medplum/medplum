@@ -1,13 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor } from '@mantine/core';
-import { Attachment } from '@medplum/fhirtypes';
+import { ContentType } from '@medplum/core';
+import type { Attachment } from '@medplum/fhirtypes';
+import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import type { JSX } from 'react';
+import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 
 export interface AttachmentDisplayProps {
-  value?: Attachment;
-  maxWidth?: number;
+  readonly value?: Attachment;
+  readonly maxWidth?: number;
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const { contentType, url, title } = props.value ?? {};
+  const { contentType, url: uncachedUrl, title } = props.value ?? {};
+  const url = useCachedBinaryUrl(uncachedUrl);
 
   if (!url) {
     return null;
@@ -23,9 +30,12 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           <source type={contentType} src={url} />
         </video>
       )}
-      {contentType === 'application/pdf' && (
-        <div data-testid="attachment-pdf" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
+      {(contentType?.startsWith('text/') ||
+        contentType === 'application/json' ||
+        contentType === 'application/pdf') && (
+        <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe
+            title="Attachment"
             width="100%"
             height="400"
             src={url + '#navpanes=0'}
@@ -35,9 +45,11 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           />
         </div>
       )}
+      {contentType === ContentType.CDA_XML && <CcdaDisplay url={url} />}
       <div data-testid="download-link" style={{ padding: '2px 16px 16px 16px' }}>
         <Anchor
-          href={url}
+          // use the `uncachedUrl` to download the file as the cached URL may expire by the time the user clicks the download link
+          href={uncachedUrl}
           data-testid="attachment-details"
           target="_blank"
           rel="noopener noreferrer"

@@ -1,10 +1,12 @@
+import Link from '@docusaurus/Link';
+import { JSX } from 'react';
 import styles from './TestimonialHeader.module.css';
 
 export interface TestimonialHeaderProps {
-  imgSrc: string;
-  name: string;
-  title?: string;
-  twitter?: string;
+  readonly imgSrc: string;
+  readonly name: string;
+  readonly title?: string;
+  readonly twitter?: string;
 }
 
 export function TestimonialHeader(props: TestimonialHeaderProps): JSX.Element {
@@ -16,9 +18,9 @@ export function TestimonialHeader(props: TestimonialHeaderProps): JSX.Element {
         <div className={styles.testimonialTitle}>{props.title}</div>
       </div>
       {props.twitter && (
-        <a href={props.twitter} className={styles.testimonialLink}>
+        <Link href={props.twitter} className={styles.testimonialLink}>
           <img src="/img/icons/twitter-icon.svg" loading="lazy" alt="Twitter icon" className={styles.testimonialIcon} />
-        </a>
+        </Link>
       )}
     </div>
   );

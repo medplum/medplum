@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { LOINC, SNOMED, UCUM, createReference, getReferenceString } from '@medplum/core';
-import {
+import type {
   ActivityDefinition,
   ObservationDefinition,
   PlanDefinition,
@@ -11,7 +14,7 @@ import {
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
 
-export const Covid19AssessmentQuestionnaire: Questionnaire = {
+export const Covid19AssessmentQuestionnaire: WithId<Questionnaire> = {
   resourceType: 'Questionnaire',
   url: 'http://fhir.data4life.care/covid-19/r4/Questionnaire/covid19-recommendation',
   version: '4.0.0',
@@ -676,7 +679,7 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
   id: 'covid19-assessment',
 };
 
-export const Covid19NasalSpecimen: SpecimenDefinition = {
+export const Covid19NasalSpecimen: WithId<SpecimenDefinition> = {
   resourceType: 'SpecimenDefinition',
   id: 'covid19-nasal-specimen',
   typeCollected: {
@@ -684,7 +687,7 @@ export const Covid19NasalSpecimen: SpecimenDefinition = {
   },
 };
 
-export const Covid19PCRObservationDefinition: ObservationDefinition = {
+export const Covid19PCRObservationDefinition: WithId<ObservationDefinition> = {
   resourceType: 'ObservationDefinition',
   id: 'covid19pcr-observation-definition',
   preferredReportName: 'SARS-CoV-2 (COVID-19) RNA [Presence] in Respiratory specimen by NAA with probe detection',
@@ -700,7 +703,7 @@ export const Covid19PCRObservationDefinition: ObservationDefinition = {
   permittedDataType: ['string'],
 };
 
-export const Covid19PCRTest: ActivityDefinition = {
+export const Covid19PCRTest: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
   id: 'covid19-pcr-test',
   status: 'active',
@@ -723,7 +726,7 @@ export const Covid19PCRTest: ActivityDefinition = {
   observationResultRequirement: [createReference(Covid19PCRObservationDefinition)],
 };
 
-export const Covid19ReviewReport: ActivityDefinition = {
+export const Covid19ReviewReport: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
   title: 'Review COVID-19 Report',
   name: 'Review COVID-19 Report',
@@ -738,7 +741,7 @@ export const Covid19ReviewReport: ActivityDefinition = {
   ],
 };
 
-export const Covid19CarePlanDefinition: PlanDefinition = {
+export const Covid19CarePlanDefinition: WithId<PlanDefinition> = {
   resourceType: 'PlanDefinition',
   title: 'COVID-19 Evaluation Pre-Admission to Inpatient Oncology Department',
   identifier: [
@@ -789,7 +792,7 @@ export const Covid19CarePlanDefinition: PlanDefinition = {
   id: 'covid19-care-plan-definition',
 };
 
-export const Covid19PCRLabService: PlanDefinition = {
+export const Covid19PCRLabService: WithId<PlanDefinition> = {
   resourceType: 'PlanDefinition',
   title: 'SARS-CoV-2 (COVID-19) RNA panel',
   description: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
@@ -851,7 +854,7 @@ export const Covid19PCRLabService: PlanDefinition = {
   id: 'covid19-care-plan-definition',
 };
 
-export const Covid19AssessmentTask: Task = {
+export const Covid19AssessmentTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
 
@@ -867,7 +870,7 @@ export const Covid19AssessmentTask: Task = {
   id: 'covid19-assessment-task',
 };
 
-export const Covid19InitialConsultTask: Task = {
+export const Covid19InitialConsultTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
   focus: {
@@ -881,7 +884,7 @@ export const Covid19InitialConsultTask: Task = {
   id: 'covid19-initial-consult-task',
 };
 
-export const Covid19PCRServiceRequest: ServiceRequest = {
+export const Covid19PCRServiceRequest: WithId<ServiceRequest> = {
   // Required fields
   resourceType: 'ServiceRequest',
   id: 'covid19pcr-service-request',
@@ -901,7 +904,7 @@ export const Covid19PCRServiceRequest: ServiceRequest = {
   },
 };
 
-export const Covid19PCRTask: Task = {
+export const Covid19PCRTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
 
@@ -914,7 +917,7 @@ export const Covid19PCRTask: Task = {
   id: 'covid19pcr-task',
 };
 
-export const Covid19ReviewLabsTask: Task = {
+export const Covid19ReviewLabsTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
   focus: createReference(HomerDiagnosticReport),
@@ -926,7 +929,7 @@ export const Covid19ReviewLabsTask: Task = {
   id: 'covid19-review-labs-task',
 };
 
-export const Covid19FollowUpConsultTask: Task = {
+export const Covid19FollowUpConsultTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
   focus: createReference(DrAliceSmithSchedule),
@@ -938,7 +941,7 @@ export const Covid19FollowUpConsultTask: Task = {
   id: 'covid19-follow-up-consult-task',
 };
 
-export const Covid19RequestGroup: RequestGroup = {
+export const Covid19RequestGroup: WithId<RequestGroup> = {
   resourceType: 'RequestGroup',
   status: 'active',
   intent: 'order',

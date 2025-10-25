@@ -1,48 +1,53 @@
-import { Alert, Button, Center, Group, Stack, TextInput, Title } from '@mantine/core';
-import { LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Alert, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '@medplum/react-hooks';
+
+export type MfaFormFields = 'token';
 
 export interface MfaFormProps {
-  login: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly title: string;
+  readonly buttonText: string;
+  readonly qrCodeUrl?: string;
+  readonly onSubmit: (formData: Record<MfaFormFields, string>) => void | Promise<void>;
 }
 
 export function MfaForm(props: MfaFormProps): JSX.Element {
-  const medplum = useMedplum();
   const [errorMessage, setErrorMessage] = useState<string>();
   return (
     <Form
-      style={{ maxWidth: 400 }}
-      onSubmit={(formData: Record<string, string>) => {
+      onSubmit={(formData: Record<MfaFormFields, string>) => {
         setErrorMessage(undefined);
-        medplum
-          .post('auth/mfa/verify', {
-            login: props.login,
-            token: formData.token,
-          })
-          .then(props.handleAuthResponse)
-          .catch((err) => setErrorMessage(normalizeErrorString(err)));
+        props.onSubmit(formData)?.catch((err) => setErrorMessage(normalizeErrorString(err)));
       }}
     >
       <Stack>
         <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Title>Enter MFA code</Title>
+          <Title>{props.title}</Title>
         </Center>
         {errorMessage && (
           <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
             {errorMessage}
           </Alert>
         )}
+        {props.qrCodeUrl && (
+          <Stack align="center">
+            <Text>Scan this QR code with your authenticator app.</Text>
+            <img src={props.qrCodeUrl} alt="Multi Factor Auth QR Code" />
+          </Stack>
+        )}
         <Stack>
-          <TextInput name="token" label="MFA code" required />
+          <TextInput name="token" label="MFA code" autoComplete="one-time-code" required autoFocus />
         </Stack>
         <Group justify="flex-end" mt="xl">
-          <Button type="submit">Submit code</Button>
+          <SubmitButton>{props.buttonText}</SubmitButton>
         </Group>
       </Stack>
     </Form>

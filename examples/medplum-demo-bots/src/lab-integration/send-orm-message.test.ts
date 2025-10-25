@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import type { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOrmMessage, handler } from './send-orm-message';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
@@ -19,8 +21,9 @@ describe('Send to Partner Lab', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   beforeEach(async (ctx: any) => {
@@ -121,7 +124,12 @@ describe('Send to Partner Lab', () => {
 
   test.skip('Test Connection', async (ctx: any) => {
     try {
-      await handler(ctx.medplum, { input: ctx.order, contentType: 'string', secrets: { ...CONNECTION_DETAILS } });
+      await handler(ctx.medplum, {
+        bot: { reference: 'Bot/123' },
+        input: ctx.order,
+        contentType: 'string',
+        secrets: { ...CONNECTION_DETAILS },
+      });
     } catch {
       console.error('Here');
     }

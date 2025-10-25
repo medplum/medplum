@@ -1,4 +1,7 @@
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { DateTimeInput } from './DateTimeInput';
 
@@ -9,6 +12,12 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <DateTimeInput onChange={console.log} />
+    <DateTimeInput name="demo" onChange={console.log} />
+  </Document>
+);
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <DateTimeInput name="demo" onChange={console.log} disabled />
   </Document>
 );

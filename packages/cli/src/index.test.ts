@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { main, run } from '.';
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
@@ -29,7 +31,7 @@ describe('CLI', () => {
 
   test('run', async () => {
     await run();
-    expect(process.exit).toBeCalledWith(1);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   test('run with optional env set', async () => {
@@ -38,19 +40,19 @@ describe('CLI', () => {
     process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
     process.env.MEDPLUM_TOKEN_URL = 'http://example.com/oauth/token';
     await run();
-    expect(process.exit).toBeCalledWith(1);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   test('Missing command', async () => {
     await main(['node', 'index.js']);
     expect(process.exit).toHaveBeenCalledWith(1);
     // default command help displays
-    expect(processError).toBeCalledWith(expect.stringContaining('Usage: medplum [options] [command]'));
-    expect(processError).toBeCalledWith(expect.stringContaining('Command to access Medplum CLI'));
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Usage: medplum [options] [command]'));
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Command to access Medplum CLI'));
   });
 
   test('Unknown command', async () => {
     await main(['node', 'index.js', 'xyz']);
-    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
 });

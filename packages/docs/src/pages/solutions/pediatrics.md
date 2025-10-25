@@ -22,4 +22,5 @@ Patient-provider messaging is a common feature of pediatric applications. Organi
 
 ## Case Studies
 
+- [Develo Pediatric EHR](/blog/develo-case-study)
 - [24/7 Pediatrician Access](/blog/summer-case-study) - Summer Health Case Study

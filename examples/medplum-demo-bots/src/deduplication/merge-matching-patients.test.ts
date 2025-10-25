@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { Mock, vi } from 'vitest';
+import type { WithId } from '@medplum/core';
+import type { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 import {
   linkPatientRecords,
   mergePatientRecords,
@@ -38,25 +42,25 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       name: [{ given: ['Homer'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
 
     expect(result.src.id).toBe('src');
     expect(result.target.id).toBe('target');
 
-    expect(result.src.link).toEqual([
+    expect(result.src.link).toStrictEqual([
       { other: { reference: 'Patient/target', display: 'Lisa Simpson' }, type: 'replaced-by' },
     ]);
     expect(result.src.active).toBe(false);
 
-    expect(result.target.link).toEqual([
+    expect(result.target.link).toStrictEqual([
       { other: { reference: 'Patient/src', display: 'Homer Simpson' }, type: 'replaces' },
     ]);
   });
@@ -66,20 +70,20 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       name: [{ given: ['Homer'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
       link: [{ other: [createReference({ resourceType: 'Patient', id: '123' })], type: 'seealso' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
 
     expect(result.src.link?.length).toBe(1);
     expect(result.target.link?.length).toBe(2);
-    expect(result.target.link?.[1]).toEqual({
+    expect(result.target.link?.[1]).toStrictEqual({
       other: { display: 'Homer Simpson', reference: 'Patient/src' },
       type: 'replaces',
     });
@@ -92,7 +96,7 @@ describe('Deduplication', () => {
       active: false,
       name: [{ given: ['Homer'], family: 'Simpson' }],
       link: [{ other: { reference: 'Patient/target' }, type: 'replaced-by' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
@@ -100,7 +104,7 @@ describe('Deduplication', () => {
       active: true,
       name: [{ given: ['Lisa'], family: 'Simpson' }],
       link: [{ other: createReference(srcPatient), type: 'replaces' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = unlinkPatientRecords(srcPatient, targetPatient);
 
@@ -114,13 +118,13 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       identifier: [{ use: 'usual', system: 'http://foo.org', value: '123' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       identifier: [{ use: 'official', system: 'http://bar.org', value: '456' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const fields = {
       address: [{ city: 'Springfield' }],
@@ -128,10 +132,10 @@ describe('Deduplication', () => {
     const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
     // Assertions
-    expect(result.src).toEqual(srcPatient);
+    expect(result.src).toStrictEqual(srcPatient);
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
-    expect(result.target.identifier).toEqual([
+    expect(result.target.identifier).toStrictEqual([
       { use: 'official', system: 'http://bar.org', value: '456' },
       { use: 'old', system: 'http://foo.org', value: '123' },
     ]);
@@ -141,13 +145,13 @@ describe('Deduplication', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       identifier: [{ use: 'usual', value: '123', system: 'http://example.org' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const fields = {
       address: [{ city: 'Springfield' }],
@@ -155,10 +159,10 @@ describe('Deduplication', () => {
 
     const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
-    expect(result.src).toEqual(srcPatient);
+    expect(result.src).toStrictEqual(srcPatient);
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
-    expect(result.target.identifier).toEqual([{ use: 'usual', value: '123', system: 'http://example.org' }]);
+    expect(result.target.identifier).toStrictEqual([{ use: 'usual', value: '123', system: 'http://example.org' }]);
   });
 
   test('Should rewrite Clinical Resource to new patient', async () => {
@@ -170,12 +174,12 @@ describe('Deduplication', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
-    } as Patient;
+    } as WithId<Patient>;
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
     const fetch = mockFetch(200, (url: string) => {
       if (url.includes('subject=')) {
         return {
@@ -195,7 +199,7 @@ describe('Deduplication', () => {
 
     await updateResourceReferences(client, srcPatient, targetPatient, 'ServiceRequest');
     const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
-    expect(clinicalResourceUpdated.subject).toEqual({ reference: 'Patient/target' });
+    expect(clinicalResourceUpdated.subject).toStrictEqual({ reference: 'Patient/target' });
   });
 
   describe('Patients already linked', async () => {

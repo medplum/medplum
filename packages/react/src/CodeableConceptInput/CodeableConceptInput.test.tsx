@@ -1,8 +1,11 @@
-import { CodeableConcept } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import type { CodeableConceptInputProps } from './CodeableConceptInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 
 const medplum = new MockClient();
@@ -20,27 +23,39 @@ describe('CodeableConceptInput', () => {
     jest.useRealTimers();
   });
 
-  async function setup(child: ReactNode): Promise<void> {
+  async function setup(props?: Partial<CodeableConceptInputProps>): Promise<void> {
+    const finalProps: CodeableConceptInputProps = {
+      binding,
+      name: 'test',
+      path: 'Resource.test',
+      outcome: undefined,
+      onChange: jest.fn(),
+      ...props,
+    };
     await act(async () => {
-      render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+      render(
+        <MedplumProvider medplum={medplum}>
+          <CodeableConceptInput {...finalProps} />
+        </MedplumProvider>
+      );
     });
   }
 
   test('Renders', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" />);
+    await setup();
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Renders CodeableConcept default value', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" defaultValue={{ coding: [{ code: 'abc' }] }} />);
+    await setup({ defaultValue: { coding: [{ code: 'abc' }] } });
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
     expect(screen.getByText('abc')).toBeDefined();
   });
 
   test('Searches for results', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" />);
+    await setup();
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -64,13 +79,14 @@ describe('CodeableConceptInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    expect(selected.getByText('Test Display')).toBeDefined();
   });
 
   test('Create unstructured value', async () => {
     let currValue: CodeableConcept | undefined;
 
-    await setup(<CodeableConceptInput binding={binding} name="test" onChange={(newValue) => (currValue = newValue)} />);
+    await setup({ onChange: (newValue) => (currValue = newValue) });
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -82,13 +98,13 @@ describe('CodeableConceptInput', () => {
       fireEvent.change(input, { target: { value: 'XYZ' } });
     });
 
-    await waitFor(() => screen.getByText('+ Create XYZ'));
+    expect(await screen.findByText('+ Create XYZ')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('+ Create XYZ'));
     });
 
-    await waitFor(() => screen.getByText('XYZ'));
+    expect(await screen.findByText('XYZ')).toBeInTheDocument();
 
     expect(currValue).toMatchObject({
       coding: [
@@ -111,9 +127,7 @@ describe('CodeableConceptInput', () => {
       ],
     };
 
-    await setup(
-      <CodeableConceptInput binding={undefined} name="test" defaultValue={defaultValue} onChange={jest.fn()} />
-    );
+    await setup({ defaultValue });
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -125,6 +139,6 @@ describe('CodeableConceptInput', () => {
       fireEvent.change(input, { target: { value: 'XYZ' } });
     });
 
-    await waitFor(() => screen.getByText('+ Create XYZ'));
+    expect(await screen.findByText('+ Create XYZ')).toBeInTheDocument();
   });
 });

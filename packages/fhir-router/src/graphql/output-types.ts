@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
 import {
   capitalize,
   evalFhirPathTyped,
   getDataType,
   getResourceTypes,
   getSearchParameters,
-  InternalSchemaElement,
   isLowerCase,
   isReference,
   isResourceTypeSchema,
@@ -14,23 +16,26 @@ import {
   toTypedValue,
   tryGetDataType,
 } from '@medplum/core';
-import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
-import {
-  GraphQLEnumType,
+import type { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
   GraphQLEnumValueConfigMap,
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
+  GraphQLOutputType,
+  GraphQLResolveInfo,
+} from 'graphql';
+import {
+  GraphQLEnumType,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLOutputType,
-  GraphQLResolveInfo,
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { buildSearchArgs, fhirParamToGraphQLField, GraphQLContext, resolveBySearch, typeCache } from './utils';
+import type { GraphQLContext } from './utils';
+import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
 
 export const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   ...typeCache,

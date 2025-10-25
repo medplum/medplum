@@ -1,18 +1,23 @@
-import { Anchor, Badge, Box, Button, Group, Modal, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
-import { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import { getDisplayString } from '@medplum/core';
+import type { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
-import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
-import { Form } from '../Form/Form';
-import { killEvent } from '../utils/dom';
+import type { JSX } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { AllergyDialog } from './AllergyDialog';
+import { CollapsibleSection } from './CollapsibleSection';
+import SummaryItem from './SummaryItem';
+import styles from './SummaryItem.module.css';
 
 export interface AllergiesProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly allergies: AllergyIntolerance[];
+  readonly onClickResource?: (resource: AllergyIntolerance) => void;
 }
 
 export function Allergies(props: AllergiesProps): JSX.Element {
@@ -20,73 +25,103 @@ export function Allergies(props: AllergiesProps): JSX.Element {
   const { patient, encounter } = props;
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>(props.allergies);
   const [opened, { open, close }] = useDisclosure(false);
-  const [code, setCode] = useState<CodeableConcept>();
+  const [editAllergy, setEditAllergy] = useState<AllergyIntolerance>();
+
+  // Sort allergies with active ones first
+  const sortedAllergies = useMemo(() => {
+    return [...allergies].sort((a, b) => {
+      const aStatus = a.clinicalStatus?.coding?.[0]?.code;
+      const bStatus = b.clinicalStatus?.coding?.[0]?.code;
+
+      // Active allergies first
+      if (aStatus === 'active' && bStatus !== 'active') {
+        return -1;
+      }
+      if (aStatus !== 'active' && bStatus === 'active') {
+        return 1;
+      }
+
+      return getDisplayString(a).localeCompare(getDisplayString(b));
+    });
+  }, [allergies]);
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
-      medplum
-        .createResource<AllergyIntolerance>({
-          resourceType: 'AllergyIntolerance',
-          patient: createReference(patient),
-          encounter: encounter ? createReference(encounter) : undefined,
-          code,
-          onsetDateTime: formData.onset ? formData.onset : undefined,
-          reaction: formData.reaction ? [{ manifestation: [{ text: formData.reaction }] }] : undefined,
-        })
-        .then((newAllergy) => {
-          setAllergies([...allergies, newAllergy]);
-          close();
-        })
-        .catch(console.error);
+    async (allergy: AllergyIntolerance) => {
+      if (allergy.id) {
+        const updatedAllergy = await medplum.updateResource(allergy);
+        setAllergies(allergies.map((a) => (a.id === updatedAllergy.id ? updatedAllergy : a)));
+      } else {
+        const newAllergy = await medplum.createResource(allergy);
+        setAllergies([...allergies, newAllergy]);
+      }
+      setEditAllergy(undefined);
+      close();
     },
-    [medplum, patient, encounter, allergies, close, code]
+    [medplum, allergies, close]
   );
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Allergies
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
-          }}
-        >
-          + Add
-        </Anchor>
-      </Group>
-      {allergies.length > 0 ? (
-        <Box>
-          {allergies.map((allergy) => (
-            <Badge key={allergy.id} variant="light" maw="100%">
-              <CodeableConceptDisplay value={allergy.code} />
-            </Badge>
-          ))}
-        </Box>
-      ) : (
-        <Text>(none)</Text>
-      )}
-      <Modal opened={opened} onClose={close} title="Add Allergy">
-        <Form onSubmit={handleSubmit}>
-          <Stack>
-            <CodeableConceptInput
-              name="allergy"
-              data-autofocus={true}
-              binding="http://hl7.org/fhir/us/core/ValueSet/us-core-allergy-substance"
-              onChange={(allergy) => setCode(allergy)}
-            />
-            <TextInput name="reaction" label="Reaction" />
-            <NativeSelect name="status" label="Status" data={['active']} />
-            <TextInput name="onset" label="Onset" type="date" />
-            <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
-            </Group>
-          </Stack>
-        </Form>
+      <CollapsibleSection
+        title="Allergies"
+        onAdd={() => {
+          setEditAllergy(undefined);
+          open();
+        }}
+      >
+        {sortedAllergies.length > 0 ? (
+          <Box>
+            <Flex direction="column" gap={8}>
+              {sortedAllergies.map((allergy) => {
+                const status = allergy.clinicalStatus?.coding?.[0]?.code || 'unknown';
+
+                return (
+                  <SummaryItem
+                    key={allergy.id}
+                    onClick={() => {
+                      setEditAllergy(allergy);
+                      open();
+                    }}
+                  >
+                    <Box>
+                      <Text fw={500} className={styles.itemText}>
+                        {getDisplayString(allergy)}
+                      </Text>
+                      <Group mt={2} gap={4}>
+                        {status && (
+                          <StatusBadge color={getClinicalStatusColor(status)} variant="light" status={status} />
+                        )}
+                      </Group>
+                    </Box>
+                  </SummaryItem>
+                );
+              })}
+            </Flex>
+          </Box>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
+      <Modal opened={opened} onClose={close} title={editAllergy ? 'Edit Allergy' : 'Add Allergy'}>
+        <AllergyDialog patient={patient} encounter={encounter} allergy={editAllergy} onSubmit={handleSubmit} />
       </Modal>
     </>
   );
+}
+
+function getClinicalStatusColor(status?: string): string {
+  if (!status) {
+    return 'gray';
+  }
+
+  switch (status) {
+    case 'active':
+      return 'red';
+    case 'inactive':
+      return 'orange';
+    case 'resolved':
+      return 'blue';
+    default:
+      return 'gray';
+  }
 }

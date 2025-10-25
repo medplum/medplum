@@ -1,12 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement, SearchRequest } from '@medplum/core';
 import {
   getElementDefinition,
   getSearchParameter,
   getSearchParameterDetails,
   getSearchParameters,
-  InternalSchemaElement,
-  SearchRequest,
 } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.

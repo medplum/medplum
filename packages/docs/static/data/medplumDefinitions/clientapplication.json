@@ -89,6 +89,93 @@
       "base": "Resource"
     },
     {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ClientApplication.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "ClientApplication.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ClientApplication.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ClientApplication.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ClientApplication.status",
+      "min": 0,
+      "max": "1",
+      "short": "active | error | off",
+      "definition": "The client application status. The status is active by default. The status can be set to error to indicate that the client application is not working properly. The status can be set to off to indicate that the client application is no longer in use.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "name",
       "depth": 1,
       "types": [
@@ -121,6 +208,55 @@
       "inherited": false
     },
     {
+      "name": "signInForm",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ClientApplication.signInForm",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Custom values for the Log In form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "welcomeString",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.signInForm.welcomeString",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Welcome string for the Log In Form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "logo",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ClientApplication.signInForm.logo",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Logo for the Log In Form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "secret",
       "depth": 1,
       "types": [
@@ -133,6 +269,22 @@
       "max": "1",
       "short": "",
       "definition": "Client secret string used to verify the identity of a client.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "retiringSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.retiringSecret",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
       "comment": "",
       "inherited": false
     },
@@ -164,7 +316,23 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Optional redirect URI used when redirecting a client back to the client application.",
+      "definition": "@deprecated This field is deprecated. Use redirectUris instead.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "redirectUris",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ClientApplication.redirectUris",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional redirect URI array used when redirecting a client back to the client application.",
       "comment": "",
       "inherited": false
     },
@@ -214,6 +382,70 @@
       "max": "1",
       "short": "",
       "definition": "Optional external Identity Provider (IdP) for the client application.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "accessTokenLifetime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.accessTokenLifetime",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional configuration to set the access token duration",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "refreshTokenLifetime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.refreshTokenLifetime",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional configuration to set the refresh token duration",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "allowedOrigin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.allowedOrigin",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "defaultScope",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.defaultScope",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
       "comment": "",
       "inherited": false
     }

@@ -1,5 +1,8 @@
-import { BotEvent, createReference, getReferenceString, LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getReferenceString, LOINC, SNOMED, UCUM } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
   AllergyIntolerance,
   BundleEntry,
   CarePlan,
@@ -22,7 +25,7 @@ import {
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
   const patientHistory = await medplum.readHistory('Patient', patient.id as string);
-  if ((patientHistory.entry as BundleEntry[]).length > 1) {
+  if ((patientHistory.entry?.length ?? 0) > 1) {
     console.log('Patient already has history');
     return;
   }
@@ -76,10 +79,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 
 /**
- * Returns a practitioner resource.
- * Creates the practitioner if one does not already exist.
+ * Creates the questionnaire if one does not already exist.
  * @param medplum - The medplum client.
- * @returns The practitioner resource.
  */
 async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
   const questionnaire = await medplum.searchOne('Questionnaire', 'title=Order Lab Tests');
@@ -95,7 +96,7 @@ async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
       {
         id: 'id-4',
         linkId: 'g2',
-        type: 'group',
+        type: 'display',
         text: 'For guidance on which labs to order visit: https://www.uptodate.com/contents/search?search=lab%20orders',
       },
       {
@@ -164,7 +165,7 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
       photo: [
         {
           contentType: 'image/png',
-          url: 'https://docs.medplum.com/img/cdc-femaledoc.png',
+          url: 'https://www.medplum.com/img/cdc-femaledoc.png',
         },
       ],
     },
@@ -208,7 +209,7 @@ async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner
  * @param schedule - The practitioner's schedule.
  * @param slotDate - The day of slots.
  */
-async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate: Date): Promise<void> {
+async function ensureSlots(medplum: MedplumClient, schedule: WithId<Schedule>, slotDate: Date): Promise<void> {
   const existingSlots = await medplum.search(
     'Slot',
     new URLSearchParams([

@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface ContainerProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Container(props: ContainerProps): JSX.Element {

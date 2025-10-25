@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ClientStorage, MemoryStorage } from './storage';
 
 describe('Storage', () => {
@@ -23,7 +25,7 @@ describe('Storage', () => {
     expect(storage.getObject('baz')).toBeUndefined();
 
     storage.setString('foo', 'bar');
-    expect(storage.getString('foo')).toEqual('bar');
+    expect(storage.getString('foo')).toStrictEqual('bar');
 
     storage.setObject('baz', { name: 'Homer' });
     expect(storage.getObject('baz')).toMatchObject({ name: 'Homer' });
@@ -46,7 +48,7 @@ describe('Storage', () => {
     expect(storage.getObject('baz')).toBeUndefined();
 
     storage.setString('foo', 'bar');
-    expect(storage.getString('foo')).toEqual('bar');
+    expect(storage.getString('foo')).toStrictEqual('bar');
 
     storage.setObject('baz', { name: 'Homer' });
     expect(storage.getObject('baz')).toMatchObject({ name: 'Homer' });
@@ -64,15 +66,15 @@ describe('Storage', () => {
 describe('MemoryStorage', () => {
   test('Get string', () => {
     const storage = new MemoryStorage();
-    expect(storage.length).toEqual(0);
+    expect(storage.length).toStrictEqual(0);
 
     storage.setItem('foo', 'bar');
-    expect(storage.getItem('foo')).toEqual('bar');
-    expect(storage.length).toEqual(1);
-    expect(storage.key(0)).toEqual('foo');
+    expect(storage.getItem('foo')).toStrictEqual('bar');
+    expect(storage.length).toStrictEqual(1);
+    expect(storage.key(0)).toStrictEqual('foo');
 
     storage.setItem('foo', '');
     expect(storage.getItem('foo')).toBeNull();
-    expect(storage.length).toEqual(0);
+    expect(storage.length).toStrictEqual(0);
   });
 });

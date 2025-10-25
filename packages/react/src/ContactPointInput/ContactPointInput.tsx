@@ -1,25 +1,32 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { ContactPoint } from '@medplum/fhirtypes';
+import type { ContactPoint } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useRef, useState } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
-  onChange: ((value: ContactPoint | undefined) => void) | undefined;
+  readonly onChange?: (value: ContactPoint | undefined) => void;
 };
 
 export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const { path, outcome } = props;
-  const { getModifiedNestedElement } = useContext(BackboneElementContext);
+  const { elementsByPath, getExtendedProps } = useContext(ElementsContext);
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
-  const ref = useRef<ContactPoint>();
+  const ref = useRef<ContactPoint>(contactPoint);
   ref.current = contactPoint;
 
   const [systemElement, useElement, valueElement] = useMemo(
-    () => ['system', 'use', 'value'].map((field) => getModifiedNestedElement(path + '.' + field)),
-    [getModifiedNestedElement, path]
+    () => ['system', 'use', 'value'].map((field) => elementsByPath[path + '.' + field]),
+    [elementsByPath, path]
+  );
+  const [systemProps, useProps, valueProps] = useMemo(
+    () => ['system', 'use', 'value'].map((field) => getExtendedProps(path + '.' + field)),
+    [getExtendedProps, path]
   );
 
   function setContactPointWrapper(newValue: ContactPoint | undefined): void {
@@ -56,9 +63,12 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
     setContactPointWrapper(newValue);
   }
 
+  const errorPath = props.valuePath ?? path;
+
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
+        disabled={props.disabled || systemProps?.readonly}
         data-testid="system"
         defaultValue={contactPoint?.system}
         required={(systemElement?.min ?? 0) > 0}
@@ -66,22 +76,24 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
           setSystem(e.currentTarget.value as 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other')
         }
         data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'other']}
-        error={getErrorsForInput(outcome, path + '.system')}
+        error={getErrorsForInput(outcome, errorPath + '.system')}
       />
       <NativeSelect
+        disabled={props.disabled || useProps?.readonly}
         data-testid="use"
         defaultValue={contactPoint?.use}
         required={(useElement?.min ?? 0) > 0}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'mobile')}
         data={['', 'home', 'work', 'temp', 'old', 'mobile']}
-        error={getErrorsForInput(outcome, path + '.use')}
+        error={getErrorsForInput(outcome, errorPath + '.use')}
       />
       <TextInput
+        disabled={props.disabled || valueProps?.readonly}
         placeholder="Value"
         defaultValue={contactPoint?.value}
         required={(valueElement?.min ?? 0) > 0}
         onChange={(e) => setValue(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.value')}
+        error={getErrorsForInput(outcome, errorPath + '.value')}
       />
     </Group>
   );

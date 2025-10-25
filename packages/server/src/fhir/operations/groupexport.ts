@@ -1,12 +1,15 @@
-import { accepted } from '@medplum/core';
-import { Group, Patient, Project } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getConfig } from '../../config';
-import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
+import type { Repository } from '../repo';
+import type { PatientEverythingParameters } from './patienteverything';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Group export request.
@@ -16,36 +19,39 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function groupExportHandler(req: Request, res: Response): Promise<void> {
+export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const query = req.query as Record<string, string | undefined>;
-  const since = query._since;
-  const types = query._type?.split(',');
+  const since = singularize(req.query._since);
+  const types = singularize(req.query._type)?.split(',');
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);
 
   // Start the exporter
-  const exporter = new BulkExporter(ctx.repo, since, types);
-  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const exporter = new BulkExporter(ctx.repo);
+  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
-  groupExportResources(exporter, ctx.project, group, ctx.repo)
+  groupExportResources(ctx.repo, exporter, ctx.project, group, {
+    _type: types as ResourceType[] | undefined,
+    _since: since,
+  })
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }
 
 export async function groupExportResources(
+  repo: Repository,
   exporter: BulkExporter,
   project: Project,
   group: Group,
-  repo: Repository
+  params?: PatientEverythingParameters
 ): Promise<void> {
   // Read all patients in the group
   if (group.member) {
@@ -53,18 +59,18 @@ export async function groupExportResources(
       if (!member.entity?.reference) {
         continue;
       }
-      const [resourceType, memberId] = member.entity.reference.split('/') as [string, string];
+      const [resourceType, memberId] = parseReference(member.entity);
       try {
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
-          const bundle = await getPatientEverything(repo, patient);
+          const bundle = await getPatientEverything(repo, patient, params);
           await exporter.writeBundle(bundle);
         } else {
           const resource = await repo.readResource(resourceType, memberId);
           await exporter.writeResource(resource);
         }
-      } catch (err) {
-        getRequestContext().logger.warn('Unable to read patient for group export', {
+      } catch (_err) {
+        getLogger().warn('Unable to read patient for group export', {
           reference: member.entity.reference,
         });
       }

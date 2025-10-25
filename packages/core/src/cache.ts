@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * LRU cache (least recently used)
  * Source: https://stackoverflow.com/a/46432113
  */
+
 export class LRUCache<T> {
   private readonly max: number;
   private readonly cache: Map<string, T>;
@@ -64,6 +68,6 @@ export class LRUCache<T> {
 
   private first(): string {
     // This works because the Map class maintains ordered keys.
-    return this.cache.keys().next().value;
+    return this.cache.keys().next().value as string;
   }
 }

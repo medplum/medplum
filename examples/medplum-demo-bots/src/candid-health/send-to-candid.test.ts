@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   CPT,
   createReference,
@@ -5,11 +7,11 @@ import {
   ICD10,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
   SNOMED,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, Coverage, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import type { Bundle, Coverage, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import fetch from 'node-fetch';
 import { handler } from './send-to-candid';
@@ -24,8 +26,9 @@ describe('Candid Health Tests', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   beforeEach(async (ctx) => {
@@ -442,6 +445,7 @@ describe('Candid Health Tests', () => {
   test('Send to Candid', async (ctx: any) => {
     const { medplum, patient, encounter } = ctx as { medplum: MedplumClient; patient: Patient; encounter: Encounter };
     await handler(medplum, {
+      bot: { reference: 'Bot/123' },
       input: encounter,
       contentType: 'application/fhir+json',
       secrets: {
@@ -450,7 +454,7 @@ describe('Candid Health Tests', () => {
       },
     });
 
-    const body = JSON.parse(vi.mocked(fetch).mock?.lastCall?.[1]?.body?.toString() || '{}');
+    const body = JSON.parse(vi.mocked(fetch).mock?.lastCall?.[1]?.body as string);
 
     expect(body).toMatchObject({
       external_id: getReferenceString(encounter),

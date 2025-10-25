@@ -18,7 +18,7 @@ Utility functions that use the `OperationDefinition` to automate implementation 
 - [`parseInputParameters`](./utils/parameters.ts) takes either standard `Parameters` input or plain JSON key-value pairs
   for compatibility, and produces an object containing all defined input parameter values
   - Validates number of parameter values, including required parameters
-- [`sendOutputParameters`](./utils/parameters.ts) handles sending a set of output values as the response
+- [`buildOutputParameters`](./utils/parameters.ts) handles sending a set of output values as the response
   - Only sends parameters defined in the `OperationDefinition`
   - Validates parameter cardinality and throws a server error when response wouldn't match `OperationDefinition`
   - Can be passed a `Resource` when there is one matching output parameter named `return`
@@ -26,7 +26,7 @@ Utility functions that use the `OperationDefinition` to automate implementation 
 ### Example: Project $init
 
 ```ts
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { created } from '@medplum/core';
 import { Reference, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -58,13 +58,13 @@ interface ProjectInitParameters {
   ownerEmail?: string;
 }
 
-export async function projectInitHandler(req: Request, res: Response): Promise<void> {
+export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ProjectInitParameters>(operation, req);
 
   // Handle operation business logic...
   const project = doProjectInit(params);
 
   // Special case: single `return` output parameter means respond with the Project resource directly
-  await sendOutputParameters(operation, res, created, project);
+  return [created, project];
 }
 ```

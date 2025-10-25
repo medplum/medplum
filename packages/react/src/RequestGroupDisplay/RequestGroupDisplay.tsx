@@ -1,16 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Grid, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheckbox, IconSquare } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 
 export interface RequestGroupDisplayProps {
-  value?: RequestGroup | Reference<RequestGroup>;
-  onStart: (task: Task, input: Reference) => void;
-  onEdit: (task: Task, input: Reference, output: Reference) => void;
+  readonly value?: RequestGroup | Reference<RequestGroup>;
+  readonly onStart: (task: Task, input: Reference) => void;
+  readonly onEdit: (task: Task, input: Reference, output: Reference) => void;
 }
 
 export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Element | null {
@@ -67,7 +70,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   );
 
   function buildBatchRequest(request: RequestGroup): Bundle {
-    const batchEntries = [] as BundleEntry[];
+    const batchEntries: BundleEntry[] = [];
     if (request.action) {
       for (const action of request.action) {
         if (action.resource?.reference) {
@@ -84,7 +87,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   }
 
   function findBundleEntry<T extends Resource>(reference: Reference<T>): T | undefined {
-    for (const entry of responseBundle?.entry as BundleEntry[]) {
+    for (const entry of responseBundle?.entry ?? []) {
       if (entry.resource && reference.reference === getReferenceString(entry.resource)) {
         return entry.resource as T;
       }

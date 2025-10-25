@@ -1,18 +1,23 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
+import type { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config/loader';
+import type { FileSystemStorage } from '../../storage/filesystem';
+import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
-const app = express();
-let accessToken: string;
-
 describe('Group Export', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -118,12 +123,7 @@ describe('Group Export', () => {
     expect(output.some((o) => o.type === 'Device')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
     expect(output.some((o) => o.type === 'Group')).toBeTruthy();
-    // Get the export content
-    const outputLocation = new URL(output[0].url as string);
-    const res8 = await request(app)
-      .get(outputLocation.pathname + outputLocation.search)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(200);
+    expect(output[0].url.startsWith(getConfig().storageBaseUrl)).toBeTruthy();
   });
 
   test('Since filter', async () => {
@@ -216,15 +216,13 @@ describe('Group Export', () => {
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
-    const res7 = await request(app)
-      .get(outputLocation.pathname + outputLocation.search)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
+    const outputContent = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(outputLocation);
+    expect(outputContent).toBeDefined();
 
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
-    expect(res7.text.trim().split('\n')).toHaveLength(1);
-    expect(JSON.parse(res7.text).id).toEqual(res2.body.id);
+    expect(outputContent.trim().split('\n')).toHaveLength(1);
+    expect(JSON.parse(outputContent).id).toStrictEqual(res2.body.id);
   });
 
   test('Type filter', async () => {
@@ -317,7 +315,7 @@ describe('Group Export', () => {
   test('groupExportResources without members', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
     const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
 
     const group: Group = await systemRepo.createResource<Group>({
@@ -326,16 +324,16 @@ describe('Group Export', () => {
       actual: true,
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
-    expect(exportWriteResourceSpy).toBeCalledTimes(0);
+    expect(exportWriteResourceSpy).toHaveBeenCalledTimes(0);
   });
 
   test('groupExportResources members without reference', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
 
     const patient: Patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -353,7 +351,7 @@ describe('Group Export', () => {
       member: [{ entity: { reference: '' } }, { entity: { reference: `Patient/${patient.id}` } }],
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
   });

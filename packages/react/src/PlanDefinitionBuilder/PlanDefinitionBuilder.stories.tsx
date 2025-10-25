@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { useMedplum } from '@medplum/react-hooks';
-import { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
@@ -53,12 +56,14 @@ export const Covid19Eval = (): JSX.Element => {
   }
 
   return (
-    <PlanDefinitionBuilder
-      value={Covid19CarePlanDefinition}
-      onSubmit={(formData: any) => {
-        console.log(JSON.stringify(formData, null, 2));
-      }}
-    />
+    <Document>
+      <PlanDefinitionBuilder
+        value={Covid19CarePlanDefinition}
+        onSubmit={(formData: any) => {
+          console.log(JSON.stringify(formData, null, 2));
+        }}
+      />
+    </Document>
   );
 };
 
@@ -82,11 +87,13 @@ export const Covid19PCRLabServiceStory = (): JSX.Element => {
   }
 
   return (
-    <PlanDefinitionBuilder
-      value={Covid19PCRLabService}
-      onSubmit={(formData: any) => {
-        console.log(JSON.stringify(formData, null, 2));
-      }}
-    />
+    <Document>
+      <PlanDefinitionBuilder
+        value={Covid19PCRLabService}
+        onSubmit={(formData: any) => {
+          console.log(JSON.stringify(formData, null, 2));
+        }}
+      />
+    </Document>
   );
 };

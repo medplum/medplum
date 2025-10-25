@@ -1,14 +1,18 @@
-import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
-import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
-import { createHmac, createPrivateKey, randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, WithId } from '@medplum/core';
+import { ContentType, encodeBase64 } from '@medplum/core';
+import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+import { Command } from 'commander';
 import { SignJWT } from 'jose';
-import { basename, extname, resolve } from 'path';
-import internal from 'stream';
-import tar from 'tar';
+import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, extname, resolve } from 'node:path';
+import { isPromise } from 'node:util/types';
+import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
-interface MedplumConfig {
+export interface MedplumConfig {
   baseUrl?: string;
   clientId?: string;
   googleClientId?: string;
@@ -17,7 +21,7 @@ interface MedplumConfig {
   bots?: MedplumBotConfig[];
 }
 
-interface MedplumBotConfig {
+export interface MedplumBotConfig {
   readonly name: string;
   readonly id: string;
   readonly source: string;
@@ -53,38 +57,34 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
     return;
   }
 
-  try {
-    console.log('Saving source code...');
-    const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+  console.log('Saving source code...');
+  const sourceCode = await medplum.createAttachment({
+    data: code,
+    filename: basename(codePath),
+    contentType: getCodeContentType(codePath),
+  });
 
-    console.log('Updating bot.....');
-    const updateResult = await medplum.updateResource({
-      ...bot,
-      sourceCode,
-    });
-    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
-  } catch (err) {
-    console.log('Update error: ', err);
-  }
+  console.log('Updating bot...');
+  const updateResult = await medplum.updateResource({
+    ...bot,
+    sourceCode,
+  });
+  console.log('Success! New bot version: ' + updateResult.meta?.versionId);
 }
 
-export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: WithId<Bot>): Promise<void> {
   const codePath = botConfig.dist ?? botConfig.source;
   const code = readFileContents(codePath);
   if (!code) {
     return;
   }
 
-  try {
-    console.log('Deploying bot...');
-    const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
-      code,
-      filename: basename(codePath),
-    })) as OperationOutcome;
-    console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
-  } catch (err) {
-    console.log('Deploy error: ', err);
-  }
+  console.log('Deploying bot...');
+  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
+    code,
+    filename: basename(codePath),
+  })) as OperationOutcome;
+  console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
 }
 
 export async function createBot(
@@ -96,30 +96,27 @@ export async function createBot(
   runtimeVersion?: string,
   writeConfig?: boolean
 ): Promise<void> {
-  try {
-    const body = {
-      name: botName,
-      description: '',
-      runtimeVersion,
-    };
-    const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
-    const bot = await medplum.readResource('Bot', newBot.id);
+  const body = {
+    name: botName,
+    description: '',
+    runtimeVersion,
+  };
+  const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
+  const bot = await medplum.readResource('Bot', newBot.id);
 
-    const botConfig = {
-      name: botName,
-      id: newBot.id,
-      source: sourceFile,
-      dist: distFile,
-    };
-    await saveBot(medplum, botConfig as MedplumBotConfig, bot);
-    await deployBot(medplum, botConfig as MedplumBotConfig, bot);
-    console.log(`Success! Bot created: ${bot.id}`);
+  const botConfig = {
+    name: botName,
+    id: newBot.id,
+    source: sourceFile,
+    dist: distFile,
+  };
 
-    if (writeConfig) {
-      addBotToConfig(botConfig);
-    }
-  } catch (err) {
-    console.log('Error while creating new bot: ' + err);
+  await saveBot(medplum, botConfig as MedplumBotConfig, bot);
+  await deployBot(medplum, botConfig as MedplumBotConfig, bot);
+  console.log(`Success! Bot created: ${bot.id}`);
+
+  if (writeConfig) {
+    addBotToConfig(botConfig);
   }
 }
 
@@ -135,16 +132,19 @@ export function readBotConfigs(botName: string): MedplumBotConfig[] {
 /**
  * Returns the config file name.
  * @param tagName - Optional environment tag name.
- * @param server - Optional server flag.
+ * @param options - Optional command line options.
  * @returns The config file name.
  */
-export function getConfigFileName(tagName?: string, server = false): string {
+export function getConfigFileName(tagName?: string, options?: Record<string, any>): string {
+  if (options?.file) {
+    return options.file;
+  }
   const parts = ['medplum'];
   if (tagName) {
     parts.push(tagName);
   }
   parts.push('config');
-  if (server) {
+  if (options?.server) {
     parts.push('server');
   }
   parts.push('json');
@@ -160,8 +160,17 @@ export function writeConfig(configFileName: string, config: Record<string, any>)
   writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
 }
 
-export function readConfig(tagName?: string, server = false): MedplumConfig | undefined {
-  const content = readFileContents(getConfigFileName(tagName, server));
+export function readConfig(tagName?: string, options?: { file?: string }): MedplumConfig | undefined {
+  const fileName = getConfigFileName(tagName, options);
+  const content = readFileContents(fileName);
+  if (!content) {
+    return undefined;
+  }
+  return JSON.parse(content);
+}
+
+export function readServerConfig(tagName?: string): Record<string, string | number> | undefined {
+  const content = readFileContents(getConfigFileName(tagName, { server: true }));
   if (!content) {
     return undefined;
   }
@@ -169,7 +178,7 @@ export function readConfig(tagName?: string, server = false): MedplumConfig | un
 }
 
 function readFileContents(fileName: string): string {
-  const path = resolve(process.cwd(), fileName);
+  const path = resolve(fileName);
   if (!existsSync(path)) {
     return '';
   }
@@ -199,14 +208,14 @@ function escapeRegex(str: string): string {
  * @param destinationDir - The destination directory where all files will be extracted.
  * @returns A tar file extractor.
  */
-export function safeTarExtractor(destinationDir: string): internal.Writable {
+export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream {
   const MAX_FILES = 100;
   const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
   let fileCount = 0;
   let totalSize = 0;
 
-  return tar.x({
+  return extract({
     cwd: destinationDir,
     filter: (_path, entry) => {
       fileCount++;
@@ -246,7 +255,6 @@ export function saveProfile(profileName: string, options: Profile): Profile {
   const storage = new FileSystemStorage(profileName);
   const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
-  console.log(`${profileName} profile created`);
   return optionsObject;
 }
 
@@ -303,4 +311,75 @@ export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile
     .setExpirationTime('5m')
     .sign(privateKey);
   await medplum.startJwtAssertionLogin(jwt);
+}
+
+/**
+ * Attaches the provided subcommand to the provided parent command.
+ *
+ * We use this rather than directly calling the `addCommand` method on the parent command because we need
+ * to modify some additional settings on each command before adding them to the parent.
+ *
+ * @param command - The parent command.
+ * @param subcommand - The command to attach to the provided parent command.
+ */
+export function addSubcommand(command: Command, subcommand: Command): void {
+  subcommand.configureHelp({ showGlobalOptions: true });
+  command.addCommand(subcommand);
+}
+
+export class MedplumCommand extends Command {
+  action(fn: (...args: any[]) => void | Promise<void>): this {
+    // This is the only way to get both global and local options propagated to all subcommands automatically
+    // Otherwise you have to call `command.optsWithGlobals()` within every function to get merged global and local options
+    const wrappedFn = withMergedOptions(this, fn);
+    // @ts-expect-error Access to hidden member
+    // This is the function that gets called when a command is executed
+    // We overwrite it with the wrapped version
+    super._actionHandler = wrappedFn;
+    return this;
+  }
+
+  /**
+   * We use this method to reset the option state
+   * Which is not cleared between executions of the main function during tests
+   *
+   * This is because all of our subcommands are declared in the global scope
+   *
+   * Rather than re-architect the entire CLI package, I added this to make sure all options are reset between executions of main
+   */
+  resetOptionDefaults(): void {
+    // @ts-expect-error Overriding private field
+    this._optionValues = {};
+    for (const option of this.options) {
+      // So we also set options that default to false
+      // We explicitly check strict equality to undefined
+      if (option.defaultValue !== undefined) {
+        // We use the attributeName since that's the camelCase'd name that is used to access options
+        // @ts-expect-error Overriding private field
+        this._optionValues[option.attributeName()] = option.defaultValue;
+      }
+    }
+  }
+}
+
+export function withMergedOptions(
+  command: MedplumCommand,
+  fn: ((...args: any[]) => Promise<void>) | ((...args: any[]) => void)
+): (args: any[]) => Promise<void> {
+  // The .action callback takes an extra parameter which is the command or options.
+  return async (args: any[]): Promise<void> => {
+    const expectedArgsCount = command.registeredArguments.length;
+    const actionArgs = args.slice(0, expectedArgsCount);
+    actionArgs[expectedArgsCount] = command.optsWithGlobals();
+    try {
+      const result: Promise<void> | void = fn(...actionArgs);
+      if (isPromise(result)) {
+        await result;
+      }
+    } finally {
+      // We want to always make sure to reset the options to default at the end of each execution,
+      // We do it in a finally block in case the command errors
+      command.resetOptionDefaults();
+    }
+  };
 }

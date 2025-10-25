@@ -1,25 +1,7 @@
-import { stringify } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
-
-/**
- * Compares two arrays of objects.
- * @param incoming - The incoming array of elements.
- * @param existing - The existing array of elements.
- * @returns True if the arrays are equal.  False if they are different.
- */
-export function compareArrays(incoming: any[], existing: any[]): boolean {
-  if (incoming.length !== existing.length) {
-    return false;
-  }
-
-  for (let i = 0; i < incoming.length; i++) {
-    if (stringify(incoming[i]) !== stringify(existing[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getSearchParameters } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * Derives an "identifier" search parameter from a reference search parameter.
@@ -42,4 +24,25 @@ export function deriveIdentifierSearchParameter(inputParam: SearchParameter): Se
     type: 'token',
     expression: `(${inputParam.expression}).identifier`,
   } as SearchParameter;
+}
+
+function getDerivedSearchParameters(searchParams: SearchParameter[]): SearchParameter[] {
+  const result: SearchParameter[] = [];
+  for (const searchParameter of searchParams) {
+    if (searchParameter.type === 'reference') {
+      result.push(deriveIdentifierSearchParameter(searchParameter));
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns all search parameters for a resource type, including both standard and derived parameters.
+ * @param resourceType - The FHIR resource type.
+ * @returns Array of SearchParameters including both standard and derived parameters.
+ */
+export function getStandardAndDerivedSearchParameters(resourceType: string): SearchParameter[] {
+  const standardParams = Object.values(getSearchParameters(resourceType) ?? {});
+  const derivedParams = getDerivedSearchParameters(standardParams);
+  return [...standardParams, ...derivedParams];
 }

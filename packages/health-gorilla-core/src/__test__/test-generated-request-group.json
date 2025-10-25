@@ -1,0 +1,469 @@
+{
+  "resourceType": "RequestGroup",
+  "meta": {
+    "profile": ["https://healthgorilla.com/fhir/StructureDefinition/hg-order"]
+  },
+  "contained": [
+    {
+      "resourceType": "Account",
+      "status": "active",
+      "meta": {
+        "profile": ["https://healthgorilla.com/fhir/StructureDefinition/hg-order-account"]
+      },
+      "type": {
+        "coding": [
+          {
+            "system": "https://healthgorilla.com/fhir/StructureDefinition/hg-order-account",
+            "code": "thirdParty",
+            "display": "Third Party"
+          },
+          {
+            "system": "https://www.healthgorilla.com/order-billto",
+            "code": "thirdParty",
+            "display": "Third Party"
+          }
+        ],
+        "text": "Third Party"
+      },
+      "coverage": [
+        {
+          "coverage": {
+            "reference": "#coverage1"
+          },
+          "priority": 1
+        },
+        {
+          "coverage": {
+            "reference": "#coverage2"
+          },
+          "priority": 2
+        }
+      ],
+      "id": "account"
+    },
+    {
+      "resourceType": "Practitioner",
+      "id": "practitioner",
+      "meta": {
+        "profile": [
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner",
+          "https://healthgorilla.com/fhir/StructureDefinition/hg-practitioner"
+        ]
+      },
+      "identifier": [
+        {
+          "system": "https://www.healthgorilla.com",
+          "value": "07a83165d5b41cb967291e44"
+        },
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                "code": "NPI",
+                "display": "National provider identifier"
+              }
+            ],
+            "text": "National provider identifier"
+          },
+          "system": "http://hl7.org/fhir/sid/us-npi",
+          "value": "1790970747"
+        }
+      ],
+      "active": true,
+      "name": [
+        {
+          "use": "official",
+          "text": "Amisha S Bhakta, PA",
+          "family": "Bhakta",
+          "given": ["Amisha", "S"],
+          "suffix": ["PA"]
+        }
+      ],
+      "address": [
+        {
+          "use": "work",
+          "text": "444 8th St, San Francisco, CA 94103",
+          "line": ["444 8th St"],
+          "city": "San Francisco",
+          "state": "CA",
+          "postalCode": "94103",
+          "country": "USA"
+        }
+      ]
+    },
+    {
+      "resourceType": "Organization",
+      "id": "organization",
+      "identifier": [
+        {
+          "system": "https://www.healthgorilla.com",
+          "value": "t-c7ed4760dc104c90bdad9e26"
+        },
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                "code": "AN",
+                "display": "Account number"
+              }
+            ],
+            "text": "Account_number"
+          },
+          "value": "12457895"
+        }
+      ],
+      "partOf": {
+        "reference": "Organization/5ce92c6497ce182e63160939"
+      }
+    },
+    {
+      "resourceType": "Coverage",
+      "identifier": [
+        {
+          "value": "11111119"
+        }
+      ],
+      "status": "active",
+      "subscriber": {
+        "reference": "#subscriber0"
+      },
+      "beneficiary": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      },
+      "relationship": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+            "code": "self",
+            "display": "Self"
+          }
+        ],
+        "text": "Self"
+      },
+      "payor": [
+        {
+          "reference": "Organization/ip-3514"
+        }
+      ],
+      "class": [
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                "code": "group",
+                "display": "Group"
+              }
+            ],
+            "text": "Group"
+          },
+          "value": "12345670"
+        }
+      ],
+      "id": "coverage1"
+    },
+    {
+      "resourceType": "Coverage",
+      "identifier": [
+        {
+          "value": "111111188"
+        }
+      ],
+      "status": "active",
+      "subscriber": {
+        "reference": "#subscriber1"
+      },
+      "beneficiary": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      },
+      "relationship": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+            "code": "self",
+            "display": "Self"
+          }
+        ],
+        "text": "Self"
+      },
+      "payor": [
+        {
+          "reference": "Organization/ip-3464"
+        }
+      ],
+      "class": [
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                "code": "group",
+                "display": "Group"
+              }
+            ],
+            "text": "Group"
+          },
+          "value": "12345679"
+        }
+      ],
+      "id": "coverage2"
+    },
+    {
+      "resourceType": "Patient",
+      "name": [
+        {
+          "given": ["Five"],
+          "family": "Testpatient"
+        }
+      ],
+      "telecom": [
+        {
+          "system": "phone",
+          "use": "home",
+          "value": "9729163001"
+        },
+        {
+          "system": "email",
+          "use": "home",
+          "value": "fivetestpatient+labcorp@example.com"
+        }
+      ],
+      "gender": "female",
+      "birthDate": "1951-01-17",
+      "address": [
+        {
+          "use": "home",
+          "type": "physical",
+          "line": ["4775 Crown Blvd"],
+          "city": "Dallas",
+          "state": "TX",
+          "postalCode": "75063",
+          "country": "US"
+        }
+      ],
+      "identifier": [
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                "code": "MR",
+                "display": "Medical record number"
+              }
+            ],
+            "text": "Medical record number"
+          },
+          "value": "PID-Testpatient-five"
+        },
+        {
+          "system": "https://www.healthgorilla.com",
+          "value": "d05b5e65f4f4ade2e5033b17"
+        }
+      ],
+      "id": "subscriber0",
+      "patient": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      }
+    },
+    {
+      "resourceType": "Patient",
+      "name": [
+        {
+          "given": ["Five"],
+          "family": "Testpatient"
+        }
+      ],
+      "telecom": [
+        {
+          "system": "phone",
+          "use": "home",
+          "value": "9729163001"
+        },
+        {
+          "system": "email",
+          "use": "home",
+          "value": "fivetestpatient+labcorp@example.com"
+        }
+      ],
+      "gender": "female",
+      "birthDate": "1951-01-17",
+      "address": [
+        {
+          "use": "home",
+          "type": "physical",
+          "line": ["4775 Crown Blvd"],
+          "city": "Dallas",
+          "state": "TX",
+          "postalCode": "75063",
+          "country": "US"
+        }
+      ],
+      "identifier": [
+        {
+          "type": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                "code": "MR",
+                "display": "Medical record number"
+              }
+            ],
+            "text": "Medical record number"
+          },
+          "value": "PID-Testpatient-five"
+        },
+        {
+          "system": "https://www.healthgorilla.com",
+          "value": "d05b5e65f4f4ade2e5033b17"
+        }
+      ],
+      "id": "subscriber1",
+      "patient": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      }
+    },
+    {
+      "resourceType": "ServiceRequest",
+      "subject": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      },
+      "status": "active",
+      "intent": "order",
+      "category": [
+        {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "103693007",
+              "display": "Diagnostic procedure"
+            }
+          ]
+        }
+      ],
+      "code": {
+        "coding": [
+          {
+            "code": "083935"
+          }
+        ],
+        "text": "083935"
+      },
+      "note": [
+        {
+          "text": "Note 1"
+        }
+      ],
+      "priority": "routine",
+      "id": "labtest0"
+    },
+    {
+      "resourceType": "Specimen",
+      "id": "specimen",
+      "subject": {
+        "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+        "display": "Five Testpatient"
+      },
+      "collection": {
+        "collectedDateTime": "2023-11-22T01:10:00.000Z"
+      }
+    }
+  ],
+  "extension": [
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-authorizedBy",
+      "valueReference": {
+        "reference": "Organization/5ce92c6497ce182e63160939"
+      }
+    },
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-account",
+      "valueReference": {
+        "reference": "#account"
+      }
+    },
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-performer",
+      "valueReference": {
+        "reference": "Organization/f-a855594f43fe879c6570b92e"
+      }
+    },
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-requester",
+      "extension": [
+        {
+          "url": "agent",
+          "valueReference": {
+            "reference": "#practitioner"
+          }
+        },
+        {
+          "url": "onBehalfOf",
+          "valueReference": {
+            "reference": "#organization"
+          }
+        }
+      ]
+    },
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-deliveryOptions",
+      "extension": [
+        {
+          "url": "electronic",
+          "valueBoolean": true
+        }
+      ]
+    },
+    {
+      "url": "https://www.healthgorilla.com/fhir/StructureDefinition/requestgroup-specimen",
+      "valueReference": {
+        "reference": "#specimen"
+      }
+    }
+  ],
+  "status": "active",
+  "intent": "order",
+  "subject": {
+    "reference": "Patient/d05b5e65f4f4ade2e5033b17",
+    "display": "Five Testpatient"
+  },
+  "author": {
+    "reference": "Practitioner/07a83165d5b41cb967291e44",
+    "display": "Amisha S Bhakta PA"
+  },
+  "reasonCode": [
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/sid/icd-10",
+          "code": "D63.1"
+        }
+      ],
+      "text": "D63.1"
+    },
+    {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/sid/icd-10",
+          "code": "E04.2"
+        }
+      ],
+      "text": "E04.2"
+    }
+  ],
+  "action": [
+    {
+      "resource": {
+        "reference": "#labtest0",
+        "display": "083935"
+      }
+    }
+  ],
+  "note": []
+}

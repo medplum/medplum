@@ -1,4 +1,6 @@
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
+import { JSX } from 'react';
 import { Container } from '../components/Container';
 import styles from './pricing.module.css';
 
@@ -7,10 +9,13 @@ export default function PricingPage(): JSX.Element {
     <Layout title="Pricing">
       <Container>
         <div className={styles.pricing}>
-          <h1>Pricing</h1>
+          <h1>Build the future of healthcare</h1>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            For questions about pricing or to schedule a demo please reach out to us at{' '}
-            <a href="mailto:hello@medplum.com">hello@medplum.com</a>.
+            Plans for startups, enterprises, and everyone in between.
+          </p>
+          <p style={{ maxWidth: 600, margin: '20px auto' }}>
+            For questions about pricing or to <Link href="https://cal.com/medplum/15">schedule a demo</Link> please
+            reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
             <colgroup>
@@ -25,7 +30,12 @@ export default function PricingPage(): JSX.Element {
             <thead>
               <tr>
                 <th />
-                <th colSpan={4}>Cloud Hosted</th>
+                <th colSpan={4}>
+                  Cloud Hosted
+                  <sup>
+                    <a href="#note17">17</a>
+                  </sup>
+                </th>
                 <th colSpan={2}>Self Hosted</th>
               </tr>
               <tr>
@@ -37,13 +47,13 @@ export default function PricingPage(): JSX.Element {
                   </sup>
                 </th>
                 <th>
-                  Developer
+                  Production
                   <sup>
                     <a href="#note2">2</a>
                   </sup>
                 </th>
                 <th>
-                  Production
+                  Premium
                   <sup>
                     <a href="#note3">3</a>
                   </sup>
@@ -51,7 +61,7 @@ export default function PricingPage(): JSX.Element {
                 <th>
                   Enterprise
                   <sup>
-                    <a href="/enterprise">4</a>
+                    <a href="#note4">4</a>
                   </sup>
                 </th>
                 <th>
@@ -63,7 +73,7 @@ export default function PricingPage(): JSX.Element {
                 <th>
                   Enterprise
                   <sup>
-                    <a href="/enterprise">6</a>
+                    <a href="#note6">6</a>
                   </sup>
                 </th>
               </tr>
@@ -73,23 +83,23 @@ export default function PricingPage(): JSX.Element {
                 <td>Pricing</td>
                 <td>Free</td>
                 <td>
-                  <a href="https://buy.stripe.com/fZeeXv2Or0uM1MY3cd">$300/mo</a>
+                  <Link href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">$2,000/mo</Link>
                 </td>
                 <td>
-                  <a href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">$2,000/mo</a>
+                  <Link href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">$6,000/mo</Link>
                 </td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</Link>
                 </td>
                 <td>Free</td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</Link>
                 </td>
               </tr>
               <tr>
                 <td>Standard BAA</td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td>✔️</td>
                 <td></td>
@@ -106,70 +116,81 @@ export default function PricingPage(): JSX.Element {
               </tr>
               <tr>
                 <td>
-                  FHIR Resources Stored
+                  Bots
                   <sup>
                     <a href="#note7">7</a>
                   </sup>
                 </td>
-                <td>500</td>
-                <td>1,000</td>
-                <td>50,000</td>
-                <td>Contact us</td>
-                <td></td>
-                <td>Contact us</td>
-              </tr>
-              <tr>
-                <td>
-                  Bot Invocations
-                  <sup>
-                    <a href="#note8">8</a>
-                  </sup>
-                </td>
-                <td>None</td>
-                <td>1,000</td>
-                <td>5,000</td>
+                <td>Not enabled</td>
+                <td>Enabled</td>
+                <td>Enabled</td>
                 <td>Contact us</td>
                 <td></td>
                 <td>Contact us</td>
               </tr>
               <tr>
                 <td>Emails Sent</td>
-                <td>None</td>
-                <td>50/mo</td>
-                <td>500/mo</td>
+                <td>Not enabled</td>
+                <td>Not enabled</td>
+                <td>Enabled</td>
                 <td>Contact us</td>
                 <td></td>
                 <td>Contact us</td>
               </tr>
               <tr>
-                <td>Open Onboarding</td>
-                <td>Testing only</td>
-                <td>Testing only</td>
-                <td>✔️</td>
-                <td>✔️</td>
+                <td>Usage</td>
+                <td>
+                  Test
+                  <sup>
+                    <a href="#note13">13</a>
+                  </sup>
+                </td>
+                <td>
+                  Growth
+                  <sup>
+                    <a href="#note14">14</a>
+                  </sup>
+                </td>
+                <td>
+                  Scale
+                  <sup>
+                    <a href="#note15">15</a>
+                  </sup>
+                </td>
+                <td>
+                  Enterprise
+                  <sup>
+                    <a href="#note16">16</a>
+                  </sup>
+                </td>
                 <td></td>
-                <td>✔️</td>
+                <td>
+                  Enterprise
+                  <sup>
+                    <a href="#note16">16</a>
+                  </sup>
+                </td>
               </tr>
               <tr>
                 <td>Custom Domains</td>
                 <td>None</td>
-                <td>None</td>
                 <td>1</td>
+                <td>5</td>
                 <td>Contact us</td>
                 <td></td>
                 <td>Contact us</td>
               </tr>
               <tr>
-                <td>Pre-built Integrations</td>
+                <td>UMLS Terminology</td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td></td>
                 <td>✔️</td>
               </tr>
               <tr>
-                <td>Single Tenant</td>
+                <td>Dedicated Infrastructure</td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -178,12 +199,90 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
               </tr>
               <tr>
-                <td>Support</td>
                 <td>
-                  Discord
-                  <br />
-                  GitHub
+                  <b>Communications</b>
                 </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  Websocket Subscriptions
+                  <sup>
+                    <a href="#note10">10</a>
+                  </sup>
+                </td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>Concurrent Websocket Connections</td>
+                <td></td>
+                <td></td>
+                <td>2000</td>
+                <td>Contact Us</td>
+                <td></td>
+                <td>Contact Us</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Integrations</b>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Lab/Diagnostics</td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>Medications/eRx</td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>HL7 Integration Engine</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>
+                  <b>Support</b>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Channels</td>
                 <td>
                   Discord
                   <br />
@@ -192,7 +291,12 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Discord (SLA)
                   <br />
-                  Github (SLA)
+                  GitHub (SLA)
+                </td>
+                <td>
+                  Private Slack
+                  <br />
+                  Email (SLA)
                 </td>
                 <td>Contact us</td>
                 <td>
@@ -201,6 +305,15 @@ export default function PricingPage(): JSX.Element {
                   GitHub
                 </td>
                 <td>Contact us</td>
+              </tr>
+              <tr>
+                <td>Shared Roadmap</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
               </tr>
               <tr>
                 <td>
@@ -226,7 +339,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Required Auth Methods
                   <sup>
-                    <a href="#note9">9</a>
+                    <a href="#note8">8</a>
                   </sup>
                 </td>
                 <td></td>
@@ -235,6 +348,20 @@ export default function PricingPage(): JSX.Element {
                 <td>✔️</td>
                 <td>DIY</td>
                 <td>✔️</td>
+              </tr>
+              <tr>
+                <td>
+                  External Identity Providers
+                  <sup>
+                    <a href="#note12">12</a>
+                  </sup>
+                </td>
+                <td></td>
+                <td>1</td>
+                <td>2</td>
+                <td>Contact Us</td>
+                <td>DIY</td>
+                <td>Contact Us</td>
               </tr>
               <tr>
                 <td>WAF Blocking</td>
@@ -249,22 +376,13 @@ export default function PricingPage(): JSX.Element {
                 <td>IP Address Restrictions</td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td>DIY</td>
                 <td>✔️</td>
               </tr>
               <tr>
-                <td>Observability Suite</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>✔️</td>
-                <td>DIY</td>
-                <td>✔️</td>
-              </tr>
-              <tr>
-                <td>SAML</td>
+                <td>SCIM Administration</td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -275,17 +393,46 @@ export default function PricingPage(): JSX.Element {
               <tr>
                 <td>Access Policies</td>
                 <td>Testing only</td>
-                <td>5</td>
-                <td>20</td>
+                <td>3</td>
+                <td>10</td>
                 <td>Contact us</td>
                 <td>DIY</td>
                 <td>Contact us</td>
               </tr>
               <tr>
                 <td>
+                  <strong>Observability</strong>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Log Streaming</td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td>✔️</td>
+                <td>DIY</td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>CISO Dashboard</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>
                   <strong>Compliance</strong>
                   <sup>
-                    <a href="#note10">10</a>
+                    <a href="#note9">9</a>
                   </sup>
                 </td>
                 <td></td>
@@ -301,7 +448,7 @@ export default function PricingPage(): JSX.Element {
                 <td>✔️</td>
                 <td>✔️</td>
                 <td>✔️</td>
-                <td>DIY</td>
+                <td></td>
                 <td>Contact us</td>
               </tr>
               <tr>
@@ -310,7 +457,7 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
                 <td></td>
                 <td>Contact us</td>
-                <td>DIY</td>
+                <td></td>
                 <td>Contact us</td>
               </tr>
               <tr>
@@ -319,8 +466,22 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
                 <td>✔️</td>
                 <td>Contact us</td>
-                <td>DIY</td>
+                <td></td>
                 <td>Contact us</td>
+              </tr>
+              <tr>
+                <td>
+                  Audit Support
+                  <sup>
+                    <a href="#note11">11</a>
+                  </sup>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
               </tr>
               <tr>
                 <td>
@@ -328,17 +489,17 @@ export default function PricingPage(): JSX.Element {
                 </td>
                 <td></td>
                 <td>
-                  <a href="https://buy.stripe.com/fZeeXv2Or0uM1MY3cd">Start Now</a>
+                  <Link href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</Link>
                 </td>
                 <td>
-                  <a href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</a>
+                  <Link href="https://buy.stripe.com/6oEbLj9cPb9q63e4gk">Start Now</Link>
                 </td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</Link>
                 </td>
                 <td></td>
                 <td>
-                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                  <Link href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</Link>
                 </td>
               </tr>
             </tbody>
@@ -352,38 +513,75 @@ export default function PricingPage(): JSX.Element {
                 <strong>Free</strong>: recommended for prototyping or learning.
               </li>
               <li id="note2">
-                <strong>Developer</strong>: recommended for developer environments or test environments.
+                <strong>Production</strong>: recommended for production applications, e.g. treatment of patients or
+                conducting research.
               </li>
               <li id="note3">
-                <strong>Production</strong>: recommended for production use, e.g. treatment of patients or conducting
-                research.
+                <strong>Premium</strong>: Includes diagnostics, lab and medication integrations. Recommended for
+                messaging heavy and integration heavy use cases.
               </li>
               <li id="note4">
                 <strong>Enterprise</strong>: recommended for institutions with complex workflow, integration or data
-                requirements. Read more details on our <a href="/enterprise">Enterprise</a> offering page.
+                requirements. Read more details on our <Link href="/enterprise">Enterprise</Link> offering page.
               </li>
               <li id="note5">
                 <strong>Community</strong>: refers to self-hosting the{' '}
-                <a href="https://github.com/medplum/medplum">Medplum application</a>.
+                <Link href="https://github.com/medplum/medplum">Medplum application</Link>.
               </li>
               <li id="note6">
-                <strong>Enterprise Managed</strong>: recommended for those who must host the application on their own
-                cloud infrastructure.
+                <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their
+                own cloud infrastructure. Read more details on our <Link href="/enterprise">Enterprise</Link> offering
+                page.
               </li>
               <li id="note7">
-                Data usage refers to the creation of{' '}
-                <a href="https://www.medplum.com/docs/fhir-datastore/create-fhir-data">FHIR Resources</a>. This figure
-                is cumulative.
+                <strong>Bot Invocations</strong>: refers to custom logic written by customers to execute their workflow.{' '}
+                <Link href="https://www.medplum.com/products/bots">Automation</Link> documentation and{' '}
+                <Link href="https://www.medplum.com/products/integration">integration</Link> are a good place to learn
+                more.
               </li>
               <li id="note8">
-                Bots and automation refer to custom logic written by customers to execute their workflow.{' '}
-                <a href="https://www.medplum.com/products/bots">Automation</a> documentation and{' '}
-                <a href="https://www.medplum.com/products/integration">integration</a> are a good place to learn more.
+                <strong>Required authentication methods</strong>: Organizations can require that all logins at their
+                domain go through their identity provider of choice.
               </li>
-              <li id="note9">Organizations can require that all logins go through Google Authentication.</li>
+              <li id="note9">
+                <strong>Compliance</strong>: Many complex compliance scenarios can be supported with this
+                infrastructure. You can read more on the{' '}
+                <Link href="https://www.medplum.com/docs/compliance">compliance page</Link>.
+              </li>
               <li id="note10">
-                Many complex compliance scenarios can be supported with this infrastructure. You can read more on the{' '}
-                <a href="https://www.medplum.com/docs/compliance">compliance page</a>.
+                <strong>Websocket Subscriptions</strong>: maximal number of concurrent websocket{' '}
+                <Link href="https://www.medplum.com/docs/subscriptions">subscriptions</Link> available.
+              </li>
+              <li id="note11">
+                <strong>Audit Support</strong>: receive support during common audits common in health system and payor
+                partnerships.
+              </li>
+              <li id="note12">
+                <strong>External Identity Providers</strong>: connect your Okta, Azure SSO, Auth0 or other oAuth based
+                identity provider.
+              </li>
+              <li id="note13">
+                <strong> Test Usage</strong>: For low-volume use cases such as development, testing, or small internal
+                tools.
+              </li>
+              <li id="note14">
+                <strong> Growth Usage</strong>: Supports moderate usage typical of production deployments or lightweight
+                applications.
+              </li>
+              <li id="note15">
+                <strong> Scale Usage</strong>: Designed for high-throughput environments with sustained and growing
+                traffic.
+              </li>
+              <li id="note16">
+                <strong> Enterprise Usage</strong>: Handles very high or mission-critical volumes, with customization
+                and service level guarantees.
+              </li>
+              <li id="note17">
+                <strong> Cloud Hosted</strong>: Medplum is available for purchase through{' '}
+                <Link href="https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa">
+                  AWS Marketplace
+                </Link>
+                .
               </li>
             </ol>
           </div>

@@ -1,6 +1,25 @@
-import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
-import { notifications, showNotification } from '@mantine/notifications';
-import { forbidden, MedplumClient, normalizeErrorString } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  Button,
+  Checkbox,
+  Code,
+  Divider,
+  Grid,
+  InputWrapper,
+  Modal,
+  NativeSelect,
+  NumberInput,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
+import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
   DateTimeInput,
@@ -8,12 +27,19 @@ import {
   Form,
   FormSection,
   OperationOutcomeAlert,
+  ReferenceDisplay,
+  ReferenceInput,
   useMedplum,
 } from '@medplum/react';
-import { IconCheck, IconX } from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { startAsyncJob } from './SuperAdminStartAsyncJob';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState<ReactNode | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -35,8 +61,12 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
-  function rebuildCompartments(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/compartments', formData);
+  function reloadCron(): void {
+    startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function runPendingDataMigration(): void {
+    startAsyncJob(medplum, 'Run Pending Data Migration', 'admin/super/migrate');
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -58,6 +88,58 @@ export function SuperAdminPage(): JSX.Element {
       .post('admin/super/setpassword', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getDatabaseStats(formData: Record<string, string>): void {
+    medplum
+      .post(
+        'fhir/R4/$db-stats',
+        formData.tableNames
+          ? {
+              resourceType: 'Parameters',
+              parameter: [{ name: 'tableNames', valueString: formData.tableNames }],
+            }
+          : undefined
+      )
+      .then((params: Parameters) => {
+        setModalTitle('Database Stats');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getDatabaseInvalidIndexes(): void {
+    medplum
+      .post('fhir/R4/$db-invalid-indexes')
+      .then((params: Parameters) => {
+        setModalTitle('Database Invalid Indexes');
+        setModalContent(
+          <pre>
+            {params.parameter
+              ?.filter((p) => p.name === 'invalidIndex')
+              .map((p) => p.valueString)
+              .join('\n')}
+          </pre>
+        );
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getSchemaDiff(): void {
+    medplum
+      .post('fhir/R4/$db-schema-diff')
+      .then((params: Parameters) => {
+        setModalTitle('Schema Diff');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function reconcileSchemaDiff(): void {
+    startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
   return (
@@ -93,6 +175,17 @@ export function SuperAdminPage(): JSX.Element {
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
       </Form>
       <Divider my="lg" />
+      <Title order={2}>Run Pending Data Migration</Title>
+      <p>
+        When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
+        off the background data migration process.
+      </p>
+      <Form onSubmit={runPendingDataMigration}>
+        <Stack>
+          <Button type="submit">Start Migration</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
       <Title order={2}>Reindex Resources</Title>
       <p>
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
@@ -100,24 +193,16 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form onSubmit={reindexResourceType}>
         <Stack>
-          <FormSection title="Resource Type">
-            <TextInput name="resourceType" placeholder="Reindex Resource Type" />
+          <FormSection title="Resource Type" htmlFor="resourceType">
+            <TextInput id="resourceType" name="resourceType" placeholder="Reindex Resource Type" />
+          </FormSection>
+          <FormSection title="Search Filter" htmlFor="filter">
+            <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
+          </FormSection>
+          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+            <MaxResourceVersionInput />
           </FormSection>
           <Button type="submit">Reindex</Button>
-        </Stack>
-      </Form>
-      <Divider my="lg" />
-      <Title order={2}>Rebuild Compartments</Title>
-      <p>
-        When Medplum changes how resource compartments are derived, the system may require a rebuild for old resources
-        to take effect.
-      </p>
-      <Form onSubmit={rebuildCompartments}>
-        <Stack>
-          <FormSection title="Resource Type">
-            <TextInput name="resourceType" placeholder="Compartments Resource Type" />
-          </FormSection>
-          <Button type="submit">Rebuild Compartments</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
@@ -159,47 +244,238 @@ export function SuperAdminPage(): JSX.Element {
           <Button type="submit">Force Set Password</Button>
         </Stack>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Stats</Title>
+      <p>Query current table statistics from the database.</p>
+      <Form onSubmit={getDatabaseStats}>
+        <Stack>
+          <FormSection title="Table Names (comma-delimited)" htmlFor="tableNames">
+            <TextInput id="tableNames" name="tableNames" placeholder="Observation,Observation_History" />
+          </FormSection>
+          <Button type="submit">Get Database Stats</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Invalid Indexes</Title>
+      <p>Query invalid indexes from the database.</p>
+      <Form onSubmit={getDatabaseInvalidIndexes}>
+        <Stack>
+          <Button type="submit">Get Database Invalid Indexes</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Schema Drift</Title>
+      <p>Show the schema migration needed to match the expected database schema.</p>
+      <Grid>
+        <Grid.Col span={6}>
+          <Form onSubmit={getSchemaDiff}>
+            <Stack>
+              <Button type="submit">Get Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Form onSubmit={reconcileSchemaDiff}>
+            <Stack>
+              <Button type="submit">Reconcile Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+      </Grid>
+      <Divider my="lg" />
+      <Title order={2}>Reload Cron Resources</Title>
+      <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
+      <Form onSubmit={reloadCron}>
+        <Stack>
+          <Button type="submit">Reload Cron Resources</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Explain Search</Title>
+      <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
+      <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
+
+      <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
+        {modalContent}
+      </Modal>
     </Document>
   );
 }
 
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
-  notifications.show({
-    id: url,
-    loading: true,
-    title,
-    message: 'Running...',
-    autoClose: false,
-    withCloseButton: false,
-  });
+function MaxResourceVersionInput(): JSX.Element {
+  const [value, setValue] = useState<'outdated' | 'all' | 'specific'>('outdated');
+  return (
+    <>
+      <NativeSelect
+        id="reindexType"
+        name="reindexType"
+        value={value}
+        onChange={(e) => setValue(e.target.value as 'outdated' | 'all' | 'specific')}
+        data={[
+          { label: 'Outdated resources', value: 'outdated' },
+          { label: 'All resources', value: 'all' },
+          { label: 'Less than or equal to a specific version', value: 'specific' },
+        ]}
+      />
+      {value === 'specific' && (
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
+      )}
+    </>
+  );
+}
 
-  const options: RequestInit = { method: 'POST' };
-  if (body) {
-    options.body = JSON.stringify(body);
+export function ExplainSearchForm({
+  setModalTitle,
+  setModalContent,
+  openModal,
+}: {
+  setModalTitle: (title: string) => void;
+  setModalContent: (content: ReactNode) => void;
+  openModal: () => void;
+}): JSX.Element {
+  const medplum = useMedplum();
+  const [explainProject, setExplainProject] = useState<Reference<Project> | undefined>();
+  const [explainProfile, setExplainProfile] = useState<Reference<Practitioner | Patient> | undefined>();
+  const [explainMemberships, setExplainMemberships] = useState<ProjectMembership[] | undefined>();
+  const [onBehalfOfProjectMembership, setOnBehalfOfProjectMembership] = useState<
+    Reference<ProjectMembership> | undefined
+  >();
+
+  const explainProfileSearchCriteria: Record<string, string> | undefined = useMemo(() => {
+    if (!explainProject?.reference) {
+      return undefined;
+    }
+
+    return { '_has:ProjectMembership:profile:project': explainProject.reference };
+  }, [explainProject]);
+
+  useEffect(() => {
+    setOnBehalfOfProjectMembership(undefined);
+
+    if (!explainProfile?.reference && !explainProject?.reference) {
+      setExplainMemberships(undefined);
+      return;
+    }
+
+    medplum
+      .searchResources('ProjectMembership', {
+        profile: explainProfile?.reference,
+        project: explainProject?.reference,
+        _count: 20,
+      })
+      .then((memberships) => {
+        setExplainMemberships(memberships);
+        if (memberships.length === 1) {
+          setOnBehalfOfProjectMembership(createReference(memberships[0]));
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      });
+  }, [medplum, explainProfile, explainProject]);
+
+  const searchCriteria = useMemo(() => {
+    const criteria: Record<string, string> = {};
+    if (explainProfile?.reference) {
+      criteria['profile'] = explainProfile?.reference;
+    }
+    if (explainProject?.reference) {
+      criteria['project'] = explainProject?.reference;
+    }
+
+    return criteria;
+  }, [explainProfile, explainProject]);
+
+  function explainSearch(formData: Record<string, any>): void {
+    if (!formData.query) {
+      showNotification({ color: 'red', message: 'Query is required', autoClose: false });
+      return;
+    }
+    const onBehalfOfHeader: string | undefined = formData['onBehalfOfProjectMembership'];
+    delete formData['onBehalfOfProjectMembership'];
+
+    const toSubmit = {
+      query: formData.query,
+      analyze: formData.analyze === 'on',
+      format: 'text',
+    };
+
+    const headers: HeadersInit = {};
+    if (onBehalfOfHeader) {
+      headers['x-medplum-on-behalf-of'] = onBehalfOfHeader;
+    }
+
+    medplum
+      .post('fhir/R4/$explain', toSubmit, undefined, { headers })
+      .then((params: Parameters) => {
+        setModalTitle('Database Explain');
+        const explainLine = params.parameter?.find((p) => p.name === 'explain')?.valueString;
+        const queryLine = params.parameter?.find((p) => p.name === 'query')?.valueString;
+        const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
+        const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
+        setModalContent(
+          <Code block maw={'100%'}>
+            {lines}
+          </Code>
+        );
+        openModal();
+      })
+      .catch((err) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      });
   }
 
-  medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
-      notifications.update({
-        id: url,
-        color: 'green',
-        title,
-        message: 'Done',
-        icon: <IconCheck size="1rem" />,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    })
-    .catch((err) => {
-      notifications.update({
-        id: url,
-        color: 'red',
-        title,
-        message: normalizeErrorString(err),
-        icon: <IconX size="1rem" />,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    });
+  if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
+    return <OperationOutcomeAlert outcome={forbidden} />;
+  }
+  return (
+    <Form onSubmit={explainSearch}>
+      <Stack>
+        <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
+        <Checkbox name="analyze" label="Analyze" />
+        <InputWrapper label="On Behalf Of">
+          <Stack gap="sm">
+            <ReferenceInput<Project>
+              required
+              placeholder="Project"
+              targetTypes={['Project']}
+              name="onBehalfOfProject"
+              onChange={setExplainProject}
+            />
+            <ReferenceInput<Practitioner | Patient>
+              required
+              placeholder="Practitioner or Patient"
+              name="onBehalfOfProfile"
+              targetTypes={['Practitioner', 'Patient']}
+              onChange={setExplainProfile}
+              searchCriteria={explainProfileSearchCriteria}
+            />
+            {explainMemberships?.length !== 1 && (
+              <ReferenceInput<ProjectMembership>
+                required
+                placeholder="ProjectMembership"
+                name="onBehalfOfProjectMembership"
+                targetTypes={['ProjectMembership']}
+                onChange={setOnBehalfOfProjectMembership}
+                searchCriteria={searchCriteria}
+              />
+            )}
+            {explainMemberships?.length === 1 && (
+              <>
+                <input
+                  type="hidden"
+                  name="onBehalfOfProjectMembership"
+                  value={getReferenceString(explainMemberships[0])}
+                />
+                <ReferenceDisplay value={createReference(explainMemberships[0])} />
+              </>
+            )}
+            {!onBehalfOfProjectMembership && <Text fs="italic">On Behalf Of not set. Running as super admin</Text>}
+          </Stack>
+        </InputWrapper>
+        <Button type="submit">Explain Search</Button>
+      </Stack>
+    </Form>
+  );
 }

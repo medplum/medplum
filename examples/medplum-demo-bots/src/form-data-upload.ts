@@ -1,11 +1,15 @@
-import { MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 
 export async function handler(medplum: MedplumClient): Promise<any> {
   // Create the PDF
   const binary = await medplum.createPdf({
-    content: ['Hello Medplum'],
+    docDefinition: {
+      content: ['Hello Medplum'],
+    },
   });
   console.log('Binary result', JSON.stringify(binary, null, 2));
 

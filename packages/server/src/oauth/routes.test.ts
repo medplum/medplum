@@ -1,8 +1,10 @@
-import { ClientApplication } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestClient } from '../test.setup';
 
 const app = express();
@@ -25,7 +27,7 @@ describe('OAuth Routes', () => {
       .type('form')
       .send({
         grant_type: 'client_credentials',
-        client_id: client.id as string,
+        client_id: client.id,
         client_secret: client.secret as string,
       });
 

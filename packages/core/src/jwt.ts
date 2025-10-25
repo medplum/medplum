@@ -1,4 +1,57 @@
-import { decodeBase64 } from './base64';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { decodeBase64Url } from './base64';
+
+/**
+ * Recognized JWT Claims Set members, any other members may also be present.
+ * @see {@link https://github.com/panva/jose/blob/main/src/types.d.ts#L532}
+ */
+export interface JWTPayload {
+  /**
+   * JWT Issuer
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.1|RFC7519#section-4.1.1}
+   */
+  iss?: string;
+
+  /**
+   * JWT Subject
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.2|RFC7519#section-4.1.2}
+   */
+  sub?: string;
+
+  /**
+   * JWT Audience
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3|RFC7519#section-4.1.3}
+   */
+  aud?: string | string[];
+
+  /**
+   * JWT ID
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.7|RFC7519#section-4.1.7}
+   */
+  jti?: string;
+
+  /**
+   * JWT Not Before
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.5|RFC7519#section-4.1.5}
+   */
+  nbf?: number;
+
+  /**
+   * JWT Expiration Time
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.4|RFC7519#section-4.1.4}
+   */
+  exp?: number;
+
+  /**
+   * JWT Issued At
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519#section-4.1.6|RFC7519#section-4.1.6}
+   */
+  iat?: number;
+
+  /** Any other JWT Claim Set member. */
+  [propName: string]: unknown;
+}
 
 /**
  * Decodes a section of a JWT.
@@ -6,15 +59,8 @@ import { decodeBase64 } from './base64';
  * @param payload - The JWT payload string.
  * @returns Collection of key value claims in the JWT payload.
  */
-function decodePayload(payload: string): Record<string, number | string> {
-  const cleanedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const decodedPayload = decodeBase64(cleanedPayload);
-  const uriEncodedPayload = Array.from(decodedPayload).reduce((acc, char) => {
-    const uriEncodedChar = ('00' + char.charCodeAt(0).toString(16)).slice(-2);
-    return `${acc}%${uriEncodedChar}`;
-  }, '');
-  const jsonPayload = decodeURIComponent(uriEncodedPayload);
-  return JSON.parse(jsonPayload);
+function decodePayload(payload: string): JWTPayload {
+  return JSON.parse(decodeBase64Url(payload));
 }
 
 /**
@@ -31,7 +77,7 @@ export function isJwt(token: string): boolean {
  * @param token - JWT token.
  * @returns Collection of key value claims in the JWT payload.
  */
-export function parseJWTPayload(token: string): Record<string, number | string> {
+export function parseJWTPayload(token: string): JWTPayload {
   const [_header, payload, _signature] = token.split('.');
   return decodePayload(payload);
 }
@@ -45,7 +91,7 @@ export function isMedplumAccessToken(accessToken: string): boolean {
   try {
     const payload = parseJWTPayload(accessToken);
     return typeof payload.login_id === 'string';
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }
@@ -63,7 +109,7 @@ export function tryGetJwtExpiration(token: string): number | undefined {
       return exp * 1000;
     }
     return undefined;
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 }

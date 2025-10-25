@@ -1,99 +1,120 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
-import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { getDisplayString } from '@medplum/core';
+import type { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
-import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
-import { Form } from '../Form/Form';
-import { killEvent } from '../utils/dom';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { CollapsibleSection } from './CollapsibleSection';
+import { MedicationDialog } from './MedicationDialog';
+import SummaryItem from './SummaryItem';
+import styles from './SummaryItem.module.css';
 
 export interface MedicationsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly medicationRequests: MedicationRequest[];
+  readonly onClickResource?: (resource: MedicationRequest) => void;
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {
   const medplum = useMedplum();
   const [medicationRequests, setMedicationRequests] = useState<MedicationRequest[]>(props.medicationRequests);
+  const [editMedication, setEditMedication] = useState<MedicationRequest>();
   const [opened, { open, close }] = useDisclosure(false);
-  const [code, setCode] = useState<CodeableConcept>();
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
-      const status = formData.status as 'active' | 'stopped';
-      medplum
-        .createResource<MedicationRequest>({
-          resourceType: 'MedicationRequest',
-          status,
-          intent: 'order',
-          encounter: props.encounter ? createReference(props.encounter) : undefined,
-          medicationCodeableConcept: code,
-          subject: createReference(props.patient),
-        })
-        .then((newRequest) => {
-          setMedicationRequests([newRequest, ...medicationRequests]);
-          close();
-        })
-        .catch(console.error);
+    async (medication: MedicationRequest) => {
+      if (medication.id) {
+        const updatedMedication = await medplum.updateResource(medication);
+        setMedicationRequests(medicationRequests.map((m) => (m.id === updatedMedication.id ? updatedMedication : m)));
+      } else {
+        const newMedication = await medplum.createResource(medication);
+        setMedicationRequests([newMedication, ...medicationRequests]);
+      }
+
+      setEditMedication(undefined);
+      close();
     },
-    [medplum, props.patient, props.encounter, medicationRequests, close, code]
+    [medplum, medicationRequests, close]
   );
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Medications
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
-          }}
-        >
-          + Add
-        </Anchor>
-      </Group>
-      {medicationRequests.length > 0 ? (
-        <Box>
-          {medicationRequests.map((request) => (
-            <Badge
-              mt={4}
-              key={request.id}
-              variant="light"
-              maw="50%"
-              color={request.status === 'active' ? 'blue' : 'gray'}
-            >
-              <CodeableConceptDisplay value={request.medicationCodeableConcept} />
-            </Badge>
-          ))}
-        </Box>
-      ) : (
-        <Text>(none)</Text>
-      )}
-      <Modal opened={opened} onClose={close} title="Add Medication Request">
-        <Form onSubmit={handleSubmit}>
-          <Stack h={275}>
-            <CodeableConceptInput
-              name="request"
-              data-autofocus={true}
-              binding="https://app.medplum.com/ValueSet/16d6f7b7-7eeb-4d0e-a83b-83be082aa10b"
-              onChange={(request) => setCode(request)}
-            />
-            <Radio.Group mt={32} name="status" label="Request Status" required>
-              <Radio key="active" value="active" label="active" my="xs" />
-              <Radio key="stopped" value="stopped" label="stopped" my="xs" />
-            </Radio.Group>
-            <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
-            </Group>
-          </Stack>
-        </Form>
+      <CollapsibleSection
+        title="Medications"
+        onAdd={() => {
+          setEditMedication(undefined);
+          open();
+        }}
+      >
+        {medicationRequests.length > 0 ? (
+          <Flex direction="column" gap={8}>
+            {medicationRequests.map((medication) => (
+              <SummaryItem
+                key={medication.id}
+                onClick={() => {
+                  setEditMedication(medication);
+                  open();
+                }}
+              >
+                <Box>
+                  <Text fw={500} className={styles.itemText}>
+                    {getDisplayString(medication)}
+                  </Text>
+                  <Group mt={2} gap={4}>
+                    {medication.status && (
+                      <StatusBadge
+                        color={getStatusColor(medication.status)}
+                        variant="light"
+                        status={medication.status}
+                      />
+                    )}
+                  </Group>
+                </Box>
+              </SummaryItem>
+            ))}
+          </Flex>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
+      <Modal opened={opened} onClose={close} title={editMedication ? 'Edit Medication' : 'Add Medication'}>
+        <MedicationDialog
+          patient={props.patient}
+          encounter={props.encounter}
+          medication={editMedication}
+          onSubmit={handleSubmit}
+        />
       </Modal>
     </>
   );
+}
+
+function getStatusColor(status?: string): string {
+  if (!status) {
+    return 'gray';
+  }
+
+  switch (status) {
+    case 'active':
+      return 'green';
+    case 'stopped':
+      return 'red';
+    case 'on-hold':
+      return 'yellow';
+    case 'cancelled':
+      return 'red';
+    case 'completed':
+      return 'blue';
+    case 'entered-in-error':
+      return 'red';
+    case 'draft':
+      return 'gray';
+    default:
+      return 'gray';
+  }
 }

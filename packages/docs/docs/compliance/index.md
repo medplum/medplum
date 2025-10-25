@@ -14,7 +14,7 @@ This is a living document, and we continually update our resources. We welcome f
 
 - [ONC Certification](onc.md)
 - [CLIA/CAP](clia-cap.md)
-- [SOC2 Type 2](soc2.md)
+- [SOC2 Type II](soc2.md)
 - [HIPAA compliance](hipaa.md)
 - [CFR Part 11](cfr11.md)
 - [ISO 9001](iso9001.md)
@@ -33,5 +33,6 @@ The materials in this section can be used in multiple contexts, and depend on yo
 
 ## Reference
 
-- [Medplum Compliance](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acompliance) on Github
+- [Medplum's Trust Center on Vanta](https://app.vanta.com/medplum.com/trust/ybe9my9rkc6ok8yijm04h)
+- [Medplum Compliance](https://github.com/orgs/medplum/projects/17) on Github
 - [Medplum Audit and Logging](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) on Github

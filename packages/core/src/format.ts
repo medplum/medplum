@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -9,10 +11,12 @@ import {
   Period,
   Quantity,
   Range,
+  Reference,
   Timing,
   TimingRepeat,
 } from '@medplum/fhirtypes';
-import { capitalize } from './utils';
+import type { TypedValue } from './types';
+import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -28,12 +32,57 @@ export interface HumanNameFormatOptions {
 }
 
 /**
+ * Converts a typed value to a string.
+ * @param typedValue - The typed value to convert to a string.
+ * @returns The string representation of the typed value.
+ */
+export function typedValueToString(typedValue: TypedValue | undefined): string {
+  if (!typedValue) {
+    return '';
+  }
+  switch (typedValue.type) {
+    case 'Address':
+      return formatAddress(typedValue.value);
+    case 'CodeableConcept':
+      return formatCodeableConcept(typedValue.value);
+    case 'Coding':
+      return formatCoding(typedValue.value);
+    case 'ContactPoint':
+      return typedValue.value.value;
+    case 'HumanName':
+      return formatHumanName(typedValue.value);
+    case 'Quantity':
+      return formatQuantity(typedValue.value);
+    case 'Reference':
+      return formatReferenceString(typedValue.value);
+    default:
+      return typedValue.value?.toString() ?? '';
+  }
+}
+
+/**
+ * Formats a FHIR Reference as a string.
+ * @param value - The reference to format.
+ * @returns The formatted reference string.
+ */
+export function formatReferenceString(value: Reference | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.display ?? value.reference ?? stringify(value);
+}
+
+/**
  * Formats a FHIR Address as a string.
  * @param address - The address to format.
  * @param options - Optional address format options.
  * @returns The formatted address string.
  */
-export function formatAddress(address: Address, options?: AddressFormatOptions): string {
+export function formatAddress(address: Address | undefined, options?: AddressFormatOptions): string {
+  if (!address) {
+    return '';
+  }
+
   const builder = [];
 
   if (address.line) {
@@ -67,7 +116,11 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
  * @param options - Optional name format options.
  * @returns The formatted name string.
  */
-export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
+export function formatHumanName(name: HumanName | undefined, options?: HumanNameFormatOptions): string {
+  if (!name) {
+    return '';
+  }
+
   const builder = [];
 
   if (name.prefix && options?.prefix !== false) {
@@ -143,7 +196,7 @@ export function isValidDate(date: Date): boolean {
 export function formatDate(
   date: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!date) {
     return '';
@@ -167,7 +220,7 @@ export function formatDate(
 export function formatTime(
   time: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!time) {
     return '';
@@ -190,7 +243,7 @@ export function formatTime(
 export function formatDateTime(
   dateTime: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!dateTime) {
     return '';
@@ -212,7 +265,7 @@ export function formatDateTime(
 export function formatPeriod(
   period: Period | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!period || (!period.start && !period.end)) {
     return '';
@@ -423,10 +476,17 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
 /**
  * Formats a Coding element as a string.
  * @param coding - A FHIR Coding element
+ * @param includeCode - If true, includes both the code and display if available
  * @returns The coding as a string.
  */
-export function formatCoding(coding: Coding | undefined): string {
-  return ensureString(coding?.display) ?? ensureString(coding?.code) ?? '';
+export function formatCoding(coding: Coding | undefined, includeCode?: boolean): string {
+  const display = ensureString(coding?.display);
+  if (display) {
+    const code = includeCode ? ensureString(coding?.code) : undefined;
+    return `${display}${code ? ' (' + code + ')' : ''}`;
+  }
+
+  return ensureString(coding?.code) ?? '';
 }
 
 /**
@@ -439,24 +499,24 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
     return '';
   }
 
-  if ('component' in obs) {
-    return (obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / ');
-  }
+  const result = [];
 
   if (obs.valueQuantity) {
-    return formatQuantity(obs.valueQuantity);
+    result.push(formatQuantity(obs.valueQuantity));
+  } else if (obs.valueCodeableConcept) {
+    result.push(formatCodeableConcept(obs.valueCodeableConcept));
+  } else {
+    const valueString = ensureString(obs.valueString);
+    if (valueString) {
+      result.push(valueString);
+    }
   }
 
-  if (obs.valueCodeableConcept) {
-    return formatCodeableConcept(obs.valueCodeableConcept);
+  if ('component' in obs) {
+    result.push((obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / '));
   }
 
-  const valueString = ensureString(obs.valueString);
-  if (valueString) {
-    return valueString;
-  }
-
-  return '';
+  return result.join(' / ').trim();
 }
 
 /**

@@ -1,14 +1,21 @@
-import { FhircastConnection, FhircastMessageEvent, FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  FhircastConnection,
+  FhircastMessageEvent,
+  FhircastMessagePayload,
+  SubscriptionRequest,
+} from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useRef, useState } from 'react';
 
 type ConnectionStatus = 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING' | 'DISCONNECTED' | 'UNSUBSCRIBED';
 
 type WebSocketHandlerProps = {
-  clientId: string;
-  onMessage: (message: FhircastMessagePayload) => void;
-  subRequest?: SubscriptionRequest;
-  onStatusChange?: (status: ConnectionStatus) => void;
+  readonly clientId: string;
+  readonly onMessage: (message: FhircastMessagePayload) => void;
+  readonly subRequest?: SubscriptionRequest;
+  readonly onStatusChange?: (status: ConnectionStatus) => void;
 };
 
 export default function ConnectionHandler(props: WebSocketHandlerProps): null {
@@ -16,7 +23,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
   const { subRequest, onMessage, onStatusChange } = props;
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('IDLE');
 
-  const connectionRef = useRef<FhircastConnection>();
+  const connectionRef = useRef<FhircastConnection>(undefined);
   const onMessageRef = useRef(onMessage);
 
   useEffect(() => {

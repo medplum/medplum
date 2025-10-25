@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { AnnotationInput, AnnotationInputProps } from './AnnotationInput';
+import type { AnnotationInputProps } from './AnnotationInput';
+import { AnnotationInput } from './AnnotationInput';
 
 const medplum = new MockClient();
 
@@ -16,6 +19,7 @@ function setup(args: AnnotationInputProps): void {
 describe('AnnotationInput', () => {
   test('Renders undefined value', () => {
     setup({
+      path: '',
       name: 'a',
     });
     expect(screen.queryByDisplayValue('Hello world')).toBeNull();
@@ -23,6 +27,7 @@ describe('AnnotationInput', () => {
 
   test('Renders default value', () => {
     setup({
+      path: '',
       name: 'a',
       defaultValue: {
         text: 'Hello world',
@@ -35,6 +40,7 @@ describe('AnnotationInput', () => {
     const onChange = jest.fn();
 
     setup({
+      path: '',
       name: 'a',
       onChange,
     });
@@ -57,6 +63,7 @@ describe('AnnotationInput', () => {
 
   test('Set value without change listener', async () => {
     setup({
+      path: '',
       name: 'a',
     });
 
@@ -73,6 +80,7 @@ describe('AnnotationInput', () => {
     const onChange = jest.fn();
 
     setup({
+      path: '',
       name: 'a',
       defaultValue: {
         text: 'Hello world',

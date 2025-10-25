@@ -1,19 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
-import { getClient } from '../database';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import {
   generateAccessToken,
   generateIdToken,
   generateRefreshToken,
   generateSecret,
-  getJwks,
   getSigningKey,
   initKeys,
   verifyJwt,
 } from './keys';
-import { withTestContext } from '../test.setup';
 
 describe('Keys', () => {
   beforeAll(async () => {
@@ -25,25 +25,6 @@ describe('Keys', () => {
     await shutdownApp();
   });
 
-  test('Init keys', () =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
-
-      // First, delete all existing keys
-      await getClient().query('DELETE FROM "JsonWebKey"');
-
-      // Init once
-      await initKeys(config);
-      const jwks1 = getJwks();
-      expect(jwks1.keys.length).toBe(1);
-
-      // Init again
-      await initKeys(config);
-      const jwks2 = getJwks();
-      expect(jwks2.keys.length).toBe(1);
-      expect(jwks2.keys[0].kid).toEqual(jwks2.keys[0].kid);
-    }));
-
   test('Missing issuer', async () => {
     const config = await loadTestConfig();
     delete (config as any).issuer;
@@ -51,7 +32,7 @@ describe('Keys', () => {
       await initKeys(config);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing issuer');
+      expect((err as Error).message).toStrictEqual('Missing issuer');
     }
   });
 
@@ -62,13 +43,13 @@ describe('Keys', () => {
     try {
       await initKeys(undefined as unknown as MedplumServerConfig);
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid server configuration');
+      expect((err as Error).message).toStrictEqual('Invalid server configuration');
     }
 
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
   });
 
@@ -79,19 +60,19 @@ describe('Keys', () => {
     try {
       await initKeys({} as unknown as MedplumServerConfig);
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing issuer');
+      expect((err as Error).message).toStrictEqual('Missing issuer');
     }
 
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
 
     try {
       await verifyJwt('xyz');
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
   });
 
@@ -103,7 +84,7 @@ describe('Keys', () => {
 
     // Construct a broken JWT with empty "kid"
     const accessToken = await new SignJWT({})
-      .setProtectedHeader({ alg: 'RS256', kid: '', typ: 'JWT' })
+      .setProtectedHeader({ alg: 'ES256', kid: '', typ: 'JWT' })
       .setIssuedAt()
       .setIssuer(config.issuer)
       .setAudience('my-audience')
@@ -113,7 +94,7 @@ describe('Keys', () => {
     try {
       await verifyJwt(accessToken);
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing kid header');
+      expect((err as Error).message).toStrictEqual('Missing kid header');
     }
   });
 
@@ -136,7 +117,7 @@ describe('Keys', () => {
     try {
       await verifyJwt(accessToken);
     } catch (err) {
-      expect((err as Error).message).toEqual('Key not found');
+      expect((err as Error).message).toStrictEqual('Key not found');
     }
   });
 
@@ -152,7 +133,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate access token', async () => {
@@ -169,7 +150,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate refresh token', async () => {
@@ -184,7 +165,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate secret', () => {

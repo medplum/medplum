@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Blockquote, Stack } from '@mantine/core';
-import { Annotation, Task } from '@medplum/fhirtypes';
+import type { Annotation, Task } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
+import type { JSX } from 'react';
 
 export interface NotesPageProps {
-  task: Task;
+  readonly task: Task;
 }
 
 export function NotesPage(props: NotesPageProps): JSX.Element {

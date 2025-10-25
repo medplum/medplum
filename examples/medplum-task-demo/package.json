@@ -1,15 +1,17 @@
 {
   "name": "medplum-task-demo",
-  "version": "3.0.1",
+  "version": "4.5.2",
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm run build:bots && tsc && vite build",
+    "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
-    "build:bots": "npm run clean && npm run lint && tsc",
+    "dev": "npm run build:bots && vite",
     "lint": "eslint src/",
-    "dev": "vite",
-    "build": "npm run clean && tsc && vite build",
-    "preview": "vite preview"
+    "lint:fix": "eslint src/ --fix",
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "prettier": {
     "printWidth": 120,
@@ -17,30 +19,41 @@
     "trailingComma": "es5"
   },
   "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
     "extends": [
       "@medplum/eslint-config"
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.4.2",
-    "@mantine/hooks": "7.4.2",
-    "@mantine/notifications": "7.4.2",
-    "@medplum/core": "3.0.1",
-    "@medplum/definitions": "3.0.1",
-    "@medplum/eslint-config": "3.0.1",
-    "@medplum/fhirtypes": "3.0.1",
-    "@medplum/react": "3.0.1",
-    "@tabler/icons-react": "2.46.0",
-    "@types/node": "20.11.5",
-    "@types/react": "18.2.48",
-    "@types/react-dom": "18.2.18",
-    "@vitejs/plugin-react": "4.2.1",
-    "postcss": "8.4.33",
-    "postcss-preset-mantine": "1.12.3",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-router-dom": "6.21.3",
-    "typescript": "5.3.3",
-    "vite": "5.0.12"
+    "@mantine/core": "7.17.8",
+    "@mantine/hooks": "7.17.8",
+    "@mantine/notifications": "7.17.8",
+    "@medplum/core": "4.5.2",
+    "@medplum/definitions": "4.5.2",
+    "@medplum/eslint-config": "4.5.2",
+    "@medplum/fhirtypes": "4.5.2",
+    "@medplum/mock": "4.5.2",
+    "@medplum/react": "4.5.2",
+    "@tabler/icons-react": "3.35.0",
+    "@types/node": "20.19.23",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.1.0",
+    "postcss": "8.5.6",
+    "postcss-preset-mantine": "1.18.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-router": "7.9.4",
+    "rimraf": "6.0.1",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.3",
+    "vite": "7.1.12",
+    "vitest": "4.0.3"
+  },
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

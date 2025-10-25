@@ -1,5 +1,8 @@
-import { BotEvent, CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10, MedplumClient } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
   Address,
   Coverage,
   CoverageClass,

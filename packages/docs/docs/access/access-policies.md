@@ -74,9 +74,9 @@ While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it do
 
 :::
 
-### Read-only Resource Type
+### Read-only Access
 
-The following access policy grants read-only access to the [`Patient`](/docs/api/fhir/resources/patient)resource type:
+The following access policy grants read-only access to the [`Patient`](/docs/api/fhir/resources/patient) resource type:
 
 ```json
 {
@@ -91,7 +91,85 @@ The following access policy grants read-only access to the [`Patient`](/docs/api
 }
 ```
 
-Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
+Similarly, the following access policy grants read/write access to the Patient resource, and also grants _only_ read access to all other resources:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Read Only Example",
+  "resource": [
+    {
+      "resourceType": "Patient"
+    },
+    {
+      "resourceType": "*",
+      "readonly": true
+    }
+  ]
+}
+```
+
+Attempting to modify a read-only resource will result in an HTTP [`403 Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403) response.
+
+### FHIR Interactions
+
+The above read-only access is special case of the more general ability to control which interactions are allowed for a set of resources. The `AccessPolicy.resource.interaction` field can specify a subset of [FHIR interactions](http://hl7.org/fhir/R4/codesystem-restful-interaction.html) that can be performed on resources of the given type. The following are equivalent:
+
+```js
+{
+  "resourceType": "AccessPolicy",
+  "name": "Read-only modes",
+  "resource": [
+    // Legacy shorthand
+    {
+      "resourceType": "*",
+      "readonly": true,
+    },
+    // Explicit list of interactions
+    {
+      "resourceType": "*",
+      "interaction": ["read", "search", "history", "vread"]
+    }
+  ]
+}
+```
+
+The `interaction` array can contain any of the supported interaction types:
+
+- `create`: Write new resources
+- `read`: Read a specific resource by ID
+- `update`: Update an existing resource, including patch operations
+- `delete`: Soft-delete resources
+- `search`: Search for resources of the given type
+- `history`: View the list of previous versions of a resource
+- `vread`: View a specific previous version of a resource
+
+:::tip Related interactions
+
+Some FHIR interactions are used in concert by the server, and so should be considered together:
+
+- [Upserts](/docs/fhir-datastore/working-with-fhir#upsert) require `search` to identify existing resources, in addition to both `create` and `update`
+- `search` access may be required as part of a `create` or `update` if the resource contains any [Conditional references](/docs/migration/convert-to-fhir#linking-data-using-conditional-references), in order to resolve references to individual resources
+- `read` access to referenced resource types is required in `create` and `update` interactions, if [`Project.checkReferencesOnWrite`](/docs/api/fhir/medplum/project) is set
+- `history` and `vread` are often specified together, to grant access to the entire [version history](/docs/fhir-datastore/resource-history) of resources
+
+:::
+
+For example, this policy allows creating new resources and viewing any resources for which the ID is known, but will
+prevent searching for or modifying existing resources:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Write-only Sandbox",
+  "resource": [
+    {
+      "resourceType": "*",
+      "interaction": ["create", "read"]
+    }
+  ]
+}
+```
 
 ### Read-only Elements
 
@@ -133,7 +211,7 @@ Constraints on writes to a resource can also be specified using [FHIRPath expres
 
 :::tip
 
-In resource constraints, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
+In case of a resource being created, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 
 :::
 
@@ -192,29 +270,71 @@ The AccessPolicy below grants access to all `Observation` resources that belong 
 }
 ```
 
+### Binaries
+
+The FHIR `Binary` resource is a special case. It is used to store arbitrary binary data, such as images or documents. Unlike other resources, `Binary` resources are not searchable, and therefore do not have search parameters, and therefore cannot use the `criteria` field in an `AccessPolicy`.
+
+To control access to `Binary` resources, you must use the `securityContext` field. This field is a reference to another resource, such as a `Patient`, `Practitioner`, or `Organization`, that defines the context in which the binary data is relevant.
+
+See [Binary Security Context](/docs/access/binary-security-context) for more information on how to use the `securityContext` field to control access to `Binary` resources.
+
 ### Parameterized Policies
 
 For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
 
-```json
-{
-  "resourceType": "AccessPolicy",
-  "id": "123",
-  "name": "Parameterized Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?organization=%provider_organization"
-    },
-    {
-      "resourceType": "DiagnosticReport",
-      "criteria": "DiagnosticReport?performer=%provider_organization"
-    }
-  ]
-}
-```
+Medplum provides the following built-in variables:
 
-This policy acts like a template, that can be instantiated (potentially multiple times) on a user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
+| Variable      | Description                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`) |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                  |
+
+<details open>
+  <summary>
+    Example: General Practitioner Access Policy
+  </summary>
+  The following access policy grants access to all [`Patient`](/docs/api/fhir/resources/patient) resources where the current user (a [`Practitioner`](/docs/api/fhir/resources/practitioner)) is listed as the general practitioner:
+  ```json
+  {
+    "resourceType": "AccessPolicy",
+    "name": "GP Access Policy",
+    "resource": [
+      {
+        "resourceType": "Patient",
+        "criteria": "Patient?general-practitioner=%profile"
+      }
+    ]
+  }
+  ```
+</details>
+
+You can also set custom variables for access policies on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
+This policy then acts like a _template_, that can be instantiated, potentially multiple times, with different values for each variable.
+
+<details open>
+  <summary>
+    Example: Custom Access Policy Variables
+  </summary>
+  In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations.
+
+    ```json
+    {
+      "resourceType": "AccessPolicy",
+      "id": "123",
+      "name": "Parameterized Access Policy",
+      "resource": [
+        {
+          "resourceType": "Patient",
+          "criteria": "Patient?organization=%provider_organization"
+        },
+        {
+          "resourceType": "DiagnosticReport",
+          "criteria": "DiagnosticReport?performer=%provider_organization"
+        }
+      ]
+    }
+    ```
+    We can set these variables on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource, as follows
 
 ```js
 {
@@ -244,7 +364,14 @@ This policy acts like a template, that can be instantiated (potentially multiple
 }
 ```
 
-In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations. See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
+</details>
+
+Some common use cases for parameterized policies include:
+
+- Granting access to parents of pediatric patients
+- Granting clinicians access to patients in a specific state, based on the clinician's state license
+
+See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
@@ -290,7 +417,7 @@ This access policy grants read-only access to all Patients that are within that 
 
 The `meta.account` property is not FHIR standard. It is an extra `Reference` property in the `Meta` section.
 
-For example:
+For example, here's how the Patient resource would look:
 
 ```json
 {
@@ -321,7 +448,13 @@ If you are building a patient-facing application (such as [FooMedical](https://g
 
 :::caution Open Patient Registration
 
-Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/auth/open-patient-registration) for instructions on enabling this functionality.
+Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/user-management/open-patient-registration) for instructions on enabling this functionality.
+
+:::
+
+:::danger Binary Access
+
+Binary resources cannot use compartment-based access controls. They require explicit `securityContext` declaration. See the [Binary Security Context](/docs/access/binary-security-context) documentation for more information.
 
 :::
 
@@ -426,6 +559,27 @@ The [patient access policy](#patient-access) above can be combined with [policy 
   ]
 }
 ```
+
+### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
+
+In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
+The recent enhancements introduce the **AccessPolicy.basedOn element**, which enhances traceability and linkage of access policies. These improvements are made accessible to the front end via the /auth/me endpoint, enabling seamless role-based access control (RBAC) for users. For more information, see the [PR](https://github.com/medplum/medplum/pull/4925) detailing the changes.
+
+This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
+
+- **Endpoint: /auth/me**
+
+  - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
+
+- **AccessPolicy.basedOn**
+
+  - This element is an array containing references to original AccessPolicy resources.
+  - It provides traceability by linking the resolved AccessPolicy back to its source policies.
+  - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.
+
+- **Client-Side**
+  - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
+  - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
 
 ## Related Resources
 

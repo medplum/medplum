@@ -10,7 +10,7 @@
           "value": "default-src 'none'; base-uri 'self'; child-src 'self'; connect-src 'self' *.medplum.com *.google.com *.google-analytics.com *.algolia.net vercel.live; font-src 'self' data: fonts.gstatic.com assets.vercel.com; form-action 'self' *.gstatic.com *.google.com; frame-ancestors 'self' *.medplum.com; frame-src 'self' *.medplum.com *.gstatic.com *.google.com *.youtube.com vercel.live; img-src 'self' data: *.medplum.com *.gstatic.com *.google.com *.googletagmanager.com github.com *.github.com *.githubusercontent.com *.youtube.com vercel.com assets.vercel.com; manifest-src 'self'; media-src 'self' *.medplum.com; script-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com *.googleapis.com *.googletagmanager.com vercel.live; style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com *.googleapis.com; worker-src 'self' blob: *.medplum.com *.gstatic.com *.google.com; upgrade-insecure-requests"
         },
         {
-          "key": "Permission-Policy",
+          "key": "Permissions-Policy",
           "value": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
         },
         {
@@ -50,16 +50,8 @@
       "destination": "/docs/access/access-policies"
     },
     {
-      "source": "/docs/auth/authentication-integration-patterns",
-      "destination": "/docs/auth/methods"
-    },
-    {
-      "source": "/docs/auth/:page(oauth-auth-code|client-credentials|google-auth|external-identity-providers|external-ids|token-exchange)",
-      "destination": "/docs/auth/methods/:page*"
-    },
-    {
       "source": "/docs/auth/okta-auth",
-      "destination": "/docs/auth/methods/domain-level-identity-providers"
+      "destination": "/docs/auth/domain-level-identity-providers"
     },
     {
       "source": "/docs/sdk/modules",
@@ -68,6 +60,78 @@
     {
       "source": "/docs/sdk/classes/MedplumClient",
       "destination": "/docs/sdk/core.medplumclient"
+    },
+    {
+      "source": "/docs/sdk/classes/MedplumClient",
+      "destination": "/docs/sdk/core.medplumclient"
+    },
+    {
+      "source": "/docs/fhir-datastore/migration-logic",
+      "destination": "/docs/migration"
+    },
+    {
+      "source": "/docs/fhir-datastore/adoption-strategy",
+      "destination": "/docs/migration"
+    },
+    {
+      "source": "/careers/solutions-engineer",
+      "destination": "/careers/forward-deployed-engineer"
+    },
+    {
+      "source": "/docs/auth/user-management-guide",
+      "destination": "/docs/user-management"
+    },
+    {
+      "source": "/docs/auth/methods",
+      "destination": "/docs/auth"
+    },
+    {
+      "source": "/docs/auth/methods/oauth-auth-code",
+      "destination": "/docs/auth/medplum-as-idp"
+    },
+    {
+      "source": "/docs/auth/methods/client-credentials",
+      "destination": "/docs/auth/client-credentials"
+    },
+    {
+      "source": "/docs/auth/methods/google-auth",
+      "destination": "/docs/auth/google-auth"
+    },
+    {
+      "source": "/docs/auth/methods/domain-level-identity-providers",
+      "destination": "/docs/auth/domain-level-identity-providers"
+    },
+    {
+      "source": "/docs/auth/methods/external-identity-providers",
+      "destination": "/docs/auth/external-identity-providers"
+    },
+    {
+      "source": "/docs/auth/methods/external-ids",
+      "destination": "/docs/user-management/external-ids"
+    },
+    {
+      "source": "/docs/auth/methods/on-behalf-of",
+      "destination": "/docs/auth/on-behalf-of"
+    },
+    {
+      "source": "/docs/auth/methods/token-exchange",
+      "destination": "/docs/auth/token-exchange"
+    },
+    {
+      "source": "/docs/auth/project-vs-server-scoped-users",
+      "destination": "/docs/user-management/project-vs-server-scoped-users"
+    },
+    {
+      "source": "/docs/auth/custom-emails",
+      "destination": "/docs/user-management/custom-emails"
+    },
+    {
+      "source": "/docs/auth/open-patient-registration",
+      "destination": "/docs/user-management/open-patient-registration"
+    },
+    {
+      "source": "/docs/graphql/basic-queries",
+      "destination": "/docs/graphql"
     }
   ]
 }

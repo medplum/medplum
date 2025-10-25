@@ -1,4 +1,6 @@
-import { Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Resource } from '@medplum/fhirtypes';
 
 /**
  * Cleans a resource of unwanted meta values.
@@ -22,30 +24,4 @@ export function cleanResource(resource: Resource): Resource {
     ...resource,
     meta,
   };
-}
-
-/**
- * Adds the supplied profileUrl to the resource.meta.profile if it is not already
- * specified
- * @param resource - A FHIR resource
- * @param profileUrl - The profile URL to add
- */
-export function addProfileToResource(resource: Resource, profileUrl: string): void {
-  if (!resource?.meta?.profile?.includes(profileUrl)) {
-    resource.meta = resource.meta ?? {};
-    resource.meta.profile = resource.meta.profile ?? [];
-    resource.meta.profile.push(profileUrl);
-  }
-}
-
-/**
- * Removes the supplied profileUrl from the resource.meta.profile if it is present
- * @param resource - A FHIR resource
- * @param profileUrl - The profile URL to remove
- */
-export function removeProfileFromResource(resource: Resource, profileUrl: string): void {
-  if (resource?.meta?.profile?.includes(profileUrl)) {
-    const index = resource.meta.profile.indexOf(profileUrl);
-    resource.meta.profile.splice(index, 1);
-  }
 }

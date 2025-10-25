@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { initApp } from './index';
-import { act, screen, waitFor } from './test-utils/render';
+import { act, screen } from './test-utils/render';
 
 describe('App Index', () => {
   beforeAll(() => {
@@ -11,8 +13,6 @@ describe('App Index', () => {
           }),
       })
     );
-
-    global.Request = jest.fn();
   });
 
   test('Renders', async () => {
@@ -23,10 +23,6 @@ describe('App Index', () => {
       await initApp();
     });
 
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    await act(async () => {
-      document.getElementById('root')?.remove();
-    });
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 });

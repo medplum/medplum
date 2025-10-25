@@ -1,9 +1,12 @@
-import { Parser } from '../fhirlexer/parse';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Parser } from '../fhirlexer/parse';
 import { initFhirPathParserBuilder } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { Operator } from '../search/search';
 import { tokenize } from './tokenize';
-import { FhirFilterComparison, FhirFilterConnective, FhirFilterExpression, FhirFilterNegation } from './types';
+import type { FhirFilterExpression } from './types';
+import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
 
 /**
  * The operatorMap maps FHIR _filter operators to Medplum search operators.
@@ -11,13 +14,13 @@ import { FhirFilterComparison, FhirFilterConnective, FhirFilterExpression, FhirF
  */
 const operatorMap: Record<string, Operator | undefined> = {
   // eq - an item in the set has an equal value
-  eq: Operator.EQUALS,
+  eq: Operator.EXACT,
   // ne - An item in the set has an unequal value
   ne: Operator.NOT_EQUALS,
   // co - An item in the set contains this value
   co: Operator.CONTAINS,
   // sw - An item in the set starts with this value
-  sw: undefined,
+  sw: Operator.STARTS_WITH,
   // ew - An item in the set ends with this value
   ew: undefined,
   // gt / lt / ge / le - A value in the set is (greater than, less than, greater or equal, less or equal) the given value
@@ -33,7 +36,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // eb - The value ends before the specified value
   eb: Operator.ENDS_BEFORE,
   // pr - The set is empty or not (value is false or true)
-  pr: Operator.MISSING,
+  pr: Operator.PRESENT,
   // po - True if a (implied) date period in the set overlaps with the implied period in the value
   po: undefined,
   // ss - True if the value subsumes a concept in the set
@@ -59,7 +62,11 @@ function getOperator(value: string): Operator {
 }
 
 class FilterParameterParser {
-  constructor(readonly parser: Parser) {}
+  readonly parser: Parser;
+
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): FhirFilterExpression {
     let result: FhirFilterExpression;

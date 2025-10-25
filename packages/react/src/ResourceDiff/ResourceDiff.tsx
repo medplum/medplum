@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
-import { Delta, diff } from '../utils/diff';
+import type { Resource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import type { Delta } from '../utils/diff';
+import { diff } from '../utils/diff';
 import classes from './ResourceDiff.module.css';
 
 export interface ResourceDiffProps {
-  original: Resource;
-  revised: Resource;
-  ignoreMeta?: boolean;
+  readonly original: Resource;
+  readonly revised: Resource;
+  readonly ignoreMeta?: boolean;
 }
 
 export function ResourceDiff(props: ResourceDiffProps): JSX.Element {

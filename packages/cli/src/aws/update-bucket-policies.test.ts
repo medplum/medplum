@@ -1,25 +1,36 @@
-import {
-  CloudFormationClient,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   CloudFormationClientResolvedConfig,
-  DescribeStackResourcesCommand,
-  DescribeStacksCommand,
-  ListStacksCommand,
-  ServiceInputTypes,
-  ServiceOutputTypes,
+  ServiceInputTypes as CloudFormationServiceInputTypes,
+  ServiceOutputTypes as CloudFormationServiceOutputTypes,
   StackResource,
 } from '@aws-sdk/client-cloudformation';
 import {
-  CloudFrontClient,
+  CloudFormationClient,
+  DescribeStackResourcesCommand,
+  DescribeStacksCommand,
+  ListStacksCommand,
+} from '@aws-sdk/client-cloudformation';
+import type {
   CloudFrontClientResolvedConfig,
-  CreateInvalidationCommand,
+  ServiceInputTypes as CloudFrontServiceInputTypes,
+  ServiceOutputTypes as CloudFrontServiceOutputTypes,
 } from '@aws-sdk/client-cloudfront';
-import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
-import { AwsStub, mockClient } from 'aws-sdk-client-mock';
-import fs from 'fs';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import type {
+  S3ClientResolvedConfig,
+  ServiceInputTypes as S3ServiceInputTypes,
+  ServiceOutputTypes as S3ServiceOutputTypes,
+} from '@aws-sdk/client-s3';
+import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client } from '@aws-sdk/client-s3';
+import type { AwsStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
+import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),
@@ -35,12 +46,23 @@ jest.mock('fs', () => ({
   },
 }));
 
-let cfMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFormationClientResolvedConfig>;
-let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: AwsStub<
+  CloudFormationServiceInputTypes,
+  CloudFormationServiceOutputTypes,
+  CloudFormationClientResolvedConfig
+>;
+let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
+let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-bucket-policies command', () => {
+  let processError: jest.SpyInstance;
+
   beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
@@ -122,12 +144,12 @@ describe('update-bucket-policies command', () => {
     s3Mock.on(GetBucketPolicyCommand).resolves({ Policy: '{}' });
     s3Mock.on(PutBucketPolicyCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient) as AwsStub<
-      ServiceInputTypes,
-      ServiceOutputTypes,
-      CloudFrontClientResolvedConfig
-    >;
+    cloudFrontMock = mockClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   test('Success', async () => {
@@ -146,15 +168,18 @@ describe('update-bucket-policies command', () => {
     );
 
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'dev']);
-    expect(console.log).toBeCalledWith('App bucket policy:');
+    expect(console.log).toHaveBeenCalledWith('App bucket policy:');
   });
 
   test('Config not found', async () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
 
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found: not-found');
+    await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
   });
 
   test('Stack not found', async () => {
@@ -164,33 +189,36 @@ describe('update-bucket-policies command', () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
-    await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found: not-found');
+    await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
+    expect(processError).toHaveBeenCalledWith('Error: Stack not found: not-found\n');
   });
 
   describe('updateBucketPolicy', () => {
     test('Bucket not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy('App', undefined, undefined, undefined, {});
-      expect(console.log).toBeCalledWith('App bucket not found');
+      await expect(updateBucketPolicy('App', undefined, undefined, undefined, {})).rejects.toThrow(
+        'App bucket not found'
+      );
     });
 
     test('Distribution not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy('App', { PhysicalResourceId: 'x' } as StackResource, undefined, undefined, {});
-      expect(console.log).toBeCalledWith('App distribution not found');
+      await expect(
+        updateBucketPolicy('App', { PhysicalResourceId: 'x' } as StackResource, undefined, undefined, {})
+      ).rejects.toThrow('App distribution not found');
     });
 
     test('OAI not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy(
-        'App',
-        { PhysicalResourceId: 'x' } as StackResource,
-        { PhysicalResourceId: 'x' } as StackResource,
-        undefined,
-        {}
-      );
-      expect(console.log).toBeCalledWith('App OAI not found');
+      await expect(
+        updateBucketPolicy(
+          'App',
+          { PhysicalResourceId: 'x' } as StackResource,
+          { PhysicalResourceId: 'x' } as StackResource,
+          undefined,
+          {}
+        )
+      ).rejects.toThrow('App OAI not found');
     });
 
     test('Dry run', async () => {
@@ -202,7 +230,7 @@ describe('update-bucket-policies command', () => {
         { PhysicalResourceId: 'x' } as StackResource,
         { dryrun: true }
       );
-      expect(console.log).toBeCalledWith('Dry run - skipping updates');
+      expect(console.log).toHaveBeenCalledWith('Dry run - skipping updates');
     });
   });
 });

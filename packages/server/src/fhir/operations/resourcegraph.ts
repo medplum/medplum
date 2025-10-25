@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -7,12 +10,12 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
 } from '@medplum/core';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
@@ -20,10 +23,11 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
-import { Repository } from '../repo';
-import { sendResponse } from '../response';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
+import type { Repository } from '../repo';
+
+type ResourceCache = Record<string, WithId<Resource>>;
 
 /**
  * Handles a Resource $graph request.
@@ -31,10 +35,10 @@ import { sendResponse } from '../response';
  * The operation fetches all the data related to this resources as defined by a GraphDefinition resource
  *
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
+export async function resourceGraphHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { resourceType, id } = req.params;
   const definition = await validateQueryParameters(req);
@@ -43,21 +47,24 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   }
 
   const rootResource = await ctx.repo.readResource(resourceType, id);
-  const results = [rootResource] as Resource[];
-  const resourceCache = {} as Record<string, Resource>;
+  const results = [rootResource];
+  const resourceCache: ResourceCache = Object.create(null);
   resourceCache[getReferenceString(rootResource)] = rootResource;
   if ('url' in rootResource) {
     resourceCache[(rootResource as { url: string }).url] = rootResource;
   }
   await followLinks(ctx.repo, rootResource, definition.link, results, resourceCache);
 
-  await sendResponse(res, allOk, {
-    resourceType: 'Bundle',
-    entry: deduplicateResources(results).map((r) => ({
-      resource: r,
-    })),
-    type: 'collection',
-  });
+  return [
+    allOk,
+    {
+      resourceType: 'Bundle',
+      entry: deduplicateResources(results).map((r) => ({
+        resource: r,
+      })),
+      type: 'collection',
+    },
+  ];
 }
 
 /**
@@ -83,14 +90,14 @@ type SearchLink = Omit<GraphDefinitionLink, 'path'> & {
   target: Required<Pick<GraphDefinitionLinkTarget, 'type' | 'params'>>;
 };
 function isSearchLink(link: GraphDefinitionLink): link is SearchLink {
-  return link.path === undefined && link.target !== undefined && link.target.every((t) => t.type && t.params);
+  return !!(link.path === undefined && link.target?.every((t) => t.type && t.params));
 }
 async function followLinks(
   repo: Repository,
-  resource: Resource,
+  resource: WithId<Resource>,
   links: GraphDefinitionLink[] | undefined,
-  results: Resource[],
-  resourceCache: Record<string, Resource>,
+  results: WithId<Resource>[],
+  resourceCache: ResourceCache,
   depth = 0
 ): Promise<void> {
   // Circuit Breaker
@@ -104,7 +111,7 @@ async function followLinks(
   }
   for (const link of links) {
     for (const target of link.target || []) {
-      let linkedResources: Resource[];
+      let linkedResources: WithId<Resource>[];
 
       if (isFhirPathLink(link)) {
         linkedResources = await followFhirPathLink(repo, link, target, resource, resourceCache);
@@ -139,16 +146,16 @@ async function followFhirPathLink(
   repo: Repository,
   link: FhirPathLink,
   target: GraphDefinitionLinkTarget,
-  resource: Resource,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
-  const results = [] as Resource[];
+  resource: WithId<Resource>,
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
+  const results = [] as WithId<Resource>[];
 
   const elements = evalFhirPathTyped(link.path, [toTypedValue(resource)]);
 
   // The only kinds of links we can follow are 'reference search parameters'. This includes elements of type
   // Reference and type canonical
-  if (!elements.every((elem) => [PropertyType.Reference, PropertyType.canonical].includes(elem.type))) {
+  if (!elements.every((elem) => ([PropertyType.Reference, PropertyType.canonical] as string[]).includes(elem.type))) {
     throw new OperationOutcomeError(badRequest('Invalid link path. Must return a path to a Reference type'));
   }
 
@@ -171,13 +178,13 @@ async function followReferenceElements(
   repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
   const targetReferences = elements
     .filter((elem) => elem.value.reference?.split('/')[0] === target.type)
     .map((elem) => elem.value as Reference);
 
-  const results = [] as Resource[];
+  const results = [] as WithId<Resource>[];
 
   for (const ref of targetReferences) {
     if (ref.reference) {
@@ -199,12 +206,12 @@ async function followCanonicalElements(
   repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
   // Filter out Resources where we've seen the canonical URL
   const targetUrls = elements.map((elem) => elem.value as string);
 
-  const results = [] as Resource[];
+  const results = [] as WithId<Resource>[];
   for (const url of targetUrls) {
     if (url in resourceCache) {
       results.push(resourceCache[url]);
@@ -214,7 +221,7 @@ async function followCanonicalElements(
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
-        getRequestContext().logger.warn('Found more than 1 resource with canonical URL', { url });
+        getLogger().warn('Found more than 1 resource with canonical URL', { url });
       }
 
       // Cache here to speed up subsequent loop iterations
@@ -237,11 +244,11 @@ async function followCanonicalElements(
  */
 async function followSearchLink(
   repo: Repository,
-  resource: Resource,
+  resource: WithId<Resource>,
   link: SearchLink,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
-  const results = [] as Resource[];
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
+  const results = [] as WithId<Resource>[];
   for (const target of link.target) {
     const searchResourceType = target.type;
     const params = target.params as string;
@@ -251,7 +258,7 @@ async function followSearchLink(
     const searchParams = params.replace('{ref}', getReferenceString(resource));
 
     // Formulate the searchURL string
-    const searchRequest = parseSearchDefinition(`${searchResourceType}?${searchParams}`);
+    const searchRequest = parseSearchRequest(`${searchResourceType}?${searchParams}`);
 
     // Parse the max count from the link description, if available
     searchRequest.count = Math.min(parseCardinality(link.max), 5000);
@@ -272,7 +279,7 @@ async function followSearchLink(
  * @param req - The HTTP request.
  * @returns The operation parameters if available; otherwise, undefined.
  */
-async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
+async function validateQueryParameters(req: FhirRequest): Promise<GraphDefinition> {
   const ctx = getAuthenticatedContext();
   const { graph } = req.query;
   if (typeof graph !== 'string') {
@@ -304,10 +311,10 @@ function parseCardinality(cardinality: string | undefined): number {
   if (cardinality === '*') {
     return Number.POSITIVE_INFINITY;
   }
-  return parseInt(cardinality, 10);
+  return Number.parseInt(cardinality, 10);
 }
 
-function addToCache(resource: Resource, cache: Record<string, Resource>): void {
+function addToCache(resource: WithId<Resource>, cache: ResourceCache): void {
   cache[getReferenceString(resource)] = resource;
   const url = (resource as any).url;
   if (url) {
@@ -315,7 +322,7 @@ function addToCache(resource: Resource, cache: Record<string, Resource>): void {
   }
 }
 
-function deduplicateResources(resources: Resource[]): Resource[] {
+function deduplicateResources<T extends Resource>(resources: WithId<T>[]): WithId<T>[] {
   const seen = new Set<string>();
   return resources.filter((item) => {
     const key = getReferenceString(item);

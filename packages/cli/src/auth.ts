@@ -1,16 +1,20 @@
-import { ContentType, getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { exec } from 'child_process';
-import { createServer } from 'http';
-import { platform } from 'os';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { ContentType, getDisplayString, MEDPLUM_CLI_CLIENT_ID, normalizeErrorString } from '@medplum/core';
+import { exec } from 'node:child_process';
+import { createServer } from 'node:http';
+import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
+import type { Profile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, saveProfile } from './utils';
 
-const clientId = 'medplum-cli';
+const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
 
-export const login = createMedplumCommand('login');
-export const whoami = createMedplumCommand('whoami');
+export const login = new MedplumCommand('login');
+export const whoami = new MedplumCommand('whoami');
+export const token = new MedplumCommand('token');
 
 login.action(async (options) => {
   const profileName = options.profile ?? 'default';
@@ -25,6 +29,16 @@ login.action(async (options) => {
 whoami.action(async (options) => {
   const medplum = await createMedplumClient(options);
   printMe(medplum);
+});
+
+token.action(async (options) => {
+  const medplum = await createMedplumClient(options);
+  await medplum.getProfileAsync();
+  const token = medplum.getAccessToken();
+  if (!token) {
+    throw new Error('Not logged in');
+  }
+  console.log(token);
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
@@ -47,14 +61,20 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
       await jwtAssertionLogin(medplum, profile);
       break;
   }
-
-  console.log('Login successful');
 }
 
 async function startWebServer(medplum: MedplumClient): Promise<void> {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url as string, 'http://localhost:9615');
     const code = url.searchParams.get('code');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200, {
+        Allow: 'GET, POST',
+        'Content-Type': ContentType.TEXT,
+      });
+      res.end('OK');
+      return;
+    }
     if (url.pathname === '/' && code) {
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });
@@ -65,6 +85,7 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
         res.end(`Error: ${normalizeErrorString(err)}`);
       } finally {
         server.close();
+        process.exit(0);
       }
     } else {
       res.writeHead(404, { 'Content-Type': ContentType.TEXT });
@@ -95,7 +116,19 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  exec(cmd);
+  return new Promise((resolve, reject) => {
+    exec(cmd, (error, _, stderr) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        reject(new Error('Could not open browser: ' + stderr));
+        return;
+      }
+      resolve();
+    });
+  });
 }
 
 /**

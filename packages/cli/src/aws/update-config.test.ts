@@ -1,19 +1,37 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
-import { unlinkSync, writeFileSync } from 'fs';
-import readline from 'readline';
+import 'aws-sdk-client-mock-jest';
+import { randomUUID } from 'node:crypto';
+import { unlinkSync, writeFileSync } from 'node:fs';
+import readline from 'node:readline';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
 import { mockReadline } from './test.utils';
 
-jest.mock('readline');
+jest.mock('node:readline');
 
 describe('update-config command', () => {
+  let ssmClient: AwsClientStub<SSMClient>;
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
+
   beforeEach(() => {
-    const ssmClient = mockClient(SSMClient);
+    ssmClient = mockClient(SSMClient);
     ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
     ssmClient.on(PutParameterCommand).resolves({});
+  });
+
+  afterEach(() => {
+    ssmClient.restore();
   });
 
   test('Not found', async () => {
@@ -23,9 +41,11 @@ describe('update-config command', () => {
 
     readline.createInterface = jest.fn(() => mockReadline());
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag]);
-
-    expect(console.log).toHaveBeenCalledWith(`Configuration file ${getConfigFileName(tag)} not found`);
+    await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith(`Config not found: ${tag} (${getConfigFileName(tag)})`);
+    expect(processError).toHaveBeenCalledWith(`Error: Config not found: ${tag}\n`);
   });
 
   test('Infra only success', async () => {
@@ -56,11 +76,8 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() =>
-      mockReadline(
-        'y' // Yes, write to Parameter Store
-      )
-    );
+    // Mock readline.createInterface for two calls
+    (readline.createInterface as jest.Mock).mockImplementation(() => mockReadline('y', 'y'));
 
     await main(['node', 'index.js', 'aws', 'update-config', tag]);
     unlinkSync(infraFileName);
@@ -107,7 +124,7 @@ describe('update-config command', () => {
   test('Infra and server config success', async () => {
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-    const serverFileName = getConfigFileName(tag, true);
+    const serverFileName = getConfigFileName(tag, { server: true });
 
     writeFileSync(
       infraFileName,
@@ -136,6 +153,7 @@ describe('update-config command', () => {
       serverFileName,
       JSON.stringify({
         foo: 'bar',
+        storageBaseUrl: 'https://storage.test.example.com/binary/',
       }),
       'utf8'
     );
@@ -156,7 +174,7 @@ describe('update-config command', () => {
 
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-    const serverFileName = getConfigFileName(tag, true);
+    const serverFileName = getConfigFileName(tag, { server: true });
 
     writeFileSync(
       infraFileName,
@@ -191,10 +209,46 @@ describe('update-config command', () => {
 
     readline.createInterface = jest.fn(() => mockReadline());
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag]);
+    await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     unlinkSync(infraFileName);
     unlinkSync(serverFileName);
 
-    expect(console.error).toHaveBeenCalledWith('Error: Infra "apiPort" (8103) does not match server "port" (5000)');
+    expect(processError).toHaveBeenCalledWith('Error: Infra "apiPort" (8103) does not match server "port" (5000)\n');
+  });
+
+  test('Auto confirm with --yes', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+
+    await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
+    unlinkSync(infraFileName);
+
+    expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 4);
   });
 });

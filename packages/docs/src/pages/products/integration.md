@@ -70,7 +70,7 @@ Below are some of the classes of applications indexed by common integration meth
 | PACS                  | HL7                       | HL7 ORU, OBX message types common                            |
 | Vaccine Registry      | SFTP                      | Often operated by public health departments, government      |
 | Payor                 | FHIR                      | Regulatory changes have increased payor FHIR adoption        |
-| Pharmacy              | REST                      | Pharmacy API such as DoseSpot, Surescripts                   |
+| Pharmacy              | REST                      | Pharmacy API such as DoseSpot                                |
 | Logging and Analytics | REST                      | Splunk, Freshpaint, Amplitude, Segment and related           |
 | CRM                   | REST, CSV                 | CRM often have API or file based import                      |
 | Forms                 | REST                      | Qualtrics, Jotforms, Formstack have REST API with webhooks   |
@@ -93,6 +93,6 @@ Below is a system diagram that shows, at a high level all of the systems working
 
 - [Sample bots](https://github.com/medplum/medplum-demo-bots) these are a quickstart for building your integrations
 - [Bot tutorials](/docs/bots)
-- [Authentication, Authorization and Identity](/docs/auth)
+- [Authentication, Authorization and Identity](/docs/auth/)
 - [Compliance Portal](/docs/compliance)
 - [All Epic FHIR Endpoints](https://open.epic.com/MyApps/Endpoints)

@@ -7,11 +7,15 @@ This package defines the packages in the default AWS Lambda Layer.
 Current packages:
 
 - [`@medplum/core`](https://www.npmjs.com/package/@medplum/core)
+- [`fast-xml-parser`](https://www.npmjs.com/package/fast-xml-parser)
 - [`form-data`](https://www.npmjs.com/package/form-data)
+- [`jose`](https://www.npmjs.com/package/jose)
+- [`jszip`](https://www.npmjs.com/package/jszip)
 - [`node-fetch`](https://www.npmjs.com/package/node-fetch)
 - [`pdfmake`](https://www.npmjs.com/package/pdfmake)
 - [`ssh2`](https://www.npmjs.com/package/ssh2)
 - [`ssh2-sftp-client`](https://www.npmjs.com/package/ssh2-sftp-client)
+- [`twilio`](https://www.npmjs.com/package/twilio)
 
 ## Usage
 

@@ -1,31 +1,42 @@
-import { Avatar, AvatarProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AvatarProps } from '@mantine/core';
+import { Avatar } from '@mantine/core';
 import { getDisplayString, getImageSrc } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react-hooks';
+import type { Reference, Resource } from '@medplum/fhirtypes';
+import { useCachedBinaryUrl, useResource } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { getInitials } from './ResourceAvatar.utils';
 
 export interface ResourceAvatarProps extends AvatarProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   const resource = useResource(props.value);
-  const text = resource ? getDisplayString(resource) : props.alt ?? '';
-  const imageUrl = (resource && getImageSrc(resource)) ?? props.src;
+  const text = resource ? getDisplayString(resource) : (props.alt ?? '');
+  const initials = getInitials(text);
+  const uncachedImageUrl = (resource && getImageSrc(resource)) ?? props.src;
+  const imageUrl = useCachedBinaryUrl(uncachedImageUrl ?? undefined);
   const radius = props.radius ?? 'xl';
 
-  const avatarProps = { ...props };
-  delete avatarProps.value;
-  delete avatarProps.link;
+  const avatarProps = { ...props, value: undefined, link: undefined };
 
   if (props.link) {
     return (
       <MedplumLink to={resource}>
-        <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps} />
+        <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps}>
+          {initials}
+        </Avatar>
       </MedplumLink>
     );
   }
 
-  return <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps} />;
+  return (
+    <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps}>
+      {initials}
+    </Avatar>
+  );
 }

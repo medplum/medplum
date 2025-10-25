@@ -1,0 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css';
+import { Inter } from 'next/font/google';
+import type { ReactNode } from 'react';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>): ReactNode {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <MantineProvider>{children}</MantineProvider>
+      </body>
+    </html>
+  );
+}

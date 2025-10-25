@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
 import { operationOutcomeIssueToString } from '@medplum/core';
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons-react';
+import type { JSX } from 'react';
 
 export interface OperationOutcomeAlertProps {
-  outcome?: OperationOutcome;
-  issues?: OperationOutcomeIssue[];
+  readonly outcome?: OperationOutcome;
+  readonly issues?: OperationOutcomeIssue[];
 }
 
 export function OperationOutcomeAlert(props: OperationOutcomeAlertProps): JSX.Element | null {

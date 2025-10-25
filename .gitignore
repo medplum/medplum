@@ -14,28 +14,16 @@ prettier-fmt.err
 prettier-fmt1.err
 
 # Output
-packages/agent/dist/
-packages/app/dist/
-packages/cdk/dist/
-packages/cli/dist/
-packages/core/dist/
+dist/
 packages/core/docs/
+!packages/definitions/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
 packages/definitions/dist/**/*.d.ts.map
-packages/examples/dist/
-packages/fhir-router/dist/
-packages/generator/dist/
 packages/generator/output/
-packages/graphiql/dist/
+packages/generator/compare.html
 packages/graphiql/public/
-packages/health-gorilla/dist/
-packages/hl7/dist/
-packages/mock/dist/
-packages/react/dist/
-packages/react-hooks/dist/
-packages/server/dist/
 
 # Storybook output
 storybook-static/
@@ -48,9 +36,13 @@ coverage/
 
 # TypeScript incremental build
 tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
 
 # Server tarball
 medplum-server.tar.gz
+
+# App tarball
+medplum-app.tar.gz
 
 # Deb files
 *.deb
@@ -72,3 +64,42 @@ medplum-server.tar.gz
 
 # Agent artifacts
 packages/agent/*agent-*-linux*
+packages/agent/sea-prep.blob
+packages/agent/src/upgrader-logs-*.txt
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+*.bak
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Cursor
+.cursor/

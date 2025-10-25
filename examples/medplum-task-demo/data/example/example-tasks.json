@@ -1,0 +1,1279 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SS"
+                }
+              ]
+            },
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "444222222"
+          }
+        ],
+        "name": [
+          {
+            "given": ["Jane"],
+            "family": "California"
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "use": "home",
+            "line": ["123 Main St."],
+            "city": "San Francisco",
+            "state": "CA",
+            "postalCode": "98732"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3d9d2d9c-6648-4583-812b-d0d389facca2",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SS"
+                }
+              ]
+            },
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "923081234"
+          }
+        ],
+        "name": [
+          {
+            "given": ["Walker", "Texas"],
+            "family": "Ranger"
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "use": "home",
+            "line": ["123 Main St."],
+            "city": "Dallas",
+            "state": "TX",
+            "postalCode": "98732"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SS"
+                }
+              ]
+            },
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "8370413840"
+          }
+        ],
+        "name": [
+          {
+            "given": ["Tony"],
+            "family": "Soprano"
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "use": "home",
+            "line": ["123 Main St."],
+            "city": "Albany",
+            "state": "NY",
+            "postalCode": "98732"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c9d3c09b-9474-11ee-8c90-0242ac120812",
+      "resource": {
+        "resourceType": "Practitioner",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567890"
+          }
+        ],
+        "name": [
+          {
+            "family": "Smith",
+            "given": ["Alice"],
+            "prefix": ["Dr."]
+          }
+        ],
+        "gender": "female",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD"
+                }
+              ],
+              "text": "MD"
+            },
+            "issuer": {
+              "display": "State of New York"
+            },
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification",
+                "extension": [
+                  {
+                    "url": "whereValid",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "https://www.usps.com/",
+                          "code": "NY"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [
+          {
+            "prefix": ["Nurse"],
+            "given": ["Bob"],
+            "family": "Jones"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1973-11-02"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "topic": {
+          "coding": [
+            {
+              "code": "Lab test results",
+              "display": "Lab test results"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "Do you have the results of my lab tests yet?"
+          }
+        ],
+        "topic": {
+          "text": "December 15th lab tests."
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+          }
+        ],
+        "sender": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "sent": "2023-12-18T14:26:06.531Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "Do you have the test id number?"
+          }
+        ],
+        "topic": {
+          "text": "December 15th lab tests."
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+          }
+        ],
+        "sender": {
+          "reference": "Practitioner/b95651dc-448b-42c3-b427-f26d082a574d"
+        },
+        "sent": "2023-12-18T14:28:06.531Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "Yes, it is 12345"
+          }
+        ],
+        "topic": {
+          "text": "December 15th lab tests."
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+          }
+        ],
+        "sender": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "sent": "2023-12-18T14:46:06.531Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b0fa2a73-1b87-4121-9a04-731bc0c177ea",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "topic": {
+          "coding": [
+            {
+              "code": "Schedule a Physical",
+              "display": "Schedule a Physical"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "Can I schedule a physical for December 23rd?"
+          }
+        ],
+        "topic": {
+          "text": "Schedule a Physical"
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:b0fa2a73-1b87-4121-9a04-731bc0c177ea"
+          }
+        ],
+        "sender": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "sent": "2023-12-18T14:01:15.175Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Mr. Lucien408 Bosco882 PharmD"
+        },
+        "topic": {
+          "coding": [
+            {
+              "code": "Prescription Refill",
+              "display": "Prescription Refill"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "My prescription ran out, can I come in to refill it?"
+          }
+        ],
+        "topic": {
+          "text": "December 15th lab tests."
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002"
+          }
+        ],
+        "sender": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "sent": "2023-12-18T14:26:06.531Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "intent": "order",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "for": {
+          "reference": "urn:uuid:3d9d2d9c-6648-4583-812b-d0d389facca2",
+          "display": "Walker Texas Ranger"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "restriction": { "period": { "end": "2024-04-01T16:00:00.000Z" } },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "respond-to-message",
+              "display": "Respond to Patient Message"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "intent": "order",
+        "status": "completed",
+        "focus": {
+          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "for": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "restriction": { "period": { "end": "2024-04-01T16:30:00.000Z" } },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "respond-to-message",
+              "display": "Respond to Patient Message"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "intent": "order",
+        "status": "completed",
+        "focus": {
+          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "for": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "respond-to-message",
+              "display": "Respond to Patient Message"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "intent": "order",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "for": {
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "restriction": { "period": { "end": "2024-04-01T16:30:00.000Z" } },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "respond-to-message",
+              "display": "Respond to Patient Message"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "intent": "order",
+        "status": "completed",
+        "focus": {
+          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
+        },
+        "for": {
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "respond-to-message",
+              "display": "Respond to Patient Message"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+
+    {
+      "fullUrl": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac129872",
+      "resource": {
+        "resourceType": "Schedule",
+        "active": true,
+        "actor": [
+          {
+            "reference": "urn:uuid:c9d3c09b-9474-11ee-8c90-0242ac120812"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Schedule"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac129872"
+        },
+        "intent": "order",
+        "for": {
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "schedule-appointment",
+              "display": "Schedule Appointment"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3385ee9e-f180-4e8b-8b12-cf4833144e7b",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "35200-5",
+              "display": "Cholesterol [Mass or Moles/volume] in Serum or Plasma"
+            }
+          ],
+          "text": "Cholesterol"
+        },
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performer": [
+          {
+            "display": "Acme Laboratory, Inc"
+          }
+        ],
+        "valueQuantity": {
+          "value": 6.3,
+          "unit": "mmol/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "mmol/L"
+        },
+        "referenceRange": [
+          {
+            "high": {
+              "value": 4.5,
+              "unit": "mmol/L",
+              "system": "http://unitsofmeasure.org",
+              "code": "mmol/L"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:94e4378e-9336-4538-98f5-47dcf1ded634",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "35217-9",
+              "display": "Triglyceride [Mass or Moles/volume] in Serum or Plasma"
+            }
+          ],
+          "text": "Triglyceride"
+        },
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performer": [
+          {
+            "display": "Acme Laboratory, Inc"
+          }
+        ],
+        "valueQuantity": {
+          "value": 1.3,
+          "unit": "mmol/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "mmol/L"
+        },
+        "referenceRange": [
+          {
+            "high": {
+              "value": 2,
+              "unit": "mmol/L",
+              "system": "http://unitsofmeasure.org",
+              "code": "mmol/L"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3b7c71bb-1357-4cac-88d7-3e374676e988",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "hdlcholesterol",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative: Observation</b><a name=\"hdlcholesterol\"> </a></p><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">Resource Observation &quot;hdlcholesterol&quot; </p></div><p><b>status</b>: final</p><p><b>code</b>: Cholesterol in HDL <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"https://loinc.org/\">LOINC</a>#2085-9 &quot;Cholesterol in HDL [Mass/volume] in Serum or Plasma&quot;)</span></p><p><b>subject</b>: <a href=\"patient-example-b.html\">Patient/pat2</a> &quot;Duck DONALD&quot;</p><p><b>performer</b>: <a href=\"organization-example-lab.html\">Organization/1832473e-2fe0-452d-abe9-3cdb9879522f: Acme Laboratory, Inc</a> &quot;Clinical Lab&quot;</p><p><b>value</b>: 1.3 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM code mmol/L = 'mmol/L')</span></p><h3>ReferenceRanges</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Low</b></td></tr><tr><td style=\"display: none\">*</td><td>1.5 mmol/L<span style=\"background: LightGoldenRodYellow\"> (Details: UCUM code mmol/L = 'mmol/L')</span></td></tr></table></div>"
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2085-9",
+              "display": "Cholesterol in HDL [Mass/volume] in Serum or Plasma"
+            }
+          ],
+          "text": "Cholesterol in HDL"
+        },
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performer": [
+          {
+            "display": "Acme Laboratory, Inc"
+          }
+        ],
+        "valueQuantity": {
+          "value": 1.3,
+          "unit": "mmol/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "mmol/L"
+        },
+        "referenceRange": [
+          {
+            "low": {
+              "value": 1.5,
+              "unit": "mmol/L",
+              "system": "http://unitsofmeasure.org",
+              "code": "mmol/L"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:f2aedf86-166c-4f14-995e-9320ebab06e7",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "13457-7",
+              "display": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation"
+            }
+          ],
+          "text": "LDL Chol. (Calc)"
+        },
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performer": [
+          {
+            "display": "Acme Laboratory, Inc"
+          }
+        ],
+        "valueQuantity": {
+          "value": 4.6,
+          "unit": "mmol/L",
+          "system": "http://unitsofmeasure.org",
+          "code": "mmol/L"
+        },
+        "referenceRange": [
+          {
+            "high": {
+              "value": 3,
+              "unit": "mmol/L",
+              "system": "http://unitsofmeasure.org",
+              "code": "mmol/L"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e2b02def-3968-476c-b7be-d404b4a459ed",
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "identifier": [
+          {
+            "system": "http://acme.com/lab/reports",
+            "value": "5234342"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "HM"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "57698-3",
+              "display": "Lipid panel with direct LDL - Serum or Plasma"
+            }
+          ],
+          "text": "Lipid Panel"
+        },
+        "subject": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "effectiveDateTime": "2011-03-04T08:30:00+11:00",
+        "issued": "2013-01-27T11:45:33+11:00",
+        "performer": [
+          {
+            "display": "Acme Laboratory, Inc"
+          }
+        ],
+        "result": [
+          {
+            "reference": "urn:uuid:3385ee9e-f180-4e8b-8b12-cf4833144e7b"
+          },
+          {
+            "reference": "urn:uuid:94e4378e-9336-4538-98f5-47dcf1ded634"
+          },
+          {
+            "reference": "urn:uuid:3b7c71bb-1357-4cac-88d7-3e374676e988"
+          },
+          {
+            "reference": "urn:uuid:f2aedf86-166c-4f14-995e-9320ebab06e7"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DiagnosticReport"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:e2b02def-3968-476c-b7be-d404b4a459ed"
+        },
+        "intent": "order",
+        "for": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "158965000",
+                "display": "Doctor"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "review-diagnostic-report",
+              "display": "Review Diagnostic Report"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "docStatus": "final",
+        "type": {
+          "text": "Driver's License"
+        },
+        "category": [
+          {
+            "text": "Identity Document"
+          }
+        ],
+        "content": [
+          {
+            "attachment": {
+              "contentType": "image/jpeg",
+              "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Californian_sample_driver%27s_license%2C_c._2019.jpg"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "docStatus": "final",
+        "type": {
+          "text": "Driver's License"
+        },
+        "category": [
+          {
+            "text": "Identity Document"
+          }
+        ],
+        "content": [
+          {
+            "attachment": {
+              "contentType": "image/jpeg",
+              "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Californian_sample_driver%27s_license%2C_c._2019.jpg"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "docStatus": "final",
+        "type": {
+          "text": "Driver's License"
+        },
+        "category": [
+          {
+            "text": "Identity Document"
+          }
+        ],
+        "content": [
+          {
+            "attachment": {
+              "contentType": "image/jpeg",
+              "url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Californian_sample_driver%27s_license%2C_c._2019.jpg"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
+        },
+        "intent": "order",
+        "for": {
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane California"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "verify-drivers-license",
+              "display": "Verify Drivers License"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "status": "ready",
+        "focus": {
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
+        },
+        "intent": "order",
+        "for": {
+          "reference": "urn:uuid:3d9d2d9c-6648-4583-812b-d0d389facca2",
+          "display": "Walker Texas Ranger"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "verify-drivers-license",
+              "display": "Verify Drivers License"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "status": "ready",
+        "priority": "asap",
+        "focus": {
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
+        },
+        "intent": "order",
+        "for": {
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
+        },
+        "performerType": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-example-app/task-status",
+              "code": "ready",
+              "display": "Ready"
+            }
+          ]
+        },
+        "restriction": { "period": { "end": "2024-04-01T17:30:00.000Z" } },
+        "code": {
+          "coding": [
+            {
+              "system": "https://medplum.com/medplum-task-demo/task-type",
+              "code": "verify-drivers-license",
+              "display": "Verify Drivers License"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Task"
+      }
+    }
+  ]
+}

@@ -1,13 +1,17 @@
-import { Text, TextProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TextProps } from '@mantine/core';
+import { Text } from '@mantine/core';
 import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
-import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ResourceNameProps extends TextProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceName(props: ResourceNameProps): JSX.Element | null {

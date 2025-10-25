@@ -1,9 +1,14 @@
-import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { GoogleCredentialResponse, LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import type { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
@@ -34,8 +39,8 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
 
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={async (formData: Record<string, string>) => {
+        setOutcome(undefined);
         try {
           let recaptchaToken = '';
           if (recaptchaSiteKey) {
@@ -72,6 +77,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                     await medplum.startGoogleLogin({
                       googleClientId: response.clientId,
                       googleCredential: response.credential,
+                      projectId: props.projectId,
                       createUser: true,
                     })
                   );
@@ -132,7 +138,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       </Stack>
       <Group justify="space-between" mt="xl" wrap="nowrap">
         <Checkbox name="remember" label="Remember me" size="xs" />
-        <Button type="submit">Create account</Button>
+        <SubmitButton>Create account</SubmitButton>
       </Group>
     </Form>
   );

@@ -1,72 +1,91 @@
-import { MedplumClient, parseLogLevel } from '@medplum/core';
-import { existsSync, readFileSync } from 'fs';
-import { App } from './app';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
+import { execSync } from 'node:child_process';
+import { appendFileSync, closeSync, existsSync, openSync } from 'node:fs';
+import path, { dirname } from 'node:path';
+import { agentMain } from './agent-main';
+import { createPidFile, registerAgentCleanup } from './pid';
+import { upgraderMain } from './upgrader';
+import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
-interface Args {
-  baseUrl: string;
-  clientId: string;
-  clientSecret: string;
-  agentId: string;
-  logLevel?: string;
-}
+const TEMP_LOG_FILE = path.join(
+  dirname(UPGRADE_MANIFEST_PATH),
+  `stop-service-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`
+);
 
-export async function main(argv: string[]): Promise<App> {
-  let args: Args;
-  if (argv.length >= 6) {
-    args = readCommandLineArgs(argv);
-  } else if (existsSync('agent.properties')) {
-    args = readPropertiesFile('agent.properties');
+export async function main(argv: string[]): Promise<void> {
+  registerAgentCleanup();
+  if (argv[2] === '--upgrade') {
+    createPidFile('medplum-agent-upgrader');
+    await upgraderMain(argv);
+  } else if (argv[2] === '--remove-old-services') {
+    const logFileFd = openSync(TEMP_LOG_FILE, 'a');
+
+    let allAgentServices: string[] = [];
+    const currentServiceName = `MedplumAgent_${MEDPLUM_VERSION}`;
+
+    while (!allAgentServices.includes(currentServiceName)) {
+      const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
+      appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
+      allAgentServices = output
+        .toString()
+        .trim()
+        .split('\n')
+        .map((line) => line.replace('SERVICE_NAME: ', '').trim());
+      appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}\r\n`, { encoding: 'utf-8' });
+    }
+
+    const servicesToRemove =
+      argv[3] === '--all'
+        ? allAgentServices
+        : allAgentServices.filter((serviceName) => serviceName !== `MedplumAgent_${MEDPLUM_VERSION}`);
+    appendFileSync(logFileFd, `Medplum agent service to filter out: MedplumAgent_${MEDPLUM_VERSION}\r\n`, {
+      encoding: 'utf-8',
+    });
+
+    for (const serviceName of servicesToRemove) {
+      // We try to stop the service and continue even if it fails
+      try {
+        execSync(`net stop ${serviceName}`);
+        appendFileSync(logFileFd, `${serviceName} stopped\r\n`, { encoding: 'utf-8' });
+        console.log(`${serviceName} stopped`);
+      } catch (err) {
+        appendFileSync(logFileFd, `Failed to stop service: ${serviceName}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
+        console.error(`Failed to stop service: ${serviceName}`);
+        console.error(normalizeErrorString(err));
+      }
+      // We try to delete the service even if stopping it failed
+      try {
+        execSync(`sc.exe delete ${serviceName}`);
+        appendFileSync(logFileFd, `${serviceName} deleted\r\n`, { encoding: 'utf-8' });
+        console.log(`${serviceName} deleted`);
+      } catch (err) {
+        appendFileSync(logFileFd, `Failed to delete service: ${serviceName}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
+        console.error(`Failed to delete service: ${serviceName}`);
+        console.error(normalizeErrorString(err));
+      }
+    }
+
+    closeSync(logFileFd);
+  } else if (existsSync(UPGRADE_MANIFEST_PATH)) {
+    // If we are the agent starting up just after upgrading, skip checking pid file until later
+    // We do want to do the "upgrading-agent" check though
+    // Which prevents multiple agents from competing to complete the upgrade in case multiple agent processes restart at the same time
+    // After we finish upgrade, we will attempt to take over and register agent cleanup for
+    createPidFile('medplum-upgrading-agent');
+    await agentMain(argv);
   } else {
-    console.log('Missing arguments');
-    console.log('Arguments can be passed on the command line or in a properties file.');
-    console.log('Example with command line arguments:');
-    console.log('    node medplum-agent.js <baseUrl> <clientId> <clientSecret> <agentId>');
-    console.log('Example with properties file:');
-    console.log('    node medplum-agent.js');
-    process.exit(1);
+    createPidFile('medplum-agent');
+    await agentMain(argv);
   }
-
-  if (!args.baseUrl || !args.clientId || !args.clientSecret || !args.agentId) {
-    console.log('Missing arguments');
-    console.log('Expected arguments:');
-    console.log('    baseUrl: The Medplum server base URL.');
-    console.log('    clientId: The OAuth client ID.');
-    console.log('    clientSecret: The OAuth client secret.');
-    console.log('    agentId: The Medplum agent ID.');
-    process.exit(1);
-  }
-
-  const { baseUrl, clientId, clientSecret, agentId } = args;
-
-  const medplum = new MedplumClient({ baseUrl, clientId });
-  await medplum.startClientLogin(clientId, clientSecret);
-
-  const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
-  await app.start();
-
-  process.on('SIGINT', () => {
-    console.log('Gracefully shutting down from SIGINT (Crtl-C)');
-    app.stop();
-    process.exit();
-  });
-
-  return app;
-}
-
-function readCommandLineArgs(argv: string[]): Args {
-  const [_node, _script, baseUrl, clientId, clientSecret, agentId] = argv;
-  return { baseUrl, clientId, clientSecret, agentId };
-}
-
-function readPropertiesFile(fileName: string): Args {
-  return Object.fromEntries(
-    readFileSync(fileName)
-      .toString()
-      .split('\n')
-      .map((line) => line.split('=').map((s) => s.trim()))
-  );
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  main(process.argv).catch(console.error);
+  main(process.argv).catch((err) => {
+    console.log(err);
+    process.exit(1);
+  });
 }

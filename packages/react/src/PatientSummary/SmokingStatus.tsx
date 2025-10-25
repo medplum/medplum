@@ -1,12 +1,15 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { HTTP_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
-import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
+import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
+import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { Form } from '../Form/Form';
-import { killEvent } from '../utils/dom';
+import { SubmitButton } from '../Form/SubmitButton';
+import { CollapsibleSection } from './CollapsibleSection';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html
@@ -26,11 +29,11 @@ export interface SmokingStatusProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly smokingStatus?: Observation;
+  readonly onClickResource?: (resource: Observation) => void;
 }
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
   const medplum = useMedplum();
-  const { patient, encounter } = props;
   const [smokingStatus, setSmokingStatus] = useState<Observation | undefined>(props.smokingStatus);
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -65,8 +68,8 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
             ],
             text: 'Tobacco smoking status',
           },
-          subject: createReference(patient),
-          encounter: encounter ? createReference(encounter) : undefined,
+          subject: createReference(props.patient),
+          encounter: props.encounter ? createReference(props.encounter) : undefined,
           effectiveDateTime: new Date().toISOString(),
           valueCodeableConcept: {
             coding: [
@@ -85,34 +88,25 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         })
         .catch(console.error);
     },
-    [medplum, patient, encounter, close]
+    [medplum, props.patient, props.encounter, close]
   );
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Smoking Status
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
-          }}
-        >
-          + Edit
-        </Anchor>
-      </Group>
-      {smokingStatus?.valueCodeableConcept ? (
-        <Box>
-          <Badge variant="light">
-            <CodeableConceptDisplay value={smokingStatus.valueCodeableConcept} />
-          </Badge>
-        </Box>
-      ) : (
-        <Text>(none)</Text>
-      )}
+      <CollapsibleSection
+        title="Smoking Status"
+        onAdd={() => {
+          open();
+        }}
+      >
+        {smokingStatus?.valueCodeableConcept ? (
+          <UnstyledButton data-testid="smoking-status-button" onClick={() => props.onClickResource?.(smokingStatus)}>
+            <Text>{formatCodeableConcept(smokingStatus.valueCodeableConcept)}</Text>
+          </UnstyledButton>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
       <Modal opened={opened} onClose={close} title="Set Smoking Status">
         <Form onSubmit={handleSubmit}>
           <Stack>
@@ -122,7 +116,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
               ))}
             </Radio.Group>
             <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
+              <SubmitButton>Save</SubmitButton>
             </Group>
           </Stack>
         </Form>

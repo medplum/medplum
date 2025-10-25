@@ -1,0 +1,33 @@
+{
+  "resourceType": "ValueSet",
+  "id": "urn:uuid:39996991-94bd-4fdd-bba6-d72ec5e3cd21",
+  "url": "https://medplum.com/medplum-task-example-app/task-status",
+  "name": "example-business-status-value-set",
+  "title": "Example Business Status Value Set",
+  "status": "active",
+  "compose": {
+    "include": [
+      {
+        "system": "https://medplum.com/medplum-task-example-app/task-status",
+        "concept": [
+          {
+            "code": "ready",
+            "display": "Ready"
+          },
+          {
+            "code": "doctor-sign-off-needed",
+            "display": "Doctor sign-off needed"
+          },
+          {
+            "code": "doctor-review-needed",
+            "display": "Doctor review needed"
+          },
+          {
+            "code": "follow-up-needed",
+            "display": "Follow-up needed"
+          }
+        ]
+      }
+    ]
+  }
+}

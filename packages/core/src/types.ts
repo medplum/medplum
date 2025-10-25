@@ -1,6 +1,7 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Bundle,
-  BundleEntry,
   CodeableConcept,
   Coding,
   ElementDefinition,
@@ -8,11 +9,13 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
-import { SearchParameterDetails } from './search/details';
-import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, createReference } from './utils';
+import type { SearchParameterDetails } from './search/details';
+import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
+import { getAllDataTypes, tryGetDataType } from './typeschema/types';
+import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -94,7 +97,7 @@ export const PropertyType = {
   uri: 'uri',
   url: 'url',
   uuid: 'uuid',
-};
+} as const;
 
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
@@ -144,12 +147,81 @@ export interface TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
-  for (const entry of bundle.entry as BundleEntry[]) {
+  for (const entry of bundle.entry ?? []) {
     const resource = entry.resource as SearchParameter;
     if (resource.resourceType === 'SearchParameter') {
       indexSearchParameter(resource);
     }
   }
+}
+
+export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
+  const maybeSDs = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
+  for (const sd of maybeSDs) {
+    if (sd?.resourceType === 'StructureDefinition' && sd.kind === 'resource') {
+      getOrInitTypeSchema(sd.type);
+    }
+  }
+}
+
+function getOrInitTypeSchema(resourceType: string): TypeInfo {
+  let typeSchema = globalSchema.types[resourceType];
+  if (!typeSchema) {
+    typeSchema = {
+      searchParamsDetails: {},
+    } as TypeInfo;
+    globalSchema.types[resourceType] = typeSchema;
+  }
+
+  // Binary has no search parameters; not even those inherited from Resource
+  if (!typeSchema.searchParams && resourceType !== 'Binary') {
+    typeSchema.searchParams = {
+      _id: {
+        base: [resourceType],
+        code: '_id',
+        type: 'token',
+        expression: resourceType + '.id',
+      } as SearchParameter,
+      _lastUpdated: {
+        base: [resourceType],
+        code: '_lastUpdated',
+        type: 'date',
+        expression: resourceType + '.meta.lastUpdated',
+      } as SearchParameter,
+      _compartment: {
+        base: [resourceType],
+        code: '_compartment',
+        type: 'reference',
+        expression: resourceType + '.meta.compartment',
+      } as SearchParameter,
+      _profile: {
+        base: [resourceType],
+        code: '_profile',
+        type: 'uri',
+        expression: resourceType + '.meta.profile',
+      } as SearchParameter,
+      _security: {
+        base: [resourceType],
+        code: '_security',
+        type: 'token',
+        expression: resourceType + '.meta.security',
+      } as SearchParameter,
+      _source: {
+        base: [resourceType],
+        code: '_source',
+        type: 'uri',
+        expression: resourceType + '.meta.source',
+      } as SearchParameter,
+      _tag: {
+        base: [resourceType],
+        code: '_tag',
+        type: 'token',
+        expression: resourceType + '.meta.tag',
+      } as SearchParameter,
+    };
+  }
+
+  return typeSchema;
 }
 
 /**
@@ -160,59 +232,10 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
   for (const resourceType of searchParam.base ?? []) {
-    let typeSchema = globalSchema.types[resourceType];
-    if (!typeSchema) {
-      typeSchema = {
-        searchParamsDetails: {},
-      } as TypeInfo;
-      globalSchema.types[resourceType] = typeSchema;
-    }
+    const typeSchema = getOrInitTypeSchema(resourceType);
 
     if (!typeSchema.searchParams) {
-      typeSchema.searchParams = {
-        _id: {
-          base: [resourceType],
-          code: '_id',
-          type: 'token',
-          expression: resourceType + '.id',
-        } as SearchParameter,
-        _lastUpdated: {
-          base: [resourceType],
-          code: '_lastUpdated',
-          type: 'date',
-          expression: resourceType + '.meta.lastUpdated',
-        } as SearchParameter,
-        _compartment: {
-          base: [resourceType],
-          code: '_compartment',
-          type: 'reference',
-          expression: resourceType + '.meta.compartment',
-        } as SearchParameter,
-        _profile: {
-          base: [resourceType],
-          code: '_profile',
-          type: 'uri',
-          expression: resourceType + '.meta.profile',
-        } as SearchParameter,
-        _security: {
-          base: [resourceType],
-          code: '_security',
-          type: 'token',
-          expression: resourceType + '.meta.security',
-        } as SearchParameter,
-        _source: {
-          base: [resourceType],
-          code: '_source',
-          type: 'uri',
-          expression: resourceType + '.meta.source',
-        } as SearchParameter,
-        _tag: {
-          base: [resourceType],
-          code: '_tag',
-          type: 'token',
-          expression: resourceType + '.meta.tag',
-        } as SearchParameter,
-      };
+      typeSchema.searchParams = {};
     }
 
     typeSchema.searchParams[searchParam.code as string] = searchParam;
@@ -349,10 +372,15 @@ function capitalizeDisplayWord(word: string): string {
  * Returns an element definition by type and property name.
  * @param typeName - The type name.
  * @param propertyName - The property name.
+ * @param profileUrl - (optional) The URL of the current resource profile
  * @returns The element definition if found.
  */
-export function getElementDefinition(typeName: string, propertyName: string): InternalSchemaElement | undefined {
-  const typeSchema = tryGetDataType(typeName);
+export function getElementDefinition(
+  typeName: string,
+  propertyName: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const typeSchema = tryGetDataType(typeName, profileUrl);
   if (!typeSchema) {
     return undefined;
   }
@@ -394,21 +422,53 @@ export function getElementDefinitionFromElements(
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
- * @param value - The object to check
- * @returns True if the input is of type 'object' and contains property 'resourceType'
+ * Returns true if the value is a TypedValue.
+ * @param value - The unknown value to check.
+ * @returns True if the value is a TypedValue.
  */
-export function isResource(value: unknown): value is Resource {
-  return !!(value && typeof value === 'object' && 'resourceType' in value);
+export function isTypedValue(value: unknown): value is TypedValue {
+  return !!(value && typeof value === 'object' && 'type' in value && 'value' in value);
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
+ * Type guard to validate that an object is a FHIR resource
  * @param value - The object to check
+ * @param resourceType - Checks that the resource is of the given type
+ * @returns True if the input is of type 'object' and contains property 'resourceType'
+ */
+export function isResource<T extends Resource>(value: unknown, resourceType?: T['resourceType']): value is T {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (!('resourceType' in value)) {
+    return false;
+  }
+  if (resourceType && value.resourceType !== resourceType) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Type guard to validate that an object is a FHIR reference
+ * @param value - The object to check
+ * @param resourceType - Checks that the reference is of the given type
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
-export function isReference(value: unknown): value is Reference & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value);
+
+export function isReference<T extends Resource = Resource>(
+  value: unknown,
+  resourceType?: T['resourceType']
+): value is Reference<T> & { reference: string } {
+  // if the value is an object with a reference property and the reference is a string, then it is a reference
+  if (value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string') {
+    // if resourceType is provided, check if the reference matches the resource type
+    if (resourceType) {
+      return value.reference.match(new RegExp(`^${resourceType}(/|\\?)`)) !== null;
+    }
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -469,8 +529,8 @@ export function stringifyTypedValue(v: TypedValue): string {
     case PropertyType.Reference:
       return v.value.reference;
     default:
-      if (isResource(v.value)) {
-        return createReference(v.value).reference as string;
+      if (isResourceWithId(v.value)) {
+        return getReferenceString(v.value);
       }
       return JSON.stringify(v);
   }

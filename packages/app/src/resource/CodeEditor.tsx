@@ -1,13 +1,15 @@
-import { RefObject } from 'react';
-import { sendCommand } from '../utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { sendCommand } from '@medplum/react';
+import type { JSX, Ref } from 'react';
 
 export interface CodeEditorProps {
-  language: 'typescript' | 'json';
-  module?: 'commonjs' | 'esnext';
-  defaultValue?: string;
-  iframeRef: RefObject<HTMLIFrameElement>;
-  testId?: string;
-  minHeight?: string;
+  readonly language: 'typescript' | 'json';
+  readonly module?: 'commonjs' | 'esnext';
+  readonly defaultValue?: string;
+  readonly iframeRef: Ref<HTMLIFrameElement> | undefined;
+  readonly testId?: string;
+  readonly minHeight?: string;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
@@ -19,6 +21,7 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
 
   return (
     <iframe
+      title="Code Editor"
       frameBorder="0"
       src={url.toString()}
       style={{ width: '100%', height: '100%', minHeight: props.minHeight }}

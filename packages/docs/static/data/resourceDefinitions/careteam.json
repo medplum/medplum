@@ -607,6 +607,12 @@
       "type": "reference",
       "description": "Who care team is for",
       "expression": "CareTeam.subject"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "The name of the care team",
+      "expression": "CareTeam.name"
     }
   ]
 }

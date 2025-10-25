@@ -40,5 +40,5 @@ The Medplum Forms implementation is a very standards compliant implementation of
 - [Storybook Simple Questionnaire](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--groups)
 - [Storybook Social Determinants of Health (SDH)](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--ahchrsn-screening)
 - [Foo Medical](https://foomedical.com/) sample patient portal with questionnaires
-- [Provider Demo](https://provider.foomedical.com/) sample simple EHR with questionnaires
+- [Provider Demo](https://provider.medplum.com/) sample simple EHR with questionnaires
 - [Questionnaire Automation Tutorial](/docs/bots) shows how to build automations on questionnaire submission

@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Input, Stack } from '@mantine/core';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
-  onSetTopic: (topic: string | undefined) => void;
+  readonly onSetTopic: (topic: string | undefined) => void;
 }
 export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   const [topicInput, setTopicInput] = useState<string>('');
@@ -24,6 +27,18 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
       <Button
         type="button"
         onClick={() => {
+          setTopicInput('');
+          setTopic(undefined);
+        }}
+        size="compact-sm"
+        fullWidth
+        disabled={!topicInput}
+      >
+        Clear Topic Input
+      </Button>
+      <Button
+        type="button"
+        onClick={() => {
           if (topicInput !== '') {
             setTopic(topicInput);
           }
@@ -36,13 +51,15 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
       <Button
         type="button"
         onClick={() => {
-          setTopicInput('');
-          setTopic(undefined);
+          if (topic) {
+            setTopic(undefined);
+          }
         }}
+        disabled={!topic}
         size="compact-sm"
         fullWidth
       >
-        Clear Topic
+        Unsubscribe from Topic
       </Button>
     </Stack>
   );

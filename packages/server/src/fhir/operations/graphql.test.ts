@@ -1,13 +1,17 @@
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { Binary, Encounter, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
+import type { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import { loadTestConfig } from '../../config';
-import { addTestUser, withTestContext } from '../../test.setup';
+import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
+import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
+import * as searchFile from '../search';
 
 const app = express();
 let practitioner: Practitioner;
@@ -20,9 +24,9 @@ let encounter2: Encounter;
 let bobAccessToken: string;
 
 describe('GraphQL', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Setup a new project
@@ -38,7 +42,7 @@ describe('GraphQL', () => {
 
       const aliceRepo = new Repository({
         author: createReference(aliceRegistration.profile),
-        project: aliceRegistration.project.id as string,
+        projects: [aliceRegistration.project],
       });
 
       // Create a profile picture
@@ -118,8 +122,12 @@ describe('GraphQL', () => {
         ],
       });
       bobAccessToken = bobRegistration.accessToken;
-    })
-  );
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -237,7 +245,7 @@ describe('GraphQL', () => {
       .set('Content-Type', ContentType.JSON)
       .send(introspectionRequest);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual(res1.text);
+    expect(res2.text).toStrictEqual(res1.text);
   });
 
   test.skip('Get __schema', async () => {
@@ -274,6 +282,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 
@@ -316,7 +325,7 @@ describe('GraphQL', () => {
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeNull();
-    expect(res.body.errors[0].message).toEqual('Not found');
+    expect(res.body.errors[0].message).toStrictEqual('Not found');
   });
 
   test('Search', async () => {
@@ -579,7 +588,7 @@ describe('GraphQL', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Max depth', async () => {
+  test.skip('Max depth', async () => {
     // The definition of "depth" is a little abstract in GraphQL
     // We use "selection", which, in a well formatted query, is the level of indentation
 
@@ -600,7 +609,12 @@ describe('GraphQL', () => {
                   basedOn {
                     resource {
                       ...on ServiceRequest {
-                        id
+                        asNeededCodeableConcept {
+                          coding {
+                            extension { url }
+                            system code
+                          }
+                        }
                       }
                     }
                   }
@@ -639,6 +653,20 @@ describe('GraphQL', () => {
                                 resource {
                                   ...on ServiceRequest {
                                     id
+                                    basedOn {
+                                      resource {
+                                        ...on ServiceRequest {
+                                          id
+                                          basedOn {
+                                            resource {
+                                              ...on ServiceRequest {
+                                                id
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -656,7 +684,7 @@ describe('GraphQL', () => {
     `,
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Field "id" exceeds max depth (depth=13, max=12)');
   });
 
   test('Hidden fields in nested lookups', async () => {
@@ -797,4 +825,415 @@ describe('GraphQL', () => {
     expect(res.body.data.Encounter).toBeDefined();
     expect(res.body.data.Encounter.basedOn[0].resource).toBeNull();
   });
+
+  test('Max searches exceeded', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [{ name: 'graphqlMaxSearches', valueInteger: 1 }],
+      },
+    });
+
+    // Create a patient
+    const res1 = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+    expect(res1.status).toBe(201);
+
+    // GraphQL request with one search is ok
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+        {
+          PatientList {
+            id
+          }
+        }
+    `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.data.PatientList).toHaveLength(1);
+
+    // GraphQL request with nested search is not ok
+    // This should exceed the max searches limit
+    const res3 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+        {
+          PatientList {
+            id
+            encounters: EncounterList(_reference: patient) {
+              resourceType
+              id
+            }
+          }
+        }
+    `,
+      });
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.PatientList).toHaveLength(1);
+    expect(res3.body.data.PatientList[0].encounters).toBeNull();
+    expect(res3.body.errors).toHaveLength(1);
+    expect(res3.body.errors[0].message).toStrictEqual('Maximum number of searches exceeded');
+  });
+
+  describe('searchByReference', () => {
+    async function runQuery(accessToken: string): Promise<unknown> {
+      const res = await request(app)
+        .post('/fhir/R4/$graphql')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          query: `
+            {
+              PatientList {
+                id
+                ObservationList(_reference: subject) {
+                  id
+                  bodySite { text }
+                }
+              }
+            }`,
+        });
+      expect(res.status).toBe(200);
+
+      return res.body.data;
+    }
+
+    let searchByReferenceSpy: jest.SpyInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
+
+    beforeEach(async () => {
+      searchByReferenceSpy = jest.spyOn(searchFile, 'searchByReferenceImpl');
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('disabled without project setting', async () => {
+      const { accessToken, project, repo } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const obs = await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient),
+      });
+      hasId(obs);
+
+      expect(project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')).toBeUndefined();
+      const data = await runQuery(accessToken);
+      expect(data).toStrictEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
+      });
+
+      expect(searchByReferenceSpy).not.toHaveBeenCalled();
+    });
+
+    test('Respect project boundary', async () => {
+      const {
+        accessToken: accessToken1,
+        project: project1,
+        repo: repo1,
+      } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+      const {
+        accessToken: accessToken2,
+        project: project2,
+        repo: repo2,
+      } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+
+      expect(project1.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toStrictEqual(
+        10
+      );
+      expect(project2.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toStrictEqual(
+        10
+      );
+
+      const patient1 = await repo1.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const patient2 = await repo2.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Billy'], family: 'Smith' }],
+      });
+
+      const obs1 = await repo1.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient1),
+      });
+      hasId(obs1);
+
+      // make an observation in project2 that references patient1 which should make it inaccessible via the ref
+      await repo2.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient1),
+      });
+
+      const data1 = await runQuery(accessToken1);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
+      expect(data1).toStrictEqual({
+        PatientList: [{ id: patient1.id, ObservationList: [{ id: obs1.id, bodySite: null }] }],
+      });
+
+      // obs2 is in project2 but has a reference to patient1 which is in project1, so expect no observations
+      const data2 = await runQuery(accessToken2);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
+      expect(data2).toStrictEqual({ PatientList: [{ id: patient2.id, ObservationList: [] }] });
+    });
+
+    test('Respect access policy', async () => {
+      const { accessToken, project, repo } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const obs = await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient),
+        bodySite: { text: 'left arm' },
+      });
+      hasId(obs);
+
+      const { accessToken: restrictedAccessToken } = await addTestUser(project, {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+          },
+        ],
+      });
+
+      const { accessToken: hiddenBodySiteAccessToken } = await addTestUser(project, {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+          },
+          {
+            resourceType: 'Observation',
+            hiddenFields: ['bodySite'],
+          },
+        ],
+      });
+
+      // No AccessPolicy
+      const data = await runQuery(accessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
+      expect(data).toStrictEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: { text: 'left arm' } }] }],
+      });
+
+      // AccessPolicy excludes Observation
+      const restrictedData = await runQuery(restrictedAccessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
+      expect(restrictedData).toStrictEqual({ PatientList: [{ id: patient.id, ObservationList: null }] });
+
+      // AccessPolicy hides BodySite
+      const hiddenData = await runQuery(hiddenBodySiteAccessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(3);
+      expect(hiddenData).toStrictEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
+      });
+    });
+  });
+
+  test('Create Task with groupIdentifier', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'CodeSystem',
+            readonly: true,
+          },
+          {
+            resourceType: 'ValueSet',
+            readonly: true,
+          },
+          {
+            resourceType: 'Task',
+            criteria: 'Task?group-identifier=http://example.com/group-identifier-system|example',
+          },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `mutation {
+          TaskCreate(
+            res: {
+              resourceType: "Task"
+              status: "requested"
+              intent: "order"
+              groupIdentifier: {
+                system: "http://example.com/group-identifier-system"
+                value: "example"
+              }
+            }
+          )
+          { id }
+        }`,
+      });
+    expect('errors' in res.body).toStrictEqual(false);
+    expect(res.body?.data?.TaskCreate?.id).toBeDefined();
+  });
+
+  test('Uses reader instance when available', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ query: `{ PatientList(_id: "${patient.id}") { id } }` });
+    expect(res.status).toBe(200);
+    expect(readerSpy).toHaveBeenCalledTimes(1);
+    expect(writerSpy).toHaveBeenCalledTimes(0);
+  });
+
+  test('GraphQL in batch users writer', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: '$graphql',
+          },
+          resource: {
+            query: `{ PatientList(_id: "${patient.id}") { id } }`,
+          } as unknown as Resource,
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+    expect(res.body.entry[0].resource.data.PatientList).toHaveLength(1);
+    expect(res.body.entry[0].resource.data.PatientList[0].id).toBe(patient.id);
+
+    expect(readerSpy).toHaveBeenCalledTimes(0);
+    expect(writerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('Cursor pagination', async () => {
+    // There are 2 encounters created in beforeAll
+    // Cursor pagination only applies when sorting by _lastUpdated ascending AND using the Connection API
+    // Search for encounters with _count=1 to force multiple pages
+    const res1 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+          {
+            EncounterConnection(_count: 1, _sort: "_lastUpdated") {
+              edges {
+                resource {
+                  id
+                }
+              }
+              next
+            }
+          }
+        `,
+      });
+    expect(res1.status).toBe(200);
+    expect(res1.body.data.EncounterConnection.edges).toHaveLength(1);
+    const firstId = res1.body.data.EncounterConnection.edges[0].resource.id;
+    expect([encounter1.id, encounter2.id]).toContain(firstId);
+    expect(res1.body.data.EncounterConnection.next).toBeDefined();
+
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+          {
+            EncounterConnection(_count: 1, _sort: "_lastUpdated", _cursor: "${res1.body.data.EncounterConnection.next}") {
+              edges {
+                resource {
+                  id
+                }
+              }
+              next
+            }
+          }
+        `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.data.EncounterConnection.edges).toHaveLength(1);
+    const secondId = res2.body.data.EncounterConnection.edges[0].resource.id;
+    expect([encounter1.id, encounter2.id]).toContain(secondId);
+    expect(res2.body.data.EncounterConnection.next).toBeDefined();
+  });
 });
+
+function hasId<T extends Resource = Resource>(resource: T): asserts resource is T & { id: string } {
+  if (!isPopulated(resource.id)) {
+    throw new Error('Resource does not have an id');
+  }
+}

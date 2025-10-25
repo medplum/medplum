@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Card, CloseButton, Title } from '@mantine/core';
-import { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import classes from './InfoSection.module.css';
 
 interface InfoSectionProps {
-  title?: string | JSX.Element;
-  children: ReactNode;
-  onButtonClick?: (id: string) => void;
-  resourceType?: string;
-  id?: string;
+  readonly title?: string | JSX.Element;
+  readonly children: ReactNode;
+  readonly onButtonClick?: (id: string) => void;
+  readonly resourceType?: string;
+  readonly id?: string;
 }
 
 export function InfoSection({ title, children, onButtonClick, id = '' }: InfoSectionProps): JSX.Element {

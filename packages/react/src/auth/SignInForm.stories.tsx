@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { Meta } from '@storybook/react';
-import { SignInForm } from './SignInForm';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
+import { SignInForm } from './SignInForm';
 
 export default {
-  title: 'Medplum/SignInForm',
+  title: 'Medplum/Auth/SignInForm',
   component: SignInForm,
 } as Meta;
 

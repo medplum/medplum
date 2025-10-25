@@ -1,8 +1,9 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'react-refresh'],
+  plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
     'eslint:recommended',
+    'plugin:import/recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/strict',
     'plugin:jsdoc/recommended-typescript-error',
@@ -16,11 +17,11 @@ module.exports = {
     eqeqeq: ['error', 'always'],
     'no-constant-binary-expression': 'error',
     'no-constructor-return': 'error',
-    'no-duplicate-imports': 'error',
     'no-new-native-nonconstructor': 'error',
     'no-promise-executor-return': 'error',
     'no-self-compare': 'error',
     'no-template-curly-in-string': 'error',
+    'no-throw-literal': 'error',
     'no-unmodified-loop-condition': 'error',
     'no-unreachable-loop': 'error',
     'no-unused-private-class-members': 'error',
@@ -48,7 +49,6 @@ module.exports = {
     'no-octal-escape': 'error',
     'no-proto': 'error',
     'no-return-assign': 'error',
-    'no-return-await': 'error',
     'no-sequences': 'error',
     'no-unneeded-ternary': 'error',
     'no-unused-expressions': 'error',
@@ -102,11 +102,16 @@ module.exports = {
     '@typescript-eslint/prefer-return-this-type': 'error',
     '@typescript-eslint/prefer-string-starts-ends-with': 'error',
     '@typescript-eslint/prefer-ts-expect-error': 'off', // We must use @ts-ignore for optional dependencies in type definitions
-    '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    '@typescript-eslint/return-await': ['error', 'in-try-catch'],
+    '@typescript-eslint/switch-exhaustiveness-check': [
+      'error',
+      {
+        allowDefaultCaseForExhaustiveSwitch: true,
+        considerDefaultExhaustiveForUnions: true,
+        requireDefaultForNonUnion: false,
+      },
+    ],
     '@typescript-eslint/unified-signatures': 'error',
-    // TypeScript extensions for base rules
-    'no-throw-literal': 'off',
-    '@typescript-eslint/no-throw-literal': 'error',
 
     'no-useless-constructor': 'off',
     '@typescript-eslint/no-useless-constructor': 'error',
@@ -117,8 +122,33 @@ module.exports = {
       {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
+
+    // imports rules for isolatedModules and verbatimModuleSyntax
+    'no-duplicate-imports': 'off', // Disable base rule
+    'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+    'import/no-duplicates': 'error',
+    'import/no-unresolved': 'off', // Handled by TypeScript
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      {
+        prefer: 'type-imports',
+        fixStyle: 'separate-type-imports',
+      },
+    ],
+    '@typescript-eslint/consistent-type-exports': 'error',
+
+    // React Hooks
+    'react-hooks/exhaustive-deps': 'error',
+    'react-hooks/set-state-in-effect': 'warn',
+    'react-hooks/refs': 'warn',
+    'react-hooks/immutability': 'warn',
+    'react-hooks/static-components': 'warn',
+    'react-hooks/preserve-manual-memoization': 'warn',
+    'react-hooks/purity': 'warn',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
@@ -131,6 +161,7 @@ module.exports = {
     '@typescript-eslint/prefer-nullish-coalescing': 'off',
     '@typescript-eslint/no-unnecessary-condition': 'off',
     '@typescript-eslint/no-dynamic-delete': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
 
     // JSDoc
     'jsdoc/check-tag-names': [
@@ -142,22 +173,37 @@ module.exports = {
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/tag-lines': 'off',
+    'jsdoc/require-yields-type': 'off',
+    'jsdoc/require-throws-type': 'off',
+
+    // Header
+    'header/header': [
+      'error',
+      'line',
+      [
+        ' SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors',
+        ' SPDX-License-Identifier: Apache-2.0',
+      ],
+    ],
+
+    // No Only Tests
+    'no-only-tests/no-only-tests': ['error', { fix: true }],
   },
   ignorePatterns: [
     'coverage',
-    'dist',
-    'node_modules',
-    'packages/**/dist/',
+    '**/node_modules/',
+    '**/dist/',
     'packages/docs/build/',
     'packages/docs/markdown-to-mdx.cjs',
     'packages/docs/docusaurus.config.js',
     'packages/docs/sidebars.js',
+    'packages/generator/output/',
     'packages/eslint-config/index.cjs',
     'packages/expo-medplum-polyfills/build',
-    'babel.config.js',
-    'babel.config.cjs',
-    'jest.sequencer.js',
+    'babel.config.*',
+    'jest.sequencer.*',
     'package-lock.json',
+    'postcss.config.cjs',
     'rollup.config.mjs',
     'webpack.config.js',
   ],

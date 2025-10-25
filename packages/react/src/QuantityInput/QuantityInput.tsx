@@ -1,18 +1,25 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { Quantity } from '@medplum/fhirtypes';
-import { useState, WheelEvent } from 'react';
+import type { Quantity } from '@medplum/fhirtypes';
+import type { JSX, WheelEvent } from 'react';
+import { useContext, useMemo, useState } from 'react';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface QuantityInputProps {
-  name: string;
-  defaultValue?: Quantity;
-  autoFocus?: boolean;
-  required?: boolean;
-  onChange?: (value: Quantity) => void;
-  disableWheel?: boolean;
+export interface QuantityInputProps extends ComplexTypeInputProps<Quantity> {
+  readonly autoFocus?: boolean;
+  readonly required?: boolean;
+  readonly disableWheel?: boolean;
 }
 
 export function QuantityInput(props: QuantityInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [comparatorProps, valueProps, unitProps] = useMemo(
+    () => ['comparator', 'value', 'unit'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   function setValueWrapper(newValue: Quantity): void {
     setValue(newValue);
@@ -24,6 +31,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
+        disabled={props.disabled || comparatorProps?.readonly}
         style={{ width: 80 }}
         data-testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
@@ -36,6 +44,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }
       />
       <TextInput
+        disabled={props.disabled || valueProps?.readonly}
         id={props.name}
         name={props.name}
         required={props.required}
@@ -59,6 +68,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }}
       />
       <TextInput
+        disabled={props.disabled || unitProps?.readonly}
         placeholder="Unit"
         data-testid={props.name + '-unit'}
         defaultValue={value?.unit}

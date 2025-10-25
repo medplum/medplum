@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Anchor } from '@mantine/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 
 export function PreviewPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };

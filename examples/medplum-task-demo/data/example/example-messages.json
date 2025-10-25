@@ -1,0 +1,167 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SS"
+                }
+              ]
+            },
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "333222222"
+          }
+        ],
+        "name": [
+          {
+            "given": ["John"],
+            "family": "Smith "
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "use": "home",
+            "line": ["123 Main St."],
+            "city": "Springfiled",
+            "state": "IL",
+            "postalCode": "98732"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "subject": {
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+          "display": "John Smith"
+        },
+        "topic": { "coding": [{ "code": "Lab test results", "display": "Lab test results" }] }
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [{ "contentString": "Do you have the results of my lab tests yet?" }],
+        "topic": { "text": "December 15th lab tests." },
+        "partOf": [{ "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002" }],
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
+        "sent": "2023-12-18T14:26:06.531Z"
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [{ "contentString": "Do you have the test id number?" }],
+        "topic": { "text": "December 15th lab tests." },
+        "partOf": [{ "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002" }],
+        "sender": { "reference": "Practitioner/b95651dc-448b-42c3-b427-f26d082a574d" },
+        "sent": "2023-12-18T14:28:06.531Z"
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [{ "contentString": "Yes, it is 12345" }],
+        "topic": { "text": "December 15th lab tests." },
+        "partOf": [{ "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002" }],
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
+        "sent": "2023-12-18T14:46:06.531Z"
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    },
+    {
+      "fullUrl": "urn:uuid:b0fa2a73-1b87-4121-9a04-731bc0c177ea",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "topic": {
+          "coding": [
+            {
+              "code": "Schedule a Physical",
+              "display": "Schedule a Physical"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [
+          {
+            "contentString": "Can I schedule a physical for December 23rd?"
+          }
+        ],
+        "topic": {
+          "text": "Schedule a Physical"
+        },
+        "partOf": [
+          {
+            "reference": "urn:uuid:b0fa2a73-1b87-4121-9a04-731bc0c177ea"
+          }
+        ],
+        "sender": {
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+          "display": "John Smith"
+        },
+        "sent": "2023-12-18T14:01:15.175Z"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Communication"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002",
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "subject": {
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+          "display": "Mr. Lucien408 Bosco882 PharmD"
+        },
+        "topic": { "coding": [{ "code": "Prescription Refill", "display": "Prescription Refill" }] }
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    },
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [{ "contentString": "My prescription ran out, can I come in to refill it?" }],
+        "topic": { "text": "December 15th lab tests." },
+        "partOf": [{ "reference": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002" }],
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
+        "sent": "2023-12-18T14:26:06.531Z"
+      },
+      "request": { "method": "POST", "url": "Communication" }
+    }
+  ]
+}

@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { globalSchema } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
@@ -40,7 +42,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: 'foo' } });
     });
 
-    expect(onChange).toBeCalledWith('foo');
+    expect(onChange).toHaveBeenCalledWith('foo');
   });
 
   test('Boolean input', async () => {
@@ -58,14 +60,14 @@ describe('SearchFilterValueInput', () => {
       fireEvent.click(screen.getByTestId('filter-value'));
     });
 
-    expect(onChange).toBeCalledWith('true');
+    expect(onChange).toHaveBeenCalledWith('true');
     onChange.mockClear();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('filter-value'));
     });
 
-    expect(onChange).toBeCalledWith('false');
+    expect(onChange).toHaveBeenCalledWith('false');
     onChange.mockClear();
   });
 
@@ -84,7 +86,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: '1950-01-01' } });
     });
 
-    expect(onChange).toBeCalledWith('1950-01-01');
+    expect(onChange).toHaveBeenCalledWith('1950-01-01');
   });
 
   test('Date/Time input', async () => {
@@ -104,7 +106,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: localString } });
     });
 
-    expect(onChange).toBeCalledWith(isoString);
+    expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
   test('Quantity input', async () => {
@@ -122,7 +124,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: '5' } });
     });
 
-    expect(onChange).toBeCalledWith('5');
+    expect(onChange).toHaveBeenCalledWith('5');
   });
 
   test('Reference input', async () => {
@@ -141,11 +143,15 @@ describe('SearchFilterValueInput', () => {
     );
 
     // Wait for the resource to load
+    expect(await screen.findByText('Test Organization')).toBeInTheDocument();
+
+    // Clear the existing value
+    const clearButton = screen.getByTitle('Clear all');
     await act(async () => {
-      await waitFor(() => screen.getByText('Test Organization'));
+      fireEvent.click(clearButton);
     });
 
-    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });

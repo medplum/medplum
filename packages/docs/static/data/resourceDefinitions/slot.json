@@ -396,6 +396,12 @@
       "type": "token",
       "description": "The free/busy status of the appointment",
       "expression": "Slot.status"
+    },
+    {
+      "name": "end",
+      "type": "date",
+      "description": "The end time of the Slot",
+      "expression": "Slot.end"
     }
   ]
 }

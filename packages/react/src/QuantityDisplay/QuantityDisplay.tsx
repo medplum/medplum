@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatQuantity } from '@medplum/core';
-import { Quantity } from '@medplum/fhirtypes';
+import type { Quantity } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 
 export interface QuantityDisplayProps {
-  value?: Quantity;
+  readonly value?: Quantity;
 }
 
 export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null {

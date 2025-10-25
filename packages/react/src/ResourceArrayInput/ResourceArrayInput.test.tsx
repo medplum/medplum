@@ -1,8 +1,11 @@
-import { InternalSchemaElement } from '@medplum/core';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { ResourceArrayInput, ResourceArrayInputProps } from './ResourceArrayInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import type { ResourceArrayInputProps } from './ResourceArrayInput';
+import { ResourceArrayInput } from './ResourceArrayInput';
 
 const medplum = new MockClient();
 
@@ -32,6 +35,7 @@ const slicedProperty: InternalSchemaElement = {
         name: 'chocolateVariety',
         path: 'IceCream.flavors',
         definition: 'The type of chocolate you prefer',
+        description: 'The type of chocolate you prefer',
         elements: {
           url: {
             path: 'IceCream.flavors.url',
@@ -57,6 +61,7 @@ const slicedProperty: InternalSchemaElement = {
         name: 'vanillaVariety',
         path: 'IceCream.flavors',
         definition: 'The type of vanilla ice cream you prefer',
+        description: 'The type of vanilla ice cream you prefer',
         elements: {
           url: {
             path: 'IceCream.flavors.url',
@@ -82,8 +87,9 @@ const slicedProperty: InternalSchemaElement = {
   },
 };
 
-const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'property' | 'outcome'> = {
+const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'path' | 'property' | 'outcome'> = {
   name: 'myProp',
+  path: 'Fake.myProp',
   property,
   outcome: undefined,
 };
@@ -194,30 +200,19 @@ describe('ResourceArrayInput', () => {
       onChange,
     });
 
-    const shouldExist = [
-      'slice-chocolateVariety-elements-0',
-      'slice-chocolateVariety-remove-0',
-      'slice-chocolateVariety-add',
-      'slice-vanillaVariety-elements-0',
-      'slice-vanillaVariety-remove-0',
-      'nonsliced-add',
-    ];
-    shouldExist.forEach((testId) => {
+    ['slice-chocolateVariety-add', 'slice-vanillaVariety-add', 'nonsliced-add'].forEach((testId) => {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
     });
 
-    const shouldNotExist = ['slice-vanillaVariety-add', 'nonsliced-remove-0'];
-    shouldNotExist.forEach((testId) => {
+    [
+      'slice-chocolateVariety-elements-0',
+      'slice-chocolateVariety-remove-0',
+      'slice-vanillaVariety-elements-0',
+      'slice-vanillaVariety-remove-0',
+      'nonsliced-remove-0',
+    ].forEach((testId) => {
       expect(screen.queryByTestId(testId)).toBeNull();
     });
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('slice-chocolateVariety-remove-0'));
-    });
-
-    expect(screen.queryByTestId('slice-chocolateVariety-add')).toBeInTheDocument();
-    expect(screen.queryByTestId('slice-chocolateVariety-remove-0')).toBeNull();
-    expect(screen.queryByTestId('slice-chocolateVariety-elements-0')).toBeNull();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('slice-chocolateVariety-add'));
@@ -283,9 +278,8 @@ describe('ResourceArrayInput', () => {
       { url: 'greenVariety', valueString: 'Pistachio' },
     ];
 
-    expect(onChange.mock.calls.length).toBe(1);
-    expect(onChange.mock.calls[0][0].length).toBe(expectedValue.length);
-    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining(expectedValue));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(expectedValue);
   });
 
   test('Hiding non-sliced values', async () => {

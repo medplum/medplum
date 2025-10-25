@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Button, Modal, Stack, Text, Title } from '@mantine/core';
 import { formatDateTime, formatHumanName, formatTiming } from '@medplum/core';
-import { HumanName, MedicationRequest } from '@medplum/fhirtypes';
+import type { HumanName, MedicationRequest } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Medication(): JSX.Element {
@@ -33,9 +36,9 @@ function RenewalModal({
   opened,
   setOpened,
 }: {
-  prev: MedicationRequest;
-  opened: boolean;
-  setOpened: (o: boolean) => void;
+  readonly prev: MedicationRequest;
+  readonly opened: boolean;
+  readonly setOpened: (o: boolean) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const patient = medplum.getProfile();

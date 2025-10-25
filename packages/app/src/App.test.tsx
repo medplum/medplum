@@ -1,13 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { App } from './App';
+import type { UserEvent } from './test-utils/render';
+import { act, render, screen, userEvent } from './test-utils/render';
 
 const navigateMock = jest.fn();
 
-async function setup(url = '/'): Promise<void> {
+async function setup(url = '/'): Promise<UserEvent> {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
@@ -19,6 +23,8 @@ async function setup(url = '/'): Promise<void> {
       </MemoryRouter>
     );
   });
+
+  return user;
 }
 
 describe('App', () => {
@@ -34,11 +40,8 @@ describe('App', () => {
   });
 
   test('Click logo', async () => {
-    await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
+    const user = await setup();
+    await openNav(user);
 
     expect(screen.getByText('Patients')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
@@ -46,47 +49,29 @@ describe('App', () => {
   });
 
   test('Click profile', async () => {
-    await setup();
+    const user = await setup();
+    await openMenu(user);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Account settings'));
-    });
+    await user.click(screen.getByText('Account settings'));
   });
 
   test('Change profile', async () => {
-    await setup();
+    const user = await setup();
+    await openMenu(user);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add another account'));
-    });
+    await user.click(screen.getByText('Add another account'));
   });
 
   test('Click sign out', async () => {
-    await setup();
+    const user = await setup();
+    await openMenu(user);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sign out'));
-    });
+    await user.click(screen.getByText('Sign out'));
   });
 
   test('Active link', async () => {
-    await setup('/ServiceRequest?status=active');
-
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
+    const user = await setup('/ServiceRequest?status=active');
+    await openNav(user);
 
     const activeLink = screen.getByText('Active Orders');
     const completedLink = screen.getByText('Completed Orders');
@@ -94,18 +79,15 @@ describe('App', () => {
   });
 
   test('Resource Type Search', async () => {
-    await setup();
+    const user = await setup();
+    await openNav(user);
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Resource Type')) as HTMLInputElement;
 
     // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Different' } });
-    });
+    await user.type(input, 'Different');
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
+    await user.type(input, 'Test');
 
     // Wait for the drop down
     await act(async () => {
@@ -113,15 +95,33 @@ describe('App', () => {
     });
 
     // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
+    await user.keyboard('{ArrowDown}');
 
     // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await user.keyboard('{Enter}');
 
     expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });
+
+function isNavOpen(): boolean {
+  return !!screen.queryByRole('navigation');
+}
+
+async function openNav(user: UserEvent): Promise<void> {
+  if (!isNavOpen()) {
+    await user.click(screen.getByTitle('Medplum Logo'));
+  }
+}
+
+function isMenuOpen(): boolean {
+  return !!screen.queryByText('Sign out');
+}
+
+async function openMenu(user: UserEvent): Promise<void> {
+  if (!isMenuOpen()) {
+    await user.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+
+    await screen.findByText('Sign out');
+  }
+}

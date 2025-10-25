@@ -1,15 +1,19 @@
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ResourceType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeInput } from '../CodeInput/CodeInput';
 
 export interface ResourceTypeInputProps {
-  name: string;
-  placeholder?: string;
-  defaultValue?: ResourceType;
-  targetTypes?: string[];
-  autoFocus?: boolean;
-  testId?: string;
-  onChange?: (value: ResourceType | undefined) => void;
+  readonly name: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: ResourceType;
+  readonly autoFocus?: boolean;
+  readonly testId?: string;
+  readonly maxValues?: number;
+  readonly onChange?: (value: ResourceType | undefined) => void;
+  readonly disabled?: boolean;
 }
 
 export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
@@ -28,6 +32,7 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
 
   return (
     <CodeInput
+      disabled={props.disabled}
       data-autofocus={props.autoFocus}
       data-testid={props.testId}
       defaultValue={resourceType}
@@ -36,8 +41,9 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
       placeholder={props.placeholder}
       binding="https://medplum.com/fhir/ValueSet/resource-types"
       creatable={false}
-      maxValues={0}
+      maxValues={props.maxValues ?? 1}
       clearable={false}
+      withHelpText={false}
     />
   );
 }

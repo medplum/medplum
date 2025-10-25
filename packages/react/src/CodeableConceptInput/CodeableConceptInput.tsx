@@ -1,14 +1,29 @@
-import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
-export interface CodeableConceptInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
-  defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept | undefined) => void;
+export interface CodeableConceptInputProps
+  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
+    ComplexTypeInputProps<CodeableConcept> {
+  readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const { defaultValue, onChange, ...rest } = props;
+  const {
+    defaultValue,
+    onChange,
+    withHelpText,
+    // spread these unused props so they don't get passed to ValueSetAutocomplete in `rest`
+    outcome: _outcome,
+    path: _path,
+    valuePath: _valuePath,
+    ...rest
+  } = props;
   const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
@@ -23,6 +38,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     <ValueSetAutocomplete
       defaultValue={value && codeableConceptToValueSetElement(value)}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
       {...rest}
     />
   );

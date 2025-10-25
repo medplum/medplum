@@ -1,24 +1,25 @@
-import { accepted, allOk, forbidden, getResourceTypes, Operator } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getConfig } from '../../config';
-import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
-import { AsyncJobExecutor } from './utils/asyncjobexecutor';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import type { Repository } from '../repo';
+import { AsyncJobExecutor } from './utils/asyncjobexecutor';
+import { buildBinaryIds } from './utils/binary';
 
 /**
  * Handles an expunge request.
  *
  * Endpoint: [fhir base]/[resourceType]/[id]/$expunge
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function expungeHandler(req: Request, res: Response): Promise<void> {
+export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
-    sendOutcome(res, forbidden);
-    return;
+  if (!ctx.project.superAdmin && !ctx.membership.admin) {
+    return [forbidden];
   }
 
   const { resourceType, id } = req.params;
@@ -26,37 +27,46 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
   if (everything === 'true') {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
-    await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+    await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
     exec.start(async () => {
       ctx.logger.info('Expunge started', { resourceType, id });
       await new Expunger(ctx.repo, id).expunge();
     });
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    return [accepted(exec.getContentLocation(baseUrl))];
   } else {
     await ctx.repo.expungeResource(resourceType, id);
-    sendOutcome(res, allOk);
+    return [allOk];
   }
 }
 
 export class Expunger {
-  constructor(
-    readonly repo: Repository,
-    readonly compartment: string,
-    readonly maxResultsPerPage = 10000
-  ) {
+  readonly repo: Repository;
+  readonly compartment: string;
+  readonly maxResultsPerPage: number;
+
+  constructor(repo: Repository, compartment: string, maxResultsPerPage = 10000) {
+    this.repo = repo;
+    this.compartment = compartment;
     this.maxResultsPerPage = maxResultsPerPage;
   }
 
   async expunge(): Promise<void> {
     const resourceTypes = getResourceTypes();
-
     for (const resourceType of resourceTypes) {
       await this.expungeByResourceType(resourceType);
     }
   }
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
+    if (resourceType === 'Binary') {
+      return;
+    }
+
     const repo = this.repo;
+    // NOTE(ThatOneBro 23/01/2025): Attempted to convert this to using `repo.processAllResources`,
+    // But it doesn't quite fit the pattern since the "next" links are not usable
+    // As the expunge process is destructive and the "cursor" essentially is always at the beginning of the table
+    // We delete the next N resources over and over and use the "next" link as a signal if there are more resources to delete
     let hasNext = true;
     while (hasNext) {
       const bundle = await repo.search({
@@ -65,21 +75,26 @@ export class Expunger {
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
 
-      if (bundle.entry && bundle.entry.length > 0) {
-        const resourcesToExpunge: string[] = [];
-        for (const entry of bundle.entry) {
-          if (entry.resource?.id) {
-            resourcesToExpunge.push(entry.resource.id);
-          }
-        }
-        await repo.expungeResources(resourceType, resourcesToExpunge);
+      if (!bundle.entry || bundle.entry.length === 0) {
+        break;
+      }
 
-        const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      const resourcesToExpunge: string[] = [];
+      const binaryIds = new Set<string>();
 
-        if (!linkNext?.url) {
-          hasNext = false;
+      for (const entry of bundle.entry) {
+        if (entry.resource?.id) {
+          resourcesToExpunge.push(entry.resource.id);
+          buildBinaryIds(entry.resource, binaryIds);
         }
-      } else {
+      }
+      await repo.expungeResources(resourceType, resourcesToExpunge);
+      if (binaryIds.size > 0) {
+        await repo.expungeResources('Binary', Array.from(binaryIds));
+      }
+
+      const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      if (!linkNext?.url) {
         hasNext = false;
       }
     }

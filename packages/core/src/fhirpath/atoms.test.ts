@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation } from '@medplum/fhirtypes';
-import { AtomContext } from '../fhirlexer/parse';
+import type { Bundle, Observation } from '@medplum/fhirtypes';
+import type { AtomContext } from '../fhirlexer/parse';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { LiteralAtom, SymbolAtom } from './atoms';
@@ -18,39 +20,67 @@ describe('Atoms', () => {
   test('LiteralAtom', () => {
     const str = { type: PropertyType.string, value: 'a' };
     const strLiteral = new LiteralAtom(str);
-    expect(strLiteral.eval()).toEqual([str]);
-    expect(strLiteral.toString()).toEqual("'a'");
+    expect(strLiteral.eval()).toStrictEqual([str]);
+    expect(strLiteral.toString()).toStrictEqual("'a'");
 
     const num = { type: PropertyType.decimal, value: 1 };
     const numLiteral = new LiteralAtom(num);
-    expect(numLiteral.eval()).toEqual([num]);
-    expect(numLiteral.toString()).toEqual('1');
+    expect(numLiteral.eval()).toStrictEqual([num]);
+    expect(numLiteral.toString()).toStrictEqual('1');
 
     const bool = { type: PropertyType.boolean, value: true };
     const boolLiteral = new LiteralAtom(bool);
-    expect(boolLiteral.eval()).toEqual([bool]);
-    expect(boolLiteral.toString()).toEqual('true');
+    expect(boolLiteral.eval()).toStrictEqual([bool]);
+    expect(boolLiteral.toString()).toStrictEqual('true');
   });
 
   test('SymbolAtom', () => {
     const symbol = new SymbolAtom('symbol');
-    expect(symbol.toString()).toEqual('symbol');
+    expect(symbol.toString()).toStrictEqual('symbol');
   });
 
   test('EmptySetAtom', () => {
     const atom = parseFhirPath('{}');
-    expect(atom.eval(context, [])).toEqual([]);
-    expect(atom.toString()).toEqual('{}');
+    expect(atom.eval(context, [])).toStrictEqual([]);
+    expect(atom.toString()).toStrictEqual('{}');
   });
 
   test('ConcatAtom', () => {
-    expect(evalFhirPath('{} & {}', [])).toEqual([]);
-    expect(evalFhirPath('x & y', [])).toEqual([]);
+    expect(evalFhirPath('{} & {}', [])).toStrictEqual([]);
+    expect(evalFhirPath('x & y', [])).toStrictEqual([]);
   });
 
   test('UnionAtom', () => {
-    expect(evalFhirPath('{} | {}', [])).toEqual([]);
-    expect(evalFhirPath('x | y', [])).toEqual([]);
+    expect(evalFhirPath('{} | {}', [])).toStrictEqual([]);
+    expect(evalFhirPath('x | y', [])).toStrictEqual([]);
+  });
+
+  test.each([
+    ['true = true', [true]],
+    ['true = false', [false]],
+    ['true = {}', []],
+    ['false = true', [false]],
+    ['false = false', [true]],
+    ['false = {}', []],
+    ['{} = true', []],
+    ['{} = false', []],
+    ['{} = {}', []],
+  ])('EqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toStrictEqual(expected);
+  });
+
+  test.each([
+    ['true != true', [false]],
+    ['true != false', [true]],
+    ['true != {}', []],
+    ['false != true', [true]],
+    ['false != false', [false]],
+    ['false != {}', []],
+    ['{} != true', []],
+    ['{} != false', []],
+    ['{} != {}', []],
+  ])('NotEqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toStrictEqual(expected);
   });
 
   test.each([
@@ -64,7 +94,7 @@ describe('Atoms', () => {
     ['{} or false', []],
     ['{} or {}', []],
   ])('OrAtom: %s to equal %s', (input: any, expected: any) => {
-    expect(evalFhirPath(input, [])).toEqual(expected);
+    expect(evalFhirPath(input, [])).toStrictEqual(expected);
   });
 
   test.each([
@@ -78,7 +108,7 @@ describe('Atoms', () => {
     ['{} implies false', []],
     ['{} implies {}', []],
   ])('ImpliesAtom: %s to equal %s', (input: any, expected: any) => {
-    expect(evalFhirPath(input, [])).toEqual(expected);
+    expect(evalFhirPath(input, [])).toStrictEqual(expected);
   });
 
   test('AsAtom', () => {
@@ -96,9 +126,9 @@ describe('Atoms', () => {
       valueCodeableConcept: { coding: [{ code: 'xyz' }] },
     };
 
-    expect(evalFhirPath('value as Quantity', obs1)).toEqual([obs1.valueQuantity]);
-    expect(evalFhirPath('value as Quantity', obs2)).toEqual([]);
-    expect(evalFhirPath('value as CodeableConcept', obs1)).toEqual([]);
-    expect(evalFhirPath('value as CodeableConcept', obs2)).toEqual([obs2.valueCodeableConcept]);
+    expect(evalFhirPath('value as Quantity', obs1)).toStrictEqual([obs1.valueQuantity]);
+    expect(evalFhirPath('value as Quantity', obs2)).toStrictEqual([]);
+    expect(evalFhirPath('value as CodeableConcept', obs1)).toStrictEqual([]);
+    expect(evalFhirPath('value as CodeableConcept', obs2)).toStrictEqual([obs2.valueCodeableConcept]);
   });
 });

@@ -14,6 +14,7 @@
 .editing {
   border: 1.5px solid var(--mantine-color-gray-1);
   border-left: 4px solid var(--mantine-color-blue-5);
+  min-height: 100px;
 }
 
 .questionBody {
@@ -33,7 +34,7 @@
   position: absolute;
   right: 4px;
   bottom: 0;
-  font-size: var(--mantine-font-size-xs);
+  --text-fz: var(--mantine-font-size-xs);
 
   & a {
     margin-left: 8px;
@@ -68,4 +69,8 @@
 
 .typeSelect {
   width: 100px;
+}
+
+.preserveBreaks {
+  white-space: pre-wrap;
 }

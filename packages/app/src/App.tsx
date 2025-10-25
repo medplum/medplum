@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Space } from '@mantine/core';
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
-import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
+import type { UserConfiguration } from '@medplum/fhirtypes';
+import type { NavbarMenu } from '@medplum/react';
+import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
 import {
-  Icon,
   IconBrandAsana,
   IconBuilding,
+  IconDatabase,
   IconForms,
   IconId,
   IconLock,
@@ -17,8 +20,9 @@ import {
   IconStar,
   IconWebhook,
 } from '@tabler/icons-react';
+import type { FunctionComponent, JSX } from 'react';
 import { Suspense } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 
 import './App.css';
@@ -75,7 +79,7 @@ function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
   return result;
 }
 
-const resourceTypeToIcon: Record<string, Icon> = {
+const resourceTypeToIcon: Record<string, FunctionComponent> = {
   Patient: IconStar,
   Practitioner: IconId,
   Organization: IconBuilding,
@@ -90,13 +94,16 @@ const resourceTypeToIcon: Record<string, Icon> = {
 };
 
 function getIcon(to: string): JSX.Element | undefined {
+  if (to.includes('admin/super/db')) {
+    return <IconDatabase />;
+  }
   try {
     const resourceType = new URL(to, 'https://app.medplum.com').pathname.split('/')[1];
     if (resourceType in resourceTypeToIcon) {
       const Icon = resourceTypeToIcon[resourceType];
       return <Icon />;
     }
-  } catch (e) {
+  } catch (_err) {
     // Ignore
   }
   return <Space w={30} />;

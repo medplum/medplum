@@ -10,7 +10,7 @@ To get a sense of what bots are, it's useful to consider some examples. Below ar
 
 - **Consume event data or webhooks from other platforms**: see this tutorial on [consuming HL7 feeds and converting to FHIR](/docs/bots/hl7-into-fhir).
 - **Export data to other systems**: see this tutorial on [exporting a PDF report for human consumption](/docs/bots/creating-a-pdf).
-- **Drive workflow**: see this tutorial on [checking insurance eligibility for a specific medical service](/docs/bots/insurance-eligibility-check).
+- **Drive workflow**: see this tutorial on checking insurance eligibility for a specific medical service.
 - **Calling out to 3rd party APIs**: see this tutorial on [uploading a file to an external API](/docs/bots/file-uploads).
 
 ## Writing Bots

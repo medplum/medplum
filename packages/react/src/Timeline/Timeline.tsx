@@ -1,29 +1,34 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Menu, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import type { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
-import { ReactNode } from 'react';
+import cx from 'clsx';
+import type { JSX, ReactNode } from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { Panel, PanelProps } from '../Panel/Panel';
+import type { PanelProps } from '../Panel/Panel';
+import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
+import classes from './Timeline.module.css';
 
 export interface TimelineProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
   return <Container>{props.children}</Container>;
 }
 
-export interface TimelineItemProps extends PanelProps {
-  resource: Resource;
-  profile?: Reference;
-  dateTime?: string;
-  padding?: boolean;
-  popupMenuItems?: ReactNode;
+export interface TimelineItemProps<T extends Resource = Resource> extends PanelProps {
+  readonly resource: T;
+  readonly profile?: Reference;
+  readonly dateTime?: string;
+  readonly padding?: boolean;
+  readonly popupMenuItems?: ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
@@ -68,8 +73,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         )}
       </Group>
       <ErrorBoundary>
-        {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}
-        {!padding && <>{props.children}</>}
+        <div className={cx(classes.item, { [classes.itemPadding]: padding })}>{props.children}</div>
       </ErrorBoundary>
     </Panel>
   );

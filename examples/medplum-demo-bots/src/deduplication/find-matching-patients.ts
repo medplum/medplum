@@ -1,5 +1,8 @@
-import { BotEvent, MedplumClient, createReference, getReferenceString, resolveId } from '@medplum/core';
-import { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getReferenceString, resolveId } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Patient, RiskAssessment, Task } from '@medplum/fhirtypes';
 
 /**
  * This Bot listens for changes to a `Patient` resource and searches for potential patient duplicates.
@@ -30,7 +33,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   // Search for potential active duplicate patients by matching first name, last name, birthdate, and postal code.
   const candidateMatches = await medplum.searchResources('Patient', {
     'family:exact': srcPatient.name?.[0]?.family,
-    'given:exact': srcPatient.name?.[0]?.given,
+    'given:exact': srcPatient.name?.[0]?.given?.join(' '),
     birthdate: srcPatient.birthDate,
     'address-postalcode': srcPatient.address?.[0]?.postalCode,
     // only search for patients that are 'active' (have not already been)

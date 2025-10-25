@@ -1,5 +1,7 @@
-import { SNOMED, createReference, getReferenceString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { SNOMED, createReference } from '@medplum/core';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './conditions-list-questionnaire';
@@ -10,6 +12,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const quesionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
+    url: 'https://medplum.com/Questionnaire/conditions-list-or-problem-list',
     name: 'Conditions List or Problem List',
     title: 'A Questionnaire for collecting a list of conditions or problems',
     status: 'active',
@@ -102,13 +105,18 @@ test('Success', async () => {
         ],
       },
     ],
-    questionnaire: getReferenceString(questionnaire),
+    questionnaire: questionnaire.url,
     subject: createReference(HomerSimpson),
     encounter: createReference(encounter),
     source: createReference(DrAliceSmith),
     authored: new Date().toISOString(),
     status: 'completed',
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBe(true);
 });

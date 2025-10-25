@@ -1,6 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
 import { PropertyType } from '@medplum/core';
+import type { Extension } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
-import { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { useCallback } from 'react';
 import { Document } from '../Document/Document';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
@@ -13,6 +19,7 @@ export const AddressInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="address-input"
+      path="Patient.address"
       defaultValue={HomerSimpson.address?.[0]}
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'Address' }] }}
       defaultPropertyType={PropertyType.Address}
@@ -26,6 +33,7 @@ export const BooleanInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="boolean-input"
+      path="Device.boolean"
       defaultValue={false}
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'boolean' }] }}
       defaultPropertyType={PropertyType.boolean}
@@ -39,6 +47,7 @@ export const DateInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
+      path="Observation.date"
       defaultValue="2021-01-01"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'date' }] }}
       defaultPropertyType={PropertyType.date}
@@ -52,6 +61,7 @@ export const DateTimeInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
+      path="Procedure.dateTime"
       defaultValue="2021-01-01T16:00:01Z"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'dateTime' }] }}
       defaultPropertyType={PropertyType.dateTime}
@@ -60,3 +70,37 @@ export const DateTimeInput = (): JSX.Element => (
     />
   </Document>
 );
+
+const defaultValue: Extension[] = [
+  {
+    url: 'https://example.com',
+    valueString: 'foo',
+  },
+];
+const property: InternalSchemaElement = {
+  path: 'extension',
+  description: '',
+  min: 0,
+  max: 10,
+  type: [{ code: 'Extension' }],
+  isArray: false,
+};
+export const ExtensionInput = (): JSX.Element => {
+  const onChange = useCallback((newValue: any): void => {
+    console.log('onChange', newValue);
+  }, []);
+
+  return (
+    <Document>
+      <ResourcePropertyInput
+        name="extension"
+        path="Patient.extension"
+        defaultValue={defaultValue}
+        property={property}
+        defaultPropertyType={PropertyType.dateTime}
+        onChange={onChange}
+        outcome={undefined}
+      />
+    </Document>
+  );
+};

@@ -1,11 +1,15 @@
-import { CodeSystem } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeSystem } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { systemRepo } from '../repo';
-import { getClient } from '../../database';
+import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 
 describe('Coding lookup table', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
@@ -31,9 +35,9 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getClient();
+      const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query('SELECT id, code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
-      expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toEqual([
+      expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toStrictEqual([
         'AB (Ambulance)',
         'CD (Cardiology)',
         'E (Emergency)',
@@ -45,9 +49,9 @@ describe('Coding lookup table', () => {
         codingId,
         'CD',
       ]);
-      expect(properties.rowCount).toEqual(1);
+      expect(properties.rowCount).toStrictEqual(1);
       const targetId = results.rows.find((r) => r.code === 'CD').id;
-      expect(properties.rows[0].target).toEqual(targetId);
+      expect(properties.rows[0].target).toStrictEqual(targetId);
     }));
 
   test('Omits codings from incomplete CodeSystem resource', () =>
@@ -66,8 +70,8 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getClient();
+      const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query('SELECT code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
-      expect(results.rowCount).toEqual(0);
+      expect(results.rowCount).toStrictEqual(0);
     }));
 });

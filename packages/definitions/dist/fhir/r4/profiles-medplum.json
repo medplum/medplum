@@ -95,6 +95,86 @@
             }]
           },
           {
+            "id" : "Project.text",
+            "path" : "Project.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Project.contained",
+            "path" : "Project.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Project.extension",
+            "path" : "Project.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Project.modifierExtension",
+            "path" : "Project.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Project.identifier",
+            "path" : "Project.identifier",
+            "short" : "An identifier for this project",
+            "definition" : "An identifier for this project.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "Project.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "Project.name",
             "path" : "Project.name",
             "definition" : "A name associated with the Project.",
@@ -144,7 +224,7 @@
             "id" : "Project.strictMode",
             "path" : "Project.strictMode",
             "short" : "Whether this project uses strict FHIR validation.",
-            "definition" : "Whether this project uses strict FHIR validation.",
+            "definition" : "Whether this project uses strict FHIR validation.  This setting has been deprecated, and can only be set by a super admin.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -204,7 +284,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature"
             }
           },
           {
@@ -224,23 +304,23 @@
             }
           },
           {
-            "id" : "Project.secret",
-            "path" : "Project.secret",
-            "definition" : "Secure environment variable that can be used to store secrets for bots.",
+            "id" : "Project.setting",
+            "path" : "Project.setting",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
             "min" : 0,
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
             }],
             "base" : {
-              "path" : "Project.secret",
+              "path" : "Project.setting",
               "min" : 0,
               "max" : "*"
             }
           },
           {
-            "id" : "Project.secret.name",
-            "path" : "Project.secret.name",
+            "id" : "Project.setting.name",
+            "path" : "Project.setting.name",
             "definition" : "The secret name.",
             "min" : 1,
             "max" : "1",
@@ -248,14 +328,14 @@
               "code" : "string"
             }],
             "base" : {
-              "path" : "Project.secret.name",
+              "path" : "Project.setting.name",
               "min" : 1,
               "max" : "1"
             }
           },
           {
-            "id" : "Project.secret.value[x]",
-            "path" : "Project.secret.value[x]",
+            "id" : "Project.setting.value[x]",
+            "path" : "Project.setting.value[x]",
             "definition" : "The secret value.",
             "min" : 1,
             "max" : "1",
@@ -272,10 +352,49 @@
               "code" : "integer"
             }],
             "base" : {
-              "path" : "Project.secret.value[x]",
+              "path" : "Project.setting.value[x]",
               "min" : 1,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Project.secret",
+            "path" : "Project.secret",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to project administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.secret",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
+          },
+          {
+            "id" : "Project.systemSetting",
+            "path" : "Project.systemSetting",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only modifiable by system administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.systemSetting",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
+          },
+          {
+            "id" : "Project.systemSecret",
+            "path" : "Project.systemSecret",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to system administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.systemSecret",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
           },
           {
             "id" : "Project.site",
@@ -381,6 +500,95 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id": "Project.link",
+            "path": "Project.link",
+            "definition": "Linked Projects whose contents are made available to this one",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.link",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.link.project",
+            "path": "Project.link.project",
+            "definition": "A reference to the Project to be linked into this one",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "Reference", "targetProfile": ["Project"]}],
+            "base": {
+              "path": "Project.link.project",
+              "min": 1,
+              "max": "1"
+            }
+          },
+          {
+            "id": "Project.defaultProfile",
+            "path": "Project.defaultProfile",
+            "definition": "Default profiles to apply to resources in this project that do not individually specify profiles",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultProfile",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.resourceType",
+            "path": "Project.defaultProfile.resourceType",
+            "definition": "The resource type onto which to apply the default profiles",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultProfile.resourceType",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.profile",
+            "path": "Project.defaultProfile.profile",
+            "definition": "The profiles to add by default",
+            "min": 1,
+            "max": "*",
+            "type": [{
+              "code" : "canonical",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
+            }],
+            "base": {
+              "path": "Project.defaultProfile.profile",
+              "min": 1,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.exportedResourceType",
+            "path": "Project.exportedResourceType",
+            "definition": "The resource types exported by the project when linked",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.exportedResourceType",
+              "min": 0,
+              "max": "*"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
           }
         ]
       }
@@ -476,6 +684,70 @@
             }]
           },
           {
+            "id" : "ClientApplication.text",
+            "path" : "ClientApplication.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "ClientApplication.contained",
+            "path" : "ClientApplication.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "ClientApplication.extension",
+            "path" : "ClientApplication.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "ClientApplication.modifierExtension",
+            "path" : "ClientApplication.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "ClientApplication.status",
             "path" : "ClientApplication.status",
             "short" : "active | error | off",
@@ -526,6 +798,51 @@
             }
           },
           {
+            "id" : "ClientApplication.signInForm",
+            "path" : "ClientApplication.signInForm",
+            "definition" : "Custom values for the Log In form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "ClientApplication.signInForm",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.welcomeString",
+            "path" : "ClientApplication.signInForm.welcomeString",
+            "definition" : "Welcome string for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.welcomeString",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.logo",
+            "path" : "ClientApplication.signInForm.logo",
+            "definition" : "Logo for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.logo",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.secret",
             "path" : "ClientApplication.secret",
             "definition" : "Client secret string used to verify the identity of a client.",
@@ -536,6 +853,21 @@
             }],
             "base": {
               "path" : "ClientApplication.secret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.retiringSecret",
+            "path" : "ClientApplication.retiringSecret",
+            "definition" : "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.retiringSecret",
               "min" : 0,
               "max" : "1"
             }
@@ -558,7 +890,7 @@
           {
             "id" : "ClientApplication.redirectUri",
             "path" : "ClientApplication.redirectUri",
-            "definition" : "Optional redirect URI used when redirecting a client back to the client application.",
+            "definition" : "@deprecated This field is deprecated. Use redirectUris instead.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -568,6 +900,21 @@
               "path" : "ClientApplication.redirectUri",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.redirectUris",
+            "path" : "ClientApplication.redirectUris",
+            "definition" : "Optional redirect URI array used when redirecting a client back to the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base": {
+              "path" : "ClientApplication.redirectUris",
+              "min" : 0,
+              "max" : "*"
             }
           },
           {
@@ -613,6 +960,78 @@
               "path" : "ClientApplication.identityProvider",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.accessTokenLifetime",
+            "path" : "ClientApplication.accessTokenLifetime",
+            "definition" : "Optional configuration to set the access token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.accessTokenLifetime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.refreshTokenLifetime",
+            "path" : "ClientApplication.refreshTokenLifetime",
+            "definition" : "Optional configuration to set the refresh token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.refreshTokenLifetime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.allowedOrigin",
+            "path" : "ClientApplication.allowedOrigin",
+            "definition" : "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.allowedOrigin",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.defaultScope",
+            "path" : "ClientApplication.defaultScope",
+            "definition" : "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.defaultScope",
+              "min" : 0,
+              "max" : "*"
             }
           }
         ]
@@ -709,6 +1128,86 @@
             }]
           },
           {
+            "id" : "User.text",
+            "path" : "User.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "User.contained",
+            "path" : "User.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "User.extension",
+            "path" : "User.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "User.modifierExtension",
+            "path" : "User.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "User.identifier",
+            "path" : "User.identifier",
+            "short" : "An identifier for this user",
+            "definition" : "An identifier for this user.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "User.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "User.firstName",
             "path" : "User.firstName",
             "definition" : "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
@@ -741,7 +1240,7 @@
           {
             "id" : "User.externalId",
             "path" : "User.externalId",
-            "definition" : "DEPRECATED Replaced by ProjectMembership.externalId.",
+            "definition" : "@deprecated Replaced by ProjectMembership.externalId.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -786,8 +1285,8 @@
           {
             "id" : "User.admin",
             "path" : "User.admin",
-            "short" : "DEPRECATED",
-            "definition" : "DEPRECATED",
+            "short" : "@deprecated",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -825,6 +1324,21 @@
             }],
             "base": {
               "path" : "User.mfaSecret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "User.mfaRequired",
+            "path" : "User.mfaRequired",
+            "definition" : "Whether the user is required to complete MFA enrollment. If true, the user must complete MFA enrollment before they can log in.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base": {
+              "path" : "User.mfaRequired",
               "min" : 0,
               "max" : "1"
             }
@@ -954,6 +1468,103 @@
             }]
           },
           {
+            "id" : "ProjectMembership.text",
+            "path" : "ProjectMembership.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.contained",
+            "path" : "ProjectMembership.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.extension",
+            "path" : "ProjectMembership.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.modifierExtension",
+            "path" : "ProjectMembership.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.identifier",
+            "path" : "ProjectMembership.identifier",
+            "short" : "An identifier for this ProjectMembership",
+            "definition" : "An identifier for this ProjectMembership.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "ProjectMembership.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ProjectMembership.active",
+            "path" : "ProjectMembership.active",
+            "short" : "Whether this patient's record is in active use",
+            "definition" : "Whether this project membership record is in active use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ProjectMembership.active",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "meaningWhenMissing" : "This resource is generally assumed to be active if no value is provided for the active element"
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",
@@ -1024,9 +1635,24 @@
             }
           },
           {
+            "id" : "ProjectMembership.userName",
+            "path" : "ProjectMembership.userName",
+            "definition" : "SCIM userName. A service provider's unique identifier for the user, typically used by the user to directly authenticate to the service provider. Often displayed to the user as their unique identifier within the system (as opposed to \"id\" or \"externalId\", which are generally opaque and not user-friendly identifiers).  Each User MUST include a non-empty userName value.  This identifier MUST be unique across the service provider's entire set of Users.  This attribute is REQUIRED and is case insensitive.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ProjectMembership.userName",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ProjectMembership.externalId",
             "path" : "ProjectMembership.externalId",
-            "definition" : "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain's identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
+            "definition" : "SCIM externalId. A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain's identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1263,6 +1889,70 @@
             }]
           },
           {
+            "id" : "Bot.text",
+            "path" : "Bot.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Bot.contained",
+            "path" : "Bot.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Bot.extension",
+            "path" : "Bot.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Bot.modifierExtension",
+            "path" : "Bot.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "Bot.identifier",
             "path" : "Bot.identifier",
             "short" : "An identifier for this bot",
@@ -1328,6 +2018,21 @@
             }
           },
           {
+            "id" : "Bot.timeout",
+            "path" : "Bot.timeout",
+            "definition" : "The maximum allowed execution time of the bot in seconds.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "Bot.timeout",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.photo",
             "path" : "Bot.photo",
             "definition" : "Image of the bot.",
@@ -1377,6 +2082,21 @@
             }
           },
           {
+            "id" : "Bot.system",
+            "path" : "Bot.system",
+            "definition" : "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.system",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.runAsUser",
             "path" : "Bot.runAsUser",
             "definition" : "Optional flag to indicate that the bot should be run as the user.",
@@ -1387,6 +2107,21 @@
             }],
             "base" : {
               "path" : "Bot.runAsUser",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.publicWebhook",
+            "path" : "Bot.publicWebhook",
+            "definition" : "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.publicWebhook",
               "min" : 0,
               "max" : "1"
             }
@@ -1462,7 +2197,7 @@
           {
             "id" : "Bot.code",
             "path" : "Bot.code",
-            "definition" : "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+            "definition" : "@deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1565,6 +2300,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "Login.text",
+            "path" : "Login.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Login.contained",
+            "path" : "Login.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Login.extension",
+            "path" : "Login.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Login.modifierExtension",
+            "path" : "Login.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -1843,7 +2642,7 @@
           {
             "id" : "Login.admin",
             "path" : "Login.admin",
-            "definition" : "DEPRECATED",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1858,7 +2657,7 @@
           {
             "id" : "Login.superAdmin",
             "path" : "Login.superAdmin",
-            "definition" : "Whether this login has super administrator privileges.",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1915,6 +2714,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.pictureUrl",
+            "path" : "Login.pictureUrl",
+            "definition" : "Optional picture URL from the external identity provider.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.pictureUrl",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -1932,7 +2746,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Password change request for the 'forgot password' flow.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityRequest instead.",
       "snapshot" : {
         "element" : [
           {
@@ -2007,6 +2821,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.text",
+            "path" : "PasswordChangeRequest.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.contained",
+            "path" : "PasswordChangeRequest.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.extension",
+            "path" : "PasswordChangeRequest.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.modifierExtension",
+            "path" : "PasswordChangeRequest.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -2085,6 +2963,243 @@
             }],
             "base" : {
               "path" : "PasswordChangeRequest.redirectUri",
+              "min" : 0,
+              "max" : "1"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/UserSecurityRequest",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "UserSecurityRequest",
+      "name" : "UserSecurityRequest",
+      "url" : "https://medplum.com/fhir/StructureDefinition/UserSecurityRequest",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "UserSecurityRequest",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "User security request for the 'forgot password' flow, email verification, etc.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "UserSecurityRequest",
+            "path" : "UserSecurityRequest",
+            "short" : "User security request for the 'forgot password' flow, email verification, etc.",
+            "definition" : "User security request for the 'forgot password' flow, email verification, etc.",
+            "min" : 0,
+            "max" : "*",
+            "base": {
+              "path" : "UserSecurityRequest",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "UserSecurityRequest.id",
+            "path" : "UserSecurityRequest.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.meta",
+            "path" : "UserSecurityRequest.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.implicitRules",
+            "path" : "UserSecurityRequest.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.language",
+            "path" : "UserSecurityRequest.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.text",
+            "path" : "UserSecurityRequest.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.contained",
+            "path" : "UserSecurityRequest.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.extension",
+            "path" : "UserSecurityRequest.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.modifierExtension",
+            "path" : "UserSecurityRequest.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.type",
+            "path" : "UserSecurityRequest.type",
+            "definition" : "The type of user security request.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "UserSecurityRequest.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/user-security-request-type"
+            }
+          },
+          {
+            "id" : "UserSecurityRequest.user",
+            "path" : "UserSecurityRequest.user",
+            "definition" : "The user performing the security request.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
+            }],
+            "base" : {
+              "path" : "UserSecurityRequest.user",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "UserSecurityRequest.secret",
+            "path" : "UserSecurityRequest.secret",
+            "definition" : "Secret string used to verify the identity of the user.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "UserSecurityRequest.secret",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "UserSecurityRequest.used",
+            "path" : "UserSecurityRequest.used",
+            "definition" : "Whether this request has been used, and is therefore no longer valid.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "UserSecurityRequest.used",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "UserSecurityRequest.redirectUri",
+            "path" : "UserSecurityRequest.redirectUri",
+            "definition" : "Redirect URI used when redirecting a client back to the client application.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base" : {
+              "path" : "UserSecurityRequest.redirectUri",
               "min" : 0,
               "max" : "1"
             }
@@ -2183,6 +3298,70 @@
             }]
           },
           {
+            "id" : "JsonWebKey.text",
+            "path" : "JsonWebKey.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.contained",
+            "path" : "JsonWebKey.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.extension",
+            "path" : "JsonWebKey.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.modifierExtension",
+            "path" : "JsonWebKey.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id": "JsonWebKey.active",
             "path": "JsonWebKey.active",
             "definition": "Whether this key is in active use.",
@@ -2203,7 +3382,7 @@
             "id": "JsonWebKey.alg",
             "path": "JsonWebKey.alg",
             "definition": "The specific cryptographic algorithm used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -2212,7 +3391,7 @@
             ],
             "base": {
               "path": "JsonWebKey.alg",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -2220,7 +3399,7 @@
             "id": "JsonWebKey.kty",
             "path": "JsonWebKey.kty",
             "definition": "The family of cryptographic algorithms used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -2229,7 +3408,7 @@
             ],
             "base": {
               "path": "JsonWebKey.kty",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -2453,6 +3632,57 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id": "JsonWebKey.x",
+            "path": "JsonWebKey.x",
+            "definition": "The x coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.x",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.y",
+            "path": "JsonWebKey.y",
+            "definition": "The y coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.y",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.crv",
+            "path": "JsonWebKey.crv",
+            "definition": "The cryptographic curve identifier (e.g., 'P-256', 'P-384', 'P-521').",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.crv",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
@@ -2548,6 +3778,70 @@
             }]
           },
           {
+            "id" : "AccessPolicy.text",
+            "path" : "AccessPolicy.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.contained",
+            "path" : "AccessPolicy.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.extension",
+            "path" : "AccessPolicy.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.modifierExtension",
+            "path" : "AccessPolicy.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "AccessPolicy.name",
             "path" : "AccessPolicy.name",
             "definition" : "A name associated with the AccessPolicy.",
@@ -2561,6 +3855,22 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "AccessPolicy.basedOn",
+            "path" : "AccessPolicy.basedOn",
+            "definition" : "Other access policies used to derive this access policy.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "AccessPolicy.basedOn",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }]
           },
           {
             "id" : "AccessPolicy.compartment",
@@ -2590,7 +3900,15 @@
               "path" : "AccessPolicy.resource",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key": "axp-3",
+                "severity": "error",
+                "human": "Criteria must be a valid FHIR search string on the correct resource type, e.g. Patient?identifier=123",
+                "expression": "criteria.exists() implies criteria.startsWith(%context.resourceType & '?')"
+              }
+            ]
           },
           {
             "id" : "AccessPolicy.resource.resourceType",
@@ -2610,7 +3928,7 @@
           {
             "id" : "AccessPolicy.resource.compartment",
             "path" : "AccessPolicy.resource.compartment",
-            "definition" : "DEPRECATED Optional compartment restriction for the resource type.",
+            "definition" : "@deprecated Optional compartment restriction for the resource type.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2641,7 +3959,7 @@
           {
             "id" : "AccessPolicy.resource.readonly",
             "path" : "AccessPolicy.resource.readonly",
-            "definition" : "Optional flag to indicate that the resource type is read-only.",
+            "definition" : "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read', 'vread', 'history']",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2651,6 +3969,25 @@
               "path" : "AccessPolicy.resource.readonly",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "AccessPolicy.resource.interaction",
+            "path" : "AccessPolicy.resource.interaction",
+            "definition" : "Permitted FHIR interactions with this resource type",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.interaction",
+              "min" : 0,
+              "max" : "*"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions"
             }
           },
           {
@@ -2861,6 +4198,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.text",
+            "path" : "UserConfiguration.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.contained",
+            "path" : "UserConfiguration.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.extension",
+            "path" : "UserConfiguration.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.modifierExtension",
+            "path" : "UserConfiguration.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -3149,6 +4550,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.text",
+            "path" : "BulkDataExport.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.contained",
+            "path" : "BulkDataExport.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.extension",
+            "path" : "BulkDataExport.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.modifierExtension",
+            "path" : "BulkDataExport.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -3469,10 +4934,74 @@
               "code" : "code"
             }],
             "base" : {
-              "path" : "SmartAppLaunch.language",
+              "path" : "Resource.language",
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "SmartAppLaunch.text",
+            "path" : "SmartAppLaunch.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.contained",
+            "path" : "SmartAppLaunch.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.extension",
+            "path" : "SmartAppLaunch.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.modifierExtension",
+            "path" : "SmartAppLaunch.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
           },
           {
             "id" : "SmartAppLaunch.patient",
@@ -3594,10 +5123,74 @@
               "code" : "code"
             }],
             "base" : {
-              "path" : "DomainConfiguration.language",
+              "path" : "Resource.language",
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "DomainConfiguration.text",
+            "path" : "DomainConfiguration.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.contained",
+            "path" : "DomainConfiguration.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.extension",
+            "path" : "DomainConfiguration.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.modifierExtension",
+            "path" : "DomainConfiguration.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
           },
           {
             "id" : "DomainConfiguration.domain",
@@ -3817,7 +5410,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
@@ -3881,9 +5482,73 @@
             }]
           },
           {
+            "id" : "AsyncJob.text",
+            "path" : "AsyncJob.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "AsyncJob.contained",
+            "path" : "AsyncJob.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "AsyncJob.extension",
+            "path" : "AsyncJob.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "AsyncJob.modifierExtension",
+            "path" : "AsyncJob.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "AsyncJob.status",
             "path" : "AsyncJob.status",
-            "short" : "accepted | error | completed",
+            "short" : "accepted | error | completed | cancelled",
             "definition" : "The status of the request.",
             "min" : 1,
             "max" : "1",
@@ -3944,6 +5609,71 @@
               "min" : 1,
               "max" : "1"
             }
+          },
+          {
+            "id" : "AsyncJob.output",
+            "path" : "AsyncJob.output",
+            "definition" : "Outputs resulting from the async job.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code": "Parameters"
+            }],
+            "base" : {
+              "path" : "AsyncJob.output",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "AsyncJob.type",
+            "path" : "AsyncJob.type",
+            "short" : "data-migration",
+            "definition" : "The type of the AsyncJob.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-type|4.0.1"
+            }
+          },
+          {
+            "id" : "AsyncJob.dataVersion",
+            "path" : "AsyncJob.dataVersion",
+            "definition" : "The data version of the migration this job represents.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.dataVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "integer"
+            }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }
@@ -4036,6 +5766,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "Agent.text",
+            "path" : "Agent.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Agent.contained",
+            "path" : "Agent.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Agent.extension",
+            "path" : "Agent.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Agent.modifierExtension",
+            "path" : "Agent.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -4226,6 +6020,1792 @@
             }
           }
         ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "ViewDefinition",
+      "url" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+      "version" : "0.0.1-pre",
+      "name" : "ViewDefinition",
+      "title" : "View Definition",
+      "status" : "draft",
+      "date" : "2024-06-11T00:39:12+00:00",
+      "publisher" : "HL7",
+      "contact" : [{
+        "name" : "HL7",
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://example.org/example-publisher"
+        }]
+      }],
+      "description" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+      "jurisdiction" : [{
+        "coding" : [{
+          "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+          "code" : "001",
+          "display" : "World"
+        }]
+      }],
+      "fhirVersion" : "5.0.0",
+      "mapping" : [{
+        "identity" : "rim",
+        "uri" : "http://hl7.org/v3",
+        "name" : "RIM Mapping"
+      }],
+      "kind" : "logical",
+      "abstract" : false,
+      "type" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/Base",
+      "derivation" : "specialization",
+      "snapshot" : {
+        "element" : [{
+          "id" : "ViewDefinition",
+          "path" : "ViewDefinition",
+          "short" : "View Definition",
+          "definition" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Base",
+            "min" : 0,
+            "max" : "*"
+          },
+          "isModifier" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.url",
+          "path" : "ViewDefinition.url",
+          "short" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "definition" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.url",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.identifier",
+          "path" : "ViewDefinition.identifier",
+          "short" : "Additional identifier for the view definition",
+          "definition" : "Additional identifier for the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.identifier",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "Identifier"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.name",
+          "path" : "ViewDefinition.name",
+          "short" : "Name of view definition (computer and database friendly)",
+          "definition" : "Name of the view definition, must be in a database-friendly format.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.name",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.title",
+          "path" : "ViewDefinition.title",
+          "short" : "Name for this view definition (human friendly)",
+          "definition" : "A optional human-readable description of the view.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.title",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.meta",
+          "path" : "ViewDefinition.meta",
+          "short" : "Metadata about the view definition",
+          "definition" : "Metadata about the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.meta",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "Meta"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.status",
+          "path" : "ViewDefinition.status",
+          "short" : "draft | active | retired | unknown",
+          "definition" : "draft | active | retired | unknown",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.status",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/publication-status"
+          }
+        },
+        {
+          "id" : "ViewDefinition.experimental",
+          "path" : "ViewDefinition.experimental",
+          "short" : "For testing purposes, not real usage",
+          "definition" : "For testing purposes, not real usage",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.experimental",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.publisher",
+          "path" : "ViewDefinition.publisher",
+          "short" : "Name of the publisher/steward (organization or individual)",
+          "definition" : "Name of the publisher/steward (organization or individual)",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.publisher",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.contact",
+          "path" : "ViewDefinition.contact",
+          "short" : "Contact details for the publisher",
+          "definition" : "Contact details for the publisher",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.contact",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "ContactDetail"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.description",
+          "path" : "ViewDefinition.description",
+          "short" : "Natural language description of the view definition",
+          "definition" : "Natural language description of the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.useContext",
+          "path" : "ViewDefinition.useContext",
+          "short" : "The context that the content is intended to support",
+          "definition" : "The context that the content is intended to support",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.useContext",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "UsageContext"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.copyright",
+          "path" : "ViewDefinition.copyright",
+          "short" : "Use and/or publishing restrictions",
+          "definition" : "Use and/or publishing restrictions",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.copyright",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.resource",
+          "path" : "ViewDefinition.resource",
+          "short" : "FHIR resource for the ViewDefinition",
+          "definition" : "The FHIR resource that the view is based upon, e.g. 'Patient' or 'Observation'.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.resource",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+          }
+        },
+        {
+          "id" : "ViewDefinition.fhirVersion",
+          "path" : "ViewDefinition.fhirVersion",
+          "short" : "FHIR version(s) of the resource for the ViewDefinition",
+          "definition" : "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.fhirVersion",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/FHIR-version"
+          }
+        },
+        {
+          "id" : "ViewDefinition.constant",
+          "path" : "ViewDefinition.constant",
+          "short" : "Constant that can be used in FHIRPath expressions",
+          "definition" : "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.constant",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.id",
+          "path" : "ViewDefinition.constant.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.extension",
+          "path" : "ViewDefinition.constant.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.modifierExtension",
+          "path" : "ViewDefinition.constant.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.name",
+          "path" : "ViewDefinition.constant.name",
+          "short" : "Name of constant (referred to in FHIRPath as %[name])",
+          "definition" : "Name of constant (referred to in FHIRPath as %[name])",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.constant.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.value[x]",
+          "path" : "ViewDefinition.constant.value[x]",
+          "short" : "Value of constant",
+          "definition" : "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.constant.value[x]",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "base64Binary"
+          },
+          {
+            "code" : "boolean"
+          },
+          {
+            "code" : "canonical"
+          },
+          {
+            "code" : "code"
+          },
+          {
+            "code" : "date"
+          },
+          {
+            "code" : "dateTime"
+          },
+          {
+            "code" : "decimal"
+          },
+          {
+            "code" : "id"
+          },
+          {
+            "code" : "instant"
+          },
+          {
+            "code" : "integer"
+          },
+          {
+            "code" : "integer64"
+          },
+          {
+            "code" : "oid"
+          },
+          {
+            "code" : "string"
+          },
+          {
+            "code" : "positiveInt"
+          },
+          {
+            "code" : "time"
+          },
+          {
+            "code" : "unsignedInt"
+          },
+          {
+            "code" : "uri"
+          },
+          {
+            "code" : "url"
+          },
+          {
+            "code" : "uuid"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select",
+          "path" : "ViewDefinition.select",
+          "short" : "A collection of columns and nested selects to include in the view.",
+          "definition" : "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "min" : 1,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select",
+            "min" : 1,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "sql-expressions",
+            "severity" : "error",
+            "human" : "Can only have at most one of `forEach` or `forEachOrNull`.",
+            "expression" : "(forEach | forEachOrNull).count() <= 1",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          },
+          {
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.id",
+          "path" : "ViewDefinition.select.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.extension",
+          "path" : "ViewDefinition.select.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.modifierExtension",
+          "path" : "ViewDefinition.select.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column",
+          "path" : "ViewDefinition.select.column",
+          "short" : "A column to be produced in the resulting table.",
+          "definition" : "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.column",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.id",
+          "path" : "ViewDefinition.select.column.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.extension",
+          "path" : "ViewDefinition.select.column.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.modifierExtension",
+          "path" : "ViewDefinition.select.column.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.path",
+          "path" : "ViewDefinition.select.column.path",
+          "short" : "FHIRPath expression that creates a column and defines its content",
+          "definition" : "A FHIRPath expression that evaluates to the value that will be output in the column for each \nresource. The input context is the collection of resources of the type specified in the resource \nelement. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.path",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.name",
+          "path" : "ViewDefinition.select.column.name",
+          "short" : "Column name produced in the output",
+          "definition" : "Name of the column produced in the output, must be in a database-friendly format. The column \nnames in the output must not have any duplicates.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.description",
+          "path" : "ViewDefinition.select.column.description",
+          "short" : "Description of the column",
+          "definition" : "A human-readable description of the column.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.collection",
+          "path" : "ViewDefinition.select.column.collection",
+          "short" : "Indicates whether the column may have multiple values.",
+          "definition" : "Indicates whether the column may have multiple values. Defaults to `false` if unset.\n\nViewDefinitions must have this set to `true` if multiple values may be returned. Implementations SHALL\nreport an error if multiple values are produced when that is not the case.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.collection",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.type",
+          "path" : "ViewDefinition.select.column.type",
+          "short" : "A FHIR StructureDefinition URI for the column's type.",
+          "definition" : "A FHIR StructureDefinition URI for the column's type. Relative URIs are implicitly given\nthe 'http://hl7.org/fhir/StructureDefinition/' prefix. The URI may also use FHIR element ID notation to indicate\na backbone element within a structure. For instance, `Observation.referenceRange` may be specified to indicate\nthe returned type is that backbone element.\n\nThis field *must* be provided if a ViewDefinition returns a non-primitive type. Implementations should report an error\nif the returned type does not match the type set here, or if a non-primitive type is returned but this field is unset.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.type",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag",
+          "path" : "ViewDefinition.select.column.tag",
+          "short" : "Additional metadata describing the column",
+          "definition" : "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.id",
+          "path" : "ViewDefinition.select.column.tag.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.extension",
+          "path" : "ViewDefinition.select.column.tag.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.modifierExtension",
+          "path" : "ViewDefinition.select.column.tag.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.name",
+          "path" : "ViewDefinition.select.column.tag.name",
+          "short" : "Name of tag",
+          "definition" : "A name that identifies the meaning of the tag. A namespace should be used to scope the tag to \na particular context. For example, 'ansi/type' could be used to indicate the type that should \nbe used to represent the value within an ANSI SQL database.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.value",
+          "path" : "ViewDefinition.select.column.tag.value",
+          "short" : "Value of tag",
+          "definition" : "Value of tag",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag.value",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.select",
+          "path" : "ViewDefinition.select.select",
+          "short" : "Nested select relative to a parent expression.",
+          "definition" : "Nested select relative to a parent expression. If the parent `select` has a `forEach` or `forEachOrNull`, this child select will apply for each item in that expression.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.select",
+            "min" : 0,
+            "max" : "*"
+          },
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.select.forEach",
+          "path" : "ViewDefinition.select.forEach",
+          "short" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select. The default is effectively `$this`.",
+          "definition" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select, relative to the root resource or parent `select`,\nif applicable. `forEach` will produce a row for each element selected in the expression. For example, using forEach on `address` in Patient will\ngenerate a new row for each address, with columns defined in the corresponding `column` structure.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.forEach",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.forEachOrNull",
+          "path" : "ViewDefinition.select.forEachOrNull",
+          "short" : "Same as forEach, but will produce a row with null values if the collection is empty.",
+          "definition" : "Same as forEach, but produces a single row with null values in the nested expression if the collection is empty. For example,\nwith a Patient resource, a `forEachOrNull` on address will produce a row for each patient even if there are no addresses; it will\nsimply set the address columns to `null`.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.forEachOrNull",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.unionAll",
+          "path" : "ViewDefinition.select.unionAll",
+          "short" : "Creates a union of all rows in the given selection structures.",
+          "definition" : "A `unionAll` combines the results of multiple selection structures. Each structure under the `unionAll` must produce the same column names\nand types. The results from each nested selection will then have their own row.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.unionAll",
+            "min" : 0,
+            "max" : "*"
+          },
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.where",
+          "path" : "ViewDefinition.where",
+          "short" : "A series of zero or more FHIRPath constraints to filter resources for the view.",
+          "definition" : "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.where",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.id",
+          "path" : "ViewDefinition.where.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.extension",
+          "path" : "ViewDefinition.where.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.modifierExtension",
+          "path" : "ViewDefinition.where.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.path",
+          "path" : "ViewDefinition.where.path",
+          "short" : "A FHIRPath expression defining a filter condition",
+          "definition" : "A FHIRPath expression that defines a filter that must evaluate to true for a resource to be\nincluded in the output. The input context is the collection of resources of the type specified in\nthe resource element. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.where.path",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.description",
+          "path" : "ViewDefinition.where.description",
+          "short" : "A human-readable description of the above where constraint.",
+          "definition" : "A human-readable description of the above where constraint.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.where.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        }]
+      },
+      "differential" : {
+        "element" : [{
+          "id" : "ViewDefinition",
+          "path" : "ViewDefinition",
+          "short" : "View Definition",
+          "definition" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. "
+        },
+        {
+          "id" : "ViewDefinition.url",
+          "path" : "ViewDefinition.url",
+          "short" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "definition" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.identifier",
+          "path" : "ViewDefinition.identifier",
+          "short" : "Additional identifier for the view definition",
+          "definition" : "Additional identifier for the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Identifier"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.name",
+          "path" : "ViewDefinition.name",
+          "short" : "Name of view definition (computer and database friendly)",
+          "definition" : "Name of the view definition, must be in a database-friendly format.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.title",
+          "path" : "ViewDefinition.title",
+          "short" : "Name for this view definition (human friendly)",
+          "definition" : "A optional human-readable description of the view.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.meta",
+          "path" : "ViewDefinition.meta",
+          "short" : "Metadata about the view definition",
+          "definition" : "Metadata about the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Meta"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.status",
+          "path" : "ViewDefinition.status",
+          "short" : "draft | active | retired | unknown",
+          "definition" : "draft | active | retired | unknown",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/publication-status"
+          }
+        },
+        {
+          "id" : "ViewDefinition.experimental",
+          "path" : "ViewDefinition.experimental",
+          "short" : "For testing purposes, not real usage",
+          "definition" : "For testing purposes, not real usage",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.publisher",
+          "path" : "ViewDefinition.publisher",
+          "short" : "Name of the publisher/steward (organization or individual)",
+          "definition" : "Name of the publisher/steward (organization or individual)",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.contact",
+          "path" : "ViewDefinition.contact",
+          "short" : "Contact details for the publisher",
+          "definition" : "Contact details for the publisher",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "ContactDetail"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.description",
+          "path" : "ViewDefinition.description",
+          "short" : "Natural language description of the view definition",
+          "definition" : "Natural language description of the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.useContext",
+          "path" : "ViewDefinition.useContext",
+          "short" : "The context that the content is intended to support",
+          "definition" : "The context that the content is intended to support",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "UsageContext"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.copyright",
+          "path" : "ViewDefinition.copyright",
+          "short" : "Use and/or publishing restrictions",
+          "definition" : "Use and/or publishing restrictions",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.resource",
+          "path" : "ViewDefinition.resource",
+          "short" : "FHIR resource for the ViewDefinition",
+          "definition" : "The FHIR resource that the view is based upon, e.g. 'Patient' or 'Observation'.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+          }
+        },
+        {
+          "id" : "ViewDefinition.fhirVersion",
+          "path" : "ViewDefinition.fhirVersion",
+          "short" : "FHIR version(s) of the resource for the ViewDefinition",
+          "definition" : "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/FHIR-version"
+          }
+        },
+        {
+          "id" : "ViewDefinition.constant",
+          "path" : "ViewDefinition.constant",
+          "short" : "Constant that can be used in FHIRPath expressions",
+          "definition" : "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.name",
+          "path" : "ViewDefinition.constant.name",
+          "short" : "Name of constant (referred to in FHIRPath as %[name])",
+          "definition" : "Name of constant (referred to in FHIRPath as %[name])",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.value[x]",
+          "path" : "ViewDefinition.constant.value[x]",
+          "short" : "Value of constant",
+          "definition" : "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "base64Binary"
+          },
+          {
+            "code" : "boolean"
+          },
+          {
+            "code" : "canonical"
+          },
+          {
+            "code" : "code"
+          },
+          {
+            "code" : "date"
+          },
+          {
+            "code" : "dateTime"
+          },
+          {
+            "code" : "decimal"
+          },
+          {
+            "code" : "id"
+          },
+          {
+            "code" : "instant"
+          },
+          {
+            "code" : "integer"
+          },
+          {
+            "code" : "integer64"
+          },
+          {
+            "code" : "oid"
+          },
+          {
+            "code" : "string"
+          },
+          {
+            "code" : "positiveInt"
+          },
+          {
+            "code" : "time"
+          },
+          {
+            "code" : "unsignedInt"
+          },
+          {
+            "code" : "uri"
+          },
+          {
+            "code" : "url"
+          },
+          {
+            "code" : "uuid"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select",
+          "path" : "ViewDefinition.select",
+          "short" : "A collection of columns and nested selects to include in the view.",
+          "definition" : "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "min" : 1,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "sql-expressions",
+            "severity" : "error",
+            "human" : "Can only have at most one of `forEach` or `forEachOrNull`.",
+            "expression" : "(forEach | forEachOrNull).count() <= 1",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column",
+          "path" : "ViewDefinition.select.column",
+          "short" : "A column to be produced in the resulting table.",
+          "definition" : "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.path",
+          "path" : "ViewDefinition.select.column.path",
+          "short" : "FHIRPath expression that creates a column and defines its content",
+          "definition" : "A FHIRPath expression that evaluates to the value that will be output in the column for each \nresource. The input context is the collection of resources of the type specified in the resource \nelement. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.name",
+          "path" : "ViewDefinition.select.column.name",
+          "short" : "Column name produced in the output",
+          "definition" : "Name of the column produced in the output, must be in a database-friendly format. The column \nnames in the output must not have any duplicates.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.description",
+          "path" : "ViewDefinition.select.column.description",
+          "short" : "Description of the column",
+          "definition" : "A human-readable description of the column.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.collection",
+          "path" : "ViewDefinition.select.column.collection",
+          "short" : "Indicates whether the column may have multiple values.",
+          "definition" : "Indicates whether the column may have multiple values. Defaults to `false` if unset.\n\nViewDefinitions must have this set to `true` if multiple values may be returned. Implementations SHALL\nreport an error if multiple values are produced when that is not the case.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.type",
+          "path" : "ViewDefinition.select.column.type",
+          "short" : "A FHIR StructureDefinition URI for the column's type.",
+          "definition" : "A FHIR StructureDefinition URI for the column's type. Relative URIs are implicitly given\nthe 'http://hl7.org/fhir/StructureDefinition/' prefix. The URI may also use FHIR element ID notation to indicate\na backbone element within a structure. For instance, `Observation.referenceRange` may be specified to indicate\nthe returned type is that backbone element.\n\nThis field *must* be provided if a ViewDefinition returns a non-primitive type. Implementations should report an error\nif the returned type does not match the type set here, or if a non-primitive type is returned but this field is unset.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag",
+          "path" : "ViewDefinition.select.column.tag",
+          "short" : "Additional metadata describing the column",
+          "definition" : "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.name",
+          "path" : "ViewDefinition.select.column.tag.name",
+          "short" : "Name of tag",
+          "definition" : "A name that identifies the meaning of the tag. A namespace should be used to scope the tag to \na particular context. For example, 'ansi/type' could be used to indicate the type that should \nbe used to represent the value within an ANSI SQL database.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.value",
+          "path" : "ViewDefinition.select.column.tag.value",
+          "short" : "Value of tag",
+          "definition" : "Value of tag",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.select",
+          "path" : "ViewDefinition.select.select",
+          "short" : "Nested select relative to a parent expression.",
+          "definition" : "Nested select relative to a parent expression. If the parent `select` has a `forEach` or `forEachOrNull`, this child select will apply for each item in that expression. ",
+          "min" : 0,
+          "max" : "*",
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.select.forEach",
+          "path" : "ViewDefinition.select.forEach",
+          "short" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select. The default is effectively `$this`.",
+          "definition" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select, relative to the root resource or parent `select`,\nif applicable. `forEach` will produce a row for each element selected in the expression. For example, using forEach on `address` in Patient will\ngenerate a new row for each address, with columns defined in the corresponding `column` structure.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.forEachOrNull",
+          "path" : "ViewDefinition.select.forEachOrNull",
+          "short" : "Same as forEach, but will produce a row with null values if the collection is empty.",
+          "definition" : "Same as forEach, but produces a single row with null values in the nested expression if the collection is empty. For example,\nwith a Patient resource, a `forEachOrNull` on address will produce a row for each patient even if there are no addresses; it will\nsimply set the address columns to `null`.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.unionAll",
+          "path" : "ViewDefinition.select.unionAll",
+          "short" : "Creates a union of all rows in the given selection structures.",
+          "definition" : "A `unionAll` combines the results of multiple selection structures. Each structure under the `unionAll` must produce the same column names\nand types. The results from each nested selection will then have their own row.",
+          "min" : 0,
+          "max" : "*",
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.where",
+          "path" : "ViewDefinition.where",
+          "short" : "A series of zero or more FHIRPath constraints to filter resources for the view.",
+          "definition" : "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.path",
+          "path" : "ViewDefinition.where.path",
+          "short" : "A FHIRPath expression defining a filter condition",
+          "definition" : "A FHIRPath expression that defines a filter that must evaluate to true for a resource to be\nincluded in the output. The input context is the collection of resources of the type specified in\nthe resource element. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.description",
+          "path" : "ViewDefinition.where.description",
+          "short" : "A human-readable description of the above where constraint.",
+          "definition" : "A human-readable description of the above where constraint.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        }]
       }
     }
   }]

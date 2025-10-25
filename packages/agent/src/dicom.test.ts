@@ -1,12 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LogLevel, allOk, createReference } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
 import { Server } from 'mock-socket';
-import path from 'path';
+import path from 'node:path';
 import { App } from './app';
-
-jest.mock('node-windows');
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -15,7 +15,7 @@ let endpoint: Endpoint;
 describe('DICOM', () => {
   beforeAll(async () => {
     console.log = jest.fn();
-    dimse.log.transports.forEach((t) => (t.silent = true));
+    dimse.log.disableAll(false);
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -58,7 +58,7 @@ describe('DICOM', () => {
       ],
     } as Agent);
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     const client = new dimse.Client();
@@ -66,8 +66,6 @@ describe('DICOM', () => {
     //
     // C-ECHO
     //
-    console.log('CODY sending C-ECHO');
-
     const echoResponse = (await new Promise((resolve, reject) => {
       const request = new dimse.requests.CEchoRequest();
       request.on('response', resolve);
@@ -81,7 +79,7 @@ describe('DICOM', () => {
     const echoCommandDataset = echoResponse.getCommandDataset();
     expect(echoCommandDataset).toBeDefined();
     expect(echoCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(echoCommandDataset?.getElement('Status')).toEqual(0);
+    expect(echoCommandDataset?.getElement('Status')).toStrictEqual(0);
 
     //
     // C-STORE
@@ -100,10 +98,10 @@ describe('DICOM', () => {
     const storeCommandDataset = storeResponse.getCommandDataset();
     expect(storeCommandDataset).toBeDefined();
     expect(storeCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(storeCommandDataset?.getElement('Status')).toEqual(0);
+    expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
 
     client.clearRequests();
-    app.stop();
+    await app.stop();
     mockServer.stop();
   }, 10000);
 });

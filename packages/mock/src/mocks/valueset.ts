@@ -1,4 +1,6 @@
-import { ValueSet } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ValueSet } from '@medplum/fhirtypes';
 
 export const exampleValueSet: ValueSet = {
   resourceType: 'ValueSet',
@@ -10,6 +12,16 @@ export const exampleValueSet: ValueSet = {
         system: 'x',
         code: 'test-code',
         display: 'Test Display',
+      },
+      {
+        system: 'x',
+        code: 'test-code-2',
+        display: 'Test Display 2',
+      },
+      {
+        system: 'x',
+        code: 'test-code-3',
+        display: 'Test Display 3',
       },
     ],
   },

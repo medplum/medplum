@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
@@ -108,6 +110,6 @@ describe('list command', () => {
   test('List command', async () => {
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'list']);
-    expect(console.log).toBeCalledWith('Stack ID:              123');
+    expect(console.log).toHaveBeenCalledWith('Stack ID:              123');
   });
 });

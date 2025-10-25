@@ -31,5 +31,5 @@ The Medplum communications and messaging implementation is a very standards comp
 ## Demos and Reference Material
 
 - [Foo Medical Messaging](https://foomedical.com/messaging) sample patient portal with messaging and attachments.
-- [Provider Demo](https://provider.foomedical.com/) sample simple EHR with provider messaging inbox.
+- [Provider Demo](https://provider.medplum.com/) sample simple EHR with provider messaging inbox.
 - [Sample Code from Foo Medical](https://github.com/medplum/foomedical/blob/main/src/pages/messages/Chat.tsx) sample code for searching for messaging.

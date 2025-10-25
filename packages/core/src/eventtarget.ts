@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * Based on: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
  */
@@ -45,10 +48,15 @@ export class EventTarget {
     }
     return !event.defaultPrevented;
   }
+
+  removeAllListeners(): void {
+    // @ts-expect-error Normally listeners is read-only. In this case we are dumping all listeners
+    this.listeners = {};
+  }
 }
 
 export class TypedEventTarget<TEvents extends Record<string, Event>> {
-  private emitter = new EventTarget();
+  private readonly emitter = new EventTarget();
 
   dispatchEvent<TEventType extends keyof TEvents & string>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);
@@ -66,5 +74,9 @@ export class TypedEventTarget<TEvents extends Record<string, Event>> {
     handler: (event: TEvents[TEventType]) => void
   ): void {
     this.emitter.removeEventListener(type, handler as any);
+  }
+
+  removeAllListeners(): void {
+    this.emitter.removeAllListeners();
   }
 }

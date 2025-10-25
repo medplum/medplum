@@ -1,15 +1,19 @@
-// start-block customEmails
-import { BotEvent, getDisplayString, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { PasswordChangeRequest, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 
-export async function handler(medplum: MedplumClient, event: BotEvent<PasswordChangeRequest>): Promise<any> {
-  // This Bot executes on every new PasswordChangeRequest resource.
-  // PasswordChangeRequest resources are created when a new user registers or is invited to a project.
-  // PasswordChangeRequest resources are only available to project administrators.
+// start-block customEmails
+import type { BotEvent, MedplumClient, ProfileResource } from '@medplum/core';
+import { getDisplayString, getReferenceString } from '@medplum/core';
+import type { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+
+export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {
+  // This Bot executes on every new UserSecurityRequest resource.
+  // UserSecurityRequest resources are created when a new user registers or is invited to a project.
+  // UserSecurityRequest resources are only available to project administrators.
   // Therefore, this Bot must be configured as a project admin.
   const pcr = event.input;
 
-  // Get the user from the PasswordChangeRequest.
+  // Get the user from the UserSecurityRequest.
   const user = await medplum.readReference(pcr.user as Reference<User>);
 
   // Get the project membership for the user.
@@ -36,7 +40,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PasswordCh
   // Learn more: https://nodemailer.com/extras/mailcomposer/
 
   if (pcr.type === 'invite') {
-    // This PasswordChangeRequest was created as part of a new user invite flow.
+    // This UserSecurityRequest was created as part of a new user invite flow.
     // Send a Welcome email to the user.
     await medplum.sendEmail({
       to: email,
@@ -54,7 +58,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PasswordCh
       ].join('\n'),
     });
   } else {
-    // This PasswordChangeRequest was created as part of a password reset flow.
+    // This UserSecurityRequest was created as part of a password reset flow.
     // Send a Password Reset email to the user.
     await medplum.sendEmail({
       to: email,

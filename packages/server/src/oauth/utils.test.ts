@@ -1,13 +1,16 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError, WithId } from '@medplum/core';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestClient, withTestContext } from '../test.setup';
 import {
   getAuthTokens,
-  getClient,
+  getClientApplication,
   getMembershipsForLogin,
+  normalizeUserInfoUrl,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -40,15 +43,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Not found');
     }
   });
 
   test('Login with missing email', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: '',
         password: 'medplum_admin',
@@ -58,15 +61,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid email');
     }
   });
 
   test('Login with missing password', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: '',
@@ -76,15 +79,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid password');
     }
   });
 
   test('User not found', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'user-not-found@example.com',
         password: 'medplum_admin',
@@ -94,15 +97,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User not found');
     }
   });
 
   test('Blank authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: '' as unknown as 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -112,7 +115,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -120,7 +123,7 @@ describe('OAuth utils', () => {
   test('Invalid authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'xyz' as unknown as 'password',
         email: 'admin@example.com',
         scope: 'openid',
@@ -129,7 +132,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -137,7 +140,7 @@ describe('OAuth utils', () => {
   test('Invalid google credentials', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'google',
         email: 'admin@example.com',
         scope: 'openid',
@@ -146,7 +149,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
     }
   });
@@ -154,7 +157,7 @@ describe('OAuth utils', () => {
   test('Invalid scope', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -164,7 +167,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
     }
   });
@@ -180,7 +183,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Project ID is required for external ID');
     }
   });
@@ -197,7 +200,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('User not found');
     }
   });
@@ -205,7 +208,7 @@ describe('OAuth utils', () => {
   test('Login successfully', async () => {
     const login = await withTestContext(() =>
       tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -227,7 +230,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing email or externalId');
     }
   });
 
@@ -242,7 +245,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Project ID is required for external ID');
     }
   });
 
@@ -251,7 +254,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -264,7 +267,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -273,7 +276,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -286,7 +289,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge');
     }
   });
 
@@ -294,7 +297,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -309,7 +312,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -317,7 +320,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -335,7 +338,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -359,7 +362,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -377,7 +380,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login revoked');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login revoked');
     }
   });
 
@@ -387,7 +390,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login granted');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login granted');
     }
   });
 
@@ -397,7 +400,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login already verified');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login already verified');
     }
   });
 
@@ -407,36 +410,52 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
-    }
-  });
-
-  test('getAuthTokens missing user', async () => {
-    try {
-      await getAuthTokens({ resourceType: 'Login', user: {} } as Login, { reference: 'Patient/123' });
-      fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing user');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User reference is missing');
     }
   });
 
   test('getAuthTokens Login missing profile', async () => {
     try {
-      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } } as Login, {
-        reference: 'Patient/123',
-      });
+      await getAuthTokens(
+        { resourceType: 'User', id: '123', firstName: 'John', lastName: 'Doe' },
+        { resourceType: 'Login', id: '456', user: { reference: 'User/123' } } as WithId<Login>,
+        {
+          reference: 'Patient/123',
+        }
+      );
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login missing profile');
     }
   });
 
   test('CLI client', async () => {
-    const client = await getClient('medplum-cli');
+    const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
-    expect(client.id).toEqual('medplum-cli');
+    expect(client.id).toStrictEqual('medplum-cli');
+  });
+
+  describe('normalizeUserInfoUrl', () => {
+    test.each([
+      ['http://example.com/oauth2/userinfo', false],
+      [' http://example.com/oauth2/userinfo ', false],
+      ['https://example.com/oauth2/userinfo', false],
+      [' https://example.com/oauth2/userinfo ', false],
+      ['file://example.com/oauth2/userinfo', true],
+      [' file://example.com/oauth2/userinfo ', true],
+    ])('with URL [%s]', (userInfoUrl, expectError) => {
+      try {
+        normalizeUserInfoUrl(userInfoUrl);
+        if (expectError) {
+          fail('Expected error');
+        }
+      } catch (err) {
+        if (!expectError) {
+          throw err;
+        }
+      }
+    });
   });
 });
 

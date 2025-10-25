@@ -1,0 +1,101 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/operation-framework.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# ValueSet Validate Code
+
+Validates whether a specified coding is included in the given `ValueSet`.
+
+```
+[baseUrl]/ValueSet/$validate-code
+[baseUrl]/ValueSet/[id]/$validate-code
+```
+
+## Parameters
+
+| Name              | Type              | Description                                                                                                                                                    | Required        |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `url`             | `uri`             | The canonical URL of the ValueSet to validate against                                                                                                          | No<sup>\*</sup> |
+| `code`            | `string`          | The code to look up.                                                                                                                                           | No              |
+| `system`          | `string`          | The canonical URL of the code system the code belongs to.                                                                                                      | No              |
+| `coding`          | `Coding`          | Look up via full Coding.                                                                                                                                       | No              |
+| `codeableConcept` | `CodeableConcept` | Look up multiple related codes.                                                                                                                                | No              |
+| `display`         | `string`          | Additionally validate the given display text                                                                                                                   | No              |
+| `abstract`        | `boolean`         | Whether codes labeled as abstract should be included. Abstract codes represent broad categories or groupings rather than specific concepts, e.g. "Vital Signs" | No              |
+
+<sup>*</sup> If no `url` is provided, the operation must be invoked on a specific `ValueSet` instance.
+
+:::note Required Parameters
+
+Although no parameters are strictly required by the operation, at least one of the following must be provided:
+
+- Both `code` and `system` parameters (and optionally `display`)
+- The `coding` parameter
+- The `codeableConcept` parameter with at least one contained `coding`
+
+:::
+
+## Output
+
+The operation returns a `Parameters` resource containing the validation result.
+
+| Name      | Type      | Description                                                   | Required |
+| --------- | --------- | ------------------------------------------------------------- | -------- |
+| `result`  | `boolean` | Whether or not any given coding is included in the `ValueSet` | Yes      |
+| `display` | `string`  | The display text of the included code                         | No       |
+
+### Error Responses
+
+**Example**: Specified `ValueSet` could not be found by URL (400 Bad Request)
+
+```js
+{
+    "resourceType": "OperationOutcome",
+    "issue": [
+        {
+            "severity": "error"
+            "code": "invalid",
+            "details": {
+                "text": "ValueSet http://example.com/ValueSet/missing not found"
+            },
+        }
+    ]
+}
+```
+
+## Examples
+
+**Request**:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="request">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+  -X POST \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -d '{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"http://hl7.org/fhir/ValueSet/condition-severity"},{"name":"coding","valueCoding":{"system":"http://snomed.info/sct","code":"255604002"}}]}'
+```
+
+  </TabItem>
+</Tabs>
+
+**Response**: (200 OK)
+
+```js
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "result", "valueBoolean": true },
+    { "name": "display", "valueString": "Mild (qualifier value)" }
+  ]
+}
+```

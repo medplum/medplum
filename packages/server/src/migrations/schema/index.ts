@@ -1,4 +1,10 @@
-export * from './migration';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+/*
+ * This is a generated file
+ * Do not edit manually.
+ */
+
 export * as v1 from './v1';
 export * as v2 from './v2';
 export * as v3 from './v3';
@@ -8,6 +14,8 @@ export * as v6 from './v6';
 export * as v7 from './v7';
 export * as v8 from './v8';
 export * as v9 from './v9';
+/* CAUTION: LOAD-BEARING COMMENT */
+/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */
 export * as v10 from './v10';
 export * as v11 from './v11';
 export * as v12 from './v12';
@@ -54,3 +62,46 @@ export * as v52 from './v52';
 export * as v53 from './v53';
 export * as v54 from './v54';
 export * as v55 from './v55';
+export * as v56 from './v56';
+export * as v57 from './v57';
+export * as v58 from './v58';
+export * as v59 from './v59';
+export * as v60 from './v60';
+export * as v61 from './v61';
+export * as v62 from './v62';
+export * as v63 from './v63';
+export * as v64 from './v64';
+export * as v65 from './v65';
+export * as v66 from './v66';
+export * as v67 from './v67';
+export * as v68 from './v68';
+export * as v69 from './v69';
+export * as v70 from './v70';
+export * as v71 from './v71';
+export * as v72 from './v72';
+export * as v73 from './v73';
+export * as v74 from './v74';
+export * as v75 from './v75';
+export * as v76 from './v76';
+export * as v77 from './v77';
+export * as v78 from './v78';
+export * as v79 from './v79';
+export * as v80 from './v80';
+export * as v81 from './v81';
+export * as v82 from './v82';
+export * as v83 from './v83';
+export * as v84 from './v84';
+export * as v85 from './v85';
+export * as v86 from './v86';
+export * as v87 from './v87';
+export * as v88 from './v88';
+export * as v89 from './v89';
+export * as v90 from './v90';
+export * as v91 from './v91';
+export * as v92 from './v92';
+export * as v93 from './v93';
+export * as v94 from './v94';
+export * as v95 from './v95';
+export * as v96 from './v96';
+export * as v97 from './v97';
+export * as v98 from './v98';

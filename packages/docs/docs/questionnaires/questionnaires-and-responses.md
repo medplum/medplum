@@ -13,7 +13,7 @@ A [`Questionnaire`](/docs/api/fhir/resources/questionnaire) represents the quest
 | ------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `title`       | A _human-readable_ name to identify the `Questionnaire`.                                                   |                                                                                       | US Surgeon General - Family Health Portrait                            |
 | `name`        | A _computer-readable_ name to identify the `Questionnaire`.                                                |                                                                                       | USSurgeonGeneralFamilyHealthPortrait                                   |
-| `item`        | An object containing the questions and groups of questions. Also includes any rules defined for answering. |                                                                                       | [See below](#the-questions-on-a-questionnaire)                         |
+| `item`        | An object containing the questions and groups of questions. Also includes any rules defined for answering. |                                                                                       | [See below](#defining-the-questions)                                   |
 | `subjectType` | The resource types that can be a subject of this `Questionnaire`.                                          |                                                                                       | Patient                                                                |
 | `description` | A description of the `Questionnaire`. It can include instructions, examples, comments about misuse, etc.   |                                                                                       | Questions to get a picture of family health and family health history. |
 | `purpose`     | An explanation of _why_ the `Questionnaire` is needed.                                                     |                                                                                       | Captures basic family history information.                             |
@@ -109,7 +109,7 @@ The [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) re
 | `questionnaire` | The canonical URL of the `Questionnaire` that is being answered by this response.                                |                 | http://example.org/Questionnaires/example-questionnaire |
 | `source`        | The individual who provided the answers on this response.                                                        |                 | Patient/homer-simpson                                   |
 | `subject`       | Who/what the answers from the response apply to, but not necessarily who actually answered the questions.        |                 | Patient/maggie-simpson                                  |
-| `item`          | The responses to the questions.                                                                                  |                 | [See below](#the-responses-to-questions)                |
+| `item`          | The responses to the questions.                                                                                  |                 | [See below](#answering-the-questions)                   |
 | `author`        | The individual who received and recorded the responses, but not necessarily who actually answered the questions. |                 | Practitioner/receptionist                               |
 | `authored`      | The date that the answers were gathered.                                                                         | dateTime        | 2023-11-18                                              |
 | `encounter`     | A reference to the `Encounter` that the response is a part of.                                                   |                 | Encounter/maggie-simpson-physical                       |
@@ -136,3 +136,32 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 ## UI Components
 
 Medplum provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+
+### Signature Required
+
+To require a signature for a Questionnaire, add the following extension to the Questionnaire resource:
+
+```typescript
+{
+  "resourceType": 'Questionnaire',
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired",
+      "valueCodeableConcept": {
+        "coding": [
+          {
+            "system": "urn:iso-astm:E1762-95:2013",
+            "code": "1.2.840.10065.1.12.1.1",
+            "display": "Author's Signature"
+          }
+        ]
+      }
+    }
+  ],
+  //...
+}
+```
+
+The `QuestionnaireForm` component will automatically render a signature input field when the signature extension is present in the Questionnaire. The signature input field will be required and will validate that a signature is provided before submission.
+
+See the [Storybook](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--signature-required) for an example.

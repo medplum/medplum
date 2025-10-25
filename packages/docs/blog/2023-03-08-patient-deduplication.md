@@ -1,17 +1,15 @@
 ---
 slug: patient-deduplication
 title: Patient Deduplication
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [bots]
 ---
 
 # Patient Deduplication
 
 Patient deduplication is a tough problem, and there are many approaches to implementing a deduplication program. We provide this guide and [sample code](https://github.com/medplum/medplum-demo-bots) as a resource to teams who want to run a continuous deduplication program that is powered by automation and highly auditable.
+
+<!-- truncate -->
 
 There are three elements that we see playing a big role in deduplication:
 
@@ -31,7 +29,7 @@ A sample (skeleton) deduplication bot can be found in the [Medplum Demo Bot](htt
 
 ## Maintaining Identifiers
 
-Many systems issue patient identifiers, like payors (e.g. United Healthcare), pharmacy and medication systems (e.g. Surescripts or DoseSpot) and even payment providers like Stripe. FHIR support maintaining multiple identifiers from different systems. If you maintain records with patient identifiers from different systems, this can be the basis for detecting duplicates with high accuracy.
+Many systems issue patient identifiers, like payors (e.g. United Healthcare), pharmacy and medication systems (e.g. DoseSpot) and even payment providers like Stripe. FHIR support maintaining multiple identifiers from different systems. If you maintain records with patient identifiers from different systems, this can be the basis for detecting duplicates with high accuracy.
 
 The sample deduplication bot test shows a patient with multiple identifiers for reference.
 
@@ -41,8 +39,8 @@ The stakes are high for deduplication. A false merge can cause treatment errors,
 
 ## Resources
 
-- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) sample Bot
-- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.test.ts) Bot tests
+- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/deduplication/merge-matching-patients.ts) sample Bot
+- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/deduplication/merge-matching-patients.test.ts) Bot tests
 - [Bot Execution via Subscription](/docs/bots/bot-basics#executing-automatically-using-a-subscription)
 - [FHIR Multiple Identifiers](/docs/fhir-basics#naming-data-identifiers) documentation
 - [Patient](https://app.medplum.com/Patient) resource in Medplum App

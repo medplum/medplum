@@ -1,0 +1,33 @@
+{{- if .Values.deployment.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "medplum.fullname" . }}
+  minReplicas: {{ .Values.deployment.autoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.deployment.autoscaling.maxReplicas | default 10 }}
+  metrics:
+    {{- if .Values.deployment.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.deployment.autoscaling.targetCPUUtilizationPercentage | default 80 }}
+    {{- end }}
+    {{- if .Values.deployment.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.deployment.autoscaling.targetMemoryUtilizationPercentage | default 80 }}
+    {{- end }}
+{{- end }}

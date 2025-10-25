@@ -1,18 +1,246 @@
-import { ResourceType } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, EncounterTimeline, PatientTimeline, ServiceRequestTimeline } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Menu } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { showNotification, updateNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceTimelineMenuItemContext } from '@medplum/react';
+import {
+  DefaultResourceTimeline,
+  EncounterTimeline,
+  PatientTimeline,
+  ServiceRequestTimeline,
+  useMedplum,
+  useMedplumNavigate,
+} from '@medplum/react';
+import {
+  IconCheck,
+  IconEdit,
+  IconListDetails,
+  IconPin,
+  IconPinnedOff,
+  IconRepeat,
+  IconTextRecognition,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
+import { useParams } from 'react-router';
+import { isAwsTextractEnabled } from '../config';
+import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 
 export function TimelinePage(): JSX.Element | null {
+  const medplum = useMedplum();
+  const navigate = useMedplumNavigate();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
-  switch (resourceType) {
-    case 'Encounter':
-      return <EncounterTimeline encounter={reference} />;
-    case 'Patient':
-      return <PatientTimeline patient={reference} />;
-    case 'ServiceRequest':
-      return <ServiceRequestTimeline serviceRequest={reference} />;
-    default:
-      return <DefaultResourceTimeline resource={reference} />;
+  const [resendSubscriptionsResource, setResendSubscriptionsResource] = useState<Resource | undefined>();
+  const resendSubscriptiosnDisclosure = useDisclosure(false);
+
+  function setPriority(
+    communication: Communication,
+    priority: 'routine' | 'urgent' | 'asap' | 'stat'
+  ): Promise<Communication> {
+    return medplum.updateResource({ ...communication, priority });
   }
+
+  function onPin(communication: Communication, reloadTimeline: () => void): void {
+    setPriority(communication, 'stat').then(reloadTimeline).catch(console.error);
+  }
+
+  function onUnpin(communication: Communication, reloadTimeline: () => void): void {
+    setPriority(communication, 'routine').then(reloadTimeline).catch(console.error);
+  }
+
+  function onDetails(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}`);
+  }
+
+  function onEdit(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/edit`);
+  }
+
+  function onDelete(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/delete`);
+  }
+
+  function onResend(timelineItem: Resource): void {
+    setResendSubscriptionsResource(timelineItem);
+    resendSubscriptiosnDisclosure[1].open();
+  }
+
+  function onVersionDetails(version: Resource): void {
+    navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
+  }
+
+  function onAwsTextract(resource: Resource, reloadTimeline: () => void): void {
+    const id = 'aws-textract';
+    showNotification({
+      id,
+      title: 'AWS Textract in Progress',
+      message: 'Extracting text... This may take a moment...',
+      loading: true,
+      autoClose: false,
+    });
+    medplum
+      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-textract'), {})
+      .then(() => {
+        reloadTimeline();
+        updateNotification({
+          id,
+          title: 'AWS Textract Successful',
+          message: 'Text successfully extracted.',
+          color: 'green',
+          icon: <IconCheck size="1rem" />,
+          loading: false,
+          withCloseButton: true,
+        });
+      })
+      .catch((err) =>
+        updateNotification({
+          id,
+          title: 'AWS Textract Error',
+          color: 'red',
+          message: normalizeErrorString(err),
+          icon: <IconX size="1rem" />,
+          loading: false,
+          withCloseButton: true,
+        })
+      );
+  }
+
+  function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {
+    const { primaryResource, currentResource, reloadTimeline } = context;
+
+    const isHistoryResource =
+      currentResource.resourceType === primaryResource.resourceType && currentResource.id === primaryResource.id;
+
+    const canPin = currentResource.resourceType === 'Communication' && currentResource.priority !== 'stat';
+    const canUnpin = currentResource.resourceType === 'Communication' && currentResource.priority === 'stat';
+
+    const showVersionDetails = isHistoryResource;
+    const showDetails = !isHistoryResource;
+
+    const canEdit = !isHistoryResource;
+    const canDelete = !isHistoryResource;
+
+    const isProjectAdmin = medplum.getProjectMembership()?.admin;
+    const canResend = isProjectAdmin;
+
+    const showAwsAi =
+      isAwsTextractEnabled() &&
+      (currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media');
+
+    return (
+      <Menu.Dropdown>
+        <Menu.Label>Resource</Menu.Label>
+        {canPin && (
+          <Menu.Item
+            leftSection={<IconPin size={14} />}
+            onClick={() => onPin(currentResource, reloadTimeline)}
+            aria-label={`Pin ${getReferenceString(currentResource)}`}
+          >
+            Pin
+          </Menu.Item>
+        )}
+        {canUnpin && (
+          <Menu.Item
+            leftSection={<IconPinnedOff size={14} />}
+            onClick={() => onUnpin(currentResource, reloadTimeline)}
+            aria-label={`Unpin ${getReferenceString(currentResource)}`}
+          >
+            Unpin
+          </Menu.Item>
+        )}
+        {showDetails && (
+          <Menu.Item
+            leftSection={<IconListDetails size={14} />}
+            onClick={() => onDetails(currentResource)}
+            aria-label={`Details ${getReferenceString(currentResource)}`}
+          >
+            Details
+          </Menu.Item>
+        )}
+        {showVersionDetails && (
+          <Menu.Item
+            leftSection={<IconListDetails size={14} />}
+            onClick={() => onVersionDetails(currentResource)}
+            aria-label={`Details ${getReferenceString(currentResource)}`}
+          >
+            Details
+          </Menu.Item>
+        )}
+        {canEdit && (
+          <Menu.Item
+            leftSection={<IconEdit size={14} />}
+            onClick={() => onEdit(currentResource)}
+            aria-label={`Edit ${getReferenceString(currentResource)}`}
+          >
+            Edit
+          </Menu.Item>
+        )}
+        {isProjectAdmin && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>Admin</Menu.Label>
+            {canResend && (
+              <Menu.Item
+                leftSection={<IconRepeat size={14} />}
+                onClick={() => onResend(currentResource)}
+                aria-label={`Resend Subscriptions ${getReferenceString(currentResource)}`}
+              >
+                Resend Subscriptions
+              </Menu.Item>
+            )}
+          </>
+        )}
+        {showAwsAi && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>AWS AI</Menu.Label>
+            <Menu.Item
+              leftSection={<IconTextRecognition size={14} />}
+              onClick={() => onAwsTextract(currentResource, reloadTimeline)}
+              aria-label={`AWS Textract ${getReferenceString(currentResource)}`}
+            >
+              AWS Textract
+            </Menu.Item>
+          </>
+        )}
+        {canDelete && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>Danger zone</Menu.Label>
+            <Menu.Item
+              color="red"
+              leftSection={<IconTrash size={14} />}
+              onClick={() => onDelete(currentResource)}
+              aria-label={`Delete ${getReferenceString(currentResource)}`}
+            >
+              Delete
+            </Menu.Item>
+          </>
+        )}
+      </Menu.Dropdown>
+    );
+  }
+
+  return (
+    <>
+      {resourceType === 'Encounter' && <EncounterTimeline encounter={reference} getMenu={getMenu} />}
+      {resourceType === 'Patient' && <PatientTimeline patient={reference} getMenu={getMenu} />}
+      {resourceType === 'ServiceRequest' && <ServiceRequestTimeline serviceRequest={reference} getMenu={getMenu} />}
+      {resourceType !== 'Encounter' && resourceType !== 'Patient' && resourceType !== 'ServiceRequest' && (
+        <DefaultResourceTimeline resource={reference} getMenu={getMenu} />
+      )}
+      <ResendSubscriptionsModal
+        key={`resend-subscriptions-${resendSubscriptionsResource?.id}`}
+        resource={resendSubscriptionsResource}
+        opened={resendSubscriptiosnDisclosure[0]}
+        onClose={resendSubscriptiosnDisclosure[1].close}
+      />
+    </>
+  );
 }

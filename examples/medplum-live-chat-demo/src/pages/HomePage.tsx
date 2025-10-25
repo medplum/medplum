@@ -1,15 +1,22 @@
-import { Button, Group, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Button, Stack, TextInput, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import { Communication, Practitioner, Reference } from '@medplum/fhirtypes';
-import { DrAliceSmith } from '@medplum/mock';
-import { Document, Loading, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useMemo } from 'react';
-import { Chat } from '../components/Chat';
-
-const DR_ALICE_SMITH: Reference<Practitioner> = {
-  reference: getReferenceString(DrAliceSmith),
-  display: 'Dr. Alice Smith',
-};
+import type { Communication, Patient, Practitioner } from '@medplum/fhirtypes';
+import { HomerSimpson } from '@medplum/mock';
+import {
+  ChatModal,
+  Document,
+  Form,
+  Loading,
+  ResourceName,
+  ThreadChat,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
+import { IconArrowRight } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -20,24 +27,77 @@ export function HomePage(): JSX.Element {
   // This can be a Practitioner, Patient, or RelatedPerson depending on the user's role in the project.
   // See the "Register" tutorial for more detail
   // https://www.medplum.com/docs/tutorials/register
+  // This page is not rendered unless profile is defined, so we can assert Practitioner
   const profile = useMedplumProfile() as Practitioner;
   const medplum = useMedplum();
+  const [thread, setThread] = useState<Communication>();
+  const [homerSimpson, setHomerSimpson] = useState<Patient>();
+  const searchingThreadRef = useRef(false);
 
-  const profileRef = useMemo(() => createReference(profile), [profile]);
+  useEffect(() => {
+    medplum
+      .createResourceIfNoneExist(HomerSimpson, 'name=Homer Simpson')
+      .then((homer) => {
+        setHomerSimpson(homer);
+      })
+      .catch(console.error);
+  }, [medplum]);
 
-  if (!profile) {
+  useEffect(() => {
+    if (!homerSimpson || searchingThreadRef.current) {
+      return;
+    }
+    searchingThreadRef.current = true;
+    const meReference = createReference(profile);
+    medplum
+      .createResourceIfNoneExist<Communication>(
+        {
+          resourceType: 'Communication',
+          topic: { text: 'Demo Thread' },
+          sender: meReference,
+          recipient: [meReference, createReference(homerSimpson)],
+          status: 'in-progress',
+        },
+        `part-of:missing=true&recipient=${getReferenceString(profile)}&recipient=${getReferenceString(homerSimpson)}&topic:text=Demo Thread`
+      )
+      .then((thread) => {
+        setThread(thread);
+        searchingThreadRef.current = false;
+      })
+      .catch(console.error);
+  }, [medplum, profile, homerSimpson]);
+
+  const incomingInputRef = useRef<HTMLInputElement>(null);
+
+  if (!(thread && homerSimpson)) {
     return <Loading />;
   }
 
-  async function createIncomingMessage(): Promise<void> {
+  async function createIncomingMessage(message: string): Promise<void> {
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      sender: DR_ALICE_SMITH,
-      recipient: [profileRef],
-      payload: [{ contentString: 'Can you come in tomorrow for a follow-up?' }],
+      sender: createReference(homerSimpson as Patient),
+      recipient: [createReference(profile)],
+      payload: [{ contentString: message }],
       sent: new Date().toISOString(),
+      partOf: [createReference(thread as Communication)],
     });
+  }
+
+  async function markLastMessageAsDelivered(): Promise<void> {
+    const lastMessage = await medplum.searchOne(
+      'Communication',
+      `part-of=${getReferenceString(thread as Communication)}&sender=${getReferenceString(profile)}&_sort=-sent`
+    );
+
+    if (lastMessage && !lastMessage.received) {
+      await medplum.updateResource({
+        ...lastMessage,
+        received: new Date().toISOString(),
+        status: 'completed',
+      });
+    }
   }
 
   return (
@@ -45,10 +105,43 @@ export function HomePage(): JSX.Element {
       <Title>
         Welcome <ResourceName value={profile} link />
       </Title>
-      <Group justify="center" pt="xl">
-        <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
-      </Group>
-      <Chat />
+      <Stack>
+        <Form
+          onSubmit={(formData) => {
+            if (incomingInputRef.current) {
+              incomingInputRef.current.value = '';
+            }
+            createIncomingMessage(formData.message).catch(console.error);
+          }}
+        >
+          <TextInput
+            ref={incomingInputRef}
+            name="message"
+            placeholder="Create an incoming chat message"
+            radius="xl"
+            rightSectionWidth={42}
+            rightSection={
+              <ActionIcon
+                type="submit"
+                size="1.5rem"
+                radius="xl"
+                color="blue"
+                variant="filled"
+                aria-label="Create incoming message"
+              >
+                <IconArrowRight size="1rem" stroke={1.5} />
+              </ActionIcon>
+            }
+            pt={20}
+          />
+        </Form>
+        <Button onClick={() => markLastMessageAsDelivered().catch(console.error)}>Mark Last Message Delivered</Button>
+      </Stack>
+      {thread && (
+        <ChatModal>
+          <ThreadChat thread={thread} />
+        </ChatModal>
+      )}
     </Document>
   );
 }

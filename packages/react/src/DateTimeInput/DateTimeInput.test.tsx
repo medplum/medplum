@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { DateTimeInput } from './DateTimeInput';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
@@ -27,7 +29,7 @@ describe('DateTimeInput', () => {
   test('onChange without listener', async () => {
     const value = convertIsoToLocal(new Date().toISOString());
 
-    render(<DateTimeInput placeholder="Placeholder" />);
+    render(<DateTimeInput name="a" placeholder="Placeholder" />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Placeholder'), { target: { value } });
@@ -45,13 +47,13 @@ describe('DateTimeInput', () => {
     const isoString = date.toISOString();
     const localString = convertIsoToLocal(isoString);
 
-    render(<DateTimeInput placeholder="Placeholder" onChange={onChange} />);
+    render(<DateTimeInput name="a" placeholder="Placeholder" onChange={onChange} />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Placeholder'), { target: { value: localString } });
     });
 
-    expect(onChange).toBeCalledWith(isoString);
+    expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
   test('Invalid date/time strings', () => {

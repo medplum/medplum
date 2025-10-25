@@ -1,9 +1,13 @@
-import { formatHumanName, HumanNameFormatOptions } from '@medplum/core';
-import { HumanName } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { HumanNameFormatOptions } from '@medplum/core';
+import { formatHumanName } from '@medplum/core';
+import type { HumanName } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 
 export interface HumanNameDisplayProps {
-  value?: HumanName;
-  options?: HumanNameFormatOptions;
+  readonly value?: HumanName;
+  readonly options?: HumanNameFormatOptions;
 }
 
 export function HumanNameDisplay(props: HumanNameDisplayProps): JSX.Element | null {

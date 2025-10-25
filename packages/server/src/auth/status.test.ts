@@ -1,17 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Login, User } from '@medplum/fhirtypes';
+import type { Login, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
-const app = express();
-let user: User;
-
 describe('Status', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let user: User;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -57,7 +60,7 @@ describe('Status', () => {
 
     const res = await request(app).get('/auth/login/' + login.id);
     expect(res.status).toBe(200);
-    expect(res.body.login).toEqual(login.id);
+    expect(res.body.login).toStrictEqual(login.id);
   });
 
   test('Granted', async () => {

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Coverage, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
+import type { Coverage, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './eligibility-check-opkit';
@@ -75,6 +77,7 @@ test.skip('Success', async () => {
   };
 
   const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
     input,
     contentType,
     secrets: { OPKIT_API_KEY: { name: 'OPKIT_API_KEY', valueString: '1234567890' } },
