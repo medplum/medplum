@@ -26,15 +26,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "extends": [
-      "@medplum/eslint-config"
-    ],
-    "root": true
-  },
   "overrides": {
     "@jest/types": "30.2.0",
     "esbuild": "0.25.11",

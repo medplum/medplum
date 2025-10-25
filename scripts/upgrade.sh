@@ -100,7 +100,7 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@mantine/* @storybook/* @types/node commander eslint hibp jose node-fetch npm storybook storybook-* zod uuid"
+MAJOR_EXCLUDE="@mantine/* @storybook/* @types/node commander hibp jose node-fetch npm storybook storybook-* zod uuid"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

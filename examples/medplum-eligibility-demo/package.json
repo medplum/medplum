@@ -19,11 +19,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
