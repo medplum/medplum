@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isMain, MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
+import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { execSync } from 'node:child_process';
 import { appendFileSync, closeSync, existsSync, openSync } from 'node:fs';
 import path, { dirname } from 'node:path';
@@ -83,7 +83,7 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (isMain(import.meta)) {
+if (import.meta.main) {
   main(process.argv).catch((err) => {
     console.log(err);
     process.exit(1);

@@ -16,7 +16,7 @@ const options = {
   target: 'es2021',
   tsconfig: 'tsconfig.json',
   define: {
-    'import.meta': '{ "main": true }',
+    'import.meta.main': 'true',
   },
 };
 

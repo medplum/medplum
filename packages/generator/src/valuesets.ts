@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isMain } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type {
   Bundle,
@@ -276,6 +275,6 @@ async function main(): Promise<void> {
   writeFileSync(resolve(__dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
 }
 
-if (isMain(import.meta)) {
+if (import.meta.main) {
   main().catch(console.error);
 }
