@@ -3449,8 +3449,8 @@ describe('App', () => {
     // Verify that persistent clients were created
     expect(app.hl7Clients.size).toStrictEqual(2);
 
-    // Spy on client.close() to verify it's called
-    const closeSpies = Array.from(app.hl7Clients.values()).map((client) => jest.spyOn(client, 'close'));
+    // Spy on pool.closeAll() to verify it's called
+    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => jest.spyOn(pool, 'closeAll'));
 
     // Stop the app
     await app.stop();
@@ -3458,7 +3458,7 @@ describe('App', () => {
     expect(app.hl7Clients.size).toStrictEqual(0);
 
     // Verify that close was called on all clients
-    for (const closeSpy of closeSpies) {
+    for (const closeSpy of closeAllSpies) {
       expect(closeSpy).toHaveBeenCalled();
     }
 
