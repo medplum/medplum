@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { GetFunctionConfigurationCommandOutput } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
-  GetFunctionConfigurationCommandOutput,
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
@@ -14,7 +14,7 @@ import {
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
 import { sleep } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config/loader';
@@ -32,7 +32,7 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
@@ -49,7 +49,7 @@ exports.handler = async (event, context) => {
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
+    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }

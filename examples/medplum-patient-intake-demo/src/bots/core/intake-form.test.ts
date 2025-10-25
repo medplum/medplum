@@ -7,7 +7,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   Organization,
   Patient,
@@ -20,6 +20,9 @@ import { handler } from './intake-form';
 import {
   consentCategoryMapping,
   consentPolicyRuleMapping,
+  consentProvisionActionMapping,
+  consentProvisionCodeMapping,
+  consentProvisionPurposeMapping,
   consentScopeMapping,
   extensionURLMapping,
   findQuestionnaireItem,
@@ -92,10 +95,22 @@ describe('Intake form', async () => {
         state: 'CA',
         postalCode: '95008',
       });
-      expect(patient.telecom?.[0]).toStrictEqual({
-        system: 'phone',
-        value: '555-555-5555',
-      });
+      expect(patient.telecom).toStrictEqual([
+        {
+          rank: 1,
+          system: 'phone',
+          value: '555-555-5555',
+        },
+        {
+          rank: 2,
+          system: 'sms',
+          value: '555-555-5555',
+        },
+        {
+          system: 'email',
+          value: 'marge@simpson.com',
+        },
+      ]);
       expect(patient.identifier?.[0]).toStrictEqual({
         type: {
           coding: [
@@ -536,7 +551,7 @@ describe('Intake form', async () => {
 
       const consents = await medplum.searchResources('Consent', { patient: getReferenceString(patient) });
 
-      expect(consents.length).toStrictEqual(4);
+      expect(consents.length).toStrictEqual(7);
 
       expect(consents[0].scope).toStrictEqual(consentScopeMapping.treatment);
       expect(consents[0].category[0]).toStrictEqual(consentCategoryMapping.med);
@@ -555,6 +570,43 @@ describe('Intake form', async () => {
       expect(consents[3].scope).toStrictEqual(consentScopeMapping.adr);
       expect(consents[3].category[0]).toStrictEqual(consentCategoryMapping.acd);
       expect(consents[3].status).toStrictEqual('active');
+
+      expect(consents[4].scope).toStrictEqual(consentScopeMapping.patientPrivacy);
+      expect(consents[4].category[0]).toStrictEqual(consentCategoryMapping.cd);
+      expect(consents[4].status).toStrictEqual('active');
+      expect(consents[4].provision).toBeDefined();
+      expect(consents[4].provision?.type).toStrictEqual('permit');
+      expect(consents[4].provision?.action?.[0]).toStrictEqual(consentProvisionActionMapping.use);
+      expect(consents[4].provision?.purpose?.[0]).toStrictEqual(consentProvisionPurposeMapping.patadmin);
+      expect(consents[4].provision?.code).toStrictEqual([
+        consentProvisionCodeMapping.email,
+        consentProvisionCodeMapping.appointmentReminders,
+      ]);
+
+      expect(consents[5].scope).toStrictEqual(consentScopeMapping.patientPrivacy);
+      expect(consents[5].category[0]).toStrictEqual(consentCategoryMapping.cd);
+      expect(consents[5].status).toStrictEqual('active');
+      expect(consents[5].provision).toBeDefined();
+      expect(consents[5].provision?.type).toStrictEqual('permit');
+      expect(consents[5].provision?.action?.[0]).toStrictEqual(consentProvisionActionMapping.use);
+      expect(consents[5].provision?.purpose?.[0]).toStrictEqual(consentProvisionPurposeMapping.patadmin);
+      expect(consents[5].provision?.code).toStrictEqual([
+        consentProvisionCodeMapping.phone,
+        consentProvisionCodeMapping.sms,
+      ]);
+
+      expect(consents[6].scope).toStrictEqual(consentScopeMapping.patientPrivacy);
+      expect(consents[6].category[0]).toStrictEqual(consentCategoryMapping.cd);
+      expect(consents[6].status).toStrictEqual('rejected');
+      expect(consents[6].provision).toBeDefined();
+      expect(consents[6].provision?.type).toStrictEqual('deny');
+      expect(consents[6].provision?.action?.[0]).toStrictEqual(consentProvisionActionMapping.use);
+      expect(consents[6].provision?.purpose?.[0]).toStrictEqual(consentProvisionPurposeMapping.patadmin);
+      expect(consents[6].provision?.code).toStrictEqual([
+        consentProvisionCodeMapping.appointmentReminders,
+        consentProvisionCodeMapping.phone,
+        consentProvisionCodeMapping.sms,
+      ]);
     });
 
     test('adds rejected consent', async () => {

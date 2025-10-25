@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import { Constraint } from './typeschema/types';
+import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type { Constraint } from './typeschema/types';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';

@@ -4,7 +4,8 @@ import { Button, AppShell as MantineAppShell, ScrollArea, Space, Text } from '@m
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import { Fragment, JSX, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
+import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
+import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
@@ -194,44 +195,9 @@ function getActiveLink(
  */
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
   const linkUrl = new URL(linkHref, 'https://example.com');
-
-  if (
-    linkUrl.pathname === '/admin/project' &&
-    (currentPathname === '/admin/project' ||
-      (currentPathname.startsWith('/admin/') && currentPathname !== '/admin/config'))
-  ) {
-    return 1;
-  }
-
-  // Special case for Config (admin) - should be active for '/admin/config' only
-  if (linkUrl.pathname === '/admin/config' && currentPathname === '/admin/config') {
-    return 1;
-  }
-
-  // Special case for DoseSpot Favorites - should be active for '/integrations/dosespot' only
-  if (linkUrl.pathname === '/integrations/dosespot' && currentPathname === '/integrations/dosespot') {
-    return 2; // Higher score to ensure it takes precedence over /integrations
-  }
-
-  if (currentPathname.startsWith(linkUrl.pathname)) {
-    // Check if the pathname segments match exactly for the resource type part
-    const linkSegments = linkUrl.pathname.split('/').filter(Boolean);
-    const currentSegments = currentPathname.split('/').filter(Boolean);
-
-    // If the link is a resource type (single segment like /ServiceRequest)
-    if (linkSegments.length === 1 && currentSegments.length >= 1) {
-      // Check if the first segment matches (the resource type)
-      if (linkSegments[0] === currentSegments[0]) {
-        return 1;
-      }
-    }
-  }
-
-  // For other links, check exact pathname match first
   if (currentPathname !== linkUrl.pathname) {
     return 0;
   }
-
   const ignoredParams = ['_count', '_offset'];
   for (const [key, value] of linkUrl.searchParams.entries()) {
     if (ignoredParams.includes(key)) {

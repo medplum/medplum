@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Stack, Text, Title } from '@mantine/core';
 import { Document } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 export function ErrorPage(): JSX.Element {
   return (

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Encounter, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Encounter, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export const encounter: Encounter = {
   resourceType: 'Encounter',

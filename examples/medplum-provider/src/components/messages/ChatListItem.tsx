@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
-import { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
 import { MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { formatDateTime, formatHumanName } from '@medplum/core';
 import classes from './ChatListItem.module.css';
 import cx from 'clsx';
@@ -12,22 +12,23 @@ interface ChatListItemProps {
   topic: Communication;
   lastCommunication: Communication | undefined;
   isSelected: boolean;
+  onSelectedItem: (topic: Communication) => string;
 }
 
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
-  const { topic, lastCommunication, isSelected } = props;
+  const { topic, lastCommunication, isSelected, onSelectedItem } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
   const trimmedMsg = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
-  const content = trimmedMsg ? `${topic.topic?.text}: ${trimmedMsg}` : `No messages available`;
+  const senderName = lastCommunication?.sender?.display ? `${lastCommunication?.sender?.display}: ` : '';
+  const content = trimmedMsg ? `${senderName} ${trimmedMsg}` : `No messages available`;
   const topicName = topic.topic?.text ?? content;
 
   return (
-    <MedplumLink to={`/Message/${topic.id}`} c="dark">
+    <MedplumLink to={onSelectedItem(topic)} c="dark">
       <Group
         p="xs"
-        key={topic.id}
         align="center"
         wrap="nowrap"
         className={cx(classes.contentContainer, {

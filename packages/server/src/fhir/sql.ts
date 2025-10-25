@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
-import { Period } from '@medplum/fhirtypes';
-import { Client, Pool, PoolClient } from 'pg';
+import type { Period } from '@medplum/fhirtypes';
+import type { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
 import { getLogger } from '../logger';
 
@@ -209,21 +209,53 @@ export interface Expression {
   buildSql(builder: SqlBuilder): void;
 }
 
+abstract class Executable implements Expression {
+  buildSql(_builder: SqlBuilder): void {
+    throw new Error('Method not implemented');
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    const sql = new SqlBuilder();
+    sql.appendExpression(this);
+    return (await sql.execute(conn)).rows;
+  }
+}
+
 export class Column implements Expression {
   readonly tableName: string | undefined;
-  columnName: string;
+  actualColumnName: string;
   readonly raw?: boolean;
   readonly alias?: string;
 
   constructor(tableName: string | undefined, columnName: string, raw?: boolean, alias?: string) {
     this.tableName = tableName;
-    this.columnName = columnName;
+    this.actualColumnName = columnName;
     this.raw = raw;
     this.alias = alias;
   }
 
+  /**
+   * @returns - the column name to be used in the SQL query.
+   * This is the alias if provided, otherwise the actual column name.
+   */
+  get effectiveColumnName(): string {
+    return this.alias || this.actualColumnName;
+  }
+
   buildSql(sql: SqlBuilder): void {
     sql.appendColumn(this);
+  }
+}
+
+export class Constant implements Expression {
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
   }
 }
 
@@ -389,25 +421,34 @@ export class UnionAllBuilder {
   }
 }
 
-export class Union implements Expression {
+export class Union extends Executable implements Expression {
   readonly queries: SelectQuery[];
+  private allFlag = false;
+
   constructor(...queries: SelectQuery[]) {
+    super();
     this.queries = queries;
+  }
+
+  all(): this {
+    this.allFlag = true;
+    return this;
   }
 
   buildSql(sql: SqlBuilder): void {
     for (let i = 0; i < this.queries.length; i++) {
       if (i > 0) {
         sql.append(' UNION ');
+        if (this.allFlag) {
+          sql.append('ALL ');
+        }
       }
-      sql.append('(');
       sql.appendExpression(this.queries[i]);
-      sql.append(')');
     }
   }
 }
 
-export type JoinType = 'INNER JOIN' | 'LEFT JOIN' | 'INNER JOIN LATERAL';
+export type JoinType = 'INNER JOIN' | 'LEFT JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN LATERAL';
 
 export class Join {
   readonly joinType: JoinType;
@@ -463,13 +504,13 @@ export class SqlBuilder {
 
   appendColumn(column: Column): this {
     if (column.raw) {
-      this.append(column.columnName);
+      this.append(column.actualColumnName);
     } else {
       if (column.tableName) {
         this.appendIdentifier(column.tableName);
         this.append('.');
       }
-      this.appendIdentifier(column.columnName);
+      this.appendIdentifier(column.actualColumnName);
     }
     if (column.alias) {
       this.append(' AS ');
@@ -486,6 +527,8 @@ export class SqlBuilder {
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
+    } else if (value === null || value === undefined) {
+      this.append('NULL');
     } else {
       this.values.push(value);
       this.sql.push('$' + this.values.length);
@@ -590,16 +633,23 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
-export abstract class BaseQuery {
-  readonly tableName: string;
+export abstract class BaseQuery extends Executable {
+  readonly actualTableName: string;
   readonly predicate: Conjunction;
   explain: boolean | string[] = false;
-  readonly alias?: string;
 
-  constructor(tableName: string, alias?: string) {
-    this.tableName = tableName;
-    this.alias = alias;
+  constructor(tableName: string) {
+    super();
+    this.actualTableName = tableName;
     this.predicate = new Conjunction([]);
+  }
+
+  /**
+   * @returns - the table name to be used in the SQL query.
+   * This is the alias if provided, otherwise the actual table name.
+   */
+  get effectiveTableName(): string {
+    return this.actualTableName;
   }
 
   whereExpr(expression: Expression): this {
@@ -608,7 +658,7 @@ export abstract class BaseQuery {
   }
 
   where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
-    this.predicate.where(getColumn(column, this.tableName), operator, value, type);
+    this.predicate.where(getColumn(column, this.actualTableName), operator, value, type);
     return this;
   }
 
@@ -620,43 +670,54 @@ export abstract class BaseQuery {
   }
 }
 
-interface CTE {
+export interface CTE {
   name: string;
   expr: Expression;
   recursive?: boolean;
 }
 
-export class SelectQuery extends BaseQuery implements Expression {
-  readonly innerQuery?: SelectQuery | Union | ValuesQuery;
+export class SelectQuery extends BaseQuery {
+  readonly innerQuery?: BaseQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
+  private readonly alias?: string;
   with?: CTE;
   limit_: number;
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string, innerQuery?: SelectQuery | Union | ValuesQuery, alias?: string) {
-    super(tableName, alias);
+  constructor(tableName: string, innerQuery?: BaseQuery | Union | ValuesQuery, alias?: string) {
+    super(tableName);
     this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
     this.joins = [];
     this.groupBys = [];
     this.orderBys = [];
+    this.alias = alias;
     this.limit_ = 0;
     this.offset_ = 0;
   }
 
+  get effectiveTableName(): string {
+    return this.alias || this.actualTableName;
+  }
+
+  withCte(name: string, expr: Expression): this {
+    this.with = { name, expr };
+    return this;
+  }
+
   withRecursive(name: string, expr: Expression): this {
-    this.with = { name, expr: expr, recursive: true };
+    this.with = { name, expr, recursive: true };
     return this;
   }
 
   distinctOn(column: Column | string): this {
-    this.distinctOns.push(getColumn(column, this.tableName));
+    this.distinctOns.push(getColumn(column, this.effectiveTableName));
     return this;
   }
 
@@ -666,13 +727,13 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   column(column: Column | string): this {
-    this.columns.push(getColumn(column, this.tableName));
+    this.columns.push(getColumn(column, this.effectiveTableName));
     return this;
   }
 
   addColumns(columns: Column[]): this {
     for (const col of columns) {
-      this.columns.push(new Column(this.tableName, col.columnName));
+      this.columns.push(new Column(this.effectiveTableName, col.effectiveColumnName));
     }
     return this;
   }
@@ -682,23 +743,18 @@ export class SelectQuery extends BaseQuery implements Expression {
     return `T${this.joinCount}`;
   }
 
-  join(
-    joinType: 'INNER JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN',
-    joinItem: SelectQuery | string,
-    joinAlias: string,
-    onExpression: Expression
-  ): this {
+  join(joinType: JoinType, joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join(joinType, joinItem, joinAlias, onExpression));
     return this;
   }
 
   groupBy(column: Column | string): this {
-    this.groupBys.push(new GroupBy(getColumn(column, this.tableName)));
+    this.groupBys.push(new GroupBy(getColumn(column, this.effectiveTableName)));
     return this;
   }
 
   orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
+    this.orderBys.push(new OrderBy(getColumn(column, this.effectiveTableName), descending));
     return this;
   }
 
@@ -755,12 +811,6 @@ export class SelectQuery extends BaseQuery implements Expression {
     }
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
-    sql.appendExpression(this);
-    return (await sql.execute(conn)).rows;
-  }
-
   private buildDistinctOn(sql: SqlBuilder): void {
     if (this.distinctOns.length > 0) {
       sql.append('DISTINCT ON (');
@@ -801,7 +851,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(') AS ');
     }
 
-    sql.appendIdentifier(this.tableName);
+    sql.appendIdentifier(this.actualTableName);
     if (this.alias) {
       sql.append(' ');
       sql.appendIdentifier(this.alias);
@@ -866,11 +916,89 @@ export class ArraySubquery implements Expression {
     sql.append('EXISTS(SELECT 1 FROM unnest(');
     sql.appendColumn(this.column);
     sql.append(') AS ');
-    sql.appendIdentifier(this.column.columnName);
+    sql.appendIdentifier(this.column.effectiveColumnName);
     sql.append(' WHERE ');
     sql.appendExpression(this.filter);
     sql.append(' LIMIT 1');
     sql.append(')');
+  }
+}
+
+export class UpdateQuery extends BaseQuery {
+  private _from?: CTE;
+  private readonly setColumns: [Column, any][];
+  readonly returning?: Column[];
+
+  constructor(tableName: string, returning?: (Column | string)[]) {
+    super(tableName);
+    this.setColumns = [];
+    this.returning = returning?.map((c) => getColumn(c, this.actualTableName));
+  }
+
+  set(column: Column | string, value: any): this {
+    // Including the table name is invalid; from the spec:
+    // Do not include the table's name in the specification of a target column — for example,
+    // UPDATE table_name SET table_name.col = 1 is invalid.
+    if (column instanceof Column) {
+      this.setColumns.push([new Column(undefined, column.actualColumnName), value]);
+    } else {
+      this.setColumns.push([new Column(undefined, column), value]);
+    }
+    return this;
+  }
+
+  from(fromQuery: CTE): this {
+    this._from = fromQuery;
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (this._from) {
+      sql.append('WITH ');
+      if (this._from.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this._from.name);
+      sql.append(' AS (');
+      sql.appendExpression(this._from.expr);
+      sql.append(') ');
+    }
+    sql.append('UPDATE ');
+    sql.appendIdentifier(this.actualTableName);
+    sql.append(' SET ');
+
+    let firstSet = true;
+    for (const [column, expr] of this.setColumns) {
+      if (!firstSet) {
+        sql.append(', ');
+      }
+      sql.appendColumn(column);
+      sql.append(' = ');
+      sql.appendParameters(expr, false);
+      firstSet = false;
+    }
+
+    if (this._from) {
+      sql.append(' FROM ');
+      sql.appendIdentifier(this._from.name);
+    }
+
+    if (this.predicate.expressions.length > 0) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.predicate);
+    }
+
+    if (this.returning && this.returning.length > 0) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returning) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 
@@ -905,14 +1033,13 @@ export class InsertQuery extends BaseQuery {
   }
 
   returnColumn(column: Column | string): this {
-    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.effectiveColumnName : column);
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
-    const sql = new SqlBuilder();
+  buildSql(sql: SqlBuilder): void {
     sql.append('INSERT INTO ');
-    sql.appendIdentifier(this.tableName);
+    sql.appendIdentifier(this.actualTableName);
     if (this.values) {
       const columnNames = Object.keys(this.values[0]);
       this.appendColumns(sql, columnNames);
@@ -922,9 +1049,8 @@ export class InsertQuery extends BaseQuery {
     }
     this.appendMerge(sql);
     if (this.returnColumns) {
-      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+      sql.append(` RETURNING ${this.returnColumns.join(', ')}`);
     }
-    return sql.execute(conn);
   }
 
   private appendColumns(sql: SqlBuilder, columnNames: string[]): void {
@@ -1008,20 +1134,28 @@ export class InsertQuery extends BaseQuery {
       first = false;
     }
   }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    if (!this.values?.length) {
+      return [];
+    }
+    return super.execute(conn);
+  }
 }
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
 
   using(...tableNames: string[]): this {
-    this.usingTables = tableNames;
+    for (const table of tableNames) {
+      this.usingTables = append(this.usingTables, table);
+    }
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
+  buildSql(sql: SqlBuilder): void {
     sql.append('DELETE FROM ');
-    sql.appendIdentifier(this.tableName);
+    sql.appendIdentifier(this.actualTableName);
 
     if (this.usingTables) {
       sql.append(' USING ');
@@ -1036,7 +1170,6 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
-    return (await sql.execute(conn)).rows;
   }
 }
 
@@ -1121,3 +1254,17 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
     RETURNS text LANGUAGE sql IMMUTABLE
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
 };
+
+export function isValidTableName(tableName: string): boolean {
+  return /^\w+$/.test(tableName);
+}
+
+export function replaceNullWithUndefinedInRows(rows: any[]): void {
+  for (const row of rows) {
+    for (const k in row) {
+      if ((row as any)[k] === null) {
+        (row as any)[k] = undefined;
+      }
+    }
+  }
+}

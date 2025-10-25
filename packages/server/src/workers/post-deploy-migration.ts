@@ -1,14 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
-import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import type { WithId } from '@medplum/core';
+import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
+import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import {
+import type {
   CustomPostDeployMigrationJobData,
   DynamicPostDeployJobData,
   PostDeployJobData,
@@ -23,16 +27,10 @@ import {
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
-import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import type { MigrationAction, MigrationActionResult } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import {
-  addVerboseQueueLogging,
-  isJobActive,
-  isJobCompatible,
-  moveToDelayedAndThrow,
-  queueRegistry,
-  WorkerInitializer,
-} from './utils';
+import type { WorkerInitializer } from './utils';
+import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -150,9 +148,10 @@ async function runDynamicMigration(
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
+  const results: MigrationActionResult[] = [];
   try {
-    const results = await withLongRunningDatabaseClient(async (client) => {
-      return executeMigrationActions(client, job.data.migrationActions);
+    await withLongRunningDatabaseClient(async (client) => {
+      await executeMigrationActions(client, results, job.data.migrationActions);
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
@@ -174,14 +173,19 @@ export async function runCustomMigration(
   job: Job<CustomPostDeployMigrationJobData> | undefined,
   jobData: CustomPostDeployMigrationJobData,
   callback: (
+    client: PoolClient,
+    results: MigrationActionResult[],
     job: Job<CustomPostDeployMigrationJobData> | undefined,
     jobData: CustomPostDeployMigrationJobData
-  ) => Promise<MigrationActionResult[]>
+  ) => Promise<void>
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
+  const results: MigrationActionResult[] = [];
   try {
-    const results = await callback(job, jobData);
+    await withLongRunningDatabaseClient(async (client) => {
+      await callback(client, results, job, jobData);
+    });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
@@ -192,7 +196,8 @@ export async function runCustomMigration(
       type: jobData.type,
       dataVersion: asyncJob.dataVersion,
     });
-    await exec.failJob(repo, err);
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
+    await exec.failJob(repo, err, output);
   }
   return 'finished';
 }
@@ -201,14 +206,34 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
   return {
     resourceType: 'Parameters',
     parameter: results.map((r) => {
+      const { name, durationMs, ...rest } = r;
+      const part: ParametersParameter[] = [
+        {
+          name: 'durationMs',
+          valueInteger: durationMs,
+        },
+      ];
+      for (const [name, value] of Object.entries(rest)) {
+        const typedValue = toTypedValue(value);
+        if (typedValue.type === 'undefined') {
+          continue;
+        }
+        if ([PropertyType.integer, PropertyType.decimal, PropertyType.boolean].includes(typedValue.type as any)) {
+          part.push({
+            name: name,
+            ['value' + capitalize(typedValue.type)]: value,
+          });
+        } else {
+          part.push({
+            name: name,
+            valueString: value?.toString(),
+          });
+        }
+      }
+
       return {
-        name: r.name,
-        part: [
-          {
-            name: 'durationMs',
-            valueInteger: r.durationMs,
-          },
-        ],
+        name,
+        part,
       };
     }),
   };

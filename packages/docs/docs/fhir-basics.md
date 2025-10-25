@@ -148,6 +148,12 @@ The example below shows a resource modeling a prescription (i.e. [`MedicationReq
 
 ## Querying Data: Search
 
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/PcZoZvfkmiQ?si=EQJtdbrBCiRh4dJP" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
+
 FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](/blog/graphql-vs-rest) for tradeoffs between REST and GraphQL).
 
 **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification defines specific [search parameters](/docs/search/basic-search#search-parameters) for each resource that can be used for queries.
@@ -159,6 +165,8 @@ Refer to the [Medplum search documentation](/docs/search/basic-search) for a mor
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/tWW2_0lxNl4?si=bs4lD_2pm1HO0Ux2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
+
+<br/>
 
 The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**. See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
 
@@ -194,6 +202,8 @@ Below is an example [`CodeableConcept`][codeableconcept], that defines the medic
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/NumGLpR9Q7w?si=EPkEYFI2_jkxdzPw"  title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
+
+<br/>
 
 One issue in healthcare applications is that the same entity can have many different identifiers in different systems. For example, a patient might be identified simultaneously by their:
 
@@ -251,6 +261,45 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 ```
 
 </details>
+
+
+
+
+## ValueSets
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/rUulfIWlckI?si=jy7BwirKmkGZAqi8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
+
+
+ValueSets are a collection of codes that are used to represent a concept. They act as filters or subsets of larger terminology systems (like SNOMED CT, LOINC, or ICD-10) to specify exactly which codes are appropriate for a specific use case. They are defined by a `system` and a `concept` array. The `concept` array contains the codes that are part of the ValueSet.
+
+
+```json
+{
+  "resourceType": "ValueSet",
+  "url": "http://example.com/ValueSet/vitals",
+  "name": "vitals",
+  "title": "Vital Signs",
+  "status": "active",
+  "compose": {
+    "include": [
+      {
+        "system": "http://loinc.org",
+        "concept": [
+          { "code": "8310-5", "display": "Body temperature" },
+          { "code": "8462-4", "display": "Diastolic blood pressure" },
+          { "code": "8480-6", "display": "Systolic blood pressure" },
+          { "code": "8867-4", "display": "Heart rate" },
+          { "code": "9279-1", "display": "Respiratory rate" }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## Listening for changes: Subscriptions
 

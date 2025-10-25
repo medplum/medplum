@@ -6,7 +6,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { PatientExportForm, PatientExportFormProps } from './PatientExportForm';
+import type { PatientExportFormProps } from './PatientExportForm';
+import { PatientExportForm } from './PatientExportForm';
 
 describe('PatientExportForm', () => {
   async function setup(args: PatientExportFormProps, medplum = new MockClient()): Promise<void> {

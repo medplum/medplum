@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   append,
@@ -8,12 +9,10 @@ import {
   isReference,
   isResource,
   Operator,
-  SearchRequest,
   sortStringArray,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
@@ -24,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';
@@ -99,6 +98,7 @@ export async function getPatientEverything(
   // Recursively resolve references to resources not in the official compartment, but
   // which should be included for completeness
   await addResolvedReferences(repo, bundle.entry);
+  bundle.entry = removeDuplicateEntries(bundle.entry);
   return bundle;
 }
 
@@ -126,6 +126,7 @@ export async function searchPatientCompartment(
     filters,
     count: search?.count ?? defaultMaxResults,
     offset: search?.offset,
+    sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure that pagination works correctly
   });
 }
 
@@ -193,4 +194,26 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
     }
   }
   return foundReferences;
+}
+
+/**
+ * Removes duplicate entries from the given list of bundle entries.
+ * @param entries - The bundle entries.
+ * @returns The deduplicated bundle entries.
+ */
+function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
+  if (!entries) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const resource = entry.resource as WithId<Resource>;
+    const ref = getReferenceString(resource);
+    if (seen.has(ref)) {
+      return false;
+    } else {
+      seen.add(ref);
+      return true;
+    }
+  });
 }

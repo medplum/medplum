@@ -1,41 +1,49 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  deepClone,
   deepEquals,
   FileBuilder,
-  getAllDataTypes,
+  getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  InternalTypeSchema,
   isPopulated,
-  isResourceTypeSchema,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
+import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { readdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Client, escapeIdentifier } from 'pg';
+import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import {
-  ColumnSearchParameterImplementation,
-  getSearchParameterImplementation,
-  SearchParameterImplementation,
-  TokenColumnSearchParameterImplementation,
-} from '../fhir/searchparameter';
-import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import type { SearchParameterImplementation } from '../fhir/searchparameter';
+import { getSearchParameterImplementation } from '../fhir/searchparameter';
+import type { SqlFunctionDefinition } from '../fhir/sql';
+import { TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
-import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
+  ColumnNameAbbreviations,
+  escapeMixedCaseIdentifier,
+  escapeUnicode,
+  getColumns,
+  getFunctionDefinition,
+  parseIndexDefinition,
+  TableNameAbbreviations,
+  tsVectorExpression,
+} from './migrate-utils';
+import type {
+  CheckConstraintDefinition,
   ColumnDefinition,
+  DbClient,
   IndexDefinition,
   IndexType,
-  IndexTypes,
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
   TableDefinition,
 } from './types';
+import { SerialColumnTypes } from './types';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 
@@ -76,32 +84,69 @@ export async function main(): Promise<void> {
     allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
     analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
+    writeSchema: process.argv.includes('--writeSchema'),
+    skipMigration: process.argv.includes('--skipMigration'),
   };
-  await dbClient.connect();
 
-  const b = new FileBuilder();
-  await buildMigration(b, options);
+  if (!options.skipMigration) {
+    await dbClient.connect();
 
-  await dbClient.end();
-  if (dryRun) {
-    console.log(b.toString());
-  } else {
-    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-    rewriteMigrationExports();
+    const b = new FileBuilder();
+    await buildMigration(b, options);
+
+    await dbClient.end();
+
+    if (dryRun) {
+      console.log(b.toString());
+    } else {
+      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
+      rewriteMigrationExports();
+    }
+  }
+
+  if (options.writeSchema) {
+    const schemaBuilder = new FileBuilder();
+    buildSchema(schemaBuilder);
+    if (dryRun) {
+      console.log(schemaBuilder.toString());
+    } else {
+      writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
+    }
   }
 }
 
 export type BuildMigrationOptions = {
-  dbClient: Client | Pool | PoolClient;
+  dbClient: DbClient;
   dropUnmatchedIndexes?: boolean;
   skipPostDeployActions?: boolean;
   allowPostDeployActions?: boolean;
   analyzeResourceTables?: boolean;
+  writeSchema?: boolean;
+  skipMigration?: boolean;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
   const actions = await generateMigrationActions(options);
   writeActionsToBuilder(b, actions);
+}
+
+export function buildSchema(builder: FileBuilder): void {
+  const targetDefinition = buildTargetDefinition();
+
+  const actions: MigrationAction[] = [];
+
+  for (const targetFunction of targetDefinition.functions) {
+    actions.push({
+      type: 'CREATE_FUNCTION',
+      name: targetFunction.name,
+      createQuery: targetFunction.createQuery,
+    });
+  }
+
+  for (const targetTable of targetDefinition.tables) {
+    actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+  }
+  writeSchema(builder, actions);
 }
 
 export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
@@ -137,12 +182,15 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   const matchedStartTables = new Set<TableDefinition>();
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
-    if (!startTable) {
-      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
-    } else {
+    if (startTable) {
       matchedStartTables.add(startTable);
-      actions.push(...generateColumnsActions(ctx, startTable, targetTable));
-      actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+      actions.push(
+        ...generateColumnsActions(ctx, startTable, targetTable),
+        ...generateIndexesActions(ctx, startTable, targetTable, options),
+        ...generateConstraintsActions(ctx, startTable, targetTable)
+      );
+    } else {
+      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
     }
   }
 
@@ -153,10 +201,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   }
 
   if (options.analyzeResourceTables) {
-    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
-      if (!isResourceTypeSchema(fhirType)) {
-        continue;
-      }
+    for (const resourceType of getResourceTypes()) {
       actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
     }
   }
@@ -181,204 +226,72 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
     tables.push(await getTableDefinition(db, tableName));
   }
 
-  const unusedParsers = SpecialIndexParsers.filter((p) => !p.usageCount);
-  if (unusedParsers.length) {
-    throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
-  }
-
   return { tables, functions };
 }
 
-async function getTableNames(db: Client | Pool | PoolClient): Promise<string[]> {
+async function getTableNames(db: DbClient): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: Client | Pool | PoolClient, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: DbClient, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
     indexes: await getIndexes(db, name),
+    constraints: await getCheckConstraints(db, name),
   };
 }
 
-async function getFunctionDefinition(
-  db: Client | Pool | PoolClient,
-  name: string
-): Promise<SqlFunctionDefinition | undefined> {
-  let result: QueryResult<{ pg_get_functiondef: string }>;
-  try {
-    result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
-  } catch (_err) {
-    return undefined;
-  }
-
-  if (result.rows.length === 1) {
-    return {
-      name,
-      createQuery: result.rows[0].pg_get_functiondef,
-    };
-  }
-
-  if (result.rows.length > 1) {
-    throw new Error('Multiple functiondefs found for ' + name);
-  }
-
-  return undefined;
-}
-
-async function getColumns(db: Client | Pool | PoolClient, tableName: string): Promise<ColumnDefinition[]> {
-  // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
-  const rs = await db.query(`
-    SELECT
-      attname,
-      attnotnull,
-      format_type(atttypid, atttypmod) AS data_type,
-      COALESCE((SELECT indisprimary from pg_index where indrelid = attrelid AND attnum = any(indkey) and indisprimary = true), FALSE) AS primary_key,
-      pg_get_expr(d.adbin, d.adrelid) AS default_value
-    FROM
-      pg_attribute
-      JOIN pg_class ON pg_class.oid = attrelid
-      JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
-      LEFT JOIN pg_catalog.pg_attrdef d ON (pg_attribute.attrelid, pg_attribute.attnum) = (d.adrelid, d.adnum)
-    WHERE
-      pg_namespace.nspname = 'public'
-      AND pg_class.relname = '${tableName}'
-      AND attnum > 0
-      AND NOT attisdropped
-    ORDER BY
-      attnum
-  `);
-
-  return rs.rows.map((row) => ({
-    name: row.attname,
-    type: normalizeColumnType(row.data_type.toUpperCase()),
-    primaryKey: Boolean(row.primary_key),
-    notNull: row.attnotnull,
-    defaultValue: row.default_value,
-  }));
-}
-
-async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Promise<IndexDefinition[]> {
-  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
+async function getIndexes(db: DbClient, tableName: string): Promise<IndexDefinition[]> {
+  const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
-// If the index definition is beyond the ability of the parser, define a special-handler function here
-type SpecialIndexParser = ((indexdef: string) => IndexDefinition | undefined) & { usageCount?: number };
-const SpecialIndexParsers: SpecialIndexParser[] = [
-  // example special parser that is no longer needed
-  // (indexdef: string) => {
-  //   // CREATE INDEX "Coding_display_idx" ON public."Coding" USING gin (system, to_tsvector('english'::regconfig, display)) WHERE (display IS NOT NULL)
-  //   const tsVectorExpr = tsVectorExpression('english', 'display');
-  //   const match = indexdef.endsWith(`USING gin (system, ${tsVectorExpr}) WHERE (display IS NOT NULL)`);
-  //   if (!match) {
-  //     return undefined;
-  //   }
-  //   return {
-  //     columns: ['system', { expression: tsVectorExpr, name: 'display' }],
-  //     indexType: 'gin',
-  //     where: 'display IS NOT NULL',
-  //   };
-  // },
-];
-
-export function parseIndexDefinition(indexdef: string): IndexDefinition {
-  const fullIndexDef = indexdef;
-
-  const specialMatches = SpecialIndexParsers.map((p) => {
-    const result = p(indexdef);
-    if (result) {
-      p.usageCount = (p.usageCount ?? 0) + 1;
-    }
-    return p(indexdef);
-  }).filter((d): d is IndexDefinition => !!d);
-  if (specialMatches.length > 1) {
-    throw new Error('Multiple special index parsers matched: ' + indexdef);
-  } else if (specialMatches.length === 1) {
-    specialMatches[0].indexdef = fullIndexDef;
-    return specialMatches[0];
-  }
-
-  let where: string | undefined;
-  const whereMatch = indexdef.match(/ WHERE \((.+)\)$/);
-  if (whereMatch) {
-    where = whereMatch[1];
-    indexdef = indexdef.substring(0, whereMatch.index);
-  }
-
-  let include: string[] | undefined;
-  const includeMatch = indexdef.match(/ INCLUDE \((.+)\)$/);
-  if (includeMatch) {
-    include = includeMatch[1].split(',').map((s) => s.trim().replaceAll('"', ''));
-    indexdef = indexdef.substring(0, includeMatch.index);
-  }
-
-  const indexTypeMatch = indexdef.match(/USING (\w+)/);
-  if (!indexTypeMatch) {
-    throw new Error('Could not parse index type from ' + indexdef);
-  }
-
-  const indexType = indexTypeMatch[1] as IndexType;
-  if (!IndexTypes.includes(indexType)) {
-    throw new Error('Invalid index type: ' + indexType);
-  }
-
-  const expressionsMatch = indexdef.match(/\((.+)\)$/);
-  if (!expressionsMatch) {
-    throw new Error('Invalid index definition: ' + indexdef);
-  }
-
-  const parsedExpressions = parseIndexColumns(expressionsMatch[1]);
-  const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
-    if (expression.match(/^[ \w"]+$/)) {
-      return expression.trim().replaceAll('"', '');
-    }
-
-    const idxNameMatch = indexdef.match(/INDEX "([a-zA-Z]+)_(\w+)_(idx|idx_tsv)"/); // ResourceName_column1_column2_idx
-    if (!idxNameMatch) {
-      throw new Error('Could not parse index name from ' + indexdef);
-    }
-
-    let name = splitIndexColumnNames(idxNameMatch[2])[i];
-    if (!name) {
-      // column names aren't considered when determining index equality, so it is fine to use a placeholder
-      // name here. If we want to be stricter and match on index name as well, throw an error here instead
-      // of using a placeholder name among other changes
-      name = 'placeholder';
-    }
-    name = expandAbbreviations(name, ColumnNameAbbreviations);
-
-    return { expression, name };
-  });
-
-  const indexDef: IndexDefinition = {
-    columns,
-    indexType: indexType,
-    unique: indexdef.includes('CREATE UNIQUE INDEX'),
-    indexdef: fullIndexDef,
-  };
-
-  if (where) {
-    indexDef.where = where;
-  }
-
-  if (include) {
-    indexDef.include = include;
-  }
-
-  return indexDef;
+export function parseIndexName(indexdef: string): string | undefined {
+  return /INDEX "?([^"]+)"? ON/i.exec(indexdef)?.[1];
 }
 
-export function parseIndexName(indexdef: string): string | undefined {
-  return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
+export async function getCheckConstraints(
+  db: DbClient,
+  tableName: string
+): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
+  const rs = await db.query<{
+    table_name: string;
+    conname: string;
+    contype: string;
+    convalidated: boolean;
+    condef: string;
+  }>(
+    `SELECT conrelid::regclass AS table_name, conname, contype, convalidated, pg_get_constraintdef(oid, TRUE) as condef
+FROM pg_catalog.pg_constraint
+WHERE connamespace = 'public'::regnamespace AND conrelid IN($1::regclass) AND contype = 'c'`,
+    [escapeIdentifier(tableName)]
+  );
+
+  const cds: (CheckConstraintDefinition & { valid: boolean })[] = [];
+  for (const row of rs.rows) {
+    if (row.contype === 'c') {
+      const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
+      if (!expressionMatch) {
+        throw new Error('Could not parse check constraint expression from ' + row.condef);
+      }
+      cds.push({
+        name: row.conname,
+        type: 'check',
+        expression: expressionMatch[1],
+        valid: row.convalidated,
+      });
+    }
+  }
+  return cds;
 }
 
 function buildTargetDefinition(): SchemaDefinition {
   const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
-  for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
-    buildCreateTables(result, resourceType, typeSchema);
+  for (const resourceType of getResourceTypes()) {
+    buildCreateTables(result, resourceType);
   }
 
   buildAddressTable(result);
@@ -388,22 +301,15 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingTable(result);
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
+  buildConceptMappingTable(result);
+  buildCodingSystemTable(result);
+  buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
 }
 
-export function buildCreateTables(
-  result: SchemaDefinition,
-  maybeResourceType: string,
-  fhirType: InternalTypeSchema
-): void {
-  if (!isResourceTypeSchema(fhirType)) {
-    // Don't create a table if fhirType is a subtype or not a resource type
-    return;
-  }
-  const resourceType = maybeResourceType as ResourceType;
-
+export function buildCreateTables(result: SchemaDefinition, resourceType: ResourceType): void {
   const tableDefinition: TableDefinition = {
     name: resourceType,
     columns: [
@@ -411,19 +317,25 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'projectId', type: 'UUID' },
-      { name: '__version', type: 'INTEGER' },
+      { name: 'projectId', type: 'UUID', notNull: true },
+      { name: '__version', type: 'INTEGER', notNull: true },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['projectId', 'lastUpdated'], indexType: 'btree' },
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
       { columns: ['__version'], indexType: 'btree' },
+      // This index is used to efficiently paginate through resources during reindexing
+      {
+        columns: ['lastUpdated', '__version'],
+        where: 'deleted = false',
+        indexType: 'btree',
+        indexNameOverride: `${resourceType}_reindex_idx`,
+      },
     ],
   };
 
@@ -432,38 +344,43 @@ export function buildCreateTables(
     tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
   }
 
+  if (resourceType === 'Project') {
+    tableDefinition.constraints = tableDefinition.constraints ?? [];
+    tableDefinition.constraints.push({
+      name: 'reserved_project_id_check',
+      type: 'check',
+      expression: `id <> '${systemResourceProjectId}'::uuid`,
+    });
+  }
+
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
-  result.tables.push(tableDefinition);
-
-  result.tables.push({
-    name: resourceType + '_History',
-    columns: [
-      { name: 'versionId', type: 'UUID', primaryKey: true, notNull: true },
-      { name: 'id', type: 'UUID', notNull: true },
-      { name: 'content', type: 'TEXT', notNull: true },
-      { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
-    ],
-    indexes: [
-      { columns: ['id'], indexType: 'btree' },
-      { columns: ['lastUpdated'], indexType: 'btree' },
-      { columns: ['versionId'], indexType: 'btree', unique: true },
-    ],
-  });
-
-  result.tables.push({
-    name: resourceType + '_References',
-    columns: [
-      { name: 'resourceId', type: 'UUID', notNull: true },
-      { name: 'targetId', type: 'UUID', notNull: true },
-      { name: 'code', type: 'TEXT', notNull: true },
-    ],
-    compositePrimaryKey: ['resourceId', 'targetId', 'code'],
-    indexes: [
-      { columns: ['resourceId', 'targetId', 'code'], indexType: 'btree', unique: true },
-      { columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] },
-    ],
-  });
+  result.tables.push(
+    tableDefinition,
+    {
+      name: resourceType + '_History',
+      columns: [
+        { name: 'versionId', type: 'UUID', primaryKey: true, notNull: true },
+        { name: 'id', type: 'UUID', notNull: true },
+        { name: 'content', type: 'TEXT', notNull: true },
+        { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
+      ],
+      indexes: [
+        { columns: ['id'], indexType: 'btree' },
+        { columns: ['lastUpdated'], indexType: 'btree' },
+      ],
+    },
+    {
+      name: resourceType + '_References',
+      columns: [
+        { name: 'resourceId', type: 'UUID', notNull: true },
+        { name: 'targetId', type: 'UUID', notNull: true },
+        { name: 'code', type: 'TEXT', notNull: true },
+      ],
+      compositePrimaryKey: ['resourceId', 'targetId', 'code'],
+      indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
+    }
+  );
 }
 
 const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source']);
@@ -485,14 +402,10 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     }
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
-    if (impl.searchStrategy === 'lookup-table') {
-      continue;
-    }
-
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
-        if (!columnDefinitionsEqual(existing, column)) {
+        if (!columnDefinitionsEqual(tableDefinition, existing, column)) {
           throw new Error(
             `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
           );
@@ -520,9 +433,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
-): ColumnDefinition[] {
+function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
       if (impl.type !== SearchParameterType.TEXT) {
@@ -538,6 +449,12 @@ function getSearchParameterColumns(
     }
     case 'column':
       return [getColumnDefinition(impl.columnName, impl)];
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ name: impl.sortColumnName, type: 'TEXT' }];
+      }
+      return [];
+    }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
@@ -545,7 +462,7 @@ function getSearchParameterColumns(
 
 function getSearchParameterIndexes(
   searchParam: SearchParameter,
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+  impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -570,6 +487,12 @@ function getSearchParameterIndexes(
         indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
       }
       return indexes;
+    }
+    case 'lookup-table': {
+      if (impl.sortColumnName) {
+        return [{ columns: [impl.sortColumnName], indexType: 'btree' }];
+      }
+      return [];
     }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
@@ -626,8 +549,10 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
-    result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
+    result.indexes.push(
+      { columns: ['project', 'email'], indexType: 'btree', unique: true },
+      { columns: ['project', 'externalId'], indexType: 'btree', unique: true }
+    );
   }
 
   if (resourceType === 'Encounter') {
@@ -662,12 +587,14 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
     }
     profileCol.defaultValue = "''::text";
 
-    result.indexes.push({
-      columns: ['project', 'externalId'],
-      indexType: 'btree',
-      unique: true,
-    });
-    result.indexes.push({ columns: ['project', 'userName'], indexType: 'btree', unique: true });
+    result.indexes.push(
+      {
+        columns: ['project', 'externalId'],
+        indexType: 'btree',
+        unique: true,
+      },
+      { columns: ['project', 'userName'], indexType: 'btree', unique: true }
+    );
   }
 }
 
@@ -678,32 +605,32 @@ function buildAddressTable(result: SchemaDefinition): void {
     ['address', 'city', 'country', 'postalCode', 'state', 'use'],
     [
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, address)", name: 'address' }],
+        columns: [{ expression: tsVectorExpression('simple', 'address'), name: 'address' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: 'to_tsvector(\'simple\'::regconfig, "postalCode")', name: 'postalCode' }],
+        columns: [{ expression: tsVectorExpression('simple', 'postalCode'), name: 'postalCode' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, city)", name: 'city' }],
+        columns: [{ expression: tsVectorExpression('simple', 'city'), name: 'city' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, use)", name: 'use' }],
+        columns: [{ expression: tsVectorExpression('simple', 'use'), name: 'use' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, country)", name: 'country' }],
+        columns: [{ expression: tsVectorExpression('simple', 'country'), name: 'country' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, state)", name: 'state' }],
+        columns: [{ expression: tsVectorExpression('simple', 'state'), name: 'state' }],
         indexType: 'gin',
         indexNameSuffix: 'idx_tsv',
       },
@@ -738,19 +665,19 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         indexType: 'gin',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
+        columns: [{ expression: tsVectorExpression('simple', 'name'), name: 'name' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
+        columns: [{ expression: tsVectorExpression('simple', 'given'), name: 'given' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
       },
       {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
+        columns: [{ expression: tsVectorExpression('simple', 'family'), name: 'family' }],
         indexType: 'gin',
         unique: false,
         indexNameSuffix: 'idx_tsv',
@@ -787,7 +714,11 @@ function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      { name: 'id', type: 'BIGINT', notNull: true, defaultValue: 'nextval(\'"Coding_id_seq"\'::regclass)' },
+      {
+        name: 'id',
+        type: 'BIGSERIAL',
+        primaryKey: true,
+      },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -847,9 +778,8 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
     columns: [
       {
         name: 'id',
-        type: 'BIGINT',
-        notNull: true,
-        defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
+        type: 'BIGSERIAL',
+        primaryKey: true,
       },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
@@ -857,10 +787,64 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
       { name: 'uri', type: 'TEXT' },
       { name: 'description', type: 'TEXT' },
     ],
-    indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
+    indexes: [{ columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] }],
+  });
+}
+
+function buildConceptMappingTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'conceptMap', type: 'UUID', notNull: true },
+      { name: 'sourceSystem', type: 'BIGINT', notNull: true },
+      { name: 'sourceCode', type: 'TEXT', notNull: true },
+      { name: 'targetSystem', type: 'BIGINT', notNull: true },
+      { name: 'targetCode', type: 'TEXT', notNull: true },
+      { name: 'relationship', type: 'TEXT' },
+      { name: 'sourceDisplay', type: 'TEXT' },
+      { name: 'targetDisplay', type: 'TEXT' },
+      { name: 'comment', type: 'TEXT' },
     ],
+    indexes: [
+      {
+        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
+        unique: true,
+      },
+      {
+        indexNameOverride: 'ConceptMapping_map_reverse_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'targetSystem', 'targetCode', 'sourceSystem'],
+      },
+    ],
+  });
+}
+
+function buildCodingSystemTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodingSystem',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'system', type: 'TEXT', notNull: true },
+    ],
+    indexes: [{ columns: ['system'], indexType: 'btree', unique: true, include: ['id'] }],
+  });
+}
+
+function buildConceptMappingAttributeTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping_Attribute',
+    columns: [
+      { name: 'mapping', type: 'BIGINT', notNull: true },
+      { name: 'uri', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'value', type: 'TEXT', notNull: true },
+      { name: 'kind', type: 'TEXT', notNull: true },
+    ],
+    compositePrimaryKey: ['mapping', 'uri', 'type', 'value', 'kind'],
+    indexes: [],
   });
 }
 
@@ -873,15 +857,15 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
       { name: 'dataVersion', type: 'INTEGER', notNull: true },
       { name: 'firstBoot', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
     ],
-    indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+    indexes: [],
   });
 }
 
 export async function executeMigrationActions(
-  client: Client | Pool | PoolClient,
+  client: DbClient,
+  results: MigrationActionResult[],
   actions: MigrationAction[]
-): Promise<MigrationActionResult[]> {
-  const results: MigrationActionResult[] = [];
+): Promise<void> {
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
@@ -892,7 +876,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'CREATE_TABLE': {
-        const queries = getCreateTableQueries(action.definition);
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: true });
         for (const query of queries) {
           await fns.query(client, results, query);
         }
@@ -924,8 +908,12 @@ export async function executeMigrationActions(
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        await fns.query(client, results, query);
+        if (action.notNull) {
+          await fns.nonBlockingAlterColumnNotNull(client, results, action.tableName, action.columnName);
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          await fns.query(client, results, query);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -941,11 +929,64 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'ADD_CONSTRAINT': {
+        await fns.nonBlockingAddCheckConstraint(
+          client,
+          results,
+          action.tableName,
+          action.constraintName,
+          action.constraintExpression
+        );
+        break;
+      }
     }
   }
-  return results;
 }
 
+function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
+  b.append(String.raw`\set ON_ERROR_STOP true`);
+  b.append(String.raw`\set QUIET on`);
+  b.newLine();
+
+  b.appendNoWrap(String.raw`DROP DATABASE IF EXISTS medplum;`);
+  b.appendNoWrap(String.raw`CREATE DATABASE medplum;`);
+  b.newLine();
+
+  b.appendNoWrap(String.raw`\c medplum`);
+  b.newLine();
+
+  b.append('DO $$');
+  b.append('BEGIN');
+  b.append(`  IF current_database() NOT IN ('medplum') THEN`);
+  b.append(`    RAISE EXCEPTION 'Connected to wrong database: %', current_database();`);
+  b.append('  END IF;');
+  b.append('END $$;');
+  b.newLine();
+
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  b.newLine();
+
+  for (const action of actions) {
+    switch (action.type) {
+      case 'CREATE_FUNCTION': {
+        b.appendNoWrap(ensureEndsWithSemicolon(escapeUnicode(action.createQuery)));
+        b.newLine();
+        break;
+      }
+      case 'CREATE_TABLE': {
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: false });
+        for (const query of queries) {
+          b.appendNoWrap(ensureEndsWithSemicolon(query));
+        }
+        b.newLine();
+        break;
+      }
+      default:
+        throw new Error('Unsupported writeSchema action type: ' + action.type);
+    }
+  }
+}
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
@@ -965,7 +1006,7 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'CREATE_TABLE': {
-        const queries = getCreateTableQueries(action.definition);
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: true });
         for (const query of queries) {
           b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
@@ -997,8 +1038,14 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        if (action.notNull) {
+          b.appendNoWrap(
+            `await fns.nonBlockingAlterColumnNotNull(client, results, \`${action.tableName}\`, \`${action.columnName}\`);`
+          );
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -1015,6 +1062,12 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'ADD_CONSTRAINT': {
+        b.appendNoWrap(
+          `await fns.nonBlockingAddConstraint(client, results, '${action.tableName}', '${action.constraintName}', \`${action.constraintExpression}\`);`
+        );
         break;
       }
       default: {
@@ -1038,7 +1091,7 @@ function generateColumnsActions(
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
       actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
-    } else if (!columnDefinitionsEqual(startColumn, targetColumn)) {
+    } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
       actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
     }
   }
@@ -1114,25 +1167,58 @@ function generateAlterColumnActions(
   return actions;
 }
 
-function getCreateTableQueries(tableDef: TableDefinition): string[] {
+export function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
   const queries: string[] = [];
-  const createTableParts = [`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`];
-  for (let i = 0; i < tableDef.columns.length; i++) {
-    const column = tableDef.columns[i];
-    createTableParts.push(`  "${column.name}" ${column.type}` + (i !== tableDef.columns.length - 1 ? ',' : ''));
+  const createTableLines = [];
+  for (const column of tableDef.columns) {
+    const parts: string[] = [escapeIdentifier(column.name), column.type];
+    if (column.identity) {
+      parts.push(`GENERATED ${column.identity} AS IDENTITY`);
+    }
+    if (column.primaryKey) {
+      parts.push('PRIMARY KEY');
+    }
+    if (column.notNull && !column.primaryKey && !column.identity) {
+      parts.push('NOT NULL');
+    }
+    if (column.defaultValue) {
+      if (column.identity) {
+        throw new Error(`Cannot set default value on identity column ${tableDef.name}.${column.name}`);
+      }
+      parts.push(`DEFAULT ${column.defaultValue}`);
+    }
+    createTableLines.push(`  ${parts.join(' ')}`);
   }
-  createTableParts.push(')');
-  queries.push(createTableParts.join('\n'));
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
-    queries.push(
-      `ALTER TABLE IF EXISTS "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
-    );
+    createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
   }
 
+  for (const constraint of tableDef.constraints ?? []) {
+    if (constraint.type === 'check') {
+      createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
+    } else {
+      throw new Error(`Unsupported constraint type: ${constraint.type}`);
+    }
+  }
+
+  queries.push(
+    [
+      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS ' : ''}${escapeIdentifier(tableDef.name)} (`,
+      createTableLines.join(',\n'),
+      ')',
+    ].join('\n')
+  );
+
   for (const indexDef of tableDef.indexes) {
+    if (indexDef.primaryKey) {
+      continue;
+    }
     const indexName = getIndexName(tableDef.name, indexDef);
-    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef);
+    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef, {
+      concurrent: false,
+      ifNotExists: options.includeIfExists,
+    });
     queries.push(createIndexSql);
   }
 
@@ -1183,7 +1269,30 @@ function generateIndexesActions(
   const matchedIndexes = new Set<IndexDefinition>();
   const seenIndexNames = new Set<string>();
 
-  for (const targetIndex of targetTable.indexes) {
+  const computedIndexes: IndexDefinition[] = [];
+  let pkIndex: IndexDefinition | undefined;
+  if (targetTable.compositePrimaryKey) {
+    pkIndex = {
+      columns: targetTable.compositePrimaryKey,
+      indexType: 'btree',
+      unique: true,
+      primaryKey: true,
+    };
+  } else {
+    const pkColumn = targetTable.columns.find((c) => c.primaryKey);
+    if (pkColumn) {
+      pkIndex = {
+        columns: [pkColumn.name],
+        indexType: 'btree',
+        unique: true,
+        primaryKey: true,
+      };
+    }
+  }
+  if (pkIndex) {
+    computedIndexes.push(pkIndex);
+  }
+  for (const targetIndex of [...targetTable.indexes, ...computedIndexes]) {
     const indexName = getIndexName(targetTable.name, targetIndex);
     if (seenIndexNames.has(indexName)) {
       throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
@@ -1191,16 +1300,19 @@ function generateIndexesActions(
     seenIndexNames.add(indexName);
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
-    if (!startIndex) {
+    if (startIndex) {
+      matchedIndexes.add(startIndex);
+    } else {
       ctx.postDeployAction(
         () => {
-          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
+          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
+            concurrent: true,
+            ifNotExists: true,
+          });
           actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
         },
         `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
-    } else {
-      matchedIndexes.add(startIndex);
     }
   }
 
@@ -1222,10 +1334,61 @@ function generateIndexesActions(
   return actions;
 }
 
-function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = tableName;
+function generateConstraintsActions(
+  ctx: GenerateActionsContext,
+  startTable: TableDefinition,
+  targetTable: TableDefinition
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
 
-  indexName = applyAbbreviations(indexName, TableNameAbbreviations) + '_';
+  const matchedConstraints = new Set<CheckConstraintDefinition>();
+  const seenConstraintNames = new Set<string>();
+
+  for (const targetConstraint of targetTable.constraints ?? []) {
+    if (seenConstraintNames.has(targetConstraint.name)) {
+      throw new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint });
+    }
+    seenConstraintNames.add(targetConstraint.name);
+
+    const startConstraint = startTable.constraints?.find((c) => constraintDefinitionsEqual(c, targetConstraint));
+    if (startConstraint) {
+      matchedConstraints.add(startConstraint);
+    } else {
+      ctx.postDeployAction(
+        () => {
+          actions.push({
+            type: 'ADD_CONSTRAINT',
+            tableName: targetTable.name,
+            constraintName: targetConstraint.name,
+            constraintExpression: targetConstraint.expression,
+          });
+        },
+        `ADD CONSTRAINT ${escapeIdentifier(targetConstraint.name)} ON ${escapeIdentifier(targetTable.name)} ...`
+      );
+    }
+  }
+
+  for (const startConstraint of startTable.constraints ?? []) {
+    if (!matchedConstraints.has(startConstraint)) {
+      console.log(
+        `[${startTable.name}] Existing constraint should not exist:`,
+        startConstraint.expression || JSON.stringify(startConstraint)
+      );
+    }
+  }
+  return actions;
+}
+
+function getIndexName(tableName: string, index: IndexDefinition): string {
+  if (index.indexNameOverride) {
+    return index.indexNameOverride;
+  }
+
+  if (index.primaryKey) {
+    return tableName + '_pkey';
+  }
+
+  let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
 
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
@@ -1240,21 +1403,36 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
   return indexName;
 }
 
-function buildIndexSql(tableName: string, indexName: string, index: IndexDefinition): string {
+function buildIndexSql(
+  tableName: string,
+  indexName: string,
+  index: IndexDefinition,
+  options: { concurrent: boolean; ifNotExists: boolean }
+): string {
   let result = 'CREATE ';
 
   if (index.unique) {
     result += 'UNIQUE ';
   }
 
-  result += 'INDEX CONCURRENTLY IF NOT EXISTS "';
+  result += 'INDEX ';
+
+  if (options.concurrent) {
+    result += 'CONCURRENTLY ';
+  }
+
+  if (options.ifNotExists) {
+    result += 'IF NOT EXISTS ';
+  }
+
+  result += '"';
   result += indexName;
   result += '" ON "';
   result += tableName;
   result += '" ';
 
-  if (index.indexType === 'gin') {
-    result += 'USING gin ';
+  if (index.indexType !== 'btree') {
+    result += 'USING ' + index.indexType + ' ';
   }
 
   result += '(';
@@ -1281,7 +1459,7 @@ function getMigrationFilenames(): string[] {
 }
 
 function getVersionFromFilename(filename: string): number {
-  return parseInt(filename.replace('v', '').replace('.ts', ''), 10);
+  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
 }
 
 function getNextSchemaVersion(): number {
@@ -1314,18 +1492,50 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
-      unique: d.unique ?? false,
-      // don't care about indexNameSuffix, indexdef, nor expression names
+      unique: (d.primaryKey || d.unique) ?? false,
+      // parseIndexDefinition does not include primary key information
+      primaryKey: undefined,
+      // for expressions, ignore names since those are only used for index name generation
+      columns: d.columns.map((c) => (typeof c === 'string' ? c : c.expression)),
+      // don't care about these
+      indexNameOverride: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
-      columns: d.columns.map((c) => (typeof c === 'string' ? c : c.expression)),
     };
   });
 
   return deepEquals(aPrime, bPrime);
 }
 
-export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
+/**
+ * Translate SERIAL types to INT types based on {@link https://www.postgresql.org/docs/16/datatype-numeric.html#DATATYPE-SERIAL}
+ * Translate IDENTITY types to NOT NULL
+ *
+ * @param tableDef - the table definition
+ * @param inputColumnDef - the column definition to desugar
+ * @returns the desugared column definition if it was a SERIAL/IDENTITY column, otherwise the original column definition
+ */
+function desugarColumnDefinition(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
+  if (SerialColumnTypes.has(inputColumnDef.type.toLocaleUpperCase())) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
+    columnDef.notNull = true;
+    const sequenceName = [tableDef.name, columnDef.name, 'seq'].join('_');
+    columnDef.defaultValue = `nextval('${escapeIdentifier(sequenceName)}'::regclass)`;
+    return columnDef;
+  }
+
+  if (inputColumnDef.identity) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.identity = undefined;
+    columnDef.notNull = true;
+    return columnDef;
+  }
+
+  return inputColumnDef;
+}
+
+export function columnDefinitionsEqual(table: TableDefinition, a: ColumnDefinition, b: ColumnDefinition): boolean {
   // Populate optional fields with default values before comparing
   for (const def of [a, b]) {
     def.defaultValue ??= undefined;
@@ -1334,23 +1544,12 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
-  return deepEquals(a, b);
+  return deepEquals(desugarColumnDefinition(table, a), desugarColumnDefinition(table, b));
 }
 
-const TableNameAbbreviations: Record<string, string | undefined> = {
-  MedicinalProductAuthorization: 'MPA',
-  MedicinalProductContraindication: 'MPC',
-  MedicinalProductPharmaceutical: 'MPP',
-  MedicinalProductUndesirableEffect: 'MPUE',
-};
-
-const ColumnNameAbbreviations: Record<string, string | undefined> = {
-  participatingOrganization: 'partOrg',
-  primaryOrganization: 'primOrg',
-  immunizationEvent: 'immEvent',
-  identifier: 'idnt',
-  Identifier: 'Idnt',
-};
+export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
+  return deepEquals({ ...a, valid: undefined }, { ...b, valid: undefined });
+}
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
@@ -1366,23 +1565,16 @@ function applyAbbreviations(name: string, abbreviations: Record<string, string |
   return result;
 }
 
-function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
-  let result = name;
-  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
-    result = result.replace(abbrev, original);
+function ensureEndsWithSemicolon(query: string): string {
+  if (query.endsWith(';')) {
+    return query;
   }
-
-  // Expand _Refs suffix back to _References
-  if (result.endsWith('_Refs')) {
-    result = result.slice(0, -'Refs'.length) + 'References';
-  }
-
-  return result;
+  return query + ';';
 }
 
 if (require.main === module) {
-  main().catch((reason) => {
-    console.error(reason);
+  main().catch((err) => {
+    console.error(err);
     process.exit(1);
   });
 }

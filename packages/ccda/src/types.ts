@@ -11,6 +11,7 @@ export interface Ccda {
   effectiveTime?: CcdaEffectiveTime[];
   custodian?: CcdaCustodian;
   informationRecipient?: CcdaInformationRecipient;
+  participant?: CcdaParticipant[];
   documentationOf?: CcdaDocumentationOf;
   title?: string;
   code?: CcdaCode;
@@ -149,7 +150,7 @@ export interface CcdaProcedure {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaCode<'completed' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
+  statusCode: CcdaCode<'completed' | 'active' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   methodCode?: CcdaCode;
   targetSiteCode?: CcdaCode;
@@ -160,7 +161,7 @@ export interface CcdaProcedure {
 export interface CcdaAct {
   '@_classCode': string;
   '@_moodCode': string;
-  templateId: CcdaTemplateId[];
+  templateId?: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
   statusCode?: CcdaCode;
@@ -170,6 +171,7 @@ export interface CcdaAct {
   author?: CcdaAuthor[];
   text?: CcdaText;
   performer?: CcdaPerformer[];
+  participant?: CcdaParticipant[];
 }
 
 export interface CcdaAuthor {
@@ -182,6 +184,7 @@ export interface CcdaAssignedAuthor {
   id?: CcdaId[];
   code?: CcdaCode;
   assignedPerson?: CcdaAssignedPerson;
+  associatedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
@@ -228,7 +231,9 @@ export interface CcdaObservationRange {
 export interface CcdaParticipant {
   '@_classCode'?: string;
   '@_typeCode'?: string;
+  templateId?: CcdaTemplateId[];
   participantRole?: CcdaParticipantRole;
+  associatedEntity?: CcdaAssignedAuthor;
 }
 
 export interface CcdaParticipantRole {
@@ -248,7 +253,7 @@ export interface CcdaPlayingEntity {
   '@_classCode'?: string;
   '@_typeCode'?: string;
   code?: CcdaCode;
-  name?: string[];
+  name?: CcdaName[] | string[];
 }
 
 export interface CcdaPlayingDevice {
@@ -290,7 +295,12 @@ export interface CcdaQuantity {
   '@_unit'?: string;
 }
 
-export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference;
+export interface CcdaInteger {
+  '@_xsi:type': 'INT';
+  '@_value': string;
+}
+
+export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference | CcdaInteger;
 
 export interface CcdaPeriod {
   '@_xsi:type'?: 'PIVL_TS';
@@ -345,6 +355,7 @@ export interface CcdaTimeStamp {
 export interface CcdaEntryRelationship {
   '@_typeCode': string;
   '@_inversionInd'?: string;
+  sequenceNumber?: CcdaInteger;
   observation?: CcdaObservation[];
   act?: CcdaAct[];
   substanceAdministration?: CcdaSubstanceAdministration[];
@@ -364,12 +375,14 @@ export interface CcdaLanguageCommunication {
 
 export interface CcdaPerformer {
   '@_typeCode'?: string;
+  templateId?: CcdaTemplateId[];
   assignedEntity: CcdaAssignedEntity;
   functionCode?: CcdaCode;
 }
 
 export interface CcdaAssignedEntity {
   id: CcdaId[];
+  code?: CcdaCode;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedPerson?: CcdaAssignedPerson;
@@ -385,7 +398,7 @@ export interface CcdaOrganization {
 }
 
 export interface CcdaOrganizer {
-  '@_classCode': 'CLUSTER';
+  '@_classCode': 'CLUSTER' | 'OBS';
   '@_moodCode': 'EVN';
   templateId: CcdaTemplateId[];
   id: CcdaId[];

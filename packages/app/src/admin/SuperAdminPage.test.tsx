@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, forbidden } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import type { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { getDefaultNormalizer } from '@testing-library/react';
@@ -578,7 +578,6 @@ describe('SuperAdminPage', () => {
       setup();
 
       medplum.router.add('POST', '$explain', async () => {
-        console.log('returning forbidden...');
         return [forbidden];
       });
 
@@ -588,7 +587,6 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      console.log('BEFORE');
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
       });

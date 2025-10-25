@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
-  Filter,
   forbidden,
   getDateProperty,
   getReferenceString,
@@ -13,14 +13,12 @@ import {
   OperationOutcomeError,
   Operator,
   parseJWTPayload,
+  parseReference,
   parseSearchRequest,
-  ProfileResource,
   resolveId,
-  SearchRequest,
   tooManyRequests,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   ClientApplication,
   IdentityProvider,
@@ -34,19 +32,21 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
-import { Request } from 'express';
-import { IncomingMessage } from 'http';
-import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
+import type { Request } from 'express';
+import type { IncomingMessage } from 'http';
+import type { JWTPayload, VerifyOptions } from 'jose';
+import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
-import { MedplumExternalAuthConfig } from '../config/types';
+import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
-import { parseSmartScopes, SmartScope } from '../fhir/smart';
+import type { SmartScope } from '../fhir/smart';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getRedis } from '../redis';
 import {
@@ -57,15 +57,9 @@ import {
   UserAuthenticationEvent,
 } from '../util/auditevent';
 import { getStandardClientById } from './clients';
-import {
-  generateAccessToken,
-  generateIdToken,
-  generateRefreshToken,
-  generateSecret,
-  MedplumAccessTokenClaims,
-  verifyJwt,
-} from './keys';
-import { AuthState } from './middleware';
+import type { MedplumAccessTokenClaims } from './keys';
+import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
+import type { AuthState } from './middleware';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -87,6 +81,7 @@ export interface LoginRequest {
   readonly userAgent?: string;
   readonly allowNoMembership?: boolean;
   readonly origin?: string;
+  readonly pictureUrl?: string;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -199,6 +194,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     codeChallengeMethod: request.codeChallengeMethod,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
+    pictureUrl: request.pictureUrl,
   });
 
   // Try to get user memberships
@@ -306,11 +302,11 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
-  if (!user.mfaEnrolled) {
+  const secret = user.mfaSecret;
+  if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
@@ -434,6 +430,23 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
+  }
+
+  // Optionally update the profile picture from Google
+  if (
+    login.authMethod === 'google' &&
+    login.pictureUrl &&
+    project.setting?.find((s) => s.name === 'googleAuthProfilePictures' && s.valueBoolean)
+  ) {
+    try {
+      const [resourceType, id] = parseReference(membership.profile);
+      await systemRepo.patchResource(resourceType, id, [
+        { op: 'test', path: '/photo', value: undefined },
+        { op: 'add', path: '/photo', value: [{ url: login.pictureUrl, contentType: 'image/jpeg' }] },
+      ]);
+    } catch (err) {
+      getLogger().warn('Failed to update profile picture', { err });
+    }
   }
 
   // TODO: Do we really need to check IP access rules inside this method?

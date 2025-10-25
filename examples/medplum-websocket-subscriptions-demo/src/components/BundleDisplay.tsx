@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Accordion, ActionIcon, Chip, Group } from '@mantine/core';
-import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowNarrowRight, IconCheck } from '@tabler/icons-react';
-import { JSX, SyntheticEvent, useCallback } from 'react';
+import { useCallback } from 'react';
+import type { JSX, SyntheticEvent } from 'react';
 
 export interface BundleDisplayProps {
   readonly bundle: Bundle;

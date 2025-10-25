@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
-import { MedplumServerConfig } from './types';
+import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { getLogger } from '../logger';
+import type { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -30,6 +32,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds ??= 30_000;
   config.accurateCountThreshold ??= 1_000_000;
+  config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
@@ -43,8 +46,32 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
-
   config.defaultFhirQuota ??= 50_000;
+
+  // Automatically generate a signing key if using built-in storage and no signing key is provided
+  if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
+    getLogger().warn(
+      'Generating temporary signing key. Storage URLs will not work in cluster environments, and will be invalid after server restart.'
+    );
+    const passphrase = randomUUID();
+    const signingKey = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs1',
+        format: 'pem',
+        cipher: 'aes-256-cbc',
+        passphrase,
+      },
+    });
+    config.signingKeyId = 'medplum-generated-key';
+    config.signingKey = signingKey.privateKey;
+    config.signingKeyPassphrase = passphrase;
+  }
+
   return config as ServerConfig;
 }
 
@@ -65,6 +92,7 @@ type DefaultConfigKeys =
   | 'bullmq'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
+  | 'maxSearchOffset'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
@@ -73,7 +101,7 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = [
+const integerKeys = new Set([
   'accurateCountThreshold',
   'bcryptHashSalt',
   'defaultAuthRateLimit',
@@ -88,6 +116,7 @@ const integerKeys = [
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -104,17 +133,17 @@ const integerKeys = [
   'bullmq.concurrency',
 
   'fission.routerPort',
-];
+]);
 
 export function isIntegerConfig(key: string): boolean {
-  return integerKeys.includes(key);
+  return integerKeys.has(key);
 }
 
 export function isFloatConfig(_key: string): boolean {
   return false;
 }
 
-const booleanKeys = [
+const booleanKeys = new Set([
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -130,12 +159,15 @@ const booleanKeys = [
   'registerEnabled',
   'require',
   'rejectUnauthorized',
-];
+  'fhirSearchDiscourageSeqScan',
+]);
 
 export function isBooleanConfig(key: string): boolean {
-  return booleanKeys.includes(key);
+  return booleanKeys.has(key);
 }
 
+const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaultOAuthClients', 'smtp']);
+
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
+  return objectKeys.has(key);
 }

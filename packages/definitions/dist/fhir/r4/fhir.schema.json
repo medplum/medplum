@@ -59501,6 +59501,7 @@
           "description": "A list of optional features that are enabled for the project.",
           "items": {
             "enum": [
+              "ai",
               "aws-comprehend",
               "aws-textract",
               "bots",
@@ -60106,6 +60107,10 @@
           "description": "Shared secret for MFA authenticator applications.",
           "$ref": "#/definitions/string"
         },
+        "mfaRequired": {
+          "description": "Whether the user is required to complete MFA enrollment. If true, the user must complete MFA enrollment before they can log in.",
+          "$ref": "#/definitions/boolean"
+        },
         "mfaEnrolled": {
           "description": "Whether the user has completed MFA enrollment.",
           "$ref": "#/definitions/boolean"
@@ -60252,6 +60257,10 @@
         },
         "userAgent": {
           "description": "The User-Agent request header as sent by the client.",
+          "$ref": "#/definitions/string"
+        },
+        "pictureUrl": {
+          "description": "Optional picture URL from the external identity provider.",
           "$ref": "#/definitions/string"
         }
       },

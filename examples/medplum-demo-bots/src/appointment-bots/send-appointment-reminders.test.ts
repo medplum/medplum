@@ -3,7 +3,7 @@
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { handler } from './send-appointment-reminders';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 
 const medplum = new MockClient();
 

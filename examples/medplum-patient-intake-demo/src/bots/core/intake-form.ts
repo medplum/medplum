@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addProfileToResource, BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { addProfileToResource, createReference, getQuestionnaireAnswers } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -15,15 +16,18 @@ import {
   addPharmacy,
   consentCategoryMapping,
   consentPolicyRuleMapping,
+  consentProvisionCodeMapping,
   consentScopeMapping,
   convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   getHumanName,
   getPatientAddress,
+  getPatientTelecom,
   observationCategoryMapping,
   observationCodeMapping,
   PROFILE_URLS,
+  setPatientTelecomRank,
   upsertObservation,
 } from './intake-utils';
 
@@ -70,8 +74,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient.gender = answers['gender-identity'].valueCoding.code as Patient['gender'];
   }
 
-  if (answers['phone']?.valueString) {
-    patient.telecom = [{ system: 'phone', value: answers['phone'].valueString }];
+  const patientTelecom = getPatientTelecom(answers);
+  if (patientTelecom) {
+    patient.telecom = patientTelecom;
+  }
+
+  if (answers['patient-contact-preference-call-or-text']?.valueBoolean) {
+    setPatientTelecomRank(patient.telecom, answers);
   }
 
   if (answers['ssn']?.valueString) {
@@ -275,5 +284,42 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     consentCategoryMapping.acd,
     consentPolicyRuleMapping.adr,
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-email']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-email-date']?.valueDate),
+    [consentProvisionCodeMapping.email, consentProvisionCodeMapping.appointmentReminders]
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-call-or-text']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-call-or-text-date']?.valueDate),
+    [consentProvisionCodeMapping.phone, consentProvisionCodeMapping.sms]
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-voice-text-appointment-reminders']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-voice-text-appointment-reminders-date']?.valueDate),
+    [
+      consentProvisionCodeMapping.appointmentReminders,
+      consentProvisionCodeMapping.phone,
+      consentProvisionCodeMapping.sms,
+    ]
   );
 }

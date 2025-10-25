@@ -5,7 +5,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
+import type { PatientTimelineProps } from './PatientTimeline';
+import { PatientTimeline } from './PatientTimeline';
 
 const medplum = new MockClient();
 

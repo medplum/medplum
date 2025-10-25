@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "4.3.11",
+  "version": "4.5.1",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",
@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json",
-    "clean": "rimraf dist/index.js dist/index.d.ts",
+    "clean": "rimraf dist/index*",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest"

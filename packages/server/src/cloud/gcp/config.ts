@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { splitN } from '@medplum/core';
-import { MedplumServerConfig } from '../../config/types';
+import type { MedplumServerConfig } from '../../config/types';
 import { isBooleanConfig, isIntegerConfig, isObjectConfig } from '../../config/utils';
 
 /**

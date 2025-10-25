@@ -7,14 +7,16 @@ import {
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  MedplumClient,
   SNOMED,
 } from '@medplum/core';
-import {
+import type { MedplumClient } from '@medplum/core';
+import type {
   Address,
   CodeableConcept,
   Coding,
   Consent,
+  ConsentProvision,
+  ContactPoint,
   HumanName,
   Observation,
   Organization,
@@ -141,6 +143,15 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  cd: {
+    coding: [
+      {
+        system: LOINC,
+        code: '59284-0',
+        display: 'Consent Document',
+      },
+    ],
+  },
 };
 
 export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
@@ -177,6 +188,74 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
         system: 'http://medplum.com',
         code: 'BasicADR',
         display: 'Advanced Care Directive',
+      },
+    ],
+  },
+  communicationPreferences: {
+    coding: [
+      {
+        system: 'http://example.com/fhir/CodeSystem/consent-policy',
+        code: 'communication-preferences',
+        display: 'Communication Preferences Policy',
+      },
+    ],
+  },
+};
+
+export const consentProvisionPurposeMapping: Record<string, Coding> = {
+  patadmin: {
+    system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+    code: 'PATADMIN',
+    display: 'Patient Administration',
+  },
+};
+
+export const consentProvisionCodeMapping: Record<string, CodeableConcept> = {
+  sms: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'sms',
+        display: 'SMS',
+      },
+    ],
+  },
+  phone: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'phone',
+        display: 'Phone',
+      },
+    ],
+  },
+  email: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'email',
+        display: 'Email',
+      },
+    ],
+  },
+  appointmentReminders: {
+    coding: [
+      {
+        system: LOINC,
+        code: '101134-5',
+        display: 'Appointment reminder',
+      },
+    ],
+  },
+};
+
+export const consentProvisionActionMapping: Record<string, CodeableConcept> = {
+  use: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentaction',
+        code: 'use',
+        display: 'Use',
       },
     ],
   },
@@ -641,8 +720,19 @@ export async function addConsent(
   scope: CodeableConcept,
   category: CodeableConcept,
   policyRule: CodeableConcept | undefined,
-  date: Consent['dateTime'] | undefined
+  date: Consent['dateTime'] | undefined,
+  provision?: CodeableConcept[]
 ): Promise<void> {
+  let consentProvision: ConsentProvision | undefined;
+  if (provision) {
+    consentProvision = {
+      type: consentGiven ? 'permit' : 'deny',
+      action: [consentProvisionActionMapping.use],
+      purpose: [consentProvisionPurposeMapping.patadmin],
+      code: provision,
+    };
+  }
+
   await medplum.createResource({
     resourceType: 'Consent',
     patient: createReference(patient),
@@ -651,6 +741,7 @@ export async function addConsent(
     category: [category],
     policyRule: policyRule,
     dateTime: date,
+    provision: provision ? consentProvision : undefined,
   });
 }
 
@@ -803,6 +894,69 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
 
   // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+/**
+ * Extracts patient contact information from questionnaire answers.
+ *
+ * @param answers - Questionnaire response answers
+ * @returns Array of ContactPoint resources for phone/email, or undefined if none found
+ */
+export function getPatientTelecom(
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): ContactPoint[] | undefined {
+  const patientTelecom: ContactPoint[] = [];
+
+  if (answers['phone']?.valueString) {
+    patientTelecom.push({
+      system: 'phone',
+      value: answers['phone'].valueString,
+    });
+  }
+
+  if (answers['phone-sms']?.valueString) {
+    patientTelecom.push({
+      system: 'sms',
+      value: answers['phone-sms'].valueString,
+    });
+  }
+
+  if (answers['email']?.valueString) {
+    patientTelecom.push({
+      system: 'email',
+      value: answers['email'].valueString,
+    });
+  }
+
+  return patientTelecom.length > 0 ? patientTelecom : undefined;
+}
+
+/**
+ * Sets rank for phone and SMS contacts based on patient preference.
+ * @param patientTelecom - Array of patient contact points
+ * @param answers - Questionnaire response answers
+ */
+export function setPatientTelecomRank(
+  patientTelecom: ContactPoint[] | undefined,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): void {
+  if (!patientTelecom?.length) {
+    return;
+  }
+
+  const phoneContact = patientTelecom.find((contact) => contact.system === 'phone');
+  const smsContact = patientTelecom.find((contact) => contact.system === 'sms');
+  const preferredPhoneMethod = answers['patient-contact-preference-preferred-method-for-phone-reminders']?.valueCoding;
+
+  if (phoneContact && smsContact) {
+    if (preferredPhoneMethod?.code === 'sms') {
+      phoneContact.rank = 2;
+      smsContact.rank = 1;
+    } else {
+      phoneContact.rank = 1;
+      smsContact.rank = 2;
+    }
+  }
 }
 
 function getRelatedPersonRelationshipFromCoverage(coverageRelationship: Coding): Coding | undefined {

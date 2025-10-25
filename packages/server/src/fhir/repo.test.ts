@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -9,15 +10,15 @@ import {
   encodeBase64,
   getReferenceString,
   isOk,
+  normalizeErrorString,
   notFound,
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Binary,
   BundleEntry,
   ElementDefinition,
@@ -26,7 +27,6 @@ import {
   OperationOutcome,
   Organization,
   Patient,
-  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -42,9 +42,10 @@ import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew, RegisterRequest } from '../auth/register';
-import { loadTestConfig } from '../config/loader';
-import { r4ProjectId } from '../constants';
+import type { RegisterRequest } from '../auth/register';
+import { registerNew } from '../auth/register';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
@@ -165,35 +166,71 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Read history', () =>
-    withTestContext(async () => {
-      const version1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: {
-          lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
-        },
-      });
-      expect(version1).toBeDefined();
-      expect(version1.id).toBeDefined();
+  describe('Read history', () => {
+    const versions: Record<string, WithId<Patient>> = {};
 
-      const version2 = await systemRepo.updateResource<Patient>({
-        resourceType: 'Patient',
-        id: version1.id,
-        active: true,
-        meta: {
-          lastUpdated: new Date().toISOString(),
-        },
-      });
-      expect(version2).toBeDefined();
-      expect(version2.id).toStrictEqual(version1.id);
-      expect(version2.meta?.versionId).not.toStrictEqual(version1.meta?.versionId);
+    beforeAll(async () =>
+      withTestContext(async () => {
+        systemRepo ??= getSystemRepo();
 
-      const history = await systemRepo.readHistory('Patient', version1.id);
-      expect(history).toBeDefined();
-      expect(history.entry?.length).toBe(2);
-      expect(history.entry?.[0]?.resource?.id).toBe(version2.id);
-      expect(history.entry?.[1]?.resource?.id).toBe(version1.id);
-    }));
+        versions.v1 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
+          },
+        });
+        expect(versions.v1.id).toBeDefined();
+
+        versions.v2 = await systemRepo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: versions.v1.id,
+          active: true,
+          meta: {
+            lastUpdated: new Date().toISOString(),
+          },
+        });
+
+        expect(versions.v2.id).toStrictEqual(versions.v1.id);
+        expect(versions.v2.meta?.versionId).not.toStrictEqual(versions.v1.meta?.versionId);
+      })
+    );
+
+    test.each([
+      ['no options', {}, ['v2', 'v1']],
+      ['limit', { limit: 1 }, ['v2']],
+      ['offset', { offset: 1 }, ['v1']],
+      ['limit and offset', { limit: 1, offset: 1 }, ['v1']],
+      ['negative offset', { offset: -1 }, ['v2', 'v1']],
+      ['large offset', { offset: 10000 }, []],
+      ['negative limit', { limit: -1 }, ['v2', 'v1']],
+      ['large limit', { limit: 100000 }, ['v2', 'v1']],
+    ])('options: %s', async (_, options, expected) => {
+      const history = await systemRepo.readHistory('Patient', versions.v1.id, options);
+      if (expected.length === 0) {
+        expect(history).toBeDefined();
+        expect(history.entry?.length).toBe(0);
+      } else {
+        expect(history).toBeDefined();
+        expect(history.entry?.length).toBe(expected.length);
+        for (let i = 0; i < expected.length; i++) {
+          expect(history.entry?.[i]?.resource?.id).toBe(versions[expected[i]].id);
+        }
+      }
+    });
+
+    test('with config.maxSearchOffset', async () => {
+      const prevMax = getConfig().maxSearchOffset;
+      getConfig().maxSearchOffset = 200;
+      try {
+        await systemRepo.readHistory('Patient', versions.v1.id, { offset: 300 });
+        throw new Error('Expected to throw');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toStrictEqual('Search offset exceeds maximum (got 300, max 200)');
+      } finally {
+        getConfig().maxSearchOffset = prevMax;
+      }
+    });
+  });
 
   test('Update patient', () =>
     withTestContext(async () => {
@@ -1194,6 +1231,11 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
   });
+  async function getProjectIdColumn(id: string): Promise<string | null> {
+    const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
+    const client = getSystemRepo().getDatabaseClient(DatabaseMode.WRITER);
+    return (await projectIdQuery.execute(client))[0].projectId;
+  }
 
   test('Super admin can edit User.meta.project', async () =>
     withTestContext(async () => {
@@ -1207,6 +1249,7 @@ describe('FHIR Repo', () => {
         lastName: randomUUID(),
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(user1.id)).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1215,6 +1258,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user2.meta?.project).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(user2.id)).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
@@ -1223,6 +1267,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
+      expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
     }));
 
   test('Handles caching of profile from linked project', async () =>
@@ -1318,7 +1363,7 @@ describe('FHIR Repo', () => {
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = getSystemRepo();
-    const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+    const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     const finalPostCommit = jest.fn();
 
     const error = new Error('Post-commit hook failed');
@@ -1371,16 +1416,22 @@ describe('FHIR Repo', () => {
         link: [],
       };
 
-      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
-
       // Postgres uses a 16-bit counter for placeholder formats internally,
-      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
-      for (let i = 0; i < 64 * 1024 + 1; i++) {
-        link.other.reference = 'Patient/' + randomUUID();
-        patient.link?.push(link);
+      // so (2^16 + 1) / 3 = (64k + 1) / 3 will definitely overflow it if not sent in smaller batches
+      // the division by three since there are 3 column placeholders per inserted row
+      for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 3); i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
-      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+      await repo.withTransaction(async (client) => {
+        const querySpy = jest.spyOn(client, 'query');
+        await repo.createResource<Patient>(patient);
+        const calls = querySpy.mock.calls;
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
+        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
+        querySpy.mockRestore();
+      });
     }));
 
   test('__version column', async () => {
@@ -1432,6 +1483,10 @@ describe('FHIR Repo', () => {
       // This is invalid in a similar way to some of the legacy UUIDs imported from other systems which we must continue to support
       // This test fails using the version of the validator.js isUUID (13.15.0) that caused the regression this PR fixed: https://github.com/medplum/medplum/pull/6289
       const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
+
+      // cleanup if it exists so the test can run again successfully
+      await systemRepo.expungeResource('Patient', nonconformantUuid);
+
       const patient = await repo.createResource<Patient>(
         {
           id: nonconformantUuid,

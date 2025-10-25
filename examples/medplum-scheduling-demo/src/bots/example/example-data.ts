@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, getReferenceString, MedplumClient } from '@medplum/core';
-import {
+import { createReference, getReferenceString } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
   Appointment,
   Bundle,
   BundleEntry,

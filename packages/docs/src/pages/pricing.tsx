@@ -9,7 +9,10 @@ export default function PricingPage(): JSX.Element {
     <Layout title="Pricing">
       <Container>
         <div className={styles.pricing}>
-          <h1>Pricing</h1>
+          <h1>Build the future of healthcare</h1>
+          <p style={{ maxWidth: 600, margin: '20px auto' }}>
+            Plans for startups, enterprises, and everyone in between.
+          </p>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
             For questions about pricing or to <Link href="https://cal.com/medplum/15">schedule a demo</Link> please
             reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
@@ -411,7 +414,7 @@ export default function PricingPage(): JSX.Element {
                 <td>Log Streaming</td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td>DIY</td>
                 <td>✔️</td>

@@ -3,11 +3,12 @@
 import { Button, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Practitioner, Task } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import type { Practitioner, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface ClaimTaskProps {
   readonly task: Task;

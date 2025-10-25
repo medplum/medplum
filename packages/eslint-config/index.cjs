@@ -3,6 +3,7 @@ module.exports = {
   plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
     'eslint:recommended',
+    'plugin:import/recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/strict',
     'plugin:jsdoc/recommended-typescript-error',
@@ -16,7 +17,6 @@ module.exports = {
     eqeqeq: ['error', 'always'],
     'no-constant-binary-expression': 'error',
     'no-constructor-return': 'error',
-    'no-duplicate-imports': 'error',
     'no-new-native-nonconstructor': 'error',
     'no-promise-executor-return': 'error',
     'no-self-compare': 'error',
@@ -127,8 +127,28 @@ module.exports = {
       },
     ],
 
+    // imports rules for isolatedModules and verbatimModuleSyntax
+    'no-duplicate-imports': 'off', // Disable base rule
+    'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
+    'import/no-duplicates': 'error',
+    'import/no-unresolved': 'off', // Handled by TypeScript
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      {
+        prefer: 'type-imports',
+        fixStyle: 'separate-type-imports',
+      },
+    ],
+    '@typescript-eslint/consistent-type-exports': 'error',
+
     // React Hooks
     'react-hooks/exhaustive-deps': 'error',
+    'react-hooks/set-state-in-effect': 'warn',
+    'react-hooks/refs': 'warn',
+    'react-hooks/immutability': 'warn',
+    'react-hooks/static-components': 'warn',
+    'react-hooks/preserve-manual-memoization': 'warn',
+    'react-hooks/purity': 'warn',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
@@ -153,6 +173,8 @@ module.exports = {
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/tag-lines': 'off',
+    'jsdoc/require-yields-type': 'off',
+    'jsdoc/require-throws-type': 'off',
 
     // Header
     'header/header': [
@@ -177,9 +199,8 @@ module.exports = {
     'packages/docs/sidebars.js',
     'packages/eslint-config/index.cjs',
     'packages/expo-medplum-polyfills/build',
-    'babel.config.js',
-    'babel.config.cjs',
-    'jest.sequencer.js',
+    'babel.config.*',
+    'jest.sequencer.*',
     'package-lock.json',
     'postcss.config.cjs',
     'rollup.config.mjs',
