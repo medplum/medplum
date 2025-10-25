@@ -576,8 +576,8 @@ export class App {
 
     if (this.hl7Clients.size !== 0) {
       const clientClosePromises = [];
-      for (const channel of this.channels.values()) {
-        clientClosePromises.push(channel.stop());
+      for (const client of this.hl7Clients.values()) {
+        clientClosePromises.push(client.close());
       }
       await Promise.all(clientClosePromises);
     }

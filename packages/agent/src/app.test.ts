@@ -3352,6 +3352,125 @@ describe('App', () => {
     }
     console.log = originalConsoleLog;
   });
+
+  test('App#stop should close all persistent HL7 clients', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitResponses: [] as AgentTransmitRequest[],
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:transmit:request') {
+          state.transmitResponses.push(command);
+        }
+      });
+    });
+
+    // Create an agent with keepAlive enabled
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      setting: [{ name: 'keepAlive', valueBoolean: true }],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Start multiple HL7 servers to create multiple persistent clients
+    const hl7Server1 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    hl7Server1.start(57100);
+
+    const hl7Server2 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    hl7Server2.start(57101);
+
+    // Wait for servers to start listening
+    while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
+      await sleep(100);
+    }
+
+    // Send messages to create persistent clients
+    const hl7MessageBody =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+      'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+      'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
+
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57100',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57101',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    while (app.hl7Clients.size !== 2) {
+      await sleep(100);
+    }
+
+    // Verify that persistent clients were created
+    expect(app.hl7Clients.size).toStrictEqual(2);
+
+    // Spy on client.close() to verify it's called
+    const closeSpies = Array.from(app.hl7Clients.values()).map((client) => jest.spyOn(client, 'close'));
+
+    // Stop the app
+    await app.stop();
+
+    expect(app.hl7Clients.size).toStrictEqual(0);
+
+    // Verify that close was called on all clients
+    for (const closeSpy of closeSpies) {
+      expect(closeSpy).toHaveBeenCalled();
+    }
+
+    // Clean up
+    await hl7Server1.stop();
+    await hl7Server2.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    console.log = originalConsoleLog;
+  });
 });
 
 class MockChildProcess extends EventEmitter implements ChildProcess {
