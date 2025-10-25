@@ -197,6 +197,7 @@ module.exports = {
     'packages/docs/markdown-to-mdx.cjs',
     'packages/docs/docusaurus.config.js',
     'packages/docs/sidebars.js',
+    'packages/generator/output/',
     'packages/eslint-config/index.cjs',
     'packages/expo-medplum-polyfills/build',
     'babel.config.*',
