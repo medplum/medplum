@@ -56,7 +56,7 @@ export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useMedplumNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
 
   if (medplum.isLoading()) {
     return null;
