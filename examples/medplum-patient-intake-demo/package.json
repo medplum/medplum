@@ -20,11 +20,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
     "@mantine/core": "8.3.2",
     "@mantine/hooks": "8.3.2",

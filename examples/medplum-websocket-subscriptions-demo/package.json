@@ -15,11 +15,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
     "@emotion/react": "11.14.0",
     "@mantine/core": "8.3.2",
