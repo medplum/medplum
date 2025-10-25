@@ -16,6 +16,7 @@ import {
   getDataType,
   getReferenceString,
   getSearchParameter,
+  invalidSearchOperator,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -1037,12 +1038,12 @@ function buildNormalSearchFilterExpression(
     case 'token':
     case 'uri':
       if (impl.type === SearchParameterType.BOOLEAN) {
-        return buildBooleanSearchFilter(table, impl, filter.operator, filter.value);
+        return buildBooleanSearchFilter(table, impl, filter);
       } else {
         return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
       }
     case 'reference':
-      return buildReferenceSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
+      return buildReferenceSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
     case 'date':
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
@@ -1085,8 +1086,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('id'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
@@ -1108,8 +1108,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('deleted'),
         },
-        filter.operator,
-        filter.value
+        filter
       );
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
@@ -1134,8 +1133,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('projectId'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     }
     case '_compartment': {
@@ -1148,8 +1146,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('compartments'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     }
     case '_filter':
@@ -1248,18 +1245,15 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
  * Adds an ID search filter as "WHERE" clause to the query builder.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(
-  table: string,
-  impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  values: string[]
-): Expression {
-  const column = new Column(table, impl.columnName);
+function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
 
+  const values = splitSearchOnComma(filter.value);
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
@@ -1269,8 +1263,8 @@ function buildIdSearchFilter(
     }
   }
 
-  const condition = buildEqualityCondition(impl, values, column);
-  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
+  const condition = buildEqualityCondition(impl, values, new Column(table, impl.columnName));
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
     return new Negation(condition);
   }
   return condition;
@@ -1302,17 +1296,19 @@ const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  value: string
+  filter: Filter
 ): Expression {
-  if (!allowedBooleanValues.includes(value)) {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
+  if (!allowedBooleanValues.includes(filter.value)) {
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
   return new Condition(
     new Column(table, impl.columnName),
-    operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
-    value
+    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
+    filter.value
   );
 }
 
@@ -1320,16 +1316,19 @@ function buildBooleanSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
+ * @param filter - The search filter.
  * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
+  filter: Filter,
   values: string[] | Column
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
     values = values.map((v) =>
@@ -1346,7 +1345,9 @@ function buildReferenceSearchFilter(
   } else {
     condition = new Condition(column, 'IN', values);
   }
-  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
+  return filter.operator === Operator.NOT || filter.operator === Operator.NOT_EQUALS
+    ? new Negation(condition)
+    : condition;
 }
 
 function buildReferenceEqualsCondition(
@@ -1401,6 +1402,9 @@ export function buildDateSearchFilter(
   impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   validateDateValue(filter.value);
 
   if (table === 'MeasureReport' && impl.columnName === 'period') {

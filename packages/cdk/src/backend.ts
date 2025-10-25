@@ -291,8 +291,6 @@ export class BackEnd extends Construct {
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
     if (config.containerInsightsV2) {
       clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
-    } else {
-      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
     }
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 

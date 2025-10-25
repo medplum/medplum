@@ -162,7 +162,6 @@ describe('App', () => {
       if (event.type === 'open' && !state.shouldConnect) {
         return;
       }
-      // eslint-disable-next-line no-invalid-this
       originalDispatchEvent.call(this, event);
     });
 
@@ -1220,12 +1219,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1350,12 +1344,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -3397,14 +3386,14 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server1.start(57100);
+    await hl7Server1.start(57100);
 
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server2.start(57101);
+    await hl7Server2.start(57101);
 
     // Wait for servers to start listening
     while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {

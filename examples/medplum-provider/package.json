@@ -17,15 +17,10 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
-    "@mantine/core": "7.17.8",
-    "@mantine/hooks": "7.17.8",
-    "@mantine/notifications": "7.17.8",
+    "@mantine/core": "8.3.2",
+    "@mantine/hooks": "8.3.2",
+    "@mantine/notifications": "8.3.2",
     "@medplum/core": "4.5.2",
     "@medplum/dosespot-react": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
@@ -38,7 +33,7 @@
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
-    "@types/node": "20.19.23",
+    "@types/node": "22.18.10",
     "@types/react": "19.2.2",
     "@types/react-big-calendar": "1.16.3",
     "@types/react-dom": "19.2.2",
@@ -58,6 +53,6 @@
   },
   "packageManager": "npm@10.9.4",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

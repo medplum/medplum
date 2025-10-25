@@ -12,9 +12,7 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
-import { CloudWatchLogger } from './cloudwatch';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -224,11 +222,7 @@ export function createAuditEvent(
 export function logAuditEvent(auditEvent: AuditEvent): void {
   const config = getConfig();
   if (config.logAuditEvents) {
-    if (config.auditEventLogGroup) {
-      getCloudWatchLogger(config).write(JSON.stringify(auditEvent));
-    } else {
-      console.log(JSON.stringify(auditEvent));
-    }
+    console.log(JSON.stringify(auditEvent));
   }
 }
 
@@ -237,23 +231,4 @@ function buildDurationExtension(duration: number): Extension {
     url: 'https://medplum.com/fhir/StructureDefinition/durationMs',
     valueInteger: Math.round(duration),
   };
-}
-
-/** @deprecated */
-let cloudWatchLogger: CloudWatchLogger | undefined = undefined;
-
-/**
- * @param config - The server config.
- * @returns The CloudWatch logger.
- * @deprecated
- */
-function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
-  if (!cloudWatchLogger) {
-    cloudWatchLogger = cloudWatchLogger = new CloudWatchLogger(
-      config.awsRegion,
-      config.auditEventLogGroup as string,
-      config.auditEventLogStream
-    );
-  }
-  return cloudWatchLogger;
 }

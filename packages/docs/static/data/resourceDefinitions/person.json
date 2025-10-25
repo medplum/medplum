@@ -441,73 +441,73 @@
       "name": "address",
       "type": "string",
       "description": " A server defined search that may match any of the string fields in the Address, including line, city, district, state, country, postalCode, and/or text\r",
-      "expression": "Person.address"
+      "expression": "Person.address | RelatedPerson.address"
     },
     {
       "name": "address-city",
       "type": "string",
       "description": " A city specified in an address\r",
-      "expression": "Person.address.city"
+      "expression": "Person.address.city | RelatedPerson.address.city"
     },
     {
       "name": "address-country",
       "type": "string",
       "description": " A country specified in an address\r",
-      "expression": "Person.address.country"
+      "expression": "Person.address.country | RelatedPerson.address.country"
     },
     {
       "name": "address-postalcode",
       "type": "string",
       "description": " A postal code specified in an address\r",
-      "expression": "Person.address.postalCode"
+      "expression": "Person.address.postalCode | RelatedPerson.address.postalCode"
     },
     {
       "name": "address-state",
       "type": "string",
       "description": " A state specified in an address\r",
-      "expression": "Person.address.state"
+      "expression": "Person.address.state | RelatedPerson.address.state"
     },
     {
       "name": "address-use",
       "type": "token",
       "description": " A use code specified in an address\r",
-      "expression": "Person.address.use"
+      "expression": "Person.address.use | RelatedPerson.address.use"
     },
     {
       "name": "birthdate",
       "type": "date",
       "description": " The person's date of birth\r",
-      "expression": "Person.birthDate"
+      "expression": "Person.birthDate | RelatedPerson.birthDate"
     },
     {
       "name": "email",
       "type": "token",
       "description": " A value in an email contact\r",
-      "expression": "Person.telecom.where(system = 'email')"
+      "expression": "Person.telecom.where(system = 'email') | RelatedPerson.telecom.where(system = 'email')"
     },
     {
       "name": "gender",
       "type": "token",
       "description": " The gender of the person\r",
-      "expression": "Person.gender"
+      "expression": "Person.gender | RelatedPerson.gender"
     },
     {
       "name": "phone",
       "type": "token",
       "description": " A value in a phone contact\r",
-      "expression": "Person.telecom.where(system = 'phone')"
+      "expression": "Person.telecom.where(system = 'phone') | RelatedPerson.telecom.where(system = 'phone')"
     },
     {
       "name": "phonetic",
       "type": "string",
       "description": " A portion of name using some kind of phonetic matching algorithm\r",
-      "expression": "Person.name"
+      "expression": "Person.name | RelatedPerson.name"
     },
     {
       "name": "telecom",
       "type": "token",
       "description": " The value in any kind of contact\r",
-      "expression": "Person.telecom"
+      "expression": "Person.telecom | RelatedPerson.telecom"
     },
     {
       "name": "identifier",

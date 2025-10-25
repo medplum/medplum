@@ -723,7 +723,7 @@ test.each([[Operator.IN], [Operator.NOT_IN]])('Condition.code :%s search', (oper
           },
         ],
       })
-    ).rejects.toThrow(/not supported/);
+    ).rejects.toThrow('Invalid modifier');
   })
 );
 

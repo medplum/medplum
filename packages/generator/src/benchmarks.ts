@@ -33,7 +33,7 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
   }
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   runBenchmarks(
     { title: 'Patient resource validation', fn: validatePatient },
     { title: 'StructureDefinition Bundle validation', fn: validateBundle },

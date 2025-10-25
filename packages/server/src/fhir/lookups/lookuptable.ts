@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule, WithId } from '@medplum/core';
-import { Operator as FhirOperator, splitSearchOnComma } from '@medplum/core';
+import {
+  Operator as FhirOperator,
+  invalidSearchOperator,
+  OperationOutcomeError,
+  splitSearchOnComma,
+} from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
@@ -148,6 +153,10 @@ export abstract class LookupTable {
     _param: SearchParameter,
     filter: Filter
   ): Expression {
+    if (filter.operator === FhirOperator.IN || filter.operator === FhirOperator.NOT_IN) {
+      throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+    }
+
     const lookupTableName = this.getTableName(resourceType);
     const columnName = this.getColumnName(filter.code);
 

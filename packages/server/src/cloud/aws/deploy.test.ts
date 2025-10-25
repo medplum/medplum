@@ -78,7 +78,7 @@ describe('Deploy', () => {
         return {
           FunctionName,
           Timeout: config.Timeout ?? DEFAULT_LAMBDA_TIMEOUT,
-          Runtime: 'nodejs20.x',
+          Runtime: 'nodejs22.x',
           Handler: 'index.handler',
           State: 'Active',
           Layers: [
