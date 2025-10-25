@@ -159,7 +159,7 @@ async function processMrconso(): Promise<void> {
   icd10Stream.end();
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main()
     .then(() => console.log('Done'))
     .catch(console.error);

@@ -197,6 +197,6 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   return undefined;
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main();
 }

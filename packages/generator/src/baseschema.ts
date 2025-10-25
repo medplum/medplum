@@ -27,10 +27,6 @@ export function main(): void {
   );
 }
 
-if (require.main === module) {
-  main();
-}
-
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
   return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && schema.kind !== 'logical' && !schema.parentType;
 }
@@ -47,4 +43,8 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
       addOutputType(outputTypes, innerType.name, innerType);
     }
   }
+}
+
+if (import.meta.main) {
+  main();
 }
