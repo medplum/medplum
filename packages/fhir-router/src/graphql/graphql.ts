@@ -44,16 +44,10 @@ import {
   specifiedRules,
   validate,
 } from 'graphql';
-<<<<<<< HEAD
 import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import type { FhirRepository } from '../repo';
 import { RepositoryMode } from '../repo';
-import { getGraphQLInputType } from './input-types';
-=======
-import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
-import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType, getPatchOperationInputType } from './input-types';
->>>>>>> e99326f6b (use patch-specific syntax to match post/put/patch operations)
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import type { GraphQLContext } from './utils';
 import {
@@ -711,14 +705,14 @@ function isLinkedResource(node: FieldNode): boolean {
   return node.name.value === 'resource';
 }
 
-<<<<<<< HEAD
 function getNextCursor(bundle: Bundle): string | undefined {
   const link = bundle.link?.find((l) => l.relation === 'next')?.url;
   if (!link) {
     return undefined;
   }
   return new URL(link).searchParams.get('_cursor') || undefined;
-=======
+}
+
 function buildPatchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return {
     id: {
@@ -730,5 +724,4 @@ function buildPatchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       description: 'Array of patch operations',
     },
   };
->>>>>>> e99326f6b (use patch-specific syntax to match post/put/patch operations)
 }
