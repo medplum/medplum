@@ -140,17 +140,50 @@ describe('CodeSystem validate-code', () => {
   test('Checks project', async () => {
     const otherAccessToken = await initTestAuth();
     const res = await request(app)
-      .post('/fhir/R4/CodeSystem/$validate-code')
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
       .set('Authorization', 'Bearer ' + otherAccessToken)
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       } as Parameters);
-    expect(res.status).toStrictEqual(400);
-    expect(res.body).toMatchObject<OperationOutcome>({
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
+    expect(res.status).toBe(404);
+  });
+
+  test('Falls back to validating system URL', async () => {
+    // System URL doesn't have a corresponding CodeSystem resource
+    const system = 'https://example.com/' + randomUUID();
+    // Test with matching system URL
+    const resY = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system, code: '1' } }],
+      } as Parameters);
+    expect(resY.status).toBe(200);
+    expect(resY.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: true }],
+    });
+
+    // Test with system URL that doesn't match
+    const resN = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: 'http://example.com/other-system' },
+          { name: 'coding', valueCoding: { system, code: '1' } },
+        ],
+      } as Parameters);
+    expect(resN.status).toBe(200);
+    expect(resN.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: false }],
     });
   });
 
