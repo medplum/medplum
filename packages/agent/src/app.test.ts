@@ -162,7 +162,6 @@ describe('App', () => {
       if (event.type === 'open' && !state.shouldConnect) {
         return;
       }
-      // eslint-disable-next-line no-invalid-this
       originalDispatchEvent.call(this, event);
     });
 
