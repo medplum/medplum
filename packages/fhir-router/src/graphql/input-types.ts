@@ -101,7 +101,11 @@ export function getPatchOperationInputType(): GraphQLInputObjectType {
       fields: {
         op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
         path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
-        value: { type: GraphQLString, description: 'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)' },
+        value: {
+          type: GraphQLString,
+          description:
+            'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
+        },
       },
     });
   }
