@@ -40,7 +40,7 @@ export class ClientStorage implements IClientStorage {
   private readonly prefix: string = '';
 
   constructor(storage?: Storage | StorageWithKeys, prefix?: string) {
-    if (!storage && typeof localStorage !== 'undefined') {
+    if (!storage && typeof globalThis.localStorage !== 'undefined') {
       this.storage = localStorage;
     } else if (!storage) {
       this.storage = new MemoryStorage();
@@ -48,7 +48,7 @@ export class ClientStorage implements IClientStorage {
       this.storage = storage;
     }
 
-    this.prefix = prefix ?? (this.storage === localStorage ? '@medplum:' : '');
+    this.prefix = prefix ?? (this.storage === globalThis.localStorage ? '@medplum:' : '');
   }
 
   private makeKey(key: string): string {
@@ -59,7 +59,7 @@ export class ClientStorage implements IClientStorage {
     // We clear differently for localStorage and for Storage types that specify a special 'keys' method
     // We will iterate through each item and check for our prefix
     // Otherwise if this storage is not localStorage or does not specify keys, then we just call clear on it
-    if (!isStorageWithKeys(this.storage) && this.storage !== localStorage) {
+    if (!isStorageWithKeys(this.storage) && this.storage !== globalThis.localStorage) {
       this.storage.clear();
       return;
     }
