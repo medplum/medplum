@@ -97,7 +97,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         Sign out
       </Menu.Item>
       <Text size="xs" c="dimmed" ta="center">
-        {props.version}
+        Medplum {props.version}
       </Text>
     </>
   );
