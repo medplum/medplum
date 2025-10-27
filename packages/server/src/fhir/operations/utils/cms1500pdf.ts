@@ -11,6 +11,7 @@ import {
 import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import path from 'path';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
+import { fileURLToPath } from 'url';
 import { getAuthenticatedContext } from '../../../context';
 
 const PAGE_WIDTH = 612;
@@ -105,7 +106,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: path.relative(process.cwd(), path.resolve('./static/cms1500.png')),
+        image: path.relative(process.cwd(), fileURLToPath(new URL('../../../../static/cms1500.png', import.meta.url))),
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
