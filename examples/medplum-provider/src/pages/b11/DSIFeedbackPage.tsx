@@ -25,7 +25,7 @@ export function DSIFeedbackPage(): JSX.Element {
       filters: [
         {
           code: 'questionnaire',
-          operator: Operator.IN,
+          operator: Operator.EQUALS,
           value: dsiQuestionnaires?.map((q) => `Questionnaire/${q.id}`).join(',') ?? '',
         },
       ],
