@@ -13,11 +13,6 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
     "@medplum/core": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
