@@ -245,11 +245,6 @@ function applyProjectAdminAccessPolicy(
     });
 
     accessPolicy.resource.push({
-      resourceType: 'PasswordChangeRequest',
-      readonly: true,
-    });
-
-    accessPolicy.resource.push({
       resourceType: 'UserSecurityRequest',
       readonly: true,
     });
