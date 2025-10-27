@@ -418,7 +418,7 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
         }
 
         const fileStream = fs.createWriteStream(zipFilePath);
-        response.body.pipe(fileStream);
+        response.body?.pipe(fileStream);
 
         // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
         fileStream.on('finish', async () => {

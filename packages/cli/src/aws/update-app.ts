@@ -94,7 +94,7 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
   try {
     const response = await fetch(tarballUrl);
     const extractor = safeTarExtractor(tmpDir);
-    await pipeline(response.body, extractor);
+    await pipeline(response.body as NodeJS.ReadableStream, extractor);
     return join(tmpDir, 'package', 'dist');
   } catch (error) {
     rmSync(tmpDir, { recursive: true, force: true });

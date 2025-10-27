@@ -91,12 +91,8 @@ fi
 
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
-# hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
-# jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
-# node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
-# uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@types/node commander hibp jose node-fetch npm zod uuid"
+MAJOR_EXCLUDE="@types/node commander npm zod"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
