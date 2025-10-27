@@ -133,7 +133,7 @@ mutation {
   <TabItem value="ts" label="Typescript">
     <MedplumCodeBlock language="ts">
 {`
-const result = await medplum.graphql(`
+const result = await medplum.graphql(\`
 mutation {
   PatientPatch(
     id: "example-id"
@@ -147,7 +147,7 @@ mutation {
     name { family given }
   }
 }
-`);
+\`);
 `}
     </MedplumCodeBlock>
   </TabItem>
