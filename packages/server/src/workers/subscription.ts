@@ -541,12 +541,14 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
   let error: Error | undefined = undefined;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   const fetchStartTime = Date.now();
   let fetchEndTime: number;
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    const response = await fetch(url, { method: 'POST', headers, body, signal: controller.signal });
     fetchEndTime = Date.now();
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
@@ -572,6 +574,8 @@ async function sendRestHook(
       subscription
     );
     error = ex as Error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const fetchDurationMs = fetchEndTime - fetchStartTime;

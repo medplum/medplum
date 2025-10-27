@@ -857,7 +857,7 @@ export async function getExternalUserInfo(
   const contentType = response.headers.get('content-type');
   try {
     if (contentType?.includes(ContentType.JSON)) {
-      return await response.json();
+      return (await response.json()) as Record<string, unknown>;
     } else if (contentType?.includes(ContentType.JWT)) {
       return parseJWTPayload(await response.text());
     }

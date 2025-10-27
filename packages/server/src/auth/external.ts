@@ -220,14 +220,14 @@ async function verifyExternalCode(
       body: params.toString(),
     });
 
-    const responseBody = await response.json();
+    const responseBody = (await response.json()) as Record<string, unknown> | undefined;
 
-    if (!response.ok) {
+    if (!response.ok || !responseBody?.id_token) {
       globalLogger.warn('Bad response from external auth check', { status: response.status, body: responseBody });
       throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
     }
 
-    return parseJWTPayload(responseBody.id_token);
+    return parseJWTPayload(responseBody.id_token as string);
   } catch (err: any) {
     globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));

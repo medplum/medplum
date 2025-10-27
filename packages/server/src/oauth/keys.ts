@@ -3,7 +3,7 @@
 import { Operator } from '@medplum/core';
 import type { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
-import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
+import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import type { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
@@ -88,10 +88,10 @@ const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
-const publicKeys: Record<string, KeyLike> = {};
+const publicKeys: Record<string, CryptoKey> = {};
 const jwks: { keys: JWK[] } = { keys: [] };
 let jsonWebKey: JsonWebKey | undefined;
-let signingKey: KeyLike | undefined;
+let signingKey: CryptoKey | undefined;
 
 export async function initKeys(config: MedplumServerConfig): Promise<void> {
   issuer = undefined;
@@ -158,7 +158,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     jwks.keys.push(publicKey);
 
     // Convert from JWK to PKCS and add to the collection of public keys
-    publicKeys[jwk.id as string] = (await importJWK(publicKey)) as KeyLike;
+    publicKeys[jwk.id as string] = (await importJWK(publicKey)) as CryptoKey;
   }
 
   // Use the first key as the signing key
@@ -166,7 +166,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
   signingKey = (await importJWK({
     ...(jsonWebKey as JWK),
     use: 'sig',
-  })) as KeyLike;
+  })) as CryptoKey;
 }
 
 /**
@@ -182,8 +182,8 @@ export function getJwks(): { keys: JWK[] } {
  * Returns the current signing key.
  * @returns The current signing key.
  */
-export function getSigningKey(): KeyLike {
-  return signingKey as KeyLike;
+export function getSigningKey(): CryptoKey {
+  return signingKey as CryptoKey;
 }
 
 /**
@@ -285,7 +285,7 @@ export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; p
  * @param protectedHeader - The JWT protected header.
  * @returns The public key.
  */
-function getKeyForHeader(protectedHeader: JWSHeaderParameters): KeyLike {
+function getKeyForHeader(protectedHeader: JWSHeaderParameters): CryptoKey {
   const kid = protectedHeader.kid;
   if (!kid) {
     throw new Error('Missing kid header');
