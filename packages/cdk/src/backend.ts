@@ -205,6 +205,7 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
         removalPolicy: RemovalPolicy.RETAIN,
+        autoMinorVersionUpgrade: config.rdsAutoMinorVersionUpgrade,
       };
 
       const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
