@@ -14,14 +14,9 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
-    "@mantine/core": "7.17.8",
-    "@mantine/notifications": "7.17.8",
+    "@mantine/core": "8.3.2",
+    "@mantine/notifications": "8.3.2",
     "@medplum/core": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
     "@medplum/health-gorilla-core": "4.5.2",
@@ -31,7 +26,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@vitejs/plugin-react": "5.1.0",
-    "eslint": "8.57.1",
+    "eslint": "9.38.0",
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "0.4.24",
     "postcss": "8.5.6",

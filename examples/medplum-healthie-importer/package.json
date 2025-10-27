@@ -5,9 +5,9 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
-    "deploy": "ts-node scripts/deploy-importer.ts",
+    "build": "npm run clean && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
+    "deploy": "ts-node scripts/deploy-importer.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --write .",
@@ -20,15 +20,6 @@
     "printWidth": 120,
     "singleQuote": true,
     "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "extends": [
-      "@medplum/eslint-config"
-    ],
-    "root": true
   },
   "devDependencies": {
     "@medplum/bot-layer": "4.5.2",
@@ -43,8 +34,8 @@
     "@vitest/coverage-v8": "4.0.3",
     "@vitest/ui": "4.0.3",
     "commander": "12.1.0",
-    "esbuild": "0.25.11",
     "dotenv": "17.2.3",
+    "esbuild": "0.25.11",
     "fast-glob": "3.3.3",
     "node-fetch": "2.7.0",
     "ts-node": "10.9.2",

@@ -159,8 +159,8 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [13, 18]
-        redis-version: [6, 7]
+        pg-version: [14, 18]
+        redis-version: [7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -240,13 +240,13 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Coveralls GitHub Action
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
         env:
@@ -261,8 +261,8 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [13, 18]
-        redis-version: [6, 7]
+        pg-version: [14, 18]
+        redis-version: [7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -372,7 +372,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7) }}
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}

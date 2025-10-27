@@ -43,7 +43,6 @@ async function prompt(
   validationFunc: (str: string) => boolean | string,
   validationMessage: string
 ): Promise<string> {
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const defaultPrompt = defaultValue ? ` (${defaultValue})` : '';
     const answer = (await terminal.question(`${question}${defaultPrompt}: `)) || defaultValue;

@@ -14,15 +14,10 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "dependencies": {
-    "@mantine/core": "7.17.8",
-    "@mantine/hooks": "7.17.8",
-    "@mantine/notifications": "7.17.8",
+    "@mantine/core": "8.3.2",
+    "@mantine/hooks": "8.3.2",
+    "@mantine/notifications": "8.3.2",
     "@medplum/core": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
     "next": "15.5.4",
@@ -37,8 +32,8 @@
     "@types/node": "20.19.23",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "eslint": "8.57.1",
-    "eslint-config-next": "15.5.4",
+    "eslint": "9.38.0",
+    "eslint-config-next": "15.5.6",
     "typescript": "5.9.3"
   },
   "packageManager": "npm@10.9.4",
