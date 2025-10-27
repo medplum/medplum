@@ -551,7 +551,7 @@ export class App {
       return;
     }
 
-    channel.start();
+    await channel.start();
     this.channels.set(definition.name, channel);
   }
 
