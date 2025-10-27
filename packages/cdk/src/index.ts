@@ -31,6 +31,6 @@ export async function main(context?: Record<string, string>): Promise<void> {
   app.synth();
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main().catch(console.error);
 }
