@@ -89,8 +89,8 @@ export async function validateCodingInValueSet(valueSet: ValueSet, codings: Codi
 
   const systemUrl = found?.system ?? valueSet.compose?.include?.[0]?.system;
   if (found && systemUrl) {
-    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', systemUrl);
-    return codeSystem.content !== 'example' ? validateCoding(codeSystem, found) : found;
+    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', systemUrl).catch(() => undefined);
+    return validateCoding(codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
   }
   return undefined;
 }
