@@ -173,6 +173,11 @@
             "code": "transaction-bundles",
             "display": "Transaction Bundles",
             "definition": "Use database transactions for transaction Bundles"
+          },
+          {
+            "code": "validate-terminology",
+            "display": "Validate Terminology Bindings",
+            "definition": "Validate that resource fields contain codes from the expected ValueSet"
           }
         ]
       }
