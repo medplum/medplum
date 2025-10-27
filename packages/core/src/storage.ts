@@ -12,6 +12,23 @@ export interface IClientStorage {
 }
 
 /**
+ * A `Storage` that supports getting a list of all contained item keys via a `keys` method.
+ *
+ * Useful when you want to namespace your storage with the `prefix` feature of `ClientStorage`.
+ */
+export interface StorageWithKeys extends Storage {
+  keys(): string[];
+}
+
+/**
+ * @param storage - The Storage to test whether or not it supports the `keys` method.
+ * @returns True if the Storage has a `keys` method, otherwise returns false.
+ */
+export function isStorageWithKeys(storage: Storage): storage is StorageWithKeys {
+  return storage.keys && typeof storage.keys === 'function';
+}
+
+/**
  * The ClientStorage class is a utility class for storing strings and objects.
  *
  * When using MedplumClient in the browser, it will be backed by browser localStorage.
@@ -19,12 +36,19 @@ export interface IClientStorage {
  * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
 export class ClientStorage implements IClientStorage {
-  private readonly storage: IStorage;
-  private readonly prefix: string;
+  private readonly storage: Storage | StorageWithKeys;
+  private readonly prefix: string = '';
 
-  constructor(storage?: IStorage, prefix?: string) {
-    this.storage = storage ?? (typeof localStorage !== 'undefined' ? new WebLocalStorage() : new MemoryStorage());
-    this.prefix = prefix ?? '@medplum:';
+  constructor(storage?: Storage | StorageWithKeys, prefix?: string) {
+    if (!storage && typeof localStorage !== 'undefined') {
+      this.storage = localStorage;
+    } else if (!storage) {
+      this.storage = new MemoryStorage();
+    } else {
+      this.storage = storage;
+    }
+
+    this.prefix = prefix ?? (this.storage === localStorage ? '@medplum:' : '');
   }
 
   private makeKey(key: string): string {
@@ -32,8 +56,17 @@ export class ClientStorage implements IClientStorage {
   }
 
   clear(): void {
-    this.storage
-      .keys()
+    // We clear differently for localStorage and for Storage types that specify a special 'keys' method
+    // We will iterate through each item and check for our prefix
+    // Otherwise if this storage is not localStorage or does not specify keys, then we just call clear on it
+    if (!isStorageWithKeys(this.storage) && this.storage !== localStorage) {
+      this.storage.clear();
+      return;
+    }
+
+    // The fallback here assumes this.storage is a Storage from the storage Class
+    const keys = isStorageWithKeys(this.storage) ? this.storage.keys() : Object.keys(this.storage);
+    keys
       .filter((key) => key.startsWith(this.prefix))
       .forEach((key) => {
         this.storage.removeItem(key);
@@ -59,52 +92,6 @@ export class ClientStorage implements IClientStorage {
 
   setObject<T>(key: string, value: T): void {
     this.setString(this.makeKey(key), value ? stringify(value) : undefined);
-  }
-}
-
-/**
- * IStorage is an interface that extends the Storage interface with a keys() method.
- */
-export interface IStorage extends Storage {
-  keys(): string[];
-}
-
-/**
- * The WebLocalStorage class is a wrapper around the browser localStorage object to implement IStorage.
- */
-export class WebLocalStorage implements IStorage {
-  private readonly storage: Storage;
-
-  constructor(storage: Storage = localStorage) {
-    this.storage = storage;
-  }
-
-  public get length(): number {
-    return this.storage.length;
-  }
-
-  clear(): void {
-    this.storage.clear();
-  }
-
-  getItem(key: string): string | null {
-    return this.storage.getItem(key);
-  }
-
-  key(index: number): string | null {
-    return this.storage.key(index);
-  }
-
-  removeItem(key: string): void {
-    this.storage.removeItem(key);
-  }
-
-  setItem(key: string, value: string): void {
-    this.storage.setItem(key, value);
-  }
-
-  keys(): string[] {
-    return Object.keys(this.storage);
   }
 }
 
@@ -170,10 +157,6 @@ export class MemoryStorage implements Storage {
    */
   key(index: number): string | null {
     return Array.from(this.data.keys())[index];
-  }
-
-  keys(): string[] {
-    return Array.from(this.data.keys());
   }
 }
 
