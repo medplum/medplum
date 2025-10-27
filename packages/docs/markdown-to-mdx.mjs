@@ -1,5 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+/* global console */
+/* global process */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+import fs from 'node:fs';
+import path from 'node:path';
 
 function copyDir(sourceDir, targetDir) {
   const files = fs.readdirSync(sourceDir, { withFileTypes: true });
@@ -84,9 +89,9 @@ function escapeMdx(fileName, text) {
   return result;
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   if (process.argv.length < 4) {
-    console.log('Usage: node copy-markdown.cjs <sourceDir> <targetDir>');
+    console.log('Usage: node markdown-to-mdx.mjs <sourceDir> <targetDir>');
     process.exit(1);
   }
   const [_node, _script, source, target] = process.argv;

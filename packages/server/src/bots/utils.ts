@@ -27,6 +27,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
 import { getConfig } from '../config/loader';
 import type { AuthenticatedRequestContext } from '../context';
 import { buildTracingExtension } from '../context';
@@ -362,4 +363,30 @@ export async function createAuditEvent(
 
 function tail(str: string, n: number): string {
   return str.substring(str.length - n);
+}
+
+/**
+ * Determines the recommended JavaScript file extension for the bot code.
+ * @param bot - The bot.
+ * @param code - The bot code.
+ * @returns The recommended file extension.
+ */
+export function getJsFileExtension(bot: Bot, code: string): string {
+  // Need to determine if the bot code is CJS or ESM
+  // 1. If the code filename uses .cjs or .mjs, then that determines the module type
+  const allowedExtensions = ['.cjs', '.mjs'];
+  const fileExtension = bot.executableCode?.title ? extname(bot.executableCode?.title) : undefined;
+  if (fileExtension && allowedExtensions.includes(fileExtension)) {
+    return fileExtension;
+  }
+
+  // 2. If the code exclusively uses `export` or `module.exports`, then that determines the module type
+  const codeContainsExport = /\bexport\b/.test(code);
+  const codeContainsModuleExports = /\bmodule\.exports\b/.test(code);
+  if (codeContainsExport && !codeContainsModuleExports) {
+    return '.mjs';
+  }
+
+  // 3. Default to CJS
+  return '.cjs';
 }

@@ -23,7 +23,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -89,7 +89,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -158,7 +158,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
     env:
@@ -240,13 +240,13 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Coveralls GitHub Action
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
         env:
@@ -260,7 +260,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
     env:
@@ -342,10 +342,10 @@ jobs:
       - name: Start server and app
         run: |
           pushd packages/server
-          npm run start &
+          npm start > server.log 2>&1 &
           popd
           pushd packages/app
-          npm run preview &
+          npm run preview > app.log 2>&1 &
           popd
         env:
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
@@ -358,6 +358,7 @@ jobs:
           until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
               echo "Max retries reached. Deployment not ready."
+              cat packages/server/server.log
               exit 1
             fi
             
@@ -372,7 +373,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
+        if: ${{ failure() || (matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
@@ -389,7 +390,7 @@ jobs:
       pull-requests: write
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: 20
+      NODE_VERSION: '22'
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
