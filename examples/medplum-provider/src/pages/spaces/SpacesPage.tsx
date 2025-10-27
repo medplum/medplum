@@ -376,10 +376,7 @@ export function SpacesPage(): JSX.Element {
         {/* Right Panel for Resource Details */}
         {selectedResource && (
           <Paper withBorder className={classes.previewResource}>
-            <Group
-              justify="space-between"
-              p="md"
-            >
+            <Group justify="space-between" p="md">
               <Text size="lg" fw={600}>
                 Resource Details
               </Text>
