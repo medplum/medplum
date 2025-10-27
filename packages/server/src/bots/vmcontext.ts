@@ -51,6 +51,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     console: botConsole,
     fetch,
     require,
+    process,
     ContentType,
     Hl7Message,
     MedplumClient,
