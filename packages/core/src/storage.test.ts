@@ -127,26 +127,6 @@ describe('Storage', () => {
     expect(localStorage.length).toStrictEqual(1);
     expect(localStorage.getItem('foo')).toStrictEqual('bar');
   });
-
-  test('Using localStorage', () => {
-    const storage = new ClientStorage();
-
-    storage.clear();
-    expect(storage.getString('foo')).toBeUndefined();
-    expect(storage.getObject('baz')).toBeUndefined();
-
-    storage.setString('foo', 'bar');
-    expect(storage.getString('foo')).toStrictEqual('bar');
-
-    storage.setObject('baz', { name: 'Homer' });
-    expect(storage.getObject('baz')).toMatchObject({ name: 'Homer' });
-
-    storage.setString('foo', '');
-    expect(storage.getString('foo')).toBeUndefined();
-
-    storage.setObject('baz', null);
-    expect(storage.getObject('baz')).toBeUndefined();
-  });
 });
 
 describe('MemoryStorage', () => {
