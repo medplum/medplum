@@ -33,7 +33,7 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode?: boolean, options?: Hl7ConnectionOptions): void {
+  async start(port: number, encoding?: string, enhancedMode?: boolean, options?: Hl7ConnectionOptions): Promise<void> {
     if (encoding) {
       this.setEncoding(encoding);
     }
@@ -55,22 +55,30 @@ export class Hl7Server {
       });
     });
 
-    // Node errors have a code
-    const errorListener = async (e: Error & { code?: string }): Promise<void> => {
-      if (e?.code === 'EADDRINUSE') {
-        await sleep(50);
-        server.close();
-        server.listen(port);
-      }
-    };
-    server.on('error', errorListener);
+    await new Promise<void>((resolve) => {
+      const listenOnPort = (port: number): void => {
+        server.listen(port, resolve);
+      };
 
-    server.once('listening', () => {
-      server.off('error', errorListener);
+      // Node errors have a code
+      const errorListener = async (e: Error & { code?: string }): Promise<void> => {
+        if (e?.code === 'EADDRINUSE') {
+          await sleep(50);
+          server.close();
+          listenOnPort(port);
+        }
+      };
+
+      server.on('error', errorListener);
+
+      server.once('listening', () => {
+        server.off('error', errorListener);
+      });
+
+      listenOnPort(port);
+
+      this.server = server;
     });
-
-    server.listen(port);
-    this.server = server;
   }
 
   /**

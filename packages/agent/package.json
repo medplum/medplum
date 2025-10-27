@@ -13,11 +13,12 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "files": [
     "dist"
   ],
   "scripts": {
-    "agent": "ts-node src/main.ts",
+    "agent": "tsx src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
@@ -43,6 +44,6 @@
     "postject": "1.0.0-alpha.6"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }
