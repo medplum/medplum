@@ -158,7 +158,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 22]
+        node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
     env:
@@ -260,7 +260,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 22]
+        node-version: [22, 24]
         pg-version: [14, 18]
         redis-version: [7]
     env:
