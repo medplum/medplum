@@ -3386,14 +3386,14 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server1.start(57100);
+    await hl7Server1.start(57100);
 
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server2.start(57101);
+    await hl7Server2.start(57101);
 
     // Wait for servers to start listening
     while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
