@@ -11,6 +11,8 @@ const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
   ...typeCache,
 };
 
+let patchOperationInputType: GraphQLInputObjectType | undefined;
+
 export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
   let result = inputTypeCache[inputType];
   if (!result) {
@@ -89,4 +91,23 @@ function buildInputPropertyField(
     capitalize(elementDefinitionType.code as string)
   );
   fields[propertyName] = fieldConfig;
+}
+
+export function getPatchOperationInputType(): GraphQLInputObjectType {
+  if (!patchOperationInputType) {
+    patchOperationInputType = new GraphQLInputObjectType({
+      name: 'PatchOperationInput',
+      description: 'A JSON Patch operation as per RFC 6902',
+      fields: {
+        op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
+        path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
+        value: {
+          type: GraphQLString,
+          description:
+            'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
+        },
+      },
+    });
+  }
+  return patchOperationInputType;
 }
