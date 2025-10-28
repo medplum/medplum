@@ -9,6 +9,7 @@ export interface IClientStorage {
   setString(key: string, value: string | undefined): void;
   getObject<T>(key: string): T | undefined;
   setObject<T>(key: string, value: T): void;
+  makeKey(key: string): string;
 }
 
 /**
