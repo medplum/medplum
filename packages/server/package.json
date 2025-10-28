@@ -13,15 +13,16 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
+    "build": "npm run clean && tsc && node build.mjs",
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
-    "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
+    "dev": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
-    "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
+    "migrate": "tsx src/migrations/migrate-main.ts",
+    "start": "node --import ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
     "test:seed": "jest seed.test.ts --testTimeout=400000"
   },
@@ -92,7 +93,7 @@
     "rfc6902": "5.1.2",
     "semver": "7.7.3",
     "uuid": "11.1.0",
-    "validator": "13.15.15",
+    "validator": "13.15.20",
     "ws": "8.18.3",
     "zod": "3.25.76"
   },
@@ -107,7 +108,7 @@
     "@types/express": "5.0.4",
     "@types/json-schema": "7.0.15",
     "@types/mailparser": "3.4.6",
-    "@types/node": "20.19.23",
+    "@types/node": "22.18.10",
     "@types/node-fetch": "2.6.13",
     "@types/nodemailer": "7.0.3",
     "@types/pg": "8.15.5",
@@ -122,10 +123,9 @@
     "openapi3-ts": "4.5.0",
     "set-cookie-parser": "2.7.1",
     "supertest": "7.1.4",
-    "superwstest": "2.1.1",
-    "ts-node-dev": "2.0.0"
+    "superwstest": "2.1.1"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

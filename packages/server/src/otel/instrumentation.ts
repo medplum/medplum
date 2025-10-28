@@ -130,10 +130,7 @@ export async function shutdownOpenTelemetry(): Promise<void> {
   }
 }
 
-if (require.main === undefined) {
-  // There are 2 ways that this file can be loaded:
-  // 1. As a "require" from the command line when starting the server
-  // 2. As an "import" from the unit tests
+if (process.env.NODE_ENV !== 'test') {
   // We want to initialize OpenTelemetry only when starting the server
   initOpenTelemetry();
 }

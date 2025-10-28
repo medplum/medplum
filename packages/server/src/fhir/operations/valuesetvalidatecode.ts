@@ -87,9 +87,10 @@ export async function validateCodingInValueSet(valueSet: ValueSet, codings: Codi
     }
   }
 
-  if (found) {
-    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
-    return codeSystem.content !== 'example' ? validateCoding(codeSystem, found) : found;
+  const systemUrl = found?.system ?? valueSet.compose?.include?.[0]?.system;
+  if (found && systemUrl) {
+    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', systemUrl).catch(() => undefined);
+    return validateCoding(codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
   }
   return undefined;
 }
@@ -101,7 +102,9 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     );
   }
 
-  const candidates = codings.filter((c) => c.system === include.system && c.code) as (Coding & { code: string })[];
+  const candidates = codings.filter((c) => c.code && (!c.system || c.system === include.system)) as (Coding & {
+    code: string;
+  })[];
   if (!candidates.length) {
     return undefined;
   }
