@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Group, Paper, Text, ThemeIcon } from '@mantine/core';
+import { Box, Group, Loader, Paper, Text, ThemeIcon } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { useResource } from '@medplum/react';
 import { IconFileText } from '@tabler/icons-react';
@@ -18,9 +18,7 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
   if (!resource) {
     return (
       <Paper withBorder p="sm" className={classes.resourceBox}>
-        <Text size="sm" c="dimmed">
-          Unable to find resource
-        </Text>
+        <Loader />
       </Paper>
     );
   }
