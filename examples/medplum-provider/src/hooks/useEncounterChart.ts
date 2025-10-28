@@ -8,7 +8,6 @@ import type {
   ClinicalImpression,
   Encounter,
   Practitioner,
-  Reference,
   Task,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
