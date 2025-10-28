@@ -368,22 +368,20 @@ class TemplateExtractor implements CrawlerVisitor {
       path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
     }
 
-    if (!results.length) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
-      return;
-    }
-
     const isArrayElement = path.endsWith(']');
     if (isArrayElement) {
       path = replacePathIndex(path, this.currentContext().indexOffset);
       this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element before inserting copies
+    } else if (!results.length) {
+      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      return;
     }
 
     switch (extension.value.url) {
       case contextExtension:
         for (let i = 0; i < results.length; i++) {
           if (isArrayElement && i) {
-            path = replacePathIndex(path, this.currentContext().indexOffset + i);
+            path = replacePathIndex(path, this.currentContext().indexOffset);
           }
 
           // Clone template object and remove SDC extension from it
@@ -438,7 +436,6 @@ class TemplateExtractor implements CrawlerVisitor {
       const resource = deepClone(template.value);
       const patch = this.getTemplatePatch();
       applyPatch(resource, patch);
-      console.log('===== PATCHED', JSON.stringify(resource.telecom, null, 2), patch);
       this.bundle.entry?.push(this.createBundleEntry(resource, extension.value as Extension));
     }
   }
