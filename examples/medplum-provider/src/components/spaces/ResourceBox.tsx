@@ -35,7 +35,7 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
       .readReference({ reference: resourceReference })
       .then(setResource)
       .catch(setError)
-      .finally(() => setLoading(false))
+      .finally(() => setLoading(false));
   }, [medplum, resourceReference]);
 
   if (loading) {
@@ -50,7 +50,6 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
       </Paper>
     );
   }
-
 
   if (error || !resource) {
     return (
