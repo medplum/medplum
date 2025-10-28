@@ -52,6 +52,7 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
   desiredServerCount: ValueOrExternalSecret<number>;
@@ -79,8 +80,7 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: ValueOrExternalSecret<boolean>;
+  containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -97,8 +97,8 @@ export interface MedplumSourceInfraConfig {
   };
   environment?: StringMap;
 
-  rdsIdsMajorVersionSuffix?: boolean;
-  rdsPersistentParameterGroups?: boolean;
+  rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
+  rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
 
   fireLens?: {
     enabled: true;
@@ -152,6 +152,7 @@ export interface MedplumInfraConfig {
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
   rdsClusterParameters?: StringMap;
+  rdsAutoMinorVersionUpgrade?: boolean;
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
@@ -182,8 +183,7 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: boolean;
+  containerRegistryCredentialsSecretArn?: string;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

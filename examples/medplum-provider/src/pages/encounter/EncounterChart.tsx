@@ -16,6 +16,8 @@ import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { BillingTab } from './BillingTab';
 import { createReference, getReferenceString } from '@medplum/core';
+import { ChartNoteStatus } from '../../types/encounter';
+import { SignAddendumCard } from '../../components/encounter/SignAddemdum';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
 const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
@@ -50,7 +52,8 @@ export const EncounterChart = (): JSX.Element => {
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
-  const [provenance, setProvenance] = useState<Provenance | undefined>(undefined);
+  const [provenances, setProvenances] = useState<Provenance[]>([]);
+  const [chartNoteStatus, setChartNoteStatus] = useState<ChartNoteStatus>(ChartNoteStatus.Unsigned);
 
   useEffect(() => {
     if (!encounter) {
@@ -59,11 +62,18 @@ export const EncounterChart = (): JSX.Element => {
 
     const fetchProvenance = async (): Promise<void> => {
       const provenance = await medplum.searchResources('Provenance', `target=${getReferenceString(encounter)}`);
-      setProvenance(provenance[0]);
+      setProvenances(provenance);
+      if (provenance.length > 0 && clinicalImpression?.status === 'completed') {
+        setChartNoteStatus(ChartNoteStatus.SignedAndLocked);
+      } else if (provenance.length > 0) {
+        setChartNoteStatus(ChartNoteStatus.Signed);
+      } else {
+        setChartNoteStatus(ChartNoteStatus.Unsigned);
+      }
     };
 
     fetchProvenance().catch((err) => showErrorNotification(err));
-  }, [encounter, medplum]);
+  }, [clinicalImpression, encounter, medplum]);
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -116,28 +126,30 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
-  const handleSign = async (practitioner: Reference<Practitioner>): Promise<void> => {
+  const handleSign = async (practitioner: Reference<Practitioner>, lock: boolean): Promise<void> => {
     if (!encounter) {
       return;
     }
 
-    // Complete all incomplete tasks
-    const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
-    const updatedTasks = await Promise.all(
-      tasksToUpdate.map((task) =>
-        medplum.updateResource({
-          ...task,
-          status: 'completed',
-        })
-      )
-    );
+    if (lock) {
+      // Complete all incomplete tasks
+      const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
+      const updatedTasks = await Promise.all(
+        tasksToUpdate.map((task) =>
+          medplum.updateResource({
+            ...task,
+            status: 'completed',
+          })
+        )
+      );
 
-    setTasks(
-      tasks.map((task) => {
-        const updated = updatedTasks.find((t) => t.id === task.id);
-        return updated || task;
-      })
-    );
+      setTasks(
+        tasks.map((task) => {
+          const updated = updatedTasks.find((t) => t.id === task.id);
+          return updated || task;
+        })
+      );
+    }
 
     // Create provenance record with signature
     const newProvenance = await medplum.createResource<Provenance>({
@@ -183,7 +195,13 @@ export const EncounterChart = (): JSX.Element => {
       ],
     });
 
-    setProvenance(newProvenance);
+    setProvenances([...provenances, newProvenance]);
+
+    if (lock) {
+      setChartNoteStatus(ChartNoteStatus.SignedAndLocked);
+    } else {
+      setChartNoteStatus(ChartNoteStatus.Signed);
+    }
   };
 
   if (!patient || !encounter) {
@@ -195,7 +213,7 @@ export const EncounterChart = (): JSX.Element => {
       <Stack justify="space-between" gap={0}>
         <EncounterHeader
           encounter={encounter}
-          signed={provenance !== undefined}
+          chartNoteStatus={chartNoteStatus}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
@@ -204,6 +222,8 @@ export const EncounterChart = (): JSX.Element => {
         <Box p="md">
           {activeTab === 'notes' && (
             <Stack gap="md">
+              <SignAddendumCard encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
+
               {clinicalImpression && (
                 <Card withBorder shadow="sm" mt="md">
                   <Title>Fill chart note</Title>
@@ -214,12 +234,17 @@ export const EncounterChart = (): JSX.Element => {
                     autosize
                     minRows={4}
                     maxRows={8}
-                    disabled={provenance !== undefined}
+                    disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
                   />
                 </Card>
               )}
               {tasks.map((task: Task) => (
-                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} enabled={provenance === undefined} />
+                <TaskPanel
+                  key={task.id}
+                  task={task}
+                  onUpdateTask={updateTaskList}
+                  enabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+                />
               ))}
             </Stack>
           )}

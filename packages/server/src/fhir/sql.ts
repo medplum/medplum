@@ -527,6 +527,8 @@ export class SqlBuilder {
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
+    } else if (value === null || value === undefined) {
+      this.append('NULL');
     } else {
       this.values.push(value);
       this.sql.push('$' + this.values.length);
@@ -1131,6 +1133,13 @@ export class InsertQuery extends BaseQuery {
       sql.appendIdentifier(columnName);
       first = false;
     }
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    if (!this.values?.length) {
+      return [];
+    }
+    return super.execute(conn);
   }
 }
 

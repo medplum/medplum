@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
-  FileBuilder,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -12,9 +12,7 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Client, escapeIdentifier } from 'pg';
+import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { SearchParameterImplementation } from '../fhir/searchparameter';
@@ -45,8 +43,6 @@ import type {
 } from './types';
 import { SerialColumnTypes } from './types';
 
-const SCHEMA_DIR = resolve(__dirname, 'schema');
-
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
 const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn];
@@ -62,55 +58,6 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 
     if (!isPopulated(bundle.entry)) {
       throw new Error('Empty search parameter bundle: ' + filename);
-    }
-  }
-}
-
-export async function main(): Promise<void> {
-  const dryRun = process.argv.includes('--dryRun');
-
-  indexStructureDefinitionsAndSearchParameters();
-
-  const dbClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'medplum',
-    user: 'medplum',
-    password: 'medplum',
-  });
-  const options: BuildMigrationOptions = {
-    dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
-    dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
-    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
-    writeSchema: process.argv.includes('--writeSchema'),
-    skipMigration: process.argv.includes('--skipMigration'),
-  };
-
-  if (!options.skipMigration) {
-    await dbClient.connect();
-
-    const b = new FileBuilder();
-    await buildMigration(b, options);
-
-    await dbClient.end();
-
-    if (dryRun) {
-      console.log(b.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-      rewriteMigrationExports();
-    }
-  }
-
-  if (options.writeSchema) {
-    const schemaBuilder = new FileBuilder();
-    buildSchema(schemaBuilder);
-    if (dryRun) {
-      console.log(schemaBuilder.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
     }
   }
 }
@@ -196,7 +143,12 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+      ctx.postDeployAction(
+        () => {
+          actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+        },
+        `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
+      );
     }
   }
 
@@ -1454,40 +1406,6 @@ function buildIndexSql(
   return result;
 }
 
-function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
-}
-
-function getVersionFromFilename(filename: string): number {
-  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
-}
-
-function getNextSchemaVersion(): number {
-  const [lastSchemaVersion] = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => b - a);
-
-  return lastSchemaVersion + 1;
-}
-
-function rewriteMigrationExports(): void {
-  const b = new FileBuilder();
-  const filenamesWithoutExt = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => a - b)
-    .map((version) => `v${version}`);
-  for (const filename of filenamesWithoutExt) {
-    b.append(`export * as ${filename} from './${filename}';`);
-    if (filename === 'v9') {
-      b.append('/* CAUTION: LOAD-BEARING COMMENT */');
-      b.append(
-        '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */'
-      );
-    }
-  }
-  writeFileSync(`${SCHEMA_DIR}/index.ts`, b.toString(), { flag: 'w' });
-}
-
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
@@ -1509,12 +1427,13 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
 
 /**
  * Translate SERIAL types to INT types based on {@link https://www.postgresql.org/docs/16/datatype-numeric.html#DATATYPE-SERIAL}
+ * Translate IDENTITY types to NOT NULL
  *
  * @param tableDef - the table definition
  * @param inputColumnDef - the column definition to desugar
- * @returns the desugared column definition if it was a SERIAL type, otherwise the original column definition
+ * @returns the desugared column definition if it was a SERIAL/IDENTITY column, otherwise the original column definition
  */
-function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
+function desugarColumnDefinition(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
   if (SerialColumnTypes.has(inputColumnDef.type.toLocaleUpperCase())) {
     const columnDef = deepClone(inputColumnDef);
     columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
@@ -1523,6 +1442,14 @@ function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: Col
     columnDef.defaultValue = `nextval('${escapeIdentifier(sequenceName)}'::regclass)`;
     return columnDef;
   }
+
+  if (inputColumnDef.identity) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.identity = undefined;
+    columnDef.notNull = true;
+    return columnDef;
+  }
+
   return inputColumnDef;
 }
 
@@ -1535,7 +1462,7 @@ export function columnDefinitionsEqual(table: TableDefinition, a: ColumnDefiniti
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
-  return deepEquals(desugarSerialColumnTypes(table, a), desugarSerialColumnTypes(table, b));
+  return deepEquals(desugarColumnDefinition(table, a), desugarColumnDefinition(table, b));
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
@@ -1561,11 +1488,4 @@ function ensureEndsWithSemicolon(query: string): string {
     return query;
   }
   return query + ';';
-}
-
-if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }

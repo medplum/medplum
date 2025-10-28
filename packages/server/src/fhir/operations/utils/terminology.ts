@@ -29,7 +29,17 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     ownProjectOnly?: boolean;
   }
 ): Promise<WithId<T>> {
+  if (!url) {
+    throw new OperationOutcomeError(badRequest(`${resourceType} not specified`));
+  }
   const { repo, project } = getAuthenticatedContext();
+
+  const versionDelim = url.lastIndexOf('|');
+  if (versionDelim > 0) {
+    url = url.slice(0, versionDelim);
+    options = { ...options, version: options?.version ?? url.slice(versionDelim + 1) };
+  }
+
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
   if (options?.version) {
     filters.push({ code: 'version', operator: Operator.EQUALS, value: options.version });

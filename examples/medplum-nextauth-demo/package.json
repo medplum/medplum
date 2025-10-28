@@ -1,6 +1,6 @@
 {
   "name": "medplum-nextauth-demo",
-  "version": "4.4.3",
+  "version": "4.5.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,17 +14,12 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "dependencies": {
-    "@mantine/core": "7.17.8",
-    "@mantine/hooks": "7.17.8",
-    "@mantine/notifications": "7.17.8",
-    "@medplum/core": "4.4.3",
-    "@medplum/eslint-config": "4.4.3",
+    "@mantine/core": "8.3.2",
+    "@mantine/hooks": "8.3.2",
+    "@mantine/notifications": "8.3.2",
+    "@medplum/core": "4.5.2",
+    "@medplum/eslint-config": "4.5.2",
     "next": "15.5.4",
     "next-auth": "4.24.11",
     "postcss": "8.5.6",
@@ -33,16 +28,16 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.4.3",
-    "@types/node": "20.19.20",
+    "@medplum/fhirtypes": "4.5.2",
+    "@types/node": "22.18.10",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.1",
-    "eslint": "8.57.1",
-    "eslint-config-next": "15.5.4",
+    "@types/react-dom": "19.2.2",
+    "eslint": "9.38.0",
+    "eslint-config-next": "15.5.6",
     "typescript": "5.9.3"
   },
   "packageManager": "npm@10.9.4",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

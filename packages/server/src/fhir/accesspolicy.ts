@@ -68,6 +68,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
+    validateTerminology: project.features?.some((f) => f === 'validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
   });
 }
@@ -242,11 +243,6 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
       readonlyFields: ['project', 'user'],
-    });
-
-    accessPolicy.resource.push({
-      resourceType: 'PasswordChangeRequest',
-      readonly: true,
     });
 
     accessPolicy.resource.push({

@@ -205,6 +205,7 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
         removalPolicy: RemovalPolicy.RETAIN,
+        autoMinorVersionUpgrade: config.rdsAutoMinorVersionUpgrade,
       };
 
       const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
@@ -291,8 +292,6 @@ export class BackEnd extends Construct {
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
     if (config.containerInsightsV2) {
       clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
-    } else {
-      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
     }
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
@@ -467,9 +466,18 @@ export class BackEnd extends Construct {
       });
     }
 
+    let containerRegistryCredentials: secretsmanager.ISecret | undefined = undefined;
+    if (config.containerRegistryCredentialsSecretArn) {
+      containerRegistryCredentials = secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'RegistryCredentialsSecret',
+        config.containerRegistryCredentialsSecretArn
+      );
+    }
+
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -484,7 +492,7 @@ export class BackEnd extends Construct {
       for (const container of config.additionalContainers) {
         this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
           containerName: container.name,
-          image: this.getContainerImage(config, container.image),
+          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
           command: container.command,
           environment: container.environment,
           logging: this.logDriver,
@@ -689,9 +697,14 @@ export class BackEnd extends Construct {
    * Otherwise, the image name is assumed to be a Docker Hub image.
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
+   * @param credentials - The credentials for the image repository.
    * @returns The container image.
    */
-  private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {
+  private getContainerImage(
+    config: MedplumInfraConfig,
+    imageName: string,
+    credentials: secretsmanager.ISecret | undefined
+  ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
       `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
@@ -710,7 +723,7 @@ export class BackEnd extends Construct {
     }
 
     // Otherwise, use the standard container image
-    return ecs.ContainerImage.fromRegistry(imageName);
+    return ecs.ContainerImage.fromRegistry(imageName, { credentials });
   }
 }
 

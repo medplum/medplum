@@ -1,78 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, TextInput, Button, Paper, Text, Box, ScrollArea, Group, Select } from '@mantine/core';
+import { Stack, Button, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
-import { IconSend, IconTrash } from '@tabler/icons-react';
+import { IconTrash, IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
+import { MessageWithLinks } from '../../components/MessageWithLinks';
+import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
+import type { Message } from '../../types/spaces';
+import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
+import { ConversationList } from './ConversationList';
+import { ChatInput } from './ChatInput';
+import classes from './SpacesPage.module.css';
+import type { Identifier } from '@medplum/fhirtypes';
 
-interface Message {
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  content: string | null;
-  tool_calls?: any[];
-  tool_call_id?: string;
-}
-
-const SYSTEM_MESSAGE: Message = {
-  role: 'system',
-  content: `You are a helpful healthcare assistant with access to FHIR data through the Medplum platform.
-
-FHIR BASICS:
-FHIR (Fast Healthcare Interoperability Resources) is a standard for healthcare data exchange. Key concepts:
-- Resources: Structured data types like Patient, Observation, Medication
-- References: Links between resources (e.g., Patient/123)
-- Search: Query resources using parameters
-
-AVAILABLE RESOURCES:
-- Patient, Practitioner, Observation, Condition, MedicationRequest, Appointment, Task, Encounter, DiagnosticReport, DocumentReference
-
-SEARCH EXAMPLES:
-- Patient?name=John
-- Patient/abc-123
-- Observation?subject=Patient/123
-
-COMMON TASKS:
-- "Find patient John" → GET Patient?name=John
-- "Show patient details" → GET Patient/{id}
-- "Create a task" → POST Task
-- "Find all observations for patient X" → GET Observation?subject=Patient/{id}
-
-Always maintain conversation context and reference previous searches or data when relevant.`,
+const botId: Identifier = {
+  value: 'ai-api-bot',
+  system: 'https://www.medplum.com/bots',
 };
-
-const MODELS = [
-  { value: 'gpt-5', label: 'GPT-5' },
-  { value: 'o1', label: 'O1' },
-  { value: 'o1-mini', label: 'O1 Mini' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'gpt-4', label: 'GPT-4' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-];
-
-const FHIR_TOOLS = [
-  {
-    type: 'function',
-    function: {
-      name: 'fhir_request',
-      description:
-        'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
-      parameters: {
-        type: 'object',
-        properties: {
-          method: {
-            type: 'string',
-            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-          },
-          path: { type: 'string' },
-          body: { type: 'object' },
-        },
-        required: ['method', 'path'],
-      },
-    },
-  },
-];
 
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
@@ -80,33 +26,46 @@ export function SpacesPage(): JSX.Element {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
+  const [topicId, setTopicId] = useState<string | undefined>();
+  const [historyOpened, setHistoryOpened] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
-
-  // Load saved model from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('selectedModel');
-    if (saved) {
-      setSelectedModel(saved);
-    }
-  }, []);
-
-  // Persist model to localStorage
-  useEffect(() => {
-    localStorage.setItem('selectedModel', selectedModel);
-  }, [selectedModel]);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport) {
+    if (viewport && hasStarted) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, hasStarted]);
 
   const handleClear = (): void => {
     setMessages([SYSTEM_MESSAGE]);
+    setHasStarted(false);
+    setTopicId(undefined);
+  };
+
+  const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
+    try {
+      setLoading(true);
+      const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
+      setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
+      setTopicId(selectedTopicId);
+      setHasStarted(true);
+    } catch (error: any) {
+      showErrorNotification(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHistoryClick = (): void => {
+    setRefreshKey((prev) => prev + 1); // Refresh the conversation list
+    setHistoryOpened((prev) => !prev);
   };
 
   const handleSend = async (): Promise<void> => {
@@ -114,35 +73,58 @@ export function SpacesPage(): JSX.Element {
       return;
     }
 
+    const isFirstMessage = !hasStarted;
+    if (isFirstMessage) {
+      setHasStarted(true);
+    }
+
     const userMessage: Message = { role: 'user', content: input };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     setInput('');
+    setCurrentFhirRequest(undefined);
     setLoading(true);
 
     try {
-      // First request
-      let response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+      // Create topic on first message
+      let currentTopicId = topicId;
+      if (isFirstMessage) {
+        const topic = await createConversationTopic(medplum, input.substring(0, 100), selectedModel);
+        currentTopicId = topic.id;
+        setTopicId(currentTopicId);
+      }
+
+      // Save user message
+      if (currentTopicId) {
+        await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
+      }
+      let response = await medplum.executeBot(botId, {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
           { name: 'model', valueString: selectedModel },
           { name: 'tools', valueString: JSON.stringify(FHIR_TOOLS) },
+          { name: 'temperature', valueString: '0.3' },
         ],
       });
 
       const toolCallsStr = response.parameter?.find((p: any) => p.name === 'tool_calls')?.valueString;
+      const allResourceRefs: string[] = [];
 
       if (toolCallsStr) {
         const toolCalls = JSON.parse(toolCallsStr);
-        const assistantMessageWithToolCalls: any = {
+        const assistantMessageWithToolCalls: Message = {
           role: 'assistant',
           content: null,
           tool_calls: toolCalls,
         };
         currentMessages.push(assistantMessageWithToolCalls);
 
-        // Execute FHIR calls locally
+        // Save tool call message
+        if (currentTopicId) {
+          await saveMessage(medplum, currentTopicId, assistantMessageWithToolCalls, currentMessages.length - 1);
+        }
+
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'fhir_request') {
             const args =
@@ -151,6 +133,7 @@ export function SpacesPage(): JSX.Element {
                 : toolCall.function.arguments;
 
             const { method, path, body } = args;
+            setCurrentFhirRequest(`${method} ${path}`);
             let result;
             try {
               if (method === 'GET') {
@@ -159,36 +142,88 @@ export function SpacesPage(): JSX.Element {
                 result = await medplum.post(medplum.fhirUrl(path), body);
               } else if (method === 'PUT') {
                 result = await medplum.put(medplum.fhirUrl(path), body);
-              } else if (method === 'PATCH') {
-                result = await medplum.patch(medplum.fhirUrl(path), body);
               } else if (method === 'DELETE') {
                 result = await medplum.delete(medplum.fhirUrl(path));
               }
-            } catch (error: any) {
-              result = { error: error.message };
-            }
 
-            currentMessages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(result),
-            });
+              if (result?.resourceType === 'Bundle' && result?.entry) {
+                result.entry.forEach((entry: any) => {
+                  if (entry.resource?.resourceType && entry.resource?.id) {
+                    allResourceRefs.push(`${entry.resource.resourceType}/${entry.resource.id}`);
+                  }
+                });
+              } else if (result?.resourceType && result?.id) {
+                allResourceRefs.push(`${result.resourceType}/${result.id}`);
+              }
+
+              const toolMessage: Message = {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(result),
+              };
+              currentMessages.push(toolMessage);
+
+              // Save tool response message
+              if (currentTopicId) {
+                await saveMessage(medplum, currentTopicId, toolMessage, currentMessages.length - 1);
+              }
+            } catch (err: any) {
+              const errorResult = {
+                error: true,
+                message: `Unable to execute ${method}: ${path}`,
+                details: err.message || 'Unknown error',
+              };
+
+              const toolErrorMessage: Message = {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(errorResult),
+              };
+              currentMessages.push(toolErrorMessage);
+
+              // Save tool error message
+              if (currentTopicId) {
+                await saveMessage(medplum, currentTopicId, toolErrorMessage, currentMessages.length - 1);
+              }
+            }
           }
         }
 
-        // Send updated messages after FHIR requests
-        response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
+        // Second AI request: summarize the FHIR response
+        // Use the existing conversation context but replace system message with summary version
+        const summaryMessages = [
+          {
+            role: 'system',
+            content: SUMMARY_SYSTEM_MESSAGE,
+          },
+          ...currentMessages.slice(1), // Skip original system message, include all conversation
+        ];
+
+        response = await medplum.executeBot(botId, {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'messages', valueString: JSON.stringify(currentMessages) },
+            { name: 'messages', valueString: JSON.stringify(summaryMessages) },
             { name: 'model', valueString: selectedModel },
+            { name: 'temperature', valueString: '0.3' },
           ],
         });
       }
 
+      // To be replaced for Resource display
       const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
       if (content) {
-        setMessages([...currentMessages, { role: 'assistant', content }]);
+        let finalContent = content;
+        if (allResourceRefs.length > 0) {
+          const uniqueRefs = [...new Set(allResourceRefs)];
+          finalContent = `${content}\n\nResources Found:\n${uniqueRefs.map((ref) => `• ${ref}`).join('\n')}`;
+        }
+        const assistantMessage: Message = { role: 'assistant', content: finalContent };
+        setMessages([...currentMessages, assistantMessage]);
+
+        // Save assistant message
+        if (currentTopicId) {
+          await saveMessage(medplum, currentTopicId, assistantMessage, currentMessages.length);
+        }
       }
     } catch (error: any) {
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${error.message}` }]);
@@ -197,7 +232,7 @@ export function SpacesPage(): JSX.Element {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent): void => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend().catch((error) => showErrorNotification(error));
@@ -208,98 +243,143 @@ export function SpacesPage(): JSX.Element {
     (m) => m.role !== 'system' && m.role !== 'tool' && !(m.role === 'assistant' && m.tool_calls)
   );
 
-  return (
-    <Stack h="calc(100vh - 68px)" p="md">
-      <Group justify="space-between">
-        <Text size="xl" fw={700}>
-          AI Assistant
-        </Text>
-
-        <Group gap="xs">
-          <Text size="sm" c="dimmed">
-            {visibleMessages.length} messages
-          </Text>
-          <Button size="xs" variant="subtle" color="red" onClick={handleClear} leftSection={<IconTrash size={14} />}>
-            Clear
-          </Button>
-        </Group>
-      </Group>
-
-      <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
-        <Stack gap="md" p="xs">
-          {visibleMessages.map((message, index) => (
-            <Paper
-              key={index}
-              p="md"
-              withBorder
+  // Centered layout before first message
+  if (!hasStarted) {
+    return (
+      <Flex h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+        <Transition mounted={historyOpened} transition="slide-right" duration={200}>
+          {(styles) => (
+            <Box
+              w={320}
               style={{
-                alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '70%',
-                backgroundColor: message.role === 'user' ? '#F8F0FC' : '#f5f5f5',
+                ...styles,
               }}
             >
-              <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
-            </Paper>
-          ))}
-          {loading && (
-            <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-              <Text c="dimmed">{messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}</Text>
-            </Paper>
+              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+            </Box>
           )}
-        </Stack>
-      </ScrollArea>
+        </Transition>
 
-      <Box>
-        <Paper p="md" radius="lg" withBorder style={{ backgroundColor: '#fff' }}>
-          <Group gap="md" wrap="nowrap" align="center">
-            <TextInput
-              placeholder="Ask, search, or make anything..."
-              value={input}
-              onChange={(e) => setInput(e.currentTarget.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              style={{ flex: 1 }}
-              styles={{
-                input: {
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: '15px',
-                  padding: 0,
-                },
-              }}
+        <Box p="md">
+          <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
+            <IconHistory size={20} />
+          </ActionIcon>
+        </Box>
+
+        <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
+          <Box
+            w="100%"
+            className={hasStarted ? classes.fadeOut : undefined}
+            style={{
+              maxWidth: '700px',
+            }}
+          >
+            <Text size="xl" fw={700} mb="xs">
+              Start a New Space
+            </Text>
+
+            <ChatInput
+              input={input}
+              onInputChange={setInput}
+              onKeyDown={handleKeyDown}
+              onSend={handleSend}
+              loading={loading}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              backgroundColor="white"
             />
-            <Select
-              size="xs"
-              data={MODELS}
-              value={selectedModel}
-              onChange={(value) => setSelectedModel(value ?? 'gpt-5')}
-              styles={{
-                input: {
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#666',
-                  minWidth: '100px',
-                  cursor: 'pointer',
-                },
-              }}
-            />
-            <Button
-              radius="xl"
-              size="sm"
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              w="36px"
-              h="36px"
-              bg="#7c3aed"
-              p={0}
-            >
-              <IconSend size={18} />
+          </Box>
+        </Stack>
+      </Flex>
+    );
+  }
+
+  // Chat layout after first message
+  return (
+    <Flex h="calc(100vh - 68px)">
+      <Transition mounted={historyOpened} transition="slide-right" duration={200}>
+        {(styles) => (
+          <Box
+            style={{
+              ...styles,
+              width: '320px',
+              borderRight: '1px solid #e9ecef',
+              position: 'relative',
+            }}
+          >
+            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+          </Box>
+        )}
+      </Transition>
+
+      <Stack
+        p="md"
+        className={classes.fadeIn}
+        style={{
+          flex: 1,
+        }}
+      >
+        <Group justify="space-between">
+          <Group gap="xs">
+            <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
+              <IconHistory size={20} />
+            </ActionIcon>
+
+            <Text size="xl" fw={700}>
+              AI Assistant
+            </Text>
+          </Group>
+
+          <Group gap="xs">
+            <Text size="sm" c="dimmed">
+              {visibleMessages.length} messages
+            </Text>
+            <Button size="xs" variant="subtle" color="red" onClick={handleClear} leftSection={<IconTrash size={14} />}>
+              Clear
             </Button>
           </Group>
-        </Paper>
-      </Box>
-    </Stack>
+        </Group>
+
+        <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
+          <Stack gap="md" p="xs">
+            {visibleMessages.map((message, index) => (
+              <Paper
+                key={index}
+                p="md"
+                withBorder
+                style={{
+                  alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '70%',
+                  backgroundColor: message.role === 'user' ? '#F8F0FC' : '#f5f5f5',
+                }}
+              >
+                {message.role === 'assistant' ? (
+                  <MessageWithLinks content={message.content || ''} />
+                ) : (
+                  <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                )}
+              </Paper>
+            ))}
+            {loading && (
+              <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
+                <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
+              </Paper>
+            )}
+          </Stack>
+        </ScrollArea>
+
+        <Box w="50%" style={{ margin: '0 auto' }}>
+          <ChatInput
+            input={input}
+            onInputChange={setInput}
+            onKeyDown={handleKeyDown}
+            onSend={handleSend}
+            loading={loading}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+          />
+        </Box>
+      </Stack>
+    </Flex>
   );
 }

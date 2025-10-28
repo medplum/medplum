@@ -425,6 +425,49 @@ describe('ConceptMap/$import', () => {
       issue: [expect.objectContaining({ details: { text: 'Source code for mapping is required' } })],
     });
   });
+
+  test('Ignores unspecified source code in ConceptMap resource', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      url: 'http://example.com/ConceptMap/' + randomUUID(),
+      group: [
+        {
+          source: SNOMED,
+          element: [
+            {
+              code: '364075005',
+              target: [{ code: '8886-4', equivalence: 'equivalent' }],
+            },
+            {
+              target: [{ code: 'unmapped', equivalence: 'equal' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const pool = getDatabasePool(DatabaseMode.READER);
+    const results = await getMappingRows(pool, conceptMap);
+    expect(results).toHaveLength(1);
+  });
+
+  test('Handles ConceptMap with no valid mappings', async () => {
+    const map: ConceptMap = await repo.createResource({
+      resourceType: 'ConceptMap',
+      group: [
+        {
+          target: 'urn:uuid:f2334818-8254-4c9f-95a4-335109e78c25',
+          element: [{ target: [{ equivalence: 'disjoint' }] }],
+        },
+      ],
+      status: 'active',
+    });
+
+    const pool = getDatabasePool(DatabaseMode.READER);
+    const results = await getMappingRows(pool, map);
+    expect(results).toHaveLength(0);
+  });
 });
 
 async function getMappingRows(pool: Pool, conceptMap: ConceptMap): Promise<any[]> {

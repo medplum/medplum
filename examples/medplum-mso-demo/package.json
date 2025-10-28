@@ -1,6 +1,6 @@
 {
   "name": "medplum-mso-demo",
-  "version": "4.4.3",
+  "version": "4.5.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,34 +15,29 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
-    "@mantine/core": "7.17.8",
-    "@mantine/hooks": "7.17.8",
-    "@mantine/notifications": "7.17.8",
-    "@medplum/core": "4.4.3",
-    "@medplum/eslint-config": "4.4.3",
-    "@medplum/fhirtypes": "4.4.3",
-    "@medplum/react": "4.4.3",
+    "@mantine/core": "8.3.2",
+    "@mantine/hooks": "8.3.2",
+    "@mantine/notifications": "8.3.2",
+    "@medplum/core": "4.5.2",
+    "@medplum/eslint-config": "4.5.2",
+    "@medplum/fhirtypes": "4.5.2",
+    "@medplum/react": "4.5.2",
     "@tabler/icons-react": "3.35.0",
-    "@types/node": "20.19.20",
+    "@types/node": "22.18.10",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.1",
-    "@vitejs/plugin-react": "5.0.4",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.1.0",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-router": "7.9.4",
     "typescript": "5.9.3",
-    "vite": "7.1.9"
+    "vite": "7.1.12"
   },
   "packageManager": "npm@10.9.4",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

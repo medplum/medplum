@@ -143,13 +143,18 @@ function jsonPathToFhirPath(path: string): string {
 }
 
 function tryGetElementDefinition(resourceType: string, fhirPath: string): InternalSchemaElement | undefined {
-  const details = getSearchParameterDetails(resourceType, {
-    resourceType: 'SearchParameter',
-    base: [resourceType],
-    code: resourceType + '.' + fhirPath,
-    expression: resourceType + '.' + fhirPath,
-  } as SearchParameter);
-  return details?.elementDefinitions?.[0];
+  try {
+    const details = getSearchParameterDetails(resourceType, {
+      resourceType: 'SearchParameter',
+      base: [resourceType],
+      code: resourceType + '.' + fhirPath,
+      expression: resourceType + '.' + fhirPath,
+    } as SearchParameter);
+    return details?.elementDefinitions?.[0];
+  } catch (err) {
+    console.warn('Failed to get element definition', { resourceType, fhirPath, err });
+    return undefined;
+  }
 }
 
 function touchUpValue(

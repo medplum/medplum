@@ -305,4 +305,37 @@ describe('ValueSet validate-code', () => {
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
   });
+
+  test('Falls back to validating system URL when CodeSystem unavailable', async () => {
+    const system = 'http://example.com/other-codes-' + randomUUID();
+    const res = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/test-valueset-' + randomUUID(),
+        status: 'active',
+        compose: { include: [{ system }] },
+      } satisfies ValueSet);
+    expect(res.status).toStrictEqual(201);
+    const vs = res.body as ValueSet;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: vs.url },
+          { name: 'coding', valueCoding: { system, code: randomUUID() } },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toBeUndefined();
+  });
 });

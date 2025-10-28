@@ -1,6 +1,8 @@
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* global process */
-/* eslint no-console: "off" */
+/* global console */
 
 import esbuild from 'esbuild';
 import { writeFileSync } from 'node:fs';
@@ -13,6 +15,9 @@ const options = {
   resolveExtensions: ['.js', '.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
+  define: {
+    'import.meta.main': 'true',
+  },
 };
 
 // The single executable application feature only supports running a single embedded CommonJS file.

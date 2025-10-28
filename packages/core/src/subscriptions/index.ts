@@ -10,7 +10,7 @@ import { normalizeErrorString, OperationOutcomeError, serverError, validationErr
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import type { ProfileResource, WithId } from '../utils';
-import { deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
@@ -553,13 +553,22 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  // Should eventually remove this once we've seen who is relying on this behavior
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    logger?.warn('Subscription suppressed due to mismatched meta.account', {
-      subscriptionId: subscription.id,
-      resourceId: resource.id,
-    });
-    return false;
+  const subscriptionAccounts = extractAccountReferences(subscription.meta) ?? [];
+  const resourceAccounts = extractAccountReferences(resource.meta) ?? [];
+
+  if (subscriptionAccounts.length) {
+    // Check if there is any common account between the subscription and the resource
+    if (
+      !subscriptionAccounts.some((subAccount) =>
+        resourceAccounts.some((resAccount) => resAccount.reference === subAccount.reference)
+      )
+    ) {
+      logger?.debug('Subscription suppressed due to mismatched accounts', {
+        subscriptionId: subscription.id,
+        resource: getReferenceString(resource),
+      });
+      return false;
+    }
   }
 
   return true;

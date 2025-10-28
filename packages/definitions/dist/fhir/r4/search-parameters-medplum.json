@@ -539,24 +539,6 @@
       }
     },
     {
-      "fullUrl": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
-      "resource": {
-        "resourceType": "SearchParameter",
-        "id": "PasswordChangeRequest-user",
-        "url": "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
-        "version": "4.0.1",
-        "name": "user",
-        "status": "draft",
-        "publisher": "Medplum",
-        "description": "The user for the password change request.",
-        "code": "user",
-        "base": ["PasswordChangeRequest"],
-        "type": "reference",
-        "expression": "PasswordChangeRequest.user",
-        "target": ["User"]
-      }
-    },
-    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
       "resource": {
         "resourceType": "SearchParameter",

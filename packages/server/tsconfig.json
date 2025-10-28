@@ -1,8 +1,14 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "composite": true,
+    "rootDir": "src"
   },
+  "references": [
+    { "path": "../core" },
+    { "path": "../ccda" },
+    { "path": "../definitions" },
+    { "path": "../fhir-router" }
+  ],
   "include": ["src/**/*.ts", "src/**/*.json"]
 }

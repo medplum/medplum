@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "4.4.3",
+  "version": "4.5.2",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -28,10 +28,8 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "bin": {
-    "medplum": "./dist/cjs/index.cjs"
-  },
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -45,6 +43,9 @@
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
   "types": "dist/cjs/index.d.ts",
+  "bin": {
+    "medplum": "./dist/cjs/index.cjs"
+  },
   "files": [
     "dist/cjs",
     "dist/esm"
@@ -55,20 +56,20 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "medplum": "ts-node src/index.ts",
+    "medplum": "tsx src/index.ts",
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.907.0",
-    "@aws-sdk/client-cloudformation": "3.907.0",
-    "@aws-sdk/client-cloudfront": "3.907.0",
-    "@aws-sdk/client-ecs": "3.907.0",
-    "@aws-sdk/client-s3": "3.907.0",
-    "@aws-sdk/client-ssm": "3.907.0",
-    "@aws-sdk/client-sts": "3.907.0",
-    "@aws-sdk/types": "3.901.0",
-    "@medplum/core": "4.4.3",
-    "@medplum/hl7": "4.4.3",
+    "@aws-sdk/client-acm": "3.917.0",
+    "@aws-sdk/client-cloudformation": "3.917.0",
+    "@aws-sdk/client-cloudfront": "3.917.0",
+    "@aws-sdk/client-ecs": "3.917.0",
+    "@aws-sdk/client-s3": "3.917.0",
+    "@aws-sdk/client-ssm": "3.917.0",
+    "@aws-sdk/client-sts": "3.917.0",
+    "@aws-sdk/types": "3.914.0",
+    "@medplum/core": "4.5.2",
+    "@medplum/hl7": "4.5.2",
     "commander": "12.1.0",
     "dotenv": "17.2.3",
     "fast-glob": "3.3.3",
@@ -78,13 +79,13 @@
     "tar": "7.5.1"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.4.3",
-    "@medplum/mock": "4.4.3",
+    "@medplum/fhirtypes": "4.5.2",
+    "@medplum/mock": "4.5.2",
     "@types/node-fetch": "2.6.13",
     "@types/semver": "7.7.1",
     "aws-sdk-client-mock": "4.1.0"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

@@ -551,7 +551,7 @@ export class App {
       return;
     }
 
-    channel.start();
+    await channel.start();
     this.channels.set(definition.name, channel);
   }
 
@@ -576,8 +576,8 @@ export class App {
 
     if (this.hl7Clients.size !== 0) {
       const clientClosePromises = [];
-      for (const channel of this.channels.values()) {
-        clientClosePromises.push(channel.stop());
+      for (const client of this.hl7Clients.values()) {
+        clientClosePromises.push(client.close());
       }
       await Promise.all(clientClosePromises);
     }
@@ -636,7 +636,7 @@ export class App {
   private trySendToHl7Connection(): void {
     while (this.hl7Queue.length > 0) {
       const msg = this.hl7Queue.shift();
-      if (msg && msg.type === 'agent:transmit:response' && msg.channel) {
+      if (msg?.type === 'agent:transmit:response' && msg.channel) {
         const channel = this.channels.get(msg.channel);
         if (channel) {
           channel.sendToRemote(msg);

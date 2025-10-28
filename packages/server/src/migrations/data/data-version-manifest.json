@@ -112,7 +112,9 @@
     "requiredBefore": "4.4.0"
   },
   "v29": {
-    "serverVersion": "4.4.3",
-    "requiredBefore": "4.5.0"
+    "serverVersion": "4.4.3"
+  },
+  "v30": {
+    "serverVersion": "5.0.0"
   }
 }

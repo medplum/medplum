@@ -766,7 +766,7 @@ export class PatientSummaryBuilder {
     if (resource.result) {
       for (const result of resource.result) {
         const r = this.getByReference(result);
-        if (r && r.resourceType === 'Observation') {
+        if (r?.resourceType === 'Observation') {
           this.buildResultRows(rows, r);
         }
       }
@@ -783,7 +783,7 @@ export class PatientSummaryBuilder {
     if (resource.hasMember) {
       for (const member of resource.hasMember) {
         const m = this.getByReference(member);
-        if (m && m.resourceType === 'Observation') {
+        if (m?.resourceType === 'Observation') {
           this.buildResultRows(rows, m);
         }
       }
@@ -804,7 +804,7 @@ export class PatientSummaryBuilder {
       if (resource.activity) {
         for (const activity of resource.activity) {
           const a = this.getByReference(activity.reference);
-          if (a && a.resourceType === 'ServiceRequest') {
+          if (a?.resourceType === 'ServiceRequest') {
             rows.push([formatCodeableConcept(a.code), formatDate(a.authoredOn)]);
           }
         }

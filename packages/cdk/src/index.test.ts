@@ -410,4 +410,16 @@ describe('Infra', () => {
     await expect(main({ config: filename })).resolves.not.toThrow();
     await unlink(filename);
   });
+
+  test('Use containerRegistryCredentialsSecretArn', async () => {
+    const filename = await writeConfig('./medplum.containerRegistryCredentialsSecretArn.config.json', {
+      ...baseConfig,
+      name: 'containerRegistryCredentialsSecretArn',
+      stackName: 'MedplumContainerRegistryCredentialsSecretArnStack',
+      containerRegistryCredentialsSecretArn: 'arn:aws:secretsmanager:us-east-1:123456789:secret:TestCredentials-sHDBJc',
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
 });
