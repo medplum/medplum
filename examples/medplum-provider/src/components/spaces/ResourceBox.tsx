@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Group, Loader, Paper, Text, ThemeIcon } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import { useResource } from '@medplum/react';
+import type { Resource } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { IconFileText } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import classes from './ResourceBox.module.css';
 
@@ -13,12 +15,49 @@ interface ResourceBoxProps {
 }
 
 export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): JSX.Element {
-  const resource = useResource({ reference: resourceReference });
+  const medplum = useMedplum();
+  const [resource, setResource] = useState<Resource | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>();
 
-  if (!resource) {
+  useEffect(() => {
+    const [resourceType, resourceId] = resourceReference.split('/');
+    if (!resourceType || !resourceId) {
+      setError('Invalid resource reference');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(undefined);
+
+    medplum
+      .readReference({ reference: resourceReference })
+      .then(setResource)
+      .catch(setError)
+      .finally(() => setLoading(false))
+  }, [medplum, resourceReference]);
+
+  if (loading) {
     return (
       <Paper withBorder p="sm" className={classes.resourceBox}>
-        <Loader />
+        <Group gap="sm" wrap="nowrap">
+          <Loader size="sm" />
+          <Text size="sm" c="dimmed">
+            Loading...
+          </Text>
+        </Group>
+      </Paper>
+    );
+  }
+
+
+  if (error || !resource) {
+    return (
+      <Paper withBorder p="sm" className={classes.resourceBox}>
+        <Text size="sm" c="red">
+          {error || 'Unable to find resource'}
+        </Text>
       </Paper>
     );
   }
