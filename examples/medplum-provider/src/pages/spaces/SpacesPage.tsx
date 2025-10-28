@@ -53,6 +53,7 @@ export function SpacesPage(): JSX.Element {
       setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
       setTopicId(selectedTopicId);
       setHasStarted(true);
+      setSelectedResource(undefined);
     } catch (error: any) {
       showErrorNotification(error);
     } finally {
