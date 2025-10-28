@@ -376,7 +376,7 @@ function parseIntegerQueryParam(query: Record<string, string | string[] | undefi
   const value = query[key];
   let strValue: string | undefined;
   if (Array.isArray(value)) {
-    strValue = value[value.length - 1];
+    strValue = value.at(-1);
   } else {
     strValue = value;
   }

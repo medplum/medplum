@@ -119,7 +119,7 @@ function buildDocsDefinition(
   const elements = resourceDefinition.snapshot?.element || [];
   for (const element of elements) {
     const parts = element.path?.split('.') || [];
-    const name = parts[parts.length - 1];
+    const name = parts.at(-1) as string;
     const { path, min, max, short, definition, comment } = element;
     result.properties.push({
       name,

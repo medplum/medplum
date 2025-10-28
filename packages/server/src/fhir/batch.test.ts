@@ -4,7 +4,6 @@ import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   Bundle,
-  BundleEntry,
   BundleEntryResponse,
   CareTeam,
   Observation,
@@ -732,7 +731,7 @@ describe('Batch and Transaction processing', () => {
 
     // Ensure that ID replacement was performed correctly
     const createdCareTeam = res.body.entry[0].resource as CareTeam;
-    const createdTask = res.body.entry[(tx.entry as BundleEntry[]).length - 1].resource as Task;
+    const createdTask = res.body.entry.at(-1).resource as Task;
     expect(createdTask.owner?.reference).toStrictEqual(getReferenceString(createdCareTeam));
   });
 

@@ -433,7 +433,7 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   if (quantity.unit) {
-    if (quantity.unit !== '%' && result[result.length - 1] !== ' ') {
+    if (quantity.unit !== '%' && result.at(-1) !== ' ') {
       result.push(' ');
     }
     result.push(quantity.unit);

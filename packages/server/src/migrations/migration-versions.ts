@@ -75,5 +75,5 @@ export function getPostDeployMigrationVersions(): number[] {
 
 export function getLatestPostDeployMigrationVersion(): number {
   const versions = getPostDeployMigrationVersions();
-  return versions[versions.length - 1];
+  return versions.at(-1) as number;
 }
