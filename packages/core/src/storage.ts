@@ -34,9 +34,8 @@ export class ClientStorage implements IClientStorage {
   }
 
   clear(): void {
-    // We clear differently for localStorage and for Storage types that specify a special 'keys' method
-    // We will iterate through each item and check for our prefix
-    // Otherwise if this storage is not localStorage, then we just call clear on it
+    // We only care about checking the keys for localStorage
+    // We only want to clear out keys that are Medplum keys
     if (this.storage === globalThis.localStorage) {
       Object.keys(this.storage)
         .filter((key) => key.startsWith(this.prefix))
@@ -44,6 +43,7 @@ export class ClientStorage implements IClientStorage {
           this.storage.removeItem(key);
         });
     } else {
+      // If not localStorage, then just clear out the whole storage
       this.storage.clear();
     }
   }
