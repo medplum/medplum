@@ -13,23 +13,6 @@ export interface IClientStorage {
 }
 
 /**
- * A `Storage` that supports getting a list of all contained item keys via a `keys` method.
- *
- * Useful when you want to namespace your storage with the `prefix` feature of `ClientStorage`.
- */
-export interface StorageWithKeys extends Storage {
-  keys(): string[];
-}
-
-/**
- * @param storage - The Storage to test whether or not it supports the `keys` method.
- * @returns True if the Storage has a `keys` method, otherwise returns false.
- */
-export function isStorageWithKeys(storage: Storage): storage is StorageWithKeys {
-  return storage.keys && typeof storage.keys === 'function';
-}
-
-/**
  * The ClientStorage class is a utility class for storing strings and objects.
  *
  * When using MedplumClient in the browser, it will be backed by browser localStorage.
@@ -37,19 +20,13 @@ export function isStorageWithKeys(storage: Storage): storage is StorageWithKeys 
  * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
 export class ClientStorage implements IClientStorage {
-  private readonly storage: Storage | StorageWithKeys;
+  private readonly storage: Storage;
   private readonly prefix: string = '';
 
-  constructor(storage?: Storage | StorageWithKeys, prefix?: string) {
-    if (!storage && typeof globalThis.localStorage !== 'undefined') {
-      this.storage = globalThis.localStorage;
-    } else if (!storage) {
-      this.storage = new MemoryStorage();
-    } else {
-      this.storage = storage;
-    }
-
-    this.prefix = prefix ?? (this.storage === globalThis.localStorage ? '@medplum:' : '');
+  constructor(storage?: Storage) {
+    this.storage =
+      storage ?? (typeof globalThis.localStorage !== 'undefined' ? globalThis.localStorage : new MemoryStorage());
+    this.prefix = this.storage === globalThis.localStorage ? '@medplum:' : '';
   }
 
   makeKey(key: string): string {
@@ -59,19 +36,16 @@ export class ClientStorage implements IClientStorage {
   clear(): void {
     // We clear differently for localStorage and for Storage types that specify a special 'keys' method
     // We will iterate through each item and check for our prefix
-    // Otherwise if this storage is not localStorage or does not specify keys, then we just call clear on it
-    if (!isStorageWithKeys(this.storage) && this.storage !== globalThis.localStorage) {
+    // Otherwise if this storage is not localStorage, then we just call clear on it
+    if (this.storage === globalThis.localStorage) {
+      Object.keys(this.storage)
+        .filter((key) => key.startsWith(this.prefix))
+        .forEach((key) => {
+          this.storage.removeItem(key);
+        });
+    } else {
       this.storage.clear();
-      return;
     }
-
-    // The fallback here assumes this.storage is a Storage from the storage Class
-    const keys = isStorageWithKeys(this.storage) ? this.storage.keys() : Object.keys(this.storage);
-    keys
-      .filter((key) => key.startsWith(this.prefix))
-      .forEach((key) => {
-        this.storage.removeItem(key);
-      });
   }
 
   getString(key: string): string | undefined {
