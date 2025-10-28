@@ -8,11 +8,11 @@ import { getLogger } from '../logger';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
-export function setSqlDebug(value: string | undefined) {
+export function setSqlDebug(value: string | undefined): void {
   DEBUG = value;
 }
 
-export function resetSqlDebug() {
+export function resetSqlDebug(): void {
   DEBUG = env['SQL_DEBUG'];
 }
 
