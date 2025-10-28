@@ -10,7 +10,7 @@ const options = {
   entryPoints: ['./src/index.ts', './src/otel/instrumentation.ts'],
   bundle: true,
   platform: 'node',
-  loader: { '.ts': 'ts' },
+  loader: { '.ts': 'ts', '.png': 'dataurl' },
   resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
