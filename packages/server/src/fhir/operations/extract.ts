@@ -206,7 +206,8 @@ class TemplateExtractor implements CrawlerVisitor {
   private currentContext(path?: string): TemplateExtractionContext {
     path = path ? trimArrayIndex(path) : undefined;
     return (
-      this.context.findLast((c) => path?.startsWith(c.path) && c.path !== path) ?? this.context[this.context.length - 1]
+      this.context.findLast((c) => path?.startsWith(c.path) && c.path !== path) ??
+      (this.context.at(-1) as TemplateExtractionContext)
     );
   }
 
@@ -526,7 +527,7 @@ function replacePathIndex(path: string, offset: number, before?: number): string
   }
 
   const arrayClose = path.indexOf(']', arrayStart);
-  const currentIndex = parseInt(path.slice(arrayStart + 1, arrayClose), 10);
+  const currentIndex = Number.parseInt(path.slice(arrayStart + 1, arrayClose), 10);
   return path.slice(0, arrayStart + 1) + (currentIndex + offset) + path.slice(path.indexOf(']', arrayStart));
 }
 
