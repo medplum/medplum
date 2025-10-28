@@ -78,7 +78,7 @@ describe('Set Password', () => {
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
     const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const secret = paths.at(-1);
 
     const res3 = await request(app).post('/auth/setpassword').type('json').send({
       id,
@@ -248,7 +248,7 @@ describe('Set Password', () => {
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
     const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const secret = paths.at(-1);
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

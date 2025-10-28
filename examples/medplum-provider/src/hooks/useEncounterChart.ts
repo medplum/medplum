@@ -8,6 +8,7 @@ import type {
   ClinicalImpression,
   Encounter,
   Practitioner,
+  Reference,
   Task,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
@@ -131,8 +132,8 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   // Fetch appointment related to the encounter
   useEffect(() => {
     const fetchAppointment = async (): Promise<void> => {
-      if (encounter?.appointment) {
-        const appointmentResult = await medplum.readReference(encounter.appointment[encounter.appointment.length - 1]);
+      if (encounter?.appointment?.length) {
+        const appointmentResult = await medplum.readReference(encounter.appointment.at(-1) as Reference);
         setAppointment(appointmentResult as Appointment);
       }
     };

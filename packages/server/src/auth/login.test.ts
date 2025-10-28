@@ -245,7 +245,7 @@ describe('Login', () => {
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
     const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const secret = paths.at(-1);
 
     // Get the new membership details
     const res4 = await request(app)
