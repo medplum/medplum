@@ -44,4 +44,3 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
     </Paper>
   );
 }
-
