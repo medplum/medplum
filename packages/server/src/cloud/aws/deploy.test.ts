@@ -20,6 +20,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
@@ -156,7 +157,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
-        export async function handler() {
+        exports.handler = async (event) => {
           console.log('input', input);
           return input;
         }
@@ -173,6 +174,14 @@ describe('Deploy', () => {
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
     } as CreateFunctionRequest);
+
+    // Verify that this was uploaded as a CJS zip file
+    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCodeBytes = createCall.args[0].input.Code?.ZipFile;
+    expect(createCodeBytes).toBeInstanceOf(Uint8Array);
+    const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
+    expect(Object.keys(createZip.files)).toEqual(expect.arrayContaining(['index.cjs', 'user.cjs']));
+
     mockLambdaClient.resetHistory();
 
     // Step 3: Deploy again to trigger the update path
@@ -196,6 +205,13 @@ describe('Deploy', () => {
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
+
+    // Verify that this was uploaded as a MJS zip file
+    const updateCall = mockLambdaClient.commandCall(0, UpdateFunctionCodeCommand);
+    const updateCodeBytes = updateCall.args[0].input?.ZipFile;
+    expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
+    const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
+    expect(Object.keys(updateZip.files)).toEqual(expect.arrayContaining(['index.mjs', 'user.mjs']));
   });
 
   test('Deploy bot with lambda layer update', async () => {
