@@ -3,8 +3,6 @@
 import type { HumanName } from '@medplum/fhirtypes';
 import { formatHumanName, getSimplePhone } from './cms1500pdf';
 
-jest.mock('./cms1500.png', () => 'mocked-base64-string', { virtual: true });
-
 describe('CMS 1500 PDF Utils', () => {
   test('formats full name with middle name', () => {
     const name: HumanName = {

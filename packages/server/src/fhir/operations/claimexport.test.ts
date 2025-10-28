@@ -7,13 +7,6 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
-jest.mock(
-  './utils/cms1500.png',
-  () =>
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-  { virtual: true }
-);
-
 const app = express();
 let accessToken: string;
 
