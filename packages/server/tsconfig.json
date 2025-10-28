@@ -10,5 +10,5 @@
     { "path": "../definitions" },
     { "path": "../fhir-router" }
   ],
-  "include": ["src/**/*"]
+  "include": ["src/**/*.ts", "src/**/*.json"]
 }
