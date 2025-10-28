@@ -132,8 +132,9 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   // Fetch appointment related to the encounter
   useEffect(() => {
     const fetchAppointment = async (): Promise<void> => {
-      if (encounter?.appointment?.length) {
-        const appointmentResult = await medplum.readReference(encounter.appointment.at(-1) as Reference);
+      const appointmentRef = encounter?.appointment?.at(-1);
+      if (appointmentRef) {
+        const appointmentResult = await medplum.readReference(appointmentRef);
         setAppointment(appointmentResult as Appointment);
       }
     };

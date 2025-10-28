@@ -1046,9 +1046,9 @@ describe('Admin Invite', () => {
     expect(setPasswordUrl).toBeDefined();
 
     const setPasswordUrlParts = setPasswordUrl?.split('/') as string[];
-    const setPasswordId = setPasswordUrlParts[setPasswordUrlParts.length - 2].trim();
+    const setPasswordId = setPasswordUrlParts.at(-2)?.trim();
     const setPasswordSecret = setPasswordUrlParts.at(-1)?.trim();
-    expect(setPasswordId).toBeDefined();
+    expect(setPasswordId).toBeTruthy();
     expect(setPasswordSecret).toBeTruthy();
 
     // Set the password
