@@ -41,7 +41,7 @@ export class ClientStorage implements IClientStorage {
 
   constructor(storage?: Storage | StorageWithKeys, prefix?: string) {
     if (!storage && typeof globalThis.localStorage !== 'undefined') {
-      this.storage = localStorage;
+      this.storage = globalThis.localStorage;
     } else if (!storage) {
       this.storage = new MemoryStorage();
     } else {
@@ -51,7 +51,7 @@ export class ClientStorage implements IClientStorage {
     this.prefix = prefix ?? (this.storage === globalThis.localStorage ? '@medplum:' : '');
   }
 
-  private makeKey(key: string): string {
+  makeKey(key: string): string {
     return this.prefix + key;
   }
 
@@ -86,12 +86,12 @@ export class ClientStorage implements IClientStorage {
   }
 
   getObject<T>(key: string): T | undefined {
-    const str = this.getString(this.makeKey(key));
+    const str = this.getString(key);
     return str ? (JSON.parse(str) as T) : undefined;
   }
 
   setObject<T>(key: string, value: T): void {
-    this.setString(this.makeKey(key), value ? stringify(value) : undefined);
+    this.setString(key, value ? stringify(value) : undefined);
   }
 }
 

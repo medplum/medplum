@@ -316,7 +316,7 @@ describe('Client', () => {
 
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
-      'activeLogin',
+      '@medplum:activeLogin',
       JSON.stringify({
         accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
@@ -341,7 +341,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123' },
           membership: { resourceType: 'ProjectMembership', id: '123' },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -373,7 +373,7 @@ describe('Client', () => {
 
   test('Admin check', async () => {
     window.localStorage.setItem(
-      'activeLogin',
+      '@medplum:activeLogin',
       JSON.stringify({
         accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
@@ -398,7 +398,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123', superAdmin: true },
           membership: { resourceType: 'ProjectMembership', id: '123', admin: true },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -2732,7 +2732,7 @@ describe('Client', () => {
     // Should NOT refresh when we have the same profile
     mockReload.mockReset();
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` },
         project: { reference: 'Project/123' },
@@ -2752,7 +2752,7 @@ describe('Client', () => {
     // Should refresh when we change to a new profile
     mockReload.mockReset();
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
@@ -2765,7 +2765,7 @@ describe('Client', () => {
     // Should refresh when going from no profile to a new profile
     mockReload.mockReset();
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: null,
       newValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
@@ -2776,7 +2776,7 @@ describe('Client', () => {
     // Should refresh when going from a profile to no profile (logged out)
     mockReload.mockReset();
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
@@ -2794,7 +2794,7 @@ describe('Client', () => {
     // @ts-expect-error This is a no-no, overriding private field
     client.sessionDetails = { profile: { id: randomUUID() } as Practitioner };
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` },
         project: { reference: 'Project/123' },
@@ -2815,7 +2815,7 @@ describe('Client', () => {
     // @ts-expect-error This is a no-no, overriding private field
     client.sessionDetails = { profile: { id: practitioner1 } as Practitioner };
     callback({
-      key: 'activeLogin',
+      key: '@medplum:activeLogin',
       oldValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` },
         project: { reference: 'Project/123' },
@@ -3274,7 +3274,7 @@ describe('Client', () => {
       const mockMe = {
         project: { resourceType: 'Project', id: '123' },
         membership: { resourceType: 'ProjectMembership', id: '123' },
-        profile: { resouceType: 'Practitioner', id: '123' },
+        profile: { resourceType: 'Practitioner', id: '123' },
         config: { resourceType: 'UserConfiguration', id: '123' },
         accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
       };

@@ -4196,7 +4196,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         // Refresh the page to ensure the active login is up to date.
         if (e.key === null) {
           locationUtils.reload();
-        } else if (e.key === 'activeLogin') {
+        } else if (e.key === this.storage.makeKey('activeLogin')) {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
           if (
