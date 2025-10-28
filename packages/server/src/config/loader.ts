@@ -4,7 +4,6 @@ import { splitN } from '@medplum/core';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
@@ -148,5 +147,5 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(path, { encoding: 'utf8' }));
 }
