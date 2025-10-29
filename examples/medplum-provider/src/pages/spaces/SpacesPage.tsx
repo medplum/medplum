@@ -3,10 +3,11 @@
 import { Stack, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition, CloseButton } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { useMedplum, ResourceTable, useResource } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from '../../components/spaces/ResourceBox';
+import { ResourcePanel } from '../../components/spaces/ResourcePanel';
 import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
 import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
@@ -299,128 +300,110 @@ export function SpacesPage(): JSX.Element {
 
   // Chat layout after first message
   return (
-    <Flex h="calc(100vh - 68px)" direction="column">
-      <Flex style={{ overflow: 'hidden' }} flex={1}>
-        <Transition mounted={historyOpened} transition="slide-right" duration={200}>
-          {(styles) => (
-            <Paper
-              className={classes.borderRight}
-              // bd="0 solid var(--mantine-color-default-border)"
-              style={{
-                ...styles,
-                width: '320px',
-                position: 'relative',
-                borderRightWidth: '1px',
-              }}
-            >
-              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-            </Paper>
-          )}
-        </Transition>
-
-        {/* Chat Section */}
-        <Paper
-          withBorder
-          className={cx(classes.fadeIn, selectedResource ? classes.borderRight : undefined)}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <Group justify="space-between" p="md">
-            <Group gap="xs">
-              <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
-                <IconHistory size={20} />
-              </ActionIcon>
-
-              <Text size="xl" fw={700}>
-                AI Assistant
-              </Text>
-            </Group>
-          </Group>
-
-          <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
-            <Stack gap="md" p="md">
-              {visibleMessages.map((message, index) => (
-                <Box
-                  key={index}
-                  style={{
-                    alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '70%',
-                    width: message.role === 'assistant' && message.resources ? '100%' : undefined,
-                  }}
-                >
-                  <Paper p="md" withBorder bg={message.role === 'user' ? 'violet.0' : undefined}>
-                    <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
-                  </Paper>
-
-                  {message.resources && message.resources.length > 0 && (
-                    <Stack gap="xs" mt="sm">
-                      {message.resources.map((resourceRef, idx) => (
-                        <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
-                      ))}
-                    </Stack>
-                  )}
-                </Box>
-              ))}
-              {loading && (
-                <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-                  <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
-                </Paper>
-              )}
-            </Stack>
-          </ScrollArea>
-        </Paper>
-
-        {/* Right Panel for Resource Details */}
-        {selectedResource && (
-          <Paper withBorder className={classes.previewResource}>
-            <Group justify="space-between" p="md">
-              <Text size="lg" fw={600}>
-                Resource Details
-              </Text>
-              <CloseButton onClick={() => setSelectedResource(undefined)} />
-            </Group>
-            <ScrollArea style={{ flex: 1 }} p="md">
-              {selectedResource && <ResourcePanel key={selectedResource} resourceReference={selectedResource} />}
-            </ScrollArea>
+    <Flex h="calc(100vh - 68px)">
+      {/* History Sidebar */}
+      <Transition mounted={historyOpened} transition="slide-right" duration={200}>
+        {(styles) => (
+          <Paper
+            className={classes.borderRight}
+            w={320}
+            style={{ ...styles, position: 'relative'}}
+          >
+            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
           </Paper>
         )}
-      </Flex>
+      </Transition>
 
-      <Paper className={classes.borderTop}>
-        <Box w="50%" style={{ margin: '0 auto' }} p="md">
-          <ChatInput
-            input={input}
-            onInputChange={setInput}
-            onKeyDown={handleKeyDown}
-            onSend={handleSend}
-            loading={loading}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-          />
-        </Box>
-      </Paper>
+      {/* Main content column - chat/resource + input */}
+      <Flex direction="column" style={{ flex: 1 }}>
+        {/* Chat and Resource panels row */}
+        <Flex style={{ overflow: 'hidden', flex: 1 }}>
+          {/* Chat Section */}
+          <Paper
+            className={cx(classes.fadeIn, selectedResource ? classes.borderRight : undefined)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <Group justify="space-between" p="md">
+              <Group gap="xs">
+                <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
+                  <IconHistory size={20} />
+                </ActionIcon>
+
+                <Text size="xl" fw={700}>
+                  AI Assistant
+                </Text>
+              </Group>
+            </Group>
+
+            <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
+              <Stack gap="md" p="md">
+                {visibleMessages.map((message, index) => (
+                  <Box
+                    key={index}
+                    style={{
+                      alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                      maxWidth: '70%',
+                      width: message.role === 'assistant' && message.resources ? '100%' : undefined,
+                    }}
+                  >
+                    <Paper p="md" withBorder bg={message.role === 'user' ? 'violet.0' : undefined}>
+                      <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                    </Paper>
+
+                    {message.resources && message.resources.length > 0 && (
+                      <Stack gap="xs" mt="sm">
+                        {message.resources.map((resourceRef, idx) => (
+                          <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                ))}
+                {loading && (
+                  <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
+                    <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
+                  </Paper>
+                )}
+              </Stack>
+            </ScrollArea>
+          </Paper>
+
+          {/* Right Panel for Resource Details */}
+          {selectedResource && (
+            <Paper className={classes.previewResource}>
+              <Group justify="space-between" p="md">
+                <Text size="lg" fw={600}>
+                  Resource Details
+                </Text>
+                <CloseButton onClick={() => setSelectedResource(undefined)} />
+              </Group>
+              <ScrollArea style={{ flex: 1 }} p="md">
+                <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
+              </ScrollArea>
+            </Paper>
+          )}
+        </Flex>
+
+        {/* Input at bottom */}
+        <Paper className={classes.borderTop}>
+          <Box w="50%" style={{ margin: '0 auto' }} p="md">
+            <ChatInput
+              input={input}
+              onInputChange={setInput}
+              onKeyDown={handleKeyDown}
+              onSend={handleSend}
+              loading={loading}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+            />
+          </Box>
+        </Paper>
+      </Flex>
     </Flex>
   );
-}
-
-interface ResourcePanelProps {
-  resourceReference: string;
-}
-
-function ResourcePanel({ resourceReference }: ResourcePanelProps): JSX.Element | null {
-  const resource = useResource({ reference: resourceReference });
-
-  if (!resource) {
-    return (
-      <Box p="md">
-        <Text c="dimmed">Loading resource...</Text>
-      </Box>
-    );
-  }
-
-  return <ResourceTable value={resource} />;
 }
