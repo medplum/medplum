@@ -96,7 +96,7 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
-import { getProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
+import { getProjectShardId, GLOBAL_SHARD_ID, GlobalResourceTypes } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -2889,6 +2889,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 }
 
+export class SystemRepository extends Repository {}
+
+export class GlobalSystemRepository extends SystemRepository {}
+
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
@@ -2942,23 +2946,28 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): Repository {
+export function getSystemRepo(conn: undefined, shardId: typeof GLOBAL_SHARD_ID): GlobalSystemRepository;
+export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): SystemRepository;
+export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): SystemRepository {
   if (conn && shardId) {
     throw new Error('Cannot specify both conn and shardId');
   }
-  return new Repository(
-    {
-      superAdmin: true,
-      strictMode: true,
-      extendedMode: true,
-      author: {
-        reference: 'system',
-      },
-      projects: undefined, // System repo does not have an associated Project; it can write to any
-      projectShardId: conn?.shardId ?? shardId, // but it still must be associated with a shard
+  const repoConfig = {
+    superAdmin: true,
+    strictMode: true,
+    extendedMode: true,
+    author: {
+      reference: 'system',
     },
-    conn
-  );
+    projects: undefined, // System repo does not have an associated Project; it can write to any
+    projectShardId: conn?.shardId ?? shardId, // but it still must be associated with a shard
+  };
+
+  if (repoConfig.projectShardId === GLOBAL_SHARD_ID) {
+    return new GlobalSystemRepository(repoConfig, conn);
+  }
+
+  return new SystemRepository(repoConfig, conn);
 }
 
 export async function getSystemRepoForProject(projectId: string): Promise<Repository> {
@@ -2969,8 +2978,8 @@ export function getShardSystemRepo(shardId: string): Repository {
   return getSystemRepo(undefined, shardId);
 }
 
-export function getGlobalSystemRepo(): Repository {
-  return getSystemRepo(undefined, 'global');
+export function getGlobalSystemRepo(): GlobalSystemRepository {
+  return getSystemRepo(undefined, GLOBAL_SHARD_ID);
 }
 
 function lowercaseFirstLetter(str: string): string {

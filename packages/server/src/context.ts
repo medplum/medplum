@@ -16,7 +16,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
-import type { Repository } from './fhir/repo';
+import type { Repository, SystemRepository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger, systemLogger } from './logger';
@@ -87,6 +87,12 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.authState = authState;
     this.repo = repo;
     this.isAsync = options?.async ?? false;
+  }
+
+  private __systemRepo?: SystemRepository;
+  get systemRepo(): SystemRepository {
+    this.__systemRepo ??= getSystemRepo(undefined, this.authState.projectShardId);
+    return this.__systemRepo;
   }
 
   get project(): WithId<Project> {
