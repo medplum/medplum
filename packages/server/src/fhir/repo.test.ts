@@ -170,6 +170,33 @@ describe('FHIR Repo', () => {
     }
   });
 
+  test('Read references with various reference shapes', async () => {
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['ReadReferences'], family: 'ReadReferences' }],
+    });
+    const references = [
+      { reference: undefined },
+      { reference: '' },
+      { reference: 'Patient/' + patient.id },
+      { display: 'test' },
+      { reference: 'Patient/' + patient.id },
+      { resource: patient },
+    ];
+    const results = await systemRepo.readReferences(references);
+    if (!Array.isArray(results)) {
+      throw new Error('Should have returned an array');
+    }
+
+    expect(results).toHaveLength(6);
+    expect((results[0] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[1] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[2] as WithId<Patient>).id).toBe(patient.id);
+    expect((results[3] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[4] as WithId<Patient>).id).toBe(patient.id);
+    expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
+  });
+
   describe('Read history', () => {
     const versions: Record<string, WithId<Patient>> = {};
 
