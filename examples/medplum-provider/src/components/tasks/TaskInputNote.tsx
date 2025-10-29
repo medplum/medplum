@@ -17,7 +17,7 @@ import { createReference, formatDate, getDisplayString, getReferenceString } fro
 import type { Annotation, QuestionnaireResponse, Task, Reference } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
