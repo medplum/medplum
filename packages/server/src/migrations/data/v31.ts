@@ -16,5 +16,7 @@ export const migration: CustomPostDeployMigration = {
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   const repo = getSystemRepo(client);
-  return rebuildR4ValueSets(repo);
+  const start = Date.now();
+  await rebuildR4ValueSets(repo);
+  results.push({ name: 'rebuildR4ValueSets', durationMs: Date.now() - start });
 }
