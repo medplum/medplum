@@ -6,7 +6,6 @@ import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { getDirName } from '.';
 
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -22,7 +21,7 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(getDirName(), '../../core/src/base-schema.json'),
+    resolve(import.meta.dirname, '../../core/src/base-schema.json'),
     JSON.stringify(outputTypes, undefined, 2),
     'utf8'
   );
