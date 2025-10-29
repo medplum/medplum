@@ -281,6 +281,7 @@ export const medplumEslintConfig = [
       '**/postcss.config.*',
       '**/rollup.config.*',
       '**/webpack.config.*',
+      '**/*.png.ts',
     ],
   },
   coreConfig,
