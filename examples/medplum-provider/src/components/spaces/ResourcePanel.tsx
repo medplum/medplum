@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
-import type { Reference, Resource, Task } from '@medplum/fhirtypes';
+import type { Reference, Resource } from '@medplum/fhirtypes';
 import { ResourceTable, useResource, PatientSummary } from '@medplum/react';
 import type { JSX } from 'react';
 import { TaskInputNote } from '../tasks/TaskInputNote';
@@ -22,7 +22,6 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
     );
   }
 
-  // Show PatientSummary for Patient resources
   if (displayResource.resourceType === 'Patient') {
     return <PatientSummary patient={displayResource} />;
   }
