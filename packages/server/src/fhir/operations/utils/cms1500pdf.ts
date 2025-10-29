@@ -9,10 +9,9 @@ import {
   HTTP_HL7_ORG,
 } from '@medplum/core';
 import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
-import { dirname, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
+import { imageData } from './cms1500.png';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -106,7 +105,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: relative(process.cwd(), resolve(getDirName(), '../../../../static/cms1500.png')),
+        image: imageData,
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
@@ -393,13 +392,4 @@ export function formatHumanName(name: HumanName | undefined): string {
   }
 
   return parts.join(', ');
-}
-
-/**
- * Returns the directory name of the current module.
- * Works with both CommonJS and ES modules.
- * @returns The directory name of the current module.
- */
-function getDirName(): string {
-  return typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
 }
