@@ -36,8 +36,7 @@ tar \
   packages/fhir-router/package.json \
   packages/fhir-router/dist \
   packages/server/package.json \
-  packages/server/dist \
-  packages/server/static
+  packages/server/dist
 
 # Supply chain attestations
 # See: https://docs.docker.com/scout/policy/#supply-chain-attestations
