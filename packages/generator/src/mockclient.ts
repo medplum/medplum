@@ -5,7 +5,6 @@ import { readJson } from '@medplum/definitions';
 import type { BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { getDirName } from '.';
 
 const resourceTypes = [
   'Address',
@@ -105,8 +104,8 @@ export function main(): void {
     // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
     buildUSCoreStructureDefinitions('/absolute/path/to/expanded/package-file', [
-      resolve(getDirName(), '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
-      resolve(getDirName(), '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
     ]);
   }
 }
@@ -116,7 +115,7 @@ function writeStructureDefinitions(): void {
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   writeFileSync(
-    resolve(getDirName(), '../../mock/src/mocks/structuredefinitions.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
@@ -161,7 +160,7 @@ function writeSearchParameters(): void {
     }
   }
   writeFileSync(
-    resolve(getDirName(), '../../mock/src/mocks/searchparameters.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/searchparameters.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
