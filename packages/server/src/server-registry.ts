@@ -140,7 +140,7 @@ export async function getClusterStatus(servers: ServerRegistryInfo[]): Promise<C
     totalServers: servers.length,
     versions: versionCounts,
     oldestVersion: versions[0],
-    newestVersion: versions[versions.length - 1],
+    newestVersion: versions.at(-1),
     isHomogeneous: versions.length === 1,
     servers: servers.map((server) => addComputedFields(now, server)),
   };

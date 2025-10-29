@@ -34,7 +34,7 @@ function getBinaryId(url?: string): string {
   }
 
   const parts: string[] = url.split('/');
-  const id = parts[parts.length - 1];
+  const id = parts.at(-1) as string;
   return id;
 }
 

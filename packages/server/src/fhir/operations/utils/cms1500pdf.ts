@@ -11,7 +11,7 @@ import {
 import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
-import imageData from './cms1500.png';
+import { imageData } from './cms1500.png';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
