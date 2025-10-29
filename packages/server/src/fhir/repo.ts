@@ -2637,14 +2637,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return new Array(references.length);
     }
-    const referenceKeys = references.map((r) => r.reference as string);
+
+    const referenceKeys: string[] = [];
+
+    // Build referenceKeys only for valid input references and track
+    // their indices in the original array so that the result array
+    // is constructed in the correct order.
+    const referenceKeyIndices: number[] = new Array(references.length);
+    for (let i = 0; i < references.length; i++) {
+      const r = references[i];
+      if (r.reference) {
+        referenceKeys.push(r.reference);
+        referenceKeyIndices[i] = referenceKeys.length - 1;
+      }
+    }
+
     if (referenceKeys.length === 0) {
       // Return early to avoid calling mget() with no args, which is an error
-      return [];
+      return new Array(references.length);
     }
-    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
-      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-    );
+
+    const cachedValues = await getRedis().mget(referenceKeys);
+
+    const result = new Array<CacheEntry | undefined>(references.length);
+    for (let i = 0; i < references.length; i++) {
+      if (referenceKeyIndices[i] === undefined) {
+        result[i] = undefined;
+      } else {
+        const cachedValue = cachedValues[referenceKeyIndices[i]];
+        result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+      }
+    }
+    return result;
   }
 
   /**
