@@ -13,6 +13,7 @@ import type {
 import csv from 'csv-parser';
 import { createReadStream, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { getDirName } from '.';
 
 const valueSets = new Map<string, CodeSystem | ValueSet>();
 
@@ -109,7 +110,7 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
   const m49Codes: Record<string, CodeSystemConcept> = Object.create(null);
   const isoCodes: Record<string, CodeSystemConcept> = Object.create(null);
 
-  const path = resolve(__dirname, 'data/unsd-methodology.csv');
+  const path = resolve(getDirName(), 'data/unsd-methodology.csv');
   return new Promise((resolve, reject) => {
     createReadStream(path)
       .pipe(csv({ separator: ';' }))
@@ -221,7 +222,7 @@ function parseCountryCodeRow(
 async function generateCurrencyCodes(): Promise<CodeSystem> {
   const isoCodes: Record<string, CodeSystemConcept> = Object.create(null);
 
-  const path = resolve(__dirname, 'data/iso-4217-list-one.csv');
+  const path = resolve(getDirName(), 'data/iso-4217-list-one.csv');
   return new Promise((resolve, reject) => {
     createReadStream(path)
       .pipe(csv())
@@ -272,7 +273,7 @@ async function main(): Promise<void> {
     .replaceAll('=', '\\u003d')
     .replaceAll('>', '\\u003e');
 
-  writeFileSync(resolve(__dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
+  writeFileSync(resolve(getDirName(), '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
 }
 
 if (import.meta.main) {

@@ -15,7 +15,8 @@ import {
 import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinitionType } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { getValueSetValues } from './valuesets';
 
 export function main(): void {
@@ -23,7 +24,7 @@ export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
-  mkdirSync(resolve(__dirname, '../../fhirtypes/dist'), { recursive: true });
+  mkdirSync(resolve(getDirName(), '../../fhirtypes/dist'), { recursive: true });
   writeIndexFile();
   writeResourceFile();
   writeResourceTypeFile();
@@ -46,7 +47,7 @@ function writeIndexFile(): void {
   for (const resourceType of names) {
     b.append("export * from './" + resourceType + "';");
   }
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(getDirName(), '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceFile(): void {
@@ -70,7 +71,7 @@ function writeResourceFile(): void {
       b.append('| ' + names[i] + ';');
     }
   }
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(getDirName(), '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceTypeFile(): void {
@@ -79,7 +80,7 @@ function writeResourceTypeFile(): void {
   b.newLine();
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(getDirName(), '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: InternalTypeSchema): void {
@@ -99,7 +100,7 @@ function writeInterfaceFile(fhirType: InternalTypeSchema): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/' + fhirType.name + '.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(getDirName(), '../../fhirtypes/dist/' + fhirType.name + '.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
@@ -364,6 +365,15 @@ function getTypeScriptTypeForProperty(
     return baseType + '[]';
   }
   return baseType;
+}
+
+/**
+ * Returns the directory name of the current module.
+ * Works with both CommonJS and ES modules.
+ * @returns The directory name of the current module.
+ */
+export function getDirName(): string {
+  return typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
 }
 
 if (process.argv[1].endsWith('index.ts')) {

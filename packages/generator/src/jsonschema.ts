@@ -7,6 +7,7 @@ import type { Bundle, ElementDefinitionType, StructureDefinition } from '@medplu
 import { writeFileSync } from 'fs';
 import type { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
+import { getDirName } from '.';
 import { getValueSetValues } from './valuesets';
 
 // Generate fhir.schema.json
@@ -66,7 +67,7 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(__dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
+    resolve(getDirName(), '../../definitions/dist/fhir/r4/fhir.schema.json'),
     JSON.stringify(fhirSchema, undefined, 2)
       .replaceAll("'", '\\u0027')
       .replaceAll('<', '\\u003c')
