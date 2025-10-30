@@ -4,6 +4,7 @@ import { createReference } from '@medplum/core';
 import type {
   Bundle,
   BundleEntry,
+  ContactPoint,
   Expression,
   OperationOutcome,
   OperationOutcomeIssue,
@@ -861,5 +862,111 @@ describe('QuestionnaireResponse/$extract', () => {
 
     const patient = await repo.readResource<Patient>('Patient', id);
     expect(patient.gender).toBe('unknown');
+  });
+
+  test('Keeps default value for primitive field', async () => {
+    const q: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'draft',
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patientTemplate',
+          telecom: [
+            {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
+                  valueString: "item.where(linkId = 'phone')",
+                },
+              ],
+              system: 'phone',
+              _value: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: "item.where(linkId = 'number').answer.value.first()",
+                  },
+                ],
+              },
+              use: 'home',
+              _use: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: "item.where(linkId = 'use').answer.value.first().code",
+                  },
+                ],
+              },
+            } as unknown as ContactPoint,
+          ],
+        },
+      ],
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
+          extension: [{ url: 'template', valueReference: { reference: '#patientTemplate' } }],
+        },
+      ],
+      item: [
+        {
+          linkId: 'phone',
+          type: 'group',
+          repeats: true,
+          required: true,
+          item: [
+            { linkId: 'number', type: 'string', required: true },
+            { linkId: 'use', type: 'choice', answerValueSet: 'http://hl7.org/fhir/ValueSet/contact-point-use' },
+          ],
+        },
+      ],
+      //...
+    };
+
+    const r: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        {
+          linkId: 'phone',
+          item: [{ linkId: 'number', answer: [{ valueString: '+1 555 555 5555' }] }],
+        },
+        {
+          linkId: 'phone',
+          item: [
+            { linkId: 'number', answer: [{ valueString: '+1 800 555 5555' }] },
+            { linkId: 'use', answer: [{ valueCoding: { code: 'work' } }] },
+          ],
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: q },
+          { name: 'questionnaire-response', resource: r },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+    const patient = batch.entry?.[0]?.resource as Patient;
+    expect(patient.telecom?.map((t) => t.use)).toStrictEqual(['home', 'work']);
+
+    // Actually send the batch to ensure it correctly updates the intended resource
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(batch);
+    expect(res2.status).toBe(200);
+    const result = res2.body as Bundle;
+    expect(result.entry?.map((e) => e.response?.status)).toStrictEqual(['201']);
   });
 });
