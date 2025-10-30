@@ -324,9 +324,10 @@ class TemplateExtractor implements CrawlerVisitor {
       // Convert to "real" path
       path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
     }
-
     if (!results.length) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      if (!isPrimitiveExtension) {
+        this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      }
       return;
     }
 
