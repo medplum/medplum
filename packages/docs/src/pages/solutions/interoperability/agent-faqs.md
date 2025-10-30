@@ -25,14 +25,14 @@ The Medplum Agent can run on any operating system version that is currently supp
 
 ## How much throughput can the Medplum Agent handle? 
 
-We benchmarked HL7 message throughput using both Original Acknowledgement Mode and [Enhanced Acknowledgement Mode (Fast ACK)](https://www.medplum.com/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack). 
+We benchmarked HL7 message throughput using both Original Acknowledgement Mode and [Enhanced Acknowledgement Mode (Fast ACK)](/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack). 
 
 We tested two server configurations: (1) a Medplum Agent on a separate network connecting to Medplum's hosted production server, simulating real-world latency to the cloud, and (2) an Agent hosted on the same machine as the Medplum Server, simulating private network scenarios. Note that throughput is significantly influenced by network latency in cross-network scenarios.
 
 | Acknowledgement Mode | Cross-Network (Agent -> Hosted Server) | Same Machine | 
 |--------|-----------|------------|
 | Original Acknowledgement Mode | 7 messages/second/channel | 174 messages/second/channel | 
-| [Enhanced Acknowledgement Mode (Fast ACK)](https://www.medplum.com/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack) | ~9,000 messages/second/channel | ~10,000 messages/second/channel | 
+| [Enhanced Acknowledgement Mode (Fast ACK)](/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack) | ~9,000 messages/second/channel | ~10,000 messages/second/channel | 
 
 ## Are auto-updates supported? As a member of our security team, what kinds of controls are available? 
 
