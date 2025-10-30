@@ -374,7 +374,9 @@ class TemplateExtractor implements CrawlerVisitor {
       path = replacePathIndex(path, this.currentContext().indexOffset);
       this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element before inserting copies
     } else if (!results.length) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      if (!isPrimitiveExtension) {
+        this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      }
       return;
     }
 
