@@ -23,6 +23,17 @@ Yes! All code contributed to Medplum, regardless if it is authored by a Medplum 
 
 The Medplum Agent can run on any operating system version that is currently supported by its vendor and has not reached end-of-life (EOL). This includes supported versions of [Windows](https://learn.microsoft.com/en-us/lifecycle/). We recommend using actively maintained versions to ensure you receive security updates and vendor support.
 
+## How much throughput can the Medplum Agent handle? 
+
+We benchmarked HL7 message throughput using both Original Acknowledgement Mode and [Enhanced Acknowledgement Mode (Fast ACK)](https://www.medplum.com/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack). 
+
+We tested two server configurations: (1) a Medplum Agent on a separate network connecting to Medplum's hosted production server, simulating real-world cross-network scenarios, and (2) an Agent hosted on the same machine as the Medplum Server, representing self-hosted deployments. Note that throughput is significantly influenced by network latency in cross-network scenarios.
+
+| Acknowledgement Mode | Cross-Network (Agent -> Hosted Server) | Same Machine | 
+|--------|-----------|------------|
+| Original Acknowledgement Mode | 7 messages/second/channel | 174 messages/second/channel | 
+| [Enhanced Acknowledgement Mode (Fast ACK)](https://www.medplum.com/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack) | ~9,000 messages/second/channel | ~10,000 messages/second/channel | 
+
 ## Are auto-updates supported? As a member of our security team, what kinds of controls are available? 
 
 The Medplum Agent supports [remote monitoring and upgrade features](/docs/agent/features) that allow for auto-updates. We recognize that healthcare organizations have varying requirements for update management based on their security policies and operational workflows, and we aim to provide operational flexibility for our users. 
