@@ -10,6 +10,7 @@ import {
 } from '@medplum/core';
 import type { Binary, Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
@@ -50,7 +51,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require,
+    require: typeof require !== 'undefined' ? require : createRequire(import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
