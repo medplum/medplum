@@ -101,7 +101,7 @@ All scheduling constraints are managed through a single consolidated extension: 
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "wed", "fri"],
-          "timeOfDay": ["09:00:00Z"], // ensure TZ aware string
+          "timeOfDay": ["09:00:00"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -197,7 +197,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00Z"],
+          "timeOfDay": ["09:00:00"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -234,7 +234,7 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [ActivityDef
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00Z"],
+          "timeOfDay": ["09:00:00"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -279,7 +279,7 @@ Here is an example Schedule that defines generic availability for all services a
         "valueTiming": {
           "repeat": {
             "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00Z"],
+            "timeOfDay": ["09:00:00"],
             "duration": 8,
             "durationUnit": "h"
           }
@@ -301,7 +301,7 @@ Here is an example Schedule that defines generic availability for all services a
           "valueTiming": {
             "repeat": {
               "dayOfWeek": ["tue", "thu"],
-              "timeOfDay": ["09:00:00Z"],
+              "timeOfDay": ["09:00:00"],
               "duration": 4,
               "durationUnit": "h"
             }
@@ -428,7 +428,7 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00Z"],
+          "timeOfDay": ["09:00:00"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -563,7 +563,7 @@ This Schedule shows how to configure default availability for all services (Mon-
         "valueTiming": {
           "repeat": {
             "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00Z"],
+            "timeOfDay": ["09:00:00"],
             "duration": 8,
             "durationUnit": "h"
           }
@@ -725,7 +725,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["tue", "thu"],
-          "timeOfDay": ["08:00:00Z"],
+          "timeOfDay": ["08:00:00"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -760,7 +760,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00Z"],
+          "timeOfDay": ["07:00:00"],
           "duration": 12,
           "durationUnit": "h"
         }
@@ -795,7 +795,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00Z"],
+          "timeOfDay": ["07:00:00"],
           "duration": 10,
           "durationUnit": "h"
         }
