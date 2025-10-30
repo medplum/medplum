@@ -7,6 +7,8 @@ import { TextDecoder, TextEncoder } from 'util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 
+let client: LambdaClient;
+
 /**
  * Executes a Bot in an AWS Lambda.
  * @param request - The bot request.
@@ -15,7 +17,9 @@ import { getConfig } from '../../config/loader';
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
   const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
-  const client = new LambdaClient({ region: config.awsRegion });
+  if (!client) {
+    client = new LambdaClient({ region: config.awsRegion });
+  }
   const name = getLambdaFunctionName(bot);
   const payload = {
     bot: createReference(bot),
