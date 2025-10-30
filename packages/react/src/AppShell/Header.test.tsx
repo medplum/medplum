@@ -68,7 +68,7 @@ describe('Header', () => {
     const reloadSpy = jest.spyOn(locationUtils, 'reload').mockImplementation(() => {});
 
     window.localStorage.setItem(
-      '@medplum:activeLogin',
+      'activeLogin',
       JSON.stringify({
         accessToken: 'abc',
         refreshToken: 'xyz',
@@ -83,7 +83,7 @@ describe('Header', () => {
       })
     );
     window.localStorage.setItem(
-      '@medplum:logins',
+      'logins',
       JSON.stringify([
         {
           accessToken: 'abc',
