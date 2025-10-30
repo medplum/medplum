@@ -23,10 +23,9 @@ export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
   private readonly prefix: string = '';
 
-  constructor(storage?: Storage) {
-    this.storage =
-      storage ?? (typeof globalThis.localStorage !== 'undefined' ? globalThis.localStorage : new MemoryStorage());
-    this.prefix = this.storage === globalThis.localStorage ? '@medplum:' : '';
+  constructor(storage?: Storage, prefix = '') {
+    this.storage = storage ?? globalThis.localStorage ?? new MemoryStorage();
+    this.prefix = prefix;
   }
 
   makeKey(key: string): string {
@@ -34,9 +33,8 @@ export class ClientStorage implements IClientStorage {
   }
 
   clear(): void {
-    // We only care about checking the keys for localStorage
-    // We only want to clear out keys that are Medplum keys
-    if (this.storage === globalThis.localStorage) {
+    // We only care about checking the keys for localStorage when a prefix is present
+    if (this.storage === globalThis.localStorage && this.prefix) {
       Object.keys(this.storage)
         .filter((key) => key.startsWith(this.prefix))
         .forEach((key) => {

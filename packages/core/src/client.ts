@@ -348,6 +348,13 @@ export interface MedplumClientOptions {
    * This can be used to set custom headers such as Cookies or Authorization headers.
    */
   defaultHeaders?: Record<string, string>;
+
+  /**
+   * Prefix to add to all keys when using `localStorage` as the backing store for `ClientStorage` (the default option in the browser).
+   *
+   * Default is `''` (no prefix).
+   */
+  storagePrefix?: string;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
