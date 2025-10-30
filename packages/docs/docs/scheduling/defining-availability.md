@@ -83,7 +83,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 <details>
 <summary>Example of the `scheduling-parameters` extension</summary>
 
-```json
+```tsx
 {
   "url": "http://medplum.com/fhir/StructureDefinition/scheduling-parameters",
   "extension": [
@@ -101,7 +101,7 @@ All scheduling constraints are managed through a single consolidated extension: 
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "wed", "fri"],
-          "timeOfDay": ["09:00:00"], // ensure TZ aware string
+          "timeOfDay": ["09:00:00Z"], // ensure TZ aware string
           "duration": 8,
           "durationUnit": "h"
         }
@@ -197,7 +197,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
+          "timeOfDay": ["09:00:00Z"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -234,7 +234,7 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [ActivityDef
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
+          "timeOfDay": ["09:00:00Z"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -279,7 +279,7 @@ Here is an example Schedule that defines generic availability for all services a
         "valueTiming": {
           "repeat": {
             "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
+            "timeOfDay": ["09:00:00Z"],
             "duration": 8,
             "durationUnit": "h"
           }
@@ -301,7 +301,7 @@ Here is an example Schedule that defines generic availability for all services a
           "valueTiming": {
             "repeat": {
               "dayOfWeek": ["tue", "thu"],
-              "timeOfDay": ["09:00:00"],
+              "timeOfDay": ["09:00:00Z"],
               "duration": 4,
               "durationUnit": "h"
             }
@@ -325,13 +325,13 @@ Here is an example Schedule that defines generic availability for all services a
 
 Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that blocks time for a specific service type.
 
-```json
+```tsx
 {
   "resourceType": "Slot",
   "schedule": {"reference": "Schedule/dr-johnson-schedule"},
   "status": "busy-unavailable",
-  "start": "2025-12-24T00:00:00-08:00",
-  "end": "2025-12-26T23:59:59-08:00",
+  "start": "2025-12-24T08:00:00Z",
+  "end": "2025-12-27T07:59:59Z",
   "comment": "Holiday vacation",
   "serviceType": [{"coding": [{"code": "office-visit"}]}]
 }
@@ -352,7 +352,7 @@ This example shows how to define availability for a simple primary care office w
 
 This ActivityDefinition defines default scheduling parameters for a 30-minute office visit with 5-minute buffers and 15-minute alignment intervals.
 
-```json
+```tsx
 {
   "resourceType": "ActivityDefinition",
   "id": "office-visit",
@@ -402,7 +402,7 @@ This ActivityDefinition defines default scheduling parameters for a 30-minute of
 
 This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits all default parameters from the ActivityDefinition without any service-specific overrides.
 
-```json
+```tsx
 {
   "resourceType": "Schedule",
   "id": "dr-johnson-schedule",
@@ -428,7 +428,7 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
+          "timeOfDay": ["09:00:00Z"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -472,7 +472,7 @@ A provider who offers different appointment types with varying availability and 
 
 This ActivityDefinition defines a 60-minute new patient visit with 15-minute buffers, 30-minute alignment intervals, and a booking limit of 3 per day.
 
-```json
+```tsx
 {
   "resourceType": "ActivityDefinition",
   "id": "new-patient-visit",
@@ -509,7 +509,7 @@ This ActivityDefinition defines a 60-minute new patient visit with 15-minute buf
 
 This ActivityDefinition defines a 20-minute follow-up visit with 5-minute buffers and 10-minute alignment intervals for more frequent scheduling.
 
-```json
+```tsx
 {
   "resourceType": "ActivityDefinition",
   "id": "follow-up-visit",
@@ -540,7 +540,7 @@ This ActivityDefinition defines a 20-minute follow-up visit with 5-minute buffer
 
 This Schedule shows how to configure default availability for all services (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
 
-```json
+```tsx
 {
   "resourceType": "Schedule",
   "id": "dr-chen-schedule",
@@ -563,7 +563,7 @@ This Schedule shows how to configure default availability for all services (Mon-
         "valueTiming": {
           "repeat": {
             "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
+            "timeOfDay": ["09:00:00Z"],
             "duration": 8,
             "durationUnit": "h"
           }
@@ -631,7 +631,7 @@ A bariatric surgery requiring surgeon, OR room, and anesthesiologist coordinatio
 
 This ActivityDefinition defines a 120-minute surgical procedure requiring coordination of surgeon, anesthesiologist, and OR room with 45/30-minute buffers and multiple booking limits (2 per day, 8 per week).
 
-```json
+```tsx
 {
   "resourceType": "ActivityDefinition",
   "id": "bariatric-surgery",
@@ -706,7 +706,7 @@ This ActivityDefinition defines a 120-minute surgical procedure requiring coordi
 
 This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited to Tuesday and Thursday mornings (8am-4pm).
 
-```json
+```tsx
 {
   "resourceType": "Schedule",
   "id": "surgeon-martinez-schedule",
@@ -725,7 +725,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["tue", "thu"],
-          "timeOfDay": ["08:00:00"],
+          "timeOfDay": ["08:00:00Z"],
           "duration": 8,
           "durationUnit": "h"
         }
@@ -741,7 +741,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
 
 This Schedule shows Operating Room 3's availability for surgical procedures, available weekdays 7am-7pm with extended 12-hour blocks.
 
-```json
+```tsx
 {
   "resourceType": "Schedule",
   "id": "or-3-schedule",
@@ -760,7 +760,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00"],
+          "timeOfDay": ["07:00:00Z"],
           "duration": 12,
           "durationUnit": "h"
         }
@@ -776,7 +776,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
 
 This Schedule shows Dr. Kim's availability for surgical procedures, covering weekdays 7am-5pm (10-hour blocks).
 
-```json
+```tsx
 {
   "resourceType": "Schedule",
   "id": "anesthesiologist-kim-schedule",
@@ -795,7 +795,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00"],
+          "timeOfDay": ["07:00:00Z"],
           "duration": 10,
           "durationUnit": "h"
         }
