@@ -32,4 +32,3 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
   return <ResourceTable value={displayResource} />;
 }
-

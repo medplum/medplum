@@ -304,11 +304,7 @@ export function SpacesPage(): JSX.Element {
       {/* History Sidebar */}
       <Transition mounted={historyOpened} transition="slide-right" duration={200}>
         {(styles) => (
-          <Paper
-            className={classes.borderRight}
-            w={320}
-            style={{ ...styles, position: 'relative'}}
-          >
+          <Paper className={classes.borderRight} w={320} style={{ ...styles, position: 'relative' }}>
             <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
           </Paper>
         )}
