@@ -314,6 +314,45 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
+  test('storagePrefix option', () => {
+    localStorage.clear();
+
+    // Create client with custom storage prefix
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      storagePrefix: '@myapp:',
+      fetch: mockFetch(200, {}),
+    });
+
+    // Set some data through the client's storage
+    const storage = (client as any).storage;
+    storage.setString('testKey', 'testValue');
+
+    // Verify it's stored with the correct prefix in localStorage
+    expect(localStorage.getItem('@myapp:testKey')).toBe('testValue');
+    expect(localStorage.getItem('testKey')).toBeNull();
+
+    // Verify we can retrieve it through the storage
+    expect(storage.getString('testKey')).toBe('testValue');
+
+    // Test with objects
+    const testObject = { foo: 'bar', nested: { value: 123 } };
+    storage.setObject('config', testObject);
+    expect(localStorage.getItem('@myapp:config')).toBeTruthy();
+    expect(storage.getObject('config')).toMatchObject(testObject);
+
+    // Create another client without prefix - should not see prefixed data
+    const clientWithoutPrefix = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      fetch: mockFetch(200, {}),
+    });
+    const unprefixedStorage = (clientWithoutPrefix as any).storage;
+    expect(unprefixedStorage.getString('testKey')).toBeUndefined();
+    expect(unprefixedStorage.getObject('config')).toBeUndefined();
+
+    localStorage.clear();
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',

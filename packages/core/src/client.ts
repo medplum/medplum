@@ -909,7 +909,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage ?? new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage(undefined, options?.storagePrefix);
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
     this.fhirBaseUrl = concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4');
