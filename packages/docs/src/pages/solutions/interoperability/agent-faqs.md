@@ -27,7 +27,7 @@ The Medplum Agent can run on any operating system version that is currently supp
 
 We benchmarked HL7 message throughput using both Original Acknowledgement Mode and [Enhanced Acknowledgement Mode (Fast ACK)](https://www.medplum.com/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack). 
 
-We tested two server configurations: (1) a Medplum Agent on a separate network connecting to Medplum's hosted production server, simulating real-world cross-network scenarios, and (2) an Agent hosted on the same machine as the Medplum Server, representing self-hosted deployments. Note that throughput is significantly influenced by network latency in cross-network scenarios.
+We tested two server configurations: (1) a Medplum Agent on a separate network connecting to Medplum's hosted production server, simulating real-world latency to the cloud, and (2) an Agent hosted on the same machine as the Medplum Server, simulating private network scenarios. Note that throughput is significantly influenced by network latency in cross-network scenarios.
 
 | Acknowledgement Mode | Cross-Network (Agent -> Hosted Server) | Same Machine | 
 |--------|-----------|------------|
