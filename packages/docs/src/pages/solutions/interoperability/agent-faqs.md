@@ -29,7 +29,7 @@ We benchmarked HL7 message throughput using both Original Acknowledgement Mode a
 
 We tested two server configurations: (1) a Medplum Agent on a separate network connecting to Medplum's hosted production server, simulating real-world latency to the cloud, and (2) an Agent hosted on the same machine as the Medplum Server, simulating private network scenarios. Note that throughput is significantly influenced by network latency in cross-network scenarios.
 
-| Acknowledgement Mode | Cross-Network (Agent -> Hosted Server) | Same Machine | 
+| Acknowledgement Mode | Cross-Network (Agent -> Cloud Server) | Same Machine | 
 |--------|-----------|------------|
 | Original Acknowledgement Mode | 7 messages/second/channel | 174 messages/second/channel | 
 | [Enhanced Acknowledgement Mode (Fast ACK)](/docs/agent/acknowledgement-modes#enhanced-acknowledgement-mode-fast-ack) | ~9,000 messages/second/channel | ~10,000 messages/second/channel | 
