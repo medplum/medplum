@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Interface for statistical data about message RTT (Round Trip Time)
+ * Interface for statistical data about message RTT (round-trip time).
  */
 export interface RttStats {
   count: number;
@@ -29,9 +29,10 @@ export class ChannelStats {
   private gcInterval: NodeJS.Timeout;
 
   /**
-   * Creates a new ChannelStats instance
-   * @param maxRttSamples - Maximum number of RTT samples to keep (default: 1000)
-   * @param maxPendingAge - Maximum age in milliseconds for pending messages before cleanup (default: 300000 = 5 minutes)
+   * Creates a new ChannelStats instance.
+   * @param maxRttSamples - Maximum number of RTT samples to keep (default: 1000).
+   * @param maxPendingAge - Maximum age in milliseconds for pending messages before cleanup (default: 300000 = 5 minutes).
+   * @param gcIntervalMs - Interval in milliseconds to cleanup pending messages (default: 60000 = 1 minute).
    */
   constructor(maxRttSamples = 1000, maxPendingAge = 300000, gcIntervalMs = 1000 * 60) {
     this.maxRttSamples = maxRttSamples;
@@ -42,8 +43,8 @@ export class ChannelStats {
   }
 
   /**
-   * Records when a message is sent
-   * @param messageId - Unique identifier for the message
+   * Records when a message is sent.
+   * @param messageId - Unique identifier for the message.
    */
   recordMessageSent(messageId: string): void {
     this.pendingMessages.set(messageId, Date.now());
@@ -51,9 +52,9 @@ export class ChannelStats {
   }
 
   /**
-   * Records when an acknowledgement is received and calculates RTT
-   * @param messageId - Unique identifier for the message
-   * @returns The calculated RTT in milliseconds, or undefined if no matching message was found
+   * Records when an acknowledgement is received and calculates RTT.
+   * @param messageId - Unique identifier for the message.
+   * @returns The calculated RTT in milliseconds, or undefined if no matching message was found.
    */
   recordAckReceived(messageId: string): number | undefined {
     const sentTime = this.pendingMessages.get(messageId);
@@ -68,8 +69,8 @@ export class ChannelStats {
   }
 
   /**
-   * Adds an RTT sample to the collection, maintaining max size
-   * @param rtt - RTT value in milliseconds
+   * Adds an RTT sample to the collection, maintaining max size.
+   * @param rtt - RTT value in milliseconds.
    */
   private addRttSample(rtt: number): void {
     this.completedRtts.push(rtt);
@@ -80,7 +81,7 @@ export class ChannelStats {
   }
 
   /**
-   * Removes pending messages that are older than maxPendingAge
+   * Removes pending messages that are older than maxPendingAge.
    */
   private cleanupOldPendingMessages(): void {
     const now = Date.now();
@@ -98,9 +99,9 @@ export class ChannelStats {
   }
 
   /**
-   * Calculates a specific percentile from RTT samples
-   * @param percentile - Percentile to calculate (0-100)
-   * @returns The percentile value, or undefined if no samples exist
+   * Calculates a specific percentile from RTT samples.
+   * @param percentile - Percentile to calculate (0-100).
+   * @returns The percentile value, or undefined if no samples exist.
    */
   private calculatePercentile(percentile: number): number | undefined {
     if (this.completedRtts.length === 0) {
@@ -113,8 +114,8 @@ export class ChannelStats {
   }
 
   /**
-   * Gets current statistics about message RTT
-   * @returns RttStats object containing all statistics
+   * Gets current statistics about message RTT.
+   * @returns RttStats object containing all statistics.
    */
   getStats(): RttStats {
     const count = this.completedRtts.length;
@@ -150,7 +151,7 @@ export class ChannelStats {
   }
 
   /**
-   * Resets all statistics and pending messages
+   * Resets all statistics and pending messages.
    */
   reset(): void {
     this.pendingMessages.clear();
@@ -158,21 +159,21 @@ export class ChannelStats {
   }
 
   /**
-   * Gets the number of pending messages awaiting acknowledgement
+   * Gets the number of pending messages awaiting acknowledgement.
    */
   getPendingCount(): number {
     return this.pendingMessages.size;
   }
 
   /**
-   * Gets the number of completed RTT samples
+   * Gets the number of completed RTT samples.
    */
   getCompletedCount(): number {
     return this.completedRtts.length;
   }
 
   /**
-   * Cleans up the ChannelStats instance
+   * Cleans up the ChannelStats instance.
    */
   cleanup(): void {
     clearInterval(this.gcInterval);
