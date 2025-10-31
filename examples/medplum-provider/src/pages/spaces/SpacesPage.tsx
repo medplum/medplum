@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Button, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition } from '@mantine/core';
+import { Stack, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition, CloseButton } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
-import { IconTrash, IconHistory } from '@tabler/icons-react';
+import { IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
-import { MessageWithLinks } from '../../components/MessageWithLinks';
+import { ResourceBox } from '../../components/spaces/ResourceBox';
+import { ResourcePanel } from '../../components/spaces/ResourcePanel';
 import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
 import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
@@ -14,6 +15,8 @@ import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
 import classes from './SpacesPage.module.css';
 import type { Identifier } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import cx from 'clsx';
 
 const botId: Identifier = {
   value: 'ai-api-bot',
@@ -31,6 +34,7 @@ export function SpacesPage(): JSX.Element {
   const [topicId, setTopicId] = useState<string | undefined>();
   const [historyOpened, setHistoryOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,12 +47,6 @@ export function SpacesPage(): JSX.Element {
     }
   }, [messages, hasStarted]);
 
-  const handleClear = (): void => {
-    setMessages([SYSTEM_MESSAGE]);
-    setHasStarted(false);
-    setTopicId(undefined);
-  };
-
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
     try {
       setLoading(true);
@@ -56,6 +54,7 @@ export function SpacesPage(): JSX.Element {
       setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
       setTopicId(selectedTopicId);
       setHasStarted(true);
+      setSelectedResource(undefined);
     } catch (error: any) {
       showErrorNotification(error);
     } finally {
@@ -148,12 +147,18 @@ export function SpacesPage(): JSX.Element {
 
               if (result?.resourceType === 'Bundle' && result?.entry) {
                 result.entry.forEach((entry: any) => {
-                  if (entry.resource?.resourceType && entry.resource?.id) {
-                    allResourceRefs.push(`${entry.resource.resourceType}/${entry.resource.id}`);
+                  if (entry.resource) {
+                    const ref = getReferenceString(entry.resource);
+                    if (ref) {
+                      allResourceRefs.push(ref);
+                    }
                   }
                 });
-              } else if (result?.resourceType && result?.id) {
-                allResourceRefs.push(`${result.resourceType}/${result.id}`);
+              } else if (result) {
+                const ref = getReferenceString(result);
+                if (ref) {
+                  allResourceRefs.push(ref);
+                }
               }
 
               const toolMessage: Message = {
@@ -209,15 +214,14 @@ export function SpacesPage(): JSX.Element {
         });
       }
 
-      // To be replaced for Resource display
       const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
       if (content) {
-        let finalContent = content;
-        if (allResourceRefs.length > 0) {
-          const uniqueRefs = [...new Set(allResourceRefs)];
-          finalContent = `${content}\n\nResources Found:\n${uniqueRefs.map((ref) => `• ${ref}`).join('\n')}`;
-        }
-        const assistantMessage: Message = { role: 'assistant', content: finalContent };
+        const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content,
+          resources: uniqueRefs,
+        };
         setMessages([...currentMessages, assistantMessage]);
 
         // Save assistant message
@@ -297,89 +301,105 @@ export function SpacesPage(): JSX.Element {
   // Chat layout after first message
   return (
     <Flex h="calc(100vh - 68px)">
+      {/* History Sidebar */}
       <Transition mounted={historyOpened} transition="slide-right" duration={200}>
         {(styles) => (
-          <Box
-            style={{
-              ...styles,
-              width: '320px',
-              borderRight: '1px solid #e9ecef',
-              position: 'relative',
-            }}
-          >
+          <Paper className={classes.borderRight} w={320} style={{ ...styles, position: 'relative' }}>
             <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-          </Box>
+          </Paper>
         )}
       </Transition>
 
-      <Stack
-        p="md"
-        className={classes.fadeIn}
-        style={{
-          flex: 1,
-        }}
-      >
-        <Group justify="space-between">
-          <Group gap="xs">
-            <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
-              <IconHistory size={20} />
-            </ActionIcon>
+      {/* Main content column - chat/resource + input */}
+      <Flex direction="column" style={{ flex: 1 }}>
+        {/* Chat and Resource panels row */}
+        <Flex style={{ overflow: 'hidden', flex: 1 }}>
+          {/* Chat Section */}
+          <Paper
+            className={cx(classes.fadeIn, selectedResource ? classes.borderRight : undefined)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <Group justify="space-between" p="md">
+              <Group gap="xs">
+                <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
+                  <IconHistory size={20} />
+                </ActionIcon>
 
-            <Text size="xl" fw={700}>
-              AI Assistant
-            </Text>
-          </Group>
+                <Text size="xl" fw={700}>
+                  AI Assistant
+                </Text>
+              </Group>
+            </Group>
 
-          <Group gap="xs">
-            <Text size="sm" c="dimmed">
-              {visibleMessages.length} messages
-            </Text>
-            <Button size="xs" variant="subtle" color="red" onClick={handleClear} leftSection={<IconTrash size={14} />}>
-              Clear
-            </Button>
-          </Group>
-        </Group>
+            <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
+              <Stack gap="md" p="md">
+                {visibleMessages.map((message, index) => (
+                  <Box
+                    key={index}
+                    style={{
+                      alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                      maxWidth: '70%',
+                      width: message.role === 'assistant' && message.resources ? '100%' : undefined,
+                    }}
+                  >
+                    <Paper p="md" withBorder bg={message.role === 'user' ? 'violet.0' : undefined}>
+                      <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                    </Paper>
 
-        <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
-          <Stack gap="md" p="xs">
-            {visibleMessages.map((message, index) => (
-              <Paper
-                key={index}
-                p="md"
-                withBorder
-                style={{
-                  alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '70%',
-                  backgroundColor: message.role === 'user' ? '#F8F0FC' : '#f5f5f5',
-                }}
-              >
-                {message.role === 'assistant' ? (
-                  <MessageWithLinks content={message.content || ''} />
-                ) : (
-                  <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                    {message.resources && message.resources.length > 0 && (
+                      <Stack gap="xs" mt="sm">
+                        {message.resources.map((resourceRef, idx) => (
+                          <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                ))}
+                {loading && (
+                  <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
+                    <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
+                  </Paper>
                 )}
-              </Paper>
-            ))}
-            {loading && (
-              <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-                <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
-              </Paper>
-            )}
-          </Stack>
-        </ScrollArea>
+              </Stack>
+            </ScrollArea>
+          </Paper>
 
-        <Box w="50%" style={{ margin: '0 auto' }}>
-          <ChatInput
-            input={input}
-            onInputChange={setInput}
-            onKeyDown={handleKeyDown}
-            onSend={handleSend}
-            loading={loading}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-          />
-        </Box>
-      </Stack>
+          {/* Right Panel for Resource Details */}
+          {selectedResource && (
+            <Paper className={classes.previewResource}>
+              <Group justify="space-between" p="md">
+                <Text size="lg" fw={600}>
+                  Resource Details
+                </Text>
+                <CloseButton onClick={() => setSelectedResource(undefined)} />
+              </Group>
+              <ScrollArea style={{ flex: 1 }} p="md">
+                <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
+              </ScrollArea>
+            </Paper>
+          )}
+        </Flex>
+
+        {/* Input at bottom */}
+        <Paper className={classes.borderTop}>
+          <Box w="50%" style={{ margin: '0 auto' }} p="md">
+            <ChatInput
+              input={input}
+              onInputChange={setInput}
+              onKeyDown={handleKeyDown}
+              onSend={handleSend}
+              loading={loading}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+            />
+          </Box>
+        </Paper>
+      </Flex>
     </Flex>
   );
 }

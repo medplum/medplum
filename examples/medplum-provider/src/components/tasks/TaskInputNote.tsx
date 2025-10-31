@@ -14,10 +14,10 @@ import {
   Textarea,
 } from '@mantine/core';
 import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
-import type { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import type { Annotation, QuestionnaireResponse, Task, Reference } from '@medplum/fhirtypes';
+import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
@@ -25,26 +25,26 @@ import { TaskNoteItem } from './TaskNoteItem';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
-interface TasksInputNoteProps {
-  task: Task;
-  onTaskChange: (task: Task) => void;
-  onDeleteTask: (task: Task) => void;
+interface TaskInputNoteProps {
+  task: Task | Reference<Task>;
+  onTaskChange?: (task: Task) => void;
+  onDeleteTask?: (task: Task) => void;
 }
 
-export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
+export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
   const { task: initialTask, onTaskChange, onDeleteTask } = props;
   const medplum = useMedplum();
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const author = useMedplumProfile();
-  const [task, setTask] = useState<Task>(initialTask);
+  const task = useResource(initialTask);
   const [note, setNote] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    setTask(initialTask);
-  }, [initialTask]);
-
   const handleAddComment = async (): Promise<void> => {
+    if (!task) {
+      return;
+    }
+
     const comment: Annotation = {
       text: note,
       authorReference: author && createReference(author),
@@ -58,7 +58,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         ...task,
         note: taskNotes,
       } as Task;
-      onTaskChange(updatedTask);
+      onTaskChange?.(updatedTask);
       setNote('');
     } catch (error) {
       showErrorNotification(error);
@@ -70,17 +70,24 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   };
 
   const confirmDeleteTask = async (): Promise<void> => {
-    onDeleteTask(task);
+    if (!task) {
+      return;
+    }
+    onDeleteTask?.(task);
     setShowDeleteModal(false);
   };
 
   const handleMarkAsCompleted = async (): Promise<void> => {
+    if (!task) {
+      return;
+    }
+
     try {
       const result: Task = {
         ...task,
         status: 'completed',
       };
-      onTaskChange(result);
+      onTaskChange?.(result);
       await debouncedUpdateResource(result);
     } catch (error) {
       showErrorNotification(error);
@@ -103,7 +110,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
               },
             ],
           });
-          onTaskChange(updatedTask);
+          onTaskChange?.(updatedTask);
         }
       } catch (err) {
         showErrorNotification(err);
@@ -111,6 +118,10 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
     },
     SAVE_TIMEOUT_MS
   );
+
+  if (!task) {
+    return <Loading />;
+  }
 
   return (
     <Flex direction="column" h="100%">
@@ -124,30 +135,34 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
           </Flex>
 
           <Flex align="center" gap="md">
-            <ActionIcon
-              variant="outline"
-              c="dimmed"
-              color="gray"
-              aria-label="Delete Task"
-              radius="xl"
-              w={36}
-              h={36}
-              onClick={() => handleDeleteTask()}
-            >
-              <IconTrash size={24} />
-            </ActionIcon>
+            {onDeleteTask && (
+              <ActionIcon
+                variant="outline"
+                c="dimmed"
+                color="gray"
+                aria-label="Delete Task"
+                radius="xl"
+                w={36}
+                h={36}
+                onClick={() => handleDeleteTask()}
+              >
+                <IconTrash size={24} />
+              </ActionIcon>
+            )}
 
-            <ActionIcon
-              variant={task.status === 'completed' ? 'filled' : 'outline'}
-              color={task.status === 'completed' ? 'blue' : 'gray'}
-              aria-label="Mark as Completed"
-              radius="xl"
-              w={36}
-              h={36}
-              onClick={() => handleMarkAsCompleted()}
-            >
-              <IconCheck size={24} />
-            </ActionIcon>
+            {onTaskChange && (
+              <ActionIcon
+                variant={task.status === 'completed' ? 'filled' : 'outline'}
+                color={task.status === 'completed' ? 'blue' : 'gray'}
+                aria-label="Mark as Completed"
+                radius="xl"
+                w={36}
+                h={36}
+                onClick={() => handleMarkAsCompleted()}
+              >
+                <IconCheck size={24} />
+              </ActionIcon>
+            )}
           </Flex>
         </Flex>
         <Divider />

@@ -30,7 +30,7 @@ import { TaskFilterMenu } from './TaskFilterMenu';
 import { IconClipboardList, IconPlus } from '@tabler/icons-react';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { TasksInputNote } from './TaskInputNote';
+import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
 import { NewTaskModal } from './NewTaskModal';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
@@ -262,7 +262,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
               className={classes.borderRight}
             >
               {selectedTask && (
-                <TasksInputNote task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
+                <TaskInputNote task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
               )}
             </Box>
 
