@@ -40,7 +40,7 @@ import { loadTestConfig } from '../config/loader';
 import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getShardSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
@@ -55,7 +55,7 @@ describe('AccessPolicy', () => {
   beforeEach(async () => {
     const result = await createTestProject();
     ({ project: testProject, projectShardId: testProjectShardId } = result);
-    systemRepo = getSystemRepo(undefined, testProjectShardId);
+    systemRepo = getShardSystemRepo(testProjectShardId);
   });
 
   afterAll(async () => {
@@ -81,6 +81,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -98,6 +99,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -127,6 +129,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -164,6 +167,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -201,6 +205,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -231,6 +236,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -261,6 +267,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -308,6 +315,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -361,6 +369,7 @@ describe('AccessPolicy', () => {
         }
 
         const repo = new Repository({
+          projectShardId: testProjectShardId,
           extendedMode: true,
           accessPolicy,
           author: {
@@ -413,6 +422,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         accessPolicy,
         author: {
@@ -440,6 +450,7 @@ describe('AccessPolicy', () => {
       expect(readObservation.meta?.compartment).toHaveLength(1);
 
       const adminRepo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         projectAdmin: true,
         author: {
@@ -512,6 +523,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo1 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -520,6 +532,7 @@ describe('AccessPolicy', () => {
       });
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -591,6 +604,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo1 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -599,6 +613,7 @@ describe('AccessPolicy', () => {
       });
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/456',
@@ -652,6 +667,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo1 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -660,6 +676,7 @@ describe('AccessPolicy', () => {
       });
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: 'Practitioner/123',
@@ -952,6 +969,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -997,6 +1015,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1041,6 +1060,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1069,6 +1089,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1109,6 +1130,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1175,6 +1197,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1228,6 +1251,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: { reference: 'Practitioner/123' },
         accessPolicy,
       });
@@ -1363,6 +1387,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: { reference: 'Practitioner/123' },
         accessPolicy,
       });
@@ -1410,7 +1435,11 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+      const repo2 = new Repository({
+        projectShardId: testProjectShardId,
+        author: { reference: 'Practitioner/123' },
+        accessPolicy,
+      });
 
       const readResource1 = await repo2.readResource<Observation>('Observation', obs1.id);
       expect(readResource1).toMatchObject({
@@ -1528,7 +1557,11 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+      const repo2 = new Repository({
+        projectShardId: testProjectShardId,
+        author: { reference: 'Practitioner/123' },
+        accessPolicy,
+      });
 
       const readResource1 = await repo2.readResource<Observation>('Observation', obsQuantity.id);
       expect(readResource1).toMatchObject({
@@ -1649,6 +1682,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1699,6 +1733,7 @@ describe('AccessPolicy', () => {
       };
 
       const repo2 = new Repository({
+        projectShardId: testProjectShardId,
         author: {
           reference: 'Practitioner/123',
         },
@@ -1730,6 +1765,7 @@ describe('AccessPolicy', () => {
   test('Compound parameterized access policy', () =>
     withTestContext(async () => {
       const adminRepo = new Repository({
+        projectShardId: testProjectShardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [testProject],
         strictMode: true,
@@ -1786,6 +1822,7 @@ describe('AccessPolicy', () => {
   test('String parameters', () =>
     withTestContext(async () => {
       const adminRepo = new Repository({
+        projectShardId: testProjectShardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [testProject],
         strictMode: true,
@@ -1860,7 +1897,6 @@ describe('AccessPolicy', () => {
       const adminInviteResult = await inviteUser({
         resourceType: 'Practitioner',
         project,
-        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -1877,7 +1913,6 @@ describe('AccessPolicy', () => {
       const inviteResult = await inviteUser({
         resourceType: 'Patient',
         project,
-        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -2300,6 +2335,7 @@ describe('AccessPolicy', () => {
       const { project, membership, projectShardId } = await createTestProject({ superAdmin: true, withClient: true });
 
       const adminRepo = new Repository({
+        projectShardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project],
         strictMode: true,
@@ -2323,7 +2359,6 @@ describe('AccessPolicy', () => {
       const adminInviteResult = await inviteUser({
         resourceType: 'Practitioner',
         project,
-        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -2364,7 +2399,6 @@ describe('AccessPolicy', () => {
       const inviteResult = await inviteUser({
         resourceType: 'Patient',
         project,
-        projectShardId,
         externalId: randomUUID(),
         firstName: 'X',
         lastName: 'Y',
@@ -2404,6 +2438,7 @@ describe('AccessPolicy', () => {
         ],
       });
       const repo = new Repository({
+        projectShardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project],
         projectAdmin: true,
@@ -2470,6 +2505,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
+        projectShardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project1],
         projectAdmin: true,
@@ -2480,6 +2516,7 @@ describe('AccessPolicy', () => {
 
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
+        projectShardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project2],
         projectAdmin: true,
@@ -2548,6 +2585,7 @@ describe('AccessPolicy', () => {
   test('Shared project read only', () =>
     withTestContext(async () => {
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [testProject],
         projectAdmin: true,
@@ -2573,6 +2611,7 @@ describe('AccessPolicy', () => {
 
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
+        projectShardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project1],
         projectAdmin: true,
@@ -2583,6 +2622,7 @@ describe('AccessPolicy', () => {
 
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
+        projectShardId: systemRepo.shardId,
         author: { reference: 'Practitioner/' + randomUUID() },
         projects: [project2, project1],
         projectAdmin: true,
@@ -2673,6 +2713,7 @@ describe('AccessPolicy', () => {
       // Repos for the test user
 
       const repoWithoutAccessPolicy = new Repository({
+        projectShardId,
         author: createReference(profile),
         projects: [project],
         projectAdmin: false,
@@ -2681,6 +2722,7 @@ describe('AccessPolicy', () => {
       });
 
       const repoWithAccessPolicy = new Repository({
+        projectShardId,
         author: createReference(profile),
         projects: [project],
         projectAdmin: false,

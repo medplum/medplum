@@ -20,7 +20,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { GlobalProject } from '../../sharding/sharding-types';
-import { getGlobalSystemRepo, getSystemRepo } from '../repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
@@ -104,7 +104,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     ownerRef = login.user as Reference;
   }
 
-  const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
@@ -135,9 +135,9 @@ export async function createProject(
   const log = getLogger();
   const config = getConfig();
   const projectShardId = config.defaultShardId ?? 'global';
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
 
-  log.info('Project creation request received', { shardId: systemRepo.projectShardId, name: projectName });
+  log.info('Project creation request received', { shardId: systemRepo.shardId, name: projectName });
   const partialProject: Project = {
     resourceType: 'Project',
     name: projectName,

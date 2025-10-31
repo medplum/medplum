@@ -11,7 +11,8 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -33,7 +34,8 @@ const identityProvider = {
 
 let project: WithId<Project>;
 let projectShardId: string;
-let defaultClient: ClientApplication;
+let client: ClientApplication;
+let systemRepo: SystemRepository;
 let externalAuthClient: ClientApplication;
 
 describe('External', () => {
@@ -52,11 +54,9 @@ describe('External', () => {
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
-      project = registerResult.project;
-      projectShardId = registerResult.projectShardId;
-      defaultClient = registerResult.client;
+      ({ project, projectShardId, client } = registerResult);
 
-      const systemRepo = getSystemRepo();
+      systemRepo = getShardSystemRepo(projectShardId);
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -87,7 +87,6 @@ describe('External', () => {
       // Invite user with external ID
       await inviteUser({
         project,
-        projectShardId,
         externalId,
         resourceType: 'Patient',
         firstName: 'External',
@@ -278,7 +277,7 @@ describe('External', () => {
   test('Invalid client', async () => {
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
-      state: JSON.stringify({ redirectUri, clientId: defaultClient.id }),
+      state: JSON.stringify({ redirectUri, clientId: client.id }),
     });
 
     // Mock the external identity provider
@@ -355,8 +354,6 @@ describe('External', () => {
 
   test('Subject auth success', async () => {
     const subjectAuthClient = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
-
       // Create a new client application with external subject auth
       const client = await createClient(systemRepo, {
         project,
@@ -413,8 +410,6 @@ describe('External', () => {
 
   test('Missing subject', async () => {
     const subjectAuthClient = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
-
       // Create a new client application with external subject auth
       const client = await createClient(systemRepo, {
         project,
@@ -459,8 +454,6 @@ describe('External', () => {
 
   test('Client secret post', async () => {
     const clientSecretPostClient = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
-
       // Create a new client application with external subject auth
       const client = await createClient(systemRepo, {
         project,
@@ -521,8 +514,6 @@ describe('External', () => {
     const domain = `${randomUUID()}.example.com`;
     const redirectUri = `https://${domain}/auth/callback`;
     const client = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
-
       // Create a new project
       const { project, client } = await registerNew({
         firstName: 'External',
@@ -551,7 +542,6 @@ describe('External', () => {
       // Invite user with external ID
       const { user, membership } = await inviteUser({
         project,
-        projectShardId,
         externalId,
         resourceType: 'Patient',
         firstName: 'External',

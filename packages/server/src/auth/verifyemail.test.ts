@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyEmail } from './verifyemail';
@@ -32,6 +32,8 @@ export async function createUserSecurityRequest(
 }
 
 describe('Verify email handler', () => {
+  const globalSystemRepo = getGlobalSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -56,7 +58,6 @@ describe('Verify email handler', () => {
 
   test('Success', async () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const usr = await verifyEmail(user);
 
       // Attempt verification with incorrect secret
@@ -77,11 +78,11 @@ describe('Verify email handler', () => {
       expect(res2.status).toBe(200);
 
       // Check that the security request was marked as used
-      const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', usr.id);
+      const afterVerifyResult = await globalSystemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', usr.id);
       expect(afterVerifyResult.used).toBe(true);
 
       // Check that the user was updated
-      const userAfter = await systemRepo.readResource<User>('User', user.id);
+      const userAfter = await globalSystemRepo.readResource<User>('User', user.id);
       expect(userAfter.emailVerified).toBe(true);
 
       // Should not be able to verify again with the same UserSecurityRequest
@@ -93,15 +94,14 @@ describe('Verify email handler', () => {
     }));
 
   test('Incorrect UserSecurityRequest.type', async () => {
-    const systemRepo = getSystemRepo();
-    const invite = await createUserSecurityRequest(systemRepo, user, 'invite');
+    const invite = await createUserSecurityRequest(globalSystemRepo, user, 'invite');
     const res1 = await request(app).post('/auth/verifyemail').type('json').send({
       id: invite.id,
       secret: invite.secret,
     });
     expect(res1.status).toBe(400);
 
-    const reset = await createUserSecurityRequest(systemRepo, user, 'reset');
+    const reset = await createUserSecurityRequest(globalSystemRepo, user, 'reset');
     const res2 = await request(app).post('/auth/verifyemail').type('json').send({
       id: reset.id,
       secret: reset.secret,

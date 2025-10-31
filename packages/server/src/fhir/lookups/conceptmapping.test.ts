@@ -6,10 +6,10 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 describe('ConceptMapping lookup table', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   const conceptMap: ConceptMap = {
     resourceType: 'ConceptMap',
@@ -55,7 +55,7 @@ describe('ConceptMapping lookup table', () => {
     withTestContext(async () => {
       const systemResource = await systemRepo.createResource(conceptMap);
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
       const results = await db.query(
         'SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
         [systemResource.id]
@@ -71,7 +71,7 @@ describe('ConceptMapping lookup table', () => {
       const systemResource = await systemRepo.createResource(conceptMap);
       await systemRepo.updateResource({ ...systemResource, group: undefined });
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
       const results = await db.query(
         'SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1',
         [systemResource.id]
@@ -86,7 +86,7 @@ describe('ConceptMapping lookup table', () => {
     const resource = await systemRepo.createResource(conceptMap);
     await systemRepo.deleteResource(resource.resourceType, resource.id);
 
-    const db = getDatabasePool(DatabaseMode.READER);
+    const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
     const results = await db.query('SELECT "sourceCode", "targetCode" FROM "ConceptMapping" WHERE "conceptMap" = $1', [
       resource.id,
     ]);

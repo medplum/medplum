@@ -16,8 +16,8 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import type { Repository, SystemRepository } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -88,6 +88,12 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.isAsync = options?.async ?? false;
   }
 
+  private __systemRepo?: SystemRepository;
+  get systemRepo(): SystemRepository {
+    this.__systemRepo ??= getShardSystemRepo(this.authState.projectShardId);
+    return this.__systemRepo;
+  }
+
   get project(): WithId<Project> {
     return this.authState.project;
   }
@@ -113,7 +119,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   getProjectSystemRepo(): Repository {
-    return getSystemRepo(undefined, this.authState.projectShardId);
+    return getShardSystemRepo(this.authState.projectShardId);
   }
 }
 

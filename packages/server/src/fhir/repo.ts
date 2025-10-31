@@ -97,7 +97,12 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
-import { getProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
+import {
+  getProjectAndProjectShardId,
+  getProjectShardId,
+  GLOBAL_SHARD_ID,
+  GlobalResourceTypes,
+} from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
@@ -159,6 +164,8 @@ const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFai
  * such as "who is the current user?" and "what is the current project?"
  */
 export interface RepositoryContext {
+  projectShardId: string;
+
   /**
    * The current author reference.
    * This should be a FHIR reference string (i.e., "resourceType/id").
@@ -233,8 +240,6 @@ export interface RepositoryContext {
    * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
-
-  projectShardId?: string;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -316,8 +321,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = RepositoryMode.WRITER;
   }
 
-  get projectShardId(): string {
-    return this.context.projectShardId ?? 'TODO-Repository.projectShardIdDefault';
+  get shardId(): string {
+    return this.context.projectShardId;
   }
 
   clone(): Repository {
@@ -394,7 +399,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId === this.context.currentProject?.id) {
       return this.context.currentProject;
     }
-    return getSystemRepo().readResource<Project>('Project', projectId);
+    const { project } = await getProjectAndProjectShardId(projectId);
+    return project;
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
@@ -403,7 +409,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
-      const systemRepo = getSystemRepo();
+      const systemRepo = getShardSystemRepo(this.shardId);
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -876,7 +882,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
       const project = await this.getProjectById(projectId);
-      await addBackgroundJobs(result, existing, { project, interaction });
+      await addBackgroundJobs(this.shardId, result, existing, { project, interaction });
     });
 
     const output = deepClone(result);
@@ -2088,7 +2094,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
     } else {
-      const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = getShardSystemRepo(this.shardId, this.conn); // Re-use DB connection to preserve transaction state
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
@@ -2457,13 +2463,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resourceType: string | undefined,
     defaultShardId: string = 'TODO-getResourceTypeShardIdDefault'
   ): string {
-    if (!this.projectShardId) {
+    if (!this.shardId) {
       throw new Error('No project shard ID');
     }
 
     if (!resourceType) {
       if (defaultShardId.startsWith('TODO')) {
-        defaultShardId = this.projectShardId;
+        defaultShardId = this.shardId;
       }
       return defaultShardId;
     }
@@ -2472,14 +2478,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return 'global';
     }
 
-    return this.projectShardId;
+    return this.shardId;
   }
 
   private assertShardAccess(resourceType?: ResourceType): void {
     if (!resourceType) {
       return;
     }
-    if (!this.projectShardId) {
+    if (!this.shardId) {
       return;
     }
     if (!this.conn?.shardId) {
@@ -2497,7 +2503,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           JSON.stringify({
             resourceType,
             resourceTypeShardId: this.getResourceTypeShardId(resourceType),
-            projectShardId: this.projectShardId,
+            projectShardId: this.shardId,
             connShardId: this.conn.shardId,
           })
       );
@@ -2887,6 +2893,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 }
 
+export class SystemRepository extends Repository {}
+
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
@@ -2909,10 +2917,12 @@ async function cacheProfile(shardId: string, profile: StructureDefinition): Prom
   if (!profile.url || !profile.meta?.project) {
     return;
   }
-  profile = await getSystemRepo().readReference(createReference(profile));
+  const projectId = profile.meta.project;
+  const systemRepo = getShardSystemRepo(shardId);
+  profile = await systemRepo.readReference(createReference(profile));
   await getRedis(shardId).set(
-    getProfileCacheKey(profile.meta?.project as string, profile.url),
-    JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
+    getProfileCacheKey(projectId, profile.url),
+    JSON.stringify({ resource: profile, projectId }),
     'EX',
     PROFILE_CACHE_EX_SECONDS
   );
@@ -2940,35 +2950,34 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(conn?: ShardPoolClient, shardId?: string): Repository {
-  if (conn && shardId) {
-    throw new Error('Cannot specify both conn and shardId');
+export async function getProjectSystemRepo(projectId: string | Reference<Project>): Promise<SystemRepository> {
+  return createSystemRepository(await getProjectShardId(projectId));
+}
+
+export function getShardSystemRepo(shardId: string, client?: ShardPoolClient): Repository {
+  return createSystemRepository(shardId, client);
+}
+
+export function getGlobalSystemRepo(): SystemRepository {
+  return getShardSystemRepo(GLOBAL_SHARD_ID);
+}
+
+function createSystemRepository(shardId: string, client?: ShardPoolClient): SystemRepository {
+  if (client && client.shardId !== shardId) {
+    throw new Error('Cannot provide a database client to a shard different from `shardId`');
   }
-  return new Repository(
-    {
-      superAdmin: true,
-      strictMode: true,
-      extendedMode: true,
-      author: {
-        reference: 'system',
-      },
-      projects: undefined, // System repo does not have an associated Project; it can write to any
-      projectShardId: conn?.shardId ?? shardId, // but it still must be associated with a shard
+  const repoConfig = {
+    superAdmin: true,
+    strictMode: true,
+    extendedMode: true,
+    author: {
+      reference: 'system',
     },
-    conn
-  );
-}
+    projects: undefined, // System repo does not have an associated Project; it can write to any
+    projectShardId: shardId, // but it still must be associated with a shard
+  };
 
-export async function getSystemRepoForProject(projectId: string): Promise<Repository> {
-  return getSystemRepo(undefined, await getProjectShardId(projectId));
-}
-
-export function getShardSystemRepo(shardId: string): Repository {
-  return getSystemRepo(undefined, shardId);
-}
-
-export function getGlobalSystemRepo(): Repository {
-  return getSystemRepo(undefined, 'global');
+  return new SystemRepository(repoConfig, client);
 }
 
 function lowercaseFirstLetter(str: string): string {

@@ -6,7 +6,7 @@ import type { Login, Patient, ProjectMembership, Reference, User } from '@medplu
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -66,15 +66,15 @@ async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
-  const globalSystemRepo = getGlobalSystemRepo();
-  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
-  const { project, projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + projectId });
+  const { project, projectShardId } = await getProjectAndProjectShardId(projectId);
+  const systemRepo = getShardSystemRepo(projectShardId);
+
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (!project.defaultPatientAccessPolicy) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
-  const systemRepo = getSystemRepo(undefined, projectShardId);
   const profile = (await createProfile(
     systemRepo,
     project,
@@ -84,11 +84,11 @@ async function createPatient(
     user.email as string
   )) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  const membership = await createProjectMembership(globalSystemRepo, user, project, profile, {
+  const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
 
-  await globalSystemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });

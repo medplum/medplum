@@ -10,7 +10,7 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
@@ -19,15 +19,14 @@ export const mfaRouter = Router();
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const systemRepo = getSystemRepo(undefined, ctx.authState.projectShardId);
-  let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
   if (user.mfaEnrolled) {
     res.json({ enrolled: true });
     return;
   }
 
   if (!user.mfaSecret) {
-    user = await systemRepo.updateResource({
+    user = await ctx.systemRepo.updateResource({
       ...user,
       mfaSecret: authenticator.generateSecret(),
     });
@@ -132,8 +131,7 @@ mfaRouter.post(
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const systemRepo = getSystemRepo(undefined, ctx.authState.projectShardId);
-    const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+    const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
     if (!user.mfaSecret) {
       sendOutcome(res, badRequest('Secret not found'));
@@ -159,7 +157,7 @@ mfaRouter.post(
       return;
     }
 
-    await systemRepo.updateResource({
+    await ctx.systemRepo.updateResource({
       ...user,
       mfaEnrolled: false,
       // We generate a new secret so that next time the user enrolls that they don't get the same secret

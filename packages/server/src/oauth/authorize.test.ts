@@ -12,17 +12,17 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
 describe('OAuth Authorize', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  let systemRepo: SystemRepository;
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
   let project: WithId<Project>;
-  let projectShardId: string;
   let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
@@ -30,12 +30,12 @@ describe('OAuth Authorize', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
+    ({ project, client } = await createTestProject({ withClient: true }));
+    systemRepo = getGlobalSystemRepo();
 
     // Create a test user
     const { user } = await inviteUser({
       project,
-      projectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',

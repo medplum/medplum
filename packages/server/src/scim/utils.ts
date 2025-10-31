@@ -6,8 +6,7 @@ import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '
 import type { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
-import type { Repository } from '../fhir/repo';
-import { getProjectShardId } from '../sharding/sharding-utils';
+import type { SystemRepository } from '../fhir/repo';
 import { patchObject } from '../util/patch';
 import type { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
 
@@ -22,7 +21,7 @@ import type { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
  * @returns List of SCIM users in the project.
  */
 export async function searchScimUsers(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   project: WithId<Project>,
   params: Record<string, string>
 ): Promise<ScimListResponse<ScimUser>> {
@@ -92,10 +91,8 @@ export async function createScimUser(
     }
   }
 
-  const projectShardId = await getProjectShardId(project);
   const { user, membership } = await inviteUser({
     project,
-    projectShardId,
     resourceType,
     firstName: scimUser.name?.givenName as string,
     lastName: scimUser.name?.familyName as string,
@@ -122,7 +119,7 @@ export async function createScimUser(
  * @param id - The user ID.
  * @returns The user.
  */
-export async function readScimUser(systemRepo: Repository, project: Project, id: string): Promise<ScimUser> {
+export async function readScimUser(systemRepo: SystemRepository, project: Project, id: string): Promise<ScimUser> {
   const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);
@@ -142,7 +139,11 @@ export async function readScimUser(systemRepo: Repository, project: Project, id:
  * @param scimUser - The updated user definition.
  * @returns The updated user.
  */
-export async function updateScimUser(systemRepo: Repository, project: Project, scimUser: ScimUser): Promise<ScimUser> {
+export async function updateScimUser(
+  systemRepo: SystemRepository,
+  project: Project,
+  scimUser: ScimUser
+): Promise<ScimUser> {
   let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', scimUser.id as string);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);
@@ -173,7 +174,7 @@ export async function updateScimUser(systemRepo: Repository, project: Project, s
  * @returns The updated user.
  */
 export async function patchScimUser(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   project: Project,
   id: string,
   request: ScimPatchRequest
@@ -211,7 +212,7 @@ export async function patchScimUser(
  * @param id - The user ID.
  * @returns The user.
  */
-export async function deleteScimUser(systemRepo: Repository, project: Project, id: string): Promise<void> {
+export async function deleteScimUser(systemRepo: SystemRepository, project: Project, id: string): Promise<void> {
   const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);

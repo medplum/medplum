@@ -15,8 +15,7 @@ import Bowser from 'bowser';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {
@@ -35,10 +34,9 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { authState } = getAuthenticatedContext();
+  const { authState, systemRepo } = getAuthenticatedContext();
   const { project, membership } = authState;
   const profileRef = membership.profile as Reference<ProfileResource>;
-  const systemRepo = getSystemRepo(undefined, authState.projectShardId);
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
@@ -113,7 +111,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 }
 
 export async function getUserConfiguration(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   project: Project,
   membership: ProjectMembership
 ): Promise<UserConfiguration> {

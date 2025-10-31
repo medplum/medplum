@@ -129,7 +129,6 @@ describe('Revoke', () => {
       // Second, Alice invites Bob to the project
       const { user } = await inviteUser({
         project: regResult.project,
-        projectShardId: regResult.projectShardId,
         resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',

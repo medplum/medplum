@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -114,7 +114,7 @@ describe('Set Password', () => {
   test('UserSecurityRequest', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const { user, project } = await withTestContext(() =>
+    const { user, project, projectShardId } = await withTestContext(() =>
       registerNew({
         projectName: 'Set Password Project',
         firstName: 'George',
@@ -126,7 +126,7 @@ describe('Set Password', () => {
     );
 
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      getShardSystemRepo(projectShardId).createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,
@@ -156,7 +156,7 @@ describe('Set Password', () => {
   test('UserSecurityRequest invalid type', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const { user, project } = await withTestContext(() =>
+    const { user, project, projectShardId } = await withTestContext(() =>
       registerNew({
         projectName: 'Set Password Project',
         firstName: 'George',
@@ -168,7 +168,7 @@ describe('Set Password', () => {
     );
 
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      getShardSystemRepo(projectShardId).createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,

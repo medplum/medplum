@@ -11,8 +11,8 @@ import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import type { Repository } from './fhir/repo';
-import { getGlobalSystemRepo, getShardSystemRepo, getSystemRepo } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import type {
@@ -104,7 +104,7 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
   config.database.disableRunPostDeployMigrations = !postDeploy;
 }
 
-async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
+async function expungePostDeployMigrationAsyncJob(repo: SystemRepository): Promise<void> {
   const jobs = (await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'))) as WithId<AsyncJob>[];
   await repo.expungeResources(
     'AsyncJob',
@@ -113,6 +113,8 @@ async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<voi
 }
 
 describe('Database migrations', () => {
+  let systemRepo: SystemRepository;
+
   beforeAll(async () => {
     console.log = jest.fn();
 
@@ -122,11 +124,12 @@ describe('Database migrations', () => {
       .mockImplementation(mockMarkPostDeployMigrationCompleted);
     jest.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
 
+    systemRepo = getGlobalSystemRepo();
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
     await initAppServices(getConfig());
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
+    await expungePostDeployMigrationAsyncJob(systemRepo);
     await shutdownApp();
   });
 
@@ -148,7 +151,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -186,7 +189,7 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
@@ -216,7 +219,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -241,7 +244,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -280,7 +283,7 @@ describe('Database migrations', () => {
 
     test('Existing AsyncJob that gets requeued and completes', () =>
       withTestContext(async () => {
-        const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+        const asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -346,7 +349,6 @@ describe('Database migrations', () => {
 
     test('Multiple data migration jobs with accepted status', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -396,12 +398,12 @@ describe('Database migrations', () => {
         mockValues.postDeployVersion = 0;
 
         await expect(
-          getSystemRepo().searchOne<AsyncJob>(
-            parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' })
-          )
+          systemRepo.searchOne<AsyncJob>(parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' }))
         ).resolves.toBeUndefined();
 
-        expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
+        expect(
+          await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID))
+        ).toStrictEqual(1);
 
         await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID, 2)).rejects.toThrow(
           'Requested post-deploy migration v2, but the pending post-deploy migration is v1.'
@@ -418,7 +420,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -430,7 +432,6 @@ describe('Database migrations', () => {
         mockValues.serverVersion = '3.2.4';
         setMigrationsConfig(true, postDeploy);
 
-        const systemRepo = getSystemRepo();
         let asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -507,7 +508,6 @@ describe('Database migrations', () => {
       [false, undefined],
     ])('Skips only if in firstBoot mode [%s] and has dataVersion [%s]', async (firstBootMode, dataVersion) => {
       mockValues.postDeployVersion = firstBootMode ? MigrationVersion.FIRST_BOOT : MigrationVersion.NONE;
-      const systemRepo = getSystemRepo();
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -563,11 +563,9 @@ describe('Database migrations', () => {
     beforeAll(async () => {
       const config = await loadTestConfig();
       await initApp(app, config);
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
 
       ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
-
-      const systemRepo = getSystemRepo();
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -609,7 +607,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
     });
 
     afterAll(async () => {

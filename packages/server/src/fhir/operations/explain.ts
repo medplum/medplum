@@ -97,7 +97,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const result = await withLongRunningDatabaseClient(
     (client) => selectQuery.execute(client),
-    repo.projectShardId,
+    repo.shardId,
     DatabaseMode.READER
   );
 

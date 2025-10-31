@@ -8,7 +8,7 @@ import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
@@ -45,8 +45,8 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
-  //TODO{sharding} this is an unauthenticated endpoint; how to know which shard/project to query?
-  const systemRepo = getSystemRepo(undefined, 'TODO-storage.get');
+  //TODO{sharding} unauthenticated endpoint. how to know which shard/project to query for the Binary?
+  const systemRepo = getShardSystemRepo('TODO{sharding}-storage.get');
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {

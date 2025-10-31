@@ -6,7 +6,7 @@ import type { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -17,29 +17,29 @@ export const verifyEmailValidator = makeValidationMiddleware([
 ]);
 
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const securityRequest = await globalSystemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
-  if (pcr.type !== 'verify-email') {
+  if (securityRequest.type !== 'verify-email') {
     sendOutcome(res, badRequest('Invalid user security request type'));
     return;
   }
 
-  if (pcr.used) {
+  if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));
     return;
   }
 
-  if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
+  if (!timingSafeEqualStr(securityRequest.secret as string, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(pcr.user as Reference<User>);
+  const user = await globalSystemRepo.readReference(securityRequest.user as Reference<User>);
 
-  await systemRepo.withTransaction(async () => {
-    await systemRepo.updateResource<User>({ ...user, emailVerified: true });
-    await systemRepo.updateResource<UserSecurityRequest>({ ...pcr, used: true });
+  await globalSystemRepo.withTransaction(async () => {
+    await globalSystemRepo.updateResource<User>({ ...user, emailVerified: true });
+    await globalSystemRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
   });
 
   sendOutcome(res, allOk);
@@ -54,8 +54,8 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  */
 export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
   // Create the password change request
-  const systemRepo = getSystemRepo();
-  return systemRepo.createResource<UserSecurityRequest>({
+  const globalSystemRepo = getGlobalSystemRepo();
+  return globalSystemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },
     type: 'verify-email',

@@ -7,12 +7,12 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
 describe('Status', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   let user: User;
 
   beforeAll(async () => {
@@ -20,7 +20,7 @@ describe('Status', () => {
     await initApp(app, config);
 
     user = await withTestContext(() =>
-      systemRepo.createResource<User>({
+      globalSystemRepo.createResource<User>({
         resourceType: 'User',
         firstName: 'Test',
         lastName: 'User',
@@ -50,7 +50,7 @@ describe('Status', () => {
 
   test('Success', async () => {
     const login = await withTestContext(() =>
-      systemRepo.createResource<Login>({
+      globalSystemRepo.createResource<Login>({
         resourceType: 'Login',
         authMethod: 'password',
         authTime: new Date().toISOString(),
@@ -65,7 +65,7 @@ describe('Status', () => {
 
   test('Granted', async () => {
     const login = await withTestContext(() =>
-      systemRepo.createResource<Login>({
+      globalSystemRepo.createResource<Login>({
         resourceType: 'Login',
         authMethod: 'password',
         authTime: new Date().toISOString(),
@@ -80,7 +80,7 @@ describe('Status', () => {
 
   test('Revoked', async () => {
     const login = await withTestContext(() =>
-      systemRepo.createResource<Login>({
+      globalSystemRepo.createResource<Login>({
         resourceType: 'Login',
         authMethod: 'password',
         authTime: new Date().toISOString(),

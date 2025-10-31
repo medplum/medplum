@@ -12,10 +12,8 @@ import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
-import { getProjectShardId } from '../../../sharding/sharding-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
-import { getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -58,15 +56,7 @@ export class AsyncJobExecutor {
     }
 
     const startTime = Date.now();
-    let projectShardId: string;
-    if (this.resource.meta?.project) {
-      projectShardId = await getProjectShardId(this.resource.meta?.project);
-    } else {
-      projectShardId = 'TODO-AsyncJobExecutor.startAsync';
-    }
-    const systemRepo = getSystemRepo(undefined, projectShardId);
     log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
-
     return this.run(callback)
       .then(async (output) => {
         log.info('AsyncJob execution completed', {
@@ -74,7 +64,7 @@ export class AsyncJobExecutor {
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
         });
-        return this.completeJob(systemRepo, output);
+        return this.completeJob(output);
       })
       .catch(async (err) => {
         log.error('AsyncJob execution failed', {
@@ -83,7 +73,7 @@ export class AsyncJobExecutor {
           error: err instanceof Error ? err.message : err.toString(),
           stack: err instanceof Error ? err.stack : undefined,
         });
-        return this.failJob(systemRepo, err);
+        return this.failJob(err);
       })
       .finally(() => {
         this.repo[Symbol.dispose]();
@@ -110,7 +100,7 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob> {
+  async completeJob(output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
@@ -124,24 +114,24 @@ export class AsyncJobExecutor {
       //TODO - This needs more validation to check that it's a system resource
       const completedDataVersion = updatedJob.dataVersion;
       getLogger().info('Marking post-deploy migration complete', {
-        shardId: repo.projectShardId,
+        shardId: this.repo.shardId,
         version: `v${completedDataVersion}`,
       });
-      await repo.withTransaction(async () => {
+      await this.repo.withTransaction(async () => {
         await markPostDeployMigrationCompleted(
-          getDatabasePool(DatabaseMode.WRITER, repo.projectShardId),
+          getDatabasePool(DatabaseMode.WRITER, this.repo.shardId),
           completedDataVersion
         );
-        updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
+        updatedJob = await this.repo.updateResource<AsyncJob>(updatedJob);
       });
-      await maybeAutoRunPendingPostDeployMigrationOnShard(repo.projectShardId);
+      await maybeAutoRunPendingPostDeployMigrationOnShard(this.repo.shardId);
       return updatedJob;
     } else {
-      return repo.updateResource<AsyncJob>(updatedJob);
+      return this.repo.updateResource<AsyncJob>(updatedJob);
     }
   }
 
-  async failJob(repo: Repository, err?: Error, output?: Parameters): Promise<AsyncJob> {
+  async failJob(err?: Error, output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -174,7 +164,7 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return repo.updateResource<AsyncJob>(failedJob);
+    return this.repo.updateResource<AsyncJob>(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {
