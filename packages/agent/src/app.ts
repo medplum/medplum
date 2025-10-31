@@ -601,6 +601,10 @@ export class App {
     this.trySendToHl7Connection();
   }
 
+  getAgentConfig(): Agent | undefined {
+    return this.config;
+  }
+
   private startWebSocketWorker(): void {
     if (this.webSocketWorker) {
       // Websocket worker is already running
