@@ -57,6 +57,10 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   maxSearchOffset?: number;
+  defaultSuperAdminEmail?: string;
+  defaultSuperAdminPassword?: string;
+  defaultSuperAdminClientId?: string;
+  defaultSuperAdminClientSecret?: string;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: (
     | 'aws-comprehend'
