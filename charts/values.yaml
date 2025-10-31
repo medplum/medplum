@@ -32,7 +32,7 @@ config:
     recaptchaSecretKey: ''
     vmContextBotsEnabled: true
     defaultBotRuntimeVersion: 'vmcontext'
-    allowedOrigins: '*'
+    allowedOrigins: ''
     introspectionEnabled: true
   database:
     host: 'localhost'
