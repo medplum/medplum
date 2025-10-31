@@ -180,8 +180,6 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 
 When updating resources in a transaction bundle, you can prevent **lost updates** by using the `ifMatch` property in the bundle entry request. This ensures that your update only succeeds if the resource hasn't been modified by another user since you last read it.
 
-**Note:** When using bundle entries, the `ifMatch` property uses the ETag format: `W/"versionId"` (e.g., `W/"${patient.meta?.versionId}"`). This is different from the SDK's `updateResource` method which uses just the `versionId` string.
-
 <details>
   <summary>Example: Version Checking in Transaction Bundle</summary>
   <Tabs groupId="language">

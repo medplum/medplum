@@ -86,8 +86,6 @@ When updating resources in a multi-user environment, it's important to prevent *
 
 To prevent this, you can use the `If-Match` header (or `ifMatch` option) to specify the expected version of the resource. If the resource's current version doesn't match, the update will fail with a `412 Precondition Failed` error.
 
-**Note:** When using the SDK's `updateResource` method, pass the `versionId` directly as a string (e.g., `patient.meta?.versionId`). When using HTTP headers or transaction bundle entries, use the ETag format: `W/"versionId"` (e.g., `W/"${patient.meta?.versionId}"`).
-
 <details>
 <summary>Example: Safe Update with Version Checking</summary>
 <Tabs groupId="language">
