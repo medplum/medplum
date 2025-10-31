@@ -1,6 +1,10 @@
 # Scheduling
 
-Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows.
+Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows. The scheduling process involves three key steps:
+
+1. [**Defining Availability**](/docs/scheduling/defining-availability) - Administering when each service can be performed in time
+2. **Matching Availability** - Ensuring patients are matched to the right scheduled actors based on state, credentials, preferences, etc.
+3. **Consuming Availability** - How users actually select and book a unit of availability
 
 ## Demo and Example App
 
