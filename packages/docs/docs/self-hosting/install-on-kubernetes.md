@@ -28,9 +28,9 @@ The specific method you use to set up these services is a decision that should a
 
 This guide assumes you have already provisioned these services and have the necessary connection information. For detailed instructions on setting up these services on specific clouds, you can refer to our cloud-specific guides:
 
-- [Install on AWS](https://www.google.com/search?q=https://www.medplum.com/docs/self-hosting/aws)
-- [Install on GCP](https://www.google.com/search?q=https://www.medplum.com/docs/self-hosting/gcp)
-- [Install on Azure](https://www.google.com/search?q=https://www.medplum.com/docs/self-hosting/azure)
+- [Install on AWS](/docs/self-hosting/install-on-aws)
+- [Install on GCP](/docs/self-hosting/install-on-gcp)
+- [Install on Azure](/docs/self-hosting/install-on-azure)
 
 ### Localhost Testing and Validation
 
