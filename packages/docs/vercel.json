@@ -132,6 +132,10 @@
     {
       "source": "/docs/graphql/basic-queries",
       "destination": "/docs/graphql"
+    },
+    {
+      "source": "/docs/self-hosting/config-settings",
+      "destination": "/docs/self-hosting/settings-reference"
     }
   ]
 }
