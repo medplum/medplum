@@ -7,6 +7,7 @@ import TabItem from '@theme/TabItem';
 import Tabs from '@theme/Tabs';
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/fhir-batch-requests.ts';
+import UpdatingDataExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/updating-data.ts';
 
 # FHIR Batch Requests
 
@@ -174,6 +175,25 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+### Preventing Lost Updates with Version Checking
+
+When updating resources in a transaction bundle, you can prevent **lost updates** by using the `ifMatch` property in the bundle entry request. This ensures that your update only succeeds if the resource hasn't been modified by another user since you last read it.
+
+**Note:** When using bundle entries, the `ifMatch` property uses the ETag format: `W/"versionId"` (e.g., `W/"${patient.meta?.versionId}"`). This is different from the SDK's `updateResource` method which uses just the `versionId` string.
+
+<details>
+  <summary>Example: Version Checking in Transaction Bundle</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="transactionIfMatchTs">
+        {UpdatingDataExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+If any resource in the transaction has been modified by another user (the version doesn't match), the transaction will fail with a `412 Precondition Failed` error, allowing you to retry after re-reading the current state.
 
 ## Performing Upserts
 
