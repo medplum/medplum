@@ -201,18 +201,18 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
               ))}
 
               {allowEdit && (
-              <Stack gap="xs">
-                <Textarea
-                  placeholder="Add a note..."
-                  minRows={4}
-                  value={note ?? ''}
-                  onChange={(e) => setNote(e.currentTarget.value)}
-                  autosize
-                />
-                <Flex justify="flex-end">
-                  <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
-                    Submit
-                  </Button>
+                <Stack gap="xs">
+                  <Textarea
+                    placeholder="Add a note..."
+                    minRows={4}
+                    value={note ?? ''}
+                    onChange={(e) => setNote(e.currentTarget.value)}
+                    autosize
+                  />
+                  <Flex justify="flex-end">
+                    <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
+                      Submit
+                    </Button>
                   </Flex>
                 </Stack>
               )}
