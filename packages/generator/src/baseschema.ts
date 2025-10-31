@@ -21,7 +21,7 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(__dirname, '../../core/src/base-schema.json'),
+    resolve(import.meta.dirname, '../../core/src/base-schema.json'),
     JSON.stringify(outputTypes, undefined, 2),
     'utf8'
   );

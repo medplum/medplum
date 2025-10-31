@@ -66,7 +66,7 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(__dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
+    resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
     JSON.stringify(fhirSchema, undefined, 2)
       .replaceAll("'", '\\u0027')
       .replaceAll('<', '\\u003c')
