@@ -80,7 +80,7 @@ const currentPatient = await medplum.readResource('Patient', 'homer-simpson');
 
 // Update with version checking to prevent lost updates
 // If another user updated the resource, this will throw an error with status 412
- await medplum.updateResource(
+await medplum.updateResource(
   {
     resourceType: 'Patient',
     id: 'homer-simpson',
@@ -89,9 +89,9 @@ const currentPatient = await medplum.readResource('Patient', 'homer-simpson');
   {
     headers: {
       'If-Match': currentPatient.meta?.versionId ? `W/"${currentPatient.meta.versionId}"` : '',
-      },
     },
-  );
+  }
+);
 // end-block safeUpdateTs
 
 /*
