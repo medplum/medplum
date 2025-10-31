@@ -7,7 +7,7 @@ import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
@@ -33,7 +33,7 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
 
 export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
   await withPoolClient(async (client) => {
-    const systemRepo = getSystemRepo(client);
+    const systemRepo = getShardSystemRepo(client.shardId, client);
 
     if (await isSeeded(systemRepo)) {
       globalLogger.info('Already seeded', { shardId: pool.shardId });

@@ -29,7 +29,7 @@ const globalPools: { pool: ShardPool | undefined; readonlyPool: ShardPool | unde
 };
 const shardPools: Record<string, { pool: ShardPool | undefined; readonlyPool: ShardPool | undefined }> = {};
 
-export function getDatabasePool(mode: DatabaseMode, shardId: string = 'TODO-default'): ShardPool {
+export function getDatabasePool(mode: DatabaseMode, shardId: string): ShardPool {
   if (shardId.startsWith('TODO')) {
     shardId = 'global';
   }

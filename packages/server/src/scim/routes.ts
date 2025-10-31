@@ -14,7 +14,6 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { createScimUser, deleteScimUser, patchScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
 
@@ -29,11 +28,7 @@ scimRouter.get(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await searchScimUsers(
-      getSystemRepo(undefined, ctx.authState.projectShardId),
-      ctx.project,
-      req.query as Record<string, string>
-    );
+    const result = await searchScimUsers(ctx.systemRepo, ctx.project, req.query as Record<string, string>);
     res.status(200).json(result);
   })
 );
@@ -55,7 +50,7 @@ scimRouter.get(
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const id = singularize(req.params.id) ?? '';
-    const result = await readScimUser(ctx.getProjectSystemRepo(), ctx.project, id);
+    const result = await readScimUser(ctx.systemRepo, ctx.project, id);
     res.status(200).json(result);
   })
 );
@@ -64,7 +59,7 @@ scimRouter.put(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const result = await updateScimUser(ctx.getProjectSystemRepo(), ctx.project, req.body);
+    const result = await updateScimUser(ctx.systemRepo, ctx.project, req.body);
     res.status(200).json(result);
   })
 );
@@ -74,7 +69,7 @@ scimRouter.patch(
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const id = singularize(req.params.id) ?? '';
-    const result = await patchScimUser(ctx.getProjectSystemRepo(), ctx.project, id, req.body);
+    const result = await patchScimUser(ctx.systemRepo, ctx.project, id, req.body);
     res.status(200).json(result);
   })
 );
@@ -84,7 +79,7 @@ scimRouter.delete(
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const id = singularize(req.params.id) ?? '';
-    await deleteScimUser(ctx.getProjectSystemRepo(), ctx.project, id);
+    await deleteScimUser(ctx.systemRepo, ctx.project, id);
     res.sendStatus(204);
   })
 );

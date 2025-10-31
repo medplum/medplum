@@ -24,8 +24,8 @@ import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
@@ -51,12 +51,10 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (ctx.project.superAdmin) {
-    const { project, projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + projectId });
+    const { project } = await getProjectAndProjectShardId({ reference: 'Project/' + projectId });
     inviteRequest.project = project;
-    inviteRequest.projectShardId = projectShardId;
   } else {
     inviteRequest.project = ctx.project;
-    inviteRequest.projectShardId = ctx.authState.projectShardId;
   }
 
   const { membership } = await inviteUser(inviteRequest);
@@ -65,7 +63,6 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
 export interface ServerInviteRequest extends InviteRequest {
   project: WithId<Project>;
-  projectShardId: string;
 }
 
 export interface ServerInviteResponse {
@@ -75,7 +72,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const systemRepo = getSystemRepo(undefined, request.projectShardId);
+  const systemRepo = await getProjectSystemRepo(request.project.id);
   const logger = getLogger();
 
   if (request.email) {
@@ -143,7 +140,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   logger.info('User created', { id: user.id, email });
   if (!existingUser) {
-    passwordResetUrl = await resetPassword(user, 'invite');
+    passwordResetUrl = await resetPassword(systemRepo, user, 'invite');
   }
 
   // Upsert profile Resource (e.g. Patient or Practitioner)
@@ -193,7 +190,7 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
 }
 
 async function upsertProfileResource(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest
 ): Promise<WithId<ProfileResource>> {
   if (request.membership?.profile) {
@@ -405,7 +402,7 @@ async function searchForExistingMembership(
 }
 
 async function sendInviteEmail(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest,
   user: User,
   existing: boolean,

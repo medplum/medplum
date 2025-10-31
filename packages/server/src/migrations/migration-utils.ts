@@ -6,8 +6,8 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
@@ -158,14 +158,17 @@ export async function preparePostDeployMigrationAsyncJob(
   );
 }
 
-export async function queuePostDeployMigration(systemRepo: Repository, version: number): Promise<WithId<AsyncJob>> {
+export async function queuePostDeployMigration(
+  systemRepo: SystemRepository,
+  version: number
+): Promise<WithId<AsyncJob>> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
 
   // Previously, queueing the bullMQ job was done in the transaction above,
   // but that could lead to race conditions if the queued job happened to be
   // picked up before the transaction was committed.
-  const jobData = migration.prepareJobData({ asyncJob, shardId: systemRepo.projectShardId });
+  const jobData = migration.prepareJobData({ asyncJob, shardId: systemRepo.shardId });
   const result = await addPostDeployMigrationJobData(jobData);
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
@@ -225,7 +228,7 @@ export async function maybeAutoRunPendingPostDeployMigrationOnShard(
     return undefined;
   }
 
-  const systemRepo = getSystemRepo(undefined, shardConfig.id);
+  const systemRepo = getShardSystemRepo(shardId);
   globalLogger.debug('Auto-queueing pending post-deploy migration', {
     shardId: shardConfig.id,
     version: `v${pendingPostDeployMigration}`,
@@ -293,6 +296,6 @@ export async function maybeStartPostDeployMigration(
     return undefined;
   }
 
-  const systemRepo = getSystemRepo(undefined, shardId);
+  const systemRepo = getShardSystemRepo(shardId);
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }

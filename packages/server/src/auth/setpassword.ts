@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword } from './utils';
@@ -18,9 +18,9 @@ export const setPasswordValidator = makeValidationMiddleware([
 ]);
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
 
-  const securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+  const securityRequest = await globalSystemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -37,7 +37,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user);
+  const user = await globalSystemRepo.readReference(securityRequest.user);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
@@ -46,12 +46,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
-  await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
+  await globalSystemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
   sendOutcome(res, allOk);
 }
 
 export async function setPassword(user: User, password: string): Promise<void> {
   const passwordHash = await bcryptHashPassword(password);
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   await systemRepo.updateResource<User>({ ...user, passwordHash });
 }

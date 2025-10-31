@@ -26,7 +26,6 @@ import {
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
 import { sendFhirResponse } from '../response';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -80,8 +79,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   }
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input

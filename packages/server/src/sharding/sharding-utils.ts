@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isResourceWithId } from '@medplum/core';
 import type { Project, Reference } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import type { GlobalProject } from './sharding-types';
 
@@ -29,15 +29,16 @@ export async function getProjectShardId(projectOrReferenceOrId: ProjectOrReferen
   return (await getProjectAndProjectShardId(projectOrReferenceOrId)).projectShardId;
 }
 
-type ProjectOrReferenceOrId = Reference<Project> | WithId<Project> | string;
+type ProjectOrReferenceOrId = Reference<Project> | WithId<Project> | string | undefined;
 
 export async function getProjectAndProjectShardId(
   projectOrReferenceOrId: ProjectOrReferenceOrId
 ): Promise<{ project: WithId<Project>; projectShardId: string }> {
   if (!getConfig().enableSharding) {
     let project: WithId<Project>;
-    if (typeof projectOrReferenceOrId === 'string') {
-      project = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId);
+    if (typeof projectOrReferenceOrId === 'string' || projectOrReferenceOrId === undefined) {
+      // cast undefined to string to trigger readResource to throw not found
+      project = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId as string);
     } else if (isResourceWithId(projectOrReferenceOrId, 'Project')) {
       project = projectOrReferenceOrId;
     } else {
@@ -47,8 +48,9 @@ export async function getProjectAndProjectShardId(
   }
 
   let globalProject: GlobalProject;
-  if (typeof projectOrReferenceOrId === 'string') {
-    globalProject = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId);
+  if (typeof projectOrReferenceOrId === 'string' || projectOrReferenceOrId === undefined) {
+    // cast undefined to string to trigger readResource to throw not found
+    globalProject = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId as string);
   } else if (isResourceWithId(projectOrReferenceOrId, 'Project')) {
     globalProject = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId.id);
   } else {
@@ -67,7 +69,7 @@ export async function getProjectAndProjectShardId(
     return { project: globalProject as WithId<Project>, projectShardId };
   }
 
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
   const project = await systemRepo.readResource<Project>('Project', globalProject.id);
   return { project, projectShardId };
 }

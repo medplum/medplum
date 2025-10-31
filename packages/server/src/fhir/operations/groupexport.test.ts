@@ -9,13 +9,13 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Group Export', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   let accessToken: string;
 
   beforeAll(async () => {
@@ -169,7 +169,7 @@ describe('Group Export', () => {
     // Create observation "3 days ago"
     // (Use systemRepo to set meta.lastUpdated)
     await withTestContext(() =>
-      systemRepo.createResource({
+      globalSystemRepo.createResource({
         ...res2.body,
         id: undefined,
         meta: {
@@ -313,7 +313,8 @@ describe('Group Export', () => {
   });
 
   test('groupExportResources without members', async () => {
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
+    const systemRepo = getShardSystemRepo(projectShardId);
     expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo);
     const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
@@ -331,7 +332,8 @@ describe('Group Export', () => {
   });
 
   test('groupExportResources members without reference', async () => {
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
+    const systemRepo = getShardSystemRepo(projectShardId);
     expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo);
 

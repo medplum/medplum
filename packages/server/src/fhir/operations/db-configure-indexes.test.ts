@@ -7,6 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 
 describe('dbgetginindexes', () => {
@@ -18,12 +19,13 @@ describe('dbgetginindexes', () => {
   const escapedTableName = escapeIdentifier(tableName);
 
   beforeAll(async () => {
+    const shardId = GLOBAL_SHARD_ID;
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     // Create a test table
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, shardId);
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
     await client.query(

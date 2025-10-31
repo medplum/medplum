@@ -3,7 +3,7 @@
 import type { Login, SmartAppLaunch } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTPayload } from 'jose';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { verifyJwt } from './keys';
 
 /**
@@ -13,7 +13,6 @@ import { verifyJwt } from './keys';
  * @param res - The response object
  */
 export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
-  const systemRepo = getSystemRepo();
   const token = req.body.token;
   if (!token) {
     res.status(400).end('Token to introspect must be provided');
@@ -23,7 +22,8 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
   try {
     const decodedToken = await verifyJwt(token);
 
-    const login = await systemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = await globalSystemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);
     if (!login.granted || login.revoked) {
       writeInactiveResponse(res);
       return;
@@ -31,7 +31,7 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
 
     let launch: SmartAppLaunch | undefined;
     if (login.launch) {
-      launch = await systemRepo.readReference(login.launch);
+      launch = await globalSystemRepo.readReference(login.launch);
     }
 
     writeActiveResponse(res, decodedToken.payload, login, launch);

@@ -31,7 +31,8 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -71,7 +72,6 @@ jest.mock('node-fetch');
 
 describe('OAuth2 Token', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   const domain = randomUUID() + '.example.com';
   const email = `text@${domain}`;
   const password = randomUUID();
@@ -83,6 +83,7 @@ describe('OAuth2 Token', () => {
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -90,6 +91,7 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
+    systemRepo = getShardSystemRepo(projectShardId);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -116,7 +118,6 @@ describe('OAuth2 Token', () => {
     // Create a test user
     const { user, membership } = await inviteUser({
       project,
-      projectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
@@ -1396,7 +1397,6 @@ describe('OAuth2 Token', () => {
     const testPatient = await withTestContext(async () => {
       const patient = await inviteUser({
         project,
-        projectShardId,
         resourceType: 'Patient',
         firstName: 'Test',
         lastName: 'Patient',
@@ -1965,7 +1965,7 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project: superAdminProject, projectShardId: superAdminProjectShardId } = await createTestProject({
+    const { project: superAdminProject } = await createTestProject({
       project: { superAdmin: true },
     });
 
@@ -1974,7 +1974,6 @@ describe('OAuth2 Token', () => {
     const password = 'test-password';
     await inviteUser({
       project: superAdminProject,
-      projectShardId: superAdminProjectShardId,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',

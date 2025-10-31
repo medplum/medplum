@@ -19,11 +19,10 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import type { Repository } from '../fhir/repo';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
-import { getProjectShardId } from '../sharding/sharding-utils';
 
 export async function createProfile(
   systemRepo: Repository,
@@ -125,8 +124,8 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const memberships = await getMembershipsForLogin(login);
   const redactedMemberships = await Promise.all(
     memberships.map(async (m) => {
-      const projectShardId = await getProjectShardId(m.project);
-      const systemRepo = getSystemRepo(undefined, projectShardId);
+      // TODO{sharding} - project system repos could probably be cached across promises
+      const systemRepo = await getProjectSystemRepo(m.project);
       return rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
         id: m.id,
         project: m.project,
@@ -229,7 +228,7 @@ export function getProjectByRecaptchaSiteKey(
   }
 
   // TODO{sharding} - Requires searching across all shards for a project
-  const systemRepo = getSystemRepo(undefined, 'TODO-getProjectByRecaptchaSiteKey');
+  const systemRepo = getShardSystemRepo('TODO{sharding}-getProjectByRecaptchaSiteKey');
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

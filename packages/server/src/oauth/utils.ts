@@ -44,7 +44,7 @@ import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository } from '../fhir/repo';
-import { getGlobalSystemRepo, getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
@@ -405,7 +405,7 @@ export function getClientApplicationMembership(
  * @param membershipId - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: Login, membershipId: string): Promise<WithId<Login>> {
+export async function setLoginMembership(login: WithId<Login>, membershipId: string): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -437,7 +437,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
 
   // Get the project
   const { project, projectShardId } = await getProjectAndProjectShardId(membership.project);
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -709,7 +709,7 @@ export async function getUserByExternalId(
  * @param projectId - Optional project ID.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmail(email: string, projectId: string | undefined): Promise<User | undefined> {
+export async function getUserByEmail(email: string, projectId: string | undefined): Promise<WithId<User> | undefined> {
   if (projectId && projectId !== 'new') {
     // If a project is specified, then try to find a user account only in that project.
     const userWithProject = await getUserByEmailInProject(email, projectId);
@@ -948,7 +948,7 @@ export async function getLoginForAccessToken(
     return undefined;
   }
   const { project, projectShardId } = await getProjectAndProjectShardId(membership.project);
-  const userConfig = await getUserConfiguration(getSystemRepo(undefined, projectShardId), project, membership);
+  const userConfig = await getUserConfiguration(getShardSystemRepo(projectShardId), project, membership);
   const authState = { login, project, projectShardId, membership, userConfig, accessToken };
   await tryAddOnBehalfOf(req, authState);
   return authState;
@@ -1074,7 +1074,7 @@ async function tryExternalAuth(
     return undefined;
   }
 
-  const redis = getRedis(systemRepo.projectShardId);
+  const redis = getRedis(systemRepo.shardId);
   const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
   let login: Login;

@@ -10,13 +10,14 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
+const systemRepo = getGlobalSystemRepo();
+
 describe('Expunge', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let superAdminAccessToken: string;
 
   beforeAll(async () => {
@@ -193,7 +194,7 @@ async function existsInDatabase(tableName: string, id: string | undefined): Prom
   const rows = await new SelectQuery(tableName)
     .column('id')
     .where('id', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, systemRepo.shardId));
   return rows.length > 0;
 }
 
@@ -201,6 +202,6 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
   const rows = await new SelectQuery(tableName)
     .column('resourceId')
     .where('resourceId', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, systemRepo.shardId));
   return rows.length > 0;
 }

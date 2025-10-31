@@ -10,6 +10,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
@@ -161,7 +162,7 @@ describe('App', () => {
     });
 
     test('Authenticated request with On-Behalf-Of', async () => {
-      const { accessToken, project, projectShardId, client } = await createTestProject({
+      const { accessToken, project, client } = await createTestProject({
         withAccessToken: true,
         withClient: true,
         membership: { admin: true },
@@ -169,7 +170,6 @@ describe('App', () => {
 
       const { profile } = await inviteUser({
         project,
-        projectShardId,
         resourceType: 'Practitioner',
         firstName: 'Test',
         lastName: 'Person',
@@ -247,7 +247,7 @@ describe('App', () => {
 
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
     expect(await shutdownApp()).toBeUndefined();
   });

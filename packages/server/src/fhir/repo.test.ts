@@ -54,17 +54,16 @@ import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { getGlobalSystemRepo, getShardSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
+  const testProjectShardId: string = GLOBAL_SHARD_ID;
+  const systemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
-  let testProjectShardId: string;
-
   let testProjectRepo: Repository;
-  let systemRepo: Repository;
 
   const usCorePatientProfile = JSON.parse(
     readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
@@ -74,12 +73,12 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProjectShardId = GLOBAL_SHARD_ID;
-    testProject = await getSystemRepo(undefined, testProjectShardId).createResource({
+    testProject = await systemRepo.createResource({
       resourceType: 'Project',
       id: randomUUID(),
     });
     testProjectRepo = new Repository({
+      projectShardId: testProjectShardId,
       projects: [testProject],
       extendedMode: true,
       author: {
@@ -90,10 +89,6 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  beforeEach(() => {
-    systemRepo = getSystemRepo();
   });
 
   test('getRepoForLogin', async () => {
@@ -234,8 +229,6 @@ describe('FHIR Repo', () => {
 
     beforeAll(async () =>
       withTestContext(async () => {
-        systemRepo ??= getSystemRepo();
-
         versions.v1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
           meta: {
@@ -451,6 +444,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -471,6 +465,7 @@ describe('FHIR Repo', () => {
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -520,6 +515,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        projectShardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -1477,7 +1473,7 @@ describe('FHIR Repo', () => {
   });
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = getSystemRepo().getDatabaseClient(DatabaseMode.WRITER);
+    const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
     return (await projectIdQuery.execute(client))[0].projectId;
   }
 
@@ -1516,7 +1512,6 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const { membership, project, projectShardId } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -1536,7 +1531,7 @@ describe('FHIR Repo', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const updatedProject = await systemRepo.updateResource({
+      const updatedProject = await getShardSystemRepo(projectShardId).updateResource({
         ...project,
         link: [{ project: createReference(project2) }],
       });
@@ -1610,7 +1605,7 @@ describe('FHIR Repo', () => {
     }));
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
-    const repo = getSystemRepo();
+    const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     const finalPostCommit = jest.fn();
 
@@ -1765,7 +1760,7 @@ describe('FHIR Repo', () => {
       let project = regResult.project;
 
       // add linkedProject to `Project.link`
-      project = await getSystemRepo().updateResource({
+      project = await getShardSystemRepo(regResult.projectShardId).updateResource({
         ...project,
         link: [{ project: createReference(linkedProject) }],
       });

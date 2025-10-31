@@ -19,7 +19,7 @@ import { getAuthenticatedContext, runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer } from './utils';
@@ -101,7 +101,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
   const { login, project, membership, projectShardId } = job.data.authState;
   const logger = getLogger();
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
@@ -148,7 +148,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
         entries: bundle.entry.length,
         errors,
       });
-      await exec.completeJob(systemRepo, {
+      await exec.completeJob({
         resourceType: 'Parameters',
         parameter: [{ name: 'results', valueReference: createReference(binary) }],
       });
@@ -158,11 +158,11 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
         asyncJob: job.data.asyncJob.id,
         outcome,
       });
-      await exec.failJob(systemRepo, new OperationOutcomeError(outcome));
+      await exec.failJob(new OperationOutcomeError(outcome));
     }
   } catch (err: any) {
     logger.error(`Async batch unhandled exception`, err);
     // Try to mark AsyncJob as failed, best effort
-    await exec.failJob(systemRepo, new OperationOutcomeError(serverError(err))).catch(() => {});
+    await exec.failJob(new OperationOutcomeError(serverError(err))).catch(() => {});
   }
 }

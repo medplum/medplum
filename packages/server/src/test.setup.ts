@@ -24,7 +24,7 @@ import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
 import type { RepositoryContext } from './fhir/repo';
-import { getSystemRepo, Repository } from './fhir/repo';
+import { getShardSystemRepo, Repository } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
@@ -62,7 +62,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
   options?: T
 ): Promise<TestProjectResult<T>> {
   const projectShardId = options?.projectShardId ?? GLOBAL_SHARD_ID;
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
 
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
@@ -149,6 +149,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     if (options?.withRepo) {
       const repoContext: RepositoryContext = {
         projects: [project],
+        projectShardId,
         currentProject: project,
         author: createReference(client),
         superAdmin: options?.superAdmin,
@@ -191,7 +192,7 @@ export async function addTestUser(
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
-  const systemRepo = getSystemRepo(undefined, projectShardId);
+  const systemRepo = getShardSystemRepo(projectShardId);
   if (accessPolicy) {
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
@@ -203,7 +204,6 @@ export async function addTestUser(
   const password = randomUUID();
   const inviteResponse = await inviteUser({
     project,
-    projectShardId,
     email,
     password,
     resourceType: 'Practitioner',

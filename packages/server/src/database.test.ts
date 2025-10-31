@@ -245,7 +245,7 @@ describe('Advisory locks', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     clientA = await pool.connect();
     clientB = await pool.connect();
     await clientA.query(`SET statement_timeout TO 100`);
