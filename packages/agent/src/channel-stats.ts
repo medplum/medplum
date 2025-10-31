@@ -160,6 +160,7 @@ export class ChannelStats {
 
   /**
    * Gets the number of pending messages awaiting acknowledgement.
+   * @returns The number of pending messages outstanding.
    */
   getPendingCount(): number {
     return this.pendingMessages.size;
@@ -167,8 +168,9 @@ export class ChannelStats {
 
   /**
    * Gets the number of completed RTT samples.
+   * @returns The current number of stored samples.
    */
-  getCompletedCount(): number {
+  getSampleCount(): number {
     return this.completedRtts.length;
   }
 
