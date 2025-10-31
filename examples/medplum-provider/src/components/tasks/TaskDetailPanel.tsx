@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Paper, ScrollArea, SegmentedControl } from '@mantine/core';
+import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
@@ -29,7 +29,11 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   if (!task) {
-    return null;
+    return (
+      <Box h="100%" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Text c="dimmed">No task selected</Text>
+      </Box>
+    );
   }
 
   const handleTaskChange = async (updatedTask: Task): Promise<void> => {
