@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mocked } from 'vitest';
+import { vi } from 'vitest';
 import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './base64';
 
 // Mock the environment module
-jest.mock('./environment');
+vi.mock('./environment');
 
 import * as environment from './environment';
 
-const mockEnvironment = environment as jest.Mocked<typeof environment>;
+const mockEnvironment = environment as Mocked<typeof environment>;
 
 describe('Base64', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('Browser', () => {
@@ -69,7 +71,7 @@ describe('Base64URL', () => {
   const unicodeStringBase64Url = '8J-Ri_CfjI0';
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test('Browser', () => {

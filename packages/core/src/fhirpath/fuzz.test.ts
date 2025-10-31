@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { fc, test } from '@fast-check/jest';
+import { fc, test } from '@fast-check/vitest';
 import { evalFhirPath, parseFhirPath } from './parse';
 
 describe('FHIRPath parser fuzz tests', () => {

@@ -9,6 +9,7 @@ import type {
   Resource,
   Specimen,
 } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
@@ -34,8 +35,7 @@ function createResourceWithReference<T extends Resource>(
 
 describe('Bundle tests', () => {
   beforeEach(() => {
-    jest
-      .spyOn(global.Math, 'random')
+    vi.spyOn(global.Math, 'random')
       .mockReturnValueOnce(0.1)
       .mockReturnValueOnce(0.2)
       .mockReturnValueOnce(0.3)
@@ -49,7 +49,7 @@ describe('Bundle tests', () => {
   });
 
   afterEach(() => {
-    jest.spyOn(global.Math, 'random').mockRestore();
+    vi.spyOn(global.Math, 'random').mockRestore();
   });
 
   describe('FHIR Bundle Download', () => {
@@ -303,7 +303,7 @@ describe('Bundle tests', () => {
       const expected = deepClone(patient);
       const meta = expected.meta;
       if (meta === undefined) {
-        fail('Expected meta to be defined');
+        throw new Error('Expected meta to be defined');
       }
 
       const removedKeys = ['project', 'versionId', 'lastUpdated', 'compartment', 'author'];

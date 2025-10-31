@@ -11,6 +11,7 @@ import type {
   Resource,
   User,
 } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
@@ -1336,7 +1337,7 @@ describe('Core Utils', () => {
   });
 
   test('lazy', () => {
-    const mockFn = jest.fn().mockReturnValue('test result');
+    const mockFn = vi.fn().mockReturnValue('test result');
     const lazyFn = lazy(mockFn);
 
     // the mock function should not have been called

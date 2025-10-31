@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Parameters, Patient } from '@medplum/fhirtypes';
-import { WS } from 'jest-websocket-mock';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import type { FetchLike } from './client';
 import { MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
@@ -70,7 +71,7 @@ describe('MedplumClient -- Subscriptions', () => {
 
   beforeEach(async () => {
     originalWarn = console.warn;
-    console.warn = jest.fn();
+    console.warn = vi.fn();
 
     wsServer = new WS('wss://api.medplum.com/ws/subscriptions-r4', { jsonProtocol: true });
 

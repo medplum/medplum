@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { WS } from 'jest-websocket-mock';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import { sleep } from '../utils';
 import { assert, ReconnectingWebSocket } from './reconnecting-websocket';
 
@@ -210,7 +211,7 @@ describe('ReconnectingWebSocket', () => {
 
   test('globalThis.WebSocket undefined', async () => {
     const originalConsoleError = console.error;
-    console.error = jest.fn();
+    console.error = vi.fn();
     const originalWebSocket = globalThis.WebSocket;
     // @ts-expect-error This is not allowed
     globalThis.WebSocket = undefined;

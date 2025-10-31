@@ -54,7 +54,7 @@ describe('Search Utils', () => {
     ['Observation?date=012522', new Error('Invalid format for date search parameter: 012522')],
   ])('parseSearchRequest(%p) => %p', (url, expected) => {
     if (expected instanceof Error) {
-      expect(() => parseSearchRequest(url)).toThrow(expected);
+      expect(() => parseSearchRequest(url)).toThrow(expected.message);
     } else {
       expect(parseSearchRequest(url)).toMatchObject(expected);
       expect(parseSearchRequest(new URL('http://example.com/' + url))).toMatchObject(expected);
