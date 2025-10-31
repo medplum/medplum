@@ -277,5 +277,20 @@ describe('Me', () => {
     expect(res3.status).toBe(200);
     expect(res3.body).toBeDefined();
     expect(res3.body.security.memberships).toHaveLength(2);
+
+    // Mark the 2nd ProjectMembership as inactive
+    await getSystemRepo().patchResource('ProjectMembership', inviteResponse.membership.id, [
+      {
+        op: 'add',
+        path: '/active',
+        value: false,
+      },
+    ]);
+
+    // Reload, should only see the 1 active membership
+    const res4 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res4.status).toBe(200);
+    expect(res4.body).toBeDefined();
+    expect(res4.body.security.memberships).toHaveLength(1);
   });
 });
