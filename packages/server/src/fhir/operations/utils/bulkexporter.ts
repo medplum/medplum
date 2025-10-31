@@ -21,8 +21,14 @@ class BulkFileWriter {
     this.writerPromise = getBinaryStorage().writeBinary(binary, filename, NDJSON_CONTENT_TYPE, this.stream);
   }
 
-  write(resource: Resource): void {
-    this.stream.write(JSON.stringify(resource) + '\n');
+  async write(resource: Resource): Promise<void> {
+    const data = JSON.stringify(resource) + '\n';
+    // Handle backpressure - if write buffer is full, wait for drain
+    if (!this.stream.write(data)) {
+      await new Promise<void>((resolve) => {
+        this.stream.once('drain', () => resolve());
+      });
+    }
   }
 
   close(): Promise<void> {
@@ -64,6 +70,24 @@ export class BulkExporter {
     return writer;
   }
 
+  async closeWriter(resourceType: string): Promise<void> {
+    const writer = this.writers[resourceType];
+    if (writer) {
+      await writer.close();
+      // Keep reference for formatOutput(), but free the stream resources
+    }
+  }
+
+  clearTrackingForResourceType(resourceType: string): void {
+    // Remove all tracked resources of this type to free memory
+    // This is safe to call after closeWriter() for a resource type
+    for (const ref of this.resourceSet) {
+      if (ref.startsWith(`${resourceType}/`)) {
+        this.resourceSet.delete(ref);
+      }
+    }
+  }
+
   async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
@@ -78,7 +102,7 @@ export class BulkExporter {
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);
-      writer.write(resource);
+      await writer.write(resource);
       this.resourceSet.add(ref);
     }
   }
@@ -91,6 +115,9 @@ export class BulkExporter {
     for (const writer of Object.values(this.writers)) {
       await writer.close();
     }
+
+    // Clear remaining tracked resources to free memory immediately
+    this.resourceSet.clear();
 
     // Update the AsyncJob
     const systemRepo = getSystemRepo();

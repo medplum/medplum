@@ -82,6 +82,10 @@ export async function exportResources(
       continue;
     }
     await exportResourceType(exporter, resourceType, pageSize, since);
+    
+    // Close writer and free memory for this resource type immediately
+    await exporter.closeWriter(resourceType);
+    exporter.clearTrackingForResourceType(resourceType);
   }
 
   // Close the exporter

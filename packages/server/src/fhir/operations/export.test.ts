@@ -10,7 +10,7 @@ import { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { exportResourceType } from './export';
+import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -156,5 +156,76 @@ describe('Export', () => {
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
       expect(exportWriteResourceSpy).toHaveBeenCalled();
+    }));
+
+  test('clearTrackingForResourceType removes only specified resource type', async () =>
+    withTestContext(async () => {
+      const exporter = new BulkExporter(systemRepo);
+      await exporter.start('http://example.com');
+
+      // Create and write multiple resource types
+      const patient = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+      });
+
+      const observation = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: `Patient/${patient.id}` },
+      });
+
+      await exporter.writeResource(patient);
+      await exporter.writeResource(observation);
+
+      // Verify both resources are tracked
+      expect(exporter.resourceSet.size).toBe(2);
+      expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
+      expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(true);
+
+      // Clear only Observation resources
+      exporter.clearTrackingForResourceType('Observation');
+
+      // Verify only Observation was removed
+      expect(exporter.resourceSet.size).toBe(1);
+      expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
+      expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(false);
+
+      const { project } = await createTestProject();
+      await exporter.close(project);
+    }));
+
+  test('closeWriter and clearTrackingForResourceType called during export', async () =>
+    withTestContext(async () => {
+      // Create test resources
+      await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+      });
+
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+      });
+
+      const exporter = new BulkExporter(systemRepo);
+      const closeWriterSpy = jest.spyOn(exporter, 'closeWriter');
+      const clearTrackingSpy = jest.spyOn(exporter, 'clearTrackingForResourceType');
+
+      await exporter.start('http://example.com');
+      const { project } = await createTestProject();
+
+      // Export only Patient and Observation types
+      await exportResources(exporter, project, ['Patient', 'Observation'], 'System');
+
+      // Verify closeWriter was called for each exported resource type
+      expect(closeWriterSpy).toHaveBeenCalledWith('Patient');
+      expect(closeWriterSpy).toHaveBeenCalledWith('Observation');
+
+      // Verify clearTrackingForResourceType was called for each exported resource type
+      expect(clearTrackingSpy).toHaveBeenCalledWith('Patient');
+      expect(clearTrackingSpy).toHaveBeenCalledWith('Observation');
     }));
 });
