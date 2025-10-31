@@ -42,7 +42,7 @@ describe('TaskDetailPanel', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    
+
     const { useDebouncedUpdateResource } = await import('../../hooks/useDebouncedUpdateResource');
     vi.mocked(useDebouncedUpdateResource).mockReturnValue(mockDebouncedUpdateResource);
   });
@@ -67,7 +67,7 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('No task selected')).toBeInTheDocument();
     });
-    
+
     // Task details should not be visible
     expect(screen.queryByText('Properties')).not.toBeInTheDocument();
   });
@@ -87,8 +87,6 @@ describe('TaskDetailPanel', () => {
         expect(screen.getByText(mockTask.description)).toBeInTheDocument();
       }
     });
-
-    
   });
 
   it('renders task detail with task reference', async () => {
@@ -200,7 +198,7 @@ describe('TaskDetailPanel', () => {
 
     const user = userEvent.setup();
     const deleteButton = screen.getByLabelText('Delete Task');
-    
+
     await act(async () => {
       await user.click(deleteButton);
     });
@@ -211,7 +209,7 @@ describe('TaskDetailPanel', () => {
 
     const dialog = screen.getByRole('dialog');
     const confirmButton = within(dialog).getByRole('button', { name: 'Delete' });
-    
+
     await act(async () => {
       await user.click(confirmButton);
     });
@@ -219,7 +217,7 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(medplum.deleteResource).toHaveBeenCalledTimes(1);
     });
-    
+
     expect(medplum.deleteResource).toHaveBeenCalledWith('Task', mockTask.id);
     expect(onDeleteTask).toHaveBeenCalledTimes(1);
     expect(onDeleteTask).toHaveBeenCalledWith(mockTask);
@@ -240,7 +238,7 @@ describe('TaskDetailPanel', () => {
 
     const user = userEvent.setup();
     const deleteButton = screen.getByLabelText('Delete Task');
-    
+
     await act(async () => {
       await user.click(deleteButton);
     });
@@ -251,7 +249,7 @@ describe('TaskDetailPanel', () => {
 
     const dialog = screen.getByRole('dialog');
     const confirmButton = within(dialog).getByRole('button', { name: 'Delete' });
-    
+
     await act(async () => {
       await user.click(confirmButton);
     });
@@ -259,7 +257,7 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(medplum.deleteResource).toHaveBeenCalledTimes(1);
     });
-    
+
     expect(onDeleteTask).not.toHaveBeenCalled();
   });
 
