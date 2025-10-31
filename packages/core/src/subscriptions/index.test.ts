@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
-import { WS } from 'jest-websocket-mock';
+import { vi } from 'vitest';
+import { WS } from 'vitest-websocket-mock';
 import type { SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
@@ -280,7 +281,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
@@ -383,7 +384,7 @@ describe('SubscriptionManager', () => {
 
     test('should track separate `Subscription` resources for same criteria with different `subscriptionProps`', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -517,7 +518,7 @@ describe('SubscriptionManager', () => {
 
     test('should not throw when remove has been called on a criteria that is not known', () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
       expect(() => defaultManager.removeCriteria('DiagnosticReport')).not.toThrow();
       expect(console.warn).toHaveBeenCalledTimes(1);
       console.warn = originalWarn;
@@ -608,7 +609,7 @@ describe('SubscriptionManager', () => {
 
     test('should return the correct amount of criteria', async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
@@ -788,7 +789,7 @@ describe('SubscriptionManager', () => {
 
     test("should warn when receiving notification for subscription we aren't expecting", async () => {
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       // @ts-expect-error We don't use defaultManager
       const _manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -855,7 +856,7 @@ describe('SubscriptionManager', () => {
 
     test('should emit `error` event when invalid message comes in over WebSocket', async () => {
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       await wsServer.connected;
 
@@ -897,7 +898,7 @@ describe('SubscriptionManager', () => {
       // TODO: Figure out why we are getting so many warnings around receiving messages for unknown subscriptions
       // This seems to happen only when running the whole test suite
       // In isolation, this console.warn mock reports 0 calls :thinking-face:
-      console.warn = jest.fn();
+      console.warn = vi.fn();
 
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
@@ -1371,7 +1372,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         shouldMatch: false,
       },
     ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
-      const log = jest.fn();
+      const log = vi.fn();
 
       const subscription: Subscription = {
         id: '123',

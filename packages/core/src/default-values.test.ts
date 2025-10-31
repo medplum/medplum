@@ -446,3 +446,7 @@ function getComplexUSCorePatient(): Patient {
     ],
   };
 }
+
+function fail(message: string): never {
+  throw new Error(message);
+}
