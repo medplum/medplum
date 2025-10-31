@@ -25,9 +25,9 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const [activeTab, setActiveTab] = useState<string>('properties');
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
-  
+
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
-  
+
   if (!task) {
     return null;
   }
@@ -40,7 +40,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const handleDeleteTask = async (deletedTask: Task): Promise<void> => {
     try {
       await medplum.deleteResource('Task', deletedTask.id as string);
-      onDeleteTask?.(deletedTask); 
+      onDeleteTask?.(deletedTask);
     } catch (error) {
       showErrorNotification(error);
     }
@@ -117,4 +117,3 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
     </>
   );
 }
-
