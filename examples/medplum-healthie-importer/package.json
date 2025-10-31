@@ -29,11 +29,11 @@
     "@medplum/eslint-config": "4.5.2",
     "@medplum/fhirtypes": "4.5.2",
     "@medplum/mock": "4.5.2",
-    "@types/node": "22.18.10",
+    "@types/node": "22.18.13",
     "@types/node-fetch": "2.6.13",
     "@types/ssh2-sftp-client": "9.0.5",
-    "@vitest/coverage-v8": "4.0.3",
-    "@vitest/ui": "4.0.3",
+    "@vitest/coverage-v8": "4.0.6",
+    "@vitest/ui": "4.0.6",
     "commander": "12.1.0",
     "dotenv": "17.2.3",
     "esbuild": "0.25.11",
@@ -41,6 +41,6 @@
     "node-fetch": "2.7.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "vitest": "4.0.3"
+    "vitest": "4.0.6"
   }
 }
