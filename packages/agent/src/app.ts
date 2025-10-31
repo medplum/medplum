@@ -20,6 +20,7 @@ import {
   MEDPLUM_VERSION,
   OperationOutcomeError,
   ReconnectingWebSocket,
+  TypedEventTarget,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
   isValidHostname,
@@ -28,6 +29,7 @@ import {
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
+import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -39,6 +41,7 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import type { ChannelStats } from './channel-stats-tracker';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
@@ -80,6 +83,7 @@ export class App {
   readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
+  readonly heartbeatEmitter = new TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>();
   private outstandingHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
@@ -190,6 +194,8 @@ export class App {
   }
 
   private async heartbeat(): Promise<void> {
+    this.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket().catch((err) => {
@@ -364,22 +370,31 @@ export class App {
     this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
-      this.logStatsTimer = setInterval(() => {
-        const stats = getCurrentStats();
-        this.log.info('Agent stats', {
-          stats: {
-            ...stats,
-            webSocketQueueDepth: this.webSocketQueue.length,
-            hl7QueueDepth: this.hl7Queue.length,
-            hl7ClientCount: this.hl7Clients.size,
-            live: this.live,
-            outstandingHeartbeats: this.outstandingHeartbeats,
-          },
-        });
-      }, this.logStatsFreqSecs * 1000);
+      this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
+      this.logStatsTimer = setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
     await this.hydrateListeners();
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+    const stats = getCurrentStats();
+    const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
+    const channelStats = Object.fromEntries(
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+    );
+    this.log.info('Agent stats', {
+      stats: {
+        ...stats,
+        webSocketQueueDepth: this.webSocketQueue.length,
+        hl7QueueDepth: this.hl7Queue.length,
+        hl7ClientCount: this.hl7Clients.size,
+        live: this.live,
+        outstandingHeartbeats: this.outstandingHeartbeats,
+        channelStats,
+      },
+    });
   }
 
   /**

@@ -1,18 +1,41 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ILogger, TypedEventTarget } from '@medplum/core';
 
 /**
  * Interface for statistical data about message RTT (round-trip time).
  */
-export interface RttStats {
-  count: number;
-  min: number | undefined;
-  max: number | undefined;
-  average: number | undefined;
-  p50: number | undefined;
-  p95: number | undefined;
-  p99: number | undefined;
-  pendingCount: number;
+export type RttStats =
+  | {
+      count: number;
+      min: number;
+      max: number;
+      average: number;
+      p50: number;
+      p95: number;
+      p99: number;
+      pendingCount: number;
+    }
+  | {
+      count: number;
+      pendingCount: number;
+    };
+
+export interface ChannelStats {
+  rtt: RttStats;
+}
+
+export interface ChannelStatsTrackerOptions {
+  /** Maximum number of RTT samples to keep (default: 1000). */
+  maxRttSamples?: number;
+  /** Maximum age in milliseconds for pending messages before cleanup (default: 300000 = 5 minutes). */
+  maxPendingAge?: number;
+  /** Interval in milliseconds to cleanup pending messages (default: 60000 = 1 minute). */
+  gcIntervalMs?: number;
+  /** The TypedEventTarget to listen to for heartbeat events. Used for triggering GC cleanup on a set interval. */
+  heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
+  /** Optional logger for the tracker. */
+  log?: ILogger;
 }
 
 /**
@@ -21,25 +44,43 @@ export interface RttStats {
  * and provides percentile-based statistics (p99, p95, average, min, max).
  * Messages are only kept in memory as long as needed for correlation.
  */
-export class ChannelStats {
+export class ChannelStatsTracker {
   private readonly pendingMessages = new Map<string, number>();
   private readonly completedRtts: number[] = [];
+  private readonly log?: ILogger;
+
   private readonly maxRttSamples: number;
   private readonly maxPendingAge: number;
-  private gcInterval: NodeJS.Timeout;
+  private readonly gcIntervalMs: number;
+  private readonly heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
+  private heartbeatListener: () => void;
 
-  /**
-   * Creates a new ChannelStats instance.
-   * @param maxRttSamples - Maximum number of RTT samples to keep (default: 1000).
-   * @param maxPendingAge - Maximum age in milliseconds for pending messages before cleanup (default: 300000 = 5 minutes).
-   * @param gcIntervalMs - Interval in milliseconds to cleanup pending messages (default: 60000 = 1 minute).
-   */
-  constructor(maxRttSamples = 1000, maxPendingAge = 300000, gcIntervalMs = 1000 * 60) {
+  private lastGcRun = Date.now();
+
+  constructor({
+    maxRttSamples = 1000,
+    maxPendingAge = 1000 * 60 * 5,
+    gcIntervalMs = 1000 * 60,
+    heartbeatEmitter,
+    log,
+  }: ChannelStatsTrackerOptions) {
     this.maxRttSamples = maxRttSamples;
     this.maxPendingAge = maxPendingAge;
-    this.gcInterval = setInterval(() => {
-      this.cleanupOldPendingMessages();
-    }, gcIntervalMs);
+    this.gcIntervalMs = gcIntervalMs;
+    this.heartbeatEmitter = heartbeatEmitter;
+    this.log = log;
+
+    const heartbeatListener = (): void => {
+      // If it's been longer than gcIntervalMs milliseconds since last GC run, run again
+      if (this.lastGcRun + this.gcIntervalMs <= Date.now()) {
+        this.cleanupOldPendingMessages();
+
+        // Then reset last GC run
+        this.lastGcRun = Date.now();
+      }
+    };
+    heartbeatEmitter.addEventListener('heartbeat', heartbeatListener);
+    this.heartbeatListener = heartbeatListener;
   }
 
   /**
@@ -94,6 +135,7 @@ export class ChannelStats {
     }
 
     for (const id of idsToDelete) {
+      this.log?.warn(`Cleaning up pending message; never got response for message with ID '${id}'`);
       this.pendingMessages.delete(id);
     }
   }
@@ -117,7 +159,7 @@ export class ChannelStats {
    * Gets current statistics about message RTT.
    * @returns RttStats object containing all statistics.
    */
-  getStats(): RttStats {
+  getRttStats(): RttStats {
     const count = this.completedRtts.length;
 
     if (count === 0) {
@@ -151,6 +193,14 @@ export class ChannelStats {
   }
 
   /**
+   * Gets all current channel statistics.
+   * @returns All current channel statistics.
+   */
+  getStats(): ChannelStats {
+    return { rtt: this.getRttStats() };
+  }
+
+  /**
    * Resets all statistics and pending messages.
    */
   reset(): void {
@@ -178,6 +228,6 @@ export class ChannelStats {
    * Cleans up the ChannelStats instance.
    */
   cleanup(): void {
-    clearInterval(this.gcInterval);
+    this.heartbeatEmitter.removeEventListener('heartbeat', this.heartbeatListener);
   }
 }
