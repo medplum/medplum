@@ -27,7 +27,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   }
 
   if (displayResource.resourceType === 'Task') {
-    return <TaskInputNote task={displayResource} />;
+    return <TaskInputNote task={displayResource} allowEdit={false} />;
   }
 
   return <ResourceTable value={displayResource} />;
