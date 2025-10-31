@@ -144,7 +144,6 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   defaultValue={value.repeat.periodUnit}
                   onChange={(e) => setPeriodUnit(e.currentTarget.value as PeriodUnit | undefined)}
                   data={[
-                    { label: 'second', value: 's' },
                     { label: 'minute', value: 'min' },
                     { label: 'hour', value: 'h' },
                     { label: 'day', value: 'd' },
