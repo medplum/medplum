@@ -1280,8 +1280,13 @@ describe('HL7', () => {
 
     test('When logStatsFreqSecs is set via reload, channel should start tracking', async () => {
       const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        mySocket: undefined as Client | undefined,
+        reloadConfigResponse: null as AgentReloadConfigRequest | null,
+      };
 
       mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
         socket.on('message', (data) => {
           const command = JSON.parse((data as Buffer).toString('utf8'));
           if (command.type === 'agent:connect:request') {
@@ -1293,10 +1298,14 @@ describe('HL7', () => {
               )
             );
           }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
         });
       });
 
-      const endpoint = await medplum.createResource<Endpoint>({
+      const endpoint2 = await medplum.createResource<Endpoint>({
         resourceType: 'Endpoint',
         status: 'active',
         address: 'mllp://localhost:57092',
@@ -1311,7 +1320,7 @@ describe('HL7', () => {
         channel: [
           {
             name: 'test',
-            endpoint: createReference(endpoint),
+            endpoint: createReference(endpoint2),
             targetReference: createReference(bot),
           },
         ],
@@ -1320,6 +1329,11 @@ describe('HL7', () => {
       const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
       // Get the channel
       let channel = app.channels.get('test');
       expect(channel).toBeDefined();
@@ -1327,49 +1341,47 @@ describe('HL7', () => {
       // Channel should NOT have stats tracker initially
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
-      // Stop the app and update agent to enable logStatsFreqSecs
-      await app.stop();
-      mockServer.stop();
-
+      // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
         ...agent,
         setting: [{ name: 'logStatsFreqSecs', valueInteger: 60 }],
       });
 
-      // Start new mock server and app
-      const mockServer2 = new Server('wss://example.com/ws/agent');
-      mockServer2.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
+      // Send reload config request
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
 
-      const app2 = new App(medplum, agent.id, LogLevel.INFO);
-      await app2.start();
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
 
       // Get the channel again
-      channel = app2.channels.get('test');
+      channel = app.channels.get('test');
       expect(channel).toBeDefined();
 
       // Channel should now have stats tracker
       expect((channel as AgentHl7Channel).stats).toBeDefined();
 
-      await app2.stop();
-      mockServer2.stop();
+      await app.stop();
+      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is removed via reload, channel should stop tracking', async () => {
       const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        mySocket: undefined as Client | undefined,
+        reloadConfigResponse: null as AgentReloadConfigRequest | null,
+      };
+
       mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
         socket.on('message', (data) => {
           const command = JSON.parse((data as Buffer).toString('utf8'));
           if (command.type === 'agent:connect:request') {
@@ -1381,10 +1393,14 @@ describe('HL7', () => {
               )
             );
           }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
         });
       });
 
-      const endpoint = await medplum.createResource<Endpoint>({
+      const endpoint3 = await medplum.createResource<Endpoint>({
         resourceType: 'Endpoint',
         status: 'active',
         address: 'mllp://localhost:57093',
@@ -1399,7 +1415,7 @@ describe('HL7', () => {
         channel: [
           {
             name: 'test',
-            endpoint: createReference(endpoint),
+            endpoint: createReference(endpoint3),
             targetReference: createReference(bot),
           },
         ],
@@ -1409,6 +1425,11 @@ describe('HL7', () => {
       const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
       // Get the channel
       let channel = app.channels.get('test');
       expect(channel).toBeDefined();
@@ -1416,44 +1437,36 @@ describe('HL7', () => {
       // Channel should have stats tracker initially
       expect((channel as AgentHl7Channel).stats).toBeDefined();
 
-      // Stop the app and update agent to disable logStatsFreqSecs
-      await app.stop();
-      mockServer.stop();
-
+      // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
         ...agent,
         setting: [],
       });
 
-      // Start new mock server and app
-      const mockServer2 = new Server('wss://example.com/ws/agent');
-      mockServer2.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
+      // Send reload config request
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
 
-      const app2 = new App(medplum, agent.id, LogLevel.INFO);
-      await app2.start();
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
 
       // Get the channel again
-      channel = app2.channels.get('test');
+      channel = app.channels.get('test');
       expect(channel).toBeDefined();
 
       // Channel should NO LONGER have stats tracker
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
-      await app2.stop();
-      mockServer2.stop();
+      await app.stop();
+      mockServer.stop();
     });
   });
 });
