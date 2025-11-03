@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
-import { AgentHl7Channel } from './hl7';
+import type { AgentHl7Channel } from './hl7';
 
 const medplum = new MockClient();
 let bot: Bot;
