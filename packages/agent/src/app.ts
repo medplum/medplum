@@ -48,7 +48,7 @@ import { EnhancedHl7Client } from './enhanced-hl7-client';
 import { AgentHl7Channel } from './hl7';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
-import { getCurrentStats } from './stats';
+import { getCurrentStats, updateStat } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(
@@ -94,6 +94,7 @@ export class App {
   private logStatsFreqSecs = -1;
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
+  private lastHeartbeatSentTime: number = -1;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
@@ -214,6 +215,7 @@ export class App {
       }
       this.outstandingHeartbeats += 1;
       await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+      this.lastHeartbeatSentTime = Date.now();
     }
   }
 
@@ -272,6 +274,7 @@ export class App {
             break;
           case 'agent:heartbeat:response':
             this.outstandingHeartbeats = 0;
+            updateStat('ping', Date.now() - this.lastHeartbeatSentTime);
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
