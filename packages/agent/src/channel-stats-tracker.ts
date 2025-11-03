@@ -48,7 +48,7 @@ export class ChannelStatsTracker {
   private readonly maxPendingAge: number;
   private readonly gcIntervalMs: number;
   private readonly heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
-  private heartbeatListener: () => void;
+  private readonly heartbeatListener: () => void;
 
   private lastGcRun = Date.now();
 
