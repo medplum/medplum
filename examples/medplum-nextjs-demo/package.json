@@ -20,8 +20,8 @@
     "@mantine/notifications": "8.3.6",
     "@medplum/core": "4.5.2",
     "@medplum/react": "4.5.2",
-    "@next/bundle-analyzer": "15.5.4",
-    "next": "15.5.4",
+    "@next/bundle-analyzer": "15.5.6",
+    "next": "15.5.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "rfc6902": "5.1.2"
