@@ -10,9 +10,11 @@ import { NIL } from 'uuid';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth } from '../../test.setup';
 
 describe('getColumnStatisticsHandler', () => {
+  const shardId = GLOBAL_SHARD_ID;
   const app = express();
 
   let accessToken: string;
@@ -27,9 +29,29 @@ describe('getColumnStatisticsHandler', () => {
     await shutdownApp();
   });
 
+  test('shardId required', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/$db-column-statistics')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining("required input parameter 'shardId'") },
+        },
+      ],
+    });
+  });
+
+  const pathWithShardId = `/fhir/R4/$db-column-statistics?shardId=${shardId}`;
+
   test('Success without tableName', async () => {
     const res = await request(app)
-      .get('/fhir/R4/$db-column-statistics?tableName=')
+      .get(`${pathWithShardId}&tableName=`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -46,7 +68,7 @@ describe('getColumnStatisticsHandler', () => {
 
   test('Success with tableName', async () => {
     const res = await request(app)
-      .get('/fhir/R4/$db-column-statistics?tableName=Patient')
+      .get(`${pathWithShardId}&tableName=Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -71,6 +93,7 @@ describe('getColumnStatisticsHandler', () => {
   describe('well-known table', () => {
     let uuid1: string;
     let uuid2: string;
+    const shardId = GLOBAL_SHARD_ID;
 
     const tableName = 'Column_Statistics_Test_Table';
     const escapedTableName = escapeIdentifier(tableName);
@@ -79,7 +102,7 @@ describe('getColumnStatisticsHandler', () => {
       uuid1 = randomUUID();
       uuid2 = randomUUID();
 
-      const client = getDatabasePool(DatabaseMode.WRITER);
+      const client = getDatabasePool(DatabaseMode.WRITER, shardId);
       await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
       await client.query(`CREATE TABLE ${escapedTableName} (id bigint NOT NULL, aaa UUID[])`);
       await client.query(
@@ -90,7 +113,7 @@ describe('getColumnStatisticsHandler', () => {
 
     test('Success with well-known tableName', async () => {
       const res = await request(app)
-        .get(`/fhir/R4/$db-column-statistics?tableName=${tableName}`)
+        .get(`${pathWithShardId}&tableName=${tableName}`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON);
       expect(res.status).toBe(200);
@@ -123,7 +146,7 @@ describe('getColumnStatisticsHandler', () => {
 
   test('Invalid tableName', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/$db-column-statistics?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
+      .get(`${pathWithShardId}&tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(400);

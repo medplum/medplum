@@ -19,7 +19,7 @@ import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -307,15 +307,18 @@ export async function createBotAuditEvent(
     extension: buildTracingExtension(),
   };
 
+  // const systemRepo getShardSystemRepo(request.)
   const config = getConfig();
   for (const destination of bot.auditEventDestination ?? ['resource']) {
     switch (destination) {
-      case 'resource':
-        await getSystemRepo().createResource<AuditEvent>({
+      case 'resource': {
+        const systemRepo = await getProjectSystemRepo(runAs.project);
+        await systemRepo.createResource<AuditEvent>({
           ...auditEvent,
           outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
         });
         break;
+      }
       case 'log':
         logAuditEvent({
           ...auditEvent,

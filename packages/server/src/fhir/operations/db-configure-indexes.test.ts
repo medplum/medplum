@@ -10,7 +10,8 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 
-describe('dbgetginindexes', () => {
+describe('db-configure-indexes', () => {
+  const shardId = GLOBAL_SHARD_ID;
   const app = express();
 
   let accessToken: string;
@@ -19,7 +20,6 @@ describe('dbgetginindexes', () => {
   const escapedTableName = escapeIdentifier(tableName);
 
   beforeAll(async () => {
-    const shardId = GLOBAL_SHARD_ID;
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth({ project: { superAdmin: true } });
@@ -46,6 +46,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'fastUpdate',
             valueBoolean: true,
@@ -74,6 +75,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'fastUpdate',
             valueBoolean: true,
@@ -102,6 +104,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'tableName',
             valueString: tableName,
@@ -130,6 +133,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'tableName',
             valueString: tableName,
@@ -192,6 +196,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'tableName',
             valueString: tableName,
@@ -279,6 +284,7 @@ describe('dbgetginindexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: shardId },
           {
             name: 'tableName',
             valueString: 'Robert"; DROP TABLE Students;',

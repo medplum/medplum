@@ -100,6 +100,7 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
     await exec.run(async () => {
       await addSetAccountsJobData({
         asyncJob,
+        shardId: repo.shardId,
         resourceType,
         id,
         accounts: params.accounts,

@@ -253,8 +253,6 @@ describe('Profile', () => {
   });
 
   test('Memberships with identifiers can be differentiated in the login response', async () => {
-    const systemRepo = getSystemRepo();
-
     //Update the membership1 to contain an identifier
     await withTestContext(() =>
       systemRepo.updateResource({

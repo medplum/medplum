@@ -527,8 +527,8 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST with multiple includes', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)

@@ -2957,7 +2957,9 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export async function getProjectSystemRepo(projectId: string | Reference<Project>): Promise<SystemRepository> {
+export async function getProjectSystemRepo(
+  projectId: string | Reference<Project> | WithId<Project>
+): Promise<SystemRepository> {
   return createSystemRepository(await getProjectShardId(projectId));
 }
 

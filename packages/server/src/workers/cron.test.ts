@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
@@ -15,7 +16,7 @@ import { convertTimingToCron, execBot, getCronQueue } from './cron';
 jest.mock('node-fetch');
 
 describe('Cron Worker', () => {
-  let botProject: Project;
+  let botProject: WithId<Project>;
   let botRepo: Repository;
   let systemRepo: SystemRepository;
 
@@ -25,7 +26,9 @@ describe('Cron Worker', () => {
 
     // Create a project
     const botProjectDetails = await createTestProject({ withClient: true });
+    // console.log(JSON.stringify(botProjectDetails, null, 2));
     botProject = botProjectDetails.project;
+    console.log('Bot project created with id:', botProject.id);
     botRepo = new Repository({
       projectShardId: botProjectDetails.projectShardId,
       extendedMode: true,
@@ -222,12 +225,15 @@ describe('Cron Worker', () => {
       });
 
       // Create a job object to pass to execBot
-      const job: Job<CronJobData> = {
+      const data: CronJobData = {
+        shardId: botRepo.shardId,
+        resourceType: 'Bot',
+        botId: bot.id,
+      };
+
+      const job = {
         id: bot.id,
-        data: {
-          resourceType: 'Bot',
-          botId: bot.id,
-        },
+        data,
       } as Job<CronJobData>;
 
       await execBot(job);

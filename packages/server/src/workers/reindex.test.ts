@@ -105,7 +105,7 @@ describe('Reindex Worker', () => {
 
   test('prepare job', async () => {
     // without request context
-    const jobData1 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+    const jobData1 = prepareReindexJobData(projectShardId, ['Patient'], 'asyncJobId1');
     expect(jobData1).toMatchObject<Partial<ReindexJobData>>({
       resourceTypes: ['Patient'],
       asyncJobId: 'asyncJobId1',
@@ -115,7 +115,7 @@ describe('Reindex Worker', () => {
 
     // with request context
     await withTestContext(() => {
-      const jobData2 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+      const jobData2 = prepareReindexJobData(projectShardId, ['Patient'], 'asyncJobId1');
       expect(jobData2).toMatchObject<Partial<ReindexJobData>>({
         resourceTypes: ['Patient'],
         asyncJobId: 'asyncJobId1',

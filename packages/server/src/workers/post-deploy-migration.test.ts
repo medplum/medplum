@@ -7,7 +7,7 @@ import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -38,7 +38,8 @@ jest.mock('../server-registry');
 describe('Post-Deploy Migration Worker', () => {
   let config: MedplumServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
-  const systemRepo = getGlobalSystemRepo();
+  const shardId = GLOBAL_SHARD_ID;
+  const systemRepo = getShardSystemRepo(shardId);
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -117,10 +118,11 @@ describe('Post-Deploy Migration Worker', () => {
 
     // inside of withTestContext, requestId and traceId are set
     await withTestContext(async () => {
-      const data1 = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
+      const data1 = prepareCustomMigrationJobData({ asyncJob, shardId });
       expect(data1).toEqual({
         type: 'custom',
         asyncJobId: asyncJob.id,
+        shardId,
         requestId: expect.any(String),
         traceId: expect.any(String),
       });
@@ -137,10 +139,11 @@ describe('Post-Deploy Migration Worker', () => {
     });
 
     // outside of withTestContext, requestId and traceId are undefined
-    const data2 = prepareCustomMigrationJobData({ asyncJob, shardId: 'test-shard-id' });
+    const data2 = prepareCustomMigrationJobData({ asyncJob, shardId });
     expect(data2).toEqual({
       type: 'custom',
       asyncJobId: asyncJob.id,
+      shardId,
       requestId: undefined,
       traceId: undefined,
     });

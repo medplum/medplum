@@ -1284,7 +1284,7 @@ describe('FHIR Repo', () => {
           code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
         const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
         if (shouldPad) {
           expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
