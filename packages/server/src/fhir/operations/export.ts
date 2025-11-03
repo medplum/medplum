@@ -82,9 +82,6 @@ export async function exportResources(
       continue;
     }
     await exportResourceType(exporter, resourceType, pageSize, since);
-
-    // Close writer and free memory for this resource type immediately
-    await exporter.closeWriter(resourceType);
   }
 
   // Close the exporter
@@ -107,6 +104,9 @@ export async function exportResourceType<T extends Resource>(
   await repo.processAllResources(searchRequest, async (resource) => {
     await exporter.writeResource(resource);
   });
+  
+  // Close writer and free memory for this resource type immediately
+  await exporter.closeWriter(resourceType);
 }
 
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
