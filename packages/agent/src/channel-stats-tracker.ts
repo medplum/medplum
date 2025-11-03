@@ -5,21 +5,16 @@ import type { ILogger, TypedEventTarget } from '@medplum/core';
 /**
  * Interface for statistical data about message RTT (round-trip time).
  */
-export type RttStats =
-  | {
-      count: number;
-      min: number;
-      max: number;
-      average: number;
-      p50: number;
-      p95: number;
-      p99: number;
-      pendingCount: number;
-    }
-  | {
-      count: number;
-      pendingCount: number;
-    };
+export type RttStats = {
+  count: number;
+  min: number;
+  max: number;
+  average: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  pendingCount: number;
+};
 
 export interface ChannelStats {
   rtt: RttStats;
@@ -89,7 +84,6 @@ export class ChannelStatsTracker {
    */
   recordMessageSent(messageId: string): void {
     this.pendingMessages.set(messageId, Date.now());
-    this.cleanupOldPendingMessages();
   }
 
   /**
@@ -143,11 +137,11 @@ export class ChannelStatsTracker {
   /**
    * Calculates a specific percentile from RTT samples.
    * @param percentile - Percentile to calculate (0-100).
-   * @returns The percentile value, or undefined if no samples exist.
+   * @returns The percentile value, or -1 if no samples exist.
    */
-  private calculatePercentile(percentile: number): number | undefined {
+  private calculatePercentile(percentile: number): number {
     if (this.completedRtts.length === 0) {
-      return undefined;
+      return -1;
     }
 
     const sorted = [...this.completedRtts].sort((a, b) => a - b);
@@ -165,12 +159,12 @@ export class ChannelStatsTracker {
     if (count === 0) {
       return {
         count: 0,
-        min: undefined,
-        max: undefined,
-        average: undefined,
-        p50: undefined,
-        p95: undefined,
-        p99: undefined,
+        min: -1,
+        max: -1,
+        average: -1,
+        p50: -1,
+        p95: -1,
+        p99: -1,
         pendingCount: this.pendingMessages.size,
       };
     }
