@@ -360,6 +360,11 @@ export class App {
           this.log.error(normalizeErrorString(result.reason));
         }
       }
+      // We need to stop tracking stats for each client so that the heartbeat listener is removed
+      // Before clearing the clients
+      for (const client of this.hl7Clients.values()) {
+        client.stopTrackingStats();
+      }
       this.hl7Clients.clear();
     }
 

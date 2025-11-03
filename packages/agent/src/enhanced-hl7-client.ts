@@ -41,5 +41,6 @@ export class EnhancedHl7Client extends Hl7Client {
 
   stopTrackingStats(): void {
     this.stats?.cleanup();
+    this.stats = undefined;
   }
 }
