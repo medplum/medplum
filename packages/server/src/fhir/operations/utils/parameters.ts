@@ -135,12 +135,13 @@ function parseStringifiedParameter(
 function validateInputParam(param: OperationDefinitionParameter, value: unknown): unknown {
   // Check parameter cardinality (min and max)
   const min = param.min ?? 0;
-  const max = parseInt(param.max ?? '1', 10);
+  const maxStr = param.max ?? '1';
+  const max = maxStr === '*' ? Number.POSITIVE_INFINITY : parseInt(maxStr, 10);
   if (Array.isArray(value)) {
     if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
         badRequest(
-          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+          `Expected ${min === max ? maxStr : min + '..' + maxStr} value(s) for input parameter ${param.name}, but ${
             value.length
           } provided`
         )

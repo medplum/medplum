@@ -85,7 +85,7 @@ describe('dbgetginindexes', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: 'tableName must be specified' },
+          details: { text: 'Expected 1..* value(s) for input parameter tableName, but 0 provided' },
         },
       ],
     });
