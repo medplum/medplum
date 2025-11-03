@@ -20,6 +20,7 @@ import {
   MEDPLUM_VERSION,
   OperationOutcomeError,
   ReconnectingWebSocket,
+  TypedEventTarget,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
   isValidHostname,
@@ -27,7 +28,8 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
-import { Hl7Client } from '@medplum/hl7';
+import { DEFAULT_ENCODING } from '@medplum/hl7';
+import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -39,8 +41,10 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import type { ChannelStats } from './channel-stats-tracker';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
+import { EnhancedHl7Client } from './enhanced-hl7-client';
 import { AgentHl7Channel } from './hl7';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
@@ -77,9 +81,10 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  readonly hl7Clients = new Map<string, Hl7Client>();
+  readonly hl7Clients = new Map<string, EnhancedHl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
+  readonly heartbeatEmitter = new TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>();
   private outstandingHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
@@ -191,6 +196,8 @@ export class App {
   }
 
   private async heartbeat(): Promise<void> {
+    this.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket().catch((err) => {
@@ -353,6 +360,11 @@ export class App {
           this.log.error(normalizeErrorString(result.reason));
         }
       }
+      // We need to stop tracking stats for each client so that the heartbeat listener is removed
+      // Before clearing the clients
+      for (const client of this.hl7Clients.values()) {
+        client.stopTrackingStats();
+      }
       this.hl7Clients.clear();
     }
 
@@ -367,22 +379,47 @@ export class App {
     this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
-      this.logStatsTimer = setInterval(() => {
-        const stats = getCurrentStats();
-        this.log.info('Agent stats', {
-          stats: {
-            ...stats,
-            webSocketQueueDepth: this.webSocketQueue.length,
-            hl7QueueDepth: this.hl7Queue.length,
-            hl7ClientCount: this.hl7Clients.size,
-            live: this.live,
-            outstandingHeartbeats: this.outstandingHeartbeats,
-          },
-        });
-      }, this.logStatsFreqSecs * 1000);
+      this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
+      if (this.keepAlive) {
+        for (const client of this.hl7Clients.values()) {
+          client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
+        }
+      }
+      this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
+    } else {
+      for (const client of this.hl7Clients.values()) {
+        client.stopTrackingStats();
+      }
     }
 
     await this.hydrateListeners();
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+    const stats = getCurrentStats();
+    const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
+    const channelStats = Object.fromEntries(
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+    );
+    const clientStats = Object.fromEntries(
+      Array.from(this.hl7Clients.values()).map((client) => [
+        `mllp://${client.host}:${client.port}?encoding=${client.encoding ?? DEFAULT_ENCODING}`,
+        client.stats?.getStats() as ChannelStats,
+      ])
+    );
+    this.log.info('Agent stats', {
+      stats: {
+        ...stats,
+        webSocketQueueDepth: this.webSocketQueue.length,
+        hl7QueueDepth: this.hl7Queue.length,
+        hl7ClientCount: this.hl7Clients.size,
+        live: this.live,
+        outstandingHeartbeats: this.outstandingHeartbeats,
+        channelStats,
+        clientStats,
+      },
+    });
   }
 
   /**
@@ -602,6 +639,10 @@ export class App {
   addToHl7Queue(message: AgentMessage): void {
     this.hl7Queue.push(message);
     this.trySendToHl7Connection();
+  }
+
+  getAgentConfig(): Agent | undefined {
+    return this.config;
   }
 
   private startWebSocketWorker(): void {
@@ -940,20 +981,28 @@ export class App {
 
     const address = new URL(message.remote);
 
-    let client: Hl7Client;
+    let client: EnhancedHl7Client;
 
     if (this.hl7Clients.has(message.remote)) {
-      client = this.hl7Clients.get(message.remote) as Hl7Client;
+      client = this.hl7Clients.get(message.remote) as EnhancedHl7Client;
     } else {
       const encoding = address.searchParams.get('encoding') ?? undefined;
       const keepAlive = this.keepAlive;
-      client = new Hl7Client({
+      client = new EnhancedHl7Client({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
         encoding,
         keepAlive,
       });
-      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
+      if (keepAlive && this.logStatsFreqSecs > 0) {
+        client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
+      }
+
+      this.log.info(`Client created for remote '${message.remote}'`, {
+        keepAlive,
+        encoding,
+        trackingStats: this.logStatsFreqSecs > 0,
+      });
 
       if (client.keepAlive) {
         this.hl7Clients.set(message.remote, client);
