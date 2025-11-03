@@ -225,7 +225,7 @@ export class Hl7Connection extends Hl7Base {
       // Extract the complete message (including VT, FS, and CR)
       const messageBuffer = buffer.subarray(bufferIdx, messageEndIndex + 1);
       // Extract the content (without VT at start and FS+CR at end)
-      const contentBuffer = messageBuffer.subarray(1, messageBuffer.length - 2);
+      const contentBuffer = messageBuffer.subarray(1, -2);
       const contentString = iconv.decode(contentBuffer, this.encoding);
       const message = Hl7Message.parse(contentString);
 
