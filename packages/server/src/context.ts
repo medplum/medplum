@@ -90,7 +90,7 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   private __systemRepo?: SystemRepository;
   get systemRepo(): SystemRepository {
-    this.__systemRepo ??= getShardSystemRepo(this.authState.projectShardId);
+    this.__systemRepo ??= getShardSystemRepo(this.repo.shardId);
     return this.__systemRepo;
   }
 
