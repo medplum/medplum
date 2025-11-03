@@ -198,14 +198,15 @@ export class Hl7Connection extends Hl7Base {
       return messages;
     }
 
-    if (buffer[0] !== VT) {
-      throw new Error('Corrupted message: does not start with VT');
-    }
-
     let bufferIdx = 0;
 
     // Keep parsing while we have complete messages
-    while (bufferIdx < buffer.length && buffer[bufferIdx] === VT) {
+    while (bufferIdx < buffer.length) {
+      // Ignore bytes between message frames
+      while (buffer[bufferIdx] !== VT && bufferIdx < buffer.length) {
+        bufferIdx++;
+      }
+
       // Look for FS+CR sequence to mark end of message
       let messageEndIndex = -1;
 
@@ -232,11 +233,6 @@ export class Hl7Connection extends Hl7Base {
 
       // Move past this message
       bufferIdx = messageEndIndex + 1;
-
-      // Validate next message starts with VT if there's more data
-      if (bufferIdx < buffer.length && buffer[bufferIdx] !== VT) {
-        throw new Error('Corrupted message: does not start with VT');
-      }
     }
 
     // Keep any remaining unfinished chunk in this.chunks
