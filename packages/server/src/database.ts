@@ -15,6 +15,7 @@ import {
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
 import { DefaultShardPool } from './sharding/shard-pool';
 import type { ShardPool, ShardPoolClient } from './sharding/sharding-types';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -31,10 +32,11 @@ const shardPools: Record<string, { pool: ShardPool | undefined; readonlyPool: Sh
 
 export function getDatabasePool(mode: DatabaseMode, shardId: string): ShardPool {
   if (shardId.startsWith('TODO')) {
-    shardId = 'global';
+    console.warn(`getDatabasePool called with shardId ${shardId}`);
+    shardId = GLOBAL_SHARD_ID;
   }
 
-  const pools = shardId && shardId !== 'global' ? shardPools[shardId] : globalPools;
+  const pools = shardId && shardId !== GLOBAL_SHARD_ID ? shardPools[shardId] : globalPools;
 
   if (!pools.pool) {
     throw new Error('Database not setup');
@@ -52,10 +54,10 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
-  globalPools.pool = await initPool('global', serverConfig.database, serverConfig.databaseProxyEndpoint);
+  globalPools.pool = await initPool(GLOBAL_SHARD_ID, serverConfig.database, serverConfig.databaseProxyEndpoint);
   if (serverConfig.readonlyDatabase) {
     globalPools.readonlyPool = await initPool(
-      'global',
+      GLOBAL_SHARD_ID,
       serverConfig.readonlyDatabase,
       serverConfig.readonlyDatabaseProxyEndpoint
     );
@@ -65,7 +67,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
   }
 
   for (const [shardId, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
-    if (shardId === 'global') {
+    if (shardId === GLOBAL_SHARD_ID) {
       continue;
     }
     const shardPool = await initPool(shardId, shardConfig.database, undefined);
