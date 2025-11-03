@@ -158,7 +158,7 @@ describe('Export', () => {
       expect(exportWriteResourceSpy).toHaveBeenCalled();
     }));
 
-  test('clearTrackingForResourceType removes only specified resource type', async () =>
+  test('closeWriter removes only specified resource type from tracking', async () =>
     withTestContext(async () => {
       const exporter = new BulkExporter(systemRepo);
       await exporter.start('http://example.com');
@@ -184,10 +184,10 @@ describe('Export', () => {
       expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
       expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(true);
 
-      // Clear only Observation resources
-      exporter.clearTrackingForResourceType('Observation');
+      // Close writer for Observation (which clears tracking for that type)
+      await exporter.closeWriter('Observation');
 
-      // Verify only Observation was removed
+      // Verify only Observation was removed from tracking
       expect(exporter.resourceSet.size).toBe(1);
       expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
       expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(false);
@@ -196,7 +196,7 @@ describe('Export', () => {
       await exporter.close(project);
     }));
 
-  test('closeWriter and clearTrackingForResourceType called during export', async () =>
+  test('closeWriter called for each resource type during export', async () =>
     withTestContext(async () => {
       // Create test resources
       await systemRepo.createResource({
@@ -212,7 +212,6 @@ describe('Export', () => {
 
       const exporter = new BulkExporter(systemRepo);
       const closeWriterSpy = jest.spyOn(exporter, 'closeWriter');
-      const clearTrackingSpy = jest.spyOn(exporter, 'clearTrackingForResourceType');
 
       await exporter.start('http://example.com');
       const { project } = await createTestProject();
@@ -224,8 +223,7 @@ describe('Export', () => {
       expect(closeWriterSpy).toHaveBeenCalledWith('Patient');
       expect(closeWriterSpy).toHaveBeenCalledWith('Observation');
 
-      // Verify clearTrackingForResourceType was called for each exported resource type
-      expect(clearTrackingSpy).toHaveBeenCalledWith('Patient');
-      expect(clearTrackingSpy).toHaveBeenCalledWith('Observation');
+      // Verify that tracking was cleared (resourceSet should be empty after close)
+      expect(exporter.resourceSet.size).toBe(0);
     }));
 });

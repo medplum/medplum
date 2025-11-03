@@ -25,8 +25,9 @@ class BulkFileWriter {
     const data = JSON.stringify(resource) + '\n';
     // Handle backpressure - if write buffer is full, wait for drain
     if (!this.stream.write(data)) {
-      await new Promise<void>((resolve) => {
+      await new Promise<void>((resolve, reject) => {
         this.stream.once('drain', () => resolve());
+        this.stream.once('error', (err) => reject(err));
       });
     }
   }
@@ -76,11 +77,7 @@ export class BulkExporter {
       await writer.close();
       // Keep reference for formatOutput(), but free the stream resources
     }
-  }
-
-  clearTrackingForResourceType(resourceType: string): void {
-    // Remove all tracked resources of this type to free memory
-    // This is safe to call after closeWriter() for a resource type
+    // Clear tracking for this resource type to free memory
     for (const ref of this.resourceSet) {
       if (ref.startsWith(`${resourceType}/`)) {
         this.resourceSet.delete(ref);
