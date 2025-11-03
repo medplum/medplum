@@ -555,6 +555,7 @@ describe('Database migrations', () => {
   // has a beforeEach that initializes and shuts down the app repeatedly.
   // Here, we want one long-running app
   describe('Super Admin routes', () => {
+    const shardId = GLOBAL_SHARD_ID;
     const app = express();
 
     let adminAccessToken: string;
@@ -619,9 +620,21 @@ describe('Database migrations', () => {
         setMigrationsConfig(true, false);
       });
 
+      test('missing shardId', async () => {
+        const res = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({});
+
+        expect(res.status).toStrictEqual(400);
+        expect(res.body).toMatchObject(badRequest('shardId is required'));
+      });
+
       test.each<[boolean, boolean, 'fail' | 'pass']>([
-        // [false, false, 'fail'],
-        // [false, true, 'fail'],
+        [false, false, 'fail'],
+        [false, true, 'fail'],
         [true, false, 'pass'],
         [true, true, 'pass'],
       ])(
@@ -634,7 +647,7 @@ describe('Database migrations', () => {
             .set('Authorization', 'Bearer ' + adminAccessToken)
             .set('Prefer', 'respond-async')
             .type('json')
-            .send({});
+            .send({ shardId });
 
           const queueAdd = getQueueAddSpy();
 
@@ -660,7 +673,7 @@ describe('Database migrations', () => {
             .set('Authorization', 'Bearer ' + adminAccessToken)
             .set('Prefer', 'respond-async')
             .type('json')
-            .send({ dataVersion });
+            .send({ shardId, dataVersion });
 
           expect(res1.status).toStrictEqual(400);
           expect(res1.headers['content-location']).not.toBeDefined();
@@ -676,7 +689,7 @@ describe('Database migrations', () => {
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ dataVersion: 1 });
+          .send({ shardId, dataVersion: 1 });
 
         // Since the version is less than or equal to the current version,
         // nothing to do, so no AsyncJob was created and no content-location header
@@ -698,7 +711,7 @@ describe('Database migrations', () => {
           .post('/admin/super/setdataversion')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
-          .send({ dataVersion: 1337 });
+          .send({ shardId, dataVersion: 1337 });
 
         expect(res1.status).toStrictEqual(200);
         expect(res1.body).toMatchObject(allOk);
@@ -710,7 +723,7 @@ describe('Database migrations', () => {
           .post('/admin/super/setdataversion')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
-          .send({ dataVersion });
+          .send({ shardId, dataVersion });
 
         expect(res1.status).toStrictEqual(400);
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
@@ -736,7 +749,8 @@ describe('Database migrations', () => {
           .post('/admin/super/reconcile-db-schema-drift')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
-          .type('json');
+          .type('json')
+          .send({ shardId });
 
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         expect(res1.status).toStrictEqual(200);
@@ -758,7 +772,8 @@ describe('Database migrations', () => {
           .post('/admin/super/reconcile-db-schema-drift')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
-          .type('json');
+          .type('json')
+          .send({ shardId });
 
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         const jobData = queueAddSpy.mock.calls[0][1];

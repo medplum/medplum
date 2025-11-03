@@ -41,7 +41,7 @@ describe('$db-invalid-indexes', () => {
     const res = await request(app)
       .post('/fhir/R4/$db-invalid-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({ shardId: GLOBAL_SHARD_ID });
     expect(res.status).toBe(200);
     const params = res.body as Parameters;
     const invalidIndex = params.parameter?.find(

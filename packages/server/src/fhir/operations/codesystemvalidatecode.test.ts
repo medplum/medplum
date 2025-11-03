@@ -8,7 +8,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, withTestContext } from '../../test.setup';
 import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
@@ -303,26 +303,27 @@ describe('CodeSystem validate-code', () => {
     });
   });
 
-  test('validateCodings', async () => {
-    const result = await validateCodings(codeSystem, [
-      { system: codeSystem.url, code: '1' }, // valid
-      { system: codeSystem.url, code: '2' }, // valid
-      { system: codeSystem.url, code: 'invalid-code' }, // invalid
-      { system: 'incorrect-system', code: '1' }, // invalid
-      { system: codeSystem.url, code: undefined }, // invalid
-      { system: undefined, code: '1' }, // valid
-      { system: undefined, code: 'invalid-code' }, // invalid
-      { system: codeSystem.url, code: '2' }, // valid duplicate
-    ]);
-    expect(result).toMatchObject([
-      { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
-      { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
-      undefined,
-      undefined,
-      undefined,
-      { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
-      undefined,
-      { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
-    ]);
-  });
+  test('validateCodings', async () =>
+    withTestContext(async () => {
+      const result = await validateCodings(codeSystem, [
+        { system: codeSystem.url, code: '1' }, // valid
+        { system: codeSystem.url, code: '2' }, // valid
+        { system: codeSystem.url, code: 'invalid-code' }, // invalid
+        { system: 'incorrect-system', code: '1' }, // invalid
+        { system: codeSystem.url, code: undefined }, // invalid
+        { system: undefined, code: '1' }, // valid
+        { system: undefined, code: 'invalid-code' }, // invalid
+        { system: codeSystem.url, code: '2' }, // valid duplicate
+      ]);
+      expect(result).toMatchObject([
+        { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
+        { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
+        undefined,
+        undefined,
+        undefined,
+        { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
+        undefined,
+        { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
+      ]);
+    }));
 });
