@@ -67,9 +67,13 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </MantineAppShell.Section>
           )}
           <MantineAppShell.Section grow>
-            {props.menus?.map((menu) => (
-              <Fragment key={`menu-${menu.title}`}>
-                <Text className={classes.menuTitle}>{menu.title}</Text>
+            {props.menus?.map((menu, index) => (
+              <Fragment key={`menu-${menu.title ?? index}`}>
+                {menu.title && (
+                  <Text size="xs" className={classes.menuTitle}>
+                    {menu.title}
+                  </Text>
+                )}
                 {menu.links?.map((link) => (
                   <NavbarLink
                     key={link.href}
