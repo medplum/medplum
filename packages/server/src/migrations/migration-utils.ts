@@ -10,6 +10,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
+import type { ShardPoolClient } from '../sharding/sharding-types';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
@@ -181,7 +182,7 @@ export async function queuePostDeployMigration(
 }
 
 export async function withLongRunningDatabaseClient<TResult>(
-  callback: (client: PoolClient) => Promise<TResult>,
+  callback: (client: ShardPoolClient) => Promise<TResult>,
   shardId: string,
   databaseMode?: DatabaseMode
 ): Promise<TResult> {
