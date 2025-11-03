@@ -4,7 +4,6 @@ import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toT
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -29,6 +28,7 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
+import type { ShardPoolClient } from '../sharding/sharding-types';
 import type { WorkerInitializer } from './utils';
 import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
 
@@ -180,7 +180,7 @@ export async function runCustomMigration(
   job: Job<CustomPostDeployMigrationJobData> | undefined,
   jobData: CustomPostDeployMigrationJobData,
   callback: (
-    client: PoolClient,
+    client: ShardPoolClient,
     results: MigrationActionResult[],
     job: Job<CustomPostDeployMigrationJobData> | undefined,
     jobData: CustomPostDeployMigrationJobData
