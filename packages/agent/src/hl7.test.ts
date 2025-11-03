@@ -1116,6 +1116,7 @@ describe('HL7', () => {
       const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
+        shouldSendAck: true,
       };
 
       mockServer.on('connection', (socket) => {
@@ -1133,20 +1134,23 @@ describe('HL7', () => {
 
           if (command.type === 'agent:transmit:request') {
             state.transmitRequests.push(command);
-            const hl7Message = Hl7Message.parse(command.body);
-            const ackMessage = hl7Message.buildAck();
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:transmit:response',
-                  channel: command.channel,
-                  callback: command.callback,
-                  remote: command.remote,
-                  contentType: ContentType.HL7_V2,
-                  body: ackMessage.toString(),
-                } satisfies AgentTransmitResponse)
-              )
-            );
+            // Only send ACK if we're supposed to (for controlled testing)
+            if (state.shouldSendAck) {
+              const hl7Message = Hl7Message.parse(command.body);
+              const ackMessage = hl7Message.buildAck();
+              socket.send(
+                Buffer.from(
+                  JSON.stringify({
+                    type: 'agent:transmit:response',
+                    channel: command.channel,
+                    callback: command.callback,
+                    remote: command.remote,
+                    contentType: ContentType.HL7_V2,
+                    body: ackMessage.toString(),
+                  } satisfies AgentTransmitResponse)
+                )
+              );
+            }
           }
         });
       });
@@ -1177,31 +1181,114 @@ describe('HL7', () => {
       await app.start();
 
       // Get the channel
-      const channel = app.channels.get('test');
+      const channel = app.channels.get('test') as AgentHl7Channel;
       expect(channel).toBeDefined();
 
       // Channel should have stats tracker
-      expect((channel as AgentHl7Channel).stats).toBeDefined();
+      expect(channel.stats).toBeDefined();
+
+      // Initially, should have no pending messages and no samples
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(0);
 
       const client = new Hl7Client({
         host: 'localhost',
         port: 57090,
       });
 
-      await client.sendAndWait(
+      // Disable ACKs temporarily so we can check pending state
+      state.shouldSendAck = false;
+
+      // Send first message (don't wait for response)
+      const sendPromise1 = client.sendAndWait(
         Hl7Message.parse(
           'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
         )
       );
 
-      // Wait for message to be processed
+      // Wait for message to be received by channel (forwarded to bot)
       while (state.transmitRequests.length === 0) {
         await sleep(20);
       }
 
-      // Stats should have recorded the message
-      expect((channel as AgentHl7Channel).stats?.getPendingCount()).toBeGreaterThanOrEqual(0);
+      // At this point: message received, pending bot response
+      // pending = 1, samples = 0
+      expect(channel.stats?.getPendingCount()).toBe(1);
+      expect(channel.stats?.getSampleCount()).toBe(0);
+
+      // Now send the ACK from the bot
+      const firstRequest = state.transmitRequests[0];
+      const hl7Message1 = Hl7Message.parse(firstRequest.body);
+      const ackMessage1 = hl7Message1.buildAck();
+      (mockServer as any).clients()[0].send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: firstRequest.channel,
+            callback: firstRequest.callback,
+            remote: firstRequest.remote,
+            contentType: ContentType.HL7_V2,
+            body: ackMessage1.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for the ACK to be processed
+      await sendPromise1;
+      await sleep(50); // Give time for stats to update
+
+      // After ACK received: pending = 0, samples = 1
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(1);
+
+      // Send second message without waiting for ACK
+      const sendPromise2 = client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+
+      // Wait for second message to be received
+      while (state.transmitRequests.length < 2) {
+        await sleep(20);
+      }
+
+      // After second message sent: pending = 1, samples = 1
+      expect(channel.stats?.getPendingCount()).toBe(1);
+      expect(channel.stats?.getSampleCount()).toBe(1);
+
+      // Send ACK for second message
+      const secondRequest = state.transmitRequests[1];
+      const hl7Message2 = Hl7Message.parse(secondRequest.body);
+      const ackMessage2 = hl7Message2.buildAck();
+      (mockServer as any).clients()[0].send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: secondRequest.channel,
+            callback: secondRequest.callback,
+            remote: secondRequest.remote,
+            contentType: ContentType.HL7_V2,
+            body: ackMessage2.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for second ACK to be processed
+      await sendPromise2;
+      await sleep(50); // Give time for stats to update
+
+      // After both ACKs received: pending = 0, samples = 2
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(2);
+
+      // Verify the correct control IDs were tracked
+      const firstMessage = Hl7Message.parse(state.transmitRequests[0].body);
+      const secondMessage = Hl7Message.parse(state.transmitRequests[1].body);
+      expect(firstMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00001');
+      expect(secondMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00002');
 
       await client.close();
       await app.stop();
