@@ -104,7 +104,7 @@ export async function exportResourceType<T extends Resource>(
   await repo.processAllResources(searchRequest, async (resource) => {
     await exporter.writeResource(resource);
   });
-  
+
   // Close writer and free memory for this resource type immediately
   await exporter.closeWriter(resourceType);
 }
