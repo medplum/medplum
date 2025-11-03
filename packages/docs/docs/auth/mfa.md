@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 
 Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Medplum supports Time-based One-Time Password (TOTP) authentication, which is compatible with authenticator apps like Google Authenticator, Microsoft Authenticator, Authy, and others.
 
-::note
+:::note
 Users enrolled in MFA will only be asked for an MFA code during a login with Username/Password
-::
+:::
 
 ## Self-Enrollment
 
@@ -94,7 +94,7 @@ For more details on the invite endpoint, see the [Invite User Endpoint](/docs/ap
 
 ## Using Medplum's SignInForm Component
 
-**We recommend using Medplum's [`SignInForm`](/docs/api/react/components#signinform) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:
+**We recommend using Medplum's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:
 
 - **MFA Enrollment**: Automatically detects when a user needs to enroll in MFA (e.g., when `mfaRequired: true` was set during invitation) and displays the enrollment screen with QR code
 - **MFA Verification**: Automatically prompts for MFA codes when users with enrolled MFA attempt to log in
