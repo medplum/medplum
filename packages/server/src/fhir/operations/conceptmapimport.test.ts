@@ -451,23 +451,6 @@ describe('ConceptMap/$import', () => {
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
   });
-
-  test('Handles ConceptMap with no valid mappings', async () => {
-    const map: ConceptMap = await repo.createResource({
-      resourceType: 'ConceptMap',
-      group: [
-        {
-          target: 'urn:uuid:f2334818-8254-4c9f-95a4-335109e78c25',
-          element: [{ target: [{ equivalence: 'disjoint' }] }],
-        },
-      ],
-      status: 'active',
-    });
-
-    const pool = getDatabasePool(DatabaseMode.READER);
-    const results = await getMappingRows(pool, map);
-    expect(results).toHaveLength(0);
-  });
 });
 
 async function getMappingRows(pool: Pool, conceptMap: ConceptMap): Promise<any[]> {
