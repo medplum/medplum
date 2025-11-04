@@ -148,7 +148,7 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   currentResource(): Resource | undefined {
-    return this.resourceStack.at(-1);
+    return this.resourceStack[this.resourceStack.length - 1];
   }
 
   validate(): OperationOutcomeIssue[] {
