@@ -11,6 +11,7 @@ import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer } from './utils';
@@ -37,6 +38,80 @@ export interface DownloadJobData {
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
+const DOWNLOAD_LOCK_TTL = 3600; // 1 hour in seconds
+
+/**
+ * Tries to atomically lock a URL for processing.
+ * Uses Redis SETNX (set if not exists) to ensure only one job processes a URL at a time.
+ * @param resourceType - The resource type.
+ * @param resourceId - The resource ID.
+ * @param url - The URL to lock.
+ * @returns True if the lock was acquired, false if the URL is already being processed.
+ */
+async function tryLockUrl(resourceType: string, resourceId: string, url: string): Promise<boolean> {
+  try {
+    const redis = getRedis();
+    const key = `download:lock:${resourceType}/${resourceId}:${url}`;
+    // SET with EX (expiration) and NX (only set if not exists) returns 'OK' if set, null if exists
+    const result = await redis.set(key, '1', 'EX', DOWNLOAD_LOCK_TTL, 'NX');
+    return result === 'OK';
+  } catch (err) {
+    // If Redis is unavailable, log and allow the job to proceed
+    // This prevents Redis issues from breaking downloads entirely
+    getLogger().warn('Failed to acquire download lock, proceeding anyway', { resourceType, resourceId, url, err });
+    return true;
+  }
+}
+
+/**
+ * Releases the lock for a URL.
+ * @param resourceType - The resource type.
+ * @param resourceId - The resource ID.
+ * @param url - The URL to unlock.
+ */
+async function unlockUrl(resourceType: string, resourceId: string, url: string): Promise<void> {
+  try {
+    const redis = getRedis();
+    const key = `download:lock:${resourceType}/${resourceId}:${url}`;
+    await redis.del(key);
+  } catch (err) {
+    // Log but don't throw - unlock failures aren't critical
+    getLogger().warn('Failed to release download lock', { resourceType, resourceId, url, err });
+  }
+}
+
+/**
+ * Replaces a specific URL in a resource's attachments with a Binary reference.
+ * Uses precise attachment traversal instead of string replacement to avoid race conditions.
+ * @param resource - The resource to update.
+ * @param oldUrl - The URL to replace.
+ * @param newBinaryId - The Binary ID to use as replacement.
+ * @returns The updated resource if the URL was found, null otherwise.
+ */
+function replaceAttachmentUrl(resource: Resource, oldUrl: string, newBinaryId: string): Resource | null {
+  const resourceCopy = JSON.parse(JSON.stringify(resource)) as Resource;
+  let found = false;
+
+  crawlTypedValue(toTypedValue(resourceCopy), {
+    visitProperty: (_parent, _key, _path, propertyValues) => {
+      for (const propertyValue of propertyValues) {
+        if (propertyValue) {
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (value.type === 'Attachment' && value.value) {
+              const attachment = value.value as Attachment;
+              if (attachment.url === oldUrl) {
+                attachment.url = `Binary/${newBinaryId}`;
+                found = true;
+              }
+            }
+          }
+        }
+      }
+    },
+  });
+
+  return found ? resourceCopy : null;
+}
 
 export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
@@ -107,6 +182,14 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     if (!isExternalUrl(attachment.url) || !isUrlAllowedByProject(project, attachment.url)) {
       continue;
     }
+
+    // Atomically try to lock this URL for processing
+    // This prevents duplicate job queuing when multiple updates happen concurrently
+    if (!(await tryLockUrl(resource.resourceType, resource.id, attachment.url))) {
+      // URL is already being processed by another job, skip it
+      continue;
+    }
+
     await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id,
@@ -186,30 +269,37 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 
+  // Read resource to check if it still exists and contains the URL
   let resource: T;
   try {
     resource = await systemRepo.readResource<T>(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     if (isGone(outcome)) {
-      // If the resource was deleted, then stop processing it.
+      // If the resource was deleted, unlock and stop processing
+      await unlockUrl(resourceType, id, url);
       return;
     }
+    await unlockUrl(resourceType, id, url);
     throw err;
   }
 
+  // Check if URL still exists in the resource
   if (!JSON.stringify(resource).includes(url)) {
-    // If the resource no longer includes the URL, then stop processing it.
+    // URL was already replaced by another job, unlock and exit
+    await unlockUrl(resourceType, id, url);
     return;
   }
 
   const projectId = resource.meta?.project;
   if (!projectId) {
+    await unlockUrl(resourceType, id, url);
     return;
   }
 
   const project = await systemRepo.readResource<Project>('Project', projectId);
   if (!isUrlAllowedByProject(project, url)) {
+    await unlockUrl(resourceType, id, url);
     return;
   }
 
@@ -253,12 +343,45 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
 
-    const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
+    // CRITICAL: Re-read the resource right before updating to get the latest state
+    // This prevents race conditions where concurrent jobs overwrite each other's updates
+    let latestResource: T;
+    try {
+      latestResource = await systemRepo.readResource<T>(resourceType, id);
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      if (isGone(outcome)) {
+        await unlockUrl(resourceType, id, url);
+        return;
+      }
+      await unlockUrl(resourceType, id, url);
+      throw err;
+    }
+
+    // Check if URL still exists in the latest resource state
+    if (!JSON.stringify(latestResource).includes(url)) {
+      // URL was already replaced between download and update, unlock and exit
+      await unlockUrl(resourceType, id, url);
+      return;
+    }
+
+    // Use precise attachment replacement instead of string replacement
+    // This ensures we only replace the specific URL we're processing
+    const updated = replaceAttachmentUrl(latestResource, url, binary.id);
+    if (!updated) {
+      // URL was removed between check and update, unlock and exit
+      await unlockUrl(resourceType, id, url);
+      return;
+    }
+
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
+    await unlockUrl(resourceType, id, url);
     log.info('Downloaded content successfully');
   } catch (ex: any) {
     log.info('Download exception: ' + ex, ex);
+    // Unlock on failure so the URL can be retried
+    await unlockUrl(resourceType, id, url);
     throw ex;
   }
 }
