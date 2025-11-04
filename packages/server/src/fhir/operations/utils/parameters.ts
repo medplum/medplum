@@ -136,7 +136,7 @@ function validateInputParam(param: OperationDefinitionParameter, value: unknown)
   // Check parameter cardinality (min and max)
   const min = param.min ?? 0;
   const maxStr = param.max ?? '1';
-  const max = maxStr === '*' ? Number.POSITIVE_INFINITY : parseInt(maxStr, 10);
+  const max = maxStr === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(maxStr, 10);
   if (Array.isArray(value)) {
     if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
