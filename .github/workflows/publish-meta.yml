@@ -92,8 +92,6 @@ jobs:
                 assets: [
                   .assets[] | {
                     name,
-                    size,
-                    digest,
                     browser_download_url: "https://download.medplum.com/releases/\($release.tag_name)/\(.name)"
                   }
                 ]
@@ -109,8 +107,6 @@ jobs:
             assets: [
               .assets[] | {
                 name,
-                size,
-                digest,
                 browser_download_url: "https://download.medplum.com/releases/\($release.tag_name)/\(.name)"
               }
             ]
