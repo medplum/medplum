@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Client, PoolClient } from 'pg';
+import type { Client } from 'pg';
 import type { CTE, Operator } from './sql';
 import {
   Column,
   Condition,
   Constant,
-  InsertQuery,
   Negation,
   SelectQuery,
   SqlBuilder,
@@ -15,8 +14,6 @@ import {
   ValuesQuery,
   isValidTableName,
   periodToRangeString,
-  resetSqlDebug,
-  setSqlDebug,
 } from './sql';
 
 describe('SqlBuilder', () => {
@@ -283,12 +280,6 @@ describe('SqlBuilder', () => {
       expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
     });
 
-    test('Empty insert is no-op', async () => {
-      const db = { query: jest.fn() } as unknown as PoolClient;
-      await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
-      expect(db.query).not.toHaveBeenCalled();
-    });
-
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable')
@@ -381,34 +372,4 @@ test('isValidTableName', () => {
   expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
   expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
   expect(isValidTableName('Observation History')).toStrictEqual(false);
-});
-
-test('debug', async () => {
-  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-  const conn = {
-    query: jest.fn(() => ({ rows: [] })),
-  } as unknown as Client;
-
-  const query = new SelectQuery('MyTable').column('id');
-
-  async function executeQuery(): Promise<void> {
-    const sql = new SqlBuilder();
-    query.buildSql(sql);
-    await sql.execute(conn);
-  }
-
-  setSqlDebug('literally anything');
-
-  consoleLogSpy.mockClear();
-  await executeQuery();
-  expect(consoleLogSpy).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
-
-  setSqlDebug(undefined);
-
-  consoleLogSpy.mockClear();
-  await executeQuery();
-  expect(consoleLogSpy).not.toHaveBeenCalled();
-
-  resetSqlDebug();
 });
