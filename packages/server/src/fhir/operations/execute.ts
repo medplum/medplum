@@ -8,6 +8,7 @@ import {
   isOk,
   isOperationOutcome,
   isResource,
+  notFound,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -104,7 +105,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
  * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
  * Otherwise, returns undefined.
  * @param req - The HTTP request.
- * @returns The bot, or undefined if not found.
+ * @returns The bot, or undefined if no ID or identifier is provided.
  */
 async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
@@ -115,12 +116,19 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   }
 
   // Otherwise, search by identifier
+  console.log(JSON.stringify(req.query));
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return ctx.repo.searchOne<Bot>({
+    const bot = await ctx.repo.searchOne<Bot>({
       resourceType: 'Bot',
       filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
     });
+
+    if (!bot) {
+      throw new OperationOutcomeError(notFound);
+    }
+
+    return bot;
   }
 
   // If no bot ID or identifier, return undefined
