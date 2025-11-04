@@ -1,26 +1,55 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition, CloseButton } from '@mantine/core';
-import type { JSX } from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { Box, Button, Group, Paper, ScrollArea, Stack, Text, TextInput } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
-import { IconHistory } from '@tabler/icons-react';
+import { IconSend, IconTrash } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import { ResourceBox } from '../../components/spaces/ResourceBox';
-import { ResourcePanel } from '../../components/spaces/ResourcePanel';
-import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
-import type { Message } from '../../types/spaces';
-import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
-import { ConversationList } from './ConversationList';
-import { ChatInput } from './ChatInput';
-import classes from './SpacesPage.module.css';
-import type { Identifier } from '@medplum/fhirtypes';
-import { getReferenceString } from '@medplum/core';
-import cx from 'clsx';
 
-const botId: Identifier = {
-  value: 'ai-api-bot',
-  system: 'https://www.medplum.com/bots',
+interface Message {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | null;
+  tool_calls?: any[];
+  tool_call_id?: string;
+}
+
+const SYSTEM_MESSAGE: Message = {
+  role: 'system',
+  content: `You are a helpful healthcare assistant with access to FHIR data through the Medplum platform.
+
+FHIR BASICS:
+FHIR (Fast Healthcare Interoperability Resources) is a standard for healthcare data exchange. Key concepts:
+- Resources: Structured data types like Patient, Observation, Medication
+- References: Links between resources (e.g., Patient/123)
+- Search: Query resources using parameters
+
+AVAILABLE RESOURCES:
+- Patient: Patient demographics (name, birthdate, gender, address, phone)
+- Practitioner: Healthcare providers
+- Observation: Vital signs, lab results (blood pressure, temperature, glucose)
+- Condition: Diagnoses and problems
+- MedicationRequest: Prescriptions
+- Appointment: Scheduled visits
+- Task: Work items and to-dos
+- Encounter: Patient visits
+- DiagnosticReport: Lab and imaging results
+- DocumentReference: Clinical documents
+
+SEARCH EXAMPLES:
+- Find by name: Patient?name=John
+- Find by ID: Patient/abc-123
+- Multiple params: Patient?name=John&birthdate=1990-01-01
+- Search all: Patient (returns first 20)
+- Phone search: Patient?telecom=555-1234
+
+COMMON TASKS:
+- "Find patient John" → GET Patient?name=John
+- "Show me patient details" (after finding) → GET Patient/{id}
+- "Create a task" → POST Task with body
+- "Find all observations for patient X" → GET Observation?subject=Patient/{id}
+
+Always maintain conversation context and reference previous searches or data when relevant.`,
 };
 
 export function SpacesPage(): JSX.Element {
@@ -28,43 +57,49 @@ export function SpacesPage(): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([SYSTEM_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-5');
-  const [hasStarted, setHasStarted] = useState(false);
-  const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [topicId, setTopicId] = useState<string | undefined>();
-  const [historyOpened, setHistoryOpened] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedResource, setSelectedResource] = useState<string | undefined>();
-  const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const fhirTools = [
+    {
+      type: 'function',
+      function: {
+        name: 'fhir_request',
+        description:
+          'Make a FHIR request to the Medplum server. Use this to search, read, create, update, or delete FHIR resources.',
+        parameters: {
+          type: 'object',
+          properties: {
+            method: {
+              type: 'string',
+              enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+              description: 'HTTP method for the FHIR request',
+            },
+            path: {
+              type: 'string',
+              description: 'FHIR resource path (e.g., "Patient?name=John" or "Patient/123")',
+            },
+            body: {
+              type: 'object',
+              description: 'FHIR resource to create or update. Required for POST, PUT, and PATCH requests.',
+            },
+          },
+          required: ['method', 'path'],
+        },
+      },
+    },
+  ];
 
   useEffect(() => {
-    const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted) {
-      viewport.scrollTo({
-        top: viewport.scrollHeight,
-        behavior: 'smooth',
-      });
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
-  }, [messages, hasStarted]);
+  }, [messages, loading]);
 
-  const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
-    try {
-      setLoading(true);
-      const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
-      setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
-      setTopicId(selectedTopicId);
-      setHasStarted(true);
-      setSelectedResource(undefined);
-    } catch (error: any) {
-      showErrorNotification(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleHistoryClick = (): void => {
-    setRefreshKey((prev) => prev + 1); // Refresh the conversation list
-    setHistoryOpened((prev) => !prev);
+  const handleClear = (): void => {
+    setMessages([SYSTEM_MESSAGE]);
   };
 
   const handleSend = async (): Promise<void> => {
@@ -72,57 +107,43 @@ export function SpacesPage(): JSX.Element {
       return;
     }
 
-    const isFirstMessage = !hasStarted;
-    if (isFirstMessage) {
-      setHasStarted(true);
-    }
-
     const userMessage: Message = { role: 'user', content: input };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     setInput('');
-    setCurrentFhirRequest(undefined);
     setLoading(true);
 
     try {
-      // Create topic on first message
-      let currentTopicId = topicId;
-      if (isFirstMessage) {
-        const topic = await createConversationTopic(medplum, input.substring(0, 100), selectedModel);
-        currentTopicId = topic.id;
-        setTopicId(currentTopicId);
-      }
-
-      // Save user message
-      if (currentTopicId) {
-        await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
-      }
-      let response = await medplum.executeBot(botId, {
+      let response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
-          { name: 'model', valueString: selectedModel },
-          { name: 'tools', valueString: JSON.stringify(FHIR_TOOLS) },
-          { name: 'temperature', valueString: '0.3' },
+          { name: 'model', valueString: 'gpt-4' },
+          { name: 'tools', valueString: JSON.stringify(fhirTools) },
         ],
       });
 
       const toolCallsStr = response.parameter?.find((p: any) => p.name === 'tool_calls')?.valueString;
-      const allResourceRefs: string[] = [];
 
       if (toolCallsStr) {
         const toolCalls = JSON.parse(toolCallsStr);
-        const assistantMessageWithToolCalls: Message = {
+
+        const toolCallsForOpenAI = toolCalls.map((tc: any) => ({
+          id: tc.id,
+          type: tc.type,
+          function: {
+            name: tc.function.name,
+            arguments:
+              typeof tc.function.arguments === 'string' ? tc.function.arguments : JSON.stringify(tc.function.arguments),
+          },
+        }));
+
+        const assistantMessageWithToolCalls: any = {
           role: 'assistant',
           content: null,
-          tool_calls: toolCalls,
+          tool_calls: toolCallsForOpenAI,
         };
         currentMessages.push(assistantMessageWithToolCalls);
-
-        // Save tool call message
-        if (currentTopicId) {
-          await saveMessage(medplum, currentTopicId, assistantMessageWithToolCalls, currentMessages.length - 1);
-        }
 
         for (const toolCall of toolCalls) {
           if (toolCall.function.name === 'fhir_request') {
@@ -132,7 +153,7 @@ export function SpacesPage(): JSX.Element {
                 : toolCall.function.arguments;
 
             const { method, path, body } = args;
-            setCurrentFhirRequest(`${method} ${path}`);
+
             let result;
             try {
               if (method === 'GET') {
@@ -141,93 +162,36 @@ export function SpacesPage(): JSX.Element {
                 result = await medplum.post(medplum.fhirUrl(path), body);
               } else if (method === 'PUT') {
                 result = await medplum.put(medplum.fhirUrl(path), body);
+              } else if (method === 'PATCH') {
+                result = await medplum.patch(medplum.fhirUrl(path), body);
               } else if (method === 'DELETE') {
                 result = await medplum.delete(medplum.fhirUrl(path));
               }
-
-              if (result?.resourceType === 'Bundle' && result?.entry) {
-                result.entry.forEach((entry: any) => {
-                  if (entry.resource) {
-                    const ref = getReferenceString(entry.resource);
-                    if (ref) {
-                      allResourceRefs.push(ref);
-                    }
-                  }
-                });
-              } else if (result) {
-                const ref = getReferenceString(result);
-                if (ref) {
-                  allResourceRefs.push(ref);
-                }
-              }
-
-              const toolMessage: Message = {
-                role: 'tool',
-                tool_call_id: toolCall.id,
-                content: JSON.stringify(result),
-              };
-              currentMessages.push(toolMessage);
-
-              // Save tool response message
-              if (currentTopicId) {
-                await saveMessage(medplum, currentTopicId, toolMessage, currentMessages.length - 1);
-              }
-            } catch (err: any) {
-              const errorResult = {
-                error: true,
-                message: `Unable to execute ${method}: ${path}`,
-                details: err.message || 'Unknown error',
-              };
-
-              const toolErrorMessage: Message = {
-                role: 'tool',
-                tool_call_id: toolCall.id,
-                content: JSON.stringify(errorResult),
-              };
-              currentMessages.push(toolErrorMessage);
-
-              // Save tool error message
-              if (currentTopicId) {
-                await saveMessage(medplum, currentTopicId, toolErrorMessage, currentMessages.length - 1);
-              }
+            } catch (error: any) {
+              result = { error: error.message };
             }
+
+            const toolResult: any = {
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(result),
+            };
+            currentMessages.push(toolResult);
           }
         }
 
-        // Second AI request: summarize the FHIR response
-        // Use the existing conversation context but replace system message with summary version
-        const summaryMessages = [
-          {
-            role: 'system',
-            content: SUMMARY_SYSTEM_MESSAGE,
-          },
-          ...currentMessages.slice(1), // Skip original system message, include all conversation
-        ];
-
-        response = await medplum.executeBot(botId, {
+        response = await medplum.executeBot('9bce4942-3b77-4d8c-b025-e324da963810', {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'messages', valueString: JSON.stringify(summaryMessages) },
-            { name: 'model', valueString: selectedModel },
-            { name: 'temperature', valueString: '0.3' },
+            { name: 'messages', valueString: JSON.stringify(currentMessages) },
+            { name: 'model', valueString: 'gpt-4' },
           ],
         });
       }
 
       const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
       if (content) {
-        const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content,
-          resources: uniqueRefs,
-        };
-        setMessages([...currentMessages, assistantMessage]);
-
-        // Save assistant message
-        if (currentTopicId) {
-          await saveMessage(medplum, currentTopicId, assistantMessage, currentMessages.length);
-        }
+        setMessages([...currentMessages, { role: 'assistant', content }]);
       }
     } catch (error: any) {
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${error.message}` }]);
@@ -236,10 +200,12 @@ export function SpacesPage(): JSX.Element {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend().catch((error) => showErrorNotification(error));
+      handleSend().catch((error) => {
+        showErrorNotification(error);
+      });
     }
   };
 
@@ -247,159 +213,79 @@ export function SpacesPage(): JSX.Element {
     (m) => m.role !== 'system' && m.role !== 'tool' && !(m.role === 'assistant' && m.tool_calls)
   );
 
-  // Centered layout before first message
-  if (!hasStarted) {
-    return (
-      <Flex h="calc(100vh - 68px)" style={{ position: 'relative' }}>
-        <Transition mounted={historyOpened} transition="slide-right" duration={200}>
-          {(styles) => (
-            <Box
-              w={320}
+  return (
+    <Stack h="calc(100vh - 68px)" p="md">
+      <Group justify="space-between">
+        <Text size="xl" fw={700}>
+          AI Assistant
+        </Text>
+        <Group gap="xs">
+          <Text size="sm" c="dimmed">
+            {visibleMessages.length} messages
+          </Text>
+          <Button size="xs" variant="subtle" color="red" onClick={handleClear} leftSection={<IconTrash size={14} />}>
+            Clear
+          </Button>
+        </Group>
+      </Group>
+
+      <ScrollArea style={{ flex: 1 }} offsetScrollbars ref={scrollAreaRef}>
+        <Stack gap="md" p="xs">
+          {visibleMessages.map((message, index) => (
+            <Paper
+              key={index}
+              p="md"
+              withBorder
               style={{
-                ...styles,
+                alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                maxWidth: '70%',
+                backgroundColor: message.role === 'user' ? '#F8F0FC' : '#f5f5f5',
               }}
             >
-              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-            </Box>
-          )}
-        </Transition>
-
-        <Box p="md">
-          <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
-            <IconHistory size={20} />
-          </ActionIcon>
-        </Box>
-
-        <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
-          <Box
-            w="100%"
-            className={hasStarted ? classes.fadeOut : undefined}
-            style={{
-              maxWidth: '700px',
-            }}
-          >
-            <Text size="xl" fw={700} mb="xs">
-              Start a New Space
-            </Text>
-
-            <ChatInput
-              input={input}
-              onInputChange={setInput}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              loading={loading}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              backgroundColor="white"
-            />
-          </Box>
-        </Stack>
-      </Flex>
-    );
-  }
-
-  // Chat layout after first message
-  return (
-    <Flex h="calc(100vh - 68px)">
-      {/* History Sidebar */}
-      <Transition mounted={historyOpened} transition="slide-right" duration={200}>
-        {(styles) => (
-          <Paper className={classes.borderRight} w={320} style={{ ...styles, position: 'relative' }}>
-            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-          </Paper>
-        )}
-      </Transition>
-
-      {/* Main content column - chat/resource + input */}
-      <Flex direction="column" style={{ flex: 1 }}>
-        {/* Chat and Resource panels row */}
-        <Flex style={{ overflow: 'hidden', flex: 1 }}>
-          {/* Chat Section */}
-          <Paper
-            className={cx(classes.fadeIn, selectedResource ? classes.borderRight : undefined)}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <Group justify="space-between" p="md">
-              <Group gap="xs">
-                <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
-                  <IconHistory size={20} />
-                </ActionIcon>
-
-                <Text size="xl" fw={700}>
-                  AI Assistant
-                </Text>
-              </Group>
-            </Group>
-
-            <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
-              <Stack gap="md" p="md">
-                {visibleMessages.map((message, index) => (
-                  <Box
-                    key={index}
-                    style={{
-                      alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '70%',
-                      width: message.role === 'assistant' && message.resources ? '100%' : undefined,
-                    }}
-                  >
-                    <Paper p="md" withBorder bg={message.role === 'user' ? 'violet.0' : undefined}>
-                      <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
-                    </Paper>
-
-                    {message.resources && message.resources.length > 0 && (
-                      <Stack gap="xs" mt="sm">
-                        {message.resources.map((resourceRef, idx) => (
-                          <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
-                        ))}
-                      </Stack>
-                    )}
-                  </Box>
-                ))}
-                {loading && (
-                  <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-                    <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
-                  </Paper>
-                )}
-              </Stack>
-            </ScrollArea>
-          </Paper>
-
-          {/* Right Panel for Resource Details */}
-          {selectedResource && (
-            <Paper className={classes.previewResource}>
-              <Group justify="space-between" p="md">
-                <Text size="lg" fw={600}>
-                  Resource Details
-                </Text>
-                <CloseButton onClick={() => setSelectedResource(undefined)} />
-              </Group>
-              <ScrollArea style={{ flex: 1 }} p="md">
-                <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
-              </ScrollArea>
+              <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+            </Paper>
+          ))}
+          {loading && (
+            <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
+              <Text c="dimmed">{messages.some((m) => m.tool_calls) ? 'Executing FHIR request...' : 'Thinking...'}</Text>
             </Paper>
           )}
-        </Flex>
+        </Stack>
+      </ScrollArea>
 
-        {/* Input at bottom */}
-        <Paper className={classes.borderTop}>
-          <Box w="50%" style={{ margin: '0 auto' }} p="md">
-            <ChatInput
-              input={input}
-              onInputChange={setInput}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              loading={loading}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-            />
-          </Box>
+      <Box>
+        <Paper p="md" radius="lg" withBorder style={{ backgroundColor: '#fff' }}>
+          <TextInput
+            placeholder="Ask, search, or make anything..."
+            value={input}
+            onChange={(e) => setInput(e.currentTarget.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            styles={{
+              input: {
+                border: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '15px',
+                padding: 0,
+              },
+            }}
+            rightSection={
+              <Button
+                radius="xl"
+                size="sm"
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                w="36px"
+                h="36px"
+                bg="#7c3aed"
+                p={0}
+              >
+                <IconSend size={18} />
+              </Button>
+            }
+          />
         </Paper>
-      </Flex>
-    </Flex>
+      </Box>
+    </Stack>
   );
 }
