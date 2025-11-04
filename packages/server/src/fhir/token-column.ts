@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule } from '@medplum/core';
 import {
+  badRequest,
   Operator as FhirOperator,
   invalidSearchOperator,
   OperationOutcomeError,
