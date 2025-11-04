@@ -53,8 +53,8 @@ export function encodeBase64(data: string): string {
  */
 export function encodeBase64Url(data: string): string {
   return encodeBase64(data)
-    .replace(/\+/g, '-') // Replace + with -
-    .replace(/\//g, '_') // Replace / with _
+    .replaceAll('+', '-') // Replace + with -
+    .replaceAll('/', '_') // Replace / with _
     .replace(/[=]{1,2}$/, ''); // Remove trailing =
 }
 
@@ -65,6 +65,6 @@ export function encodeBase64Url(data: string): string {
  */
 export function decodeBase64Url(data: string): string {
   data = data.padEnd(data.length + ((4 - (data.length % 4)) % 4), '=');
-  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+  const base64 = data.replaceAll('-', '+').replaceAll('_', '/');
   return decodeBase64(base64);
 }

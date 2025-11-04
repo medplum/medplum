@@ -37,7 +37,7 @@ bulkExportCommand
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
-      const fileName = `${type}_${fileUrl.pathname}`.replace(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
+      const fileName = `${type}_${fileUrl.pathname}`.replaceAll(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
       const path = resolve(targetDirectory ?? '', fileName);
 
       writeFile(`${path}`, await data.text(), () => {

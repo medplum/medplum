@@ -99,7 +99,7 @@ export function mapBirthDate(birthDate: string | undefined): CcdaTimeStamp | und
     return undefined;
   }
   return {
-    '@_value': birthDate.replace(/-/g, ''),
+    '@_value': birthDate.replaceAll('-', ''),
   };
 }
 

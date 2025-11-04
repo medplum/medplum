@@ -125,7 +125,7 @@ function loadEnvConfig(): MedplumServerConfig {
     }
 
     // Convert key from CAPITAL_CASE to camelCase
-    key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    key = key.toLowerCase().replaceAll(/_([a-z])/g, (g) => g[1].toUpperCase());
 
     if (isIntegerConfig(key)) {
       currConfig[key] = parseInt(value ?? '', 10);
