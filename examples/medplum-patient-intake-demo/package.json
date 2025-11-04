@@ -1,11 +1,11 @@
 {
   "name": "medplum-patient-intake-demo",
-  "version": "4.5.2",
+  "version": "4.4.2",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && tsx src/scripts/deploy-bots.ts",
+    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint src/",
@@ -20,38 +20,43 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
   "devDependencies": {
-    "@mantine/core": "8.3.6",
-    "@mantine/hooks": "8.3.6",
-    "@mantine/notifications": "8.3.6",
-    "@medplum/bot-layer": "4.5.2",
-    "@medplum/core": "4.5.2",
-    "@medplum/definitions": "4.5.2",
-    "@medplum/eslint-config": "4.5.2",
-    "@medplum/fhirtypes": "4.5.2",
-    "@medplum/mock": "4.5.2",
-    "@medplum/react": "4.5.2",
+    "@mantine/core": "7.17.8",
+    "@mantine/hooks": "7.17.8",
+    "@mantine/notifications": "7.17.8",
+    "@medplum/bot-layer": "4.4.2",
+    "@medplum/core": "4.4.2",
+    "@medplum/definitions": "4.4.2",
+    "@medplum/eslint-config": "4.4.2",
+    "@medplum/fhirtypes": "4.4.2",
+    "@medplum/mock": "4.4.2",
+    "@medplum/react": "4.4.2",
     "@tabler/icons-react": "3.35.0",
-    "@types/node": "22.18.13",
+    "@types/node": "20.19.20",
     "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "@vitejs/plugin-react": "5.1.0",
-    "chart.js": "4.5.1",
-    "esbuild": "0.25.11",
+    "@types/react-dom": "19.2.1",
+    "@vitejs/plugin-react": "5.0.4",
+    "chart.js": "4.5.0",
+    "esbuild": "0.25.10",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
-    "react-chartjs-2": "5.3.1",
+    "react-chartjs-2": "5.3.0",
     "react-dom": "19.2.0",
-    "react-router": "7.9.5",
-    "rimraf": "6.1.0",
-    "tsx": "4.20.6",
+    "react-router": "7.9.4",
+    "rimraf": "6.0.1",
+    "ts-node": "10.9.2",
     "typescript": "5.9.3",
-    "vite": "7.1.12",
-    "vitest": "4.0.6"
+    "vite": "7.1.9",
+    "vitest": "3.2.4"
   },
   "packageManager": "npm@10.9.4",
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

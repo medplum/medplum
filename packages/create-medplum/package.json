@@ -1,6 +1,6 @@
 {
   "name": "create-medplum",
-  "version": "4.5.2",
+  "version": "4.4.2",
   "description": "Medplum NPM Initializer",
   "keywords": [
     "medplum",
@@ -40,13 +40,13 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "medplum": "tsx src/index.ts",
+    "medplum": "ts-node src/index.ts",
     "test": "jest"
   },
   "devDependencies": {
-    "@types/node": "22.18.13"
+    "@types/node": "20.19.20"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
