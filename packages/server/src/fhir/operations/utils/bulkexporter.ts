@@ -113,7 +113,7 @@ export class BulkExporter {
 
   async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
-      throw new Error('Export muse be started before calling close()');
+      throw new Error('Export must be started before calling close()');
     }
 
     for (const writer of Object.values(this.writers)) {
