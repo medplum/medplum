@@ -358,7 +358,6 @@ export function LabOrderDetails({
     };
   }, [medplum, order]);
 
-
   return (
     <ScrollArea h="100%">
       <Paper h="100%">
@@ -900,7 +899,6 @@ export function LabOrderDetails({
     </ScrollArea>
   );
 }
-
 
 const getStatusColor = (status: string | undefined): string => {
   switch (status) {
