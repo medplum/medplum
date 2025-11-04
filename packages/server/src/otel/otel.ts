@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
-import { metrics } from '@opentelemetry/api';
+import opentelemetry from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
@@ -49,7 +49,7 @@ export type RecordMetricOptions = {
 
 function getMeter(): Meter {
   if (!meter) {
-    meter = metrics.getMeter('medplum');
+    meter = opentelemetry.metrics.getMeter('medplum');
   }
   return meter;
 }
