@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "4.5.2",
+  "version": "4.4.3",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -13,12 +13,11 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "type": "commonjs",
   "files": [
     "dist"
   ],
   "scripts": {
-    "agent": "tsx src/main.ts",
+    "agent": "ts-node src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
@@ -26,8 +25,8 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@medplum/core": "4.5.2",
-    "@medplum/hl7": "4.5.2",
+    "@medplum/core": "4.4.3",
+    "@medplum/hl7": "4.4.3",
     "dcmjs-dimse": "0.3.1",
     "iconv-lite": "0.7.0",
     "semver": "7.7.3",
@@ -36,14 +35,14 @@
     "ws": "8.18.3"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.5.2",
-    "@medplum/mock": "4.5.2",
+    "@medplum/fhirtypes": "4.4.3",
+    "@medplum/mock": "4.4.3",
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",
     "postject": "1.0.0-alpha.6"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "4.5.2",
+  "version": "4.4.3",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
@@ -29,7 +29,6 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
-  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -56,13 +55,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.5.2",
+    "@medplum/core": "4.4.3",
     "iconv-lite": "0.7.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.5.2"
+    "@medplum/fhirtypes": "4.4.3"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }
