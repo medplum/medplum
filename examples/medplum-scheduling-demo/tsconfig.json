@@ -16,7 +16,8 @@
     "noFallthroughCasesInSwitch": false,
     "allowJs": false,
     "resolveJsonModule": true,
-    "noEmit": true
+    "noEmit": true,
+    "isolatedModules": true
   },
   "include": ["src"]
 }
