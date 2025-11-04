@@ -10,7 +10,5 @@ export default {
     '@babel/preset-typescript',
     'babel-preset-vite',
   ],
-  plugins: [
-    esmPlugin(),
-  ],
+  plugins: [esmPlugin()],
 };

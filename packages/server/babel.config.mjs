@@ -5,7 +5,5 @@ import esmPlugin from '../babel.esm.config.mjs';
 
 export default {
   presets: [['@babel/preset-env', { targets: { node: 'current' } }], '@babel/preset-typescript'],
-  plugins: [
-    esmPlugin(),
-  ],
+  plugins: [esmPlugin()],
 };

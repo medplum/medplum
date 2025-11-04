@@ -9,7 +9,5 @@ export default {
     ['@babel/preset-react', { runtime: 'automatic' }],
     '@babel/preset-typescript',
   ],
-  plugins: [
-    esmPlugin(),
-  ],
+  plugins: [esmPlugin()],
 };
