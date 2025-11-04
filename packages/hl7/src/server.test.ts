@@ -7,7 +7,7 @@ import { Hl7Server } from './server';
 describe('HL7 Server', () => {
   test('Start and stop', async () => {
     const server = new Hl7Server(() => undefined);
-    await server.start(1234);
+    server.start(1234);
     await server.stop();
   });
 
@@ -18,7 +18,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    await server.start(1234);
+    server.start(1234);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -64,7 +64,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    await server.start(1235, encoding);
+    server.start(1235, encoding);
 
     // First, connect with a client correctly configured for windows-1252
     // This should work correctly
@@ -119,7 +119,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    await server.start(1249);
+    server.start(1249);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -165,7 +165,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    await server.start(1250);
+    server.start(1250);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -204,20 +204,18 @@ describe('HL7 Server', () => {
   }, 10000);
 
   test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
-    const state = {
-      connectionCloseCalled: false,
-    };
+    let connectionCloseCalled = false;
 
     const server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         connection.send(message.buildAck());
       });
       connection.addEventListener('close', () => {
-        state.connectionCloseCalled = true;
+        connectionCloseCalled = true;
       });
     });
 
-    await server.start(1251);
+    server.start(1251);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -243,7 +241,7 @@ describe('HL7 Server', () => {
     // Advance timers by 5 seconds - connection should still be open
     jest.advanceTimersByTime(5000);
     await Promise.resolve();
-    expect(state.connectionCloseCalled).toBe(false);
+    expect(connectionCloseCalled).toBe(false);
 
     // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
     jest.advanceTimersByTime(5000);
@@ -254,13 +252,11 @@ describe('HL7 Server', () => {
     // Wait for the server to finish stopping
     await stopPromise;
 
-    // Sleep to allow the close event to be processed on next tick
-    for (let i = 0; i < 100 && !state.connectionCloseCalled; i++) {
-      await sleep(1);
-    }
+    // Sleep for 0ms to allow the close event to be processed on next tick
+    await sleep(0);
 
     // The forceDrainTimeout should have triggered and closed the connection
-    expect(state.connectionCloseCalled).toBe(true);
+    expect(connectionCloseCalled).toBe(true);
 
     // Clean up
     await client.close().catch(() => {
@@ -339,7 +335,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1236);
+      server.start(1236);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -360,7 +356,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1237, 'utf-8');
+      server.start(1237, 'utf-8');
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -381,7 +377,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1238, undefined, true);
+      server.start(1238, undefined, true);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -402,7 +398,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1239, undefined, undefined, { messagesPerMin: 150 });
+      server.start(1239, undefined, undefined, { messagesPerMin: 150 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -423,7 +419,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1240, 'windows-1252', true, { messagesPerMin: 200 });
+      server.start(1240, 'windows-1252', true, { messagesPerMin: 200 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -446,7 +442,7 @@ describe('HL7 Server', () => {
 
       // Set encoding via setter before starting
       server.setEncoding('iso-8859-1');
-      await server.start(1241);
+      server.start(1241);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -469,7 +465,7 @@ describe('HL7 Server', () => {
 
       // Set enhancedMode via setter before starting
       server.setEnhancedMode(true);
-      await server.start(1242);
+      server.start(1242);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -492,7 +488,7 @@ describe('HL7 Server', () => {
 
       // Set messagesPerMin via setter before starting
       server.setMessagesPerMin(300);
-      await server.start(1243);
+      server.start(1243);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -517,7 +513,7 @@ describe('HL7 Server', () => {
       server.setEncoding('utf-8');
       server.setEnhancedMode(true);
       server.setMessagesPerMin(250);
-      await server.start(1244);
+      server.start(1244);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -544,7 +540,7 @@ describe('HL7 Server', () => {
       server.setMessagesPerMin(100);
 
       // Start with different parameters that should override setters
-      await server.start(1245, 'windows-1252', true, { messagesPerMin: 500 });
+      server.start(1245, 'windows-1252', true, { messagesPerMin: 500 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -570,7 +566,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      await server.start(1246, undefined, true, { messagesPerMin });
+      server.start(1246, undefined, true, { messagesPerMin });
 
       // Verify server is running with correct settings
       expect(server.server).toBeDefined();
@@ -634,7 +630,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      await server.start(1247, undefined, true, { messagesPerMin });
+      server.start(1247, undefined, true, { messagesPerMin });
 
       const client = new Hl7Client({
         host: 'localhost',
@@ -695,7 +691,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode but no rate limiting
-      await server.start(1248, undefined, true);
+      server.start(1248, undefined, true);
 
       const client = new Hl7Client({
         host: 'localhost',
