@@ -1,37 +1,15 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import eslint from '@eslint/js';
-import headerPlugin from 'eslint-plugin-header';
-import importPlugin from 'eslint-plugin-import';
-import jsdoc from 'eslint-plugin-jsdoc';
-import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
-import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
-import tseslint from 'typescript-eslint';
-
-// Workaround for eslint-plugin-header ESLint 9 compatibility issue.
-// See: https://github.com/Stuk/eslint-plugin-header/issues/57#issuecomment-2378485611
-headerPlugin.rules.header.meta.schema = false;
-
-/**
- * Core config applies to all source files.
- * TypeScript-specific rules are in the tsConfig below.
- * @type {import("@eslint/config-helpers").ConfigWithExtends}
- */
-export const coreConfig = {
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
-    eslint.configs.recommended,
-    importPlugin.flatConfigs.recommended,
-    jsdoc.configs['flat/recommended-typescript-error'],
+    'eslint:recommended',
+    'plugin:import/recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/strict',
+    'plugin:jsdoc/recommended-typescript-error',
+    'plugin:react-hooks/recommended',
   ],
-  languageOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-  },
-  plugins: {
-    header: headerPlugin,
-  },
+  reportUnusedDisableDirectives: true,
   rules: {
     // ESLint - Possible Problems
     'array-callback-return': 'error',
@@ -88,64 +66,6 @@ export const coreConfig = {
     'prefer-spread': 'error',
     radix: 'error',
 
-    'no-unused-vars': [
-      'error',
-      {
-        argsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_',
-      },
-    ],
-
-    // JSDoc
-    'jsdoc/check-tag-names': [
-      'error',
-      {
-        definedTags: ['category', 'experimental', 'ts-ignore'],
-      },
-    ],
-    'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
-    'jsdoc/require-jsdoc': 'off',
-    'jsdoc/tag-lines': 'off',
-    'jsdoc/require-yields-type': 'off',
-    'jsdoc/require-throws-type': 'off',
-
-    // Header
-    'header/header': [
-      'error',
-      'line',
-      [
-        ' SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors',
-        ' SPDX-License-Identifier: Apache-2.0',
-      ],
-    ],
-  },
-};
-
-/**
- * TypeScript config applies to all TypeScript source files.
- * These are TypeScript-specific rules that don't apply to JavaScript files.
- * This improves accuracy and performance.
- * @type {import("@eslint/config-helpers").ConfigWithExtends}
- */
-export const tsConfig = {
-  files: ['**/*.ts', '**/*.tsx'],
-  extends: [
-    tseslint.configs.recommended,
-    {
-      languageOptions: {
-        parserOptions: {
-          projectService: true,
-        },
-      },
-    },
-    tseslint.configs.strict,
-    reactHooks.configs.flat.recommended,
-    reactRefresh.configs.recommended,
-  ],
-  plugins: {
-    'no-only-tests': noOnlyTestsPlugin,
-  },
-  rules: {
     // TypeScript+ESLint
     '@typescript-eslint/array-type': 'error',
     '@typescript-eslint/consistent-generic-constructors': 'error',
@@ -207,13 +127,6 @@ export const tsConfig = {
       },
     ],
 
-    // New strict `@typescript-eslint` rules
-    // Need to drop all use of `any` first
-    '@typescript-eslint/no-unsafe-assignment': 'off',
-    '@typescript-eslint/no-unsafe-member-access': 'off',
-    '@typescript-eslint/no-unsafe-return': 'off',
-    '@typescript-eslint/no-unsafe-argument': 'off',
-
     // imports rules for isolatedModules and verbatimModuleSyntax
     'no-duplicate-imports': 'off', // Disable base rule
     'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
@@ -250,40 +163,47 @@ export const tsConfig = {
     '@typescript-eslint/no-dynamic-delete': 'off',
     '@typescript-eslint/no-empty-object-type': 'off',
 
+    // JSDoc
+    'jsdoc/check-tag-names': [
+      'error',
+      {
+        definedTags: ['category', 'experimental', 'ts-ignore'],
+      },
+    ],
+    'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
+    'jsdoc/require-jsdoc': 'off',
+    'jsdoc/tag-lines': 'off',
+    'jsdoc/require-yields-type': 'off',
+    'jsdoc/require-throws-type': 'off',
+
+    // Header
+    'header/header': [
+      'error',
+      'line',
+      [
+        ' SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors',
+        ' SPDX-License-Identifier: Apache-2.0',
+      ],
+    ],
+
     // No Only Tests
     'no-only-tests/no-only-tests': ['error', { fix: true }],
   },
+  ignorePatterns: [
+    'coverage',
+    '**/node_modules/',
+    '**/dist/',
+    'packages/docs/build/',
+    'packages/docs/markdown-to-mdx.cjs',
+    'packages/docs/docusaurus.config.js',
+    'packages/docs/sidebars.js',
+    'packages/eslint-config/index.cjs',
+    'packages/expo-medplum-polyfills/build',
+    'babel.config.*',
+    'jest.sequencer.*',
+    'package-lock.json',
+    'postcss.config.cjs',
+    'rollup.config.mjs',
+    'webpack.config.js',
+  ],
 };
-
-/** @type {import("@eslint/config-helpers").ConfigWithExtendsArray} */
-export const medplumEslintConfig = [
-  {
-    ignores: [
-      '.turbo',
-      'coverage',
-      'dist',
-      'node_modules',
-      'packages/docs/build/',
-      'packages/docs/markdown-to-mdx.cjs',
-      'packages/docs/docusaurus.config.js',
-      'packages/docs/sidebars.js',
-      'packages/eslint-config/index.cjs',
-      'packages/expo-medplum-polyfills/build',
-      'packages/generator/output/',
-      'packages/react/.storybook/',
-      'package-lock.json',
-      '**/.turbo',
-      '**/coverage/',
-      '**/dist/',
-      '**/node_modules/',
-      '**/babel.config.*',
-      '**/jest.sequencer.*',
-      '**/postcss.config.*',
-      '**/rollup.config.*',
-      '**/webpack.config.*',
-      '**/*.png.ts',
-    ],
-  },
-  coreConfig,
-  tsConfig,
-];
