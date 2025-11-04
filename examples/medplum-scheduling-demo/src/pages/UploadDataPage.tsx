@@ -55,6 +55,7 @@ export function UploadDataPage(): JSX.Element {
           icon: <IconCircleOff />,
           title: 'Error',
           message: normalizeErrorString(error),
+          autoClose: false,
         });
       })
       .finally(() => setPageDisabled(false));
@@ -93,7 +94,7 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
   // TODO: Friendlier error handling if the example bots json file hasn't been built yet
   // stating that `npm run build:bots` should be run.
-  const exampleBotData = await import(EXAMPLE_BOTS_JSON);
+  const exampleBotData = await import(/* @vite-ignore */ EXAMPLE_BOTS_JSON);
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
