@@ -35,7 +35,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "clean": "",
     "test": ""
   },

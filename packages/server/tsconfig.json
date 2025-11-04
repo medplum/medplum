@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "rootDir": "src"
+    "rootDir": "src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "references": [
     { "path": "../core" },
