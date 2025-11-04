@@ -13,12 +13,12 @@ interface BotDescription {
 const Bots: BotDescription[] = [
   {
     src: 'src/bots/example/create-review-report-task.ts',
-    dist: 'dist/example/create-review-report-task.js',
+    dist: 'dist/bots/example/create-review-report-task.js',
     criteria: 'DiagnosticReport',
   },
   {
     src: 'src/bots/example/create-respond-to-message-task.ts',
-    dist: 'dist/example/create-respond-to-message-task.js',
+    dist: 'dist/bots/example/create-respond-to-message-task.js',
     criteria: 'Communication?part-of:missing=true',
   },
 ];
