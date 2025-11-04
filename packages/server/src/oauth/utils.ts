@@ -72,7 +72,6 @@ export interface LoginRequest {
   readonly nonce: string;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
-  readonly membershipId?: string;
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
@@ -83,7 +82,6 @@ export interface LoginRequest {
   readonly allowNoMembership?: boolean;
   readonly origin?: string;
   readonly pictureUrl?: string;
-  readonly forceUseFirstMembership?: boolean;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -202,17 +200,13 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  let memberships = await getMembershipsForLogin(login);
-
-  if (request.membershipId) {
-    memberships = memberships.filter((m) => m.id === request.membershipId);
-  }
+  const memberships = await getMembershipsForLogin(login);
 
   if (memberships.length === 0 && !request.allowNoMembership) {
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
-  if (memberships.length === 1 || request.forceUseFirstMembership) {
+  if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
