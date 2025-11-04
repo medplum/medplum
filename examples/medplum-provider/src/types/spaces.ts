@@ -6,5 +6,4 @@ export interface Message {
   content: string | null;
   tool_calls?: any[];
   tool_call_id?: string;
-  resources?: string[];
 }
