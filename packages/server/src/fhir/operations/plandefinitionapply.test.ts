@@ -320,7 +320,7 @@ describe('PlanDefinition apply', () => {
       });
     expect(res4.status).toBe(400);
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
-      'Expected 1..NaN value(s) for input parameter subject, but 0 provided'
+      'Expected 1..* value(s) for input parameter subject, but 0 provided'
     );
   });
 
