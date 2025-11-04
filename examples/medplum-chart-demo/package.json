@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && tsx src/scripts/deploy-bots.ts",
+    "build:bots": "npm run clean && tsc --project bots/tsconfig.json && node --no-warnings esbuild-script.mjs && tsx src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint src/",

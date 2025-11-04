@@ -8,7 +8,9 @@ import esbuild from 'esbuild';
 import fastGlob from 'fast-glob';
 
 // Find all TypeScript files in your source directory
-const entryPoints = fastGlob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
+const entryPoints = fastGlob
+  .sync('./bots/src/**/*.ts')
+  .filter((file) => !file.endsWith('test.ts') && !file.endsWith('-utils.ts'));
 
 const botLayerDeps = Object.keys(botLayer.dependencies);
 
@@ -16,7 +18,7 @@ const botLayerDeps = Object.keys(botLayer.dependencies);
 const esbuildOptions = {
   entryPoints: entryPoints,
   bundle: true, // Bundle imported functions
-  outdir: './dist', // Output directory for compiled files
+  outdir: './bots/dist', // Output directory for compiled files
   platform: 'node', // or 'node', depending on your target platform
   loader: {
     '.ts': 'ts', // Load TypeScript files

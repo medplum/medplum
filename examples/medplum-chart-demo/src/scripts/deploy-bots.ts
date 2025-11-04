@@ -14,18 +14,18 @@ interface BotDescription {
 
 const Bots: BotDescription[] = [
   {
-    src: 'src/bots/core/general-encounter-note.ts',
-    dist: 'dist/bots/core/general-encounter-note.js',
+    src: 'bots/src/general-encounter-note.ts',
+    dist: 'bots/dist/general-encounter-note.js',
     criteria: 'QuestionnaireResponse?questionnaire=$encounter-note',
   },
   {
-    src: 'src/bots/core/obstetric-encounter-note.ts',
-    dist: 'dist/bots/core/obstetric-encounter-note.js',
+    src: 'bots/src/obstetric-encounter-note.ts',
+    dist: 'bots/dist/obstetric-encounter-note.js',
     criteria: 'QuestionnaireResponse?questionnaire=$obstetric-visit',
   },
   {
-    src: 'src/bots/core/gynecology-encounter-note.ts',
-    dist: 'dist/bots/core/gynecology-encounter-note.js',
+    src: 'bots/src/gynecology-encounter-note.ts',
+    dist: 'bots/dist/gynecology-encounter-note.js',
     criteria: 'QuestionnaireResponse?questionnaire=$gynecology-visit',
   },
 ];
