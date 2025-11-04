@@ -15,13 +15,13 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "@mantine/core": "8.3.2",
-    "@mantine/hooks": "8.3.2",
-    "@mantine/notifications": "8.3.2",
+    "@mantine/core": "8.3.6",
+    "@mantine/hooks": "8.3.6",
+    "@mantine/notifications": "8.3.6",
     "@medplum/core": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
     "next": "15.5.4",
-    "next-auth": "4.24.11",
+    "next-auth": "4.24.13",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "4.5.2",
-    "@types/node": "22.18.10",
+    "@types/node": "22.18.13",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "eslint": "9.38.0",

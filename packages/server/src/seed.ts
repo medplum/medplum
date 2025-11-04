@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword } from './auth/utils';
+import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
@@ -10,7 +11,8 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-export async function seedDatabase(): Promise<void> {
+
+export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   const systemRepo = getSystemRepo();
 
   if (await isSeeded(systemRepo)) {
@@ -19,7 +21,7 @@ export async function seedDatabase(): Promise<void> {
   }
 
   await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo);
+    await createSuperAdmin(systemRepo, config);
 
     globalLogger.info('Building structure definitions...');
     let startTime = Date.now();
@@ -38,9 +40,11 @@ export async function seedDatabase(): Promise<void> {
   });
 }
 
-async function createSuperAdmin(systemRepo: Repository): Promise<void> {
-  const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
-  const passwordHash = await bcryptHashPassword('medplum_admin');
+async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
+  const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
+  const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
+  const [firstName, lastName] = ['Medplum', 'Admin'];
+  const passwordHash = await bcryptHashPassword(password);
   const superAdmin = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
@@ -90,6 +94,29 @@ async function createSuperAdmin(systemRepo: Repository): Promise<void> {
     profile: createReference(practitioner),
     admin: true,
   });
+
+  if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
+    // Use specified client ID and secret
+    const client = await systemRepo.updateResource<ClientApplication>({
+      meta: {
+        project: superAdminProject.id,
+      },
+      resourceType: 'ClientApplication',
+      id: config.defaultSuperAdminClientId,
+      name: 'Default Super Admin Client',
+      secret: config.defaultSuperAdminClientSecret,
+    });
+
+    await systemRepo.createResource<ProjectMembership>({
+      meta: {
+        project: superAdminProject.id,
+      },
+      resourceType: 'ProjectMembership',
+      project: createReference(superAdminProject),
+      user: createReference(client),
+      profile: createReference(client),
+    });
+  }
 }
 
 /**

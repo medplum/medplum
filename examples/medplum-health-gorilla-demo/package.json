@@ -15,8 +15,8 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "8.3.2",
-    "@mantine/notifications": "8.3.2",
+    "@mantine/core": "8.3.6",
+    "@mantine/notifications": "8.3.6",
     "@medplum/core": "4.5.2",
     "@medplum/eslint-config": "4.5.2",
     "@medplum/health-gorilla-core": "4.5.2",
@@ -33,7 +33,7 @@
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-router": "7.9.4",
+    "react-router": "7.9.5",
     "typescript": "5.9.3",
     "vite": "7.1.12"
   },

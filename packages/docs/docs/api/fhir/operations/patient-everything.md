@@ -18,6 +18,20 @@ FHIR has the option to query everything associated to an individual patient. Thi
 
 The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made. The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
 
+#### Resources Included
+
+Medplum's patient `$everything` operation includes:
+
+1. **Patient Compartment Resources** - All resources defined in the [FHIR R4 Patient Compartment](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)
+
+2. **Referenced Resources** - Additional resources referenced by patient compartment resources but outside the compartment itself:
+   - Organizations
+   - Practitioners  
+   - PractitionerRoles
+   - Locations
+   - Medications
+   - Devices
+
 ## Related Documentation
 
 - Refer to [readPatientEverything](/docs/sdk/core.medplumclient.readpatienteverything) in the TypeScript SDK
