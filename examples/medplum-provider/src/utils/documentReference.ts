@@ -15,9 +15,8 @@ export async function fetchLabOrderRequisitionDocuments(
   medplum: MedplumClient,
   serviceRequest: ServiceRequest
 ): Promise<DocumentReference[]> {
-
   const healthGorillaRequisitionId = getHealthGorillaRequisitionId(serviceRequest);
-  
+
   if (!healthGorillaRequisitionId) {
     return [];
   }
@@ -46,9 +45,7 @@ export function getHealthGorillaRequisitionId(serviceRequest: ServiceRequest): s
 
   // Also check the identifier array for Health Gorilla identifiers
   if (serviceRequest.identifier) {
-    const healthGorillaIdentifier = serviceRequest.identifier.find(
-      (id) => id.system === HEALTH_GORILLA_REQUEST_SYSTEM
-    );
+    const healthGorillaIdentifier = serviceRequest.identifier.find((id) => id.system === HEALTH_GORILLA_REQUEST_SYSTEM);
     if (healthGorillaIdentifier?.value) {
       return healthGorillaIdentifier.value;
     }

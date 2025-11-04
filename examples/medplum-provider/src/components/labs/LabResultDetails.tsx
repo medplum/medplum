@@ -55,11 +55,7 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           <Text size="xl" fw={700}>
             {result.code?.text || result.code?.coding?.[0]?.display || 'Lab Result'}
           </Text>
-          <Badge 
-            size="lg" 
-            color={getStatusColor(result.status)} 
-            variant="light"
-          >
+          <Badge size="lg" color={getStatusColor(result.status)} variant="light">
             {getStatusDisplayText(result.status)}
           </Badge>
         </Stack>
@@ -67,27 +63,37 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
         <Divider />
 
         <Stack gap="sm">
-          <Text fw={600} size="sm" c="dimmed">RESULT DETAILS</Text>
-          
+          <Text fw={600} size="sm" c="dimmed">
+            RESULT DETAILS
+          </Text>
+
           <Group>
-            <Text fw={500} size="sm">Issued Date:</Text>
+            <Text fw={500} size="sm">
+              Issued Date:
+            </Text>
             <Text size="sm">{formatDate(result.issued)}</Text>
           </Group>
 
           {result.effectiveDateTime && (
             <Group>
-              <Text fw={500} size="sm">Effective Date:</Text>
+              <Text fw={500} size="sm">
+                Effective Date:
+              </Text>
               <Text size="sm">{formatDate(result.effectiveDateTime)}</Text>
             </Group>
           )}
 
           {result.code?.coding && (
             <Group align="flex-start">
-              <Text fw={500} size="sm">Test Code:</Text>
+              <Text fw={500} size="sm">
+                Test Code:
+              </Text>
               <Stack gap="xs">
                 {result.code.coding.map((coding, index) => (
                   <Group key={index} gap="xs">
-                    <Badge size="sm" variant="outline">{coding.code}</Badge>
+                    <Badge size="sm" variant="outline">
+                      {coding.code}
+                    </Badge>
                     <Text size="sm">{coding.display}</Text>
                   </Group>
                 ))}
@@ -97,21 +103,27 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
 
           {performer?.resourceType === 'Practitioner' && (
             <Group>
-              <Text fw={500} size="sm">Performed by:</Text>
+              <Text fw={500} size="sm">
+                Performed by:
+              </Text>
               <Text size="sm">{formatHumanName(performer.name?.[0] as HumanName)}</Text>
             </Group>
           )}
 
           {patient?.resourceType === 'Patient' && (
             <Group>
-              <Text fw={500} size="sm">Patient:</Text>
+              <Text fw={500} size="sm">
+                Patient:
+              </Text>
               <Text size="sm">{formatHumanName(patient.name?.[0] as HumanName)}</Text>
             </Group>
           )}
 
           {result.category && (
             <Group align="flex-start">
-              <Text fw={500} size="sm">Category:</Text>
+              <Text fw={500} size="sm">
+                Category:
+              </Text>
               <Stack gap="xs">
                 {result.category.map((category, index) => (
                   <Text key={index} size="sm">
@@ -127,7 +139,9 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           <>
             <Divider />
             <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">CONCLUSION</Text>
+              <Text fw={600} size="sm" c="dimmed">
+                CONCLUSION
+              </Text>
               <Text size="sm">{result.conclusion}</Text>
             </Stack>
           </>
@@ -137,13 +151,15 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           <>
             <Divider />
             <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">CONCLUSION CODES</Text>
+              <Text fw={600} size="sm" c="dimmed">
+                CONCLUSION CODES
+              </Text>
               {result.conclusionCode.map((code, index) => (
                 <Group key={index} align="flex-start">
-                  <Text fw={500} size="sm">Code {index + 1}:</Text>
-                  <Text size="sm">
-                    {code.text || code.coding?.[0]?.display}
+                  <Text fw={500} size="sm">
+                    Code {index + 1}:
                   </Text>
+                  <Text size="sm">{code.text || code.coding?.[0]?.display}</Text>
                 </Group>
               ))}
             </Stack>
@@ -154,13 +170,15 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           <>
             <Divider />
             <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">ATTACHMENTS</Text>
+              <Text fw={600} size="sm" c="dimmed">
+                ATTACHMENTS
+              </Text>
               {result.presentedForm.map((form, index) => (
                 <Group key={index} align="flex-start">
-                  <Text fw={500} size="sm">Attachment {index + 1}:</Text>
-                  <Text size="sm">
-                    {form.title || form.contentType || 'Attachment'}
+                  <Text fw={500} size="sm">
+                    Attachment {index + 1}:
                   </Text>
+                  <Text size="sm">{form.title || form.contentType || 'Attachment'}</Text>
                 </Group>
               ))}
             </Stack>
@@ -171,7 +189,9 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           <>
             <Divider />
             <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">TEST RESULTS</Text>
+              <Text fw={600} size="sm" c="dimmed">
+                TEST RESULTS
+              </Text>
               <ObservationTable value={result.result} hideObservationNotes={false} />
             </Stack>
           </>

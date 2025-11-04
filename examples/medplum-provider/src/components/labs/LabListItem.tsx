@@ -37,11 +37,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
               {getDisplayText(item)}
             </Text>
             {activeTab !== 'completed' && (
-              <Badge 
-                size="sm" 
-                color={getStatusColor(item.status)} 
-                variant="light"
-              >
+              <Badge size="sm" color={getStatusColor(item.status)} variant="light">
                 {getStatusDisplayText(item.status)}
               </Badge>
             )}
@@ -110,14 +106,14 @@ const getStatusDisplayText = (status: string | undefined): string => {
 const getDisplayText = (item: ServiceRequest): string => {
   // If there are multiple codes (2 or more), show them separated by commas
   if (item.code?.coding && item.code.coding.length >= 2) {
-    return item.code.coding.map(coding => coding.display).join(', ');
+    return item.code.coding.map((coding) => coding.display).join(', ');
   }
-  
+
   // If there's a text field and only one code, use the text field
   if (item.code?.text) {
     return item.code.text;
   }
-  
+
   // Otherwise, show the first code or fallback
   return item.code?.coding?.[0]?.display || 'Lab Order';
 };
@@ -133,7 +129,7 @@ const getSubText = (item: ServiceRequest, requester: Practitioner | undefined): 
 
 const getAdditionalInfo = (item: ServiceRequest, activeTab: LabTab): string[] => {
   const info: string[] = [];
-  
+
   if (activeTab === 'completed') {
     // For completed items, show completion date instead of REQ #
     const completionDate = item.meta?.lastUpdated ? formatDate(item.meta.lastUpdated) : 'Unknown date';
@@ -142,6 +138,6 @@ const getAdditionalInfo = (item: ServiceRequest, activeTab: LabTab): string[] =>
     // For open items, show REQ # as before
     info.push(`REQ #${item.requisition.value}`);
   }
-  
+
   return info;
 };
