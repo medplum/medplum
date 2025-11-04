@@ -13,8 +13,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["node", "react", "react-dom"]
+    "jsx": "react-jsx"
   },
   "exclude": ["dist"]
 }
