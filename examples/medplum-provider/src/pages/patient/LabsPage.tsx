@@ -14,21 +14,21 @@ import {
   Box,
   Modal,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
-import cx from 'clsx';
-import classes from './LabsPage.module.css';
 import type { ServiceRequest, DiagnosticReport } from '@medplum/fhirtypes';
-import { createReference, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { useNavigate, useParams } from 'react-router';
-import { useMedplum, useResource } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { IconPlus } from '@tabler/icons-react';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
 import { OrderLabsPage } from '../OrderLabsPage';
+import { usePatient } from '../../hooks/usePatient';
+import cx from 'clsx';
+import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
 
@@ -38,142 +38,51 @@ export function LabsPage(): JSX.Element {
   const medplum = useMedplum();
   
   const [activeTab, setActiveTab] = useState<LabTab>('completed');
-  const [orders, setOrders] = useState<ServiceRequest[]>([]);
+  const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<ServiceRequest | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState<boolean>(false);
-  const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isTabChangingRef = useRef<boolean>(false);
+
   
-  const patient = useResource({ resourceType: 'Patient', id: patientId });
-  const patientRef = useMemo(() => (patient ? createReference(patient) : undefined), [patient]);
-
-  // Filter orders based on status according to the requirements
-  const openOrders = useMemo(() => {
-    // Filter out completed, draft, and entered-in-error statuses (matching PatientSummary logic)
-    const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
-    
-    // Create a set of ServiceRequest IDs that have completed versions
-    const completedServiceRequestIds = new Set<string>();
-    orders.forEach((order) => {
-      if (order.status === 'completed' && order.id) {
-        completedServiceRequestIds.add(order.id);
-      }
-    });
-    
-    // Filter out ServiceRequests that are based on completed ServiceRequests
-    // and filter out ServiceRequests with duplicate requisition numbers
-    const completedRequisitionNumbers = new Set<string>();
-    const filtered = orders.filter((order) => {
-      // Filter out completed, draft, and entered-in-error statuses
-      if (filteredOutStatuses.includes(order.status || '')) {
-        return false;
-      }
-      
-      // If the ServiceRequest is based on a completed ServiceRequest, skip it
-      if (order.basedOn) {
-        const basedOnCompleted = order.basedOn.find((basedOn) => {
-          if (basedOn.reference?.startsWith('ServiceRequest/')) {
-            const [, id] = basedOn.reference.split('/');
-            return completedServiceRequestIds.has(id);
-          }
-          return false;
-        });
-        if (basedOnCompleted) {
-          return false;
-        }
-      }
-      
-      // Filter out ServiceRequests with duplicate requisition numbers
-      const requisitionNumber = order.requisition?.value;
-      if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
-        return false;
-      }
-      
-      // Add this requisition number to the set if it exists
-      if (requisitionNumber) {
-        completedRequisitionNumbers.add(requisitionNumber);
-      }
-      
-      return true;
-    });
-    
-    
-    return filtered.sort((a, b) => {
-      // Sort by most recent first using meta.lastUpdated or authoredOn
-      const aDate = a.meta?.lastUpdated || a.authoredOn;
-      const bDate = b.meta?.lastUpdated || b.authoredOn;
-      return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-    });
-  }, [orders]);
-
-  const completedOrders = useMemo(() => {
-    // Filter out ServiceRequests with duplicate requisition numbers for completed orders
-    const completedRequisitionNumbers = new Set<string>();
-    const filtered = orders.filter((order) => {
-      if (order.status !== 'completed') {
-        return false;
-      }
-      
-      // Filter out ServiceRequests with duplicate requisition numbers
-      const requisitionNumber = order.requisition?.value;
-      if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
-        return false;
-      }
-      
-      // Add this requisition number to the set if it exists
-      if (requisitionNumber) {
-        completedRequisitionNumbers.add(requisitionNumber);
-      }
-      
-      return true;
-    });
-    
-    return filtered.sort((a, b) => {
-      // Sort by most recent first using meta.lastUpdated or authoredOn
-      const aDate = a.meta?.lastUpdated || a.authoredOn;
-      const bDate = b.meta?.lastUpdated || b.authoredOn;
-      return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-    });
-  }, [orders]);
+  const patient = usePatient();
+  const patientReference = useMemo(() => patient ? getReferenceString(patient) : undefined, [patient]);
+  const [currentOrder, setCurrentOrder] = useState<ServiceRequest>();
 
   const fetchOrders = useCallback(async (): Promise<void> => {
-    if (!patientRef) {
+    if (!patientReference) {
+      showErrorNotification('Patient not found');
       return;
     }
-    
     try {
-      // Use the same approach as PatientSummary
-      const ref = getReferenceString(patientRef);
-      
+     
       const searchParams = new URLSearchParams({
-        subject: ref,
-        _count: '100', // Ensure we get all results
+        subject: patientReference,
+        _count: '100', 
         _sort: '-_lastUpdated',
         _fields: '_lastUpdated,code,status,orderDetail,category,subject,requester,performer,requisition,identifier,authoredOn,priority,reasonCode,note,supportingInfo,basedOn',
       });
       
       const results: ServiceRequest[] = await medplum.searchResources('ServiceRequest', searchParams, { cache: 'no-cache' });
       
-      setOrders(results);
+      setOpenOrders(filterOpenOrders(results));
+      setCompletedOrders(filterCompletedOrders(results));
     } catch (error) {
       showErrorNotification(error);
     }
-  }, [medplum, patientRef]);
+  }, [medplum, patientReference]);
 
   const fetchDiagnosticReports = useCallback(async (): Promise<void> => {
-    if (!patientRef) {
+    if (!patientReference) {
+      showErrorNotification('Patient not found');
       return;
     }
     
     try {
-      // Use the same approach as PatientSummary
-      const ref = getReferenceString(patientRef);
-      
+    
       const searchParams = new URLSearchParams({
-        subject: ref,
-        _count: '100', // Ensure we get all results
+        subject: patientReference,
+        _count: '100', 
         _sort: '-_lastUpdated',
         _fields: '_lastUpdated,category,code,status,subject,performer,conclusion,result,basedOn,issued,effectiveDateTime,conclusionCode,presentedForm',
       });
@@ -183,7 +92,7 @@ export function LabsPage(): JSX.Element {
     } catch (error) {
       showErrorNotification(error);
     }
-  }, [medplum, patientRef]);
+  }, [medplum, patientReference]);
 
   const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -194,100 +103,23 @@ export function LabsPage(): JSX.Element {
     }
   }, [fetchOrders, fetchDiagnosticReports]);
 
-  const handleOrderChange = useCallback((order: ServiceRequest): void => {
-    navigate(`/Patient/${patientId}/labs/${order.id}`)?.catch(console.error);
-  }, [navigate, patientId]);
-
-
 
   useEffect(() => {
-    fetchData().catch(console.error);
-  }, [fetchData]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Auto-select first item when data loads, tab changes, or when no labId is present
-  useEffect(() => {
-    // Clear any existing timeout
-    if (selectionTimeoutRef.current) {
-      clearTimeout(selectionTimeoutRef.current);
-      selectionTimeoutRef.current = null;
+    if (patientId) {
+      fetchData().catch(console.error);
     }
+  }, [patientId, fetchData]);
 
-    const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
-    const currentSelectedItem = selectedOrder;
-    
-    // Auto-select first item if we have items, no current selection, and no labId in URL
-    // Skip if we're in the middle of a tab change to prevent interference
-    if (currentItems.length > 0 && !currentSelectedItem && !labId && !isTabChangingRef.current) {
-      const firstItem = currentItems[0];
-      handleOrderChange(firstItem as ServiceRequest);
-    }
-
-    // Set a fallback timeout to ensure selection happens even if there are timing issues
-    const timeoutId = setTimeout(() => {
-      const currentItemsFallback = activeTab === 'completed' ? completedOrders : openOrders;
-      const currentSelectedItemFallback = selectedOrder;
-      
-      if (currentItemsFallback.length > 0 && !currentSelectedItemFallback && !labId && !isTabChangingRef.current) {
-        const firstItem = currentItemsFallback[0];
-        handleOrderChange(firstItem as ServiceRequest);
-      }
-    }, 100);
-
-    selectionTimeoutRef.current = timeoutId;
-
-    // Cleanup timeout on unmount or dependency change
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [openOrders, completedOrders, activeTab, selectedOrder, labId, handleOrderChange]);
+  const handleOrderChange = useCallback((order: ServiceRequest): string => {
+    return `/Patient/${patientId}/labs/${order.id}`;
+  }, [patientId]);
 
   useEffect(() => {
-    const handleSelection = async (): Promise<void> => {
-      if (labId) {
-        // Both tabs now show ServiceRequests, so we always look for ServiceRequest
-        const order = orders.find((order: ServiceRequest) => order.id === labId);
-        if (order) {
-          setSelectedOrder(order);
-        } else {
-          try {
-            const order = await medplum.readResource('ServiceRequest', labId);
-            setSelectedOrder(order);
-          } catch {
-            setSelectedOrder(undefined);
-          }
-        }
-      } else {
-        setSelectedOrder(undefined);
-      }
-    };
-
-    handleSelection().catch(() => {
-      setSelectedOrder(undefined);
-    });
-  }, [labId, orders, medplum]);
-
-  // Compute selectedItem with optimistic first-item selection (must be before early return)
-  // This ensures first item appears selected immediately when tab loads
-  const selectedItem = useMemo(() => {
-    // Both tabs now show ServiceRequests, so we always return selectedOrder
-    if (selectedOrder) {
-      return selectedOrder;
-    }
-    // Optimistically select first order if available and no labId
     const currentItems = activeTab === 'open' ? openOrders : completedOrders;
-    return currentItems.length > 0 && !labId ? currentItems[0] : undefined;
-  }, [activeTab, selectedOrder, openOrders, completedOrders, labId]);
+    const order = currentItems.find((order: ServiceRequest) => order.id === labId);
+    setCurrentOrder(order);
+  }, [activeTab, openOrders, completedOrders, labId]);
+
 
   if (!patientId) {
     return <div>Patient ID is required</div>;
@@ -295,63 +127,19 @@ export function LabsPage(): JSX.Element {
 
   const handleTabChange = (value: string): void => {
     const newTab = value as LabTab;
-    
-    // Set flag to prevent auto-selection interference
-    isTabChangingRef.current = true;
-    
-    // Get items for the new tab BEFORE changing the active tab
-    const currentItems = newTab === 'completed' ? completedOrders : openOrders;
-    
-    if (currentItems.length > 0) {
-      const firstItem = currentItems[0];
-      
-      // Use flushSync to ensure all state updates happen synchronously
-      // This prevents any visual flashing by ensuring consistent state
-      flushSync(() => {
-        setSelectedOrder(firstItem as ServiceRequest);
-        setActiveTab(newTab);
-      });
-      
-      // Navigate after state is updated
-      navigate(`/Patient/${patientId}/labs/${firstItem.id}`)?.catch(console.error);
-    } else {
-      // No items available, just switch tab
-      flushSync(() => {
-        setActiveTab(newTab);
-        setSelectedOrder(undefined);
-      });
-      navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
-    }
-    
-    // Reset flag after a brief delay to allow state updates to complete
-    setTimeout(() => {
-      isTabChangingRef.current = false;
-    }, 50);
-  };
-
-  const handleItemChange = (item: ServiceRequest): void => {
-    handleOrderChange(item);
+    setActiveTab(newTab);
   };
 
   const handleNewOrderCreated = (): void => {
     setNewOrderModalOpened(false);
     
-    // Add a small delay to ensure the new order is fully created and indexed
-    setTimeout(() => {
-      fetchData().then(() => {
-        // Switch to Open tab - the existing auto-selection logic will handle selecting the first item
-        flushSync(() => {
-          setActiveTab('open');
-          setSelectedOrder(undefined); // Clear selection to trigger auto-selection
-        });
-        
-        // Navigate to the labs page without a specific ID to trigger auto-selection
-        navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
-      }).catch(showErrorNotification);
-    }, 500); // 500ms delay to ensure order is created
+    fetchData()
+    .then(() => {
+      setActiveTab('open');
+      navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
+    })
+    .catch(showErrorNotification);
   };
-
-
 
   const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
 
@@ -401,19 +189,17 @@ export function LabsPage(): JSX.Element {
                 {!loading &&
                   currentItems.length > 0 &&
                   currentItems.map((item, index) => {
-                    // Ensure first item is treated as selected if no explicit selection exists
-                    const effectiveSelectedItem = selectedItem || (index === 0 ? item : undefined);
                     return (
                       <React.Fragment key={item.id}>
                         <LabListItem 
                           item={item} 
-                          selectedItem={effectiveSelectedItem} 
+                          selectedItem={currentOrder} 
                           activeTab={activeTab}
-                          onItemChange={handleItemChange}
+                          onItemChange={handleOrderChange}
                         />
                         {index < currentItems.length - 1 && (
                           <Box px="0.5rem">
-                            <Divider color="var(--mantine-color-gray-1)" />
+                            <Divider />
                           </Box>
                         )}
                       </React.Fragment>
@@ -433,22 +219,10 @@ export function LabsPage(): JSX.Element {
               }}
               className={classes.borderRight}
             >
-              {selectedItem ? (
-                <>
-                  {activeTab === 'completed' && selectedOrder && (
-                    <LabOrderDetails key={selectedOrder.id} order={selectedOrder} onOrderChange={handleOrderChange} diagnosticReports={diagnosticReports} activeTab={activeTab} />
-                  )}
-                  {activeTab === 'open' && selectedOrder && (
-                    <LabOrderDetails key={selectedOrder.id} order={selectedOrder} onOrderChange={handleOrderChange} diagnosticReports={diagnosticReports} activeTab={activeTab} />
-                  )}
-                </>
+              {currentOrder ? (
+                <LabOrderDetails key={currentOrder.id} order={currentOrder} onOrderChange={handleOrderChange} diagnosticReports={diagnosticReports} activeTab={activeTab} />
               ) : (
-                // Fallback: show first item even if not properly selected
-                <>
-                  {currentItems[0] && (
-                    <LabOrderDetails key={(currentItems[0] as ServiceRequest).id} order={currentItems[0] as ServiceRequest} onOrderChange={handleOrderChange} diagnosticReports={diagnosticReports} activeTab={activeTab} />
-                  )}
-                </>
+                <LabSelectEmpty activeTab={'open'} />
               )}
             </Box>
           </>
@@ -466,6 +240,81 @@ export function LabsPage(): JSX.Element {
 
     </Box>
   );
+}
+
+function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
+
+  const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
+  const completedServiceRequestIds = new Set<string>();
+  orders.forEach((order) => {
+    if (order.status === 'completed' && order.id) {
+      completedServiceRequestIds.add(order.id);
+    }
+  });
+  
+  const completedRequisitionNumbers = new Set<string>();
+  const filtered = orders.filter((order) => {
+    if (filteredOutStatuses.includes(order.status || '')) {
+      return false;
+    }
+    
+    if (order.basedOn) {
+      const basedOnCompleted = order.basedOn.find((basedOn) => {
+        if (basedOn.reference?.startsWith('ServiceRequest/')) {
+          const [, id] = basedOn.reference.split('/');
+          return completedServiceRequestIds.has(id);
+        }
+        return false;
+      });
+      if (basedOnCompleted) {
+        return false;
+      }
+    }
+    
+    const requisitionNumber = order.requisition?.value;
+    if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
+      return false;
+    }
+    
+    if (requisitionNumber) {
+      completedRequisitionNumbers.add(requisitionNumber);
+    }
+    
+    return true;
+  });
+  
+  
+  return filtered.sort((a, b) => {
+    const aDate = a.meta?.lastUpdated || a.authoredOn;
+    const bDate = b.meta?.lastUpdated || b.authoredOn;
+    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
+  })
+}
+
+function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
+  const completedRequisitionNumbers = new Set<string>();
+  const filtered = orders.filter((order) => {
+    if (order.status !== 'completed') {
+      return false;
+    }
+    
+    const requisitionNumber = order.requisition?.value;
+    if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
+      return false;
+    }
+    
+    if (requisitionNumber) {
+      completedRequisitionNumbers.add(requisitionNumber);
+    }
+    
+    return true;
+  });
+  
+  return filtered.sort((a, b) => {
+    const aDate = a.meta?.lastUpdated || a.authoredOn;
+    const bDate = b.meta?.lastUpdated || b.authoredOn;
+    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
+  });
 }
 
 function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
