@@ -11,7 +11,8 @@ import { useCallback, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import coreData from '../../data/core/appointment-service-types.json';
-import exampleBotData from '../../data/core/example-bots.json';
+
+const EXAMPLE_BOTS_JSON = '../../data/core/example-bots.json';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner) => Promise<void>;
 
@@ -90,6 +91,9 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
 }
 
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+  // TODO: Friendlier error handling if the example bots json file hasn't been built yet
+  // stating that `npm run build:bots` should be run.
+  const exampleBotData = await import(EXAMPLE_BOTS_JSON);
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];

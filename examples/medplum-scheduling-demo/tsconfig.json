@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "esnext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["esnext"],
+    "types": ["vitest/globals"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -15,6 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src"],
-  "exclude": ["dist"]
+  "include": ["src"]
 }
