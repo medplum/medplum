@@ -36,7 +36,6 @@ export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
-  const [module, setModule] = useState<'commonjs' | 'esnext'>();
   const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
@@ -50,7 +49,6 @@ export function BotEditor(): JSX.Element | null {
       .readResource('Bot', id)
       .then(async (newBot: Bot) => {
         setBot(newBot);
-        setModule(newBot.runtimeVersion === 'vmcontext' ? 'commonjs' : 'esnext');
         setDefaultCode(await getBotCode(medplum, newBot));
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
@@ -89,7 +87,7 @@ export function BotEditor(): JSX.Element | null {
         });
         const executableCode = await medplum.createAttachment({
           data: codeOutput,
-          filename: module === 'commonjs' ? 'index.cjs' : 'index.mjs',
+          filename: 'index.mjs',
           contentType: ContentType.JAVASCRIPT,
         });
         const operations: PatchOperation[] = [
@@ -112,7 +110,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, module, getCode, getCodeOutput]
+    [medplum, id, getCode, getCodeOutput]
   );
 
   const deployBot = useCallback(
@@ -165,7 +163,7 @@ export function BotEditor(): JSX.Element | null {
           <CodeEditor
             iframeRef={codeFrameRef}
             language="typescript"
-            module={module}
+            module="esnext"
             testId="code-frame"
             defaultValue={defaultCode}
             minHeight="528px"

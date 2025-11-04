@@ -27,21 +27,11 @@ export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
-const PdfPrinter = require("pdfmake");
-const userCode = require("./user.cjs");
-
-exports.handler = async (event, context) => {
-`;
-
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
+const WRAPPER_CODE = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
-import * as userCode from './user.mjs';
+import * as userCode from './user';
 
-export const handler = async (event, context) => {
-`;
-
-const WRAPPER_CODE = `
+export async function handler(event, context) {
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
@@ -177,13 +167,8 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
 async function createZipFile(bot: Bot, code: string): Promise<Uint8Array> {
   const ext = getJsFileExtension(bot, code);
   const zip = new JSZip();
-  if (ext === '.mjs') {
-    zip.file(`user.mjs`, code);
-    zip.file('index.mjs', ESM_PREFIX + WRAPPER_CODE);
-  } else {
-    zip.file(`user.cjs`, code);
-    zip.file('index.cjs', CJS_PREFIX + WRAPPER_CODE);
-  }
+  zip.file(`user${ext}`, code);
+  zip.file('index.mjs', WRAPPER_CODE.replace('./user', `./user${ext}`));
   return zip.generateAsync({ type: 'uint8array' });
 }
 
