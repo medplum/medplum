@@ -179,18 +179,21 @@ describe('Export', () => {
       await exporter.writeResource(patient);
       await exporter.writeResource(observation);
 
-      // Verify both resources are tracked
-      expect(exporter.resourceSet.size).toBe(2);
-      expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
-      expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(true);
+      // Verify both resource types are tracked
+      expect(exporter.resourceSets.size).toBe(2);
+      expect(exporter.resourceSets.has('Patient')).toBe(true);
+      expect(exporter.resourceSets.has('Observation')).toBe(true);
+      expect(exporter.resourceSets.get('Patient')?.has(`Patient/${patient.id}`)).toBe(true);
+      expect(exporter.resourceSets.get('Observation')?.has(`Observation/${observation.id}`)).toBe(true);
 
       // Close writer for Observation (which clears tracking for that type)
       await exporter.closeWriter('Observation');
 
       // Verify only Observation was removed from tracking
-      expect(exporter.resourceSet.size).toBe(1);
-      expect(exporter.resourceSet.has(`Patient/${patient.id}`)).toBe(true);
-      expect(exporter.resourceSet.has(`Observation/${observation.id}`)).toBe(false);
+      expect(exporter.resourceSets.size).toBe(1);
+      expect(exporter.resourceSets.has('Patient')).toBe(true);
+      expect(exporter.resourceSets.has('Observation')).toBe(false);
+      expect(exporter.resourceSets.get('Patient')?.has(`Patient/${patient.id}`)).toBe(true);
 
       const { project } = await createTestProject();
       await exporter.close(project);
@@ -223,7 +226,7 @@ describe('Export', () => {
       expect(closeWriterSpy).toHaveBeenCalledWith('Patient');
       expect(closeWriterSpy).toHaveBeenCalledWith('Observation');
 
-      // Verify that tracking was cleared (resourceSet should be empty after close)
-      expect(exporter.resourceSet.size).toBe(0);
+      // Verify that tracking was cleared (resourceSets should be empty after close)
+      expect(exporter.resourceSets.size).toBe(0);
     }));
 });
