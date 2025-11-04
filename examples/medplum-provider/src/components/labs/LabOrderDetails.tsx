@@ -25,7 +25,7 @@ import type { JSX } from 'react';
 import { useResource, useMedplum, AttachmentDisplay, ObservationTable } from '@medplum/react';
 import { IconSend, IconCheck, IconFlask, IconClipboardCheck } from '@tabler/icons-react';
 import { useState, useEffect, useMemo } from 'react';
-import { fetchLabOrderRequisitionDocuments } from '../../utils/documentReference';
+import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import classes from './LabOrderDetails.module.css';
 import cx from 'clsx';
 
@@ -947,24 +947,4 @@ const getStatusDisplayText = (status: string | undefined): string => {
     default:
       return status || 'Unknown';
   }
-};
-
-// Helper function to extract Health Gorilla Requisition ID (same as in documentReference.ts)
-const getHealthGorillaRequisitionId = (serviceRequest: ServiceRequest): string | undefined => {
-  // Check if ServiceRequest has a requisition identifier
-  if (serviceRequest.requisition?.system === 'https://www.healthgorilla.com') {
-    return serviceRequest.requisition.value;
-  }
-
-  // Also check the identifier array for Health Gorilla identifiers
-  if (serviceRequest.identifier) {
-    const healthGorillaIdentifier = serviceRequest.identifier.find(
-      (id) => id.system === 'https://www.healthgorilla.com'
-    );
-    if (healthGorillaIdentifier?.value) {
-      return healthGorillaIdentifier.value;
-    }
-  }
-
-  return undefined;
 };

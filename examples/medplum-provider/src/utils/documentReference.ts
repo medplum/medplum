@@ -38,7 +38,7 @@ export async function fetchLabOrderRequisitionDocuments(
  * @param serviceRequest - The ServiceRequest to extract the Health Gorilla Requisition ID from
  * @returns The Health Gorilla Requisition ID
  */
-function getHealthGorillaRequisitionId(serviceRequest: ServiceRequest): string | undefined {
+export function getHealthGorillaRequisitionId(serviceRequest: ServiceRequest): string | undefined {
   // Check if ServiceRequest has a requisition identifier
   if (serviceRequest.requisition?.system === HEALTH_GORILLA_REQUEST_SYSTEM) {
     return serviceRequest.requisition.value;
