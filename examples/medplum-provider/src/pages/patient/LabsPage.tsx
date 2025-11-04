@@ -36,7 +36,7 @@ export function LabsPage(): JSX.Element {
   const { patientId, labId } = useParams();
   const navigate = useNavigate();
   const medplum = useMedplum();
-  
+
   const [activeTab, setActiveTab] = useState<LabTab>('completed');
   const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
   const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
@@ -44,9 +44,8 @@ export function LabsPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState<boolean>(false);
 
-  
   const patient = usePatient();
-  const patientReference = useMemo(() => patient ? getReferenceString(patient) : undefined, [patient]);
+  const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
   const [currentOrder, setCurrentOrder] = useState<ServiceRequest>();
 
   const fetchOrders = useCallback(async (): Promise<void> => {
@@ -55,16 +54,18 @@ export function LabsPage(): JSX.Element {
       return;
     }
     try {
-     
       const searchParams = new URLSearchParams({
         subject: patientReference,
-        _count: '100', 
+        _count: '100',
         _sort: '-_lastUpdated',
-        _fields: '_lastUpdated,code,status,orderDetail,category,subject,requester,performer,requisition,identifier,authoredOn,priority,reasonCode,note,supportingInfo,basedOn',
+        _fields:
+          '_lastUpdated,code,status,orderDetail,category,subject,requester,performer,requisition,identifier,authoredOn,priority,reasonCode,note,supportingInfo,basedOn',
       });
-      
-      const results: ServiceRequest[] = await medplum.searchResources('ServiceRequest', searchParams, { cache: 'no-cache' });
-      
+
+      const results: ServiceRequest[] = await medplum.searchResources('ServiceRequest', searchParams, {
+        cache: 'no-cache',
+      });
+
       setOpenOrders(filterOpenOrders(results));
       setCompletedOrders(filterCompletedOrders(results));
     } catch (error) {
@@ -77,17 +78,19 @@ export function LabsPage(): JSX.Element {
       showErrorNotification('Patient not found');
       return;
     }
-    
+
     try {
-    
       const searchParams = new URLSearchParams({
         subject: patientReference,
-        _count: '100', 
+        _count: '100',
         _sort: '-_lastUpdated',
-        _fields: '_lastUpdated,category,code,status,subject,performer,conclusion,result,basedOn,issued,effectiveDateTime,conclusionCode,presentedForm',
+        _fields:
+          '_lastUpdated,category,code,status,subject,performer,conclusion,result,basedOn,issued,effectiveDateTime,conclusionCode,presentedForm',
       });
-      
-      const results: DiagnosticReport[] = await medplum.searchResources('DiagnosticReport', searchParams, { cache: 'no-cache' });
+
+      const results: DiagnosticReport[] = await medplum.searchResources('DiagnosticReport', searchParams, {
+        cache: 'no-cache',
+      });
       setDiagnosticReports(results);
     } catch (error) {
       showErrorNotification(error);
@@ -103,23 +106,24 @@ export function LabsPage(): JSX.Element {
     }
   }, [fetchOrders, fetchDiagnosticReports]);
 
-
   useEffect(() => {
     if (patientId) {
       fetchData().catch(console.error);
     }
   }, [patientId, fetchData]);
 
-  const handleOrderChange = useCallback((order: ServiceRequest): string => {
-    return `/Patient/${patientId}/labs/${order.id}`;
-  }, [patientId]);
+  const handleOrderChange = useCallback(
+    (order: ServiceRequest): string => {
+      return `/Patient/${patientId}/labs/${order.id}`;
+    },
+    [patientId]
+  );
 
   useEffect(() => {
     const currentItems = activeTab === 'open' ? openOrders : completedOrders;
     const order = currentItems.find((order: ServiceRequest) => order.id === labId);
     setCurrentOrder(order);
   }, [activeTab, openOrders, completedOrders, labId]);
-
 
   if (!patientId) {
     return <div>Patient ID is required</div>;
@@ -132,13 +136,13 @@ export function LabsPage(): JSX.Element {
 
   const handleNewOrderCreated = (): void => {
     setNewOrderModalOpened(false);
-    
+
     fetchData()
-    .then(() => {
-      setActiveTab('open');
-      navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
-    })
-    .catch(showErrorNotification);
+      .then(() => {
+        setActiveTab('open');
+        navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
+      })
+      .catch(showErrorNotification);
   };
 
   const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
@@ -170,12 +174,7 @@ export function LabsPage(): JSX.Element {
                   </Button>
                 </Group>
 
-                <ActionIcon 
-                  radius="50%" 
-                  variant="filled" 
-                  color="blue" 
-                  onClick={() => setNewOrderModalOpened(true)}
-                >
+                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewOrderModalOpened(true)}>
                   <IconPlus size={16} />
                 </ActionIcon>
               </Flex>
@@ -191,9 +190,9 @@ export function LabsPage(): JSX.Element {
                   currentItems.map((item, index) => {
                     return (
                       <React.Fragment key={item.id}>
-                        <LabListItem 
-                          item={item} 
-                          selectedItem={currentOrder} 
+                        <LabListItem
+                          item={item}
+                          selectedItem={currentOrder}
                           activeTab={activeTab}
                           onItemChange={handleOrderChange}
                         />
@@ -220,7 +219,13 @@ export function LabsPage(): JSX.Element {
               className={classes.borderRight}
             >
               {currentOrder ? (
-                <LabOrderDetails key={currentOrder.id} order={currentOrder} onOrderChange={handleOrderChange} diagnosticReports={diagnosticReports} activeTab={activeTab} />
+                <LabOrderDetails
+                  key={currentOrder.id}
+                  order={currentOrder}
+                  onOrderChange={handleOrderChange}
+                  diagnosticReports={diagnosticReports}
+                  activeTab={activeTab}
+                />
               ) : (
                 <LabSelectEmpty activeTab={'open'} />
               )}
@@ -234,16 +239,20 @@ export function LabsPage(): JSX.Element {
       </Flex>
 
       {/* New Order Modal */}
-      <Modal opened={newOrderModalOpened} onClose={() => setNewOrderModalOpened(false)} size="xl" centered title="Order Labs">
+      <Modal
+        opened={newOrderModalOpened}
+        onClose={() => setNewOrderModalOpened(false)}
+        size="xl"
+        centered
+        title="Order Labs"
+      >
         <OrderLabsPage onSubmitLabOrder={handleNewOrderCreated} />
       </Modal>
-
     </Box>
   );
 }
 
 function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
-
   const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
   const completedServiceRequestIds = new Set<string>();
   orders.forEach((order) => {
@@ -251,13 +260,13 @@ function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
       completedServiceRequestIds.add(order.id);
     }
   });
-  
+
   const completedRequisitionNumbers = new Set<string>();
   const filtered = orders.filter((order) => {
     if (filteredOutStatuses.includes(order.status || '')) {
       return false;
     }
-    
+
     if (order.basedOn) {
       const basedOnCompleted = order.basedOn.find((basedOn) => {
         if (basedOn.reference?.startsWith('ServiceRequest/')) {
@@ -270,25 +279,24 @@ function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
         return false;
       }
     }
-    
+
     const requisitionNumber = order.requisition?.value;
     if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
       return false;
     }
-    
+
     if (requisitionNumber) {
       completedRequisitionNumbers.add(requisitionNumber);
     }
-    
+
     return true;
   });
-  
-  
+
   return filtered.sort((a, b) => {
     const aDate = a.meta?.lastUpdated || a.authoredOn;
     const bDate = b.meta?.lastUpdated || b.authoredOn;
     return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  })
+  });
 }
 
 function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
@@ -297,19 +305,19 @@ function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
     if (order.status !== 'completed') {
       return false;
     }
-    
+
     const requisitionNumber = order.requisition?.value;
     if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
       return false;
     }
-    
+
     if (requisitionNumber) {
       completedRequisitionNumbers.add(requisitionNumber);
     }
-    
+
     return true;
   });
-  
+
   return filtered.sort((a, b) => {
     const aDate = a.meta?.lastUpdated || a.authoredOn;
     const bDate = b.meta?.lastUpdated || b.authoredOn;
