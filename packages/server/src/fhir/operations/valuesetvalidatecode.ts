@@ -5,7 +5,6 @@ import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
-  CodeSystemProperty,
   CodeableConcept,
   Coding,
   ValueSet,
@@ -16,13 +15,13 @@ import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
-import { hydrateCodeSystemProperties } from './expand';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   addPropertyFilter,
   findAncestor,
   findTerminologyResource,
   getParentProperty,
+  resolveProperty,
   selectCoding,
 } from './utils/terminology';
 
@@ -87,10 +86,9 @@ export async function validateCodingInValueSet(valueSet: ValueSet, codings: Codi
     }
   }
 
-  const systemUrl = found?.system ?? valueSet.compose?.include?.[0]?.system;
-  if (found && systemUrl) {
-    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', systemUrl).catch(() => undefined);
-    return validateCoding(codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
+  if (found) {
+    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
+    return codeSystem.content !== 'example' ? validateCoding(codeSystem, found) : found;
   }
   return undefined;
 }
@@ -102,9 +100,7 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     );
   }
 
-  const candidates = codings.filter((c) => c.code && (!c.system || c.system === include.system)) as (Coding & {
-    code: string;
-  })[];
+  const candidates = codings.filter((c) => c.system === include.system && c.code) as (Coding & { code: string })[];
   if (!candidates.length) {
     return undefined;
   }
@@ -113,10 +109,6 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
-    const { repo } = getAuthenticatedContext();
-    const db = repo.getDatabaseClient(DatabaseMode.READER);
-    await hydrateCodeSystemProperties(db, codeSystem);
-
     for (const coding of candidates) {
       const filterResults = await Promise.all(
         include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
@@ -143,14 +135,11 @@ async function satisfies(
 
   switch (filter.op) {
     case '=':
-    case 'in': {
-      const property = codeSystem.property?.find((p) => p.code === filter.property);
-      if (!property?.id) {
-        return false;
-      }
-      query = addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
+      query = addPropertyFilter(query, filter.property, '=', filter.value, codeSystem);
       break;
-    }
+    case 'in':
+      query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','), codeSystem);
+      break;
     case 'is-a':
     case 'descendent-of': {
       if (filter.op !== 'is-a') {
@@ -158,11 +147,11 @@ async function satisfies(
       }
 
       // Recursively find parents until one matches
-      const parentProperty = getParentProperty(codeSystem);
-      if (!parentProperty.id) {
+      const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+      if (!parentProperty) {
         return false;
       }
-      query = findAncestor(query, codeSystem, parentProperty as WithId<CodeSystemProperty>, filter.value);
+      query = findAncestor(query, codeSystem, parentProperty, filter.value);
       break;
     }
     default:
