@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
 
 // Email address to receive the resource usage report
 const REPORT_EMAIL = 'admin@example.com';
