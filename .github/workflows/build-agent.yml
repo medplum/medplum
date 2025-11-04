@@ -67,7 +67,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -179,7 +179,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -255,7 +255,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -331,7 +331,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
