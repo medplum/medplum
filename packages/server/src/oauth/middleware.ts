@@ -8,6 +8,7 @@ import type { IncomingMessage } from 'node:http';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import type { Repository } from '../fhir/repo';
+import { getLogger } from '../logger';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
 
 export type AuthState = {
@@ -42,6 +43,12 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
 }
 
 export async function authenticateTokenImpl(req: Request): Promise<AuthenticationResult | undefined> {
+  // mTLS auth - for now, just dump the headers to the logs
+  const mtlsHeader = req.headers['x-amzn-mtls-clientcert'];
+  if (mtlsHeader) {
+    getLogger().info(`mTLS client cert header: ${mtlsHeader}`);
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return undefined;
