@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'node:path';
 
