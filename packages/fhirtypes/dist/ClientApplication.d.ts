@@ -189,6 +189,14 @@ export interface ClientApplication {
   defaultScope?: string[];
 
   /**
+   * Optional PEM-formatted certificates that are allowed to authenticate
+   * to this service via mutual TLS. Supports both Certificate Authorities
+   * (CAs) and self-signed certificates. Multiple certificates can be
+   * included.
+   */
+  certificateTrustStore?: string;
+
+  /**
    * @deprecated This field is deprecated. Use redirectUris instead.
    */
   redirectUri?: string;
