@@ -36,6 +36,7 @@ esbuild
     ...options,
     format: 'cjs',
     outfile: './dist/cjs/index.cjs',
+    define: { 'import.meta.main': 'true' },
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
   .catch((err) => {
