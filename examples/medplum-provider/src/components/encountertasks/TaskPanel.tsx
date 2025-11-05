@@ -110,7 +110,11 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   );
 };
 
-const updateTaskStatus = async (task: Task, medplum: MedplumClient, onUpdateTask: (task: Task) => void): Promise<void> => {
+const updateTaskStatus = async (
+  task: Task,
+  medplum: MedplumClient,
+  onUpdateTask: (task: Task) => void
+): Promise<void> => {
   try {
     const response = await medplum.updateResource(task);
     onUpdateTask(response);

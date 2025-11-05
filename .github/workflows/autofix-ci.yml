@@ -6,10 +6,7 @@ concurrency:
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - medplum/test-actions
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
