@@ -44,6 +44,7 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
 
 export async function authenticateTokenImpl(req: Request): Promise<AuthenticationResult | undefined> {
   // mTLS auth - for now, just dump the headers to the logs
+  getLogger().info('CODY DEBUG ALL HEADERS', { headers: req.headers });
   const mtlsHeader = req.headers['x-amzn-mtls-clientcert'];
   if (mtlsHeader) {
     getLogger().info(`mTLS client cert header: ${mtlsHeader}`);
