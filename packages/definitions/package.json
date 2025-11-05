@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "4.5.2",
+  "version": "5.0.0",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",
@@ -50,10 +50,14 @@
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node build.mjs && npm run api-extractor",
+    "build:fsh": "sushi src/fsh/medplum-base-subscription",
     "clean": "rimraf --glob \"dist/!(fhir)\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest"
+  },
+  "devDependencies": {
+    "fsh-sushi": "^4.4.0"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

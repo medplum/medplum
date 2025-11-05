@@ -5,7 +5,13 @@
 /* eslint-disable no-undef */
 
 import esbuild from 'esbuild';
-import { writeFileSync } from 'fs';
+import { writeFileSync, copyFileSync } from 'fs';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -18,6 +24,23 @@ const options = {
   minify: true,
   sourcemap: true,
 };
+
+// Build FSH profiles first
+console.log('Building FSH profiles...');
+try {
+  // Copy shared sushi-config.yaml to the profile directory
+  const configSource = resolve(__dirname, 'src/fsh/sushi-config.yaml');
+  const configDest = resolve(__dirname, 'src/fsh/medplum-base-subscription/sushi-config.yaml');
+  copyFileSync(configSource, configDest);
+
+  execSync('npm run build:fsh', { stdio: 'inherit', cwd: __dirname });
+
+  // Merge FSH-generated profiles into profiles-medplum.json
+  execSync('node scripts/build-profiles.mjs', { stdio: 'inherit', cwd: __dirname });
+} catch (error) {
+  console.warn('Warning: FSH build failed or no profiles to merge:', error.message);
+  // Continue with regular build even if FSH build fails
+}
 
 esbuild
   .build({
