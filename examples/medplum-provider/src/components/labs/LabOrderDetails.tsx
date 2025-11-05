@@ -294,13 +294,14 @@ export function LabOrderDetails({
             // Prioritize those that also have QuestionnaireResponse in supportingInfo
             const originalOrder = searchResult.find((sr: ServiceRequest) => {
               if (sr.basedOn && sr.basedOn.length > 0) {
-                const hasBasedOnMatch = sr.basedOn.some((ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) => ref.reference === `ServiceRequest/${order.id}`);
+                const hasBasedOnMatch = sr.basedOn.some(
+                  (ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) =>
+                    ref.reference === `ServiceRequest/${order.id}`
+                );
 
                 if (hasBasedOnMatch) {
                   // Check if this ServiceRequest also has QuestionnaireResponse in supportingInfo
-                  return sr.supportingInfo?.some((ref) =>
-                    ref.reference?.startsWith('QuestionnaireResponse/')
-                  ) ?? false;
+                  return sr.supportingInfo?.some((ref) => ref.reference?.startsWith('QuestionnaireResponse/')) ?? false;
                 }
                 return false;
               }
@@ -310,8 +311,8 @@ export function LabOrderDetails({
             if (originalOrder) {
               // Check if original order has QuestionnaireResponse in supportingInfo
               if (originalOrder.supportingInfo && originalOrder.supportingInfo.length > 0) {
-                const questionnaireRef = originalOrder.supportingInfo.find(
-                  (ref) => ref.reference?.startsWith('QuestionnaireResponse/')
+                const questionnaireRef = originalOrder.supportingInfo.find((ref) =>
+                  ref.reference?.startsWith('QuestionnaireResponse/')
                 );
 
                 if (questionnaireRef?.reference) {
