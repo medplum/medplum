@@ -6,6 +6,8 @@
 
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
+import { cpSync } from 'fs';
+import { existsSync } from 'fs';
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -19,6 +21,18 @@ const options = {
   sourcemap: true,
 };
 
+// Copy JSON files and other non-TypeScript files to dist directories
+function copyDataFiles() {
+  const srcFhirDir = './src/fhir';
+  const distCjsFhirDir = './dist/cjs/fhir';
+  const distEsmFhirDir = './dist/esm/fhir';
+  
+  if (existsSync(srcFhirDir)) {
+    cpSync(srcFhirDir, distCjsFhirDir, { recursive: true });
+    cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
+  }
+}
+
 esbuild
   .build({
     ...options,
@@ -28,7 +42,10 @@ esbuild
       'empty-import-meta': 'silent',
     },
   })
-  .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
+  .then(() => {
+    writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+    copyDataFiles();
+  })
   .catch((err) => {
     console.error(err);
     process.exit(1);
@@ -40,7 +57,10 @@ esbuild
     format: 'esm',
     outfile: './dist/esm/index.mjs',
   })
-  .then(() => writeFileSync('./dist/esm/package.json', '{"type": "module"}'))
+  .then(() => {
+    writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+    copyDataFiles();
+  })
   .catch((err) => {
     console.error(err);
     process.exit(1);

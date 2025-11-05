@@ -11,6 +11,7 @@ const rewrites = {
   env: 'process.env',
   dirname: '__dirname',
   main: 'require.main === module',
+  url: '__dirname',
 };
 
 function esmPlugin() {
