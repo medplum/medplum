@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { NativeSelect, Stack } from '@mantine/core';
 import type { HumanName } from '@medplum/fhirtypes';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';

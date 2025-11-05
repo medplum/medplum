@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor } from '@mantine/core';
 import { HomerSimpson } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ResourceAvatar } from './ResourceAvatar';

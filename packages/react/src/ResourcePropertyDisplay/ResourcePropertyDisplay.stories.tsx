@@ -3,7 +3,7 @@
 import { PropertyType } from '@medplum/core';
 import type { Attachment } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';

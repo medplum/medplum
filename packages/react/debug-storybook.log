@@ -1,0 +1,180 @@
+[15:52:24.900] [INFO] Storybook Upgrade - v10.0.5
+[15:52:24.911] [INFO] detect-projects-spinner-start: Detecting projects...
+[15:52:24.912] [DEBUG] Finding Storybook projects...
+[15:52:24.942] [DEBUG] Found 1 Storybook projects
+[15:52:24.943] [INFO] detect-projects-spinner: Detecting projects: 1 projects
+[15:52:24.943] [DEBUG] Getting Storybook data...
+[15:52:24.943] [DEBUG] Getting Storybook info...
+[15:52:24.947] [DEBUG] Loading main config...
+[15:52:25.239] [DEBUG] Getting stories paths...
+[15:52:25.260] [DEBUG] Getting package manager...
+[15:52:25.402] [DEBUG] Getting Storybook version...
+[15:52:25.403] [DEBUG] /packages/react/.storybook - Validating before version... 9.1.9
+[15:52:25.403] [DEBUG] /packages/react/.storybook - Validating upgrade compatibility...
+[15:52:25.403] [DEBUG] /packages/react/.storybook - Fetching NPM version information...
+[15:52:25.403] [DEBUG] Getting CLI versions from NPM for storybook...
+[15:52:25.404] [DEBUG] Getting CLI versions from NPM for storybook@next...
+[15:52:25.828] [DEBUG] /packages/react/.storybook - Evaluating blockers...
+[15:52:25.833] [DEBUG] Getting installed version for @storybook/experimental-addon-test...
+[15:52:29.269] [DEBUG] An issue occurred while trying to find dependencies metadata using npm.
+[15:52:29.269] [INFO] detect-projects-spinner-stop: 1 project detected
+[15:52:29.269] [DEBUG] Found 1 valid projects and 0 error projects
+[15:52:29.269] [INFO] Upgrading from 9.1.9 to 10.0.5
+[15:52:29.278] [INFO] upgrade-dependencies-task-start: Fetching versions to update package.json files..
+[15:52:29.278] [DEBUG] Updating dependencies in /packages/react/.storybook...
+[15:52:29.284] [INFO] upgrade-dependencies-task: /packages/react/package.json
+/package.json
+[15:52:29.285] [DEBUG] {
+  "upgradedDependencies": []
+}
+[15:52:29.285] [DEBUG] {
+  "upgradedDevDependencies": [
+    "@storybook/addon-docs@^10.0.5",
+    "@storybook/addon-links@^10.0.5",
+    "@storybook/builder-vite@^10.0.5",
+    "@storybook/react@^10.0.5",
+    "@storybook/react-vite@^10.0.5",
+    "storybook@^10.0.5"
+  ]
+}
+[15:52:29.285] [DEBUG] {
+  "upgradedPeerDependencies": []
+}
+[15:52:29.285] [DEBUG] Getting CLI versions from NPM for @storybook/addon-docs...
+[15:52:29.698] [DEBUG] Getting CLI versions from NPM for @storybook/addon-links...
+[15:52:30.606] [DEBUG] Getting CLI versions from NPM for @storybook/builder-vite...
+[15:52:30.957] [DEBUG] Getting CLI versions from NPM for @storybook/react...
+[15:52:31.549] [DEBUG] Getting CLI versions from NPM for @storybook/react-vite...
+[15:52:31.887] [DEBUG] Using cached version for storybook...
+[15:52:31.887] [DEBUG] {
+  "upgradedDependencies": []
+}
+[15:52:31.887] [DEBUG] {
+  "upgradedDevDependencies": []
+}
+[15:52:31.887] [DEBUG] {
+  "upgradedPeerDependencies": []
+}
+[15:52:31.888] [INFO] upgrade-dependencies-task-success: Updated package versions in package.json files
+[15:52:31.888] [INFO] detect-automigrations-task-start: Detecting automigrations...
+[15:52:31.889] [DEBUG] Starting automigration collection across 1 projects and 18 fixes...
+[15:52:31.897] [INFO] detect-automigrations-task: Checking automigrations for /packages/react/.storybook...
+[15:52:31.897] [DEBUG] Processing project: /packages/react/.storybook
+[15:52:31.897] [DEBUG] Checking fix eslintPlugin for project /packages/react/.storybook...
+[15:52:31.898] [DEBUG] Checking fix addon-mdx-gfm-remove for project /packages/react/.storybook...
+[15:52:31.898] [DEBUG] Checking fix addon-storysource-code-panel for project /packages/react/.storybook...
+[15:52:31.898] [DEBUG] Checking fix upgrade-storybook-related-dependencies for project /packages/react/.storybook...
+[15:52:31.898] [DEBUG] Checking for incompatible storybook packages...
+[15:52:31.899] [DEBUG] Getting installed version for @storybook/addon-actions...
+[15:52:31.900] [DEBUG] Getting installed version for storybook-addon-mantine...
+[15:52:35.703] [DEBUG] An issue occurred while trying to find dependencies metadata using npm.
+[15:52:35.703] [DEBUG] Getting CLI versions from NPM for @storybook/addon-actions...
+[15:52:35.708] [DEBUG] An issue occurred while trying to find dependencies metadata using npm.
+[15:52:35.708] [DEBUG] Getting CLI versions from NPM for storybook-addon-mantine...
+[15:52:36.065] [DEBUG] Checking fix initial-globals for project /packages/react/.storybook...
+[15:52:36.078] [DEBUG] Checking fix addon-globals-api for project /packages/react/.storybook...
+[15:52:36.081] [DEBUG] Checking fix addon-a11y-addon-test for project /packages/react/.storybook...
+[15:52:36.081] [DEBUG] Checking fix consolidated-imports for project /packages/react/.storybook...
+[15:52:36.082] [DEBUG] Checking fix addon-experimental-test for project /packages/react/.storybook...
+[15:52:36.082] [DEBUG] Using cached installed version for @storybook/experimental-addon-test...
+[15:52:36.082] [DEBUG] Checking fix rnstorybook-config for project /packages/react/.storybook...
+[15:52:36.082] [DEBUG] Checking fix migrate-addon-console for project /packages/react/.storybook...
+[15:52:36.082] [DEBUG] Checking fix remove-addon-interactions for project /packages/react/.storybook...
+[15:52:36.082] [DEBUG] Checking fix renderer-to-framework for project /packages/react/.storybook...
+[15:52:36.083] [DEBUG] Checking fix remove-essential-addons for project /packages/react/.storybook...
+[15:52:36.083] [DEBUG] Checking fix addon-a11y-parameters for project /packages/react/.storybook...
+[15:52:36.083] [DEBUG] Checking fix remove-docs-autodocs for project /packages/react/.storybook...
+[15:52:36.087] [DEBUG] Checking fix wrap-getAbsolutePath for project /packages/react/.storybook...
+[15:52:36.090] [DEBUG] Checking fix fix-faux-esm-require for project /packages/react/.storybook...
+[15:52:36.098] [INFO] detect-automigrations-task: 
+Automigrations detected:
+[15:52:36.106] [INFO] detect-automigrations-task: ✔ eslintPlugin
+[15:52:36.114] [INFO] detect-automigrations-task: ✔ renderer-to-framework
+[15:52:36.120] [INFO] detect-automigrations-task: ✔ remove-essential-addons
+[15:52:36.127] [INFO] detect-automigrations-task: ✔ wrap-getAbsolutePath
+[15:52:36.134] [INFO] detect-automigrations-task: ✔ fix-faux-esm-require
+[15:52:36.134] [INFO] detect-automigrations-task-success: 5 automigration(s) detected
+[15:52:36.134] [INFO] Running all detected automigrations:
+[15:52:36.145] [INFO]   - eslintPlugin (/packages/react/.storybook)
+[15:52:36.153] [INFO]   - renderer-to-framework (/packages/react/.storybook)
+[15:52:36.161] [INFO]   - remove-essential-addons (/packages/react/.storybook)
+[15:52:36.169] [INFO]   - wrap-getAbsolutePath (/packages/react/.storybook)
+[15:52:36.177] [INFO]   - fix-faux-esm-require (/packages/react/.storybook)
+[15:52:36.184] [INFO] automigrate-/packages/react/.storybook-task-start: Running automigrations for /packages/react/.storybook
+[15:52:36.184] [DEBUG] Adding dependencies: eslint-plugin-storybook@10.0.5
+[15:52:36.184] [DEBUG] Getting CLI versions from NPM for eslint-plugin-storybook...
+[15:52:36.572] [DEBUG] Detected flat config at /Users/karl-medplum/Development/medplum/medplum/eslint.config.mjs
+[15:52:36.585] [INFO] automigrate-/packages/react/.storybook-task: ✔ eslintPlugin
+[15:52:36.585] [DEBUG] 
+Migrating @storybook/react to @storybook/react-vite
+[15:52:36.596] [DEBUG] Updating package.json files...
+[15:52:36.604] [INFO] automigrate-/packages/react/.storybook-task: ✔ renderer-to-framework
+[15:52:36.607] [DEBUG] Uninstalling @storybook/addon-actions
+[15:52:36.626] [INFO] automigrate-/packages/react/.storybook-task: ✔ remove-essential-addons
+[15:52:36.641] [INFO] automigrate-/packages/react/.storybook-task: ✔ wrap-getAbsolutePath
+[15:52:36.655] [INFO] automigrate-/packages/react/.storybook-task: ✔ fix-faux-esm-require
+[15:52:36.655] [INFO] automigrate-/packages/react/.storybook-task-success: Completed automigrations for /packages/react/.storybook
+[15:52:36.656] [INFO] Installing dependencies...
+[15:52:36.656] [INFO] install-dependencies-task-start: Installing dependencies...
+[15:52:44.167] [INFO] added 19 packages, removed 10 packages, and audited 3262 packages in 7s
+[15:52:44.176] [INFO] install-dependencies-task: added 19 packages, removed 10 packages, and audited 3262 packages in
+7s
+[15:52:44.177] [INFO] 655 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[15:52:44.185] [INFO] install-dependencies-task: 655 packages are looking for funding
+run `npm fund` for details
+
+found 0 vulnerabilities
+[15:52:44.185] [INFO] Dependencies installed
+[15:52:44.185] [INFO] install-dependencies-task-success: Dependencies installed
+[15:52:44.185] [WARN] Since you are in a monorepo, we advise you to deduplicate your dependencies. We can do this for you but it might take some time.
+[15:52:44.193] [INFO] Deduplicating dependencies...
+[15:52:44.193] [INFO] dedupe-dependencies-task-start: Deduplicating dependencies...
+[15:54:04.502] [INFO] added 1 package, changed 3 packages, and audited 3263 packages in 1m
+[15:54:04.511] [INFO] dedupe-dependencies-task: added 1 package, changed 3 packages, and audited 3263 packages in 1m
+[15:54:04.511] [INFO] 655 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[15:54:04.519] [INFO] dedupe-dependencies-task: 655 packages are looking for funding
+run `npm fund` for details
+
+found 0 vulnerabilities
+[15:54:04.529] [INFO] Dependencies deduplicated
+[15:54:04.529] [INFO] dedupe-dependencies-task-success: Dependencies deduplicated
+[15:54:04.529] [INFO] Checking the health of your project(s)..
+[15:54:06.630] [WARN] /packages/react/.storybook: 1 issue found
+[15:54:06.639] [INFO] You are currently using Storybook 10.0.5 but you have packages which are incompatible with it:
+
+- storybook-addon-mantine@6.0.0 which depends on ^9.0.0
+ Repo: https://josiahayres.github.io/storybook-addon-mantine/
+
+Please consider updating your packages or contacting the maintainers for compatibility details.
+
+For more on Storybook 9 compatibility, see the linked GitHub issue:
+https://github.com/storybookjs/storybook/issues/30944
+[15:54:06.639] [INFO] Incompatible Packages
+[15:54:06.646] [INFO] You are currently using Storybook 10.0.5 but you have packages which are incompatible with it:
+
+- storybook-addon-mantine@6.0.0 which depends on ^9.0.0
+ Repo: https://josiahayres.github.io/storybook-addon-mantine/
+
+Please consider updating your packages or contacting the maintainers for compatibility details.
+
+For more on Storybook 9 compatibility, see the linked GitHub issue:
+https://github.com/storybookjs/storybook/issues/30944
+[15:54:06.654] [INFO] Storybook doctor is complete!
+[15:54:06.661] [INFO] You can always recheck the health of your project(s) by running:
+npx storybook doctor
+[15:54:06.668] [INFO] The upgrade is complete!
+[15:54:06.677] [INFO] Your project(s) have been upgraded successfully, but some issues were found which need your attention, please check Storybook doctor logs above.
+[15:54:06.719] [INFO] If you want to learn more about the automigrations that executed in your project(s), please check the following links:
+
+• eslintPlugin
+• renderer-to-framework
+• remove-essential-addons
+• wrap-getAbsolutePath
+• fix-faux-esm-require
+[15:54:06.725] [INFO] For a full list of changes, please check our migration guide: https://storybook.js.org/docs/releases/migration-guide?ref=upgrade

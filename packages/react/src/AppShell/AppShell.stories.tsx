@@ -3,7 +3,7 @@
 import type { ProfileResource } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import { useMedplumProfile } from '@medplum/react-hooks';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import {
   Icon2fa,
   IconBellRinging,

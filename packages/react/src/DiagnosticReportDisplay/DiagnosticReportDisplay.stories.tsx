@@ -4,7 +4,7 @@ import { createReference, deepClone } from '@medplum/core';
 import type { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';

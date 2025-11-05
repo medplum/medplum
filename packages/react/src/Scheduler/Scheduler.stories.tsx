@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { withMockedDate } from '../stories/decorators';
