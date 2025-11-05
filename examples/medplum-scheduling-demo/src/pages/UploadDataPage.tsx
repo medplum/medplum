@@ -4,15 +4,13 @@ import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { capitalize, getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
 import type { MedplumClient, WithId } from '@medplum/core';
-import type { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { Binary, Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import coreData from '../../data/core/appointment-service-types.json';
-
-const EXAMPLE_BOTS_JSON = '../../data/core/example-bots.json';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner) => Promise<void>;
 
@@ -91,10 +89,20 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
   }
 }
 
+const EXAMPLE_BOTS_JSON = '../../data/core/example-bots.json';
+
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
-  // TODO: Friendlier error handling if the example bots json file hasn't been built yet
-  // stating that `npm run build:bots` should be run.
-  const exampleBotData = await import(/* @vite-ignore */ EXAMPLE_BOTS_JSON);
+  let exampleBotData: Bundle;
+  try {
+    exampleBotData = await import(/* @vite-ignore */ EXAMPLE_BOTS_JSON);
+  } catch (err) {
+    console.log(err);
+    if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+      throw new Error('Error loading bot data. Run `npm run build:bots` and try again.');
+    }
+    throw err;
+  }
+
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
@@ -128,9 +136,17 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
   for (const entry of botEntries) {
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
-    const distBinaryEntry = exampleBotData.entry.find((e: any) => e.fullUrl === distUrl);
+    const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
+      | BundleEntry<Binary>
+      | undefined;
+    if (!distBinaryEntry) {
+      throw new Error('Error finding Bundle entry with fullUrl: ' + distUrl);
+    }
+    if (!distBinaryEntry.resource?.data) {
+      throw new Error('Could not find encoded code for bot: ' + botName);
+    }
     // Decode the base64 encoded code and deploy
-    const code = atob(distBinaryEntry?.resource.data as string);
+    const code = atob(distBinaryEntry.resource.data);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
   }
 
