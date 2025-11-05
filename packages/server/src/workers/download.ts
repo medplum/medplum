@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, WithId } from '@medplum/core';
+import type { BackgroundJobContext, TypedValueWithPath, WithId } from '@medplum/core';
 import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
-import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import type { Readable } from 'node:stream';
+import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
@@ -90,9 +91,14 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource, if available
  * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
+export async function addDownloadJobs(
+  resource: WithId<Resource>,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
   if (!getConfig().autoDownloadEnabled) {
     return;
   }
@@ -104,13 +110,22 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
 
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (!isExternalUrl(attachment.url) || !isUrlAllowedByProject(project, attachment.url)) {
+    // Only process allowed external URLs
+    const url = attachment.value.url;
+    if (!isExternalUrl(url) || !isUrlAllowedByProject(project, url)) {
       continue;
     }
+
+    // Skip if this mutation didn't adjust the URL in question
+    const pointer = Pointer.fromJSON(`${pathToPointer(attachment.path)}/url`);
+    if (pointer.get(resource) === pointer.get(previousVersion)) {
+      continue;
+    }
+
     await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id,
-      url: attachment.url,
+      url,
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,
     });
@@ -253,9 +268,24 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
 
-    const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
-    (updated.meta as Meta).author = { reference: 'system' };
-    await systemRepo.updateResource(updated);
+    // re-fetch resource so we are mutating as recent a copy as possible
+    // (there may have been other mutations applied while we were writing the
+    // object into storage)
+    resource = await systemRepo.readResource<T>(resourceType, id);
+
+    const attachments = getAttachments(resource);
+    const patches = attachments
+      .filter((attachment) => attachment.value.url === url)
+      .map((value) => ({
+        op: 'replace' as const,
+        path: `${pathToPointer(value.path)}/url`,
+        value: `Binary/${binary.id}`,
+      }));
+    await systemRepo.patchResource(resourceType, id, [
+      ...patches,
+      { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
+    ]);
+
     log.info('Downloaded content successfully');
   } catch (ex: any) {
     log.info('Download exception: ' + ex, ex);
@@ -263,18 +293,27 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   }
 }
 
-function getAttachments(resource: Resource): Attachment[] {
-  const attachments: Attachment[] = [];
-  crawlTypedValue(toTypedValue(resource), {
-    visitProperty: (_parent, _key, _path, propertyValues) => {
-      for (const propertyValue of propertyValues) {
-        for (const value of arrayify(propertyValue)) {
-          if (value.type === 'Attachment') {
-            attachments.push(value.value as Attachment);
+// Translate basic FHIRPath into JSON Patch pointer
+export function pathToPointer(path: string): string {
+  return (path.startsWith('.') ? path : `.${path}`).replaceAll('.', '/').replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert `[0]` => `/0`
+}
+
+export function getAttachments(resource: Resource): TypedValueWithPath[] {
+  const attachments: TypedValueWithPath[] = [];
+  crawlTypedValue(
+    toTypedValue(resource),
+    {
+      visitProperty: (_parent, _key, _path, propertyValues) => {
+        for (const propertyValue of propertyValues) {
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Attachment') {
+              attachments.push(value);
+            }
           }
         }
-      }
+      },
     },
-  });
+    { initialPath: '' }
+  );
   return attachments;
 }
