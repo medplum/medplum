@@ -20,6 +20,9 @@ import type {
   DocumentReference,
   DiagnosticReport,
   QuestionnaireResponse,
+  MedicationRequest,
+  Reference,
+  CarePlan,
 } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useResource, useMedplum, AttachmentDisplay, ObservationTable } from '@medplum/react';
@@ -289,16 +292,15 @@ export function LabOrderDetails({
           if (searchResult && searchResult.length > 0) {
             // Find the ServiceRequest that has this order in its basedOn field
             // Prioritize those that also have QuestionnaireResponse in supportingInfo
-            const originalOrder = searchResult.find((sr: any) => {
+            const originalOrder = searchResult.find((sr: ServiceRequest) => {
               if (sr.basedOn && sr.basedOn.length > 0) {
-                const hasBasedOnMatch = sr.basedOn.some((ref: any) => ref.reference === `ServiceRequest/${order.id}`);
+                const hasBasedOnMatch = sr.basedOn.some((ref: Reference<CarePlan | ServiceRequest | MedicationRequest>) => ref.reference === `ServiceRequest/${order.id}`);
 
                 if (hasBasedOnMatch) {
                   // Check if this ServiceRequest also has QuestionnaireResponse in supportingInfo
-                  const hasQuestionnaireResponse = sr.supportingInfo?.some((ref: any) =>
+                  return sr.supportingInfo?.some((ref) =>
                     ref.reference?.startsWith('QuestionnaireResponse/')
-                  );
-                  return hasBasedOnMatch && hasQuestionnaireResponse;
+                  ) ?? false;
                 }
                 return false;
               }
@@ -308,8 +310,8 @@ export function LabOrderDetails({
             if (originalOrder) {
               // Check if original order has QuestionnaireResponse in supportingInfo
               if (originalOrder.supportingInfo && originalOrder.supportingInfo.length > 0) {
-                const questionnaireRef = originalOrder.supportingInfo.find((ref: any) =>
-                  ref.reference?.startsWith('QuestionnaireResponse/')
+                const questionnaireRef = originalOrder.supportingInfo.find(
+                  (ref) => ref.reference?.startsWith('QuestionnaireResponse/')
                 );
 
                 if (questionnaireRef?.reference) {
@@ -322,12 +324,12 @@ export function LabOrderDetails({
               }
             } else {
               // Alternative: Look for any ServiceRequest with QuestionnaireResponse in supportingInfo
-              const serviceRequestWithQuestionnaire = searchResult.find((sr: any) =>
-                sr.supportingInfo?.some((ref: any) => ref.reference?.startsWith('QuestionnaireResponse/'))
+              const serviceRequestWithQuestionnaire = searchResult.find((sr: ServiceRequest) =>
+                sr.supportingInfo?.some((ref) => ref.reference?.startsWith('QuestionnaireResponse/'))
               );
 
               if (serviceRequestWithQuestionnaire) {
-                const questionnaireRef = serviceRequestWithQuestionnaire.supportingInfo?.find((ref: any) =>
+                const questionnaireRef = serviceRequestWithQuestionnaire.supportingInfo?.find((ref) =>
                   ref.reference?.startsWith('QuestionnaireResponse/')
                 );
 
