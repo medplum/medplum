@@ -66,13 +66,15 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       sessions,
-      memberships: memberships.map((membership) => ({
-        resourceType: 'ProjectMembership',
-        id: membership.id,
-        identifier: membership.identifier,
-        profile: membership.profile,
-        admin: membership.admin,
-      })),
+      memberships: memberships
+        .filter((m) => m.active !== false)
+        .map((membership) => ({
+          resourceType: 'ProjectMembership',
+          id: membership.id,
+          identifier: membership.identifier,
+          profile: membership.profile,
+          admin: membership.admin,
+        })),
     };
   }
 

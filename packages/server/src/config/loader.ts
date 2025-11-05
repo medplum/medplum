@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -87,6 +88,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.defaultSuperAdminClientId = randomUUID();
+  config.defaultSuperAdminClientSecret = randomUUID();
   return config;
 }
 

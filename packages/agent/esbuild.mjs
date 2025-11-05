@@ -15,9 +15,6 @@ const options = {
   resolveExtensions: ['.js', '.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  define: {
-    'import.meta.main': 'true',
-  },
 };
 
 // The single executable application feature only supports running a single embedded CommonJS file.
