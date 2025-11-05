@@ -25,7 +25,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
-import { globalLogger, systemLogger } from '../logger';
+import { globalLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { ReindexJobData } from './reindex';
 import {
@@ -350,10 +350,10 @@ describe('Reindex Worker', () => {
 
       const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(systemRepo, 'search').mockRejectedValueOnce(new Error('Failed to search systemRepo'));
-      const originalLevel = systemLogger.level;
-      systemLogger.level = LogLevel.NONE;
+      const originalLevel = globalLogger.level;
+      globalLogger.level = LogLevel.NONE;
       await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
-      systemLogger.level = originalLevel;
+      globalLogger.level = originalLevel;
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
