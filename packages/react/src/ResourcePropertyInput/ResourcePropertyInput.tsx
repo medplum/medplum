@@ -241,7 +241,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.string:
     case PropertyType.uri:
     case PropertyType.url:
-      if (props.path === 'Project.secret.value[x]') {
+      if (props.path === 'Project.secret.value[x]' || props.path === 'ClientApplication.certificateTrustStore') {
         return (
           <SensitiveTextarea
             {...getPrimitiveInputProps()}

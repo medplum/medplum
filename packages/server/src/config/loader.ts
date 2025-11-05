@@ -90,6 +90,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
+  config.mtlsCertHeader = 'x-mtls-cert';
   return config;
 }
 
