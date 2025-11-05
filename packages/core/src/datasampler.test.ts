@@ -23,6 +23,7 @@ describe('DataSampler', () => {
           {
             code: { text: 'Data' },
             valueSampledData: {
+              data: undefined,
               origin: { value: 0 },
               dimensions: 1,
               period: 0,

@@ -54,12 +54,12 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "jest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@medplum/definitions": "5.0.0",
     "@medplum/fhirtypes": "5.0.0",
-    "jest-websocket-mock": "2.5.0"
+    "vitest-websocket-mock": "0.5.0"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"
