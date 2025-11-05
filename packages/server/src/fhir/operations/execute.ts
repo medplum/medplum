@@ -116,7 +116,6 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   }
 
   // Otherwise, search by identifier
-  console.log(JSON.stringify(req.query));
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
     const bot = await ctx.repo.searchOne<Bot>({
