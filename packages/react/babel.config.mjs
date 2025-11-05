@@ -1,13 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
-import esmPlugin from '../babel.esm.config.mjs';
-
 export default {
   presets: [
     ['@babel/preset-env', { targets: { node: 'current' } }],
     ['@babel/preset-react', { runtime: 'automatic' }],
     '@babel/preset-typescript',
   ],
-  plugins: [esmPlugin()],
+  plugins: [
+    () => ({
+      visitor: {
+        MetaProperty(path) {
+          if (path.node.meta.name === 'import' && path.node.property.name === 'meta') {
+            // Replace "import.meta" with "process"
+            path.replaceWithSourceString('process');
+          }
+        },
+      },
+    }),
+  ],
 };
