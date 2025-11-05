@@ -9,15 +9,9 @@ export const globalLogger = new Logger(
   process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO
 );
 
-function write(msg: string): void {
-  process.stdout.write(msg + '\n');
-}
-
-export const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
-
 /**
- * @returns the current `IRequestContext.logger` if available, otherwise `systemLogger`
+ * @returns the current `IRequestContext.logger` if available, otherwise `globalLogger`
  */
 export function getLogger(): Logger {
-  return requestContextStore.getStore()?.logger ?? systemLogger;
+  return requestContextStore.getStore()?.logger ?? globalLogger;
 }
