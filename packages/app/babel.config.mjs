@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import esmPlugin from '../../babel.esm.config.mjs';
+import esmPlugin from '../babel.esm.config.mjs';
 
 export default {
   presets: [
