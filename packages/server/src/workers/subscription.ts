@@ -35,7 +35,6 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import type { HeadersInit } from 'node-fetch';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
@@ -461,7 +460,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     switch (channelType) {
       case 'rest-hook':
         if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(subscription, rewrittenResource, interaction, requestTime);
+          await execBot(job, subscription, rewrittenResource, interaction, requestTime);
         } else {
           await sendRestHook(job, subscription, rewrittenResource, interaction, requestTime);
         }
@@ -602,7 +601,7 @@ function buildRestHookHeaders(
   resource: Resource,
   interaction: BackgroundJobInteraction,
   body: string
-): HeadersInit {
+): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': ContentType.FHIR_JSON,
     'X-Medplum-Subscription': subscription.id,
@@ -643,13 +642,15 @@ function buildRestHookHeaders(
 
 /**
  * Executes a Bot subscription.
+ * @param job - The subscription job.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
  * @param requestTime - The request time.
  */
 async function execBot(
-  subscription: Subscription,
+  job: Job<SubscriptionJobData>,
+  subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction,
   requestTime: string
@@ -681,15 +682,19 @@ async function execBot(
     throw new Error('Could not find project membership for bot');
   }
 
+  const body = interaction === 'delete' ? { deletedResource: resource } : resource;
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction, JSON.stringify(body));
+
   await executeBot({
     subscription,
     bot,
     runAs,
     requester,
-    input: interaction === 'delete' ? { deletedResource: resource } : resource,
+    input: body,
     contentType: ContentType.FHIR_JSON,
     requestTime,
     traceId: ctx.traceId,
+    headers,
   });
 }
 
