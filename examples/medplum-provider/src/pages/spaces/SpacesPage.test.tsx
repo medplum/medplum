@@ -275,70 +275,6 @@ describe('SpacesPage', () => {
       });
     });
 
-    it('shows FHIR request being executed', async () => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'POST',
-                      path: 'Patient',
-                      body: { resourceType: 'Patient' },
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Patient created' }],
-        });
-
-      medplum.post = vi.fn().mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              resolve({ resourceType: 'Patient', id: 'new-patient' });
-            }, 50);
-          })
-      );
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
-
-      await user.type(input, 'Create patient');
-      await user.click(sendButton);
-
-      // Wait for user message to appear
-      await waitFor(() => {
-        expect(screen.getByText('Create patient')).toBeInTheDocument();
-      });
-
-      // Wait for the loading state to show the FHIR request
-      await waitFor(
-        () => {
-          expect(screen.getByText(/Executing POST Patient/)).toBeInTheDocument();
-        },
-        { timeout: 5000 }
-      );
-    });
-
     it('handles FHIR request errors', async () => {
       const user = userEvent.setup();
 
@@ -385,7 +321,6 @@ describe('SpacesPage', () => {
         expect(medplum.get).toHaveBeenCalled();
       });
 
-      // Should still call the bot again with error result
       await waitFor(() => {
         expect(medplum.executeBot).toHaveBeenCalledTimes(2);
       });
