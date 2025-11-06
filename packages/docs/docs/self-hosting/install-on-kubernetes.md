@@ -12,7 +12,6 @@ This installation method is ideal for organizations already using Kubernetes or 
 
 ## Prerequisites
 
-- **Docker Desktop** https://docs.docker.com/desktop/
 - **kubectl** https://kubernetes.io/docs/tasks/tools/
 - **Helm** https://helm.sh/docs/intro/install/
 
