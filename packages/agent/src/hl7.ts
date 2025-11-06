@@ -8,6 +8,7 @@ import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
+import { ChannelStatsTracker } from './channel-stats-tracker';
 import { getCurrentStats, updateStat } from './stats';
 
 export class AgentHl7Channel extends BaseChannel {
@@ -17,6 +18,7 @@ export class AgentHl7Channel extends BaseChannel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
   private prefix: string;
+  stats?: ChannelStatsTracker;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -38,6 +40,7 @@ export class AgentHl7Channel extends BaseChannel {
 
     const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}...`);
+    this.configureStatsTracker();
     this.configureHl7ServerAndConnections();
     await this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
@@ -50,6 +53,7 @@ export class AgentHl7Channel extends BaseChannel {
     this.log.info('Channel stopping...');
     await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
+    this.stats?.cleanup();
     this.started = false;
     this.log.info('Channel stopped successfully');
   }
@@ -57,7 +61,14 @@ export class AgentHl7Channel extends BaseChannel {
   sendToRemote(msg: AgentTransmitResponse): void {
     const connection = this.connections.get(msg.remote as string);
     if (connection) {
+      const hl7Message = Hl7Message.parse(msg.body);
+      const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
+      this.channelLog.info(`[Sending ACK -- ID: ${msgControlId}]: ${hl7Message.toString().replaceAll('\r', '\n')}`);
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
+
+      if (msgControlId) {
+        this.stats?.recordAckReceived(msgControlId);
+      }
     } else {
       this.log.warn(`Attempted to send message to disconnected remote: ${msg.remote}`);
     }
@@ -70,6 +81,8 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    this.configureStatsTracker();
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
@@ -93,6 +106,18 @@ export class AgentHl7Channel extends BaseChannel {
       return false;
     }
     return true;
+  }
+
+  private configureStatsTracker(): void {
+    const logStatsFreqSecs =
+      this.app.getAgentConfig()?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger ?? -1;
+
+    if (logStatsFreqSecs > 0 && !this.stats) {
+      this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
+    } else if (logStatsFreqSecs <= 0 && this.stats) {
+      this.stats.cleanup();
+      this.stats = undefined;
+    }
   }
 
   private configureHl7ServerAndConnections(): void {
@@ -148,7 +173,11 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
-      this.channel.channelLog.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
+      const msgControlId = event.message.getSegment('MSH')?.getField(10)?.toString();
+      this.channel.channelLog.info(
+        `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
+      );
+
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
@@ -158,6 +187,11 @@ export class AgentHl7ChannelConnection {
         body: event.message.toString(),
         callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
       });
+
+      // Log stats
+      if (msgControlId) {
+        this.channel.stats?.recordMessageSent(msgControlId);
+      }
     } catch (err) {
       this.channel.log.error(`HL7 error occurred - check channel logs`);
       this.channel.channelLog.error(`HL7 error: ${normalizeErrorString(err)}`);

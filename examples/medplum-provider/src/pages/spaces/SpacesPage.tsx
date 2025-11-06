@@ -55,7 +55,7 @@ export function SpacesPage(): JSX.Element {
       setTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
-    } catch (error: any) {
+    } catch (error) {
       showErrorNotification(error);
     } finally {
       setLoading(false);
