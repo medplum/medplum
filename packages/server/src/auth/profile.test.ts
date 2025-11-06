@@ -275,7 +275,6 @@ describe('Profile', () => {
       password,
     });
 
-    
     expect(res2.status).toBe(200);
     expect(res2.body.memberships).toBeDefined();
     const updatedMembership = res2.body.memberships.find((p: any) => p.id === membership1.id);
