@@ -12,7 +12,7 @@ Building out a charting experience requires composing multiple FHIR resources in
 
 ## Patient History
 
-Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-chart-demo github](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo).
+Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-provider github](https://github.com/medplum/medplum/tree/main/examples/medplum-provider).
 
 ![Chart sample](charting-screenshot.png)
 
@@ -130,7 +130,6 @@ Placing orders requires constructing the right resources, which can be created d
 
 ## Reference
 
-- Sample application [Charting Demo Source Code](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo)
 - [Charting Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube (3 min)
 - [Medical condition/diagnosis 1CD-9](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=sharing) sample ValueSet bundle
 - [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on Github

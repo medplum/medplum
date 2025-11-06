@@ -4,6 +4,7 @@ import { Card, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
@@ -109,7 +110,11 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   );
 };
 
-const updateTaskStatus = async (task: Task, medplum: any, onUpdateTask: (task: Task) => void): Promise<void> => {
+const updateTaskStatus = async (
+  task: Task,
+  medplum: MedplumClient,
+  onUpdateTask: (task: Task) => void
+): Promise<void> => {
   try {
     const response = await medplum.updateResource(task);
     onUpdateTask(response);

@@ -83,7 +83,7 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+if (require.main === module) {
   main(process.argv).catch((err) => {
     console.log(err);
     process.exit(1);
