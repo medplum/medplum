@@ -6,10 +6,15 @@ concurrency:
 
 on:
   pull_request:
+    paths-ignore:
+      # this directory contains FHIR resource files that should not be autofixed
+      - 'packages/definitions/src/fhir/**'
   push:
     branches:
       - main
       - medplum/test-actions
+    paths-ignore:
+      - 'packages/definitions/src/fhir/**'
 
 permissions:
   contents: read

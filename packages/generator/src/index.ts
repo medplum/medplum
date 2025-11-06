@@ -366,6 +366,6 @@ function getTypeScriptTypeForProperty(
   return baseType;
 }
 
-if (process.argv[1].endsWith('index.ts')) {
+if (import.meta.main) {
   main();
 }
