@@ -34,7 +34,7 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
     medplum
       .readReference({ reference: resourceReference })
       .then(setResource)
-      .catch(setError)
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   }, [medplum, resourceReference]);
 
@@ -65,7 +65,13 @@ export function ResourceBox({ resourceReference, onClick }: ResourceBoxProps): J
   const resourceType = resource.resourceType;
 
   return (
-    <Paper withBorder p="sm" className={classes.resourceBox} onClick={() => onClick(resourceReference)}>
+    <Paper
+      withBorder
+      p="sm"
+      className={classes.resourceBox}
+      onClick={() => onClick(resourceReference)}
+      data-testid="resource-box"
+    >
       <Group gap="sm" wrap="nowrap">
         <ThemeIcon size="lg" variant="light" color="violet">
           <IconFileText size={20} />
