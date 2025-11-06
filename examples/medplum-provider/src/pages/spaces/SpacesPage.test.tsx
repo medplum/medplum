@@ -160,7 +160,6 @@ describe('SpacesPage', () => {
         expect(createConversationTopicMock).toHaveBeenCalled();
       });
     });
-
   });
 
   describe('Chat state (after first message)', () => {
@@ -559,7 +558,7 @@ describe('SpacesPage', () => {
       if (!closeButton) {
         throw new Error('CloseButton not found');
       }
-      
+
       await user.click(closeButton);
 
       await waitFor(() => {
@@ -705,4 +704,3 @@ describe('SpacesPage', () => {
     });
   });
 });
-
