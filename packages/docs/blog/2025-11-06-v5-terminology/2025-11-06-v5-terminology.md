@@ -243,15 +243,16 @@ Last but not least, we've finally unlocked a long-requested feature: validating 
 FHIR resources on write. Most resources contain some coded values, and the FHIR specification or a custom resource
 profile can require that those values are drawn from a specific allowed set. Medplum server now includes the option to
 check that any `required` [terminology bindings][terminology-binding] are satisfied in resources being written to the
-server. Since this involves potentially tens of validation queries to the terminology service per resource, all the
-performance work we did over the last few months was instrumental in making it possible.
+server. Since this involves potentially tens of [validation queries][validate-code] to the terminology service per
+resource, all the performance work we did over the past few months was instrumental in making it possible.
 
-By enabling the `validate-terminology` feature for your project, you can opt into the additional validation process. It
-provides additional assurance that your data is fully compliant with the FHIR specification, and maximizes the
-interoperability of data stored in Medplum. This does come with a small performance cost to perform the validation,
-but we will be continuing to monitor and optimize this functionality in the coming months.
+By enabling the `validate-terminology` feature for your Project, you can opt into the new validation process. It
+provides assurance that your data is fully compliant with the FHIR specification, and maximizes the interoperability of
+data stored in Medplum. This does come with a small performance cost to perform the validation, but we will be
+continuing to monitor and optimize this functionality in the coming months.
 
 If you're interested in helping us test out terminology validation in your development or staging Project, contact
 [support@medplum.com](mailto:support@medplum.com) to have the feature enabled.
 
 [terminology-binding]: https://hl7.org/fhir/R4/terminologies.html#binding
+[validate-code]: /docs/api/fhir/operations/valueset-validate-code
