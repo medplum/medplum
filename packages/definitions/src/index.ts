@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'fs';
-import { resolve, dirname } from 'node:path';
-
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function readJson(filename: string): any {
   const filenamePath = resolve(getDataDir(), filename);

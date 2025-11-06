@@ -5,9 +5,7 @@
 /* eslint-disable no-undef */
 
 import esbuild from 'esbuild';
-import { writeFileSync } from 'fs';
-import { cpSync } from 'fs';
-import { existsSync } from 'fs';
+import { cpSync, existsSync, writeFileSync } from 'fs';
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -26,7 +24,7 @@ function copyDataFiles() {
   const srcFhirDir = './src/fhir';
   const distCjsFhirDir = './dist/cjs/fhir';
   const distEsmFhirDir = './dist/esm/fhir';
-  
+
   if (existsSync(srcFhirDir)) {
     cpSync(srcFhirDir, distCjsFhirDir, { recursive: true });
     cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
