@@ -8,7 +8,7 @@ tags: [fhir-datastore]
 # Terminology Service Updates in Medplum v5
 
 As part of the Mepdlum v5 release, we've been hard at work delivering several key improvements to our
-[FHIR Terminology Services][fhir-terminology]:
+[FHIR Terminology Services][fhir-terminology], which power Medplum's rich features for handling coded values:
 
 - [Supporting synonyms][pr-synonyms] in `ValueSet/$expand`, allowing users to find codes by a number of different search terms
 - [Scaling our implementation][pr-translate] of the `ConceptMap/$translate` operation to handle maps with over a million entries
@@ -20,7 +20,7 @@ As part of the Mepdlum v5 release, we've been hard at work delivering several ke
 
 [fhir-terminology]: https://hl7.org/fhir/R4/terminology-service.html
 
-Below we'll discuss each of these changes in more detail and give an overview of the features available in
+Below we'll discuss each of these changes in more detail and give examples of the features available in
 Medplum's Terminology Services today.
 
 [pr-synonyms]: https://github.com/medplum/medplum/pull/7151
@@ -39,11 +39,11 @@ Many codes are known by multiple different related names or terms, and users may
 contexts when trying to find the right code for a clinical concept. For example, consider a provider populating
 information about a patient allergy, who wants to fill in the [`AllergyIntolerance.reaction.manifestation` field][allergy-manifestation]
 with the SNOMED CT&reg; code for hives using the [Clinical Findings ValueSet][clinical-findings]. The relevant code in
-SNOMED is `247472004`, but its display string is "Wheal (finding)" — not "hives"! If the user did not know the more
+SNOMED is `247472004`, but its display string is "Wheal (finding)" — not "hives"! If the user doesn't know the more
 technical term, finding the correct code would be difficult.
 
-Fortunately, most code systems record multiple names for their codes. These can be found as properties on the coding,
-as seen by [looking up the code][codesystem-lookup]:
+Fortunately, most code systems record multiple names (synonyms) for their codes. These are stored as metadata properties
+on the coding, which can be seen by [looking up the code][codesystem-lookup]:
 
 ```json
 {
@@ -91,10 +91,10 @@ as seen by [looking up the code][codesystem-lookup]:
 }
 ```
 
-Medplum now supports searching against these additional names as well when searching with the `filter` parameter of
-the [`ValueSet/$expand` operation][valueset-expand]. Specifically, any coding properties with a special
-[`uri` value][property-uri] of `http://hl7.org/fhir/concept-properties#synonym` will be indexed for search as a synonym
-for the given code. The `SY` property shown above is defined in the corresponding `CodeSystem` resource:
+Medplum now supports searching against these synonyms in addition to the primary display string when searching with the
+`filter` parameter of the [`ValueSet/$expand` operation][valueset-expand]. Specifically, any coding properties with a
+special [`uri` value][property-uri] of `http://hl7.org/fhir/concept-properties#synonym` will be indexed for search as a
+synonym for the given code. The `SY` property shown above is defined in the corresponding `CodeSystem` resource:
 
 ```json
 {
@@ -127,7 +127,7 @@ be supported to the amount that would fit in a single resource.
 To enable large mappings between complex code systems, we rebuilt our system for handling `ConceptMap` resources from
 the ground up. Existing mappings contained in the resource JSON were indexed into an optimized lookup table, and we
 added a new `ConceptMap/$import` endpoint similar to the [one for CodeSystems][codesystem-import] to facilitate loading
-maps with a millions entries or more into the system.
+maps with a million entries or more into the system.
 
 For example, we can query a large map of drugs from many different code systems to get their corresponding RxNorm code:
 
@@ -252,7 +252,8 @@ data stored in Medplum. This does come with a small performance cost to perform 
 continuing to monitor and optimize this functionality in the coming months.
 
 If you're interested in helping us test out terminology validation in your development or staging Project, contact
-[support@medplum.com](mailto:support@medplum.com) to have the feature enabled.
+[support@medplum.com](mailto:support@medplum.com) to have the feature enabled. If you operate a self-hosted cluster,
+you will need to upgrade to Medplum v5 before the feature will be available.
 
 [terminology-binding]: https://hl7.org/fhir/R4/terminologies.html#binding
 [validate-code]: /docs/api/fhir/operations/valueset-validate-code
