@@ -125,10 +125,8 @@ class Crawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
+        this.crawlPropertyValue(value, path);
       }
     }
   }
@@ -206,10 +204,8 @@ class AsyncCrawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          await this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
+        await this.crawlPropertyValue(value, path);
       }
     }
   }

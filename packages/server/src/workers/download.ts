@@ -268,11 +268,9 @@ function getAttachments(resource: Resource): Attachment[] {
   crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
-        if (propertyValue) {
-          for (const value of arrayify(propertyValue) as TypedValue[]) {
-            if (value.type === 'Attachment') {
-              attachments.push(value.value as Attachment);
-            }
+        for (const value of arrayify(propertyValue) as TypedValue[]) {
+          if (value.type === 'Attachment') {
+            attachments.push(value.value as Attachment);
           }
         }
       }

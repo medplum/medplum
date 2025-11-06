@@ -54,11 +54,9 @@ describe('ResourceCrawler', () => {
     crawlTypedValue(toTypedValue(patient), {
       visitProperty: (_parent, _key, _path, propertyValues) => {
         for (const propertyValue of propertyValues) {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Attachment') {
-                attachments.push(value.value as Attachment);
-              }
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (value.type === 'Attachment') {
+              attachments.push(value.value as Attachment);
             }
           }
         }
@@ -128,11 +126,9 @@ describe('ResourceCrawler', () => {
       {
         visitProperty: (_parent, _key, _path, propertyValues) => {
           for (const propertyValue of propertyValues) {
-            if (propertyValue) {
-              for (const value of arrayify(propertyValue) as TypedValue[]) {
-                if (value.type === 'Coding') {
-                  resultCodes.push(value.value);
-                }
+            for (const value of arrayify(propertyValue) as TypedValue[]) {
+              if (value.type === 'Coding') {
+                resultCodes.push(value.value);
               }
             }
           }
@@ -177,12 +173,10 @@ describe('ResourceCrawler', () => {
       toTypedValue(obs),
       {
         visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Coding') {
-                await sleep(1); // Simulate validating the coding
-                resultCodes.push(value.value);
-              }
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (value.type === 'Coding') {
+              await sleep(1); // Simulate validating the coding
+              resultCodes.push(value.value);
             }
           }
         },
