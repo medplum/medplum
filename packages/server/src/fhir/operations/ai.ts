@@ -115,7 +115,6 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
   }
 }
 
-
 /**
  * Builds a FHIR Parameters response from AI result.
  * @param result - The AI response
@@ -123,10 +122,7 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
  * @param result.tool_calls - Array of tool calls from the AI
  * @returns FHIR response
  */
-function buildParametersResponse(result: {
-  content: string | null;
-  tool_calls: any[];
-}): FhirResponse {
+function buildParametersResponse(result: { content: string | null; tool_calls: any[] }): FhirResponse {
   const parameters: ParametersParameter[] = [];
 
   if (result.content) {
@@ -186,7 +182,7 @@ export async function collectStreamedResponse(
   // Read and accumulate the stream (content only, tool calls not supported in streaming)
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  
+
   let buffer = '';
   let contentAccumulator = '';
 
@@ -278,9 +274,8 @@ async function fetchOpenAI(
 
   if (stream) {
     requestBody.stream = true;
-    
-  } 
-  
+  }
+
   if (tools && tools.length > 0) {
     requestBody.tools = tools;
     requestBody.tool_choice = 'auto';

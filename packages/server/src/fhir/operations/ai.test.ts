@@ -852,5 +852,4 @@ describe('AI Operation', () => {
     const contentParam = parameters.find((p) => p.name === 'content');
     expect(contentParam?.valueString).toBe('Hello world!');
   });
-
 });
