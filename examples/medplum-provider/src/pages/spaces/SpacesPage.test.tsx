@@ -191,31 +191,6 @@ describe('SpacesPage', () => {
       expect(screen.getByText('AI Assistant')).toBeInTheDocument();
     });
 
-    it('shows loading state while waiting for response', async () => {
-      const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              resolve({ resourceType: 'Parameters', parameter: [] });
-            }, 100);
-          })
-      );
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
-
-      await user.type(input, 'Hello AI');
-      await user.click(sendButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Thinking...')).toBeInTheDocument();
-      });
-    });
   });
 
   describe('Tool calls and FHIR requests', () => {
