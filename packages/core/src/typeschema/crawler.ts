@@ -125,7 +125,7 @@ class Crawler {
     }
 
     for (const propertyValue of propertyValues) {
-      for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
+      for (const value of arrayify(propertyValue)) {
         this.crawlPropertyValue(value, path);
       }
     }
@@ -204,7 +204,7 @@ class AsyncCrawler {
     }
 
     for (const propertyValue of propertyValues) {
-      for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
+      for (const value of arrayify(propertyValue)) {
         await this.crawlPropertyValue(value, path);
       }
     }

@@ -4,7 +4,6 @@ import { readJson } from '@medplum/definitions';
 import type { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
 import { LOINC } from '../constants';
 import { toTypedValue } from '../fhirpath/utils';
-import type { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
 import { crawlTypedValue, crawlTypedValueAsync } from './crawler';
 import { indexStructureDefinitionBundle } from './types';
@@ -54,7 +53,7 @@ describe('ResourceCrawler', () => {
     crawlTypedValue(toTypedValue(patient), {
       visitProperty: (_parent, _key, _path, propertyValues) => {
         for (const propertyValue of propertyValues) {
-          for (const value of arrayify(propertyValue) as TypedValue[]) {
+          for (const value of arrayify(propertyValue)) {
             if (value.type === 'Attachment') {
               attachments.push(value.value as Attachment);
             }
@@ -126,7 +125,7 @@ describe('ResourceCrawler', () => {
       {
         visitProperty: (_parent, _key, _path, propertyValues) => {
           for (const propertyValue of propertyValues) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
+            for (const value of arrayify(propertyValue)) {
               if (value.type === 'Coding') {
                 resultCodes.push(value.value);
               }
@@ -173,7 +172,7 @@ describe('ResourceCrawler', () => {
       toTypedValue(obs),
       {
         visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
-          for (const value of arrayify(propertyValue) as TypedValue[]) {
+          for (const value of arrayify(propertyValue)) {
             if (value.type === 'Coding') {
               await sleep(1); // Simulate validating the coding
               resultCodes.push(value.value);

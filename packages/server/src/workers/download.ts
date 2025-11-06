@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, TypedValue, WithId } from '@medplum/core';
+import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
 import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
@@ -268,7 +268,7 @@ function getAttachments(resource: Resource): Attachment[] {
   crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
-        for (const value of arrayify(propertyValue) as TypedValue[]) {
+        for (const value of arrayify(propertyValue)) {
           if (value.type === 'Attachment') {
             attachments.push(value.value as Attachment);
           }
