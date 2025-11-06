@@ -7,7 +7,7 @@ tags: [fhir-datastore]
 
 # Terminology Service Updates in Medplum v5
 
-As part of the Mepdlum v5 release, we've been hard at work delivering several key improvements to our
+As part of the [Medplum v5 release][v5], we've been hard at work delivering several key improvements to our
 [FHIR Terminology Services][fhir-terminology], which power Medplum's rich features for handling coded values:
 
 - [Supporting synonyms][pr-synonyms] in `ValueSet/$expand`, allowing users to find codes by a number of different search terms
@@ -23,6 +23,7 @@ As part of the Mepdlum v5 release, we've been hard at work delivering several ke
 Below we'll discuss each of these changes in more detail and give examples of the features available in
 Medplum's Terminology Services today.
 
+[v5]: /blog/v5-release
 [pr-synonyms]: https://github.com/medplum/medplum/pull/7151
 [pr-translate]: https://github.com/medplum/medplum/pull/7579
 [umls-release]: https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/notes.html
