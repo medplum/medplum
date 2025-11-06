@@ -282,6 +282,7 @@ export const medplumEslintConfig = [
       '**/rollup.config.*',
       '**/webpack.config.*',
       '**/*.png.ts',
+      '**/packages/definitions/src/fhir/**',
     ],
   },
   coreConfig,
