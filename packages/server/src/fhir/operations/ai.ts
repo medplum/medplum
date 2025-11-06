@@ -52,6 +52,14 @@ const operation: OperationDefinition = {
       documentation: 'JSON string containing the tools array (optional)',
     },
     {
+      name: 'stream',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'boolean',
+      documentation: 'Enable streaming responses via Server-Sent Events (optional)',
+    },
+    {
       name: 'content',
       use: 'out',
       min: 0,
@@ -75,6 +83,7 @@ type AIOperationParameters = {
   apiKey: string;
   model: string;
   tools?: string;
+  stream?: boolean;
 };
 
 /**
@@ -97,43 +106,137 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
 
   const tools = params.tools ? JSON.parse(params.tools) : undefined;
 
-  try {
+  if (params.stream) {
+    const result = await collectStreamedResponse(messages, params.apiKey, params.model, tools);
+    return buildParametersResponse(result);
+  } else {
     const result = await callAI(messages, params.apiKey, params.model, tools);
-    const parameters: ParametersParameter[] = [];
-
-    if (result.content) {
-      parameters.push({
-        name: 'content',
-        valueString: result.content,
-      });
-    }
-
-    if (result.tool_calls?.length) {
-      const toolCallsWithParsedArgs = result.tool_calls.map((tc) => ({
-        id: tc.id,
-        type: tc.type,
-        function: {
-          name: tc.function.name,
-          arguments: JSON.parse(tc.function.arguments),
-        },
-      }));
-
-      parameters.push({
-        name: 'tool_calls',
-        valueString: JSON.stringify(toolCallsWithParsedArgs),
-      });
-    }
-
-    return [
-      allOk,
-      {
-        resourceType: 'Parameters',
-        parameter: parameters,
-      },
-    ];
-  } catch (error) {
-    return [badRequest(`AI operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)];
+    return buildParametersResponse(result);
   }
+}
+
+
+/**
+ * Builds a FHIR Parameters response from AI result.
+ * @param result - The AI response
+ * @param result.content - The text content from the AI
+ * @param result.tool_calls - Array of tool calls from the AI
+ * @returns FHIR response
+ */
+function buildParametersResponse(result: {
+  content: string | null;
+  tool_calls: any[];
+}): FhirResponse {
+  const parameters: ParametersParameter[] = [];
+
+  if (result.content) {
+    parameters.push({
+      name: 'content',
+      valueString: result.content,
+    });
+  }
+
+  if (result.tool_calls?.length) {
+    const toolCallsWithParsedArgs = result.tool_calls.map((tc) => ({
+      id: tc.id,
+      type: tc.type,
+      function: {
+        name: tc.function.name,
+        arguments: JSON.parse(tc.function.arguments),
+      },
+    }));
+
+    parameters.push({
+      name: 'tool_calls',
+      valueString: JSON.stringify(toolCallsWithParsedArgs),
+    });
+  }
+
+  return [
+    allOk,
+    {
+      resourceType: 'Parameters',
+      parameter: parameters,
+    },
+  ];
+}
+
+/**
+ * Collects a streamed response from OpenAI API.
+ * This function uses streaming internally but collects the full response before returning.
+ * Note: Tool calls are not supported in streaming mode - use non-streaming for tool calls.
+ * @param messages - The conversation messages
+ * @param apiKey - OpenAI API key
+ * @param model - Model to use
+ * @param tools - Optional tools array (ignored in streaming mode)
+ * @returns The collected AI response (content only, tool_calls will be empty)
+ */
+export async function collectStreamedResponse(
+  messages: any[],
+  apiKey: string,
+  model: string,
+  tools?: any[]
+): Promise<{ content: string | null; tool_calls: any[] }> {
+  const response = await fetchOpenAI(messages, apiKey, model, tools, true);
+
+  if (!response.body) {
+    throw new Error('No response body available for streaming');
+  }
+
+  // Read and accumulate the stream (content only, tool calls not supported in streaming)
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  
+  let buffer = '';
+  let contentAccumulator = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+
+          if (data === '[DONE]') {
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices[0]?.delta;
+
+            if (!delta) {
+              continue;
+            }
+
+            // Handle content chunks
+            if (delta.content) {
+              contentAccumulator += delta.content;
+            }
+          } catch (e) {
+            // Skip malformed JSON
+            console.error('Error parsing SSE data:', e);
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return {
+    content: contentAccumulator || null,
+    tool_calls: [],
+  };
 }
 
 export async function callAI(
@@ -142,11 +245,42 @@ export async function callAI(
   model: string,
   tools?: any[]
 ): Promise<{ content: string | null; tool_calls: any[] }> {
+  const response = await fetchOpenAI(messages, apiKey, model, tools, false);
+  const completion = await response.json();
+  const message = completion.choices[0].message;
+
+  return {
+    content: message.content,
+    tool_calls: message.tool_calls || [],
+  };
+}
+
+/**
+ * Makes a request to OpenAI API.
+ * @param messages - The conversation messages
+ * @param apiKey - OpenAI API key
+ * @param model - Model to use
+ * @param tools - Optional tools array
+ * @param stream - Whether to enable streaming
+ * @returns The fetch Response object
+ */
+async function fetchOpenAI(
+  messages: any[],
+  apiKey: string,
+  model: string,
+  tools?: any[],
+  stream = false
+): Promise<Response> {
   const requestBody: any = {
     model: model,
     messages: messages,
   };
 
+  if (stream) {
+    requestBody.stream = true;
+    
+  } 
+  
   if (tools && tools.length > 0) {
     requestBody.tools = tools;
     requestBody.tool_choice = 'auto';
@@ -161,18 +295,5 @@ export async function callAI(
     body: JSON.stringify(requestBody),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
-    );
-  }
-
-  const completion = await response.json();
-  const message = completion.choices[0].message;
-
-  return {
-    content: message.content,
-    tool_calls: message.tool_calls || [],
-  };
+  return response;
 }

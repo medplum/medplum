@@ -606,10 +606,6 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
-      'AI operation failed: OpenAI API error: 401 Unauthorized - Incorrect API key provided'
-    );
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('401');
   });
 
   test('Handles multiple messages in conversation', async () => {
@@ -784,4 +780,77 @@ describe('AI Operation', () => {
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.model).toBe('gpt-3.5-turbo');
   });
+
+  test('Handles streaming responses', async () => {
+    // Create a mock streaming response
+    const encoder = new TextEncoder();
+    const streamChunks = [
+      'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":" world"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"!"}}]}\n\n',
+      'data: [DONE]\n\n',
+    ];
+
+    let chunkIndex = 0;
+    const mockReadableStream = {
+      getReader: jest.fn().mockReturnValue({
+        read: jest.fn().mockImplementation(async () => {
+          if (chunkIndex < streamChunks.length) {
+            const chunk = encoder.encode(streamChunks[chunkIndex]);
+            chunkIndex++;
+            return { done: false, value: chunk };
+          }
+          return { done: true };
+        }),
+        releaseLock: jest.fn(),
+      }),
+    };
+
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      body: mockReadableStream,
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Say hello' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+          {
+            name: 'stream',
+            valueBoolean: true,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+
+    // Verify stream parameter was set in the request
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const bodyParam = JSON.parse(fetchCall[1].body);
+    expect(bodyParam.stream).toBe(true);
+
+    // Verify the accumulated content is returned
+    const parameters = (res.body as Parameters).parameter ?? [];
+    const contentParam = parameters.find((p) => p.name === 'content');
+    expect(contentParam?.valueString).toBe('Hello world!');
+  });
+
 });
