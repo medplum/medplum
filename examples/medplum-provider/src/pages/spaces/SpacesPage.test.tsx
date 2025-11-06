@@ -326,9 +326,18 @@ describe('SpacesPage', () => {
       await user.type(input, 'Create patient');
       await user.click(sendButton);
 
+      // Wait for user message to appear
       await waitFor(() => {
-        expect(screen.getByText(/Executing POST Patient/)).toBeInTheDocument();
+        expect(screen.getByText('Create patient')).toBeInTheDocument();
       });
+
+      // Wait for the loading state to show the FHIR request
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Executing POST Patient/)).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
     });
 
     it('handles FHIR request errors', async () => {
