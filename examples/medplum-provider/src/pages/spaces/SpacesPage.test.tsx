@@ -190,7 +190,6 @@ describe('SpacesPage', () => {
 
       expect(screen.getByText('AI Assistant')).toBeInTheDocument();
     });
-
   });
 
   describe('Tool calls and FHIR requests', () => {
