@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { execSync } from 'node:child_process';
 import { generateKeyPairSync, X509Certificate } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { validateClientCert } from './cert';
 
 describe('Certificate validation', () => {
@@ -61,9 +65,7 @@ describe('Certificate validation', () => {
 
     test('No valid PEM certificates found in client cert', () => {
       const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
-      expect(() => validateClientCert('not a certificate', trustedCAs.cert)).toThrow(
-        'No valid PEM certificates found'
-      );
+      expect(() => validateClientCert('not a certificate', trustedCAs.cert)).toThrow('No valid PEM certificates found');
     });
 
     test('No valid PEM certificates found in trusted CAs', () => {
@@ -72,7 +74,6 @@ describe('Certificate validation', () => {
     });
 
     test('Malformed PEM with BEGIN but no END marker', () => {
-      const cert = generateSelfSignedCert('CN=Test Client');
       const malformedPem = '-----BEGIN CERTIFICATE-----\nMIID...';
       const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
       expect(() => validateClientCert(malformedPem, trustedCAs.cert)).toThrow('No valid PEM certificates found');
@@ -124,7 +125,10 @@ describe('Certificate validation', () => {
 });
 
 /**
- * Helper function to generate a self-signed certificate for testing
+ * Helper function to generate a self-signed certificate for testing.
+ * @param subject - The subject name for the certificate.
+ * @param isCA - Whether the certificate should be a CA certificate.
+ * @returns The generated certificate and private key.
  */
 function generateSelfSignedCert(subject: string, isCA = false): { cert: string; privateKey: string } {
   const { publicKey, privateKey } = generateKeyPairSync('rsa', {
@@ -140,7 +144,12 @@ function generateSelfSignedCert(subject: string, isCA = false): { cert: string; 
 }
 
 /**
- * Helper function to generate a CA-signed certificate for testing
+ * Helper function to generate a CA-signed certificate for testing.
+ * @param subject - The subject name for the certificate.
+ * @param ca - The CA certificate and private key.
+ * @param ca.cert - The CA certificate.
+ * @param ca.privateKey - The CA private key.
+ * @returns The generated certificate and private key.
  */
 function generateCaSignedCert(
   subject: string,
@@ -159,6 +168,14 @@ function generateCaSignedCert(
 
 /**
  * Creates a certificate using openssl command
+ * @param subject - The subject name for the certificate.
+ * @param issuer - The issuer name for the certificate.
+ * @param publicKey - The public key for the certificate.
+ * @param signingKey - The private key used to sign the certificate.
+ * @param isCA - Whether the certificate should be a CA certificate.
+ * @param notBeforeDays - Number of days from now when the certificate becomes valid.
+ * @param notAfterDays - Number of days from now when the certificate expires.
+ * @returns The generated certificate in PEM format.
  */
 function createCertificate(
   subject: string,
@@ -169,23 +186,18 @@ function createCertificate(
   notBeforeDays = 0,
   notAfterDays = 365
 ): string {
-  const { execSync } = require('child_process');
-  const fs = require('fs');
-  const os = require('os');
-  const path = require('path');
-
   // Create temporary directory
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cert-test-'));
+  const tmpDir = mkdtempSync(join(tmpdir(), 'cert-test-'));
 
   try {
     // Write keys to temporary files
-    const publicKeyPath = path.join(tmpDir, 'public.pem');
-    const signingKeyPath = path.join(tmpDir, 'signing.pem');
-    const certPath = path.join(tmpDir, 'cert.pem');
-    const configPath = path.join(tmpDir, 'openssl.cnf');
+    const publicKeyPath = join(tmpDir, 'public.pem');
+    const signingKeyPath = join(tmpDir, 'signing.pem');
+    const certPath = join(tmpDir, 'cert.pem');
+    const configPath = join(tmpDir, 'openssl.cnf');
 
-    fs.writeFileSync(publicKeyPath, publicKey);
-    fs.writeFileSync(signingKeyPath, signingKey);
+    writeFileSync(publicKeyPath, publicKey);
+    writeFileSync(signingKeyPath, signingKey);
 
     // Create OpenSSL config
     const config = `
@@ -202,7 +214,7 @@ basicConstraints = CA:${isCA ? 'TRUE' : 'FALSE'}
 keyUsage = ${isCA ? 'keyCertSign, cRLSign' : 'digitalSignature, keyEncipherment'}
 `;
 
-    fs.writeFileSync(configPath, config);
+    writeFileSync(configPath, config);
 
     // Calculate dates
     const notBefore = new Date();
@@ -215,16 +227,24 @@ keyUsage = ${isCA ? 'keyCertSign, cRLSign' : 'digitalSignature, keyEncipherment'
 
     execSync(cmd, { stdio: 'pipe' });
 
-    const cert = fs.readFileSync(certPath, 'utf8');
+    const cert = readFileSync(certPath, 'utf8');
     return cert;
   } finally {
     // Cleanup
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
 /**
- * Creates a CA-signed certificate using openssl command
+ * Creates a CA-signed certificate using openssl command.
+ * @param subject - The subject name for the certificate.
+ * @param publicKey - The public key for the certificate.
+ * @param privateKey - The private key for the certificate.
+ * @param caCert - The CA certificate.
+ * @param caPrivateKey - The CA private key.
+ * @param notBeforeDays - Number of days from now when the certificate becomes valid.
+ * @param notAfterDays - Number of days from now when the certificate expires.
+ * @returns The generated certificate in PEM format.
  */
 function createCaSignedCertificate(
   subject: string,
@@ -235,27 +255,22 @@ function createCaSignedCertificate(
   notBeforeDays = 0,
   notAfterDays = 365
 ): string {
-  const { execSync } = require('child_process');
-  const fs = require('fs');
-  const os = require('os');
-  const path = require('path');
-
   // Create temporary directory
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cert-test-'));
+  const tmpDir = mkdtempSync(join(tmpdir(), 'cert-test-'));
 
   try {
     // Write files to temporary directory
-    const privateKeyPath = path.join(tmpDir, 'private.pem');
-    const csrPath = path.join(tmpDir, 'csr.pem');
-    const certPath = path.join(tmpDir, 'cert.pem');
-    const caCertPath = path.join(tmpDir, 'ca-cert.pem');
-    const caKeyPath = path.join(tmpDir, 'ca-key.pem');
-    const configPath = path.join(tmpDir, 'openssl.cnf');
-    const extConfigPath = path.join(tmpDir, 'ext.cnf');
+    const privateKeyPath = join(tmpDir, 'private.pem');
+    const csrPath = join(tmpDir, 'csr.pem');
+    const certPath = join(tmpDir, 'cert.pem');
+    const caCertPath = join(tmpDir, 'ca-cert.pem');
+    const caKeyPath = join(tmpDir, 'ca-key.pem');
+    const configPath = join(tmpDir, 'openssl.cnf');
+    const extConfigPath = join(tmpDir, 'ext.cnf');
 
-    fs.writeFileSync(privateKeyPath, privateKey);
-    fs.writeFileSync(caCertPath, caCert);
-    fs.writeFileSync(caKeyPath, caPrivateKey);
+    writeFileSync(privateKeyPath, privateKey);
+    writeFileSync(caCertPath, caCert);
+    writeFileSync(caKeyPath, caPrivateKey);
 
     // Create OpenSSL config for CSR
     const config = `
@@ -267,7 +282,7 @@ prompt = no
 CN = ${subject.replace('CN=', '')}
 `;
 
-    fs.writeFileSync(configPath, config);
+    writeFileSync(configPath, config);
 
     // Create extension config
     const extConfig = `
@@ -275,7 +290,7 @@ basicConstraints = CA:FALSE
 keyUsage = digitalSignature, keyEncipherment
 `;
 
-    fs.writeFileSync(extConfigPath, extConfig);
+    writeFileSync(extConfigPath, extConfig);
 
     // Step 1: Generate CSR
     execSync(`openssl req -new -key "${privateKeyPath}" -out "${csrPath}" -config "${configPath}"`, {
@@ -289,10 +304,10 @@ keyUsage = digitalSignature, keyEncipherment
       { stdio: 'pipe' }
     );
 
-    const cert = fs.readFileSync(certPath, 'utf8');
+    const cert = readFileSync(certPath, 'utf8');
     return cert;
   } finally {
     // Cleanup
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(tmpDir, { recursive: true, force: true });
   }
 }
