@@ -72,14 +72,34 @@ describe('ChooseProfileForm', () => {
     expect(screen.queryByText('Staging')).not.toBeInTheDocument();
     expect(screen.getByText('Nothing found...')).toBeInTheDocument();
   });
+
+  test('Displays identifier label', () => {
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <ChooseProfileForm
+          login="x"
+          memberships={[
+            makeMembership('prod', 'Prod', 'Homer Simpson', 'Primary Care'),
+            makeMembership('staging', 'Staging', 'Homer Simpson'),
+          ]}
+          handleAuthResponse={console.log}
+        />
+      </MedplumProvider>
+    );
+
+    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getAllByText('Homer Simpson')).toHaveLength(2);
+    expect(screen.getByText(/Prod.*Primary Care/)).toBeInTheDocument();
+  });
 });
 
-function makeMembership(id: string, projectName: string, profileName: string): ProjectMembership {
+function makeMembership(id: string, projectName: string, profileName: string, label?: string): ProjectMembership {
   return {
     resourceType: 'ProjectMembership',
     id,
     project: { reference: 'Project/' + projectName, display: projectName },
     user: { reference: 'User/x', display: 'x' },
     profile: { reference: 'Practitioner/' + profileName, display: profileName },
+    identifier: label ? [{ system: 'https://medplum.com/identifier/label', value: label }] : undefined,
   };
 }
