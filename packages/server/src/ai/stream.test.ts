@@ -192,23 +192,16 @@ describe('AI Streaming', () => {
       json: jest.fn(),
     };
 
-
     // Use the real authenticated context from the test setup
     // The test access token already has the AI feature enabled
     const { streamAIToClient } = await import('./stream');
-    
+
     // Call streamAIToClient directly, bypassing authentication
-    await streamAIToClient(
-      [{ role: 'user', content: 'Test' }],
-      'sk-test-key',
-      'gpt-4',
-      undefined,
-      mockRes
-    );
+    await streamAIToClient([{ role: 'user', content: 'Test' }], 'sk-test-key', 'gpt-4', undefined, mockRes);
 
     // Verify progressive streaming
     expect(mockRes.setHeader).not.toHaveBeenCalled(); // streamAIToClient doesn't set headers
-    
+
     // Verify write was called multiple times (progressive)
     expect(writeCalls.length).toBeGreaterThan(1);
 
@@ -245,4 +238,3 @@ describe('AI Streaming', () => {
     expect(readerMock.releaseLock).toHaveBeenCalled();
   });
 });
-

@@ -94,7 +94,7 @@ export async function streamAIToClient(
   // Stream OpenAI response directly to client
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  
+
   let buffer = '';
 
   try {
@@ -187,4 +187,3 @@ async function fetchOpenAI(
 
   return response;
 }
-

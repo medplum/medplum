@@ -122,10 +122,7 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
  * @param result.tool_calls - Array of tool calls from the AI
  * @returns FHIR response
  */
-function buildParametersResponse(result: {
-  content: string | null;
-  tool_calls: any[];
-}): FhirResponse {
+function buildParametersResponse(result: { content: string | null; tool_calls: any[] }): FhirResponse {
   const parameters: ParametersParameter[] = [];
 
   if (result.content) {
