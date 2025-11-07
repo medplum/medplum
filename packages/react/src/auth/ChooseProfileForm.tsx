@@ -78,7 +78,12 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   );
 }
 
+function getMembershipLabel(membership: ProjectMembership): string | undefined {
+  return membership.identifier?.find((i) => i.system === 'https://medplum.com/identifier/label')?.value;
+}
+
 function SelectOption(membership: ProjectMembership): JSX.Element {
+  const label = getMembershipLabel(membership);
   return (
     <Group>
       <Avatar radius="xl" />
@@ -87,7 +92,7 @@ function SelectOption(membership: ProjectMembership): JSX.Element {
           {membership.profile?.display}
         </Text>
         <Text fz="xs" opacity={0.6}>
-          {membership.project?.display}
+          {membership.project?.display} {label ? ` - ${label}` : ''}
         </Text>
       </div>
     </Group>
