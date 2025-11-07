@@ -14,7 +14,7 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 
 let gitHash;
 try {
-  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  gitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
 } catch (_err) {
   gitHash = 'unknown'; // Default value when not in a git repository
 }

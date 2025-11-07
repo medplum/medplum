@@ -1,28 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Flex,
-  Paper,
-  Group,
-  Button,
-  Divider,
-  ActionIcon,
-  ScrollArea,
-  Stack,
-  Skeleton,
-  Text,
-  Box,
-  SegmentedControl,
-} from '@mantine/core';
+import { Flex, Paper, Group, Button, Divider, ActionIcon, ScrollArea, Stack, Skeleton, Text, Box } from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import cx from 'clsx';
 import classes from './TaskBoard.module.css';
-import type { CodeableConcept, ResourceType, Task } from '@medplum/fhirtypes';
+import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { createReference, getReferenceString } from '@medplum/core';
-import type { MedplumClient, ProfileResource } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import { useNavigate } from 'react-router';
-import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
@@ -30,10 +17,8 @@ import { TaskFilterMenu } from './TaskFilterMenu';
 import { IconClipboardList, IconPlus } from '@tabler/icons-react';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { TaskInputNote } from './TaskInputNote';
-import { TaskProperties } from './TaskProperties';
 import { NewTaskModal } from './NewTaskModal';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
+import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
   showMyTasks: boolean;
@@ -58,10 +43,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const selectedPatient = useResource(selectedTask?.for);
-  const [activeTab, setActiveTab] = useState<string>('properties');
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
@@ -128,17 +110,11 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
     onTaskChange(task);
     setSelectedTask(task);
-    await debouncedUpdateResource(task);
   };
 
   const handleDeleteTask = async (task: Task): Promise<void> => {
-    try {
-      await medplum.deleteResource('Task', task.id as string);
-      setTasks(tasks.filter((t) => t.id !== task.id));
-      onDeleteTask(task);
-    } catch (error) {
-      showErrorNotification(error);
-    }
+    setTasks(tasks.filter((t) => t.id !== task.id));
+    onDeleteTask(task);
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
@@ -163,10 +139,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     }
   };
 
-  const handleTabChange = (value: string): void => {
-    setActiveTab(value);
-  };
-
   const handleShowMyTasksChange = (flag: boolean): void => {
     setFilters({
       showMyTasks: flag,
@@ -174,25 +146,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
       performerType: undefined,
     });
   };
-
-  const getTabData = (): { label: string; value: string }[] => {
-    const baseTabs = [
-      { label: 'Properties', value: 'properties' },
-      { label: 'Activity Log', value: 'activity-log' },
-    ];
-
-    if (selectedPatient?.resourceType === 'Patient') {
-      baseTabs.push({ label: 'Patient Summary', value: 'patient-summary' });
-    }
-
-    return baseTabs;
-  };
-
-  useEffect(() => {
-    if (activeTab === 'patient-summary' && selectedPatient?.resourceType !== 'Patient') {
-      setActiveTab('properties');
-    }
-  }, [selectedPatient, activeTab]);
 
   return (
     <Box w="100%" h="100%">
@@ -253,74 +206,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
         </Box>
 
         {selectedTask ? (
-          <>
-            <Box
-              h="100%"
-              style={{
-                flex: 1,
-              }}
-              className={classes.borderRight}
-            >
-              {selectedTask && (
-                <TaskInputNote task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
-              )}
-            </Box>
-
-            {selectedTask && (
-              <Box h="100%" w="400px">
-                <Paper h="100%" style={{ overflow: 'hidden' }}>
-                  <Box px="md" pb="md" pt="md">
-                    <SegmentedControl
-                      value={activeTab}
-                      onChange={(value: string) => handleTabChange(value)}
-                      data={getTabData()}
-                      fullWidth
-                      radius="md"
-                      color="gray"
-                      size="sm"
-                      className={classes.segmentedControl}
-                    />
-                  </Box>
-
-                  <Box>
-                    {selectedTask && (
-                      <>
-                        {activeTab === 'properties' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <TaskProperties
-                              key={selectedTask.id}
-                              p="md"
-                              task={selectedTask}
-                              onTaskChange={handleTaskChange}
-                            />
-                          </ScrollArea>
-                        )}
-                        {activeTab === 'activity-log' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <ResourceTimeline
-                              value={selectedTask}
-                              loadTimelineResources={async (
-                                medplum: MedplumClient,
-                                _resourceType: ResourceType,
-                                id: string
-                              ) => {
-                                return Promise.allSettled([medplum.readHistory('Task', id)]);
-                              }}
-                            />
-                          </ScrollArea>
-                        )}
-                        {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <PatientSummary patient={selectedPatient} />
-                          </ScrollArea>
-                        )}
-                      </>
-                    )}
-                  </Box>
-                </Paper>
-              </Box>
-            )}
-          </>
+          <TaskDetailPanel task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
         ) : (
           <Flex direction="column" h="100%" style={{ flex: 1 }}>
             <TaskSelectEmpty />

@@ -36,7 +36,7 @@ let documentedTypes: Record<string, DocumentationLocation>;
 let lowerCaseResourceNames: Record<string, string>;
 
 export async function main(): Promise<void> {
-  const outputFolder = path.resolve(__dirname, '..', 'output');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output');
   if (!fs.existsSync(outputFolder)) {
     fs.mkdirSync(outputFolder);
   }
@@ -267,13 +267,13 @@ function writeDocs(
     const resourceType = definition.name;
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
+      resolve(import.meta.dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2) + '\n',
       'utf8'
     );
 
     writeFileSync(
-      resolve(__dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
+      resolve(import.meta.dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
       buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
@@ -618,8 +618,8 @@ async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
   const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
-  const zipFile = path.resolve(__dirname, '..', 'output', 'fhir-spec.zip');
-  const outputFolder = path.resolve(__dirname, '..', 'output', 'fhir-spec');
+  const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');
   if (!fs.existsSync(outputFolder)) {
     return downloadAndUnzip(downloadURL, zipFile, outputFolder).then(() => {

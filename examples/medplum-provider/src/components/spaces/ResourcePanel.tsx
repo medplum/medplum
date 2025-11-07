@@ -14,21 +14,26 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   const { resource } = props;
   const displayResource = useResource(resource);
 
-  if (!displayResource) {
-    return (
-      <Box p="md">
-        <Text c="dimmed">Loading resource...</Text>
-      </Box>
-    );
-  }
+  const renderResourceContent = (): JSX.Element => {
+    if (!displayResource) {
+      return <Text c="dimmed">Loading resource...</Text>;
+    }
 
-  if (displayResource.resourceType === 'Patient') {
-    return <PatientSummary patient={displayResource} />;
-  }
+    switch (displayResource.resourceType) {
+      case 'Patient':
+        return <PatientSummary patient={displayResource} />;
 
-  if (displayResource.resourceType === 'Task') {
-    return <TaskInputNote task={displayResource} />;
-  }
+      case 'Task':
+        return <TaskInputNote task={displayResource} allowEdit={false} />;
 
-  return <ResourceTable value={displayResource} />;
+      default:
+        return <ResourceTable value={displayResource} />;
+    }
+  };
+
+  return (
+    <Box p="md" data-testid="resource-panel">
+      {renderResourceContent()}
+    </Box>
+  );
 }

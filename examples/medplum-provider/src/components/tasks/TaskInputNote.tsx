@@ -27,12 +27,13 @@ import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 interface TaskInputNoteProps {
   task: Task | Reference<Task>;
+  allowEdit?: boolean;
   onTaskChange?: (task: Task) => void;
   onDeleteTask?: (task: Task) => void;
 }
 
 export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
-  const { task: initialTask, onTaskChange, onDeleteTask } = props;
+  const { task: initialTask, allowEdit = true, onTaskChange, onDeleteTask } = props;
   const medplum = useMedplum();
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const author = useMedplumProfile();
@@ -134,8 +135,8 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
             </Text>
           </Flex>
 
-          <Flex align="center" gap="md">
-            {onDeleteTask && (
+          {allowEdit && (
+            <Flex align="center" gap="md">
               <ActionIcon
                 variant="outline"
                 c="dimmed"
@@ -148,9 +149,7 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
               >
                 <IconTrash size={24} />
               </ActionIcon>
-            )}
 
-            {onTaskChange && (
               <ActionIcon
                 variant={task.status === 'completed' ? 'filled' : 'outline'}
                 color={task.status === 'completed' ? 'blue' : 'gray'}
@@ -162,10 +161,9 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
               >
                 <IconCheck size={24} />
               </ActionIcon>
-            )}
-          </Flex>
+            </Flex>
+          )}
         </Flex>
-        <Divider />
 
         <ScrollArea w="100%" h="calc(100% - 70px)" p="lg">
           {task.description && (
@@ -202,20 +200,22 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
                 <TaskNoteItem key={note.id || index} note={note} index={index} />
               ))}
 
-              <Stack gap="xs">
-                <Textarea
-                  placeholder="Add a note..."
-                  minRows={4}
-                  value={note ?? ''}
-                  onChange={(e) => setNote(e.currentTarget.value)}
-                  autosize
-                />
-                <Flex justify="flex-end">
-                  <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
-                    Submit
-                  </Button>
-                </Flex>
-              </Stack>
+              {allowEdit && (
+                <Stack gap="xs">
+                  <Textarea
+                    placeholder="Add a note..."
+                    minRows={4}
+                    value={note ?? ''}
+                    onChange={(e) => setNote(e.currentTarget.value)}
+                    autosize
+                  />
+                  <Flex justify="flex-end">
+                    <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
+                      Submit
+                    </Button>
+                  </Flex>
+                </Stack>
+              )}
             </Stack>
           </Stack>
         </ScrollArea>

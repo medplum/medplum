@@ -14,6 +14,7 @@ import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
+import type { AgentHl7Channel } from './hl7';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -332,7 +333,8 @@ describe('HL7', () => {
           'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
           'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
           'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-      )
+      ),
+      { returnAck: ReturnAckCategory.FIRST }
     );
     expect(response).toBeDefined();
     expect(response.header.getComponent(9, 1)).toBe('ACK');
@@ -1108,5 +1110,451 @@ describe('HL7', () => {
     );
 
     console.log = originalConsoleLog;
+  });
+
+  describe('Channel stats tracking', () => {
+    test('When logStatsFreqSecs is set, channel should track stats', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        transmitRequests: [] as AgentTransmitRequest[],
+        shouldSendAck: true,
+      };
+
+      mockServer.on('connection', (socket) => {
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:transmit:request') {
+            state.transmitRequests.push(command);
+            // Only send ACK if we're supposed to (for controlled testing)
+            if (state.shouldSendAck) {
+              const hl7Message = Hl7Message.parse(command.body);
+              const ackMessage = hl7Message.buildAck();
+              socket.send(
+                Buffer.from(
+                  JSON.stringify({
+                    type: 'agent:transmit:response',
+                    channel: command.channel,
+                    callback: command.callback,
+                    remote: command.remote,
+                    contentType: ContentType.HL7_V2,
+                    body: ackMessage.toString(),
+                  } satisfies AgentTransmitResponse)
+                )
+              );
+            }
+          }
+        });
+      });
+
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://localhost:57090',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+        setting: [{ name: 'logStatsFreqSecs', valueInteger: 60 }],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Get the channel
+      const channel = app.channels.get('test') as AgentHl7Channel;
+      expect(channel).toBeDefined();
+
+      // Channel should have stats tracker
+      expect(channel.stats).toBeDefined();
+
+      // Initially, should have no pending messages and no samples
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(0);
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 57090,
+      });
+
+      // Disable ACKs temporarily so we can check pending state
+      state.shouldSendAck = false;
+
+      // Send first message (don't wait for response)
+      const sendPromise1 = client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+
+      // Wait for message to be received by channel (forwarded to bot)
+      while (state.transmitRequests.length === 0) {
+        await sleep(20);
+      }
+
+      // At this point: message received, pending bot response
+      // pending = 1, samples = 0
+      expect(channel.stats?.getPendingCount()).toBe(1);
+      expect(channel.stats?.getSampleCount()).toBe(0);
+
+      // Now send the ACK from the bot
+      const firstRequest = state.transmitRequests[0];
+      const hl7Message1 = Hl7Message.parse(firstRequest.body);
+      const ackMessage1 = hl7Message1.buildAck();
+      (mockServer as any).clients()[0].send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: firstRequest.channel,
+            callback: firstRequest.callback,
+            remote: firstRequest.remote,
+            contentType: ContentType.HL7_V2,
+            body: ackMessage1.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for the ACK to be processed
+      await sendPromise1;
+      await sleep(50); // Give time for stats to update
+
+      // After ACK received: pending = 0, samples = 1
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(1);
+
+      // Send second message without waiting for ACK
+      const sendPromise2 = client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+
+      // Wait for second message to be received
+      while (state.transmitRequests.length < 2) {
+        await sleep(20);
+      }
+
+      // After second message sent: pending = 1, samples = 1
+      expect(channel.stats?.getPendingCount()).toBe(1);
+      expect(channel.stats?.getSampleCount()).toBe(1);
+
+      // Send ACK for second message
+      const secondRequest = state.transmitRequests[1];
+      const hl7Message2 = Hl7Message.parse(secondRequest.body);
+      const ackMessage2 = hl7Message2.buildAck();
+      (mockServer as any).clients()[0].send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: secondRequest.channel,
+            callback: secondRequest.callback,
+            remote: secondRequest.remote,
+            contentType: ContentType.HL7_V2,
+            body: ackMessage2.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for second ACK to be processed
+      await sendPromise2;
+      await sleep(50); // Give time for stats to update
+
+      // After both ACKs received: pending = 0, samples = 2
+      expect(channel.stats?.getPendingCount()).toBe(0);
+      expect(channel.stats?.getSampleCount()).toBe(2);
+
+      // Verify the correct control IDs were tracked
+      const firstMessage = Hl7Message.parse(state.transmitRequests[0].body);
+      const secondMessage = Hl7Message.parse(state.transmitRequests[1].body);
+      expect(firstMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00001');
+      expect(secondMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00002');
+
+      await client.close();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('When logStatsFreqSecs is not set, channel should not track stats', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+
+      mockServer.on('connection', (socket) => {
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:transmit:request') {
+            const hl7Message = Hl7Message.parse(command.body);
+            const ackMessage = hl7Message.buildAck();
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:transmit:response',
+                  channel: command.channel,
+                  callback: command.callback,
+                  remote: command.remote,
+                  contentType: ContentType.HL7_V2,
+                  body: ackMessage.toString(),
+                } satisfies AgentTransmitResponse)
+              )
+            );
+          }
+        });
+      });
+
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://localhost:57091',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Get the channel
+      const channel = app.channels.get('test');
+      expect(channel).toBeDefined();
+
+      // Channel should NOT have stats tracker
+      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('When logStatsFreqSecs is set via reload, channel should start tracking', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        mySocket: undefined as Client | undefined,
+        reloadConfigResponse: null as AgentReloadConfigRequest | null,
+      };
+
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+        });
+      });
+
+      const endpoint2 = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://localhost:57092',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint2),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Get the channel
+      let channel = app.channels.get('test');
+      expect(channel).toBeDefined();
+
+      // Channel should NOT have stats tracker initially
+      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+
+      // Update agent to enable logStatsFreqSecs
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [{ name: 'logStatsFreqSecs', valueInteger: 60 }],
+      });
+
+      // Send reload config request
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
+
+      // Get the channel again
+      channel = app.channels.get('test');
+      expect(channel).toBeDefined();
+
+      // Channel should now have stats tracker
+      expect((channel as AgentHl7Channel).stats).toBeDefined();
+
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('When logStatsFreqSecs is removed via reload, channel should stop tracking', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        mySocket: undefined as Client | undefined,
+        reloadConfigResponse: null as AgentReloadConfigRequest | null,
+      };
+
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+        });
+      });
+
+      const endpoint3 = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://localhost:57093',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint3),
+            targetReference: createReference(bot),
+          },
+        ],
+        setting: [{ name: 'logStatsFreqSecs', valueInteger: 60 }],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Get the channel
+      let channel = app.channels.get('test');
+      expect(channel).toBeDefined();
+
+      // Channel should have stats tracker initially
+      expect((channel as AgentHl7Channel).stats).toBeDefined();
+
+      // Update agent to disable logStatsFreqSecs
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [],
+      });
+
+      // Send reload config request
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
+
+      // Get the channel again
+      channel = app.channels.get('test');
+      expect(channel).toBeDefined();
+
+      // Channel should NO LONGER have stats tracker
+      expect((channel as AgentHl7Channel).stats).toBeUndefined();
+
+      await app.stop();
+      mockServer.stop();
+    });
   });
 });

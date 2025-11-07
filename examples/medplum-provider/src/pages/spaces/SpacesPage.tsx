@@ -8,24 +8,28 @@ import { IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from '../../components/spaces/ResourceBox';
 import { ResourcePanel } from '../../components/spaces/ResourcePanel';
-import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
 import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
 import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
-import classes from './SpacesPage.module.css';
 import type { Identifier } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
+import classes from './SpacesPage.module.css';
 import cx from 'clsx';
 
-const botId: Identifier = {
-  value: 'ai-api-bot',
+const fhirRequestToolsId: Identifier = {
+  value: 'ai-fhir-request-tools',
+  system: 'https://www.medplum.com/bots',
+};
+
+const resourceSummaryBotId: Identifier = {
+  value: 'ai-resource-summary',
   system: 'https://www.medplum.com/bots',
 };
 
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
-  const [messages, setMessages] = useState<Message[]>([SYSTEM_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
@@ -51,11 +55,11 @@ export function SpacesPage(): JSX.Element {
     try {
       setLoading(true);
       const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
-      setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
+      setMessages([...loadedMessages]);
       setTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
-    } catch (error: any) {
+    } catch (error) {
       showErrorNotification(error);
     } finally {
       setLoading(false);
@@ -97,13 +101,11 @@ export function SpacesPage(): JSX.Element {
       if (currentTopicId) {
         await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
       }
-      let response = await medplum.executeBot(botId, {
+      let response = await medplum.executeBot(fhirRequestToolsId, {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
           { name: 'model', valueString: selectedModel },
-          { name: 'tools', valueString: JSON.stringify(FHIR_TOOLS) },
-          { name: 'temperature', valueString: '0.3' },
         ],
       });
 
@@ -194,22 +196,11 @@ export function SpacesPage(): JSX.Element {
           }
         }
 
-        // Second AI request: summarize the FHIR response
-        // Use the existing conversation context but replace system message with summary version
-        const summaryMessages = [
-          {
-            role: 'system',
-            content: SUMMARY_SYSTEM_MESSAGE,
-          },
-          ...currentMessages.slice(1), // Skip original system message, include all conversation
-        ];
-
-        response = await medplum.executeBot(botId, {
+        response = await medplum.executeBot(resourceSummaryBotId, {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'messages', valueString: JSON.stringify(summaryMessages) },
+            { name: 'messages', valueString: JSON.stringify(currentMessages) },
             { name: 'model', valueString: selectedModel },
-            { name: 'temperature', valueString: '0.3' },
           ],
         });
       }

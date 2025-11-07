@@ -171,7 +171,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -321,7 +321,7 @@ jobs:
         # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -365,4 +365,94 @@ jobs:
               release_id: release.data.id,
               name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.asc",
               data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.asc`)
+            });
+
+  build_agent_macos:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '24'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache node modules
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-macos.sh
+        env:
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
+
+      - name: Upload Agent
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const packageJson = require('./packages/agent/package.json');
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.sha256`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.asc`)
             });
