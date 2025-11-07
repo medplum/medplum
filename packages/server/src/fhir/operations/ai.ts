@@ -3,6 +3,7 @@
 import { allOk, badRequest, forbidden } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 
@@ -107,11 +108,70 @@ export async function aiOperation(req: FhirRequest): Promise<FhirResponse> {
   const tools = params.tools ? JSON.parse(params.tools) : undefined;
 
   if (params.stream) {
-    const result = await collectStreamedResponse(messages, params.apiKey, params.model, tools);
-    return buildParametersResponse(result);
-  } else {
-    const result = await callAI(messages, params.apiKey, params.model, tools);
-    return buildParametersResponse(result);
+    // Streaming not supported through operation framework
+    // Use the aiStreamHandler route instead
+    return [badRequest('Streaming must use the /fhir/R4/$ai-stream endpoint')];
+  }
+
+  const result = await callAI(messages, params.apiKey, params.model, tools);
+  return buildParametersResponse(result);
+}
+
+/**
+ * Handles streaming AI responses via Server-Sent Events.
+ * This function writes directly to the Express response.
+ * @param req - The Express request
+ * @param res - The Express response
+ */
+export async function aiStreamHandler(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+  try {
+    const ctx = getAuthenticatedContext();
+    if (!ctx.project.features?.includes('ai')) {
+      res.status(403).json({ error: 'AI feature not enabled' });
+      return;
+    }
+
+    // Parse body parameters
+    const body = req.body?.parameter;
+    if (!body || !Array.isArray(body)) {
+      res.status(400).json({ error: 'Invalid request body' });
+      return;
+    }
+
+    const messagesParam = body.find((p: any) => p.name === 'messages');
+    const apiKeyParam = body.find((p: any) => p.name === 'apiKey');
+    const modelParam = body.find((p: any) => p.name === 'model');
+    const toolsParam = body.find((p: any) => p.name === 'tools');
+
+    if (!messagesParam?.valueString || !apiKeyParam?.valueString || !modelParam?.valueString) {
+      res.status(400).json({ error: 'Missing required parameters: messages, apiKey, model' });
+      return;
+    }
+
+    const messages = JSON.parse(messagesParam.valueString);
+    if (!Array.isArray(messages)) {
+      res.status(400).json({ error: 'Messages must be an array' });
+      return;
+    }
+
+    const tools = toolsParam?.valueString ? JSON.parse(toolsParam.valueString) : undefined;
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    await streamAIToClient(messages, apiKeyParam.valueString, modelParam.valueString, tools, res);
+    res.end();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    if (!res.headersSent) {
+      res.status(500).json({ error: errorMessage });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+      res.end();
+    }
   }
 }
 
@@ -162,39 +222,47 @@ function buildParametersResponse(result: {
 }
 
 /**
- * Collects a streamed response from OpenAI API.
- * This function uses streaming internally but collects the full response before returning.
- * Note: Tool calls are not supported in streaming mode - use non-streaming for tool calls.
+ * Streams AI response from OpenAI directly to the client via SSE.
+ * This function bridges the OpenAI stream to the Express response without collecting.
+ * Note: Tool calls are not supported in streaming mode.
  * @param messages - The conversation messages
  * @param apiKey - OpenAI API key
  * @param model - Model to use
  * @param tools - Optional tools array (ignored in streaming mode)
- * @returns The collected AI response (content only, tool_calls will be empty)
+ * @param res - Express response to write SSE data to
  */
-export async function collectStreamedResponse(
+export async function streamAIToClient(
   messages: any[],
   apiKey: string,
   model: string,
-  tools?: any[]
-): Promise<{ content: string | null; tool_calls: any[] }> {
+  tools: any[] | undefined,
+  res: ExpressResponse
+): Promise<void> {
   const response = await fetchOpenAI(messages, apiKey, model, tools, true);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
+    );
+  }
 
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }
 
-  // Read and accumulate the stream (content only, tool calls not supported in streaming)
+  // Stream OpenAI response directly to client
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   
   let buffer = '';
-  let contentAccumulator = '';
 
   try {
     while (true) {
       const { done, value } = await reader.read();
 
       if (done) {
+        res.write('data: [DONE]\n\n');
         break;
       }
 
@@ -214,14 +282,12 @@ export async function collectStreamedResponse(
             const parsed = JSON.parse(data);
             const delta = parsed.choices[0]?.delta;
 
-            if (!delta) {
+            if (!delta?.content) {
               continue;
             }
 
-            // Handle content chunks
-            if (delta.content) {
-              contentAccumulator += delta.content;
-            }
+            // Forward content chunks to client
+            res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
           } catch (e) {
             // Skip malformed JSON
             console.error('Error parsing SSE data:', e);
@@ -232,11 +298,6 @@ export async function collectStreamedResponse(
   } finally {
     reader.releaseLock();
   }
-
-  return {
-    content: contentAccumulator || null,
-    tool_calls: [],
-  };
 }
 
 export async function callAI(
@@ -278,10 +339,8 @@ async function fetchOpenAI(
 
   if (stream) {
     requestBody.stream = true;
-    
-  } 
-  
-  if (tools && tools.length > 0) {
+    // Don't include tools in streaming mode - tool calls not supported
+  } else if (tools && tools.length > 0) {
     requestBody.tools = tools;
     requestBody.tool_choice = 'auto';
   }
@@ -294,6 +353,13 @@ async function fetchOpenAI(
     },
     body: JSON.stringify(requestBody),
   });
+
+  if (!stream && !response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
+    );
+  }
 
   return response;
 }

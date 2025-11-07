@@ -20,7 +20,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
-import { aiOperation } from './operations/ai';
+import { aiOperation, aiStreamHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
@@ -156,6 +156,9 @@ fhirRouter.use(protectedRoutes);
 
 // CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
+
+// AI Streaming (cannot use FhirRouter due to SSE streaming)
+protectedRoutes.post(['/$ai-stream', '/%24ai-stream'], aiStreamHandler);
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);

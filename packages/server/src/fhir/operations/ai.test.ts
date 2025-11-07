@@ -781,7 +781,38 @@ describe('AI Operation', () => {
     expect(bodyParam.model).toBe('gpt-3.5-turbo');
   });
 
-  test('Handles streaming responses', async () => {
+  test('Rejects streaming through $ai operation', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Say hello' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+          {
+            name: 'stream',
+            valueBoolean: true,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('$ai-stream');
+  });
+
+  test('Handles streaming responses via $ai-stream endpoint', async () => {
     // Create a mock streaming response
     const encoder = new TextEncoder();
     const streamChunks = [
@@ -815,7 +846,7 @@ describe('AI Operation', () => {
     global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
-      .post(`/fhir/R4/$ai`)
+      .post(`/fhir/R4/$ai-stream`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -833,24 +864,72 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
-          {
-            name: 'stream',
-            valueBoolean: true,
-          },
         ],
       });
 
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/event-stream');
 
     // Verify stream parameter was set in the request
     const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.stream).toBe(true);
 
-    // Verify the accumulated content is returned
-    const parameters = (res.body as Parameters).parameter ?? [];
-    const contentParam = parameters.find((p) => p.name === 'content');
-    expect(contentParam?.valueString).toBe('Hello world!');
+    // Verify the SSE chunks are in the response
+    const responseText = res.text;
+    expect(responseText).toContain('data: {"content":"Hello"}');
+    expect(responseText).toContain('data: {"content":" world"}');
+    expect(responseText).toContain('data: {"content":"!"}');
+    expect(responseText).toContain('data: [DONE]');
+  });
+
+  test('Stream endpoint rejects requests without AI feature', async () => {
+    const noAiAccessToken = await initTestAuth({ project: { features: [] } });
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai-stream`)
+      .set('Authorization', 'Bearer ' + noAiAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain('AI feature not enabled');
+  });
+
+  test('Stream endpoint validates required parameters', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/$ai-stream`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test' }]),
+          },
+          // Missing apiKey and model
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('Missing required parameters');
   });
 
 });
