@@ -20,10 +20,10 @@ export function getDataDir(): string {
   const currentDir = getCurrentDir();
 
   // Need to handle the following cases:
-  // v4 and earlier: data in `/dist/fhir/`
-  // v5.0.0: data in `/dist/cjs/fhir/` and `/dist/esm/fhir/`
-  // v5.0.1 and after: data back in `/dist/fhir/`
-  const relativePaths = ['./', './cjs/', './esm/'];
+  // v4 and earlier: `index.js` in `dist/`, data in `dist/fhir/`
+  // v5.0.0: data in `index.js` in `dist/cjs/` and `dist/esm/`, data in `/dist/cjs/fhir/` and `/dist/esm/fhir/`
+  // v5.0.1 and after: `index.js` in `dist/cjs/` and `dist/esm/`, data back in `/dist/fhir/`
+  const relativePaths = ['./', '../', './cjs/', './esm/'];
   for (const relativePath of relativePaths) {
     const fullPath = resolve(currentDir, relativePath);
     const fhirPath = resolve(fullPath, 'fhir');
