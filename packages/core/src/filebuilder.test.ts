@@ -24,6 +24,6 @@ describe('FileBuilder', () => {
     const longLine = 'word '.repeat(50);
     fb.append(longLine);
     expect(fb.toString().split('\n').length).toBeGreaterThan(2);
-    expect(fb.toString().replace(/\n/g, ' ')).toEqual(longLine);
+    expect(fb.toString().replaceAll('\n', ' ')).toEqual(longLine);
   });
 });

@@ -31,7 +31,7 @@ export const TaskStatusPanel = (props: TaskStatusPanelProps): JSX.Element => {
                   style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0 }}
                   rightSection={<IconChevronDown size={16} />}
                 >
-                  {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                  {task.status.replaceAll('-', ' ').replaceAll(/\b\w/g, (char) => char.toUpperCase())}
                 </Badge>
               </Menu.Target>
               <Menu.Dropdown style={{ width: 140 }}>
@@ -54,7 +54,7 @@ export const TaskStatusPanel = (props: TaskStatusPanelProps): JSX.Element => {
             </Menu>
           ) : (
             <Badge variant="light" color={badgeColor} size="lg">
-              {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+              {task.status.replaceAll('-', ' ').replaceAll(/\b\w/g, (char) => char.toUpperCase())}
             </Badge>
           )}
         </Flex>

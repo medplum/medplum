@@ -133,7 +133,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
   }
 
   // Removing any white space
-  const codesTrimSpace = successCodes.valueString.replace(/ /g, '');
+  const codesTrimSpace = successCodes.valueString.replaceAll(' ', '');
   const listOfSuccessCodes = codesTrimSpace.split(',');
 
   for (const code of listOfSuccessCodes) {

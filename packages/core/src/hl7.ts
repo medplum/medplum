@@ -682,7 +682,7 @@ export function formatHl7DateTime(isoDate: Date | string): string {
   // Replace "T" and all dashes (-) and colons (:) with empty strings
   // Replace Z with "+0000"
   // Replace the last 3 digits before 'Z' with the 4-digit milliseconds
-  let result = isoString.replace(/[-:T]/g, '').replace(/(\.\d+)?Z$/, '');
+  let result = isoString.replaceAll(/[-:T]/g, '').replace(/(\.\d+)?Z$/, '');
 
   const milliseconds = date.getUTCMilliseconds();
   if (milliseconds > 0) {

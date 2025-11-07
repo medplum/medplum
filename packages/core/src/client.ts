@@ -1889,7 +1889,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         expression,
         target
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 

@@ -490,13 +490,13 @@ export function buildFieldNameString(key: string): string {
   tmp = tmp.replace('[x]', '');
 
   // Convert camel case to space separated
-  tmp = tmp.replace(/([A-Z])/g, ' $1');
+  tmp = tmp.replaceAll(/([A-Z])/g, ' $1');
 
   // Convert dashes and underscores to spaces
-  tmp = tmp.replace(/[-_]/g, ' ');
+  tmp = tmp.replaceAll(/[-_]/g, ' ');
 
   // Normalize whitespace to single space character
-  tmp = tmp.replace(/\s+/g, ' ');
+  tmp = tmp.replaceAll(/\s+/g, ' ');
 
   // Trim
   tmp = tmp.trim();
