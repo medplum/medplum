@@ -175,7 +175,6 @@ export async function aiStreamHandler(req: ExpressRequest, res: ExpressResponse)
   }
 }
 
-
 /**
  * Builds a FHIR Parameters response from AI result.
  * @param result - The AI response
@@ -183,10 +182,7 @@ export async function aiStreamHandler(req: ExpressRequest, res: ExpressResponse)
  * @param result.tool_calls - Array of tool calls from the AI
  * @returns FHIR response
  */
-function buildParametersResponse(result: {
-  content: string | null;
-  tool_calls: any[];
-}): FhirResponse {
+function buildParametersResponse(result: { content: string | null; tool_calls: any[] }): FhirResponse {
   const parameters: ParametersParameter[] = [];
 
   if (result.content) {
@@ -254,7 +250,7 @@ export async function streamAIToClient(
   // Stream OpenAI response directly to client
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  
+
   let buffer = '';
 
   try {
