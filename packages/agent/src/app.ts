@@ -980,6 +980,7 @@ export class App {
     }
 
     const address = new URL(message.remote);
+    const serializedMode = address.searchParams.get('serialized')?.toLowerCase() === 'true';
 
     let client: EnhancedHl7Client;
 
@@ -998,9 +999,14 @@ export class App {
         client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
       }
 
+      // Serialized mode will only be set when the client is created...
+      // This means that you will need to "reset" clients, likely by "jiggling" the keepAlive setting
+      client.setSerializedMode(serializedMode);
+
       this.log.info(`Client created for remote '${message.remote}'`, {
         keepAlive,
         encoding,
+        serializedMode,
         trackingStats: this.logStatsFreqSecs > 0,
       });
 
