@@ -11,11 +11,11 @@ import { getAuthenticatedContext } from '../context';
  */
 export async function aiStreamHandler(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   try {
-    // const ctx = getAuthenticatedContext();
-    // if (!ctx.project.features?.includes('ai')) {
-    //   res.status(403).json({ error: 'AI feature not enabled' });
-    //   return;
-    // }
+    const ctx = getAuthenticatedContext();
+    if (!ctx.project.features?.includes('ai')) {
+      res.status(403).json({ error: 'AI feature not enabled' });
+      return;
+    }
 
     // Parse body parameters
     const body = req.body?.parameter;
