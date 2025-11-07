@@ -5,7 +5,7 @@
 /* eslint-disable no-undef */
 
 import esbuild from 'esbuild';
-import { cpSync, existsSync, writeFileSync } from 'fs';
+import { cpSync, writeFileSync } from 'fs';
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -22,13 +22,8 @@ const options = {
 // Copy JSON files and other non-TypeScript files to dist directories
 function copyDataFiles() {
   const srcFhirDir = './src/fhir';
-  const distCjsFhirDir = './dist/cjs/fhir';
-  const distEsmFhirDir = './dist/esm/fhir';
-
-  if (existsSync(srcFhirDir)) {
-    cpSync(srcFhirDir, distCjsFhirDir, { recursive: true });
-    cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
-  }
+  const distEsmFhirDir = './dist/fhir';
+  cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
 }
 
 esbuild
