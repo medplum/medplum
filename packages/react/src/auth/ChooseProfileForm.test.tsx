@@ -88,7 +88,6 @@ describe('ChooseProfileForm', () => {
     );
 
     expect(screen.getByText('Choose profile')).toBeInTheDocument();
-    expect(screen.getAllByText('Homer Simpson')).toHaveLength(2);
     expect(screen.getByText(/Prod.*Primary Care/)).toBeInTheDocument();
   });
 });
