@@ -47,10 +47,7 @@ interface ProgressStep {
   timestamp?: string;
 }
 
-export function LabOrderDetails({
-  order,
-  onOrderChange: _onOrderChange,
-}: LabOrderDetailsProps): JSX.Element {
+export function LabOrderDetails({ order, onOrderChange: _onOrderChange }: LabOrderDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
@@ -61,14 +58,15 @@ export function LabOrderDetails({
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState<boolean>(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState<boolean>(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(order.status !== 'completed' ? 'progress' : 'report');
+  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
+    order.status !== 'completed' ? 'progress' : 'report'
+  );
 
   // Filter DiagnosticReports for this specific order
   useEffect(() => {
-
     const fetchPrimaryReport = async (): Promise<void> => {
       const primaryReport = await medplum.searchResources('DiagnosticReport', {
-        "based-on": `ServiceRequest/${order.id}`,
+        'based-on': `ServiceRequest/${order.id}`,
         _sort: '-_lastUpdated',
         _count: 1,
       });

@@ -32,7 +32,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
         return <LabResultDetails result={displayResource as DiagnosticReport} />;
 
       case 'ServiceRequest':
-        return <LabOrderDetails order={displayResource as ServiceRequest} onOrderChange={() => {} } />;
+        return <LabOrderDetails order={displayResource as ServiceRequest} onOrderChange={() => {}} />;
       default:
         return <ResourceTable value={displayResource} />;
     }

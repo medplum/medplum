@@ -194,11 +194,7 @@ export function LabsPage(): JSX.Element {
               className={classes.borderRight}
             >
               {currentOrder ? (
-                <LabOrderDetails
-                  key={currentOrder.id}
-                  order={currentOrder}
-                  onOrderChange={handleOrderChange}
-                />
+                <LabOrderDetails key={currentOrder.id} order={currentOrder} onOrderChange={handleOrderChange} />
               ) : (
                 <LabSelectEmpty activeTab={'open'} />
               )}
