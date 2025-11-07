@@ -282,7 +282,8 @@ describe('Hl7Client', () => {
           Hl7Message.parse(
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
               'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
-          )
+          ),
+          { returnAck: ReturnAckCategory.FIRST }
         );
 
         expect(response).toBeDefined();
