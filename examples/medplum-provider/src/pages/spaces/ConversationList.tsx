@@ -7,12 +7,12 @@ import { useMedplum } from '@medplum/react';
 import type { Communication } from '@medplum/fhirtypes';
 import { loadRecentTopics } from './space-persistence';
 import { showErrorNotification } from '../../utils/notifications';
+import { formatDate } from '@medplum/core';
 
 interface ConversationListProps {
   currentTopicId?: string;
   onSelectTopic: (topicId: string) => void;
 }
-
 export function ConversationList({ currentTopicId, onSelectTopic }: ConversationListProps): JSX.Element {
   const medplum = useMedplum();
   const [topics, setTopics] = useState<Communication[]>([]);
@@ -33,13 +33,12 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
 
   return (
     <Paper h="100%">
-      <Stack p="md">
-        <Text size="sm" fw={600} c="dimmed" mt="md">
-          Recent Conversations
-        </Text>
-
+      <Stack p={0} h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
         <ScrollArea style={{ flex: 1 }}>
-          <Stack gap="xs">
+          <Stack gap="xs" px="md">
+            <Text fw={600} c="dimmed" mt="md">
+              Recent Conversations
+            </Text>
             {loading && (
               <Text size="sm" c="dimmed">
                 Loading...
@@ -52,7 +51,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
             )}
             {!loading &&
               topics.length > 0 &&
-              topics.map((topic) => (
+              topics.map((topic, index) => (
                 <Stack gap={0} key={topic.id}>
                   <Box
                     bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
@@ -75,7 +74,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
                       </Text>
                     </Group>
                   </Box>
-                  <Divider />
+                  {index < topics.length - 1 && <Divider />}
                 </Stack>
               ))}
           </Stack>
@@ -84,29 +83,3 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
     </Paper>
   );
 }
-
-const formatDate = (dateString?: string): string => {
-  if (!dateString) {
-    return '';
-  }
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) {
-    return 'Just now';
-  }
-  if (diffMins < 60) {
-    return `${diffMins}m ago`;
-  }
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-  if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  }
-  return date.toLocaleDateString();
-};
