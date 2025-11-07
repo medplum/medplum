@@ -74,7 +74,7 @@ export function LabOrderDetails({
       });
       setDiagnosticReports(primaryReport);
     };
-    // return fetchPrimaryReport();
+
     fetchPrimaryReport().catch(showErrorNotification);
   }, [medplum, order.id]);
 
