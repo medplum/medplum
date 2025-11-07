@@ -16,39 +16,6 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
   const patient = useResource(diagnosticReport?.subject);
   const performer = useResource(diagnosticReport?.performer?.[0]);
 
-  const getStatusColor = (status: string | undefined): string => {
-    switch (status) {
-      case 'final':
-        return 'green';
-      case 'partial':
-        return 'yellow';
-      case 'preliminary':
-        return 'blue';
-      case 'cancelled':
-      case 'entered-in-error':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusDisplayText = (status: string | undefined): string => {
-    switch (status) {
-      case 'final':
-        return 'Final';
-      case 'partial':
-        return 'Partial';
-      case 'preliminary':
-        return 'Preliminary';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'entered-in-error':
-        return 'Error';
-      default:
-        return status || 'Unknown';
-    }
-  };
-
   return (
     <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
       <Stack gap="md">
@@ -201,3 +168,36 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
     </Paper>
   );
 }
+
+const getStatusColor = (status: string | undefined): string => {
+  switch (status) {
+    case 'final':
+      return 'green';
+    case 'partial':
+      return 'yellow';
+    case 'preliminary':
+      return 'blue';
+    case 'cancelled':
+    case 'entered-in-error':
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+const getStatusDisplayText = (status: string | undefined): string => {
+  switch (status) {
+    case 'final':
+      return 'Final';
+    case 'partial':
+      return 'Partial';
+    case 'preliminary':
+      return 'Preliminary';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'entered-in-error':
+      return 'Error';
+    default:
+      return status || 'Unknown';
+  }
+};
