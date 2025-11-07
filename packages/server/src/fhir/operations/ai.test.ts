@@ -931,5 +931,4 @@ describe('AI Operation', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('Missing required parameters');
   });
-
 });
