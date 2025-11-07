@@ -2765,6 +2765,13 @@ describe('AccessPolicy', () => {
       },
       'axp-3',
     ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?patient.name=Dave',
+      },
+      'axp-3',
+    ],
   ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
