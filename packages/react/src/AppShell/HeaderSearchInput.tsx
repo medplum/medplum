@@ -130,7 +130,7 @@ function buildGraphQLQuery(input: string): string {
           display
         }
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
   }
   return `{
     Patients1: PatientList(name: ${escaped}, _count: 5) {
@@ -170,7 +170,7 @@ function buildGraphQLQuery(input: string): string {
         display
       }
     }
-  }`.replace(/\s+/g, ' ');
+  }`.replaceAll(/\s+/g, ' ');
 }
 
 /**
