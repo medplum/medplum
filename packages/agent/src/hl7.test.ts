@@ -333,7 +333,8 @@ describe('HL7', () => {
           'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
           'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
           'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-      )
+      ),
+      { returnAck: ReturnAckCategory.FIRST }
     );
     expect(response).toBeDefined();
     expect(response.header.getComponent(9, 1)).toBe('ACK');
