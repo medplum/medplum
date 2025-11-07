@@ -20,6 +20,7 @@ import {
   MEDPLUM_VERSION,
   OperationOutcomeError,
   ReconnectingWebSocket,
+  TypedEventTarget,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
   isValidHostname,
@@ -27,6 +28,8 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
+import { DEFAULT_ENCODING } from '@medplum/hl7';
+import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -38,13 +41,14 @@ import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import type { ChannelStats } from './channel-stats-tracker';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
-import { getCurrentStats } from './stats';
+import { getCurrentStats, updateStat } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(
@@ -80,6 +84,7 @@ export class App {
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
+  readonly heartbeatEmitter = new TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>();
   private outstandingHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
@@ -90,6 +95,7 @@ export class App {
   private logStatsFreqSecs = -1;
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
+  private lastHeartbeatSentTime: number = -1;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
@@ -191,6 +197,8 @@ export class App {
   }
 
   private async heartbeat(): Promise<void> {
+    this.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket().catch((err) => {
@@ -208,6 +216,7 @@ export class App {
       }
       this.outstandingHeartbeats += 1;
       await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+      this.lastHeartbeatSentTime = Date.now();
     }
   }
 
@@ -266,6 +275,7 @@ export class App {
             break;
           case 'agent:heartbeat:response':
             this.outstandingHeartbeats = 0;
+            updateStat('ping', Date.now() - this.lastHeartbeatSentTime);
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
@@ -352,6 +362,11 @@ export class App {
           this.log.error(normalizeErrorString(result.reason));
         }
       }
+      // We need to stop tracking stats for each client so that the heartbeat listener is removed
+      // Before clearing the clients
+      for (const pool of this.hl7Clients.values()) {
+        pool.stopTrackingStats();
+      }
       this.hl7Clients.clear();
     }
 
@@ -381,26 +396,57 @@ export class App {
     this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
-      this.logStatsTimer = setInterval(() => {
-        const stats = getCurrentStats();
-        let totalHl7Clients = 0;
+      this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
+      if (this.keepAlive) {
         for (const pool of this.hl7Clients.values()) {
-          totalHl7Clients += pool.size();
+          pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
         }
-        this.log.info('Agent stats', {
-          stats: {
-            ...stats,
-            webSocketQueueDepth: this.webSocketQueue.length,
-            hl7QueueDepth: this.hl7Queue.length,
-            hl7ClientCount: totalHl7Clients,
-            live: this.live,
-            outstandingHeartbeats: this.outstandingHeartbeats,
-          },
-        });
-      }, this.logStatsFreqSecs * 1000);
+      }
+      this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
+    } else {
+      for (const pool of this.hl7Clients.values()) {
+        pool.stopTrackingStats();
+      }
     }
 
     await this.hydrateListeners();
+  }
+
+  private logStats(): void {
+    assert(this.logStatsFreqSecs > 0, new Error('Can only log stats when logStatsFreqSecs > 0'));
+
+    const stats = getCurrentStats();
+    let totalHl7Clients = 0;
+    for (const pool of this.hl7Clients.values()) {
+      totalHl7Clients += pool.size();
+    }
+
+    const hl7Channels = Array.from(this.channels.values()).filter((channel) => channel instanceof AgentHl7Channel);
+    const channelStats = Object.fromEntries(
+      hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+    );
+
+    const pools = Array.from(this.hl7Clients.values());
+    const allClients = pools.flatMap((pool) => pool.getClients());
+    const clientStats = Object.fromEntries(
+      allClients.map((client) => [
+        `mllp://${client.host}:${client.port}?encoding=${client.encoding ?? DEFAULT_ENCODING}`,
+        client.stats?.getStats() as ChannelStats,
+      ])
+    );
+
+    this.log.info('Agent stats', {
+      stats: {
+        ...stats,
+        webSocketQueueDepth: this.webSocketQueue.length,
+        hl7QueueDepth: this.hl7Queue.length,
+        hl7ClientCount: this.hl7Clients.size,
+        live: this.live,
+        outstandingHeartbeats: this.outstandingHeartbeats,
+        channelStats,
+        clientStats,
+      },
+    });
   }
 
   /**
@@ -572,7 +618,7 @@ export class App {
       return;
     }
 
-    channel.start();
+    await channel.start();
     this.channels.set(definition.name, channel);
   }
 
@@ -621,6 +667,10 @@ export class App {
   addToHl7Queue(message: AgentMessage): void {
     this.hl7Queue.push(message);
     this.trySendToHl7Connection();
+  }
+
+  getAgentConfig(): Agent | undefined {
+    return this.config;
   }
 
   private startWebSocketWorker(): void {
@@ -960,9 +1010,13 @@ export class App {
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
 
+    let pool: Hl7ClientPool;
+
     // Get or create the pool for this remote
-    let pool = this.hl7Clients.get(message.remote);
-    if (!pool) {
+    if (this.hl7Clients.has(message.remote)) {
+      pool = this.hl7Clients.get(message.remote) as Hl7ClientPool;
+    } else {
+      const keepAlive = this.keepAlive;
       pool = new Hl7ClientPool({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
@@ -972,10 +1026,14 @@ export class App {
         log: this.log,
       });
       this.hl7Clients.set(message.remote, pool);
+      if (keepAlive && this.logStatsFreqSecs > 0) {
+        pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
+      }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         encoding,
+        trackingStats: this.logStatsFreqSecs > 0,
       });
     }
 

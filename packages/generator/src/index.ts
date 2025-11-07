@@ -23,7 +23,7 @@ export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
-  mkdirSync(resolve(__dirname, '../../fhirtypes/dist'), { recursive: true });
+  mkdirSync(resolve(import.meta.dirname, '../../fhirtypes/dist'), { recursive: true });
   writeIndexFile();
   writeResourceFile();
   writeResourceTypeFile();
@@ -46,7 +46,7 @@ function writeIndexFile(): void {
   for (const resourceType of names) {
     b.append("export * from './" + resourceType + "';");
   }
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceFile(): void {
@@ -70,7 +70,7 @@ function writeResourceFile(): void {
       b.append('| ' + names[i] + ';');
     }
   }
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceTypeFile(): void {
@@ -79,7 +79,7 @@ function writeResourceTypeFile(): void {
   b.newLine();
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: InternalTypeSchema): void {
@@ -99,7 +99,7 @@ function writeInterfaceFile(fhirType: InternalTypeSchema): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/' + fhirType.name + '.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/' + fhirType.name + '.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
@@ -148,13 +148,6 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
     for (const subType of subTypes) {
       writeInterface(b, subType);
     }
-  }
-
-  if (typeName === 'Project') {
-    // TODO: Remove this in Medplum v4
-    b.newLine();
-    generateJavadoc(b, '@deprecated Use ProjectSetting instead');
-    b.append('export type ProjectSecret = ProjectSetting;');
   }
 }
 
@@ -373,6 +366,6 @@ function getTypeScriptTypeForProperty(
   return baseType;
 }
 
-if (process.argv[1].endsWith('index.ts')) {
+if (import.meta.main) {
   main();
 }

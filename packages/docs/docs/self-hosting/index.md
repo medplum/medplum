@@ -9,7 +9,7 @@ Medplum is an open source healthcare development platform that you can deploy in
 These guides are designed for DevOps engineers and system administrators who have experience managing production healthcare systems.
 
 :::warning Considerations
-Thinking about self-hosting? Take a look at our [self-hosting vs. cloud guide](./considerations.md) to help you decide if self-hosting is for you. 
+Thinking about self-hosting? Take a look at our [self-hosting vs. cloud guide](./considerations.md) to help you decide if self-hosting is for you.
 :::
 
 ## Installation Options
@@ -24,11 +24,11 @@ Deploy Medplum directly on Ubuntu servers using our official APT repository ([ap
 
 ### [Install on GCP](/docs/self-hosting/install-on-gcp) (Beta)
 
-Deploy Medplum on Google Cloud Platform using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for GCP-based implementations.
+Deploy Medplum on Google Cloud Platform using our Terraform configurations. Validated for production use, this deployment option provides a robust foundation, but offers a less-automated setup and requires additional operational expertise.
 
 ### [Install on Azure](/docs/self-hosting/install-on-azure) (Beta)
 
-Deploy Medplum on Azure using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for Azure-based implementations.
+Deploy Medplum on Azure using our Terraform configurations. Validated for production use, this deployment option provides a robust foundation, but offers a less-automated setup and requires additional operational expertise.
 
 ### [Install from Scratch](/docs/self-hosting/install-from-scratch)
 

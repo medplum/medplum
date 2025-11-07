@@ -162,7 +162,6 @@ describe('App', () => {
       if (event.type === 'open' && !state.shouldConnect) {
         return;
       }
-      // eslint-disable-next-line no-invalid-this
       originalDispatchEvent.call(this, event);
     });
 
@@ -1220,12 +1219,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1350,12 +1344,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57099);
-
-    // Wait for server to start listening
-    while (!hl7Server.server?.listening) {
-      await sleep(100);
-    }
+    await hl7Server.start(57099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -3397,14 +3386,14 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server1.start(57100);
+    await hl7Server1.start(57100);
 
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server2.start(57101);
+    await hl7Server2.start(57101);
 
     // Wait for servers to start listening
     while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
@@ -3470,6 +3459,596 @@ describe('App', () => {
     });
 
     console.log = originalConsoleLog;
+  });
+
+  describe('Stats tracking for HL7 clients', () => {
+    test('When keepAlive is off, clients should not track stats', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentMessage[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      // Create agent with keepAlive = false and logStatsFreqSecs > 0
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        setting: [
+          { name: 'keepAlive', valueBoolean: false },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(58100);
+
+      // Wait for server to start listening
+      while (!hl7Server.server?.listening) {
+        await sleep(100);
+      }
+
+      // Send a message
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58100`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'my-callback-id',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(100);
+      }
+
+      // Client should not be in the hl7Clients map (because keepAlive is false)
+      expect(app.hl7Clients.size).toBe(0);
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('When keepAlive is on, clients should track stats as messages are sent', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentMessage[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      // Create agent with keepAlive = true and logStatsFreqSecs > 0
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        setting: [
+          { name: 'keepAlive', valueBoolean: true },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(58101);
+
+      // Wait for server to start listening
+      while (!hl7Server.server?.listening) {
+        await sleep(100);
+      }
+
+      // Send a message
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58101`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'my-callback-id',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(100);
+      }
+
+      // Client should be in the hl7Clients map and should have stats tracking
+      expect(app.hl7Clients.size).toBe(1);
+      const client = app.hl7Clients.get('mllp://localhost:58101');
+      expect(client).toBeDefined();
+      expect(client?.stats).toBeDefined();
+      expect(client?.stats?.getSampleCount()).toBe(1);
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('When keepAlive goes from on to off, cleanup stats for all open clients', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentMessage[],
+        reloadConfigResponse: null as any,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          } else if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+        });
+      });
+
+      // Create agent with keepAlive = true and logStatsFreqSecs > 0
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        setting: [
+          { name: 'keepAlive', valueBoolean: true },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 servers
+      const hl7Server1 = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server1.start(58102);
+
+      const hl7Server2 = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server2.start(58103);
+
+      // Wait for servers to start listening
+      while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
+        await sleep(100);
+      }
+
+      // Send messages to create clients
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58102`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'callback-1',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58103`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'callback-2',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for responses
+      while (state.transmitResponses.length < 2) {
+        await sleep(100);
+      }
+
+      // Should have 2 clients with stats
+      expect(app.hl7Clients.size).toBe(2);
+      const client1 = app.hl7Clients.get('mllp://localhost:58102');
+      const client2 = app.hl7Clients.get('mllp://localhost:58103');
+      expect(client1?.stats).toBeDefined();
+      expect(client2?.stats).toBeDefined();
+
+      // Update agent to disable keepAlive
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [
+          { name: 'keepAlive', valueBoolean: false },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      // Trigger reload
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
+
+      // All clients should be closed and removed
+      expect(app.hl7Clients.size).toBe(0);
+
+      await app.stop();
+      await hl7Server1.stop();
+      await hl7Server2.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('When logStatsFreqSecs goes from on to off, cleanup all stats', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentMessage[],
+        reloadConfigResponse: null as any,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          } else if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+        });
+      });
+
+      // Create agent with keepAlive = true and logStatsFreqSecs > 0
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        setting: [
+          { name: 'keepAlive', valueBoolean: true },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(58104);
+
+      // Wait for server to start listening
+      while (!hl7Server.server?.listening) {
+        await sleep(100);
+      }
+
+      // Send a message
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58104`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'my-callback-id',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(100);
+      }
+
+      // Client should have stats
+      expect(app.hl7Clients.size).toBe(1);
+      const client = app.hl7Clients.get('mllp://localhost:58104');
+      expect(client?.stats).toBeDefined();
+
+      // Update agent to disable logStatsFreqSecs
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [{ name: 'keepAlive', valueBoolean: true }],
+      });
+
+      // Trigger reload
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
+
+      // Client should still exist but stats should be undefined
+      expect(app.hl7Clients.size).toBe(1);
+      const clientAfterReload = app.hl7Clients.get('mllp://localhost:58104');
+      expect(clientAfterReload?.stats).toBeUndefined();
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('When logStatsFreqSecs goes from off to on, start tracking stats', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentMessage[],
+        reloadConfigResponse: null as any,
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          } else if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+        });
+      });
+
+      // Create agent with keepAlive = true
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        setting: [{ name: 'keepAlive', valueBoolean: true }],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(58105);
+
+      // Wait for server to start listening
+      while (!hl7Server.server?.listening) {
+        await sleep(100);
+      }
+
+      // Send a message
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58105`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'my-callback-id',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(100);
+      }
+
+      // Client should exist but not have stats
+      expect(app.hl7Clients.size).toBe(1);
+      let client = app.hl7Clients.get('mllp://localhost:58105');
+      expect(client?.stats).toBeUndefined();
+
+      // Update agent to enable logStatsFreqSecs
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [
+          { name: 'keepAlive', valueBoolean: true },
+          { name: 'logStatsFreqSecs', valueInteger: 60 },
+        ],
+      });
+
+      // Trigger reload
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(100);
+      }
+
+      // Client should now have stats tracking
+      expect(app.hl7Clients.size).toBe(1);
+      client = app.hl7Clients.get('mllp://localhost:58105');
+      expect(client?.stats).toBeDefined();
+
+      // Send another message to verify stats tracking works
+      state.transmitResponses = [];
+      const hl7MessageBody2 =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: `mllp://localhost:58105`,
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody2,
+            callback: 'my-callback-id-2',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(100);
+      }
+
+      // Stats should have recorded the new message
+      expect(client?.stats?.getSampleCount()).toBe(1);
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
   });
 });
 

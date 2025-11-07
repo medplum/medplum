@@ -67,17 +67,13 @@ export class Hl7Connection extends Hl7Base {
     socket.on('data', (data: Buffer) => {
       try {
         this.appendData(data);
-        if (data.at(-2) === FS && data.at(-1) === CR) {
-          const buffer = Buffer.concat(this.chunks);
-          const contentBuffer = buffer.subarray(1, buffer.length - 2);
-          const contentString = iconv.decode(contentBuffer, this.encoding);
-          const message = Hl7Message.parse(contentString);
+        const messages = this.parseMessages();
+        for (const message of messages) {
           this.responseQueue.push(new Hl7MessageEvent(this, message));
-          this.resetBuffer();
-          this.processResponseQueue().catch((err) => {
-            this.dispatchEvent(new Hl7ErrorEvent(err));
-          });
         }
+        this.processResponseQueue().catch((err) => {
+          this.dispatchEvent(new Hl7ErrorEvent(err));
+        });
       } catch (err) {
         this.dispatchEvent(new Hl7ErrorEvent(err as Error));
       }
@@ -186,6 +182,65 @@ export class Hl7Connection extends Hl7Base {
     this.responseQueueProcessing = false;
   }
 
+  /**
+   * Parses complete HL7 messages from the accumulated buffer.
+   * Continues parsing while the buffer starts with VT and contains FS+CR.
+   * Keeps any incomplete message data in the buffer for the next chunk.
+   * @returns An array of parsed HL7 messages.
+   */
+  private parseMessages(): Hl7Message[] {
+    const messages: Hl7Message[] = [];
+    const buffer = Buffer.concat(this.chunks);
+    this.resetBuffer();
+
+    // Check if buffer starts with VT (Vertical Tab)
+    if (buffer.length === 0) {
+      return messages;
+    }
+
+    let bufferIdx = 0;
+
+    // Keep parsing while we have complete messages
+    while (bufferIdx < buffer.length) {
+      // Ignore bytes between message frames
+      while (buffer[bufferIdx] !== VT && bufferIdx < buffer.length) {
+        bufferIdx++;
+      }
+
+      // Look for FS+CR sequence to mark end of message
+      let messageEndIndex = -1;
+
+      for (let i = bufferIdx + 1; i < buffer.length - 1; i++) {
+        if (buffer[i] === FS && buffer[i + 1] === CR) {
+          messageEndIndex = i + 1; // Index of CR (end of message)
+          break;
+        }
+      }
+
+      // If we don't have a complete message yet, wait for more data
+      if (messageEndIndex === -1) {
+        break;
+      }
+
+      // Extract the complete message (including VT, FS, and CR)
+      const messageBuffer = buffer.subarray(bufferIdx, messageEndIndex + 1);
+      // Extract the content (without VT at start and FS+CR at end)
+      const contentBuffer = messageBuffer.subarray(1, -2);
+      const contentString = iconv.decode(contentBuffer, this.encoding);
+      const message = Hl7Message.parse(contentString);
+
+      messages.push(message);
+
+      // Move past this message
+      bufferIdx = messageEndIndex + 1;
+    }
+
+    // Keep any remaining unfinished chunk in this.chunks
+    this.chunks = bufferIdx < buffer.length ? [buffer.subarray(bufferIdx)] : [];
+
+    return messages;
+  }
+
   send(reply: Hl7Message): void {
     this.sendImpl(reply);
   }
@@ -225,7 +280,7 @@ export class Hl7Connection extends Hl7Base {
         message: msg,
         resolve,
         reject,
-        returnAck: options?.returnAck ?? ReturnAckCategory.FIRST,
+        returnAck: options?.returnAck ?? ReturnAckCategory.APPLICATION,
         timer,
       });
       this.sendImpl(msg);

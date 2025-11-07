@@ -23,7 +23,7 @@ describe('Workers', () => {
     const config = await loadTestConfig();
     initRedis(config.redis);
     await initDatabase(config);
-    await seedDatabase();
+    await seedDatabase(config);
     initBinaryStorage('file:binary');
     initWorkers(config);
     await closeWorkers();

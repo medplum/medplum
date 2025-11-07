@@ -4,6 +4,7 @@ import { createReference } from '@medplum/core';
 import type {
   Bundle,
   BundleEntry,
+  ContactPoint,
   Expression,
   OperationOutcome,
   OperationOutcomeIssue,
@@ -14,6 +15,7 @@ import type {
   QuestionnaireResponse,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -484,6 +486,106 @@ describe('QuestionnaireResponse/$extract', () => {
     ]);
   });
 
+  test('Handles multiple template elements in same array', async () => {
+    const staticUrl = 'http://example.com/' + randomUUID();
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'draft',
+      extension: [{ url: allocIdExtension, valueString: 'NewPatientId' }],
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patTemplate',
+          telecom: [
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'email')" }],
+              system: 'email',
+              use: 'home',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'pager')" }],
+              system: 'pager',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+            { system: 'url', value: staticUrl },
+            {
+              extension: [{ url: contextExtension, valueString: "item.where(linkId = 'mobile-phone')" }],
+              system: 'phone',
+              use: 'mobile',
+              _value: { extension: [{ url: valueExtension, valueString: 'answer.value.first()' }] },
+            },
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'patient',
+          text: 'Patient',
+          type: 'group',
+          extension: [
+            {
+              url: extractExtension,
+              extension: [
+                { url: 'template', valueReference: { reference: '#patTemplate' } },
+                { url: 'fullUrl', valueString: '%NewPatientId' },
+              ],
+            },
+          ],
+          item: [
+            { linkId: 'email', text: 'Email', type: 'string', repeats: true },
+            { linkId: 'mobile-phone', text: 'Mobile Phone', type: 'string' },
+            { linkId: 'pager', text: 'Pager', type: 'string' },
+          ],
+        },
+      ],
+    } as unknown as Questionnaire;
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      questionnaire: 'https://medplum.com/Questionnaire/extract-patient-minimal-telecom',
+      author: { reference: 'Practitioner/87a978a6-4844-4b21-aaa3-1abd91f6e8f1' },
+      authored: '2025-10-10T20:45:06.072Z',
+      item: [
+        {
+          linkId: 'patient',
+          item: [
+            { linkId: 'email', answer: [{ valueString: 'fake.email+1@example.com' }] },
+            { linkId: 'email', answer: [{ valueString: 'fake.email+2@example.com' }] },
+            { linkId: 'email', answer: [{ valueString: 'fake.email+3@example.com' }] },
+            { linkId: 'mobile-phone', answer: [{ valueString: '555-988-1598' }] },
+          ],
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+
+    const patient = batch.entry?.[0].resource as Patient;
+    expect(patient.telecom).toStrictEqual([
+      { system: 'email', use: 'home', value: 'fake.email+1@example.com' },
+      { system: 'email', use: 'home', value: 'fake.email+2@example.com' },
+      { system: 'email', use: 'home', value: 'fake.email+3@example.com' },
+      { system: 'url', value: staticUrl },
+      { system: 'phone', use: 'mobile', value: '555-988-1598' },
+    ]);
+  });
+
   test('QuestionnaireResponse must be specified', async () => {
     const res = await request(app)
       .post(`/fhir/R4/QuestionnaireResponse/$extract`)
@@ -760,5 +862,111 @@ describe('QuestionnaireResponse/$extract', () => {
 
     const patient = await repo.readResource<Patient>('Patient', id);
     expect(patient.gender).toBe('unknown');
+  });
+
+  test('Keeps default value for primitive field', async () => {
+    const q: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'draft',
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patientTemplate',
+          telecom: [
+            {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
+                  valueString: "item.where(linkId = 'phone')",
+                },
+              ],
+              system: 'phone',
+              _value: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: "item.where(linkId = 'number').answer.value.first()",
+                  },
+                ],
+              },
+              use: 'home',
+              _use: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: "item.where(linkId = 'use').answer.value.first().code",
+                  },
+                ],
+              },
+            } as unknown as ContactPoint,
+          ],
+        },
+      ],
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
+          extension: [{ url: 'template', valueReference: { reference: '#patientTemplate' } }],
+        },
+      ],
+      item: [
+        {
+          linkId: 'phone',
+          type: 'group',
+          repeats: true,
+          required: true,
+          item: [
+            { linkId: 'number', type: 'string', required: true },
+            { linkId: 'use', type: 'choice', answerValueSet: 'http://hl7.org/fhir/ValueSet/contact-point-use' },
+          ],
+        },
+      ],
+      //...
+    };
+
+    const r: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        {
+          linkId: 'phone',
+          item: [{ linkId: 'number', answer: [{ valueString: '+1 555 555 5555' }] }],
+        },
+        {
+          linkId: 'phone',
+          item: [
+            { linkId: 'number', answer: [{ valueString: '+1 800 555 5555' }] },
+            { linkId: 'use', answer: [{ valueCoding: { code: 'work' } }] },
+          ],
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: q },
+          { name: 'questionnaire-response', resource: r },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+    const patient = batch.entry?.[0]?.resource as Patient;
+    expect(patient.telecom?.map((t) => t.use)).toStrictEqual(['home', 'work']);
+
+    // Actually send the batch to ensure it correctly updates the intended resource
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(batch);
+    expect(res2.status).toBe(200);
+    const result = res2.body as Bundle;
+    expect(result.entry?.map((e) => e.response?.status)).toStrictEqual(['201']);
   });
 });

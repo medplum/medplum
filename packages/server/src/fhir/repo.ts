@@ -6,6 +6,8 @@ import type {
   SearchParameterDetails,
   SearchRequest,
   TypedValue,
+  TypedValueWithPath,
+  ValidatorOptions,
   WithId,
 } from '@medplum/core';
 import {
@@ -69,14 +71,18 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Coding,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Project,
   Reference,
   Resource,
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
@@ -114,6 +120,8 @@ import type { HumanNameResource } from './lookups/humanname';
 import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
+import { findTerminologyResource } from './operations/utils/terminology';
+import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -211,6 +219,8 @@ export interface RepositoryContext {
    * and that the current user has access to the referenced resource.
    */
   checkReferencesOnWrite?: boolean;
+
+  validateTerminology?: boolean;
 
   /**
    * Optional flag to include Medplum extended meta fields.
@@ -930,16 +940,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
-    const issues = validateResource(resource);
+    // Prepare validator options
+    let options: ValidatorOptions | undefined;
+    if (this.context.validateTerminology) {
+      const tokens = Object.create(null);
+      options = { ...options, collect: { tokens } };
+    }
+
+    // Validate resource against base FHIR spec
+    const issues = validateResource(resource, options);
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
 
+    // Validate profiles after verifying compliance with base spec
     const profileUrls = resource.meta?.profile;
     if (profileUrls) {
-      await this.validateProfiles(resource, profileUrls);
+      await this.validateProfiles(resource, profileUrls, options);
     }
 
+    // (Optionally) check any required terminology bindings found
+    if (this.context.validateTerminology && options?.collect?.tokens) {
+      await this.validateTerminology(options.collect.tokens, issues);
+      if (issues.some((iss) => iss.severity === 'error')) {
+        throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
+      }
+    }
+
+    // Track latency for successful validation
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
     recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
@@ -951,7 +979,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+  private async validateProfiles(resource: Resource, profileUrls: string[], options?: ValidatorOptions): Promise<void> {
     const logger = getLogger();
     for (const url of profileUrls) {
       const loadStart = process.hrtime.bigint();
@@ -965,13 +993,65 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validateResource(resource, { profile });
+      validateResource(resource, { ...options, profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       logger.debug('Profile loaded', {
         url,
         loadTime,
         validateTime,
       });
+    }
+  }
+
+  private async validateTerminology(
+    tokens: Record<string, TypedValueWithPath[]>,
+    issues: OperationOutcomeIssue[]
+  ): Promise<void> {
+    for (const [url, values] of Object.entries(tokens)) {
+      const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+
+      const resultCache: Record<string, boolean | undefined> = Object.create(null);
+      for (const value of values) {
+        let codings: Coding[] | undefined;
+        switch (value.type) {
+          case 'CodeableConcept':
+            codings = (value.value as CodeableConcept).coding;
+            break;
+          case 'Coding':
+            codings = [value.value as Coding];
+            break;
+          default: {
+            const cachedResult = resultCache[`${value.type}|${value.value}`];
+            if (cachedResult === false) {
+              issues.push({
+                severity: 'error',
+                code: 'value',
+                details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+                expression: [value.path],
+              });
+            }
+            if (cachedResult !== undefined) {
+              continue;
+            }
+            codings = [{ code: value.value as string }];
+            break;
+          }
+        }
+        if (!codings?.length) {
+          continue;
+        }
+
+        const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+        resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
+        if (!matchedCoding) {
+          issues.push({
+            severity: 'error',
+            code: 'value',
+            details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+            expression: [value.path],
+          });
+        }
+      }
     }
   }
 
@@ -2327,7 +2407,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param err - Optional error to remove the connection from the pool.
    */
   private releaseConnection(err?: boolean | Error): void {
-    if (this.conn) {
+    if (this.conn && this.disposable) {
       this.conn.release(err);
       this.conn = undefined;
     }
@@ -2557,14 +2637,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return new Array(references.length);
     }
-    const referenceKeys = references.map((r) => r.reference as string);
+
+    const referenceKeys: string[] = [];
+
+    // Build referenceKeys only for valid input references and track
+    // their indices in the original array so that the result array
+    // is constructed in the correct order.
+    const referenceKeyIndices: number[] = new Array(references.length);
+    for (let i = 0; i < references.length; i++) {
+      const r = references[i];
+      if (r.reference) {
+        referenceKeys.push(r.reference);
+        referenceKeyIndices[i] = referenceKeys.length - 1;
+      }
+    }
+
     if (referenceKeys.length === 0) {
       // Return early to avoid calling mget() with no args, which is an error
-      return [];
+      return new Array(references.length);
     }
-    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
-      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-    );
+
+    const cachedValues = await getRedis().mget(referenceKeys);
+
+    const result = new Array<CacheEntry | undefined>(references.length);
+    for (let i = 0; i < references.length; i++) {
+      if (referenceKeyIndices[i] === undefined) {
+        result[i] = undefined;
+      } else {
+        const cachedValue = cachedValues[referenceKeyIndices[i]];
+        result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+      }
+    }
+    return result;
   }
 
   /**
@@ -2639,15 +2743,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
-    if (this.disposable) {
-      if (this.transactionDepth > 0) {
-        // Bad state, remove connection from pool
-        getLogger().error('Closing Repository with active transaction');
-        this.releaseConnection(new Error('Closing Repository with active transaction'));
-      } else {
-        // Good state, return healthy connection to pool
-        this.releaseConnection(removeConnection);
-      }
+    if (this.transactionDepth > 0) {
+      // Bad state, remove connection from pool
+      getLogger().error('Closing Repository with active transaction');
+      this.releaseConnection(new Error('Closing Repository with active transaction'));
+    } else {
+      // Good state, return healthy connection to pool
+      this.releaseConnection(removeConnection);
     }
     this.closed = true;
   }

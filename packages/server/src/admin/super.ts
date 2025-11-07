@@ -274,9 +274,7 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
 });
 
 // POST to /admin/super/migrate
-// to run pending data migrations.
-// This is intended to replace all of the above endpoints,
-// because it will be run automatically by the server upgrade process.
+// to run the pending post-deploy migration, if any.
 superAdminRouter.post(
   '/migrate',
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],

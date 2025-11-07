@@ -348,6 +348,13 @@ export interface MedplumClientOptions {
    * This can be used to set custom headers such as Cookies or Authorization headers.
    */
   defaultHeaders?: Record<string, string>;
+
+  /**
+   * Prefix to add to all keys when using `localStorage` as the backing store for `ClientStorage` (the default option in the browser).
+   *
+   * Default is `''` (no prefix).
+   */
+  storagePrefix?: string;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
@@ -902,7 +909,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage ?? new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage(undefined, options?.storagePrefix);
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
     this.fhirBaseUrl = concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4');
@@ -2130,20 +2137,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async createResourceIfNoneExist<T extends Resource>(
     resource: T,
     query: string,
-    options?: MedplumRequestOptions
+    options: MedplumRequestOptions = {}
   ): Promise<WithId<T>> {
     const url = this.fhirUrl(resource.resourceType);
-    if (!options) {
-      options = { headers: { 'If-None-Exist': query } };
-    } else if (!options.headers) {
-      options.headers = { 'If-None-Exist': query };
-    } else if (Array.isArray(options.headers)) {
-      options.headers.push(['If-None-Exist', query]);
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('If-None-Exist', query);
-    } else {
-      options.headers['If-None-Exist'] = query;
-    }
+    this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post(url, resource, undefined, options);
     this.cacheResource(result);
@@ -3210,7 +3207,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Bulk Data Response containing links to Bulk Data files. See the {@link https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status | "Response - Complete Status"} for full details.
    */
   async bulkExport(
-    //eslint-disable-next-line default-param-last
     exportLevel = '',
     resourceTypes?: string,
     since?: string,
@@ -3678,14 +3674,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param ifNoneExist - Optional flag to only set the header if it doesn't already exist.
    */
   private setRequestHeader(options: MedplumRequestOptions, key: string, value: string, ifNoneExist = false): void {
-    if (!options.headers) {
-      options.headers = {};
+    const headers = options.headers;
+    if (!headers) {
+      options.headers = { [key]: value };
+    } else if (Array.isArray(headers)) {
+      if (!ifNoneExist || !headers.some(([k]) => k.toLowerCase() === key.toLowerCase())) {
+        headers.push([key, value]);
+      }
+    } else if (headers instanceof Headers) {
+      if (!ifNoneExist || !headers.has(key)) {
+        headers.set(key, value);
+      }
+    } else if (isObject(headers)) {
+      if (!ifNoneExist || !headers[key]) {
+        headers[key] = value;
+      }
     }
-    const headers = options.headers as Record<string, string>;
-    if (ifNoneExist && headers[key]) {
-      return;
-    }
-    headers[key] = value;
   }
 
   /**
@@ -4197,7 +4201,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         // Refresh the page to ensure the active login is up to date.
         if (e.key === null) {
           locationUtils.reload();
-        } else if (e.key === 'activeLogin') {
+        } else if (e.key === this.storage.makeKey('activeLogin')) {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
           if (

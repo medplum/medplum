@@ -17,21 +17,31 @@ import { sleep } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
+import { getJsFileExtension } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 
-export const LAMBDA_RUNTIME = 'nodejs20.x';
+export const LAMBDA_RUNTIME = 'nodejs22.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
-const WRAPPER_CODE = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
-const fetch = require("node-fetch");
+const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
-const userCode = require("./user.js");
+const userCode = require("./user.cjs");
 
 exports.handler = async (event, context) => {
+`;
+
+const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
+import PdfPrinter from 'pdfmake';
+import * as userCode from './user.mjs';
+
+export const handler = async (event, context) => {
+`;
+
+const WRAPPER_CODE = `
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
@@ -64,7 +74,7 @@ exports.handler = async (event, context) => {
     }
     throw err;
   }
-};
+}
 
 function createPdf(docDefinition, tableLayouts, fonts) {
   if (!fonts) {
@@ -153,7 +163,7 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
 
   const name = getLambdaNameForBot(bot);
   log.info('Deploying lambda function for bot', { name });
-  const zipFile = await createZipFile(code);
+  const zipFile = await createZipFile(bot, code);
   log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
@@ -164,10 +174,16 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
   }
 }
 
-async function createZipFile(code: string): Promise<Uint8Array> {
+async function createZipFile(bot: Bot, code: string): Promise<Uint8Array> {
+  const ext = getJsFileExtension(bot, code);
   const zip = new JSZip();
-  zip.file('user.js', code);
-  zip.file('index.js', WRAPPER_CODE);
+  if (ext === '.mjs') {
+    zip.file(`user.mjs`, code);
+    zip.file('index.mjs', ESM_PREFIX + WRAPPER_CODE);
+  } else {
+    zip.file(`user.cjs`, code);
+    zip.file('index.cjs', CJS_PREFIX + WRAPPER_CODE);
+  }
   return zip.generateAsync({ type: 'uint8array' });
 }
 

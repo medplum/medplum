@@ -1,10 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function readJson(filename: string): any {
-  return JSON.parse(readFileSync(resolve(__dirname, filename), 'utf8'));
+  const filenamePath = resolve(getDataDir(), filename);
+  return JSON.parse(readFileSync(filenamePath, 'utf8'));
+}
+
+export function getDataDir(): string {
+  if (typeof __dirname !== 'undefined') {
+    return resolve(__dirname);
+  } else if (import.meta.url) {
+    return resolve(dirname(fileURLToPath(import.meta.url)));
+  } else {
+    throw new Error('No data directory found');
+  }
 }
 
 /**

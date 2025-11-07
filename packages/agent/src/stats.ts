@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 const currentStats = {
   hl7ConnectionsOpen: 0,
+  ping: -1,
 };
 
 export function getCurrentStats(): typeof currentStats {

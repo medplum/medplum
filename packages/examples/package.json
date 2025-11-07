@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "4.5.1",
+  "version": "5.0.0",
   "description": "Medplum Code Examples",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
@@ -20,11 +21,11 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@medplum/core": "4.5.1",
-    "@medplum/fhirtypes": "4.5.1",
-    "@medplum/mock": "4.5.1"
+    "@medplum/core": "5.0.0",
+    "@medplum/fhirtypes": "5.0.0",
+    "@medplum/mock": "5.0.0"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }
