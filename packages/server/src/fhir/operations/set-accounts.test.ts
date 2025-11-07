@@ -407,6 +407,52 @@ describe('Patient Set Accounts Operation', () => {
     );
   });
 
+  test('Enforces rate limits in async mode', async () => {
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      project: { systemSetting: [{ name: 'userFhirQuota', valueInteger: 400 }] },
+    });
+    const patient = await repo.createResource({ resourceType: 'Patient' });
+    await repo.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: { text: 'Eye color' },
+    });
+    await repo.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: { text: 'Hair color' },
+    });
+    // Start the operation
+    const initRes = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization1) },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(initRes.status).toBe(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+
+    // Check the export status
+    const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes.status).toBe(429);
+  });
+
   test('Removes account without extended header', async () => {
     const setTwo = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
