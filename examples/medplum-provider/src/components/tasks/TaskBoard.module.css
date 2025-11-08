@@ -43,3 +43,8 @@
   background-color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-6));
   color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
 }
+
+.sidebar {
+  transition: width 0.3s ease-in-out, min-width 0.3s ease-in-out;
+  overflow: hidden;
+}

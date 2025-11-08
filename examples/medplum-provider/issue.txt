@@ -1,0 +1,23 @@
+Inside of the examples/medplum-provider app, add a new Route called /Tasks/
+
+This new page should show the standard app UI wrapper. The internals of the page should then be two columns:
+
+Column 1: Task Filters:
+- ~25% of the screen width, minimum width 200px. Filter can be hidden or opened up, but, by default, is visible. When hidden, a tab
+on the left hand side of the screen can be clicked to open it.
+- shows a list of possible filters on top of the tasks stored in the system. This includes allowing selecting a specific user's assigned tasks,
+or a specific CareTeam, Organization, or Group. Each of these should allow a multi-select in the UI and show a dropdown w/ typeahead
+to select the filters. Filters should show up in the URL, so that copy/pasting the URL allows people to share the currently selected filters.
+- Filter for open/closed tasks, by default should show only open tasks.
+- Filter for other task fields. Please research and suggest other options here.
+
+Column 2: Active Tasks:
+- Remainder of the screen real-estate.
+- Shows all of the tasks for the current filter, sorted with Urgent or STAT tasks up top, otherwise sorted by due date (with the soonest dates near the top)
+and then by created date ascendting.
+
+Implementation should follow existing patterns for visuals and components as well as code styles.
+
+Note that all of the data modeling is in the FHIR standard format. For reference, the FHIR Tasks object is specified here: https://build.fhir.org/task.html.
+
+If you want to reference other FHIR objets, use the internet to search the build.fhir.org website.
