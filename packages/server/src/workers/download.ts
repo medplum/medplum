@@ -275,6 +275,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     // From node-fetch docs:
     // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
+    log.info('Downloaded content successfully', { binaryId: binary.id });
 
     // re-fetch resource so we are mutating as recent a copy as possible
     // (there may have been other mutations applied while we were writing the
@@ -289,12 +290,24 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
         path: `${pathToPointer(value.path)}/url`,
         value: `Binary/${binary.id}`,
       }));
+
+    if (patches.length === 0) {
+      // This can happen if we double enqueued autodownload jobs for the same
+      // URL, or if a user has amended a resource they wrote faster than this
+      // job ran.
+      log.info('Download succeeded but original URL no longer found in resource', {
+        resourceType,
+        id,
+        url,
+        binaryId: binary.id,
+      });
+      return;
+    }
+
     await systemRepo.patchResource(resourceType, id, [
       ...patches,
       { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
     ]);
-
-    log.info('Downloaded content successfully');
   } catch (ex: any) {
     log.info('Download exception: ' + ex, ex);
     throw ex;
