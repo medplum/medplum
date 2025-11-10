@@ -26,7 +26,7 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const expires = req.query['Expires'];
-  if (!expires || Math.floor(Date.now() / 1000) > parseInt(expires as string, 10)) {
+  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
     res.status(410).send('URL has expired');
     return;
   }

@@ -633,7 +633,7 @@ export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7D
  * @returns The parsed integer value, or the default value if the string is not a number.
  */
 function parseIntOrDefault(str: string, defaultValue: number): number {
-  const result = parseInt(str, 10);
+  const result = Number.parseInt(str, 10);
   return isNaN(result) ? defaultValue : result;
 }
 
@@ -665,8 +665,8 @@ function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): numbe
   // Remove plus, minus, and optional colon
   offsetStr = offsetStr.slice(1).replace(':', '');
 
-  const hour = parseInt(offsetStr.slice(0, 2), 10);
-  const minute = parseInt(offsetStr.slice(2, 4), 10);
+  const hour = Number.parseInt(offsetStr.slice(0, 2), 10);
+  const minute = Number.parseInt(offsetStr.slice(2, 4), 10);
   return sign * (hour * 60 * 60 * 1000 + minute * 60 * 1000);
 }
 

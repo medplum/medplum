@@ -186,7 +186,7 @@ export function setValue(config: Record<string, unknown>, key: string, value: st
 
   let parsedValue: any = value;
   if (isIntegerConfig(key)) {
-    parsedValue = parseInt(value, 10);
+    parsedValue = Number.parseInt(value, 10);
   } else if (isBooleanConfig(key)) {
     parsedValue = value === 'true';
   } else if (isObjectConfig(key)) {

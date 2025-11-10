@@ -64,7 +64,7 @@ describe('resource-usage bot', () => {
     for (const line of dataLines) {
       const parts = line.split(',');
       if (parts.length === 2) {
-        const count = parseInt(parts[1], 10);
+        const count = Number.parseInt(parts[1], 10);
         if (!isNaN(count)) {
           counts.push(count);
         }

@@ -739,7 +739,7 @@ function parseV1Cursor(cursor: string): Cursor | undefined {
   if (!nextId) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString() };
 }
 
@@ -754,7 +754,7 @@ function parseV2Cursor(cursor: string): Cursor | undefined {
   if (!nextInstant) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString(), excludedIds: excludedIds?.split(',') };
 }
 
@@ -869,7 +869,7 @@ async function getEstimateCount(repo: Repository, searchRequest: SearchRequest):
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      return parseInt(match[1], 10);
+      return Number.parseInt(match[1], 10);
     }
   }
   return 0;

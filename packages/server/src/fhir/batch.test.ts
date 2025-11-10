@@ -1467,7 +1467,7 @@ describe('Batch and Transaction processing', () => {
     const results = res.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
   });
 
   test('Async batch sleeps over rate limit', async () => {
@@ -1581,6 +1581,6 @@ describe('Batch and Transaction processing', () => {
     const results = res2.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
   });
 });

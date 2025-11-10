@@ -380,7 +380,7 @@ function parseIntegerQueryParam(query: Record<string, string | string[] | undefi
   } else {
     strValue = value;
   }
-  return strValue ? parseInt(strValue, 10) : undefined;
+  return strValue ? Number.parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

@@ -128,7 +128,7 @@ function loadEnvConfig(): MedplumServerConfig {
     key = key.toLowerCase().replaceAll(/_([a-z])/g, (g) => g[1].toUpperCase());
 
     if (isIntegerConfig(key)) {
-      currConfig[key] = parseInt(value ?? '', 10);
+      currConfig[key] = Number.parseInt(value ?? '', 10);
     } else if (isFloatConfig(key)) {
       currConfig[key] = parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {

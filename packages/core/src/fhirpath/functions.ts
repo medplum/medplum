@@ -717,7 +717,7 @@ export const functions: Record<string, FhirPathFunction> = {
       return [{ type: PropertyType.integer, value }];
     }
     if (typeof value === 'string' && /^[+-]?\d+$/.exec(value)) {
-      return [{ type: PropertyType.integer, value: parseInt(value, 10) }];
+      return [{ type: PropertyType.integer, value: Number.parseInt(value, 10) }];
     }
     if (typeof value === 'boolean') {
       return [{ type: PropertyType.integer, value: value ? 1 : 0 }];

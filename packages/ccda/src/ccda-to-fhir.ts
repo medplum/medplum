@@ -1221,7 +1221,7 @@ class CcdaToFhirConverter {
           break;
 
         case 'INT': // Integer
-          result.valueInteger = observation.value['@_value'] ? parseInt(observation.value['@_value'], 10) : undefined;
+          result.valueInteger = observation.value['@_value'] ? Number.parseInt(observation.value['@_value'], 10) : undefined;
           break;
 
         default:
