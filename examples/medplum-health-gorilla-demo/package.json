@@ -26,7 +26,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@vitejs/plugin-react": "5.1.0",
-    "eslint": "9.38.0",
+    "eslint": "9.39.1",
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "0.4.24",
     "postcss": "8.5.6",
@@ -35,7 +35,7 @@
     "react-dom": "19.2.0",
     "react-router": "7.9.5",
     "typescript": "5.9.3",
-    "vite": "7.1.12"
+    "vite": "7.2.2"
   },
   "packageManager": "npm@10.9.4",
   "engines": {

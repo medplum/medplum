@@ -20,14 +20,14 @@
   "type": "module",
   "main": "index.mjs",
   "devDependencies": {
-    "eslint": "9.38.0",
+    "eslint": "9.39.1",
     "eslint-plugin-header": "3.1.1",
     "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-jsdoc": "61.1.11",
+    "eslint-plugin-jsdoc": "61.1.12",
     "eslint-plugin-no-only-tests": "3.3.0",
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "0.4.24",
-    "typescript-eslint": "8.46.2"
+    "typescript-eslint": "8.46.3"
   },
   "peerDependencies": {
     "eslint": "^9",

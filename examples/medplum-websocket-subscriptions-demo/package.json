@@ -27,7 +27,7 @@
     "@medplum/mock": "5.0.0",
     "@medplum/react": "5.0.0",
     "@tabler/icons-react": "3.35.0",
-    "@types/node": "22.18.13",
+    "@types/node": "22.19.0",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@vitejs/plugin-react": "5.1.0",
@@ -35,7 +35,7 @@
     "react-dom": "19.2.0",
     "react-router": "7.9.5",
     "typescript": "5.9.3",
-    "vite": "7.1.12"
+    "vite": "7.2.2"
   },
   "packageManager": "npm@10.9.4",
   "engines": {

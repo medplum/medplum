@@ -25,7 +25,7 @@
     "@medplum/ccda": "5.0.0",
     "@medplum/core": "5.0.0",
     "@medplum/definitions": "5.0.0",
-    "fast-xml-parser": "5.3.0",
+    "fast-xml-parser": "5.3.1",
     "form-data": "4.0.4",
     "jose": "5.10.0",
     "jszip": "3.10.1",
