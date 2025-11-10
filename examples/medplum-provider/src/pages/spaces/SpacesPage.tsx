@@ -405,7 +405,7 @@ export function SpacesPage(): JSX.Element {
 
           {/* Right Panel for Resource Details */}
           {selectedResource && (
-            <Paper className={classes.previewResource} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Paper className={classes.previewResource} >
               <Group justify="space-between" p="md">
                 <Text size="lg" fw={600}>
                   Resource Details
