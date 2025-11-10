@@ -106,5 +106,5 @@ export function createQuantity(value: number, unit: string): Quantity {
 }
 
 function isValidNumber(value: number | undefined): boolean {
-  return value !== undefined && !Number.isNaN(value) && isFinite(value);
+  return value !== undefined && !Number.isNaN(value) && Number.isFinite(value);
 }
