@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Medplum FHIR Router",
   "keywords": [
     "medplum",
@@ -56,9 +56,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "5.0.0",
-    "@medplum/definitions": "5.0.0",
-    "@medplum/fhirtypes": "5.0.0",
+    "@medplum/core": "5.0.1",
+    "@medplum/definitions": "5.0.1",
+    "@medplum/fhirtypes": "5.0.1",
     "dataloader": "2.2.3",
     "graphql": "16.11.0",
     "rfc6902": "5.1.2"
