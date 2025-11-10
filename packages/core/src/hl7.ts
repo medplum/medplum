@@ -634,7 +634,7 @@ export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7D
  */
 function parseIntOrDefault(str: string, defaultValue: number): number {
   const result = Number.parseInt(str, 10);
-  return isNaN(result) ? defaultValue : result;
+  return Number.isNaN(result) ? defaultValue : result;
 }
 
 /**

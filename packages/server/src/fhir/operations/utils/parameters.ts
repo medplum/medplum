@@ -103,7 +103,7 @@ function parseStringifiedParameter(
     case 'unsignedInt':
       {
         const n = Number.parseInt(value, 10);
-        if (!isNaN(n)) {
+        if (!Number.isNaN(n)) {
           return n;
         }
       }
@@ -111,7 +111,7 @@ function parseStringifiedParameter(
     case 'decimal':
       {
         const n = Number.parseFloat(value);
-        if (!isNaN(n)) {
+        if (!Number.isNaN(n)) {
           return n;
         }
       }

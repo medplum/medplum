@@ -1385,7 +1385,7 @@ function validateDateValue(value: string): void {
   }
 
   const dateValue = new Date(value);
-  if (isNaN(dateValue.getTime())) {
+  if (Number.isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
   }
 }
