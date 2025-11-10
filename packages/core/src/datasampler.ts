@@ -124,7 +124,9 @@ function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
 }
 
 export function expandSampledData(sample: SampledData): number[] {
-  return sample.data?.split(' ').map((d) => Number.parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
+  return (
+    sample.data?.split(' ').map((d) => Number.parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? []
+  );
 }
 
 function compressSampledData(data: number[], sampling?: SamplingInfo): string | undefined {
