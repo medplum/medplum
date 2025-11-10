@@ -1204,7 +1204,7 @@ class CcdaToFhirConverter {
         case 'PQ': // Physical Quantity
         case 'CO': // Count of individuals
           result.valueQuantity = {
-            value: observation.value['@_value'] ? parseFloat(observation.value['@_value']) : undefined,
+            value: observation.value['@_value'] ? Number.parseFloat(observation.value['@_value']) : undefined,
             unit: observation.value['@_unit'],
             system: UCUM,
             code: observation.value['@_unit'],

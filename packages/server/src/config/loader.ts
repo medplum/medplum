@@ -130,7 +130,7 @@ function loadEnvConfig(): MedplumServerConfig {
     if (isIntegerConfig(key)) {
       currConfig[key] = Number.parseInt(value ?? '', 10);
     } else if (isFloatConfig(key)) {
-      currConfig[key] = parseFloat(value ?? '');
+      currConfig[key] = Number.parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(key)) {

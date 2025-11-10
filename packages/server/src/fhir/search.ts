@@ -1471,7 +1471,7 @@ function buildQuantitySearchFilter(
     // 	 The value for the parameter in the resource is approximately the same to the provided value.
     //   Note that the recommended value for the approximation is 10% of the stated value
     //   (or for a date, 10% of the gap between now and the date), but systems may choose other values where appropriate
-    const numberValue = parseFloat(number);
+    const numberValue = Number.parseFloat(number);
     return new Conjunction([
       new Condition(new Column(table, impl.columnName), '>=', numberValue * 0.9),
       new Condition(new Column(table, impl.columnName), '<=', numberValue * 1.1),

@@ -110,7 +110,7 @@ function parseStringifiedParameter(
       break;
     case 'decimal':
       {
-        const n = parseFloat(value);
+        const n = Number.parseFloat(value);
         if (!isNaN(n)) {
           return n;
         }

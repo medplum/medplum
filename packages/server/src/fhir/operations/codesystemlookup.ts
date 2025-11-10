@@ -130,7 +130,7 @@ function toTypedValue(value: string, type: CodeSystemProperty['type']): TypedVal
     case 'integer':
       return { type, value: Number.parseInt(value, 10) };
     case 'decimal':
-      return { type, value: parseFloat(value) };
+      return { type, value: Number.parseFloat(value) };
     default:
       return { type, value };
   }

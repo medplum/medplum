@@ -889,7 +889,7 @@ export const functions: Record<string, FhirPathFunction> = {
       return [{ type: PropertyType.decimal, value }];
     }
     if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?$/.exec(value)) {
-      return [{ type: PropertyType.decimal, value: parseFloat(value) }];
+      return [{ type: PropertyType.decimal, value: Number.parseFloat(value) }];
     }
     if (typeof value === 'boolean') {
       return [{ type: PropertyType.decimal, value: value ? 1 : 0 }];
@@ -947,7 +947,7 @@ export const functions: Record<string, FhirPathFunction> = {
       return [{ type: PropertyType.Quantity, value: { value, unit: '1' } }];
     }
     if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?/.exec(value)) {
-      return [{ type: PropertyType.Quantity, value: { value: parseFloat(value), unit: '1' } }];
+      return [{ type: PropertyType.Quantity, value: { value: Number.parseFloat(value), unit: '1' } }];
     }
     if (typeof value === 'boolean') {
       return [{ type: PropertyType.Quantity, value: { value: value ? 1 : 0, unit: '1' } }];

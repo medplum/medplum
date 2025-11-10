@@ -1133,7 +1133,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return parseFloat(a.toFixed(precision));
+  return Number.parseFloat(a.toFixed(precision));
 }
 
 /**
