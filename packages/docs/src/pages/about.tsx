@@ -164,7 +164,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Darren Eam"
               title="Forward Deployed Engineer"
-              imgUrl="/img/people/darreneam.jpg"
+              imgUrl="/img/people/darreneam.jpeg"
               linkedInUrl="https://www.linkedin.com/in/darren-eam/"
               githubUrl="https://github.com/deam65"
             />
