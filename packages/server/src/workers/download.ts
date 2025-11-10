@@ -6,7 +6,7 @@ import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import { Pointer } from 'rfc6902'
+import { Pointer } from 'rfc6902';
 import type { Readable } from 'stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -113,7 +113,7 @@ export async function addDownloadJobs(
     // Only process allowed external URLs
     const url = attachment.value.url;
     if (!isExternalUrl(url) || !isUrlAllowedByProject(project, url)) {
-      continue
+      continue;
     }
 
     // Skip if this mutation didn't adjust the URL in question
@@ -284,8 +284,8 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
     const attachments = getAttachments(resource);
     const patches = attachments
-      .filter(attachment => attachment.value.url === url)
-      .map(value => ({
+      .filter((attachment) => attachment.value.url === url)
+      .map((value) => ({
         op: 'replace' as const,
         path: `${pathToPointer(value.path)}/url`,
         value: `Binary/${binary.id}`,
@@ -304,14 +304,10 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       return;
     }
 
-    await systemRepo.patchResource(
-      resourceType,
-      id,
-      [
-        ...patches,
-        { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
-      ],
-    );
+    await systemRepo.patchResource(resourceType, id, [
+      ...patches,
+      { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
+    ]);
   } catch (ex: any) {
     log.info('Download exception: ' + ex, ex);
     throw ex;
@@ -320,23 +316,25 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
 // Translate basic FHIRPath into JSON Patch pointer
 export function pathToPointer(path: string): string {
-  return (path.startsWith('.') ? path : `.${path}`)
-    .replaceAll('.', '/')
-    .replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`) // convert `[0]` => `/0`
+  return (path.startsWith('.') ? path : `.${path}`).replaceAll('.', '/').replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert `[0]` => `/0`
 }
 
 export function getAttachments(resource: Resource): TypedValueWithPath[] {
   const attachments: TypedValueWithPath[] = [];
-  crawlTypedValue(toTypedValue(resource), {
-    visitProperty: (_parent, _key, _path, propertyValues) => {
-      for (const propertyValue of propertyValues) {
-        for (const value of arrayify(propertyValue)) {
-          if (value.type === 'Attachment') {
-            attachments.push(value);
+  crawlTypedValue(
+    toTypedValue(resource),
+    {
+      visitProperty: (_parent, _key, _path, propertyValues) => {
+        for (const propertyValue of propertyValues) {
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Attachment') {
+              attachments.push(value);
+            }
           }
         }
-      }
-    }
-  }, { initialPath: '' });
+      },
+    },
+    { initialPath: '' }
+  );
   return attachments;
 }

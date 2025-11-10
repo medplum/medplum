@@ -500,9 +500,7 @@ describe('Download Worker', () => {
       await execDownloadJob(job2);
 
       const afterSecondDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
-      expect(afterSecondDownload.content?.[0]?.attachment?.url).toBe(
-        afterFirstDownload.content[0].attachment.url
-      );
+      expect(afterSecondDownload.content?.[0]?.attachment?.url).toBe(afterFirstDownload.content[0].attachment.url);
       expect(afterSecondDownload.content?.[1]?.attachment?.url).toMatch(/^Binary\//);
       expect(afterSecondDownload.meta?.author?.reference).toBe('system');
     }));
