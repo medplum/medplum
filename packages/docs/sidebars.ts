@@ -271,10 +271,6 @@ const sidebars: SidebarsConfig = {
 
         { type: 'html', value: '<strong class="menu__link">Monitoring & Operations</strong>' },
         { type: 'doc', id: 'bots/monitoring-bots' },
-
-        // { type: 'html', value: '<strong class="menu__link">Reference</strong>' },
-        // { type: 'ref', id: 'https://github.com/medplum/medplum-demo-bots' },
-        // { type: 'ref', id: 'https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Abots' },
       ],
     },
     {
