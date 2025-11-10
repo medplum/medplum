@@ -9,11 +9,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
-import { requestContextStore } from '../request-context-store';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
@@ -45,7 +43,6 @@ describe('Super Admin routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
     ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
     const normalProject = await createTestProject();

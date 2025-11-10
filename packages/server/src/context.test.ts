@@ -32,10 +32,14 @@ describe('RequestContext', () => {
 
   test('getAuthenticatedContext', () => {
     expect(() => getAuthenticatedContext()).toThrow('No request context available');
+
     requestContextStore.run(new RequestContext('request', 'trace'), () => {
       expect(() => getAuthenticatedContext()).toThrow('Request is not authenticated');
     });
-    withTestContext(() => expect(getAuthenticatedContext()).toBeDefined());
+
+    withTestContext(() => {
+      expect(() => getAuthenticatedContext()).toThrow('Request is not authenticated');
+    });
   });
 
   test('tryRunInRequestContext', () => {

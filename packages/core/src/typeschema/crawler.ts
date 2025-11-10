@@ -127,16 +127,17 @@ class Crawler {
     for (const propertyValue of propertyValues) {
       if (propertyValue) {
         for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          this.crawlPropertyValue(value, path);
+          this.crawlPropertyValue(value, path, schema);
         }
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      //TODO Is this the correct way to consider schema.innerTypes?
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }

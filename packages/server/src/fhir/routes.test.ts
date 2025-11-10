@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
-import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type { Bundle, Meta, Organization, Patient, Reference, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import type { Response } from 'supertest';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -16,6 +19,7 @@ const app = express();
 let accessToken: string;
 let legacyJsonResponseAccessToken: string;
 let searchOnReaderAccessToken: string;
+let validateTerminologyAccessToken: string;
 let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
@@ -30,6 +34,9 @@ describe('FHIR Routes', () => {
     });
     searchOnReaderAccessToken = await initTestAuth({
       project: { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] },
+    });
+    validateTerminologyAccessToken = await initTestAuth({
+      project: { features: ['validate-terminology'] },
     });
 
     for (const token of [accessToken, searchOnReaderAccessToken]) {
@@ -342,6 +349,132 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(400);
+  });
+
+  test('Update resource with invalid terminology', async () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+      active: true,
+      name: [
+        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+        { use: 'usual', given: ['Jim'] },
+        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+      ],
+      telecom: [
+        { use: 'home', system: 'url', value: 'http://example.com' },
+        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+      ],
+      gender: 'male',
+      birthDate: '1974-12-25',
+      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+      contact: [
+        {
+          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+          gender: 'female',
+        },
+      ],
+      communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'en' }] } }],
+    };
+
+    const usCorePatientProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+    ) as StructureDefinition;
+
+    // Modify the US Core Patient profile to have 'required' binding for communication.language
+    const commLang = usCorePatientProfile.snapshot?.element.find(
+      (elem) => elem.id === 'Patient.communication.language'
+    );
+    if (!commLang) {
+      throw new Error('Could not find Patient.communication.language in US Core Patient profile');
+    }
+    if (commLang.binding?.strength !== 'extensible') {
+      throw new Error('Expected extensible binding for Patient.communication.language in US Core Patient profile');
+    }
+
+    if (commLang.binding.valueSet !== 'http://hl7.org/fhir/us/core/ValueSet/simple-language') {
+      throw new Error(
+        'Expected simple-language ValueSet for Patient.communication.language in US Core Patient profile'
+      );
+    }
+    commLang.binding.strength = 'required';
+
+    const profileUrl = 'urn:uuid:' + randomUUID();
+    const profileRes = await request(app)
+      .post(`/fhir/R4/StructureDefinition`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send({
+        ...usCorePatientProfile,
+        url: profileUrl,
+      });
+    expect(profileRes.status).toBe(201);
+
+    // Create a ValueSet for the US Core Patient profile that only includes 'en' (English)
+    const languageValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://hl7.org/fhir/us/core/ValueSet/simple-language',
+      expansion: {
+        timestamp: new Date().toISOString(),
+        contains: [
+          {
+            system: 'urn:ietf:bcp:47',
+            code: 'en',
+          },
+        ],
+      },
+      status: 'active',
+    };
+    const valueSetRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send({
+        ...languageValueSet,
+      });
+    expect(valueSetRes.status).toBe(201);
+
+    let patientRes: Response;
+
+    // Valid patient without any profiles
+    patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send(patient);
+    expect(patientRes.status).toBe(201);
+
+    // Invalid gender
+    patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send({ ...patient, gender: 'enby' as unknown as Patient['gender'] });
+    expect(patientRes.status).toBe(400);
+    expect(patientRes.body.issue[0].details.text).toBe(
+      `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1`
+    );
+
+    // Valid patient with US Core Patient profile
+    patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send({ ...patient, meta: { profile: [profileUrl] } });
+    expect(patientRes.status).toBe(201);
+
+    // Invalid patient with US Core Patient profile (communication.language not in ValueSet)
+    patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + validateTerminologyAccessToken)
+      .send({
+        ...patient,
+        meta: { profile: [profileUrl] },
+        communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
+      });
+    expect(patientRes.status).toBe(400);
+    expect(patientRes.body.issue[0].details.text).toContain(
+      `did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language`
+    );
   });
 
   test('Update resource wrong content-type', async () => {

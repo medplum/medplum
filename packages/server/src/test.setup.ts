@@ -22,7 +22,7 @@ import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
-import { AuthenticatedRequestContext } from './context';
+import { RequestContext } from './context';
 import type { RepositoryContext } from './fhir/repo';
 import { Repository, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
@@ -58,121 +58,119 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
-  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    const systemRepo = getSystemRepo();
+  const systemRepo = getSystemRepo();
 
-    const project = await systemRepo.createResource<Project>({
-      resourceType: 'Project',
-      name: 'Test Project',
-      owner: {
-        reference: 'User/' + randomUUID(),
+  const project = await systemRepo.createResource<Project>({
+    resourceType: 'Project',
+    name: 'Test Project',
+    owner: {
+      reference: 'User/' + randomUUID(),
+    },
+    strictMode: true,
+    features: ['bots', 'email', 'graphql-introspection', 'cron'],
+    secret: [
+      {
+        name: 'foo',
+        valueString: 'bar',
       },
-      strictMode: true,
-      features: ['bots', 'email', 'graphql-introspection', 'cron'],
-      secret: [
-        {
-          name: 'foo',
-          valueString: 'bar',
+    ],
+    superAdmin: options?.superAdmin,
+    ...options?.project,
+  });
+
+  let client: WithId<ClientApplication> | undefined;
+  let accessPolicy: AccessPolicy | undefined;
+  let membership: ProjectMembership | undefined;
+  let login: WithId<Login> | undefined;
+  let accessToken: string | undefined;
+  let repo: Repository | undefined;
+
+  if (options?.withClient || options?.withAccessToken || options?.withRepo) {
+    client = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      redirectUris: ['https://example.com/'],
+      meta: {
+        project: project.id,
+      },
+      name: 'Test Client Application',
+      signInForm: {
+        welcomeString: 'Test Welcome String',
+        logo: {
+          url: 'https://example.com/logo.png',
         },
-      ],
-      superAdmin: options?.superAdmin,
-      ...options?.project,
+      },
     });
 
-    let client: WithId<ClientApplication> | undefined;
-    let accessPolicy: AccessPolicy | undefined;
-    let membership: ProjectMembership | undefined;
-    let login: WithId<Login> | undefined;
-    let accessToken: string | undefined;
-    let repo: Repository | undefined;
-
-    if (options?.withClient || options?.withAccessToken || options?.withRepo) {
-      client = await systemRepo.createResource<ClientApplication>({
-        resourceType: 'ClientApplication',
-        secret: randomUUID(),
-        redirectUris: ['https://example.com/'],
-        meta: {
-          project: project.id,
-        },
-        name: 'Test Client Application',
-        signInForm: {
-          welcomeString: 'Test Welcome String',
-          logo: {
-            url: 'https://example.com/logo.png',
-          },
-        },
+    if (options?.accessPolicy) {
+      accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        ...options.accessPolicy,
       });
-
-      if (options?.accessPolicy) {
-        accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          meta: { project: project.id },
-          ...options.accessPolicy,
-        });
-      }
-
-      membership = await systemRepo.createResource<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        user: createReference(client),
-        profile: createReference(client),
-        project: createReference(project),
-        accessPolicy: accessPolicy ? createReference(accessPolicy) : undefined,
-        ...options?.membership,
-      });
-
-      if (options?.withAccessToken) {
-        const scope = 'openid';
-
-        login = await systemRepo.createResource<Login>({
-          resourceType: 'Login',
-          authMethod: 'client',
-          user: createReference(client),
-          client: createReference(client),
-          membership: createReference(membership),
-          authTime: new Date().toISOString(),
-          scope,
-        });
-
-        accessToken = await generateAccessToken({
-          login_id: login.id,
-          sub: client.id,
-          username: client.id,
-          client_id: client.id,
-          profile: client.resourceType + '/' + client.id,
-          scope,
-        });
-      }
-
-      if (options?.withRepo) {
-        const repoContext: RepositoryContext = {
-          projects: [project],
-          currentProject: project,
-          author: createReference(client),
-          superAdmin: options?.superAdmin,
-          projectAdmin: options?.membership?.admin,
-          accessPolicy,
-          strictMode: project.strictMode,
-          extendedMode: true,
-          checkReferencesOnWrite: project.checkReferencesOnWrite,
-        };
-
-        if (typeof options.withRepo === 'object') {
-          Object.assign(repoContext, options.withRepo);
-        }
-        repo = new Repository(repoContext);
-      }
     }
 
-    return {
-      project,
-      accessPolicy,
-      client,
-      membership,
-      login,
-      accessToken,
-      repo,
-    } as TestProjectResult<T>;
-  });
+    membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: createReference(client),
+      profile: createReference(client),
+      project: createReference(project),
+      accessPolicy: accessPolicy ? createReference(accessPolicy) : undefined,
+      ...options?.membership,
+    });
+
+    if (options?.withAccessToken) {
+      const scope = 'openid';
+
+      login = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'client',
+        user: createReference(client),
+        client: createReference(client),
+        membership: createReference(membership),
+        authTime: new Date().toISOString(),
+        scope,
+      });
+
+      accessToken = await generateAccessToken({
+        login_id: login.id,
+        sub: client.id,
+        username: client.id,
+        client_id: client.id,
+        profile: client.resourceType + '/' + client.id,
+        scope,
+      });
+    }
+
+    if (options?.withRepo) {
+      const repoContext: RepositoryContext = {
+        projects: [project],
+        currentProject: project,
+        author: createReference(client),
+        superAdmin: options?.superAdmin,
+        projectAdmin: options?.membership?.admin,
+        accessPolicy,
+        strictMode: project.strictMode,
+        extendedMode: true,
+        checkReferencesOnWrite: project.checkReferencesOnWrite,
+      };
+
+      if (typeof options.withRepo === 'object') {
+        Object.assign(repoContext, options.withRepo);
+      }
+      repo = new Repository(repoContext);
+    }
+  }
+
+  return {
+    project,
+    accessPolicy,
+    client,
+    membership,
+    login,
+    accessToken,
+    repo,
+  } as TestProjectResult<T>;
 }
 
 export async function createTestClient(options?: TestProjectOptions): Promise<WithId<ClientApplication>> {
@@ -187,7 +185,6 @@ export async function addTestUser(
   project: WithId<Project>,
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
-  requestContextStore.enterWith(AuthenticatedRequestContext.system());
   if (accessPolicy) {
     const systemRepo = getSystemRepo();
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -299,7 +296,9 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
 
 const DEFAULT_TEST_CONTEXT = { requestId: 'test-request-id', traceId: 'test-trace-id' };
 export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
-  return requestContextStore.run(AuthenticatedRequestContext.system(ctx ?? DEFAULT_TEST_CONTEXT), fn);
+  const defaults = ctx ?? DEFAULT_TEST_CONTEXT;
+  const context = new RequestContext(defaults.requestId ?? '', defaults.traceId ?? '');
+  return requestContextStore.run(context, fn);
 }
 
 /**

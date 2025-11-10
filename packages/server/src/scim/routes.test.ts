@@ -8,9 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
-import { requestContextStore } from '../request-context-store';
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
@@ -21,7 +19,6 @@ describe('SCIM Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
 
     // First, Alice creates a project
     const registration = await registerNew({
