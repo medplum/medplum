@@ -117,6 +117,14 @@ export async function addDownloadJobs(
     }
 
     // Skip if this mutation didn't adjust the URL in question
+    // Note that there are some cases where we detect a change when an element
+    // _moved_ in the path tree without actually changing. For example, if you
+    // delete an element at array index 0, the remaining items in the array
+    // will shift their index down by 1.
+    //
+    // Given that this is a low frequency type of mutation, we prefer to pay
+    // the (low) cost of a double-enqueued download job instead of trying to
+    // detect path moves on every mutation.
     const pointer = Pointer.fromJSON(`${pathToPointer(attachment.path)}/url`);
     if (pointer.get(resource) === pointer.get(previousVersion)) {
       continue;
