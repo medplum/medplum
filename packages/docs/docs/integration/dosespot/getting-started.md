@@ -552,7 +552,7 @@ See an example implementation in the Provider App's [DoseSpotIcon](https://githu
 
 ## Practitioner AccessPolicy 
 
-The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinica favorite medications](./clinic-favorite-medications.md)
+The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinic's favorite medications](./clinic-favorite-medications.md)
 
 ```
 {
