@@ -579,6 +579,7 @@ The following AccessPolicy can be used to ensure that practitioners have the cor
       "resourceType": "MedicationKnowledge",
       "readonly": true
     }
+    //...
   ]
 }
 ```
