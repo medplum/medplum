@@ -244,7 +244,7 @@ const sidebars: SidebarsConfig = {
         { type: 'html', value: '<strong class="menu__link">Getting Started</strong>' },
         { type: 'doc', id: 'bots/bot-basics' },
         { type: 'doc', id: 'bots/unit-testing-bots' },
-        { type: 'doc', id: 'bots/running-bots-locally'},
+        { type: 'doc', id: 'bots/running-bots-locally' },
         {
           type: 'html',
           value: '<strong class="menu__link">Bot Triggers & Invocation</strong>',
