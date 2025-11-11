@@ -15,9 +15,10 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationDefinition, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { addSetAccountsJobData } from '../../workers/set-accounts';
 import type { Repository } from '../repo';
 import { getSystemRepo } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
@@ -91,19 +92,24 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
 
   const { repo } = getAuthenticatedContext();
-  if (req.headers?.['prefer'] === 'respond-async') {
+  if (req.headers?.['prefer'] === 'respond-async' && params.propagate) {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(repo);
-    await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
-    exec.start(async () => {
-      const count = await setResourceAccounts(repo, resourceType, id, params);
-      return buildOutputParameters(operation, { resourcesUpdated: count });
+    const asyncJob = await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
+    await exec.run(async () => {
+      await addSetAccountsJobData({
+        asyncJob,
+        resourceType,
+        id,
+        accounts: params.accounts,
+        authState: getAuthenticatedContext().authState,
+      });
     });
 
     return [accepted(exec.getContentLocation(baseUrl))];
   } else {
-    const count = await setResourceAccounts(repo, resourceType, id, params);
-    return [allOk, buildOutputParameters(operation, { resourcesUpdated: count })];
+    const result = await setResourceAccounts(repo, resourceType, id, params);
+    return [allOk, result];
   }
 }
 
@@ -120,7 +126,7 @@ export async function setResourceAccounts(
   resourceType: ResourceType,
   id: string,
   params: SetAccountsParameters
-): Promise<number> {
+): Promise<Parameters> {
   const isSuperAdmin = repo.isSuperAdmin();
   if (!repo.isProjectAdmin() && !isSuperAdmin) {
     throw new OperationOutcomeError(forbidden);
@@ -177,7 +183,7 @@ export async function setResourceAccounts(
     }
   }
 
-  return count;
+  return buildOutputParameters(operation, { resourcesUpdated: count });
 }
 
 async function updateCompartmentResource<T extends Resource>(
