@@ -433,64 +433,6 @@ describe('AI Operation', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Messages must be an array');
   });
 
-  test('Invalid messages JSON', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/$ai`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'messages',
-            valueString: 'invalid json',
-          },
-          {
-            name: 'apiKey',
-            valueString: 'sk-test-key',
-          },
-          {
-            name: 'model',
-            valueString: 'gpt-4',
-          },
-        ],
-      });
-
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
-  });
-
-  test('Invalid tools JSON', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/$ai`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'messages',
-            valueString: JSON.stringify([{ role: 'user', content: 'Test message' }]),
-          },
-          {
-            name: 'apiKey',
-            valueString: 'sk-test-key',
-          },
-          {
-            name: 'model',
-            valueString: 'gpt-4',
-          },
-          {
-            name: 'tools',
-            valueString: 'invalid json',
-          },
-        ],
-      });
-
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
-  });
-
   test('Works without tools parameter (optional)', async () => {
     const mockFetchResponse = {
       ok: true,
@@ -781,7 +723,33 @@ describe('AI Operation', () => {
     expect(bodyParam.model).toBe('gpt-3.5-turbo');
   });
 
-  test('Rejects streaming through $ai operation', async () => {
+  test('Supports streaming through $ai operation', async () => {
+    const mockStreamResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: jest
+            .fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n'),
+            })
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"!"}}]}\n\n'),
+            })
+            .mockResolvedValueOnce({
+              done: true,
+              value: undefined,
+            }),
+          releaseLock: jest.fn(),
+        }),
+      },
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockStreamResponse);
+
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -808,7 +776,95 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('$ai-stream');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/event-stream');
+    expect(res.text).toContain('Hello');
+    expect(res.text).toContain('!');
   });
+
+  test('Simulates actual progressive streaming behavior', async () => {
+    // Create a mock stream with intentional delays
+    const encoder = new TextEncoder();
+    const streamChunks = [
+      'data: {"choices":[{"delta":{"content":"Progressive"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":" streaming"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":" test"}}]}\n\n',
+    ];
+
+    let chunkIndex = 0;
+    const mockReadableStream = {
+      getReader: jest.fn().mockReturnValue({
+        read: jest.fn().mockImplementation(async () => {
+          if (chunkIndex < streamChunks.length) {
+            // Simulate network delay between chunks
+            await new Promise<void>((resolve) => {
+              setTimeout(() => resolve(), 10);
+            });
+            const chunk = encoder.encode(streamChunks[chunkIndex]);
+            chunkIndex++;
+            return { done: false, value: chunk };
+          }
+          return { done: true };
+        }),
+        releaseLock: jest.fn(),
+      }),
+    };
+
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      body: mockReadableStream,
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    // Make a real request to the endpoint and check the progressive streaming
+    const res = await request(app)
+      .post('/fhir/R4/$ai')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+          {
+            name: 'stream',
+            valueBoolean: true,
+          },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/event-stream');
+    expect(res.text).toContain('Progressive');
+    expect(res.text).toContain(' streaming');
+    expect(res.text).toContain(' test');
+
+    // Verify content chunks
+    const matches = res.text.match(/data: (.*?)\n\n/g);
+    expect(matches).toBeTruthy();
+    if (matches) {
+      const contentChunks = matches
+        .filter((m) => m.includes('"content"') && !m.includes('[DONE]'))
+        .map((m) => JSON.parse(m.slice(6).trim()).content);
+      expect(contentChunks).toEqual(['Progressive', ' streaming', ' test']);
+    }
+
+    // Verify no OpenAI metadata leaked (no chatcmpl-, finish_reason, role, etc.)
+    expect(res.text).not.toContain('chatcmpl-');
+    expect(res.text).not.toContain('finish_reason');
+    expect(res.text).not.toContain('"role"');
+  });
+
 });

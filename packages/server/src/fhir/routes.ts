@@ -7,7 +7,6 @@ import type { ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
-import { aiStreamHandler } from '../ai/stream';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
@@ -158,8 +157,37 @@ fhirRouter.use(protectedRoutes);
 // CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
-// AI Streaming (cannot use FhirRouter due to SSE streaming)
-protectedRoutes.post(['/$ai-stream', '/%24ai-stream'], aiStreamHandler);
+// AI $ai operation - handled directly in Express routes to support streaming
+// protectedRoutes.post(['/$ai', '/%24ai'], aiOperation);
+protectedRoutes.post(['/$ai', '/%24ai'], async (req: Request, res: Response) => {
+  const fhirRequest: FhirRequest = {
+    method: 'POST',
+    url: req.originalUrl,
+    pathname: '',
+    params: req.params,
+    query: Object.create(null),
+    body: req.body ?? {},
+    headers: req.headers,
+  };
+
+  const result = await aiOperation(fhirRequest, res);
+  
+  // If streaming, response already sent
+  if (!result) {
+    return;
+  }
+  
+  // Non-streaming response
+  if (result.length === 1) {
+    if (!isOk(result[0])) {
+      throw new OperationOutcomeError(result[0]);
+    }
+    sendOutcome(res, result[0]);
+    return;
+  }
+
+  await sendFhirResponse(req, res, result[0], result[1], result[2]);
+});
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
@@ -263,8 +291,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
 
-  // AI $ai operation
-  router.add('POST', '/$ai', aiOperation);
+// add here
+// router.add('POST', '/$ai', aiOperation);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
