@@ -291,9 +291,6 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
 
-// add here
-// router.add('POST', '/$ai', aiOperation);
-
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
