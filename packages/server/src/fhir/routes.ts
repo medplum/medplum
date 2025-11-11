@@ -171,12 +171,12 @@ protectedRoutes.post(['/$ai', '/%24ai'], async (req: Request, res: Response) => 
   };
 
   const result = await aiOperation(fhirRequest, res);
-  
+
   // If streaming, response already sent
   if (!result) {
     return;
   }
-  
+
   // Non-streaming response
   if (result.length === 1) {
     if (!isOk(result[0])) {
