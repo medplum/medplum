@@ -2,61 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, Stack, Text, Group, Badge, Divider } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { DiagnosticReport, HumanName } from '@medplum/fhirtypes';
+import type { DiagnosticReport, HumanName, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useResource, ObservationTable } from '@medplum/react';
 
 interface LabResultDetailsProps {
-  result: DiagnosticReport;
+  result: DiagnosticReport | Reference<DiagnosticReport>;
   onResultChange?: (result: DiagnosticReport) => void;
 }
 
 export function LabResultDetails({ result, onResultChange: _onResultChange }: LabResultDetailsProps): JSX.Element {
-  const patient = useResource(result.subject);
-  const performer = useResource(result.performer?.[0]);
-
-  const getStatusColor = (status: string | undefined): string => {
-    switch (status) {
-      case 'final':
-        return 'green';
-      case 'partial':
-        return 'yellow';
-      case 'preliminary':
-        return 'blue';
-      case 'cancelled':
-      case 'entered-in-error':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusDisplayText = (status: string | undefined): string => {
-    switch (status) {
-      case 'final':
-        return 'Final';
-      case 'partial':
-        return 'Partial';
-      case 'preliminary':
-        return 'Preliminary';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'entered-in-error':
-        return 'Error';
-      default:
-        return status || 'Unknown';
-    }
-  };
+  const diagnosticReport = useResource(result);
+  const patient = useResource(diagnosticReport?.subject);
+  const performer = useResource(diagnosticReport?.performer?.[0]);
 
   return (
     <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
       <Stack gap="md">
         <Stack gap="xs">
           <Text size="xl" fw={700}>
-            {result.code?.text || result.code?.coding?.[0]?.display || 'Lab Result'}
+            {diagnosticReport?.code?.text || diagnosticReport?.code?.coding?.[0]?.display || 'Lab Result'}
           </Text>
-          <Badge size="lg" color={getStatusColor(result.status)} variant="light">
-            {getStatusDisplayText(result.status)}
+          <Badge size="lg" color={getStatusColor(diagnosticReport?.status)} variant="light">
+            {getStatusDisplayText(diagnosticReport?.status)}
           </Badge>
         </Stack>
 
@@ -71,25 +39,25 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
             <Text fw={500} size="sm">
               Issued Date:
             </Text>
-            <Text size="sm">{formatDate(result.issued)}</Text>
+            <Text size="sm">{formatDate(diagnosticReport?.issued)}</Text>
           </Group>
 
-          {result.effectiveDateTime && (
+          {diagnosticReport?.effectiveDateTime && (
             <Group>
               <Text fw={500} size="sm">
                 Effective Date:
               </Text>
-              <Text size="sm">{formatDate(result.effectiveDateTime)}</Text>
+              <Text size="sm">{formatDate(diagnosticReport?.effectiveDateTime)}</Text>
             </Group>
           )}
 
-          {result.code?.coding && (
+          {diagnosticReport?.code?.coding && (
             <Group align="flex-start">
               <Text fw={500} size="sm">
                 Test Code:
               </Text>
               <Stack gap="xs">
-                {result.code.coding.map((coding, index) => (
+                {diagnosticReport?.code?.coding?.map((coding, index) => (
                   <Group key={index} gap="xs">
                     <Badge size="sm" variant="outline">
                       {coding.code}
@@ -119,13 +87,13 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
             </Group>
           )}
 
-          {result.category && (
+          {diagnosticReport?.category && (
             <Group align="flex-start">
               <Text fw={500} size="sm">
                 Category:
               </Text>
               <Stack gap="xs">
-                {result.category.map((category, index) => (
+                {diagnosticReport?.category?.map((category, index) => (
                   <Text key={index} size="sm">
                     {category.text || category.coding?.[0]?.display}
                   </Text>
@@ -135,26 +103,26 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           )}
         </Stack>
 
-        {result.conclusion && (
+        {diagnosticReport?.conclusion && (
           <>
             <Divider />
             <Stack gap="sm">
               <Text fw={600} size="sm" c="dimmed">
                 CONCLUSION
               </Text>
-              <Text size="sm">{result.conclusion}</Text>
+              <Text size="sm">{diagnosticReport?.conclusion}</Text>
             </Stack>
           </>
         )}
 
-        {result.conclusionCode && (
+        {diagnosticReport?.conclusionCode && (
           <>
             <Divider />
             <Stack gap="sm">
               <Text fw={600} size="sm" c="dimmed">
                 CONCLUSION CODES
               </Text>
-              {result.conclusionCode.map((code, index) => (
+              {diagnosticReport?.conclusionCode?.map((code, index) => (
                 <Group key={index} align="flex-start">
                   <Text fw={500} size="sm">
                     Code {index + 1}:
@@ -166,14 +134,14 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           </>
         )}
 
-        {result.presentedForm && (
+        {diagnosticReport?.presentedForm && (
           <>
             <Divider />
             <Stack gap="sm">
               <Text fw={600} size="sm" c="dimmed">
                 ATTACHMENTS
               </Text>
-              {result.presentedForm.map((form, index) => (
+              {diagnosticReport?.presentedForm?.map((form, index) => (
                 <Group key={index} align="flex-start">
                   <Text fw={500} size="sm">
                     Attachment {index + 1}:
@@ -185,14 +153,14 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           </>
         )}
 
-        {result.result && result.result.length > 0 && (
+        {diagnosticReport?.result && diagnosticReport?.result?.length > 0 && (
           <>
             <Divider />
             <Stack gap="sm">
               <Text fw={600} size="sm" c="dimmed">
                 TEST RESULTS
               </Text>
-              <ObservationTable value={result.result} hideObservationNotes={false} />
+              <ObservationTable value={diagnosticReport?.result} hideObservationNotes={false} />
             </Stack>
           </>
         )}
@@ -200,3 +168,36 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
     </Paper>
   );
 }
+
+const getStatusColor = (status: string | undefined): string => {
+  switch (status) {
+    case 'final':
+      return 'green';
+    case 'partial':
+      return 'yellow';
+    case 'preliminary':
+      return 'blue';
+    case 'cancelled':
+    case 'entered-in-error':
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+const getStatusDisplayText = (status: string | undefined): string => {
+  switch (status) {
+    case 'final':
+      return 'Final';
+    case 'partial':
+      return 'Partial';
+    case 'preliminary':
+      return 'Preliminary';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'entered-in-error':
+      return 'Error';
+    default:
+      return status || 'Unknown';
+  }
+};

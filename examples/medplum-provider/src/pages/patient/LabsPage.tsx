@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
-import type { ServiceRequest, DiagnosticReport } from '@medplum/fhirtypes';
+import type { ServiceRequest } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
 import { useNavigate, useParams } from 'react-router';
 import { useMedplum } from '@medplum/react';
@@ -40,7 +40,6 @@ export function LabsPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<LabTab>('completed');
   const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
   const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
-  const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState<boolean>(false);
 
@@ -73,42 +72,18 @@ export function LabsPage(): JSX.Element {
     }
   }, [medplum, patientReference]);
 
-  const fetchDiagnosticReports = useCallback(async (): Promise<void> => {
-    if (!patientReference) {
-      showErrorNotification('Patient not found');
-      return;
-    }
-
-    try {
-      const searchParams = new URLSearchParams({
-        subject: patientReference,
-        _count: '100',
-        _sort: '-_lastUpdated',
-        _fields:
-          '_lastUpdated,category,code,status,subject,performer,conclusion,result,basedOn,issued,effectiveDateTime,conclusionCode,presentedForm',
-      });
-
-      const results: DiagnosticReport[] = await medplum.searchResources('DiagnosticReport', searchParams, {
-        cache: 'no-cache',
-      });
-      setDiagnosticReports(results);
-    } catch (error) {
-      showErrorNotification(error);
-    }
-  }, [medplum, patientReference]);
-
   const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      await Promise.all([fetchOrders(), fetchDiagnosticReports()]);
+      await fetchOrders();
     } finally {
       setLoading(false);
     }
-  }, [fetchOrders, fetchDiagnosticReports]);
+  }, [fetchOrders]);
 
   useEffect(() => {
     if (patientId) {
-      fetchData().catch(console.error);
+      fetchData().catch(showErrorNotification);
     }
   }, [patientId, fetchData]);
 
@@ -219,13 +194,7 @@ export function LabsPage(): JSX.Element {
               className={classes.borderRight}
             >
               {currentOrder ? (
-                <LabOrderDetails
-                  key={currentOrder.id}
-                  order={currentOrder}
-                  onOrderChange={handleOrderChange}
-                  diagnosticReports={diagnosticReports}
-                  activeTab={activeTab}
-                />
+                <LabOrderDetails key={currentOrder.id} order={currentOrder} onOrderChange={handleOrderChange} />
               ) : (
                 <LabSelectEmpty activeTab={'open'} />
               )}
