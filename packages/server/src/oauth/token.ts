@@ -16,16 +16,17 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
 import {
@@ -459,6 +460,14 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
     return parseAuthorizationHeader(authHeader);
   }
 
+  const mtlsHeaderName = getConfig().mtlsCertHeader;
+  if (mtlsHeaderName) {
+    const mtlsHeader = req.headers[mtlsHeaderName];
+    if (mtlsHeader) {
+      return parseMtlsClientCertificate(req, mtlsHeader);
+    }
+  }
+
   return {
     clientId: req.body.client_id,
     clientSecret: req.body.client_secret,
@@ -557,6 +566,48 @@ async function parseAuthorizationHeader(authHeader: string): Promise<ClientIdAnd
   const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
   const [clientId, clientSecret] = credentials.split(':');
   return { clientId, clientSecret };
+}
+
+/**
+ * Tries to parse the client ID and secret from the mTLS client certificate header.
+ * @param req - The HTTP request with the mTLS client certificate header.
+ * @param encodedHeader - The URL encoded mTLS client certificate header.
+ * @returns Client ID and secret on success, or an error message on failure.
+ */
+async function parseMtlsClientCertificate(
+  req: Request,
+  encodedHeader: string | string[] | undefined
+): Promise<ClientIdAndSecret> {
+  if (!encodedHeader || Array.isArray(encodedHeader)) {
+    return { error: 'Invalid mTLS client certificate header' };
+  }
+
+  // URL decode the certificate
+  const decodedCert = decodeURIComponent(encodedHeader);
+
+  const systemRepo = getSystemRepo();
+  const clientId = req.body.client_id;
+  let client: ClientApplication;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch (_err) {
+    return { error: 'Client not found' };
+  }
+
+  if (!client.certificateTrustStore) {
+    return { error: 'Client does not have a configured certificate trust store' };
+  }
+
+  try {
+    validateClientCert(decodedCert, client.certificateTrustStore);
+  } catch (err) {
+    return { error: 'Invalid client certificate: ' + normalizeErrorString(err) };
+  }
+
+  return {
+    clientId,
+    clientSecret: client.secret,
+  };
 }
 
 async function validateClientIdAndSecret(

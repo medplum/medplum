@@ -604,6 +604,9 @@ export class BackEnd extends Construct {
       ],
       sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
+      mutualAuthentication: {
+        mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH,
+      },
     });
 
     // WAF
