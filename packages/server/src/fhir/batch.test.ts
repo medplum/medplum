@@ -1164,7 +1164,7 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -1215,7 +1215,7 @@ describe('Batch and Transaction processing', () => {
       type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
