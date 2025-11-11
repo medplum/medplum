@@ -612,7 +612,6 @@ describe('LabOrderDetails', () => {
       });
     });
 
-
     it('fetches and displays specimen label documents', async () => {
       const user = userEvent.setup();
       medplum.searchResources = vi.fn().mockImplementation(async (resourceType: string, params: any) => {
@@ -891,4 +890,3 @@ describe('LabOrderDetails', () => {
     });
   });
 });
-
