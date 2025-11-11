@@ -6,6 +6,10 @@ import { FhirRouter } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
+<<<<<<< HEAD
+=======
+import { aiStreamHandler } from '../ai/stream';
+>>>>>>> b9780f0a5efe6b427779be7490fd6ccce789004c
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
