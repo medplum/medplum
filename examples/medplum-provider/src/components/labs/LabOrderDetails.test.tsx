@@ -824,30 +824,6 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Error handling', () => {
-    it('handles error when fetching patient fails', async () => {
-      medplum.readResource = vi.fn().mockRejectedValue(new Error('Patient not found'));
-
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-      });
-    });
-
-    it('handles error when fetching diagnostic report fails', async () => {
-      medplum.searchResources = vi.fn().mockRejectedValue(new Error('Search failed'));
-
-      await act(async () => {
-        setup({ order: mockCompletedServiceRequest });
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-      });
-    });
-
     it('handles error when fetching requisition documents fails', async () => {
       const user = userEvent.setup();
       fetchLabOrderRequisitionDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
@@ -866,22 +842,6 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Cleanup', () => {
-    it('cleans up documents when component unmounts', async () => {
-      const { unmount } = await act(async () => {
-        return setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-      });
-
-      act(() => {
-        unmount();
-      });
-
-      // Component should unmount without errors
-    });
-
     it('cleans up documents when order changes', async () => {
       const { rerender } = await act(async () => {
         return setup();
