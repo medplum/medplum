@@ -145,6 +145,7 @@ export async function setResourceAccounts(
   if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
     throw new OperationOutcomeError(forbidden);
   }
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   await systemRepo.updateResource(target);
   let count = 1; // Target resource is updated already
 
@@ -152,7 +153,7 @@ export async function setResourceAccounts(
     // Calculate the difference between the previous accounts array and new one, in order to
     // propagate only those changes to compartment resources
     const additions = accounts.filter((a) => !oldAccounts?.find((o) => o.reference === a.reference));
-    const removals = oldAccounts?.filter((o) => !accounts.find((a) => a.reference === o.reference)) ?? [];
+    const removals = oldAccounts?.filter((o) => !accounts.some((a) => a.reference === o.reference)) ?? [];
 
     // Update the resources in the target compartment to trigger meta.accounts refresh
     const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
@@ -204,5 +205,6 @@ async function updateCompartmentResource<T extends Resource>(
     account: accountList?.[0],
   };
   // Use system repo to force update meta.accounts
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   return systemRepo.updateResource(resource);
 }

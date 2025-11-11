@@ -135,9 +135,9 @@ export function convertHealthieFormAnswerGroupToFhir(
 export function createSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replaceAll(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replaceAll(/\s+/g, '-') // Replace spaces with hyphens
+    .replaceAll(/-+/g, '-') // Replace multiple hyphens with single
     .trim();
 }
 

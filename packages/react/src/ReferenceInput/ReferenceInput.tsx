@@ -271,7 +271,7 @@ async function fetchResourceTypeOfProfile(
         name,
         title,
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
   const response = (await medplum.graphql(query)) as ResourceTypeGraphQLResponse;
 
