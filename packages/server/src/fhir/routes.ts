@@ -171,12 +171,12 @@ protectedRoutes.post(['/$ai', '/%24ai'], async (req: Request, res: Response) => 
   };
 
   const result = await aiOperation(fhirRequest, res);
-  
+
   // If streaming, response already sent
   if (!result) {
     return;
   }
-  
+
   // Non-streaming response
   if (result.length === 1) {
     if (!isOk(result[0])) {
@@ -291,8 +291,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
 
-// add here
-// router.add('POST', '/$ai', aiOperation);
+  // add here
+  // router.add('POST', '/$ai', aiOperation);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);

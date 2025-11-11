@@ -4,9 +4,8 @@ import { allOk, badRequest, forbidden, normalizeErrorString } from '@medplum/cor
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse } from 'express';
-import { parseInputParameters } from './utils/parameters';
 import { getAuthenticatedContext } from '../../context';
-
+import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -94,10 +93,7 @@ type AIOperationParameters = {
  * @param res - Optional Express response for streaming support.
  * @returns The server response. For streaming, returns undefined after response is sent.
  */
-export async function aiOperation(
-  req: FhirRequest, 
-  res?: ExpressResponse
-): Promise<FhirResponse | undefined> {
+export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Promise<FhirResponse | undefined> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
     return [forbidden];
@@ -128,7 +124,7 @@ export async function aiOperation(
     if (!res) {
       return [badRequest('Streaming requires Express response object')];
     }
-    
+
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -137,13 +133,16 @@ export async function aiOperation(
 
     await streamAIToClient(messages, params.apiKey, params.model, tools, res);
     res.end();
-    
+
     // Return undefined for streaming - response already sent
     return undefined;
   }
 
   try {
-    const result = await callAI(messages, params.apiKey, params.model, tools) as { content: string | null; tool_calls: any[] };
+    const result = (await callAI(messages, params.apiKey, params.model, tools)) as {
+      content: string | null;
+      tool_calls: any[];
+    };
     return buildParametersResponse(result);
   } catch (error) {
     return [badRequest('Failed to call OpenAI API: ' + (error as Error).message)];
@@ -167,7 +166,7 @@ export async function streamAIToClient(
   tools: any[] | undefined,
   res: ExpressResponse
 ): Promise<void> {
-  const response = await callAI(messages, apiKey, model, tools, true) as Response;
+  const response = (await callAI(messages, apiKey, model, tools, true)) as Response;
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }
@@ -175,7 +174,7 @@ export async function streamAIToClient(
   // Stream OpenAI response directly to client
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  
+
   let buffer = '';
 
   try {

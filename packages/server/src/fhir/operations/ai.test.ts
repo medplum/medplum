@@ -924,5 +924,4 @@ describe('AI Operation', () => {
     expect(res.text).not.toContain('finish_reason');
     expect(res.text).not.toContain('"role"');
   });
-
 });
