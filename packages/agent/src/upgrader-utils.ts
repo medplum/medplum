@@ -11,7 +11,7 @@ import type streamWeb from 'node:stream/web';
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
 export const UPGRADER_LOG_PATH = resolve(
   __dirname,
-  `upgrader-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`
+  `upgrader-logs-${new Date().toISOString().replaceAll(/:\s*/g, '-')}.txt`
 );
 export const RELEASES_PATH = resolve(__dirname);
 

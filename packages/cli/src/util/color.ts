@@ -19,5 +19,5 @@ export const color = {
 
 // Bold text wrapped in ** **
 export const processDescription = (desc: string): string => {
-  return desc.replace(/\*\*(.*?)\*\*/g, (_, text) => color.bold(text));
+  return desc.replaceAll(/\*\*(.*?)\*\*/g, (_, text) => color.bold(text));
 };

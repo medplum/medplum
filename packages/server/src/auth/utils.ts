@@ -126,6 +126,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     id: m.id,
     project: m.project,
     profile: m.profile,
+    identifier: m.identifier,
   }));
   res.json(
     await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {

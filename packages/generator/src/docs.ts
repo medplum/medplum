@@ -477,7 +477,7 @@ function extractResourceDescriptions(
       for (const div of divs) {
         const h2 = div.querySelector('h2');
         if (h2) {
-          const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
+          const h2Text = h2.textContent?.toLowerCase().replaceAll(/\s/g, '') || '';
 
           const paragraphHTML = sanitizeNodeContent(div, dom.window);
 
