@@ -433,6 +433,64 @@ describe('AI Operation', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Messages must be an array');
   });
 
+  test('Invalid messages JSON', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: 'invalid json',
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
+  });
+
+  test('Invalid tools JSON', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'Test message' }]),
+          },
+          {
+            name: 'apiKey',
+            valueString: 'sk-test-key',
+          },
+          {
+            name: 'model',
+            valueString: 'gpt-4',
+          },
+          {
+            name: 'tools',
+            valueString: 'invalid json',
+          },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
+  });
+
   test('Works without tools parameter (optional)', async () => {
     const mockFetchResponse = {
       ok: true,

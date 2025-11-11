@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse } from 'express';
@@ -102,13 +102,25 @@ export async function aiOperation(
   // }
 
   const params = parseInputParameters<AIOperationParameters>(operation, req);
-  const messages = JSON.parse(params.messages);
+  let messages: any[];
+  try {
+    messages = JSON.parse(params.messages);
+  } catch (error) {
+    return [badRequest(normalizeErrorString(error))];
+  }
 
   if (!Array.isArray(messages)) {
     return [badRequest('Messages must be an array')];
   }
 
-  const tools = params.tools ? JSON.parse(params.tools) : undefined;
+  let tools: any[] | undefined;
+  if (params.tools) {
+    try {
+      tools = JSON.parse(params.tools);
+    } catch (error) {
+      return [badRequest(normalizeErrorString(error))];
+    }
+  }
 
   if (params.stream) {
     if (!res) {
