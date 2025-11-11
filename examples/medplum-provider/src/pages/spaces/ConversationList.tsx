@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Group, ScrollArea, Box, Divider, Paper } from '@mantine/core';
+import { Stack, Text, Group, ScrollArea, Box, Divider, Paper, Flex } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
@@ -33,7 +33,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
 
   return (
     <Paper h="100%">
-      <Stack p={0} h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
+      <Flex direction="column" p={0} h="100%">
         <ScrollArea style={{ flex: 1 }}>
           <Stack gap="xs" px="md">
             <Text fw={600} c="dimmed" mt="md">
@@ -79,7 +79,7 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
               ))}
           </Stack>
         </ScrollArea>
-      </Stack>
+      </Flex>
     </Paper>
   );
 }

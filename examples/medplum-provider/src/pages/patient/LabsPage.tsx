@@ -83,7 +83,7 @@ export function LabsPage(): JSX.Element {
 
   useEffect(() => {
     if (patientId) {
-      fetchData().catch(console.error);
+      fetchData().catch(showErrorNotification);
     }
   }, [patientId, fetchData]);
 

@@ -747,7 +747,7 @@ export function LabOrderDetails({ order, onOrderChange: _onOrderChange }: LabOrd
             )}
 
             {/* Progress Tracker Tab Content - for open items */}
-            {activeDetailTab === 'progress' && order.status !== 'completed' && (
+            {activeDetailTab === 'progress' && (
               <Stack gap="md">
                 <Stack p="xl" align="center">
                   <Timeline
