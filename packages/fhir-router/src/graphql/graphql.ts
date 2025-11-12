@@ -685,7 +685,7 @@ class QueryCostVisitor {
   getCount(args?: readonly ArgumentNode[]): number | undefined {
     const countArg = args?.find((arg) => arg.name.value === '_count');
     if (countArg?.value.kind === Kind.INT) {
-      return parseInt(countArg.value.value, 10);
+      return Number.parseInt(countArg.value.value, 10);
     }
     return undefined;
   }

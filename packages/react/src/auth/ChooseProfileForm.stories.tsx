@@ -38,12 +38,26 @@ export function ManyMemberships(): JSX.Element {
   );
 }
 
-function makeMembership(id: string, projectName: string, profileName: string): ProjectMembership {
+export function MultipleMembershipsInProject(): JSX.Element {
+  const memberships = [];
+  for (let i = 1; i <= 3; i++) {
+    memberships.push(makeMembership('membership' + i, 'Project ' + i, 'Profile ' + i, 'Label ' + i));
+  }
+
+  return (
+    <Document width={450}>
+      <ChooseProfileForm login="x" memberships={memberships} handleAuthResponse={console.log} />
+    </Document>
+  );
+}
+
+function makeMembership(id: string, projectName: string, profileName: string, label?: string): ProjectMembership {
   return {
     resourceType: 'ProjectMembership',
     id,
     project: { reference: 'Project/' + projectName, display: projectName },
     user: { reference: 'User/x', display: 'x' },
     profile: { reference: 'Practitioner/' + profileName, display: profileName },
+    identifier: label ? [{ system: 'https://medplum.com/identifier/label', value: label }] : undefined,
   };
 }

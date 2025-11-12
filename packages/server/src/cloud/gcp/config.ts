@@ -3,7 +3,7 @@
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { splitN } from '@medplum/core';
 import type { MedplumServerConfig } from '../../config/types';
-import { isBooleanConfig, isIntegerConfig, isObjectConfig } from '../../config/utils';
+import { setValue } from '../../config/utils';
 
 /**
  * Gets the latest secret value from Google Secret Manager.
@@ -44,28 +44,4 @@ export async function loadGcpConfig(configPath: string): Promise<MedplumServerCo
   }
 
   return config as MedplumServerConfig;
-}
-
-function setValue(config: Record<string, unknown>, key: string, value: string): void {
-  const keySegments = key.split('.');
-  let obj = config;
-
-  while (keySegments.length > 1) {
-    const segment = keySegments.shift() as string;
-    if (!obj[segment]) {
-      obj[segment] = {};
-    }
-    obj = obj[segment] as Record<string, unknown>;
-  }
-
-  let parsedValue: any = value;
-  if (isIntegerConfig(key)) {
-    parsedValue = parseInt(value, 10);
-  } else if (isBooleanConfig(key)) {
-    parsedValue = value === 'true';
-  } else if (isObjectConfig(key)) {
-    parsedValue = JSON.parse(value);
-  }
-
-  obj[keySegments[0]] = parsedValue;
 }

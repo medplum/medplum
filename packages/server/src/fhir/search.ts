@@ -739,7 +739,7 @@ function parseV1Cursor(cursor: string): Cursor | undefined {
   if (!nextId) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString() };
 }
 
@@ -754,7 +754,7 @@ function parseV2Cursor(cursor: string): Cursor | undefined {
   if (!nextInstant) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString(), excludedIds: excludedIds?.split(',') };
 }
 
@@ -869,7 +869,7 @@ async function getEstimateCount(repo: Repository, searchRequest: SearchRequest):
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      return parseInt(match[1], 10);
+      return Number.parseInt(match[1], 10);
     }
   }
   return 0;
@@ -1385,7 +1385,7 @@ function validateDateValue(value: string): void {
   }
 
   const dateValue = new Date(value);
-  if (isNaN(dateValue.getTime())) {
+  if (Number.isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
   }
 }
@@ -1471,7 +1471,7 @@ function buildQuantitySearchFilter(
     // 	 The value for the parameter in the resource is approximately the same to the provided value.
     //   Note that the recommended value for the approximation is 10% of the stated value
     //   (or for a date, 10% of the gap between now and the date), but systems may choose other values where appropriate
-    const numberValue = parseFloat(number);
+    const numberValue = Number.parseFloat(number);
     return new Conjunction([
       new Condition(new Column(table, impl.columnName), '>=', numberValue * 0.9),
       new Condition(new Column(table, impl.columnName), '<=', numberValue * 1.1),

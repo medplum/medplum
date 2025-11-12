@@ -1889,7 +1889,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         expression,
         target
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
@@ -3523,9 +3523,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       const name = parts[0].substring(1, parts[0].length - 1);
       const remainingPart = parts.find((p) => p.startsWith('r='));
-      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
+      const remainingUnits = remainingPart ? Number.parseInt(remainingPart.substring(2), 10) : NaN;
       const timePart = parts.find((p) => p.startsWith('t='));
-      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+      const secondsUntilReset = timePart ? Number.parseInt(timePart.substring(2), 10) : NaN;
       if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }

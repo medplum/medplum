@@ -205,12 +205,12 @@ function formatTsquery(filter: string | undefined): string | undefined {
     return undefined;
   }
 
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  const noPunctuation = filter.replaceAll(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
   if (!noPunctuation) {
     return undefined;
   }
 
-  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
+  return noPunctuation.replaceAll(/\s+/g, ':* & ') + ':*';
 }
 
 export interface Expression {
