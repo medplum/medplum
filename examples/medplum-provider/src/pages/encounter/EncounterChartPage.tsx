@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Encounter, Reference } from '@medplum/fhirtypes';
-import { Loading } from '@medplum/react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { EncounterChart } from '../../components/encounter/EncounterChart';
+import { showErrorNotification } from '../../utils/notifications';
 
-export const EncounterChartPage = (): JSX.Element => {
+export const EncounterChartPage = (): JSX.Element | null => {
   const { encounterId } = useParams();
 
   if (!encounterId) {
-    return <Loading />;
+    showErrorNotification('Encounter ID not found');
+    return null;
   }
 
   const encounterRef: Reference<Encounter> = {

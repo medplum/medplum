@@ -42,12 +42,8 @@ export function useEncounterChart(
   patient?: Patient | Reference<Patient>
 ): EncounterChartHook {
   const medplum = useMedplum();
-
-  // Resolve references to actual resources
   const encounterResource = useResource(encounter);
   const patientResource = useResource(patient);
-
-  // States - use resolved resource directly, but allow manual updates via setEncounter
   const [encounterState, setEncounter] = useState<Encounter | undefined>(encounterResource);
   const [claim, setClaim] = useState<Claim | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
@@ -56,10 +52,8 @@ export function useEncounterChart(
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const [appointment, setAppointment] = useState<Appointment | undefined>();
 
-  // Use resolved resource when available, fallback to state for manual updates
   const encounterToUse = encounterResource ?? encounterState;
 
-  // Load charge items and claim when encounter is available
   useEffect(() => {
     async function loadChargeItems(): Promise<void> {
       if (encounterResource) {
@@ -116,11 +110,11 @@ export function useEncounterChart(
 
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
-    if (encounterToUse) {
+    if (encounterResource) {
       fetchTasks().catch((err) => showErrorNotification(err));
       fetchClinicalImpressions().catch((err) => showErrorNotification(err));
     }
-  }, [encounterToUse, fetchTasks, fetchClinicalImpressions]);
+  }, [encounterResource, fetchTasks, fetchClinicalImpressions]);
 
   // Fetch practitioner related to the encounter
   useEffect(() => {
