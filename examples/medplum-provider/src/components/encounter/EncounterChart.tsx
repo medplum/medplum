@@ -1,23 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
-import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
-import { Loading, useMedplum } from '@medplum/react';
+import { createReference, getReferenceString } from '@medplum/core';
+import type {
+  ClinicalImpression,
+  Encounter,
+  Patient,
+  Practitioner,
+  Provenance,
+  Reference,
+  Task,
+} from '@medplum/fhirtypes';
+import { Loading, useMedplum, useResource } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
-import { usePatient } from '../../hooks/usePatient';
-import { showErrorNotification } from '../../utils/notifications';
-import { updateEncounterStatus } from '../../utils/encounter';
-import { EncounterHeader } from '../../components/encounter/EncounterHeader';
-import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
-import { BillingTab } from './BillingTab';
-import { createReference, getReferenceString } from '@medplum/core';
 import { ChartNoteStatus } from '../../types/encounter';
-import { SignAddendumCard } from '../../components/encounter/SignAddemdum';
+import { updateEncounterStatus } from '../../utils/encounter';
+import { showErrorNotification } from '../../utils/notifications';
+import { EncounterHeader } from './EncounterHeader';
+import { SignAddendumCard } from './SignAddemdum';
+import { TaskPanel } from '../encountertasks/TaskPanel';
+import { BillingTab } from '../../pages/encounter/BillingTab';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
 const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
@@ -31,10 +37,21 @@ const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
   'entered-in-error',
 ]);
 
-export const EncounterChart = (): JSX.Element => {
-  const { patientId, encounterId } = useParams();
+export interface EncounterChartProps {
+  encounter: Encounter | Reference<Encounter>;
+}
+
+export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
+  const { encounter: encounterProp } = props;
   const medplum = useMedplum();
-  const patient = usePatient();
+  
+  // Resolve encounter reference to actual resource
+  const encounterResource = useResource(encounterProp);
+  
+  // Extract patient reference from encounter.subject
+  const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
+  const patientResource = useResource(patientReference);
+  
   const [activeTab, setActiveTab] = useState<string>('notes');
   const {
     encounter,
@@ -49,7 +66,8 @@ export const EncounterChart = (): JSX.Element => {
     setPractitioner,
     setTasks,
     setChargeItems,
-  } = useEncounterChart(patientId, encounterId);
+  } = useEncounterChart(encounterProp, patientReference);
+  
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
@@ -204,66 +222,64 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
-  if (!patient || !encounter) {
+  if (!patientResource || !encounter) {
     return <Loading />;
   }
 
   return (
-    <>
-      <Stack justify="space-between" gap={0}>
-        <EncounterHeader
-          encounter={encounter}
-          chartNoteStatus={chartNoteStatus}
-          practitioner={practitioner}
-          onStatusChange={handleEncounterStatusChange}
-          onTabChange={handleTabChange}
-          onSign={handleSign}
-        />
-        <Box p="md">
-          {activeTab === 'notes' && (
-            <Stack gap="md">
-              <SignAddendumCard encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
+    <Stack justify="space-between" gap={0}>
+      <EncounterHeader
+        encounter={encounter}
+        chartNoteStatus={chartNoteStatus}
+        practitioner={practitioner}
+        onStatusChange={handleEncounterStatusChange}
+        onTabChange={handleTabChange}
+        onSign={handleSign}
+      />
+      <Box p="md">
+        {activeTab === 'notes' && (
+          <Stack gap="md">
+            <SignAddendumCard encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
 
-              {clinicalImpression && (
-                <Card withBorder shadow="sm" mt="md">
-                  <Title>Fill chart note</Title>
-                  <Textarea
-                    defaultValue={clinicalImpression.note?.[0]?.text}
-                    value={chartNote}
-                    onChange={handleChartNoteChange}
-                    autosize
-                    minRows={4}
-                    maxRows={8}
-                    disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
-                  />
-                </Card>
-              )}
-              {tasks.map((task: Task) => (
-                <TaskPanel
-                  key={task.id}
-                  task={task}
-                  onUpdateTask={updateTaskList}
-                  enabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+            {clinicalImpression && (
+              <Card withBorder shadow="sm" mt="md">
+                <Title>Fill chart note</Title>
+                <Textarea
+                  defaultValue={clinicalImpression.note?.[0]?.text}
+                  value={chartNote}
+                  onChange={handleChartNoteChange}
+                  autosize
+                  minRows={4}
+                  maxRows={8}
+                  disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
                 />
-              ))}
-            </Stack>
-          )}
-          {activeTab === 'details' && (
-            <BillingTab
-              encounter={encounter}
-              setEncounter={setEncounter}
-              claim={claim}
-              patient={patient}
-              practitioner={practitioner}
-              setPractitioner={setPractitioner}
-              chargeItems={chargeItems}
-              setChargeItems={setChargeItems}
-              setClaim={setClaim}
-            />
-          )}
-        </Box>
-      </Stack>
-      <Outlet />
-    </>
+              </Card>
+            )}
+            {tasks.map((task: Task) => (
+              <TaskPanel
+                key={task.id}
+                task={task}
+                onUpdateTask={updateTaskList}
+                enabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+              />
+            ))}
+          </Stack>
+        )}
+        {activeTab === 'details' && (
+          <BillingTab
+            encounter={encounter}
+            setEncounter={setEncounter}
+            claim={claim}
+            patient={patientResource}
+            practitioner={practitioner}
+            setPractitioner={setPractitioner}
+            chargeItems={chargeItems}
+            setChargeItems={setChargeItems}
+            setClaim={setClaim}
+          />
+        )}
+      </Box>
+    </Stack>
   );
 };
+
