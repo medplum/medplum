@@ -6,6 +6,7 @@ import type { Atom, InfixParselet, Parser, PrefixParselet } from '../fhirlexer/p
 import { ParserBuilder } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
+import type { TypedValueWithPath } from '../typeschema/crawler';
 import {
   AndAtom,
   ArithemticOperatorAtom,
@@ -268,7 +269,7 @@ export function evalFhirPathTyped(
   input: TypedValue[],
   variables: Record<string, TypedValue> = {},
   cache: LRUCache<FhirPathAtom> | undefined = undefined
-): TypedValue[] {
+): (TypedValue | TypedValueWithPath)[] {
   let ast: FhirPathAtom;
   if (typeof expression === 'string') {
     const cachedAst = cache?.get(expression);
@@ -279,8 +280,14 @@ export function evalFhirPathTyped(
   } else {
     ast = expression;
   }
-  return ast.eval({ variables }, input).map((v) => ({
-    type: v.type,
-    value: v.value?.valueOf(),
-  }));
+  return ast.eval({ variables }, input).map((v) => {
+    const result: TypedValue & { path?: string } = {
+      type: v.type,
+      value: v.value?.valueOf(),
+    };
+    if ('path' in v && typeof v.path === 'string') {
+      result.path = v.path;
+    }
+    return result;
+  });
 }
