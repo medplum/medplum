@@ -272,7 +272,7 @@ function convertHealthieAnswerValueToFhir(answer: HealthieFormAnswer): Questionn
 
     case 'number':
     case 'Body Fat %':
-      return [{ valueQuantity: { value: parseFloat(answerValue) } }];
+      return [{ valueQuantity: { value: Number.parseFloat(answerValue) } }];
 
     case 'signature': {
       // TODO: Use FHIR SDC extension for signatures

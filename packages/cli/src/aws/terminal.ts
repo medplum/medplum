@@ -69,7 +69,7 @@ export async function choose(text: string, options: (string | number)[], default
  * @returns The selected value, or default value on empty selection.
  */
 export async function chooseInt(text: string, options: number[], defaultValue: number): Promise<number> {
-  return parseInt(
+  return Number.parseInt(
     await choose(
       text,
       options.map((o) => o.toString()),

@@ -114,7 +114,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
 function parseQuantity(str: string): Quantity {
   const parts = str.split(' ');
-  const value = parseFloat(parts[0]);
+  const value = Number.parseFloat(parts[0]);
   let unit = parts[1];
   if (unit?.startsWith("'") && unit.endsWith("'")) {
     unit = unit.substring(1, unit.length - 1);
@@ -139,7 +139,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       parse: (_, token) =>
         new LiteralAtom({
           type: token.value.includes('.') ? PropertyType.decimal : PropertyType.integer,
-          value: parseFloat(token.value),
+          value: Number.parseFloat(token.value),
         }),
     })
     .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })

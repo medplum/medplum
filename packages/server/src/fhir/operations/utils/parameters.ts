@@ -102,16 +102,16 @@ function parseStringifiedParameter(
     case 'positiveInt':
     case 'unsignedInt':
       {
-        const n = parseInt(value, 10);
-        if (!isNaN(n)) {
+        const n = Number.parseInt(value, 10);
+        if (!Number.isNaN(n)) {
           return n;
         }
       }
       break;
     case 'decimal':
       {
-        const n = parseFloat(value);
-        if (!isNaN(n)) {
+        const n = Number.parseFloat(value);
+        if (!Number.isNaN(n)) {
           return n;
         }
       }
@@ -243,7 +243,7 @@ function checkMinMax(param: OperationDefinitionParameter, value: unknown): void 
   const count = Array.isArray(value) ? value.length : +(value !== undefined);
   if (param.min && param.min > 0 && count < param.min) {
     throw new Error(`Expected ${param.min} or more values for output parameter '${param.name}', got ${count}`);
-  } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
+  } else if (param.max && param.max !== '*' && count > Number.parseInt(param.max, 10)) {
     throw new Error(`Expected at most ${param.max} values for output parameter '${param.name}', got ${count}`);
   }
 }
