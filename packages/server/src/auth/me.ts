@@ -125,10 +125,7 @@ export async function getUserConfiguration(
     result = { resourceType: 'UserConfiguration' };
   }
 
-  if (!result.menu) {
-    result.menu = getUserConfigurationMenu(project, membership);
-  }
-
+  result.menu ??= getUserConfigurationMenu(project, membership);
   return result;
 }
 
