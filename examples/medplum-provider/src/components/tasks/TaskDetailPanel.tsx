@@ -4,7 +4,7 @@ import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
@@ -24,6 +24,13 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const resolvedTask = useResource(taskProp);
   const [task, setTask] = useState<Task | undefined>(resolvedTask);
   const [activeTab, setActiveTab] = useState<string>('properties');
+
+  // Sync state when resolved task changes (e.g., when reference resolves)
+  useEffect(() => {
+    if (resolvedTask) {
+      setTask(resolvedTask);
+    }
+  }, [resolvedTask]);
 
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
