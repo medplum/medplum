@@ -25,7 +25,6 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const [task, setTask] = useState<Task | undefined>(resolvedTask);
   const [activeTab, setActiveTab] = useState<string>('properties');
 
-  // Sync state when resolved task changes (e.g., when reference resolves)
   useEffect(() => {
     if (resolvedTask) {
       setTask(resolvedTask);
