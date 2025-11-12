@@ -31,12 +31,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import classes from './LabOrderDetails.module.css';
 import cx from 'clsx';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
-  onOrderChange: (order: ServiceRequest) => void;
-  diagnosticReports?: DiagnosticReport[];
-  activeTab?: 'open' | 'completed';
+  onOrderChange?: (order: ServiceRequest) => void;
 }
 
 interface ProgressStep {
@@ -48,41 +47,34 @@ interface ProgressStep {
   timestamp?: string;
 }
 
-export function LabOrderDetails({
-  order,
-  onOrderChange: _onOrderChange,
-  diagnosticReports: allDiagnosticReports,
-  activeTab,
-}: LabOrderDetailsProps): JSX.Element {
+export function LabOrderDetails({ order, onOrderChange: _onOrderChange }: LabOrderDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
+  const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
   const [loadingDocs, setLoadingDocs] = useState<boolean>(false);
   const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState<boolean>(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState<boolean>(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>('report');
-
-  // Set default tab based on activeTab
-  useEffect(() => {
-    if (activeTab === 'open') {
-      setActiveDetailTab('progress');
-    } else {
-      setActiveDetailTab('report');
-    }
-  }, [activeTab]);
+  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
+    order.status !== 'completed' ? 'progress' : 'report'
+  );
 
   // Filter DiagnosticReports for this specific order
-  const diagnosticReports = useMemo(() => {
-    if (!allDiagnosticReports || !order.id) {
-      return [];
-    }
-    return allDiagnosticReports.filter((report) =>
-      report.basedOn?.some((ref) => ref.reference === `ServiceRequest/${order.id}`)
-    );
-  }, [allDiagnosticReports, order.id]);
+  useEffect(() => {
+    const fetchPrimaryReport = async (): Promise<void> => {
+      const primaryReport = await medplum.searchResources('DiagnosticReport', {
+        'based-on': `ServiceRequest/${order.id}`,
+        _sort: '-_lastUpdated',
+        _count: 1,
+      });
+      setDiagnosticReports(primaryReport);
+    };
+
+    fetchPrimaryReport().catch(showErrorNotification);
+  }, [medplum, order.id]);
 
   // Get the primary diagnostic report for this order
   const primaryReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
@@ -395,13 +387,13 @@ export function LabOrderDetails({
                 <Group gap="xs">
                   <Button
                     className={cx(classes.button, {
-                      [classes.selected]: activeDetailTab === (activeTab === 'open' ? 'progress' : 'report'),
+                      [classes.selected]: activeDetailTab === (order.status !== 'completed' ? 'progress' : 'report'),
                     })}
                     h={32}
                     radius="xl"
-                    onClick={() => setActiveDetailTab(activeTab === 'open' ? 'progress' : 'report')}
+                    onClick={() => setActiveDetailTab(order.status !== 'completed' ? 'progress' : 'report')}
                   >
-                    {activeTab === 'open' ? 'Progress Tracker' : 'Report'}
+                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
                   </Button>
                   <Button
                     className={cx(classes.button, { [classes.selected]: activeDetailTab === 'order' })}
@@ -755,7 +747,7 @@ export function LabOrderDetails({
             )}
 
             {/* Progress Tracker Tab Content - for open items */}
-            {activeDetailTab === 'progress' && activeTab === 'open' && (
+            {activeDetailTab === 'progress' && (
               <Stack gap="md">
                 <Stack p="xl" align="center">
                   <Timeline
@@ -820,7 +812,7 @@ export function LabOrderDetails({
             )}
 
             {/* Report Tab Content - for completed items */}
-            {activeDetailTab === 'report' && activeTab === 'completed' && primaryReport && (
+            {activeDetailTab === 'report' && primaryReport && (
               <Stack gap="sm" mb="xl">
                 {primaryReport.result && primaryReport.result.length > 0 && (
                   <Stack pt="md">

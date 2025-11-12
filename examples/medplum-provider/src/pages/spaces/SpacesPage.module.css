@@ -24,14 +24,6 @@
   border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
 }
 
-.previewResource {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-
 .fadeOut {
   animation: fadeOut 0.3s ease-out;
 }
@@ -40,3 +32,9 @@
   animation: fadeIn 0.3s ease-in;
 }
 
+.previewResource {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

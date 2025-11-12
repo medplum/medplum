@@ -128,9 +128,9 @@ function toTypedValue(value: string, type: CodeSystemProperty['type']): TypedVal
         throw new OperationOutcomeError(serverError(new Error('Invalid value for boolean property: ' + value)));
       }
     case 'integer':
-      return { type, value: parseInt(value, 10) };
+      return { type, value: Number.parseInt(value, 10) };
     case 'decimal':
-      return { type, value: parseFloat(value) };
+      return { type, value: Number.parseFloat(value) };
     default:
       return { type, value };
   }

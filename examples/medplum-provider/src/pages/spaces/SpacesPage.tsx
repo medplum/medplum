@@ -241,68 +241,111 @@ export function SpacesPage(): JSX.Element {
   // Centered layout before first message
   if (!hasStarted) {
     return (
-      <Flex h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+      <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+        {/* Overlay Sidebar */}
         <Transition mounted={historyOpened} transition="slide-right" duration={200}>
           {(styles) => (
-            <Box
+            <Paper
+              className={classes.borderRight}
               w={320}
+              h="100%"
+              shadow="xl"
               style={{
                 ...styles,
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                zIndex: 10,
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-            </Box>
+              <Group justify="space-between" p="md" className={classes.borderBottom}>
+                <Text size="lg" fw={600}>
+                  Conversations
+                </Text>
+                <CloseButton onClick={() => setHistoryOpened(false)} />
+              </Group>
+              <Box style={{ flex: 1, overflow: 'hidden' }}>
+                <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+              </Box>
+            </Paper>
           )}
         </Transition>
 
-        <Box p="md">
-          <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
-            <IconHistory size={20} />
-          </ActionIcon>
-        </Box>
-
-        <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
-          <Box
-            w="100%"
-            className={hasStarted ? classes.fadeOut : undefined}
-            style={{
-              maxWidth: '700px',
-            }}
-          >
-            <Text size="xl" fw={700} mb="xs">
-              Start a New Space
-            </Text>
-
-            <ChatInput
-              input={input}
-              onInputChange={setInput}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              loading={loading}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              backgroundColor="white"
-            />
+        {/* Main Content */}
+        <Flex h="100%" style={{ position: 'relative' }}>
+          <Box p="md">
+            <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
+              <IconHistory size={20} />
+            </ActionIcon>
           </Box>
-        </Stack>
-      </Flex>
+
+          <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
+            <Box
+              w="100%"
+              className={hasStarted ? classes.fadeOut : undefined}
+              style={{
+                maxWidth: '700px',
+              }}
+            >
+              <Text size="xl" fw={700} mb="xs">
+                Start a New Space
+              </Text>
+
+              <ChatInput
+                input={input}
+                onInputChange={setInput}
+                onKeyDown={handleKeyDown}
+                onSend={handleSend}
+                loading={loading}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                backgroundColor="white"
+              />
+            </Box>
+          </Stack>
+        </Flex>
+      </Box>
     );
   }
 
   // Chat layout after first message
   return (
-    <Flex h="calc(100vh - 68px)">
-      {/* History Sidebar */}
+    <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+      {/* Overlay History Sidebar */}
       <Transition mounted={historyOpened} transition="slide-right" duration={200}>
         {(styles) => (
-          <Paper className={classes.borderRight} w={320} style={{ ...styles, position: 'relative' }}>
-            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+          <Paper
+            className={classes.borderRight}
+            w={320}
+            h="100%"
+            shadow="xl"
+            style={{
+              ...styles,
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Group justify="space-between" p="md" className={classes.borderBottom}>
+              <Text size="lg" fw={600}>
+                Conversations
+              </Text>
+              <CloseButton onClick={() => setHistoryOpened(false)} />
+            </Group>
+            <Box style={{ flex: 1, overflow: 'hidden' }}>
+              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+            </Box>
           </Paper>
         )}
       </Transition>
 
       {/* Main content column - chat/resource + input */}
-      <Flex direction="column" style={{ flex: 1 }}>
+      <Flex direction="column" h="100%">
         {/* Chat and Resource panels row */}
         <Flex style={{ overflow: 'hidden', flex: 1 }}>
           {/* Chat Section */}
@@ -391,6 +434,6 @@ export function SpacesPage(): JSX.Element {
           </Box>
         </Paper>
       </Flex>
-    </Flex>
+    </Box>
   );
 }

@@ -44,7 +44,7 @@ export function Header(props: HeaderProps): JSX.Element {
             width={260}
             shadow="xl"
             position="bottom-end"
-            transitionProps={{ transition: 'pop-top-right' }}
+            transitionProps={{ transition: 'fade-down' }}
             opened={userMenuOpened}
             onClose={() => setUserMenuOpened(false)}
           >

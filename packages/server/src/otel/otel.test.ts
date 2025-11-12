@@ -40,6 +40,10 @@ jest.mock('../workers/batch', () => ({
   getBatchQueue: () => getMockSharedQueue(),
 }));
 
+jest.mock('../workers/set-accounts', () => ({
+  getSetAccountsQueue: () => getMockSharedQueue(),
+}));
+
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
@@ -137,7 +141,7 @@ describe('OpenTelemetry', () => {
     expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
   });
 
-  test('Heartbeat listener records queue metrics for all 4 queues', async () => {
+  test('Heartbeat listener records queue metrics for all queues', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
 
     const getDatabasePoolSpy = jest.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
@@ -158,8 +162,8 @@ describe('OpenTelemetry', () => {
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
     // Check that the queue methods were called for all 4 queues (subscription, cron, download, batch)
-    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(4);
-    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(4);
+    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(5);
+    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
 
     cleanupOtelHeartbeat();
   });

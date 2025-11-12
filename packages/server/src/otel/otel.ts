@@ -10,12 +10,13 @@ import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
+import { getSetAccountsQueue } from '../workers/set-accounts';
 import { getSubscriptionQueue } from '../workers/subscription';
 
 let queueEntries: [string, Queue][] | undefined;
 function getQueueEntries(): [string, Queue][] {
   if (!queueEntries) {
-    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue())) {
+    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue() && getSetAccountsQueue())) {
       throw new Error('Queues not initialized');
     }
     queueEntries = [
@@ -23,6 +24,7 @@ function getQueueEntries(): [string, Queue][] {
       ['cron', getCronQueue() as Queue],
       ['download', getDownloadQueue() as Queue],
       ['batch', getBatchQueue() as Queue],
+      ['set-accounts', getSetAccountsQueue() as Queue],
     ];
   }
   return queueEntries;
