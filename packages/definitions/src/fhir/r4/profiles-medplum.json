@@ -3669,7 +3669,7 @@
                 "key": "axp-3",
                 "severity": "error",
                 "human": "Criteria must be a valid FHIR search string on the correct resource type, e.g. Patient?identifier=123",
-                "expression": "criteria.exists() implies criteria.matches('^' & iif(%context.resourceType = '*','\\\\*',%context.resourceType) & '\\\\?([a-zA-Z_:-]+=[^&]+&?)+') and criteria.contains('_has:').not()"
+                "expression": "criteria.exists() implies criteria.matches('^' & iif(%context.resourceType = '*','\\\\*',%context.resourceType) & '\\\\?([a-zA-Z_:-]+=[^&]+&?)+$') and criteria.contains('_has:').not()"
               }
             ]
           },
