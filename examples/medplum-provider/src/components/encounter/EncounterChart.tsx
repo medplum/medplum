@@ -96,7 +96,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
-      setTasks(prevTasks => prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
+      setTasks((prevTasks) => prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     },
     [setTasks]
   );
