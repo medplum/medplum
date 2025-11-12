@@ -3,7 +3,7 @@
 import type { Encounter, Reference } from '@medplum/fhirtypes';
 import { Loading } from '@medplum/react';
 import type { JSX } from 'react';
-import { Outlet, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { EncounterChart } from '../../components/encounter/EncounterChart';
 
 export const EncounterChartPage = (): JSX.Element => {
@@ -18,9 +18,6 @@ export const EncounterChartPage = (): JSX.Element => {
   };
 
   return (
-    <>
       <EncounterChart encounter={encounterRef} />
-      <Outlet />
-    </>
   );
 };
