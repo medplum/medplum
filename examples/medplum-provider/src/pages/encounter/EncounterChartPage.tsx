@@ -18,7 +18,5 @@ export const EncounterChartPage = (): JSX.Element | null => {
     reference: `Encounter/${encounterId}`,
   };
 
-  return (
-      <EncounterChart encounter={encounterRef} />
-  );
+  return <EncounterChart encounter={encounterRef} />;
 };

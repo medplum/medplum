@@ -26,13 +26,13 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
       case 'Patient':
         return <PatientSummary patient={displayResource} />;
       case 'Task':
-        return <TaskDetailPanel task={displayResource as Task} />;  
+        return <TaskDetailPanel task={displayResource as Task} />;
       case 'DiagnosticReport':
         return <LabResultDetails result={displayResource as DiagnosticReport} />;
       case 'ServiceRequest':
         return <LabOrderDetails order={displayResource as ServiceRequest} onOrderChange={() => {}} />;
       case 'Encounter':
-        return <EncounterChart encounter={displayResource as Encounter} />; 
+        return <EncounterChart encounter={displayResource as Encounter} />;
       default:
         return <ResourceTable value={displayResource} />;
     }
