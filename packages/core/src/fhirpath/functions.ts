@@ -1282,7 +1282,16 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input string matches the given regular expression.
    */
   matches: (context: AtomContext, input: TypedValue[], regexAtom: Atom): TypedValue[] => {
-    return applyStringFunc((str, regex) => !!new RegExp(regex as string).exec(str), context, input, regexAtom);
+    return applyStringFunc(
+      (str, regex) => {
+        console.log('=== MATCHES?', str, regex);
+        const re = new RegExp(regex as string);
+        return !!re.exec(str);
+      },
+      context,
+      input,
+      regexAtom
+    );
   },
 
   /**

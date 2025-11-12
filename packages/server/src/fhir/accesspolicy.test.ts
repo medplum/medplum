@@ -2787,6 +2787,21 @@ describe('AccessPolicy', () => {
     })
   );
 
+  it('Server accepts criteria that starts with escape code', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Device',
+              criteria: 'Device?identifier=foo', // Since \D is a character class, it could cause confusion
+            },
+          ],
+        })
+      ).resolves.toBeDefined();
+    }));
+
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {
       const compartment = 'Patient/' + randomUUID();
