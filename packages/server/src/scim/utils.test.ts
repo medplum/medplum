@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
 import { createReference, OperationOutcomeError } from '@medplum/core';
+import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { convertScimToJsonPatch, createScimUser } from './utils';
-import { getSystemRepo } from '../fhir/repo';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
 import { registerNew } from '../auth/register';
+import { loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
+import { convertScimToJsonPatch, createScimUser } from './utils';
 
 describe('convertScimToJsonPatch', () => {
   test('Okta example', () => {
@@ -149,26 +149,20 @@ describe('createScimUser', () => {
   afterAll(shutdownApp);
 
   test('Creates a Practitioner', async () => {
-    const result = await createScimUser(
-      createReference(user),
-      project,
-      {
-        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
-        name: {
-          givenName: 'SCIM',
-          familyName: 'User',
-        },
-        emails: [{ value: randomUUID() + '@example.com' }],
-      }
-    );
-    expect(result).toHaveProperty('userType', 'Practitioner')
+    const result = await createScimUser(createReference(user), project, {
+      schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+      name: {
+        givenName: 'SCIM',
+        familyName: 'User',
+      },
+      emails: [{ value: randomUUID() + '@example.com' }],
+    });
+    expect(result).toHaveProperty('userType', 'Practitioner');
   });
 
   test('Creating a Patient fails without a defaultPatientAccessPolicy', async () => {
-    await expect(createScimUser(
-      createReference(user),
-      project,
-      {
+    await expect(
+      createScimUser(createReference(user), project, {
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         userType: 'Patient',
         name: {
@@ -176,8 +170,8 @@ describe('createScimUser', () => {
           familyName: 'User',
         },
         emails: [{ value: randomUUID() + '@example.com' }],
-      }
-    )).rejects.toThrow(OperationOutcomeError)
+      })
+    ).rejects.toThrow(OperationOutcomeError);
   });
 
   test('Creating a Patient applies the defaultPatientAccessPolicy', async () => {
@@ -188,10 +182,8 @@ describe('createScimUser', () => {
     });
     const projectWithPolicy = { ...project, defaultPatientAccessPolicy: createReference(accessPolicy) };
 
-    await expect(createScimUser(
-      createReference(user),
-      projectWithPolicy,
-      {
+    await expect(
+      createScimUser(createReference(user), projectWithPolicy, {
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         userType: 'Patient',
         name: {
@@ -199,7 +191,7 @@ describe('createScimUser', () => {
           familyName: 'User',
         },
         emails: [{ value: randomUUID() + '@example.com' }],
-      }
-    )).resolves.toHaveProperty('userType', 'Patient');
+      })
+    ).resolves.toHaveProperty('userType', 'Patient');
   });
 });
