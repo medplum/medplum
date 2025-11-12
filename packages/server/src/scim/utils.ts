@@ -81,9 +81,6 @@ export async function createScimUser(
   scimUser: ScimUser
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);
-  if (!resourceType) {
-    throw new OperationOutcomeError(badRequest('Missing Medplum user type'));
-  }
 
   const accessPolicy = project.defaultPatientAccessPolicy;
   if (!accessPolicy) {
