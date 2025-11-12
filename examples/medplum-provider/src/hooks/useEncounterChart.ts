@@ -162,7 +162,13 @@ export function useEncounterChart(
       if (!patientId || !encounterResource?.id || !practitioner?.id || chargeItems.length === 0) {
         return;
       }
-      const newClaim = await createClaimFromEncounter(medplum, patientId, encounterResource.id, practitioner.id, chargeItems);
+      const newClaim = await createClaimFromEncounter(
+        medplum,
+        patientId,
+        encounterResource.id,
+        practitioner.id,
+        chargeItems
+      );
       if (newClaim) {
         setClaim(newClaim);
       }

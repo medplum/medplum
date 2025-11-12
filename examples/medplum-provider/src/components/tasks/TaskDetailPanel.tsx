@@ -24,7 +24,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const resolvedTask = useResource(taskProp);
   const [task, setTask] = useState<Task | undefined>(resolvedTask);
   const [activeTab, setActiveTab] = useState<string>('properties');
-  
+
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
 
@@ -79,7 +79,11 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
         }}
         className={classes.borderRight}
       >
-        <TaskInputNote task={task} onTaskChange={handleTaskChange} onDeleteTask={onDeleteTask ? handleDeleteTask : undefined} />
+        <TaskInputNote
+          task={task}
+          onTaskChange={handleTaskChange}
+          onDeleteTask={onDeleteTask ? handleDeleteTask : undefined}
+        />
       </Box>
 
       <Box h="100%" w="400px">
