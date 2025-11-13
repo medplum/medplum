@@ -24,15 +24,13 @@ export class AsyncJobExecutor {
     this.resource = resource;
   }
 
-  async init(url: string): Promise<AsyncJob> {
-    if (!this.resource) {
-      this.resource = await this.repo.createResource<AsyncJob>({
-        resourceType: 'AsyncJob',
-        status: 'accepted',
-        request: url,
-        requestTime: new Date().toISOString(),
-      });
-    }
+  async init(url: string): Promise<WithId<AsyncJob>> {
+    this.resource ??= await this.repo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      request: url,
+      requestTime: new Date().toISOString(),
+    });
     return this.resource;
   }
   /**

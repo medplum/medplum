@@ -376,5 +376,5 @@ export function escapeRegexString(str: string): string {
   // { } - define quantifiers
   // \ - escapes a special character
   // | - alternation (OR operator)
-  return str.replace(/[.^$*+?()[\]{}\\|]/g, '\\$&');
+  return str.replaceAll(/[.^$*+?()[\]{}\\|]/g, '\\$&');
 }

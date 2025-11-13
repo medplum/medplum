@@ -182,7 +182,7 @@ export function formatFamilyName(name: HumanName): string {
  * @returns Returns true if the date is a valid date.
  */
 export function isValidDate(date: Date): boolean {
-  return date instanceof Date && !isNaN(date.getTime());
+  return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 /**

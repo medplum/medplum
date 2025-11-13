@@ -225,6 +225,7 @@ async function createLambda(bot: Bot, client: LambdaClient, name: string, zipFil
       MemorySize: LAMBDA_MEMORY,
       PackageType: PackageType.Zip,
       Layers: [layerVersion],
+      Description: bot.name || '',
       Code: {
         ZipFile: zipFile,
       },
@@ -276,6 +277,7 @@ async function updateLambdaConfig(bot: Bot, client: LambdaClient, name: string):
     new UpdateFunctionConfigurationCommand({
       FunctionName: name,
       Role: getConfig().botLambdaRoleArn,
+      Description: bot.name || '',
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
       Layers: [layerVersion],

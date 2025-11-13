@@ -11,7 +11,7 @@ import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 const TEMP_LOG_FILE = path.join(
   dirname(UPGRADE_MANIFEST_PATH),
-  `stop-service-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`
+  `stop-service-logs-${new Date().toISOString().replaceAll(/:\s*/g, '-')}.txt`
 );
 
 export async function main(argv: string[]): Promise<void> {
@@ -83,7 +83,7 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+if (require.main === module) {
   main(process.argv).catch((err) => {
     console.log(err);
     process.exit(1);

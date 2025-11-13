@@ -75,9 +75,11 @@ describe('Seed', () => {
 
   test('Seeder completes successfully', () =>
     withTestContext(async () => {
+      const config = await loadTestConfig();
+
       // Seeder was already run as part of `initAppServices`, but run it again
       // incase it is ever removed from `initAppServices`
-      await seedDatabase();
+      await seedDatabase(config);
 
       // Make sure all database migrations have run
       const pool = getDatabasePool(DatabaseMode.WRITER);
@@ -101,6 +103,6 @@ describe('Seed', () => {
       expect(project.strictMode).toBe(true);
 
       // Second time, seeder should silently ignore
-      await seedDatabase();
+      await seedDatabase(config);
     }));
 });

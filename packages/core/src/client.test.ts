@@ -314,6 +314,45 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
+  test('storagePrefix option', () => {
+    localStorage.clear();
+
+    // Create client with custom storage prefix
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      storagePrefix: '@myapp:',
+      fetch: mockFetch(200, {}),
+    });
+
+    // Set some data through the client's storage
+    const storage = (client as any).storage;
+    storage.setString('testKey', 'testValue');
+
+    // Verify it's stored with the correct prefix in localStorage
+    expect(localStorage.getItem('@myapp:testKey')).toBe('testValue');
+    expect(localStorage.getItem('testKey')).toBeNull();
+
+    // Verify we can retrieve it through the storage
+    expect(storage.getString('testKey')).toBe('testValue');
+
+    // Test with objects
+    const testObject = { foo: 'bar', nested: { value: 123 } };
+    storage.setObject('config', testObject);
+    expect(localStorage.getItem('@myapp:config')).toBeTruthy();
+    expect(storage.getObject('config')).toMatchObject(testObject);
+
+    // Create another client without prefix - should not see prefixed data
+    const clientWithoutPrefix = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      fetch: mockFetch(200, {}),
+    });
+    const unprefixedStorage = (clientWithoutPrefix as any).storage;
+    expect(unprefixedStorage.getString('testKey')).toBeUndefined();
+    expect(unprefixedStorage.getObject('config')).toBeUndefined();
+
+    localStorage.clear();
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
@@ -341,7 +380,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123' },
           membership: { resourceType: 'ProjectMembership', id: '123' },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -398,7 +437,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123', superAdmin: true },
           membership: { resourceType: 'ProjectMembership', id: '123', admin: true },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -3274,7 +3313,7 @@ describe('Client', () => {
       const mockMe = {
         project: { resourceType: 'Project', id: '123' },
         membership: { resourceType: 'ProjectMembership', id: '123' },
-        profile: { resouceType: 'Practitioner', id: '123' },
+        profile: { resourceType: 'Practitioner', id: '123' },
         config: { resourceType: 'UserConfiguration', id: '123' },
         accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
       };
@@ -3622,6 +3661,50 @@ describe('Client', () => {
     expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
     expect(console.log).toHaveBeenCalledWith('< 200 OK');
     expect(console.log).toHaveBeenCalledWith('< foo: bar');
+  });
+
+  test('setVerbose', async () => {
+    const fetch = jest.fn(() => {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => ContentType.FHIR_JSON,
+          forEach: (cb: (value: string, key: string) => void) => cb('bar', 'foo'),
+        },
+        json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+      });
+    });
+
+    console.log = jest.fn();
+    const client = new MedplumClient({ fetch });
+
+    // First request without verbose mode - should not log
+    let result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
+
+    // Enable verbose mode using setVerbose
+    client.setVerbose(true);
+
+    // Second request with verbose mode enabled - should log
+    result = await client.readResource('Patient', '456');
+    expect(result).toBeDefined();
+    expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/456');
+    expect(console.log).toHaveBeenCalledWith('> Accept: application/fhir+json, */*; q=0.1');
+    expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
+    expect(console.log).toHaveBeenCalledWith('< 200 OK');
+    expect(console.log).toHaveBeenCalledWith('< foo: bar');
+
+    // Disable verbose mode using setVerbose
+    (console.log as jest.Mock).mockClear();
+    client.setVerbose(false);
+
+    // Third request with verbose mode disabled - should not log
+    result = await client.readResource('Patient', '789');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
   });
 
   test('Disable extended mode', async () => {

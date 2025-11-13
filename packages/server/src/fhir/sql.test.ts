@@ -15,6 +15,8 @@ import {
   ValuesQuery,
   isValidTableName,
   periodToRangeString,
+  resetSqlDebug,
+  setSqlDebug,
 } from './sql';
 
 describe('SqlBuilder', () => {
@@ -379,4 +381,34 @@ test('isValidTableName', () => {
   expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
   expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
   expect(isValidTableName('Observation History')).toStrictEqual(false);
+});
+
+test('debug', async () => {
+  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+  const conn = {
+    query: jest.fn(() => ({ rows: [] })),
+  } as unknown as Client;
+
+  const query = new SelectQuery('MyTable').column('id');
+
+  async function executeQuery(): Promise<void> {
+    const sql = new SqlBuilder();
+    query.buildSql(sql);
+    await sql.execute(conn);
+  }
+
+  setSqlDebug('literally anything');
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+
+  setSqlDebug(undefined);
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).not.toHaveBeenCalled();
+
+  resetSqlDebug();
 });

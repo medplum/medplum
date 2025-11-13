@@ -1,24 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type {
   AsyncJob,
   Bundle,
   Communication,
   DiagnosticReport,
+  Login,
   Observation,
   Organization,
   Patient,
+  Project,
+  ProjectMembership,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
+import type { RateLimiterRes } from 'rate-limiter-flexible';
+import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { runInAsyncContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
+import type { SetAccountsJobData } from '../../workers/set-accounts';
+import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
 let accessToken: string;
+let login: WithId<Login>;
+let membership: WithId<ProjectMembership>;
+let project: WithId<Project>;
 let observation: Observation;
 let diagnosticReport: DiagnosticReport;
 let patient: Patient;
@@ -29,7 +43,11 @@ describe('Patient Set Accounts Operation', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ superAdmin: true });
+    ({ accessToken, login, membership, project } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    }));
 
     // Create organization
     const orgRes = await request(app)
@@ -371,6 +389,9 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Supports async response', async () => {
+    const queue = getSetAccountsQueue() as any;
+    queue.add.mockClear();
+
     // Start the operation
     const initRes = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
@@ -393,6 +414,22 @@ describe('Patient Set Accounts Operation', () => {
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
 
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'SetAccountsJobData',
+      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await runInAsyncContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      () => execSetAccountsJob(job)
+    );
+
     // Check the export status
     const contentLocation = new URL(initRes.headers['content-location']);
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
@@ -405,6 +442,94 @@ describe('Patient Set Accounts Operation', () => {
     expect(resBody.output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
+  });
+
+  test('Enforces rate limits in async mode', async () => {
+    const queue = getSetAccountsQueue() as any;
+    queue.add.mockClear();
+    const { accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+      project: { systemSetting: [{ name: 'userFhirQuota', valueInteger: 400 }] },
+    });
+    const patient = await repo.createResource({ resourceType: 'Patient' });
+    await repo.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: { text: 'Eye color' },
+    });
+    await repo.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: { text: 'Hair color' },
+    });
+    // Start the operation
+    const initRes = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'accounts', valueReference: createReference(organization1) },
+          { name: 'propagate', valueBoolean: true },
+        ],
+      });
+    expect(initRes.status).toBe(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'SetAccountsJobData',
+      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    // Mock out rate limiter to periodically block the user
+    let count = 0;
+    const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
+      count = (count + 1) % 3;
+      if (!key.toString().includes(membership.id)) {
+        // allowed
+        return {
+          remainingPoints: 100,
+          msBeforeNext: 100,
+          consumedPoints: 100,
+          isFirstInDuration: false,
+        } as RateLimiterRes;
+      }
+
+      return {
+        remainingPoints: 200 - count * 100, // Allow every third call
+        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        consumedPoints: 100,
+        isFirstInDuration: false,
+      } as RateLimiterRes;
+    });
+
+    // Manually execute worker
+    await runInAsyncContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      () => execSetAccountsJob(job)
+    );
+    expect(consumeMock).toHaveBeenCalledTimes(10); // Rate limits applied
+
+    // Check the export status
+    const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes.status).toBe(200); // Job waits for rate limits and ultimately succeeds
   });
 
   test('Removes account without extended header', async () => {
@@ -465,7 +590,7 @@ describe('Patient Set Accounts Operation', () => {
     const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
     const orgRef = createReference(organization);
 
-    const patientRes = await await request(app)
+    const patientRes = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -480,7 +605,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(patient.meta?.accounts).toStrictEqual([orgRef]);
     expect(patient.meta?.compartment).toContainEqual(orgRef);
 
-    const reportRes = await await request(app)
+    const reportRes = await request(app)
       .post(`/fhir/R4/DiagnosticReport`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)

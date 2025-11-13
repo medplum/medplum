@@ -12,7 +12,6 @@ const config: Config = {
   trailingSlash: false,
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
-  onBrokenMarkdownLinks: 'throw',
   onDuplicateRoutes: 'throw',
   favicon: 'favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
@@ -231,6 +230,9 @@ const config: Config = {
   } satisfies Preset.ThemeConfig,
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
   },
   themes: ['@docusaurus/theme-mermaid'],
 };

@@ -6,7 +6,15 @@ import type { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
 import { getLogger } from '../logger';
 
-const DEBUG = env['SQL_DEBUG'];
+let DEBUG: string | undefined = env['SQL_DEBUG'];
+
+export function setSqlDebug(value: string | undefined): void {
+  DEBUG = value;
+}
+
+export function resetSqlDebug(): void {
+  DEBUG = env['SQL_DEBUG'];
+}
 
 export const ColumnType = {
   UUID: 'uuid',
@@ -197,12 +205,12 @@ function formatTsquery(filter: string | undefined): string | undefined {
     return undefined;
   }
 
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  const noPunctuation = filter.replaceAll(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
   if (!noPunctuation) {
     return undefined;
   }
 
-  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
+  return noPunctuation.replaceAll(/\s+/g, ':* & ') + ':*';
 }
 
 export interface Expression {

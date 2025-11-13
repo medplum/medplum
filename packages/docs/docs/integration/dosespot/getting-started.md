@@ -549,3 +549,37 @@ When working with DoseSpot integration, it's important to understand the differe
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
 
 See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
+
+## Practitioner AccessPolicy 
+
+The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinic's favorite medications](./clinic-favorite-medications.md)
+
+```
+{
+  "resourceType": "AccessPolicy",
+  "name": "Dosespot Practitioner Example Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+    },
+    {
+      "resourceType": "MedicationRequest"
+    },
+    {
+      "resourceType": "AllergyIntolerance"
+    },
+    {
+      "resourceType": "Consent"
+    },
+    {
+      "resourceType": "ProjectMembership",
+      "readonly": true
+    },
+    {
+      "resourceType": "MedicationKnowledge",
+      "readonly": true
+    }
+    //...
+  ]
+}
+```

@@ -349,7 +349,7 @@ export function getSimplePhone(phone: string | undefined): string | undefined {
   }
 
   // Remove all remaining non-digit characters
-  return result.replace(/\D/g, '');
+  return result.replaceAll(/\D/g, '');
 }
 
 function getPhoneAreaCode(phone: string | undefined): string | undefined {

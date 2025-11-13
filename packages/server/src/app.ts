@@ -223,7 +223,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     await initDatabase(config);
-    await seedDatabase();
+    await seedDatabase(config);
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
