@@ -114,7 +114,7 @@ export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Prom
 
   // Check Accept header for streaming
   const acceptHeader = req.headers?.accept || req.headers?.Accept;
-  const wantsStreaming = acceptHeader?.includes('text/event-stream');
+  const wantsStreaming = req.header('Accept')?.includes('text/event-stream');
 
   if (wantsStreaming) {
     if (!res) {
@@ -205,7 +205,7 @@ export async function streamAIToClient(
             res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
           } catch (e) {
             // Skip malformed JSON
-            console.error('Error parsing SSE data:', e);
+            ctx.logger.error('Error parsing SSE data:', e);
           }
         }
       }
