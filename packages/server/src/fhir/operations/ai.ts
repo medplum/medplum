@@ -90,8 +90,8 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
     body: req.body ?? {},
     headers: req.headers,
   };
-
-  const result = await aiOperation(fhirRequest, res);
+  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+  const result = await aiOperation(fhirRequest, res, acceptsStreaming);
 
   // If streaming, response already sent
   if (!result) {
@@ -115,9 +115,10 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
  * Supports both regular and streaming responses based on Accept header.
  * @param req - The incoming request.
  * @param res - Optional Express response for streaming support.
+ * @param acceptsStreaming - Whether the client accepts streaming.
  * @returns The server response. For streaming, returns undefined after response is sent.
  */
-export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Promise<FhirResponse | undefined> {
+export async function aiOperation(req: FhirRequest, res?: ExpressResponse, acceptsStreaming: boolean = false): Promise<FhirResponse | undefined> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
     return [forbidden];
@@ -144,10 +145,7 @@ export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Prom
     }
   }
 
-  const acceptHeader = req.headers?.accept || req.headers?.Accept;
-  const wantsStreaming = acceptHeader?.includes('text/event-stream');
-
-  if (wantsStreaming) {
+  if (acceptsStreaming) {
     if (!res) {
       return [badRequest('Streaming requires Express response object')];
     }
