@@ -135,7 +135,7 @@
     },
     {
       "source": "/docs/self-hosting/config-settings",
-      "destination": "/docs/self-hosting/settings-reference"
+      "destination": "/docs/self-hosting/server-config"
     }
   ]
 }

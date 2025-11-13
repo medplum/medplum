@@ -2,7 +2,7 @@
 sidebar_position: 50
 ---
 
-# Server Configuration Settings
+# Server Config
 
 When running Medplum server on a local developer machine, Medplum server typically loads config settings from a JSON config file. By default, it loads config settings from `medplum.config.json`.
 
@@ -478,7 +478,7 @@ Medplum server can be configured to require an SSL connection to the database. T
 2.  `database.ssl.ca` - Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla.
 3.  `database.ssl.rejectUnauthorized` - Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs.
 
-In general, the `require` flag should be set to `true` to ensure that all connections to the database are encrypted. The `ca` and `rejectUnauthorized` flags are optional and can be used to further secure the connection.
+In general, the `require` flag should be set to `true` to ensure that all connections to the database are encrypted. The `ca` and `reactUnauthorized` flags are optional and can be used to further secure the connection.
 
 Example using JSON configuration file:
 

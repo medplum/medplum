@@ -363,7 +363,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/running-medplum-docker-container' },
         { type: 'doc', id: 'self-hosting/running-full-medplum-stack-in-docker' },
         { type: 'html', value: '<strong class="menu__link">Configuring</strong>' },
-        { type: 'doc', id: 'self-hosting/settings-reference' },
+        { type: 'doc', id: 'self-hosting/server-config' },
         { type: 'doc', id: 'self-hosting/setting-configuration' },
         { type: 'doc', id: 'self-hosting/project-settings' },
         { type: 'doc', id: 'self-hosting/setting-up-cors' },

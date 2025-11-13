@@ -108,7 +108,7 @@ of directly.
 
 ### Redirect connections through the proxy
 
-First, confirm the `database.host` and `database.ssl.require` settings are created in [AWS Parameter Store](/docs/self-hosting/config-settings#server-config):
+First, confirm the `database.host` and `database.ssl.require` settings are created in [AWS Parameter Store](/docs/self-hosting/server-config):
 
 ![AWS Console screenshot showing the "database.host" setting is present in AWS Parameter Store with an RDS Proxy endpoint value](./rds-database-host-with-rds-proxy-param.png)
 
