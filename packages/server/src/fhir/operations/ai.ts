@@ -53,14 +53,6 @@ const operation: OperationDefinition = {
       documentation: 'JSON string containing the tools array (optional)',
     },
     {
-      name: 'stream',
-      use: 'in',
-      min: 0,
-      max: '1',
-      type: 'boolean',
-      documentation: 'Enable streaming responses via Server-Sent Events (optional)',
-    },
-    {
       name: 'content',
       use: 'out',
       min: 0,
@@ -84,11 +76,11 @@ type AIOperationParameters = {
   apiKey: string;
   model: string;
   tools?: string;
-  stream?: boolean;
 };
 
 /**
  * Implements FHIR AI operation.
+ * Supports both regular and streaming responses based on Accept header.
  * @param req - The incoming request.
  * @param res - Optional Express response for streaming support.
  * @returns The server response. For streaming, returns undefined after response is sent.
@@ -120,7 +112,11 @@ export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Prom
     }
   }
 
-  if (params.stream) {
+  // Check Accept header for streaming
+  const acceptHeader = req.headers?.accept || req.headers?.Accept;
+  const wantsStreaming = acceptHeader?.includes('text/event-stream');
+
+  if (wantsStreaming) {
     if (!res) {
       return [badRequest('Streaming requires Express response object')];
     }
@@ -171,9 +167,10 @@ export async function streamAIToClient(
     throw new Error('No response body available for streaming');
   }
 
-  // Stream OpenAI response directly to client
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  // Stream OpenAI response directly to client using TextDecoderStream
+  const reader = response.body
+    .pipeThrough(new TextDecoderStream())
+    .getReader();
 
   let buffer = '';
 
@@ -186,7 +183,7 @@ export async function streamAIToClient(
         break;
       }
 
-      buffer += decoder.decode(value, { stream: true });
+      buffer += value;
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 

@@ -786,22 +786,24 @@ describe('AI Operation', () => {
       ok: true,
       status: 200,
       body: {
-        getReader: () => ({
-          read: jest
-            .fn()
-            .mockResolvedValueOnce({
-              done: false,
-              value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n'),
-            })
-            .mockResolvedValueOnce({
-              done: false,
-              value: new TextEncoder().encode('data: {"choices":[{"delta":{"content":"!"}}]}\n\n'),
-            })
-            .mockResolvedValueOnce({
-              done: true,
-              value: undefined,
-            }),
-          releaseLock: jest.fn(),
+        pipeThrough: jest.fn().mockReturnValue({
+          getReader: () => ({
+            read: jest
+              .fn()
+              .mockResolvedValueOnce({
+                done: false,
+                value: 'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
+              })
+              .mockResolvedValueOnce({
+                done: false,
+                value: 'data: {"choices":[{"delta":{"content":"!"}}]}\n\n',
+              })
+              .mockResolvedValueOnce({
+                done: true,
+                value: undefined,
+              }),
+            releaseLock: jest.fn(),
+          }),
         }),
       },
     };
@@ -812,6 +814,7 @@ describe('AI Operation', () => {
       .post(`/fhir/R4/$ai`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Accept', 'text/event-stream')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -827,22 +830,42 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
-          {
-            name: 'stream',
-            valueBoolean: true,
-          },
         ],
       });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
-    expect(res.text).toContain('Hello');
-    expect(res.text).toContain('!');
+    
+    // Parse SSE format - should not be Parameters format
+    // SSE responses don't have JSON body (res.body is empty object for text responses)
+    expect(res.body).toEqual({});
+    expect(res.text).toBeDefined();
+    
+    // Verify SSE data chunks
+    const sseLines = res.text.split('\n\n').filter((line: string) => line.startsWith('data: '));
+    expect(sseLines.length).toBeGreaterThan(0);
+    
+    const contentChunks: string[] = [];
+    for (const line of sseLines) {
+      if (line.includes('[DONE]')) {
+        continue;
+      }
+      try {
+        const data = JSON.parse(line.slice(6).trim());
+        if (data.content) {
+          contentChunks.push(data.content);
+        }
+      } catch (_e) {
+        // Skip malformed lines
+      }
+    }
+    
+    expect(contentChunks).toContain('Hello');
+    expect(contentChunks).toContain('!');
   });
 
   test('Simulates actual progressive streaming behavior', async () => {
     // Create a mock stream with intentional delays
-    const encoder = new TextEncoder();
     const streamChunks = [
       'data: {"choices":[{"delta":{"content":"Progressive"}}]}\n\n',
       'data: {"choices":[{"delta":{"content":" streaming"}}]}\n\n',
@@ -851,20 +874,22 @@ describe('AI Operation', () => {
 
     let chunkIndex = 0;
     const mockReadableStream = {
-      getReader: jest.fn().mockReturnValue({
-        read: jest.fn().mockImplementation(async () => {
-          if (chunkIndex < streamChunks.length) {
-            // Simulate network delay between chunks
-            await new Promise<void>((resolve) => {
-              setTimeout(() => resolve(), 10);
-            });
-            const chunk = encoder.encode(streamChunks[chunkIndex]);
-            chunkIndex++;
-            return { done: false, value: chunk };
-          }
-          return { done: true };
+      pipeThrough: jest.fn().mockReturnValue({
+        getReader: jest.fn().mockReturnValue({
+          read: jest.fn().mockImplementation(async () => {
+            if (chunkIndex < streamChunks.length) {
+              // Simulate network delay between chunks
+              await new Promise<void>((resolve) => {
+                setTimeout(() => resolve(), 10);
+              });
+              const chunk = streamChunks[chunkIndex];
+              chunkIndex++;
+              return { done: false, value: chunk };
+            }
+            return { done: true };
+          }),
+          releaseLock: jest.fn(),
         }),
-        releaseLock: jest.fn(),
       }),
     };
 
@@ -881,6 +906,7 @@ describe('AI Operation', () => {
       .post('/fhir/R4/$ai')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Accept', 'text/event-stream')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -896,32 +922,45 @@ describe('AI Operation', () => {
             name: 'model',
             valueString: 'gpt-4',
           },
-          {
-            name: 'stream',
-            valueBoolean: true,
-          },
         ],
       });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
-    expect(res.text).toContain('Progressive');
-    expect(res.text).toContain(' streaming');
-    expect(res.text).toContain(' test');
-
-    // Verify content chunks
-    const matches = res.text.match(/data: (.*?)\n\n/g);
-    expect(matches).toBeTruthy();
-    if (matches) {
-      const contentChunks = matches
-        .filter((m) => m.includes('"content"') && !m.includes('[DONE]'))
-        .map((m) => JSON.parse(m.slice(6).trim()).content);
-      expect(contentChunks).toEqual(['Progressive', ' streaming', ' test']);
+    
+    // Verify response is SSE format, not Parameters format
+    // SSE responses don't have JSON body (res.body is empty object for text responses)
+    expect(res.body).toEqual({});
+    expect(res.text).toBeDefined();
+    
+    // Parse SSE format explicitly
+    const sseLines = res.text.split('\n\n').filter((line: string) => line.startsWith('data: '));
+    expect(sseLines.length).toBeGreaterThan(0);
+    
+    const contentChunks: string[] = [];
+    for (const line of sseLines) {
+      if (line.includes('[DONE]')) {
+        continue;
+      }
+      try {
+        const data = JSON.parse(line.slice(6).trim());
+        if (data.content) {
+          contentChunks.push(data.content);
+        }
+      } catch (_e) {
+        // Skip malformed lines
+      }
     }
+    
+    expect(contentChunks).toEqual(['Progressive', ' streaming', ' test']);
 
     // Verify no OpenAI metadata leaked (no chatcmpl-, finish_reason, role, etc.)
     expect(res.text).not.toContain('chatcmpl-');
     expect(res.text).not.toContain('finish_reason');
     expect(res.text).not.toContain('"role"');
+    
+    // Verify no Parameters format in response
+    expect(res.text).not.toContain('"resourceType":"Parameters"');
+    expect(res.text).not.toContain('"parameter"');
   });
 });
