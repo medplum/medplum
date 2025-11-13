@@ -282,7 +282,6 @@ export async function callAI(
 
   if (stream) {
     requestBody.stream = true;
-    // Don't include tools in streaming mode - tool calls not supported
   } else if (tools && tools.length > 0) {
     requestBody.tools = tools;
     requestBody.tool_choice = 'auto';
