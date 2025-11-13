@@ -3628,10 +3628,12 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should be in the hl7Clients map and should have stats tracking
+      // Pool should be in the hl7Clients map and should have stats tracking
       expect(app.hl7Clients.size).toBe(1);
-      const client = app.hl7Clients.get('mllp://localhost:58101');
-      expect(client).toBeDefined();
+      const pool = app.hl7Clients.get('mllp://localhost:58101');
+      expect(pool).toBeDefined();
+      expect(pool?.isTrackingStats()).toBe(true);
+      const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
 
@@ -3743,12 +3745,12 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Should have 2 clients with stats
+      // Should have 2 pools with stats tracking enabled
       expect(app.hl7Clients.size).toBe(2);
-      const client1 = app.hl7Clients.get('mllp://localhost:58102');
-      const client2 = app.hl7Clients.get('mllp://localhost:58103');
-      expect(client1?.stats).toBeDefined();
-      expect(client2?.stats).toBeDefined();
+      const pool1 = app.hl7Clients.get('mllp://localhost:58102');
+      const pool2 = app.hl7Clients.get('mllp://localhost:58103');
+      expect(pool1?.isTrackingStats()).toBe(true);
+      expect(pool2?.isTrackingStats()).toBe(true);
 
       // Update agent to disable keepAlive
       await medplum.updateResource<Agent>({
@@ -3866,10 +3868,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should have stats
+      // Pool should have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      const client = app.hl7Clients.get('mllp://localhost:58104');
-      expect(client?.stats).toBeDefined();
+      const pool = app.hl7Clients.get('mllp://localhost:58104');
+      expect(pool?.isTrackingStats()).toBe(true);
 
       // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -3891,10 +3893,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should still exist but stats should be undefined
+      // Pool should still exist but stats tracking should be disabled
       expect(app.hl7Clients.size).toBe(1);
-      const clientAfterReload = app.hl7Clients.get('mllp://localhost:58104');
-      expect(clientAfterReload?.stats).toBeUndefined();
+      const poolAfterReload = app.hl7Clients.get('mllp://localhost:58104');
+      expect(poolAfterReload?.isTrackingStats()).toBe(false);
 
       await app.stop();
       await hl7Server.stop();
@@ -3982,10 +3984,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should exist but not have stats
+      // Pool should exist but not have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      let client = app.hl7Clients.get('mllp://localhost:58105');
-      expect(client?.stats).toBeUndefined();
+      let pool = app.hl7Clients.get('mllp://localhost:58105');
+      expect(pool?.isTrackingStats()).toBe(false);
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4010,10 +4012,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should now have stats tracking
+      // Pool should now have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      client = app.hl7Clients.get('mllp://localhost:58105');
-      expect(client?.stats).toBeDefined();
+      pool = app.hl7Clients.get('mllp://localhost:58105');
+      expect(pool?.isTrackingStats()).toBe(true);
 
       // Send another message to verify stats tracking works
       state.transmitResponses = [];
@@ -4039,6 +4041,7 @@ describe('App', () => {
       }
 
       // Stats should have recorded the new message
+      const client = pool?.getClients()[0];
       expect(client?.stats?.getSampleCount()).toBe(1);
 
       await app.stop();

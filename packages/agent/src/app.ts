@@ -399,7 +399,7 @@ export class App {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
       if (this.keepAlive) {
         for (const pool of this.hl7Clients.values()) {
-          pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
+          pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
         }
       }
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
@@ -440,7 +440,7 @@ export class App {
         ...stats,
         webSocketQueueDepth: this.webSocketQueue.length,
         hl7QueueDepth: this.hl7Queue.length,
-        hl7ClientCount: this.hl7Clients.size,
+        hl7ClientCount: totalHl7Clients,
         live: this.live,
         outstandingHeartbeats: this.outstandingHeartbeats,
         channelStats,
@@ -1009,6 +1009,14 @@ export class App {
 
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
+    const closeCountdownMsRaw = address.searchParams.get('closeCountdownMs') ?? undefined;
+    let closeCountdownMs = closeCountdownMsRaw ? Number.parseInt(closeCountdownMsRaw, 10) : undefined;
+    if (Number.isNaN(closeCountdownMs)) {
+      this.log.warn(
+        `Invalid closeCountdownMs '${closeCountdownMsRaw}' provided for remote '${message.remote}'. Using default closeCountdownMs for pool...`
+      );
+      closeCountdownMs = undefined;
+    }
 
     let pool: Hl7ClientPool;
 
@@ -1024,16 +1032,18 @@ export class App {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         log: this.log,
+        closeCountdownMs,
       });
       this.hl7Clients.set(message.remote, pool);
       if (keepAlive && this.logStatsFreqSecs > 0) {
-        pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter, log: this.log });
+        pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
       }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         encoding,
         trackingStats: this.logStatsFreqSecs > 0,
+        closeCountdownMs,
       });
     }
 

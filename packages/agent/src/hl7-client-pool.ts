@@ -12,6 +12,7 @@ export interface Hl7ClientPoolOptions {
   keepAlive: boolean;
   maxClients: number;
   log: ILogger;
+  closeCountdownMs?: number;
 }
 
 /**
@@ -31,6 +32,7 @@ export class Hl7ClientPool {
   private closingPromise: Promise<void> | undefined;
   private nextClientIdx: number = 0;
   private statTrackingOptions: ClientStatsTrackingOptions | undefined;
+  private closeCountdownMs?: number;
 
   constructor(options: Hl7ClientPoolOptions) {
     this.host = options.host;
@@ -39,6 +41,7 @@ export class Hl7ClientPool {
     this.keepAlive = options.keepAlive;
     this.maxClients = options.maxClients;
     this.log = options.log;
+    this.closeCountdownMs = options.closeCountdownMs;
   }
 
   /**
@@ -56,8 +59,8 @@ export class Hl7ClientPool {
   }
 
   private closeAndRemoveClient(client: EnhancedHl7Client): void {
-    client.close().catch((err) => {
-      this.log.error(normalizeErrorString(err));
+    client.close().catch((err: Error) => {
+      this.log.error('Error while closing and removing client', err);
     });
     this.removeClient(client);
   }
@@ -71,10 +74,15 @@ export class Hl7ClientPool {
    * @param forceClose - Optional boolean on whether to force the client to close its connect and be removed from the pool. Defaults to `false`.
    */
   releaseClient(client: EnhancedHl7Client, forceClose = false): void {
-    // If forcing the connection closed OR not in keepAlive mode,
+    // If forcing the connection closed
     // We should close the client and remove it from the pool
-    if (forceClose || !this.keepAlive) {
+    if (forceClose) {
       this.closeAndRemoveClient(client);
+    } else if (!this.keepAlive) {
+      // If keepAlive is off and there are no more pending messages for the queue, we can start the timer to close this client
+      client.closeIfIdle(() => {
+        this.removeClient(client);
+      });
     }
   }
 
@@ -160,6 +168,8 @@ export class Hl7ClientPool {
       port: this.port,
       encoding: this.encoding,
       keepAlive: this.keepAlive,
+      log: this.log,
+      closeCountdownMs: this.closeCountdownMs,
     });
     if (this.statTrackingOptions) {
       client.startTrackingStats(this.statTrackingOptions);
@@ -207,5 +217,9 @@ export class Hl7ClientPool {
     for (const client of this.clients) {
       client.stopTrackingStats();
     }
+  }
+
+  isTrackingStats(): boolean {
+    return this.statTrackingOptions !== undefined;
   }
 }
