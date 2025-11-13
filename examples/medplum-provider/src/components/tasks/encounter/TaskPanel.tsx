@@ -10,7 +10,7 @@ import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';
@@ -54,6 +54,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
                 valueReference: { reference: getReferenceString(updatedResponse) },
               },
             ],
+            encounter: task.encounter,
           });
           onUpdateTask(updatedTask);
         }

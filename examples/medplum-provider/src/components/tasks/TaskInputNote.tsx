@@ -19,7 +19,7 @@ import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/re
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
+import { TaskQuestionnaireForm } from './encounter/TaskQuestionnaireForm';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { TaskNoteItem } from './TaskNoteItem';
 import { useDebouncedCallback } from '@mantine/hooks';
