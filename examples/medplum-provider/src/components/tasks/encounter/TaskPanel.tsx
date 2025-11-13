@@ -54,7 +54,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
                 valueReference: { reference: getReferenceString(updatedResponse) },
               },
             ],
-            encounter: task.encounter,
           });
           onUpdateTask(updatedTask);
         }
