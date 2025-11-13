@@ -168,9 +168,7 @@ export async function streamAIToClient(
   }
 
   // Stream OpenAI response directly to client using TextDecoderStream
-  const reader = response.body
-    .pipeThrough(new TextDecoderStream())
-    .getReader();
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 
   let buffer = '';
 

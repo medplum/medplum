@@ -835,16 +835,16 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
-    
+
     // Parse SSE format - should not be Parameters format
     // SSE responses don't have JSON body (res.body is empty object for text responses)
     expect(res.body).toEqual({});
     expect(res.text).toBeDefined();
-    
+
     // Verify SSE data chunks
     const sseLines = res.text.split('\n\n').filter((line: string) => line.startsWith('data: '));
     expect(sseLines.length).toBeGreaterThan(0);
-    
+
     const contentChunks: string[] = [];
     for (const line of sseLines) {
       if (line.includes('[DONE]')) {
@@ -859,7 +859,7 @@ describe('AI Operation', () => {
         // Skip malformed lines
       }
     }
-    
+
     expect(contentChunks).toContain('Hello');
     expect(contentChunks).toContain('!');
   });
@@ -927,16 +927,16 @@ describe('AI Operation', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
-    
+
     // Verify response is SSE format, not Parameters format
     // SSE responses don't have JSON body (res.body is empty object for text responses)
     expect(res.body).toEqual({});
     expect(res.text).toBeDefined();
-    
+
     // Parse SSE format explicitly
     const sseLines = res.text.split('\n\n').filter((line: string) => line.startsWith('data: '));
     expect(sseLines.length).toBeGreaterThan(0);
-    
+
     const contentChunks: string[] = [];
     for (const line of sseLines) {
       if (line.includes('[DONE]')) {
@@ -951,14 +951,14 @@ describe('AI Operation', () => {
         // Skip malformed lines
       }
     }
-    
+
     expect(contentChunks).toEqual(['Progressive', ' streaming', ' test']);
 
     // Verify no OpenAI metadata leaked (no chatcmpl-, finish_reason, role, etc.)
     expect(res.text).not.toContain('chatcmpl-');
     expect(res.text).not.toContain('finish_reason');
     expect(res.text).not.toContain('"role"');
-    
+
     // Verify no Parameters format in response
     expect(res.text).not.toContain('"resourceType":"Parameters"');
     expect(res.text).not.toContain('"parameter"');
