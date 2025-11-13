@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden, normalizeErrorString } from '@medplum/core';
+import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
-import type { Response as ExpressResponse } from 'express';
+import type { Request, Response as ExpressResponse } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
+import { sendOutcome } from '../outcomes';
+import { sendFhirResponse } from '../response';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -78,6 +80,36 @@ type AIOperationParameters = {
   tools?: string;
 };
 
+export const aiOperationHandler = async (req: Request, res: ExpressResponse): Promise<void> => {
+  const fhirRequest: FhirRequest = {
+    method: 'POST',
+    url: req.url,
+    pathname: '',
+    params: {},
+    query: Object.create(null),
+    body: req.body ?? {},
+    headers: req.headers,
+  };
+
+  const result = await aiOperation(fhirRequest, res);
+
+  // If streaming, response already sent
+  if (!result) {
+    return;
+  }
+
+  // Non-streaming response
+  if (result.length === 1) {
+    if (!isOk(result[0])) {
+      throw new OperationOutcomeError(result[0]);
+    }
+    sendOutcome(res, result[0]);
+    return;
+  }
+
+  await sendFhirResponse(req, res, result[0], result[1], result[2]);
+};
+
 /**
  * Implements FHIR AI operation.
  * Supports both regular and streaming responses based on Accept header.
@@ -112,9 +144,8 @@ export async function aiOperation(req: FhirRequest, res?: ExpressResponse): Prom
     }
   }
 
-  // Check Accept header for streaming
   const acceptHeader = req.headers?.accept || req.headers?.Accept;
-  const wantsStreaming = req.header('Accept')?.includes('text/event-stream');
+  const wantsStreaming = acceptHeader?.includes('text/event-stream');
 
   if (wantsStreaming) {
     if (!res) {
@@ -162,6 +193,7 @@ export async function streamAIToClient(
   tools: any[] | undefined,
   res: ExpressResponse
 ): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const response = (await callAI(messages, apiKey, model, tools, true)) as Response;
   if (!response.body) {
     throw new Error('No response body available for streaming');
@@ -205,7 +237,7 @@ export async function streamAIToClient(
             res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
           } catch (e) {
             // Skip malformed JSON
-            ctx.logger.error('Error parsing SSE data:', e);
+            ctx.logger.error('Error parsing SSE data:', { error: e });
           }
         }
       }
@@ -302,10 +334,10 @@ export async function callAI(
   // For non-streaming, parse and return structured data
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error: any = new Error(
+    const error = new Error(
       `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
     );
-    error.statusCode = response.status;
+    (error as Error & { statusCode: number }).statusCode = response.status;
     throw error;
   }
 

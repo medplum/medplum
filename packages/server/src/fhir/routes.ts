@@ -20,7 +20,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
-import { aiOperation } from './operations/ai';
+import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
@@ -158,36 +158,7 @@ fhirRouter.use(protectedRoutes);
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
 // AI $ai operation - handled directly in Express routes to support streaming
-// protectedRoutes.post(['/$ai', '/%24ai'], aiOperation);
-protectedRoutes.post(['/$ai', '/%24ai'], async (req: Request, res: Response) => {
-  const fhirRequest: FhirRequest = {
-    method: 'POST',
-    url: req.originalUrl,
-    pathname: '',
-    params: req.params,
-    query: Object.create(null),
-    body: req.body ?? {},
-    headers: req.headers,
-  };
-
-  const result = await aiOperation(fhirRequest, res);
-
-  // If streaming, response already sent
-  if (!result) {
-    return;
-  }
-
-  // Non-streaming response
-  if (result.length === 1) {
-    if (!isOk(result[0])) {
-      throw new OperationOutcomeError(result[0]);
-    }
-    sendOutcome(res, result[0]);
-    return;
-  }
-
-  await sendFhirResponse(req, res, result[0], result[1], result[2]);
-});
+protectedRoutes.post(['/$ai', '/%24ai'], aiOperationHandler);
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
