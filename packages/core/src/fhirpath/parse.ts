@@ -285,8 +285,8 @@ export function evalFhirPathTyped(
       type: v.type,
       value: v.value?.valueOf(),
     };
-    if ('path' in v && typeof v.path === 'string') {
-      result.path = v.path;
+    if ('path' in v) {
+      result.path = v.path as string;
     }
     return result;
   });
