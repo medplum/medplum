@@ -205,7 +205,7 @@ export async function streamAIToClient(
             res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
           } catch (e) {
             // Skip malformed JSON
-            console.error('Error parsing SSE data:', e);
+            ctx.logger.error('Error parsing SSE data:', e);
           }
         }
       }
