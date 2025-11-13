@@ -3,7 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
-import type { Encounter, Practitioner, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import type {
+  Encounter,
+  Practitioner,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+  Task,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
@@ -145,12 +152,15 @@ describe('TaskQuestionnaireForm', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    
+
     // Set up default profile
     await medplum.createResource(mockPractitioner);
   });
 
-  const setup = (task: Task, onChangeResponse?: (response: QuestionnaireResponse) => void): ReturnType<typeof render> => {
+  const setup = (
+    task: Task,
+    onChangeResponse?: (response: QuestionnaireResponse) => void
+  ): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -485,4 +495,3 @@ describe('TaskQuestionnaireForm', () => {
     expect(callArgs.item).toBeDefined();
   });
 });
-
