@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
-import type { Practitioner, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import type { Encounter, Practitioner, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
@@ -117,6 +117,20 @@ const mockTaskWithoutResponse: Task = {
 const mockTaskWithoutQuestionnaire: Task = {
   ...mockTask,
   input: undefined,
+};
+
+const mockEncounter: Encounter = {
+  resourceType: 'Encounter',
+  id: 'encounter-123',
+  status: 'in-progress',
+  class: { code: 'AMB', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' },
+};
+
+const mockTaskWithEncounter: Task = {
+  ...mockTask,
+  encounter: {
+    reference: 'Encounter/encounter-123',
+  } as Reference<Encounter>,
 };
 
 const mockPractitioner: Practitioner = {
@@ -241,6 +255,86 @@ describe('TaskQuestionnaireForm', () => {
     expect(callArgs.item).toBeDefined();
     expect(callArgs.authored).toBeDefined();
     expect(callArgs.source).toBeDefined();
+  });
+
+  it('includes encounter in onChangeResponse when task has encounter', async () => {
+    await medplum.createResource(mockQuestionnaire);
+    await medplum.createResource(mockQuestionnaireResponse);
+    await medplum.createResource(mockEncounter);
+
+    const onChangeResponse = vi.fn();
+
+    medplum.readReference = vi.fn().mockImplementation(async (ref: Reference) => {
+      if (ref.reference === 'Questionnaire/questionnaire-123') {
+        return mockQuestionnaire;
+      }
+      if (ref.reference === 'QuestionnaireResponse/response-123') {
+        return mockQuestionnaireResponse;
+      }
+      if (ref.reference === 'Encounter/encounter-123') {
+        return mockEncounter;
+      }
+      throw new Error('Not found');
+    });
+
+    await act(async () => {
+      setup(mockTaskWithEncounter, onChangeResponse);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
+    });
+
+    const changeButton = screen.getByTestId('questionnaire-form-change');
+    await act(async () => {
+      changeButton.click();
+    });
+
+    await waitFor(() => {
+      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+    });
+
+    const callArgs = onChangeResponse.mock.calls[0][0];
+    expect(callArgs.encounter).toBeDefined();
+    expect(callArgs.encounter?.reference).toBe('Encounter/encounter-123');
+  });
+
+  it('does not include encounter in onChangeResponse when task has no encounter', async () => {
+    await medplum.createResource(mockQuestionnaire);
+    await medplum.createResource(mockQuestionnaireResponse);
+
+    const onChangeResponse = vi.fn();
+
+    medplum.readReference = vi.fn().mockImplementation(async (ref: Reference) => {
+      if (ref.reference === 'Questionnaire/questionnaire-123') {
+        return mockQuestionnaire;
+      }
+      if (ref.reference === 'QuestionnaireResponse/response-123') {
+        return mockQuestionnaireResponse;
+      }
+      throw new Error('Not found');
+    });
+
+    await act(async () => {
+      setup(mockTask, onChangeResponse);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
+    });
+
+    const changeButton = screen.getByTestId('questionnaire-form-change');
+    await act(async () => {
+      changeButton.click();
+    });
+
+    await waitFor(() => {
+      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+    });
+
+    const callArgs = onChangeResponse.mock.calls[0][0];
+    // When task has no encounter, encounter should be undefined
+    expect(callArgs.encounter).toBeUndefined();
   });
 
   it('updates questionnaire response status to completed when task becomes completed', async () => {
