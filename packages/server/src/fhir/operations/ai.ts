@@ -3,11 +3,11 @@
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
-import type { Request, Response as ExpressResponse } from 'express';
+import type { Response as ExpressResponse, Request } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { parseInputParameters } from './utils/parameters';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
+import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
