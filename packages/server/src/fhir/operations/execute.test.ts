@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
+import {
+  ContentType,
+  Operator,
+  badRequest,
+  createReference,
+  getReferenceString,
+  notFound,
+  parseJWTPayload,
+} from '@medplum/core';
 import type {
   AsyncJob,
   AuditEvent,
@@ -477,9 +485,22 @@ describe('Execute', () => {
     expect(res6.body).toStrictEqual(42);
   });
 
-  test('OperationOutcome response', async () => {
+  test.each(['$execute?identifier=invalid-identifier', 'invalid-id/$execute'])(
+    '404 response with Bot/%s',
+    async (urlEnding) => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${urlEnding}`)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('');
+      expect(res.status).toBe(404);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+      expect(res.body).toMatchObject(notFound);
+    }
+  );
+
+  test('400 response with missing id/identifier', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/$execute?identifier=invalid-identifier`)
+      .post(`/fhir/R4/Bot/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send('');
     expect(res.status).toBe(400);
