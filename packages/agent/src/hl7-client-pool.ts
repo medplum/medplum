@@ -85,7 +85,7 @@ export class Hl7ClientPool {
    * @param client - The client to remove
    */
   removeClient(client: EnhancedHl7Client): void {
-    const clientIdx = this.clients.findIndex((c) => c === client);
+    const clientIdx = this.clients.indexOf(client);
     if (clientIdx === -1) {
       return;
     }
