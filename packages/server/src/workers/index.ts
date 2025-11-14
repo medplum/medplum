@@ -66,7 +66,7 @@ export async function addBackgroundJobs(
   }
 
   try {
-    await addDownloadJobs(resource, context);
+    await addDownloadJobs(resource, previousVersion, context);
   } catch (err) {
     getLogger().error('Error adding download jobs', {
       resourceType: resource.resourceType,
