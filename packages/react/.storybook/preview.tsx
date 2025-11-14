@@ -15,6 +15,9 @@ export const parameters = {
       date: /Date$/,
     },
   },
+  docs: {
+    codePanel: true,
+  },
 };
 
 // wrap initialization of MockClient and initial page navigation
