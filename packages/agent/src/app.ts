@@ -42,7 +42,12 @@ import { AgentByteStreamChannel } from './bytestream';
 import type { Channel } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import type { ChannelStats } from './channel-stats-tracker';
-import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
+import {
+  DEFAULT_MAX_CLIENTS_PER_REMOTE,
+  DEFAULT_PING_TIMEOUT,
+  MAX_MISSED_HEARTBEATS,
+  RETRY_WAIT_DURATION_MS,
+} from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
@@ -91,7 +96,7 @@ export class App {
   private live = false;
   private shutdown = false;
   private keepAlive = false;
-  private maxClientsPerRemote = 10;
+  private maxClientsPerRemote = DEFAULT_MAX_CLIENTS_PER_REMOTE;
   private logStatsFreqSecs = -1;
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
@@ -385,7 +390,7 @@ export class App {
     } else if (this.keepAlive) {
       this.maxClientsPerRemote = 1;
     } else {
-      this.maxClientsPerRemote = 10;
+      this.maxClientsPerRemote = DEFAULT_MAX_CLIENTS_PER_REMOTE;
     }
 
     // If we have pools sitting around at this point (they weren't cleared above), set the maxClients for all of the pools

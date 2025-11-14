@@ -1136,7 +1136,7 @@ describe('HL7', () => {
     console.log = originalConsoleLog;
   });
 
-  test('Default maxClientsPerRemote of 10 in non-keepAlive mode', async () => {
+  test('Default maxClientsPerRemote of 5 in non-keepAlive mode', async () => {
     const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
@@ -1214,12 +1214,12 @@ describe('HL7', () => {
     await Promise.all(promises);
 
     // Wait for all messages to be received
-    while (releaseMessages.length < 10) {
+    while (releaseMessages.length < 5) {
       await sleep(20);
     }
 
     // Pool should have exactly 10 clients
-    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(10);
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(5);
 
     // Send one more message - should wait since we're at limit
     wsClient.send(
@@ -1238,20 +1238,20 @@ describe('HL7', () => {
     // Give it a moment to process
     await sleep(50);
 
-    // Should still be at 10 clients, not 11
-    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(10);
+    // Should still be at 5 clients, not 6
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(5);
 
     // Release one message
     releaseMessages[0]();
     await sleep(50);
 
     // In non-keepAlive mode, releasing should allow the 11th message through
-    while (releaseMessages.length < 11) {
+    while (releaseMessages.length < 6) {
       await sleep(20);
     }
 
-    // Still should have at most 10 clients at any time
-    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toBeLessThanOrEqual(10);
+    // Still should have at most 5 clients at any time
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toBeLessThanOrEqual(5);
 
     // Release remaining messages
     for (let i = 1; i < releaseMessages.length; i++) {
@@ -1529,7 +1529,7 @@ describe('HL7', () => {
       ],
       setting: [
         { name: 'keepAlive', valueBoolean: true },
-        { name: 'maxClientsPerRemote', valueInteger: 5 },
+        { name: 'maxClientsPerRemote', valueInteger: 6 },
       ],
     });
 
@@ -1556,7 +1556,7 @@ describe('HL7', () => {
     const wsClient = mySocket as unknown as Client;
 
     // Send 8 concurrent messages - only 5 should get clients immediately
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 9; i++) {
       wsClient.send(
         Buffer.from(
           JSON.stringify({
@@ -1572,12 +1572,12 @@ describe('HL7', () => {
     }
 
     // Wait for first 5 messages to be received
-    while (releaseMessages.length < 5) {
+    while (releaseMessages.length < 6) {
       await sleep(20);
     }
 
     // Pool should have exactly 5 clients (our custom limit for keepAlive)
-    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(5);
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
 
     // Should not have received more than 5 messages yet
     await sleep(50);
@@ -1595,20 +1595,20 @@ describe('HL7', () => {
     }
 
     // Should still have 5 clients max (reused in keepAlive)
-    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(5);
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
 
     // All 8 messages should now be processed
-    expect(releaseMessages.length).toStrictEqual(8);
+    expect(releaseMessages.length).toStrictEqual(9);
 
     // Release remaining messages
-    for (let i = 5; i < releaseMessages.length; i++) {
+    for (let i = 6; i < releaseMessages.length; i++) {
       releaseMessages[i]();
     }
 
     await sleep(50);
 
     // Should still have 5 clients max
-    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(5);
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
