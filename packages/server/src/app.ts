@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  parseLogLevel,
+  unsupportedMediaType,
+  warnIfNewerVersionAvailable,
+} from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -139,6 +145,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
     getLogger().warn('Stream not readable', err);
     sendOutcome(res, badRequest('Stream not readable'));
+    return;
+  }
+  if (err.name === 'UnsupportedMediaTypeError') {
+    sendOutcome(res, unsupportedMediaType);
     return;
   }
   getLogger().error('Unhandled error', err);
