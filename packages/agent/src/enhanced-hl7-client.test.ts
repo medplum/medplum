@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger, TypedEventTarget } from '@medplum/core';
-import { Hl7Message, LogLevel } from '@medplum/core';
+import { Hl7Message } from '@medplum/core';
 import { Hl7Server } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
+import { createMockLogger } from './test-utils';
 
 // Mock TypedEventTarget for heartbeat events
 class MockHeartbeatEmitter {
@@ -47,14 +48,7 @@ describe('EnhancedHl7Client', () => {
 
   beforeEach(() => {
     mockHeartbeatEmitter = new MockHeartbeatEmitter();
-    mockLogger = {
-      level: LogLevel.INFO,
-      clone: jest.fn().mockImplementation(() => mockLogger),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
+    mockLogger = createMockLogger();
   });
 
   describe('send with tracking off', () => {

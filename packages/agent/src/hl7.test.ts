@@ -6,7 +6,6 @@ import type {
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
-  Logger,
 } from '@medplum/core';
 import { allOk, ContentType, createReference, Hl7Message, LogLevel, sleep } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
@@ -16,8 +15,15 @@ import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
-import type { AgentHl7ChannelConnection } from './hl7';
-import { AgentHl7Channel, APP_LEVEL_ACK_CODES, shouldSendAppLevelAck } from './hl7';
+import type { AgentHl7ChannelConnection, AppLevelAckMode } from './hl7';
+import {
+  AgentHl7Channel,
+  APP_LEVEL_ACK_CODES,
+  APP_LEVEL_ACK_MODES,
+  parseAppLevelAckMode,
+  shouldSendAppLevelAck,
+} from './hl7';
+import { createMockLogger } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -1568,18 +1574,6 @@ describe('AgentHl7Channel application-level ACK gating', () => {
   );
   const REMOTE_ID = 'test-remote';
 
-  function createMockLogger(): Logger {
-    const logger: Record<string, any> = {
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      debug: jest.fn(),
-      logLevel: LogLevel.INFO,
-    };
-    logger.clone = jest.fn(() => logger);
-    return logger as Logger;
-  }
-
   function createTestChannel(address: string): AgentHl7Channel {
     const mockApp = {
       log: createMockLogger(),
@@ -1667,6 +1661,31 @@ describe('AgentHl7Channel application-level ACK gating', () => {
   });
 });
 
+describe('parseAppLevelAckMode', () => {
+  test.each(['AL', 'ER', 'SU', 'NE', 'aL', 'Er', 'ne', 'su'] as const)(
+    'parses valid app-level ACK mode (MSH-16) values -- %s',
+    (ackMode) => {
+      const logger = createMockLogger();
+      expect(APP_LEVEL_ACK_MODES).toContain(parseAppLevelAckMode(ackMode, logger));
+      expect(logger.warn).not.toHaveBeenCalled();
+    }
+  );
+
+  test('should return AL when an invalid value is passed in', () => {
+    const logger = createMockLogger();
+    expect(parseAppLevelAckMode('CA', logger)).toStrictEqual('AL');
+    expect(logger.warn).toHaveBeenCalledWith(
+      `Invalid appLevelAck value 'CA'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`
+    );
+  });
+
+  test('should return AL when undefined passed in', () => {
+    const logger = createMockLogger();
+    expect(parseAppLevelAckMode(undefined, logger)).toStrictEqual('AL');
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
 describe('shouldSendAppLevelAck', () => {
   test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
@@ -1715,7 +1734,8 @@ describe('shouldSendAppLevelAck', () => {
   test.each([
     { ackCode: 'AA', result: true },
     { ackCode: 'AE', result: false },
-  ])('success mode only forwards AA', ({ ackCode, result }) => {
+    { ackCode: 'AR', result: false },
+  ] as const)('success mode only forwards AA', ({ ackCode, result }) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'SU',
@@ -1723,5 +1743,16 @@ describe('shouldSendAppLevelAck', () => {
         enhancedMode: true,
       })
     ).toBe(result);
+  });
+
+  test('throws when invalid app-level ACK mode value is present', () => {
+    expect(() =>
+      shouldSendAppLevelAck({
+        // This is an invalid mode
+        mode: 'CA' as AppLevelAckMode,
+        ackCode: 'AA',
+        enhancedMode: true,
+      })
+    ).toThrow('Invalid app-level ACK mode provided');
   });
 });

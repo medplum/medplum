@@ -18,12 +18,13 @@ import { getCurrentStats, updateStat } from './stats';
  * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Tables/0155
  */
 export const APP_LEVEL_ACK_MODES = ['AL', 'ER', 'NE', 'SU'] as const;
-export const APP_LEVEL_ACK_CODES = ['AA', 'AE', 'AR'] as const;
 export type AppLevelAckMode = (typeof APP_LEVEL_ACK_MODES)[number];
+export const APP_LEVEL_ACK_CODES = ['AA', 'AE', 'AR'] as const;
+export type AppLevelAckCode = (typeof APP_LEVEL_ACK_CODES)[number];
 
 export interface ShouldSendAppLevelAckOptions {
   mode: AppLevelAckMode;
-  ackCode: string;
+  ackCode: AppLevelAckCode;
   enhancedMode: boolean;
 }
 
@@ -171,7 +172,7 @@ export class AgentHl7Channel extends BaseChannel {
       messagesPerMin = undefined;
     }
 
-    this.appLevelAckMode = this.parseAppLevelAckMode(appLevelAckRaw);
+    this.appLevelAckMode = parseAppLevelAckMode(appLevelAckRaw, this.log);
 
     this.server.setEncoding(encoding);
     this.server.setEnhancedMode(enhancedMode);
@@ -181,27 +182,6 @@ export class AgentHl7Channel extends BaseChannel {
       connection.hl7Connection.setEnhancedMode(enhancedMode);
       connection.hl7Connection.setMessagesPerMin(messagesPerMin);
     }
-  }
-
-  /**
-   * Normalizes and validates the configured application-level ACK behavior.
-   * @param rawValue - The raw query parameter value retrieved from the endpoint URL.
-   * @returns A valid application-level ACK mode.
-   */
-  private parseAppLevelAckMode(rawValue: string | undefined): AppLevelAckMode {
-    if (!rawValue) {
-      return 'AL';
-    }
-
-    const normalizedValue = rawValue.toUpperCase();
-    if ((APP_LEVEL_ACK_MODES as readonly string[]).includes(normalizedValue)) {
-      return normalizedValue as AppLevelAckMode;
-    }
-
-    this.log.warn(
-      `Invalid appLevelAck value '${rawValue}'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`
-    );
-    return 'AL';
   }
 
   private handleNewConnection(connection: Hl7Connection): void {
@@ -270,12 +250,47 @@ export class AgentHl7ChannelConnection {
 }
 
 /**
+ * Normalizes and validates the configured application-level ACK behavior.
+ *
+ * In the case that the passed-in `rawValue` is not a valid application-level ACK mode in alignment with valid values for `MSH-16`,
+ * the function returns `AL` as a fallback, since that is the assumed default mode.
+ *
+ * @param rawValue - The raw query parameter value retrieved from the endpoint URL.
+ * @param logger - The Logger instance to use for logging.
+ * @returns The parsed application-level ACK mode, or `AL` if rawValue is invalid.
+ */
+export function parseAppLevelAckMode(rawValue: string | undefined, logger: ILogger): AppLevelAckMode {
+  if (!rawValue) {
+    return 'AL';
+  }
+
+  const normalizedValue = rawValue.toUpperCase();
+  if (isAppLevelAckMode(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  logger.warn(`Invalid appLevelAck value '${rawValue}'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`);
+  return 'AL';
+}
+
+/**
  * Determines whether an ACK code is an application-level one or not.
  * @param code - The code to verify whether it is an application-level ACK code or not.
  * @returns True if the ACK code is an application-level one; otherwise, false.
  */
-export function isAppLevelAckCode(code: string): boolean {
+export function isAppLevelAckCode(code: string): code is AppLevelAckCode {
   return (APP_LEVEL_ACK_CODES as readonly string[]).includes(code);
+}
+
+/**
+ * Determines whether a value is  is an application-level one or not.
+ * @param candidate - The candidate to check.
+ * @returns True if the value is a valid application-level ACK mode (valid MSH-16 value); otherwise, false.
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Fields/MSH-16
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Tables/0155
+ */
+export function isAppLevelAckMode(candidate: string): candidate is AppLevelAckMode {
+  return (APP_LEVEL_ACK_MODES as readonly string[]).includes(candidate);
 }
 
 /**
@@ -299,6 +314,6 @@ export function shouldSendAppLevelAck(options: ShouldSendAppLevelAckOptions): bo
       return ackCode === 'AA';
     default:
       mode satisfies never;
-      return true;
+      throw new Error('Invalid app-level ACK mode provided');
   }
 }
