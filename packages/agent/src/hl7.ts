@@ -161,7 +161,7 @@ export class AgentHl7Channel extends BaseChannel {
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
-    const appLevelAckRaw = address.searchParams.get('appLevelAck');
+    const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
     let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
 
     if (messagesPerMin !== undefined && !Number.isInteger(messagesPerMin)) {
@@ -188,7 +188,7 @@ export class AgentHl7Channel extends BaseChannel {
    * @param rawValue - The raw query parameter value retrieved from the endpoint URL.
    * @returns A valid application-level ACK mode.
    */
-  private parseAppLevelAckMode(rawValue: string | null): AppLevelAckMode {
+  private parseAppLevelAckMode(rawValue: string | undefined): AppLevelAckMode {
     if (!rawValue) {
       return 'AL';
     }
