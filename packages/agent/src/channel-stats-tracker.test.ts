@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger, TypedEventTarget } from '@medplum/core';
-import { LogLevel } from '@medplum/core';
 import { ChannelStatsTracker } from './channel-stats-tracker';
+import { createMockLogger } from './test-utils';
 
 // Mock TypedEventTarget for heartbeat events
 class MockHeartbeatEmitter {
@@ -34,14 +34,7 @@ describe('ChannelStatsTracker', () => {
 
   beforeEach(() => {
     mockHeartbeatEmitter = new MockHeartbeatEmitter();
-    mockLogger = {
-      level: LogLevel.INFO,
-      clone: jest.fn().mockImplementation(() => mockLogger),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
+    mockLogger = createMockLogger();
     jest.useFakeTimers();
   });
 

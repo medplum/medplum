@@ -1,20 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  AckCode,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
 } from '@medplum/core';
 import { allOk, ContentType, createReference, Hl7Message, LogLevel, sleep } from '@medplum/core';
-import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
-import type { AgentHl7Channel } from './hl7';
+import type { AgentHl7ChannelConnection, AppLevelAckMode } from './hl7';
+import {
+  AgentHl7Channel,
+  APP_LEVEL_ACK_CODES,
+  APP_LEVEL_ACK_MODES,
+  parseAppLevelAckMode,
+  shouldSendAppLevelAck,
+} from './hl7';
+import { createMockLogger } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -1556,5 +1565,194 @@ describe('HL7', () => {
       await app.stop();
       mockServer.stop();
     });
+  });
+});
+
+describe('AgentHl7Channel application-level ACK gating', () => {
+  const BASE_MESSAGE = Hl7Message.parse(
+    'MSH|^~\\&|SND|FAC|RCV|FAC|202501011200||ADT^A01|MSG00001|P|2.5\rPID|1||123456||Doe^John\r'
+  );
+  const REMOTE_ID = 'test-remote';
+
+  function createTestChannel(address: string): AgentHl7Channel {
+    const mockApp = {
+      log: createMockLogger(),
+      channelLog: createMockLogger(),
+      heartbeatEmitter: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      },
+      getAgentConfig: jest.fn(),
+    } as unknown as App;
+
+    const definition = { name: 'test-channel' } as AgentChannel;
+    const endpoint = {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address,
+    } as Endpoint;
+
+    const channel = new AgentHl7Channel(mockApp, definition, endpoint);
+    (channel as unknown as { configureHl7ServerAndConnections(): void }).configureHl7ServerAndConnections();
+    return channel;
+  }
+
+  function attachMockConnection(channel: AgentHl7Channel): jest.Mock {
+    const sendMock = jest.fn();
+    const hl7Connection = {
+      setEncoding: jest.fn(),
+      setEnhancedMode: jest.fn(),
+      setMessagesPerMin: jest.fn(),
+      send: sendMock,
+    };
+    const connection = {
+      hl7Connection,
+      remote: REMOTE_ID,
+    } as unknown as AgentHl7ChannelConnection;
+    channel.connections.set(REMOTE_ID, connection);
+    return sendMock;
+  }
+
+  function createTransmitResponse(ackCode: AckCode): AgentTransmitResponse {
+    return {
+      type: 'agent:transmit:response',
+      remote: REMOTE_ID,
+      contentType: ContentType.HL7_V2,
+      body: BASE_MESSAGE.buildAck({ ackCode }).toString(),
+    };
+  }
+
+  test('NE with enhanced mode drops application ACKs', () => {
+    const channel = createTestChannel('mllp://localhost:57100?enhanced=true&appLevelAck=NE');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AA'));
+
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('NE with original mode still forwards ACKs', () => {
+    const channel = createTestChannel('mllp://localhost:57101?enhanced=false&appLevelAck=NE');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AA'));
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('ER with enhanced mode drops AA acknowledgements', () => {
+    const channel = createTestChannel('mllp://localhost:57102?enhanced=true&appLevelAck=ER');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AA'));
+
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('ER with enhanced mode forwards AE and AR acknowledgements', () => {
+    const channel = createTestChannel('mllp://localhost:57103?enhanced=true&appLevelAck=ER');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AE'));
+    channel.sendToRemote(createTransmitResponse('AR'));
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('parseAppLevelAckMode', () => {
+  test.each(['AL', 'ER', 'SU', 'NE', 'aL', 'Er', 'ne', 'su'] as const)(
+    'parses valid app-level ACK mode (MSH-16) values -- %s',
+    (ackMode) => {
+      const logger = createMockLogger();
+      expect(APP_LEVEL_ACK_MODES).toContain(parseAppLevelAckMode(ackMode, logger));
+      expect(logger.warn).not.toHaveBeenCalled();
+    }
+  );
+
+  test('should return AL when an invalid value is passed in', () => {
+    const logger = createMockLogger();
+    expect(parseAppLevelAckMode('CA', logger)).toStrictEqual('AL');
+    expect(logger.warn).toHaveBeenCalledWith(
+      `Invalid appLevelAck value 'CA'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`
+    );
+  });
+
+  test('should return AL when undefined passed in', () => {
+    const logger = createMockLogger();
+    expect(parseAppLevelAckMode(undefined, logger)).toStrictEqual('AL');
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('shouldSendAppLevelAck', () => {
+  test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'NE',
+        ackCode,
+        enhancedMode: false,
+      })
+    ).toBe(true);
+  });
+
+  test.each(APP_LEVEL_ACK_CODES)('always mode forwards everything', (ackCode) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'AL',
+        ackCode,
+        enhancedMode: true,
+      })
+    ).toBe(true);
+  });
+
+  test.each(APP_LEVEL_ACK_CODES)('never mode blocks all ACKs', (ackCode) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'NE',
+        ackCode,
+        enhancedMode: true,
+      })
+    ).toBe(false);
+  });
+
+  test.each([
+    { ackCode: 'AA', result: false },
+    { ackCode: 'AE', result: true },
+    { ackCode: 'AR', result: true },
+  ] as const)('error mode only forwards AE/AR', ({ ackCode, result }) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'ER',
+        ackCode,
+        enhancedMode: true,
+      })
+    ).toBe(result);
+  });
+
+  test.each([
+    { ackCode: 'AA', result: true },
+    { ackCode: 'AE', result: false },
+    { ackCode: 'AR', result: false },
+  ] as const)('success mode only forwards AA', ({ ackCode, result }) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'SU',
+        ackCode,
+        enhancedMode: true,
+      })
+    ).toBe(result);
+  });
+
+  test('throws when invalid app-level ACK mode value is present', () => {
+    expect(() =>
+      shouldSendAppLevelAck({
+        // This is an invalid mode
+        mode: 'CA' as AppLevelAckMode,
+        ackCode: 'AA',
+        enhancedMode: true,
+      })
+    ).toThrow('Invalid app-level ACK mode provided');
   });
 });
