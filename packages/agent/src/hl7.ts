@@ -17,9 +17,9 @@ import { getCurrentStats, updateStat } from './stats';
  * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Fields/MSH-16
  * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Tables/0155
  */
-export const APP_LEVEL_ACK_VALUES = ['AL', 'ER', 'NE', 'SU'] as const;
+export const APP_LEVEL_ACK_MODES = ['AL', 'ER', 'NE', 'SU'] as const;
 export const APP_LEVEL_ACK_CODES = ['AA', 'AE', 'AR'] as const;
-export type AppLevelAckMode = (typeof APP_LEVEL_ACK_VALUES)[number];
+export type AppLevelAckMode = (typeof APP_LEVEL_ACK_MODES)[number];
 
 export interface ShouldSendAppLevelAckOptions {
   mode: AppLevelAckMode;
@@ -194,12 +194,12 @@ export class AgentHl7Channel extends BaseChannel {
     }
 
     const normalizedValue = rawValue.toUpperCase();
-    if ((APP_LEVEL_ACK_VALUES as readonly string[]).includes(normalizedValue)) {
+    if ((APP_LEVEL_ACK_MODES as readonly string[]).includes(normalizedValue)) {
       return normalizedValue as AppLevelAckMode;
     }
 
     this.log.warn(
-      `Invalid appLevelAck value '${rawValue}'; expected one of ${APP_LEVEL_ACK_VALUES.join(', ')}. Using AL.`
+      `Invalid appLevelAck value '${rawValue}'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`
     );
     return 'AL';
   }

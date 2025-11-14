@@ -17,7 +17,7 @@ import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
 import type { AgentHl7ChannelConnection } from './hl7';
-import { AgentHl7Channel, shouldSendAppLevelAck } from './hl7';
+import { AgentHl7Channel, APP_LEVEL_ACK_CODES, shouldSendAppLevelAck } from './hl7';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -1668,74 +1668,60 @@ describe('AgentHl7Channel application-level ACK gating', () => {
 });
 
 describe('shouldSendAppLevelAck', () => {
-  test('non enhanced mode always returns true', () => {
+  test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'NE',
-        ackCode: 'AA',
+        ackCode,
         enhancedMode: false,
       })
     ).toBe(true);
   });
 
-  test('always mode forwards everything', () => {
+  test.each(APP_LEVEL_ACK_CODES)('always mode forwards everything', (ackCode) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'AL',
-        ackCode: 'AE',
+        ackCode,
         enhancedMode: true,
       })
     ).toBe(true);
   });
 
-  test('never mode blocks all ACKs', () => {
+  test.each(APP_LEVEL_ACK_CODES)('never mode blocks all ACKs', (ackCode) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'NE',
-        ackCode: 'AA',
+        ackCode,
         enhancedMode: true,
       })
     ).toBe(false);
   });
 
-  test('error mode only forwards AE/AR', () => {
+  test.each([
+    { ackCode: 'AA', result: false },
+    { ackCode: 'AE', result: true },
+    { ackCode: 'AR', result: true },
+  ] as const)('error mode only forwards AE/AR', ({ ackCode, result }) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'ER',
-        ackCode: 'AA',
+        ackCode,
         enhancedMode: true,
       })
-    ).toBe(false);
-    expect(
-      shouldSendAppLevelAck({
-        mode: 'ER',
-        ackCode: 'AE',
-        enhancedMode: true,
-      })
-    ).toBe(true);
-    expect(
-      shouldSendAppLevelAck({
-        mode: 'ER',
-        ackCode: 'AR',
-        enhancedMode: true,
-      })
-    ).toBe(true);
+    ).toBe(result);
   });
 
-  test('success mode only forwards AA', () => {
+  test.each([
+    { ackCode: 'AA', result: true },
+    { ackCode: 'AE', result: false },
+  ])('success mode only forwards AA', ({ ackCode, result }) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'SU',
-        ackCode: 'AA',
+        ackCode,
         enhancedMode: true,
       })
-    ).toBe(true);
-    expect(
-      shouldSendAppLevelAck({
-        mode: 'SU',
-        ackCode: 'AE',
-        enhancedMode: true,
-      })
-    ).toBe(false);
+    ).toBe(result);
   });
 });
