@@ -30,6 +30,7 @@ import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
+import styles from './AuthenticationForm.module.css';
 
 export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly disableEmailAuth?: boolean;
@@ -201,7 +202,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
           data-testid="auth.password"
         />
-        <Flex justify="space-between" align="center" px="xs" bg="gray.0" bdrs="sm">
+        <Flex className={styles.userNotice} justify="space-between" align="center" px="xs" bdrs="sm">
           <Text size="xs">
             Logging in as <em>{props.email}</em>
           </Text>
