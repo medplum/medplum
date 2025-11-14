@@ -28,13 +28,13 @@ describe('Hl7ClientPool', () => {
   let server: Hl7Server;
   const port = 57200;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         connection.send(message.buildAck());
       });
     });
-    server.start(port);
+    await server.start(port);
   });
 
   beforeEach(() => {
