@@ -3663,6 +3663,50 @@ describe('Client', () => {
     expect(console.log).toHaveBeenCalledWith('< foo: bar');
   });
 
+  test('setVerbose', async () => {
+    const fetch = jest.fn(() => {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => ContentType.FHIR_JSON,
+          forEach: (cb: (value: string, key: string) => void) => cb('bar', 'foo'),
+        },
+        json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+      });
+    });
+
+    console.log = jest.fn();
+    const client = new MedplumClient({ fetch });
+
+    // First request without verbose mode - should not log
+    let result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
+
+    // Enable verbose mode using setVerbose
+    client.setVerbose(true);
+
+    // Second request with verbose mode enabled - should log
+    result = await client.readResource('Patient', '456');
+    expect(result).toBeDefined();
+    expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/456');
+    expect(console.log).toHaveBeenCalledWith('> Accept: application/fhir+json, */*; q=0.1');
+    expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
+    expect(console.log).toHaveBeenCalledWith('< 200 OK');
+    expect(console.log).toHaveBeenCalledWith('< foo: bar');
+
+    // Disable verbose mode using setVerbose
+    (console.log as jest.Mock).mockClear();
+    client.setVerbose(false);
+
+    // Third request with verbose mode disabled - should not log
+    result = await client.readResource('Patient', '789');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
+  });
+
   test('Disable extended mode', async () => {
     const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
 

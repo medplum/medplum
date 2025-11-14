@@ -12,7 +12,7 @@ import {
 } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
+import { showErrorNotification } from '../../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -48,6 +48,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       status: 'in-progress',
       authored: new Date().toISOString(),
       source: author && createReference(author),
+      encounter: task.encounter,
     };
 
     onChangeResponse?.(updatedResponse);

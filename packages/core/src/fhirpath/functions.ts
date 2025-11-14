@@ -37,7 +37,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
   empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return booleanToTypedValue(input.length === 0 || input.every((e) => isEmpty(e.value)));
+    return booleanToTypedValue(input.every((e) => isEmpty(e.value)));
   },
 
   /**
@@ -68,7 +68,7 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   exists: (context: AtomContext, input: TypedValue[], criteria?: Atom): TypedValue[] => {
     if (criteria) {
-      return booleanToTypedValue(input.filter((e) => toJsBoolean(criteria.eval(context, [e]))).length > 0);
+      return booleanToTypedValue(input.some((e) => toJsBoolean(criteria.eval(context, [e]))));
     } else {
       return booleanToTypedValue(input.length > 0 && input.every((e) => !isEmpty(e.value)));
     }
@@ -314,7 +314,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   select: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.map((e) => criteria.eval({ parent: context, variables: { $this: e } }, [e])).flat();
+    return input.flatMap((e) => criteria.eval({ parent: context, variables: { $this: e } }, [e]));
   },
 
   /**
@@ -388,7 +388,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only the last item in the input collection.
    */
   last: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return input.length === 0 ? [] : input.slice(input.length - 1, input.length);
+    return input.length === 0 ? [] : input.slice(-1, input.length);
   },
 
   /**
@@ -419,7 +419,7 @@ export const functions: Record<string, FhirPathFunction> = {
   skip: (context: AtomContext, input: TypedValue[], num: Atom): TypedValue[] => {
     const numValue = num.eval(context, input)[0]?.value;
     if (typeof numValue !== 'number') {
-      throw new Error('Expected a number for skip(num)');
+      throw new TypeError('Expected a number for skip(num)');
     }
     if (numValue >= input.length) {
       return [];
@@ -445,7 +445,7 @@ export const functions: Record<string, FhirPathFunction> = {
   take: (context: AtomContext, input: TypedValue[], num: Atom): TypedValue[] => {
     const numValue = num.eval(context, input)[0]?.value;
     if (typeof numValue !== 'number') {
-      throw new Error('Expected a number for take(num)');
+      throw new TypeError('Expected a number for take(num)');
     }
     if (numValue >= input.length) {
       return input;
@@ -1366,7 +1366,7 @@ export const functions: Record<string, FhirPathFunction> = {
   join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
     const separator = separatorAtom?.eval(context, getRootInput(context))[0]?.value ?? '';
     if (typeof separator !== 'string') {
-      throw new Error('Separator must be a string.');
+      throw new TypeError('Separator must be a string.');
     }
     return [{ type: PropertyType.string, value: input.map((i) => i.value?.toString() ?? '').join(separator) }];
   },
@@ -1564,7 +1564,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing the result.
    */
   truncate: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return applyMathFunc((x) => x | 0, context, input);
+    return applyMathFunc((x) => Math.trunc(x), context, input);
   },
 
   /*
@@ -1904,7 +1904,7 @@ function applyStringFunc<T>(
   }
   const [{ value }] = validateInput(input, 1);
   if (typeof value !== 'string') {
-    throw new Error('String function cannot be called with non-string');
+    throw new TypeError('String function cannot be called with non-string');
   }
 
   const args = argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value);
@@ -1931,7 +1931,7 @@ function applyMathFunc(
   const quantity = isQuantity(value);
   const numberInput = quantity ? value.value : value;
   if (typeof numberInput !== 'number') {
-    throw new Error('Math function cannot be called with non-number');
+    throw new TypeError('Math function cannot be called with non-number');
   }
   const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval(context, input)[0]?.value));
   const type = quantity ? PropertyType.Quantity : input[0].type;
