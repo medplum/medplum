@@ -132,6 +132,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'email')}
+          data-testid="auth.email"
         />
       )}
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
@@ -198,6 +199,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'password')}
+          data-testid="auth.password"
         />
         <Flex justify="space-between" align="center" px="xs" bg="gray.0" bdrs="sm">
           <Text size="xs">
