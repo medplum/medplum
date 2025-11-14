@@ -6,7 +6,7 @@ import { CodeableConceptInput, Form, ResourceInput, useMedplum } from '@medplum/
 import { Button, Group, Stack } from '@mantine/core';
 import type { CodeableConcept, DiagnosticReport, Practitioner } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { showErrorNotification } from '../../utils/notifications';
+import { showErrorNotification } from '../../../utils/notifications';
 
 interface DiagnosticReportDialogProps {
   onDiagnosticReportCreated: (diagnosticReport: DiagnosticReport) => void;
