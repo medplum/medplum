@@ -76,8 +76,6 @@ export class Hl7ClientPool {
     // We should close the client and remove it from the pool
     if (forceClose || (!this.keepAlive && !client.connection?.getPendingMessageCount())) {
       this.closeAndRemoveClient(client);
-    } else {
-      console.log(client.connection?.getPendingMessageCount());
     }
   }
 
@@ -112,6 +110,8 @@ export class Hl7ClientPool {
         .catch(reject);
     });
 
+    // Remove any clients that didn't get cleaned up by close listener
+    // This is especially
     for (const client of this.clients) {
       this.removeClient(client);
     }
