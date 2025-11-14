@@ -99,10 +99,10 @@ sudo systemctl restart redis-server
 
 ## Install Node.js
 
-Add the Node.js v22.x Ubuntu repository:
+Add the Node.js v24.x Ubuntu repository:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -
 ```
 
 Install Node.js
