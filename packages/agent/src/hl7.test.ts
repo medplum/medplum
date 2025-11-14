@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  AckCode,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
@@ -15,7 +16,8 @@ import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
-import { AgentHl7Channel, AgentHl7ChannelConnection, shouldSendAppLevelAck } from './hl7';
+import type { AgentHl7ChannelConnection } from './hl7';
+import { AgentHl7Channel, shouldSendAppLevelAck } from './hl7';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -1562,7 +1564,7 @@ describe('HL7', () => {
 
 describe('AgentHl7Channel application-level ACK gating', () => {
   const BASE_MESSAGE = Hl7Message.parse(
-    'MSH|^~\\&|SND|FAC|RCV|FAC|202501011200||ADT^A01|MSG00001|P|2.5\r' + 'PID|1||123456||Doe^John\r'
+    'MSH|^~\\&|SND|FAC|RCV|FAC|202501011200||ADT^A01|MSG00001|P|2.5\rPID|1||123456||Doe^John\r'
   );
   const REMOTE_ID = 'test-remote';
 
@@ -1618,7 +1620,7 @@ describe('AgentHl7Channel application-level ACK gating', () => {
     return sendMock;
   }
 
-  function createTransmitResponse(ackCode: string): AgentTransmitResponse {
+  function createTransmitResponse(ackCode: AckCode): AgentTransmitResponse {
     return {
       type: 'agent:transmit:response',
       remote: REMOTE_ID,
