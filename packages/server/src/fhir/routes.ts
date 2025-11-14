@@ -20,7 +20,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
-import { aiOperation } from './operations/ai';
+import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
@@ -157,6 +157,9 @@ fhirRouter.use(protectedRoutes);
 // CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
+// AI $ai operation - handled directly in Express routes to support streaming
+protectedRoutes.post(['/$ai', '/%24ai'], aiOperationHandler);
+
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
 protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandler);
@@ -258,9 +261,6 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperation);
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
-
-  // AI $ai operation
-  router.add('POST', '/$ai', aiOperation);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
