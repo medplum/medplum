@@ -12,7 +12,6 @@ export interface Hl7ClientPoolOptions {
   keepAlive: boolean;
   maxClients: number;
   log: ILogger;
-  closeCountdownMs?: number;
 }
 
 /**
@@ -32,7 +31,6 @@ export class Hl7ClientPool {
   private closingPromise: Promise<void> | undefined;
   private nextClientIdx: number = 0;
   private statTrackingOptions: ClientStatsTrackingOptions | undefined;
-  private closeCountdownMs?: number;
 
   constructor(options: Hl7ClientPoolOptions) {
     this.host = options.host;
@@ -41,7 +39,6 @@ export class Hl7ClientPool {
     this.keepAlive = options.keepAlive;
     this.maxClients = options.maxClients;
     this.log = options.log;
-    this.closeCountdownMs = options.closeCountdownMs;
   }
 
   /**
@@ -59,10 +56,10 @@ export class Hl7ClientPool {
   }
 
   private closeAndRemoveClient(client: EnhancedHl7Client): void {
+    this.removeClient(client);
     client.close().catch((err: Error) => {
       this.log.error('Error while closing and removing client', err);
     });
-    this.removeClient(client);
   }
 
   /**
@@ -75,14 +72,10 @@ export class Hl7ClientPool {
    */
   releaseClient(client: EnhancedHl7Client, forceClose = false): void {
     // If forcing the connection closed
+    // Or if keepAlive is off and pending messages are 0,
     // We should close the client and remove it from the pool
-    if (forceClose) {
+    if (forceClose || (!this.keepAlive && client.connection?.getPendingMessageCount() === 0)) {
       this.closeAndRemoveClient(client);
-    } else if (!this.keepAlive) {
-      // If keepAlive is off and there are no more pending messages for the queue, we can start the timer to close this client
-      client.closeIfIdle(() => {
-        this.removeClient(client);
-      });
     }
   }
 
@@ -169,7 +162,6 @@ export class Hl7ClientPool {
       encoding: this.encoding,
       keepAlive: this.keepAlive,
       log: this.log,
-      closeCountdownMs: this.closeCountdownMs,
     });
     if (this.statTrackingOptions) {
       client.startTrackingStats(this.statTrackingOptions);

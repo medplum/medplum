@@ -1009,14 +1009,6 @@ export class App {
 
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
-    const closeCountdownMsRaw = address.searchParams.get('closeCountdownMs') ?? undefined;
-    let closeCountdownMs = closeCountdownMsRaw ? Number.parseInt(closeCountdownMsRaw, 10) : undefined;
-    if (Number.isNaN(closeCountdownMs)) {
-      this.log.warn(
-        `Invalid closeCountdownMs '${closeCountdownMsRaw}' provided for remote '${message.remote}'. Using default closeCountdownMs for pool...`
-      );
-      closeCountdownMs = undefined;
-    }
 
     let pool: Hl7ClientPool;
 
@@ -1032,7 +1024,6 @@ export class App {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         log: this.log,
-        closeCountdownMs,
       });
       this.hl7Clients.set(message.remote, pool);
       if (keepAlive && this.logStatsFreqSecs > 0) {
@@ -1043,7 +1034,6 @@ export class App {
         maxClients: this.maxClientsPerRemote,
         encoding,
         trackingStats: this.logStatsFreqSecs > 0,
-        closeCountdownMs,
       });
     }
 

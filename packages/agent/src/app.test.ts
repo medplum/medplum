@@ -3511,11 +3511,6 @@ describe('App', () => {
       });
       await hl7Server.start(58100);
 
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
-
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -3540,7 +3535,7 @@ describe('App', () => {
       }
 
       // Client should not be in the hl7Clients map (because keepAlive is false)
-      expect(app.hl7Clients.size).toBe(0);
+      expect(app.hl7Clients.get('mllp://localhost:58100')?.size()).toStrictEqual(0);
 
       await app.stop();
       await hl7Server.stop();
@@ -3599,11 +3594,6 @@ describe('App', () => {
         });
       });
       await hl7Server.start(58101);
-
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
 
       // Send a message
       const hl7MessageBody =
@@ -3840,11 +3830,6 @@ describe('App', () => {
       });
       await hl7Server.start(58104);
 
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
-
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -3955,11 +3940,6 @@ describe('App', () => {
         });
       });
       await hl7Server.start(58105);
-
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
 
       // Send a message
       const hl7MessageBody =
