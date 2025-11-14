@@ -7,10 +7,12 @@ import type {
   Claim,
   ClinicalImpression,
   Encounter,
+  Patient,
   Practitioner,
+  Reference,
   Task,
 } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useResource } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
 import { createClaimFromEncounter } from '../utils/claims';
@@ -35,11 +37,14 @@ export interface EncounterChartHook {
   setAppointment: React.Dispatch<React.SetStateAction<Appointment | undefined>>;
 }
 
-export function useEncounterChart(patientId?: string, encounterId?: string): EncounterChartHook {
+export function useEncounterChart(
+  encounter: Encounter | Reference<Encounter> | undefined,
+  patient?: Patient | Reference<Patient>
+): EncounterChartHook {
   const medplum = useMedplum();
-
-  // States
-  const [encounter, setEncounter] = useState<Encounter | undefined>();
+  const encounterResource = useResource(encounter);
+  const patientResource = useResource(patient);
+  const [encounterState, setEncounter] = useState<Encounter | undefined>(encounterResource);
   const [claim, setClaim] = useState<Claim | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -47,39 +52,36 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const [appointment, setAppointment] = useState<Appointment | undefined>();
 
-  // Load encounter data
+  const encounterToUse = encounterResource ?? encounterState;
+
   useEffect(() => {
-    async function loadEncounter(): Promise<void> {
-      if (encounterId && !encounter) {
-        const encounterResult = await medplum.readResource('Encounter', encounterId);
-        if (encounterResult) {
-          setEncounter(encounterResult);
-          const chargeItems = await getChargeItemsForEncounter(medplum, encounterResult);
-          setChargeItems(chargeItems);
-        }
+    async function loadChargeItems(): Promise<void> {
+      if (encounterResource) {
+        const chargeItemsResult = await getChargeItemsForEncounter(medplum, encounterResource);
+        setChargeItems(chargeItemsResult);
       }
     }
 
     async function fetchClaim(): Promise<void> {
-      if (!encounter?.id) {
+      if (!encounterResource?.id) {
         return;
       }
-      const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
+      const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounterResource)}`);
       if (response.length !== 0) {
         setClaim(response[0]);
       }
     }
 
-    loadEncounter().catch(showErrorNotification);
+    loadChargeItems().catch(showErrorNotification);
     fetchClaim().catch(showErrorNotification);
-  }, [encounterId, encounter, medplum]);
+  }, [encounterResource, medplum]);
 
   // Fetch tasks related to the encounter
   const fetchTasks = useCallback(async (): Promise<void> => {
-    if (!encounter) {
+    if (!encounterResource) {
       return;
     }
-    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`, {
+    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounterResource)}`, {
       cache: 'no-cache',
     });
 
@@ -90,58 +92,58 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     });
 
     setTasks(taskResult);
-  }, [medplum, encounter]);
+  }, [medplum, encounterResource]);
 
   // Fetch clinical impressions related to the encounter
   const fetchClinicalImpressions = useCallback(async (): Promise<void> => {
-    if (!encounter) {
+    if (!encounterResource) {
       return;
     }
     const clinicalImpressionResult = await medplum.searchResources(
       'ClinicalImpression',
-      `encounter=${getReferenceString(encounter)}`
+      `encounter=${getReferenceString(encounterResource)}`
     );
 
     const result = clinicalImpressionResult?.[0];
     setClinicalImpression(result);
-  }, [medplum, encounter]);
+  }, [medplum, encounterResource]);
 
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
-    if (encounter) {
+    if (encounterResource) {
       fetchTasks().catch((err) => showErrorNotification(err));
       fetchClinicalImpressions().catch((err) => showErrorNotification(err));
     }
-  }, [encounter, fetchTasks, fetchClinicalImpressions]);
+  }, [encounterResource, fetchTasks, fetchClinicalImpressions]);
 
   // Fetch practitioner related to the encounter
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
-      if (encounter?.participant?.[0]?.individual) {
-        const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
+      if (encounterResource?.participant?.[0]?.individual) {
+        const practitionerResult = await medplum.readReference(encounterResource.participant[0].individual);
         setPractitioner(practitionerResult as Practitioner);
       }
     };
 
-    if (encounter) {
+    if (encounterResource) {
       fetchPractitioner().catch((err) => showErrorNotification(err));
     }
-  }, [encounter, medplum]);
+  }, [encounterResource, medplum]);
 
   // Fetch appointment related to the encounter
   useEffect(() => {
     const fetchAppointment = async (): Promise<void> => {
-      const appointmentRef = encounter?.appointment?.at(-1);
+      const appointmentRef = encounterResource?.appointment?.at(-1);
       if (appointmentRef) {
         const appointmentResult = await medplum.readReference(appointmentRef);
         setAppointment(appointmentResult as Appointment);
       }
     };
 
-    if (encounter) {
+    if (encounterResource) {
       fetchAppointment().catch((err) => showErrorNotification(err));
     }
-  }, [encounter, medplum]);
+  }, [encounterResource, medplum]);
 
   useEffect(() => {
     const createClaim = async (): Promise<void> => {
@@ -150,20 +152,27 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
         return;
       }
 
-      if (!patientId || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
+      const patientId = patientResource?.id;
+      if (!patientId || !encounterResource?.id || !practitioner?.id || chargeItems.length === 0) {
         return;
       }
-      const newClaim = await createClaimFromEncounter(medplum, patientId, encounter.id, practitioner.id, chargeItems);
+      const newClaim = await createClaimFromEncounter(
+        medplum,
+        patientId,
+        encounterResource.id,
+        practitioner.id,
+        chargeItems
+      );
       if (newClaim) {
         setClaim(newClaim);
       }
     };
     createClaim().catch((err) => showErrorNotification(err));
-  }, [patientId, encounter, medplum, claim, practitioner, chargeItems]);
+  }, [patientResource, encounterResource, medplum, claim, practitioner, chargeItems]);
 
   return {
-    // State values
-    encounter,
+    // State values - use resolved resource when available
+    encounter: encounterToUse,
     claim,
     practitioner,
     tasks,

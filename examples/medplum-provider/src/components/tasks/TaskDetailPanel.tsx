@@ -4,7 +4,7 @@ import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
@@ -21,8 +21,16 @@ interface TaskDetailPanelProps {
 export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null {
   const { task: taskProp, onTaskChange, onDeleteTask } = props;
   const medplum = useMedplum();
-  const task = useResource(taskProp);
+  const resolvedTask = useResource(taskProp);
+  const [task, setTask] = useState<Task | undefined>(resolvedTask);
   const [activeTab, setActiveTab] = useState<string>('properties');
+
+  useEffect(() => {
+    if (resolvedTask) {
+      setTask(resolvedTask);
+    }
+  }, [resolvedTask]);
+
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
 
@@ -37,6 +45,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   }
 
   const handleTaskChange = async (updatedTask: Task): Promise<void> => {
+    setTask(updatedTask);
     onTaskChange?.(updatedTask);
     await debouncedUpdateResource(updatedTask);
   };
@@ -76,7 +85,11 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
         }}
         className={classes.borderRight}
       >
-        <TaskInputNote task={task} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
+        <TaskInputNote
+          task={task}
+          onTaskChange={handleTaskChange}
+          onDeleteTask={onDeleteTask ? handleDeleteTask : undefined}
+        />
       </Box>
 
       <Box h="100%" w="400px">
