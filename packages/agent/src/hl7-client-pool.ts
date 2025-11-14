@@ -72,10 +72,12 @@ export class Hl7ClientPool {
    */
   releaseClient(client: EnhancedHl7Client, forceClose = false): void {
     // If forcing the connection closed
-    // Or if keepAlive is off and pending messages are 0,
+    // Or if keepAlive is off and pending messages are 0 (or undefined, since connection is removed once the client is closed),
     // We should close the client and remove it from the pool
-    if (forceClose || (!this.keepAlive && client.connection?.getPendingMessageCount() === 0)) {
+    if (forceClose || (!this.keepAlive && !client.connection?.getPendingMessageCount())) {
       this.closeAndRemoveClient(client);
+    } else {
+      console.log(client.connection?.getPendingMessageCount());
     }
   }
 
@@ -109,6 +111,10 @@ export class Hl7ClientPool {
         .then(() => resolve())
         .catch(reject);
     });
+
+    for (const client of this.clients) {
+      this.removeClient(client);
+    }
 
     // We wait for the closing promise to resolve
     await this.closingPromise;

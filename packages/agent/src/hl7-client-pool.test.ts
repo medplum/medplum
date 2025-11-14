@@ -337,7 +337,7 @@ describe('Hl7ClientPool', () => {
 
   describe('closeAll', () => {
     test('Closes all clients in pool', async () => {
-      const log = new Logger(() => undefined);
+      const log = new Logger((msg) => console.log(msg));
 
       const pool = new Hl7ClientPool({
         host: 'localhost',
