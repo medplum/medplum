@@ -111,7 +111,7 @@ export class Hl7ClientPool {
     });
 
     // Remove any clients that didn't get cleaned up by close listener
-    // This is especially
+    // This is especially for when this method is called in the same tick as a client is created
     for (const client of this.clients) {
       this.removeClient(client);
     }
