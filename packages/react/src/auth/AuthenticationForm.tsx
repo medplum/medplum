@@ -11,7 +11,7 @@ import {
   PasswordInput,
   Stack,
   Text,
-  TextInput
+  TextInput,
 } from '@mantine/core';
 import type {
   BaseLoginRequest,
