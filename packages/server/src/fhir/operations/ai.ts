@@ -118,7 +118,11 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
  * @param acceptsStreaming - Whether the client accepts streaming.
  * @returns The server response. For streaming, returns undefined after response is sent.
  */
-export async function aiOperation(req: FhirRequest, res?: ExpressResponse, acceptsStreaming: boolean = false): Promise<FhirResponse | undefined> {
+export async function aiOperation(
+  req: FhirRequest,
+  res?: ExpressResponse,
+  acceptsStreaming: boolean = false
+): Promise<FhirResponse | undefined> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
     return [forbidden];
