@@ -49,6 +49,7 @@ import {
   RETRY_WAIT_DURATION_MS,
 } from './constants';
 import { AgentDicomChannel } from './dicom';
+import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
@@ -1051,48 +1052,42 @@ export class App {
 
     this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
 
-    let errorOccurred = false;
+    let forceClose = false;
 
-    // Get a client from the pool
-    pool
-      .getClient()
-      .then(async (client) => {
-        return client
-          .sendAndWait(requestMsg)
-          .then((response) => {
-            this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
-            this.addToWebSocketQueue({
-              type: 'agent:transmit:response',
-              channel: message.channel,
-              remote: message.remote,
-              callback: message.callback,
-              contentType: ContentType.HL7_V2,
-              statusCode: 200,
-              body: response.toString(),
-            } satisfies AgentTransmitResponse);
-          })
-          .catch((err) => {
-            this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
-            this.addToWebSocketQueue({
-              type: 'agent:transmit:response',
-              channel: message.channel,
-              remote: message.remote,
-              callback: message.callback,
-              contentType: ContentType.TEXT,
-              statusCode: 400,
-              body: normalizeErrorString(err),
-            } satisfies AgentTransmitResponse);
+    let client: EnhancedHl7Client;
+    try {
+      // Get a client from the pool
+      client = pool.getClient();
+    } catch (err) {
+      this.log.error(`Failed to get client from pool: ${normalizeErrorString(err)}`);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: normalizeErrorString(err),
+      } satisfies AgentTransmitResponse);
+      return;
+    }
 
-            // We mark that an error occurred so we can decide to force close the client or not below
-            errorOccurred = true;
-          })
-          .finally(() => {
-            // Release the client back to the pool
-            pool.releaseClient(client, this.keepAlive && errorOccurred);
-          });
+    client
+      .sendAndWait(requestMsg)
+      .then((response) => {
+        this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
+        this.addToWebSocketQueue({
+          type: 'agent:transmit:response',
+          channel: message.channel,
+          remote: message.remote,
+          callback: message.callback,
+          contentType: ContentType.HL7_V2,
+          statusCode: 200,
+          body: response.toString(),
+        } satisfies AgentTransmitResponse);
       })
       .catch((err) => {
-        this.log.error(`Failed to get client from pool: ${normalizeErrorString(err)}`);
+        this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
         this.addToWebSocketQueue({
           type: 'agent:transmit:response',
           channel: message.channel,
@@ -1102,6 +1097,13 @@ export class App {
           statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
+
+        // We mark that an error occurred so we can decide to force close the client or not below
+        forceClose = true;
+      })
+      .finally(() => {
+        // Release the client back to the pool
+        pool.releaseClient(client, forceClose);
       });
   }
 

@@ -48,9 +48,9 @@ export class Hl7ClientPool {
    *
    * @returns Promise that resolves with an HL7 client
    */
-  async getClient(): Promise<EnhancedHl7Client> {
+  getClient(): EnhancedHl7Client {
     if (this.closingPromise) {
-      throw new Error('Cannot get new client, pool is closing');
+      throw new Error('Cannot get new client, pool is closed');
     }
     return this.getNextClient();
   }
@@ -112,8 +112,6 @@ export class Hl7ClientPool {
 
     // We wait for the closing promise to resolve
     await this.closingPromise;
-    // Then we finally remove the closing promise
-    this.closingPromise = undefined;
   }
 
   /**

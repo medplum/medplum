@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, Logger, sleep } from '@medplum/core';
+import { Hl7Message, Logger } from '@medplum/core';
 // @ts-expect-error The __ functions are only exported for testing
 // eslint-disable-next-line import/named
 import { Hl7Server, __getCtorCallCount, __resetCtorCallCount } from '@medplum/hl7';
+import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
 
 jest.mock('@medplum/hl7', () => {
@@ -23,6 +24,18 @@ jest.mock('@medplum/hl7', () => {
     },
   };
 });
+
+function createFakeClient({
+  closeMock,
+  pendingMessages,
+}: { closeMock?: jest.Mock; pendingMessages?: number } = {}): EnhancedHl7Client {
+  return {
+    close: closeMock ?? jest.fn().mockResolvedValue(undefined),
+    connection: {
+      getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
+    },
+  } as unknown as EnhancedHl7Client;
+}
 
 describe('Hl7ClientPool', () => {
   let server: Hl7Server;
@@ -59,14 +72,14 @@ describe('Hl7ClientPool', () => {
       });
 
       // First request
-      const client1 = await pool.getClient();
+      const client1 = pool.getClient();
       expect(__getCtorCallCount()).toStrictEqual(1);
 
       // Release the client
       pool.releaseClient(client1);
 
       // Second request should reuse the same client
-      const client2 = await pool.getClient();
+      const client2 = pool.getClient();
       expect(__getCtorCallCount()).toStrictEqual(1);
       expect(client2).toBe(client1);
 
@@ -86,22 +99,17 @@ describe('Hl7ClientPool', () => {
       });
 
       // Get 3 clients without releasing
-      const client1 = await pool.getClient();
-      const client2 = await pool.getClient();
-      const client3 = await pool.getClient();
+      pool.getClient();
+      pool.getClient();
+      pool.getClient();
 
       expect(__getCtorCallCount()).toStrictEqual(3);
-      expect(pool.size()).toBe(3);
-
-      // Release all clients
-      pool.releaseClient(client1);
-      pool.releaseClient(client2);
-      pool.releaseClient(client3);
+      expect(pool.size()).toStrictEqual(3);
 
       await pool.closeAll();
     });
 
-    test('Waits when maxClients is reached', async () => {
+    test('Re-uses clients when maxClients is reached', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
@@ -113,31 +121,16 @@ describe('Hl7ClientPool', () => {
       });
 
       // Get 2 clients (max)
-      const client1 = await pool.getClient();
-      const client2 = await pool.getClient();
-      expect(pool.size()).toBe(2);
-
-      // Try to get a third client (should wait)
-      let client3Resolved = false;
-      const client3Promise = pool.getClient().then((client) => {
-        client3Resolved = true;
-        return client;
-      });
-
-      // Give it a moment to ensure it's waiting
-      await sleep(50);
-      expect(client3Resolved).toBe(false);
+      const client1 = pool.getClient();
+      const client2 = pool.getClient();
+      expect(pool.size()).toStrictEqual(2);
 
       // Release one client
       pool.releaseClient(client1);
-
-      // Now the third request should resolve
-      const client3 = await client3Promise;
-      expect(client3Resolved).toBe(true);
-      expect(client3).toBe(client1); // Should get the released client
+      const client3 = pool.getClient();
+      expect(client3).toStrictEqual(client1);
 
       pool.releaseClient(client2);
-      pool.releaseClient(client3);
       await pool.closeAll();
     });
 
@@ -156,7 +149,7 @@ describe('Hl7ClientPool', () => {
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.5\rPID|1|99999999'
       );
 
-      const client = await pool.getClient();
+      const client = pool.getClient();
       const response = await client.sendAndWait(msg);
       expect(response.header.getComponent(9, 1)).toBe('ACK');
 
@@ -176,19 +169,58 @@ describe('Hl7ClientPool', () => {
       });
 
       // Get multiple clients
-      await pool.getClient();
-      await pool.getClient();
-      await pool.getClient();
-      expect(pool.size()).toBe(3);
+      pool.getClient();
+      pool.getClient();
+      pool.getClient();
+      expect(pool.size()).toStrictEqual(3);
 
       // closeAll should remove all clients
       await pool.closeAll();
+      expect(pool.size()).toStrictEqual(0);
+    });
+
+    test('releaseClient keeps client in pool when keepAlive and not forced', () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 2,
+        log,
+      });
+
+      const client = createFakeClient();
+      pool.getClients().push(client);
+
+      pool.releaseClient(client);
+      expect(pool.size()).toBe(1);
+    });
+
+    test('releaseClient closes client when keepAlive and forced', async () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 2,
+        log,
+      });
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+
+      pool.releaseClient(client, true);
+
       expect(pool.size()).toBe(0);
+      expect(closeMock).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Non-keepAlive mode', () => {
-    test('Creates new clients each time', async () => {
+    test('Creates new clients up to maxClients', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
@@ -200,16 +232,17 @@ describe('Hl7ClientPool', () => {
       });
 
       // First request
-      const client1 = await pool.getClient();
+      const client1 = pool.getClient();
       expect(__getCtorCallCount()).toStrictEqual(1);
 
       // Release and get another
       pool.releaseClient(client1);
-      const client2 = await pool.getClient();
+      expect(pool.size()).toStrictEqual(0);
+      const client2 = pool.getClient();
 
       // Should have created a second client
       expect(__getCtorCallCount()).toStrictEqual(2);
-      expect(pool.size()).toBe(1); // Only one tracked (first was released)
+      expect(pool.size()).toStrictEqual(1); // Only one tracked (first was released)
 
       pool.releaseClient(client2);
       await pool.closeAll();
@@ -227,34 +260,18 @@ describe('Hl7ClientPool', () => {
       });
 
       // Get 2 clients (max)
-      const client1 = await pool.getClient();
-      const client2 = await pool.getClient();
+      const client1 = pool.getClient();
+      const client2 = pool.getClient();
       expect(pool.size()).toBe(2);
 
-      // Try to get a third client (should wait)
-      let client3Resolved = false;
-      const client3Promise = pool.getClient().then((client) => {
-        client3Resolved = true;
-        return client;
-      });
+      // Try to get a third client (should get one of the existing clients)
+      const client3 = pool.getClient();
+      expect([client1, client2]).toContain(client3);
 
-      // Give it a moment to ensure it's waiting
-      await sleep(50);
-      expect(client3Resolved).toBe(false);
-
-      // Release one client
-      pool.releaseClient(client1);
-
-      // Now the third request should resolve
-      const client3 = await client3Promise;
-      expect(client3Resolved).toBe(true);
-
-      pool.releaseClient(client2);
-      pool.releaseClient(client3);
       await pool.closeAll();
     });
 
-    test('Removes client from tracking on release', async () => {
+    test('releaseClient closes client when not keepAlive and no pending messages', () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
@@ -265,13 +282,56 @@ describe('Hl7ClientPool', () => {
         log,
       });
 
-      const client = await pool.getClient();
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock, pendingMessages: 0 });
+      pool.getClients().push(client);
       expect(pool.size()).toBe(1);
 
       pool.releaseClient(client);
+      expect(closeMock).toHaveBeenCalledTimes(1);
       expect(pool.size()).toBe(0);
+    });
 
-      await pool.closeAll();
+    test('releaseClient keeps client when not keepAlive and pending messages', () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 10,
+        log,
+      });
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock, pendingMessages: 2 });
+      pool.getClients().push(client);
+      expect(pool.size()).toBe(1);
+
+      pool.releaseClient(client);
+      expect(closeMock).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+    });
+
+    test('releaseClient closes client when not keepAlive and forced', () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 10,
+        log,
+      });
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock, pendingMessages: 3 });
+      pool.getClients().push(client);
+      expect(pool.size()).toBe(1);
+
+      pool.releaseClient(client, true);
+      expect(closeMock).toHaveBeenCalledTimes(1);
+      expect(pool.size()).toBe(0);
     });
   });
 
@@ -288,9 +348,9 @@ describe('Hl7ClientPool', () => {
       });
 
       // Create 3 clients
-      await pool.getClient();
-      await pool.getClient();
-      await pool.getClient();
+      pool.getClient();
+      pool.getClient();
+      pool.getClient();
 
       expect(pool.size()).toBe(3);
 
@@ -299,7 +359,7 @@ describe('Hl7ClientPool', () => {
       expect(pool.size()).toBe(0);
     });
 
-    test('Rejects waiting requests when pool is closed', async () => {
+    test('Trying to get client after closeAll throws', async () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
@@ -310,17 +370,16 @@ describe('Hl7ClientPool', () => {
         log,
       });
 
-      // Get the only client
-      await pool.getClient();
-
-      // Try to get another (will wait)
-      const client2Promise = pool.getClient();
-
       // Close the pool
-      await pool.closeAll();
+      const closeAllPromise = pool.closeAll();
 
-      // The waiting request should be rejected
-      await expect(client2Promise).rejects.toThrow('Pool closed while waiting for available client');
+      // Trying to get a client while closing throws
+      expect(() => pool.getClient()).toThrow('Cannot get new client, pool is closed');
+
+      await closeAllPromise;
+
+      // It will also throw after already closed
+      expect(() => pool.getClient()).toThrow('Cannot get new client, pool is closed');
     });
   });
 
@@ -343,16 +402,15 @@ describe('Hl7ClientPool', () => {
           `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.5\rPID|1|99999999`
         );
 
-        promises.push(
-          pool.getClient().then(async (client) => {
-            try {
-              const response = await client.sendAndWait(msg);
-              return response;
-            } finally {
-              pool.releaseClient(client);
-            }
-          })
-        );
+        promises.push(async () => {
+          const client = pool.getClient();
+          try {
+            const response = await client.sendAndWait(msg);
+            return response;
+          } finally {
+            pool.releaseClient(client);
+          }
+        });
       }
 
       const responses = await Promise.all(promises);
@@ -382,17 +440,16 @@ describe('Hl7ClientPool', () => {
           `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.5\rPID|1|99999999`
         );
 
-        promises.push(
-          pool.getClient().then(async (client) => {
-            try {
-              const response = await client.sendAndWait(msg);
-              return response;
-            } finally {
-              pool.releaseClient(client);
-              await client.close();
-            }
-          })
-        );
+        promises.push(async () => {
+          const client = pool.getClient();
+          try {
+            const response = await client.sendAndWait(msg);
+            return response;
+          } finally {
+            pool.releaseClient(client);
+            await client.close();
+          }
+        });
       }
 
       const responses = await Promise.all(promises);
