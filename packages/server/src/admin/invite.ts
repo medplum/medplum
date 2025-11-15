@@ -81,8 +81,35 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   let existingUser = false;
   let passwordResetUrl: string | undefined;
 
-  // Upsert User resource
+  // Instantiate unsaved user record from the request
   const userResource = await makeUserResource(request);
+
+  // If inviting with an email address, check for existing memberships tied to
+  // this project/email combination that are at a different scope than the one
+  // we would create. This avoids confusion of someone having separate
+  // server-scoped and project-scoped user records.
+  //
+  // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
+  if (!request.forceNewMembership && userResource.email) {
+    const projectFilter = userResource.project
+      ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
+      : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
+
+    const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        { code: 'user:User.email', operator: Operator.EXACT, value: userResource.email },
+        { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
+        projectFilter,
+      ],
+    });
+
+    if (existingMemberships.length > 0) {
+      throw new OperationOutcomeError(conflict('User is already a member of this project'));
+    }
+  }
+
+  // Upsert User resource
   let user: WithId<User>;
   if (email) {
     const searchRequest: SearchRequest<User> = {
