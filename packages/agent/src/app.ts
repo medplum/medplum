@@ -405,7 +405,7 @@ export class App {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
       if (this.keepAlive) {
         for (const pool of this.hl7Clients.values()) {
-          pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
+          pool.startTrackingStats();
         }
       }
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
@@ -1030,10 +1030,11 @@ export class App {
         keepAlive: this.keepAlive,
         maxClients: this.maxClientsPerRemote,
         log: this.log,
+        heartbeatEmitter: this.heartbeatEmitter,
       });
       this.hl7Clients.set(message.remote, pool);
       if (keepAlive && this.logStatsFreqSecs > 0) {
-        pool.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
+        pool.startTrackingStats();
       }
       this.log.info(`Client pool created for remote '${message.remote}'`, {
         keepAlive: this.keepAlive,
@@ -1053,8 +1054,8 @@ export class App {
     this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
 
     let forceClose = false;
-
     let client: EnhancedHl7Client;
+
     try {
       // Get a client from the pool
       client = pool.getClient();

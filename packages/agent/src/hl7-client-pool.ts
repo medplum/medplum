@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
-import type { ClientStatsTrackingOptions } from './enhanced-hl7-client';
+import { DEFAULT_ENCODING } from '@medplum/hl7';
+import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
+import type { HeartbeatEmitter } from './types';
 
 export interface Hl7ClientPoolOptions {
   host: string;
@@ -12,6 +14,7 @@ export interface Hl7ClientPoolOptions {
   keepAlive: boolean;
   maxClients: number;
   log: ILogger;
+  heartbeatEmitter: HeartbeatEmitter;
 }
 
 /**
@@ -28,9 +31,12 @@ export class Hl7ClientPool {
   private maxClients: number;
   private readonly log: ILogger;
   private readonly clients: EnhancedHl7Client[] = [];
+  private readonly lastUsedTimestamps = new WeakMap<EnhancedHl7Client, number>(); // WeakMap allows entries to be GC'd once key gets GC'd
   private closingPromise: Promise<void> | undefined;
   private nextClientIdx: number = 0;
-  private statTrackingOptions: ClientStatsTrackingOptions | undefined;
+  private heartbeatEmitter: HeartbeatEmitter;
+  private trackingStats = false;
+  private gcListener: (() => void) | undefined;
 
   constructor(options: Hl7ClientPoolOptions) {
     this.host = options.host;
@@ -39,6 +45,9 @@ export class Hl7ClientPool {
     this.keepAlive = options.keepAlive;
     this.maxClients = options.maxClients;
     this.log = options.log;
+    this.heartbeatEmitter = options.heartbeatEmitter;
+
+    this.startAutoClientGc();
   }
 
   /**
@@ -56,6 +65,9 @@ export class Hl7ClientPool {
   }
 
   private closeAndRemoveClient(client: EnhancedHl7Client): void {
+    this.log.info(
+      `Closing client for remote 'mllp://${client.host}:${client.port}?encoding=${client.encoding ?? DEFAULT_ENCODING}' and removing it from the pool...`
+    );
     this.removeClient(client);
     client.close().catch((err: Error) => {
       this.log.error('Error while closing and removing client', err);
@@ -72,11 +84,58 @@ export class Hl7ClientPool {
    */
   releaseClient(client: EnhancedHl7Client, forceClose = false): void {
     // If forcing the connection closed
-    // Or if keepAlive is off and pending messages are 0 (or undefined, since connection is removed once the client is closed),
-    // We should close the client and remove it from the pool
-    if (forceClose || (!this.keepAlive && !client.connection?.getPendingMessageCount())) {
+    // Or if keepAlive is off and connection is undefined
+    // We should close the client and remove it from the pool immediately
+    if (forceClose || (!this.keepAlive && client.connection === undefined)) {
       this.closeAndRemoveClient(client);
+      return;
     }
+
+    // We should track the last used time for non-keepAlive clients
+    if (!this.keepAlive) {
+      this.lastUsedTimestamps.set(client, Date.now());
+    }
+  }
+
+  private runClientGc(): void {
+    if (this.keepAlive) {
+      return;
+    }
+    for (const client of this.clients) {
+      // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago, call closeAndRemoveClient
+      if ((this.lastUsedTimestamps.get(client) ?? 0) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {
+        this.closeAndRemoveClient(client);
+      }
+    }
+  }
+
+  /**
+   * Starts the automatic Hl7Client garbage collection, when not in `keepAlive` mode.
+   *
+   * Clients that have not been used in `CLIENT_RELEASE_COUNTDOWN_MS` milliseconds (10 secs) are closed automatically.
+   */
+  startAutoClientGc(): void {
+    if (this.gcListener || this.keepAlive) {
+      return;
+    }
+    const gcListener = (): void => {
+      this.runClientGc();
+    };
+    this.heartbeatEmitter.addEventListener('heartbeat', gcListener);
+    this.gcListener = gcListener;
+  }
+
+  /**
+   * Stops the automatic Hl7Client garbage collection.
+   *
+   * No-ops when GC is not active or if the pool is in `keepAlive` mode.
+   */
+  stopAutoClientGc(): void {
+    if (!this.gcListener) {
+      return;
+    }
+    this.heartbeatEmitter.removeEventListener('heartbeat', this.gcListener);
+    this.gcListener = undefined;
   }
 
   /**
@@ -101,6 +160,8 @@ export class Hl7ClientPool {
       await this.closingPromise;
       return;
     }
+
+    this.stopAutoClientGc();
 
     const closePromises = this.clients.map((client) => client.close());
 
@@ -167,8 +228,8 @@ export class Hl7ClientPool {
       keepAlive: this.keepAlive,
       log: this.log,
     });
-    if (this.statTrackingOptions) {
-      client.startTrackingStats(this.statTrackingOptions);
+    if (this.trackingStats) {
+      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
     }
 
     this.clients.push(client);
@@ -201,21 +262,21 @@ export class Hl7ClientPool {
     return this.maxClients;
   }
 
-  startTrackingStats(options: ClientStatsTrackingOptions): void {
-    this.statTrackingOptions = options;
+  startTrackingStats(): void {
+    this.trackingStats = true;
     for (const client of this.clients) {
-      client.startTrackingStats(options);
+      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
     }
   }
 
   stopTrackingStats(): void {
-    this.statTrackingOptions = undefined;
+    this.trackingStats = false;
     for (const client of this.clients) {
       client.stopTrackingStats();
     }
   }
 
   isTrackingStats(): boolean {
-    return this.statTrackingOptions !== undefined;
+    return this.trackingStats;
   }
 }
