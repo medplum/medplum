@@ -34,7 +34,7 @@ export class Hl7ClientPool {
   private readonly lastUsedTimestamps = new WeakMap<EnhancedHl7Client, number>(); // WeakMap allows entries to be GC'd once key gets GC'd
   private closingPromise: Promise<void> | undefined;
   private nextClientIdx: number = 0;
-  private heartbeatEmitter: HeartbeatEmitter;
+  private readonly heartbeatEmitter: HeartbeatEmitter;
   private trackingStats = false;
   private gcListener: (() => void) | undefined;
 
