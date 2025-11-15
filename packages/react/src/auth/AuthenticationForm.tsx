@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import {
+  Anchor,
+  Button,
+  Center,
+  Checkbox,
+  Divider,
+  Flex,
+  Group,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import type {
   BaseLoginRequest,
   GoogleCredentialResponse,
@@ -18,6 +30,7 @@ import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
+import styles from './AuthenticationForm.module.css';
 
 export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly disableEmailAuth?: boolean;
@@ -34,7 +47,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
   if (!email) {
     return <EmailForm setEmail={setEmail} {...props} />;
   } else {
-    return <PasswordForm email={email} {...props} />;
+    return <PasswordForm email={email} resetEmail={() => setEmail(undefined)} {...props} />;
   }
 }
 
@@ -120,6 +133,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'email')}
+          data-testid="auth.email"
         />
       )}
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
@@ -150,6 +164,7 @@ export interface PasswordFormProps extends BaseLoginRequest {
   readonly email: string;
   readonly onForgotPassword?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly resetEmail: () => void;
   readonly children?: ReactNode;
 }
 
@@ -177,7 +192,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
     <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
       <OperationOutcomeAlert issues={issues} />
-      <Stack gap="xl">
+      <Stack gap="sm">
         <PasswordInput
           name="password"
           label="Password"
@@ -185,7 +200,16 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'password')}
+          data-testid="auth.password"
         />
+        <Flex className={styles.userNotice} justify="space-between" align="center" px="xs" bdrs="sm">
+          <Text size="xs">
+            Logging in as <em>{props.email}</em>
+          </Text>
+          <Button variant="transparent" onClick={props.resetEmail} size="compact-xs">
+            Change
+          </Button>
+        </Flex>
       </Stack>
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         {onForgotPassword && (
