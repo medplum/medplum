@@ -1,40 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger, TypedEventTarget } from '@medplum/core';
+import type { ILogger } from '@medplum/core';
+import { TypedEventTarget } from '@medplum/core';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import { createMockLogger } from './test-utils';
-
-// Mock TypedEventTarget for heartbeat events
-class MockHeartbeatEmitter {
-  private listeners = new Map<string, Set<() => void>>();
-
-  addEventListener(event: string, listener: () => void): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    this.listeners.get(event)?.add(listener);
-  }
-
-  removeEventListener(event: string, listener: () => void): void {
-    this.listeners.get(event)?.delete(listener);
-  }
-
-  emit(event: string): void {
-    this.listeners.get(event)?.forEach((listener) => listener());
-  }
-
-  getListenerCount(event: string): number {
-    return this.listeners.get(event)?.size ?? 0;
-  }
-}
+import type { HeartbeatEmitter } from './types';
 
 describe('ChannelStatsTracker', () => {
-  let mockHeartbeatEmitter: MockHeartbeatEmitter;
   let mockLogger: ILogger;
+  let mockHeartbeatEmitter: HeartbeatEmitter;
 
   beforeEach(() => {
-    mockHeartbeatEmitter = new MockHeartbeatEmitter();
     mockLogger = createMockLogger();
+    mockHeartbeatEmitter = new TypedEventTarget();
     jest.useFakeTimers();
   });
 
@@ -45,7 +23,7 @@ describe('ChannelStatsTracker', () => {
   describe('getSampleCount', () => {
     test('Returns 0 initially', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       expect(tracker.getSampleCount()).toBe(0);
@@ -53,7 +31,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Returns correct count after adding samples', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -71,7 +49,7 @@ describe('ChannelStatsTracker', () => {
   describe('getPendingCount', () => {
     test('Returns 0 initially', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       expect(tracker.getPendingCount()).toBe(0);
@@ -79,7 +57,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Returns correct count after sending messages', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -91,7 +69,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Returns correct count after acknowledging messages', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -109,7 +87,7 @@ describe('ChannelStatsTracker', () => {
   describe('Adding samples', () => {
     test('Adds RTT samples when messages are acknowledged', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -123,7 +101,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Returns undefined for acknowledgement without matching sent message', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       const rtt = tracker.recordAckReceived('nonexistent');
@@ -134,7 +112,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Calculates RTT correctly for multiple messages', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -154,7 +132,7 @@ describe('ChannelStatsTracker', () => {
   describe('Adding samples up to max capacity', () => {
     test('Maintains max sample limit and removes oldest', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
         maxRttSamples: 3,
       });
 
@@ -187,7 +165,7 @@ describe('ChannelStatsTracker', () => {
   describe('Calculations', () => {
     test('Returns correct stats with no samples', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       const stats = tracker.getRttStats();
@@ -204,7 +182,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Calculates correct stats with single sample', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -225,7 +203,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Calculates correct stats with multiple samples', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       // Add samples with known RTT values: 100, 200, 300, 400, 500
@@ -250,7 +228,7 @@ describe('ChannelStatsTracker', () => {
 
     test('Includes pending count in stats', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -267,7 +245,7 @@ describe('ChannelStatsTracker', () => {
       const maxPendingAge = 5000; // 5 seconds
       const gcIntervalMs = 60000; // 1 minute
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
         maxPendingAge,
         gcIntervalMs,
         log: mockLogger,
@@ -280,7 +258,7 @@ describe('ChannelStatsTracker', () => {
       jest.advanceTimersByTime(maxPendingAge + 1000);
 
       // Heartbeat should not trigger cleanup yet (hasn't been gcIntervalMs since last GC)
-      mockHeartbeatEmitter.emit('heartbeat');
+      mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
       expect(tracker.getPendingCount()).toBe(1);
       expect(mockLogger.warn).not.toHaveBeenCalled();
 
@@ -288,7 +266,7 @@ describe('ChannelStatsTracker', () => {
       jest.advanceTimersByTime(gcIntervalMs);
 
       // Now heartbeat should trigger cleanup
-      mockHeartbeatEmitter.emit('heartbeat');
+      mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
       expect(tracker.getPendingCount()).toBe(0);
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining("Cleaning up pending message; never got response for message with ID 'msg1'")
@@ -298,7 +276,7 @@ describe('ChannelStatsTracker', () => {
     test('Does not clean up recent pending messages', () => {
       const maxPendingAge = 5000; // 5 seconds
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
         maxPendingAge,
         log: mockLogger,
       });
@@ -307,7 +285,7 @@ describe('ChannelStatsTracker', () => {
       expect(tracker.getPendingCount()).toBe(1);
 
       // Heartbeat triggers cleanup of old messages
-      mockHeartbeatEmitter.emit('heartbeat');
+      mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
 
       // Send another message, which triggers cleanup
       tracker.recordMessageSent('msg2');
@@ -321,21 +299,21 @@ describe('ChannelStatsTracker', () => {
   describe('Cleanup', () => {
     test('Removes heartbeat listener when cleanup is called', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(1);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(1);
 
       tracker.cleanup();
 
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(0);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(0);
     });
 
     test('Heartbeat listener does not trigger cleanup after cleanup is called', () => {
       const maxPendingAge = 5000;
       const gcIntervalMs = 1000;
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
         maxPendingAge,
         gcIntervalMs,
         log: mockLogger,
@@ -347,7 +325,7 @@ describe('ChannelStatsTracker', () => {
       tracker.cleanup();
 
       // Emit heartbeat after cleanup
-      mockHeartbeatEmitter.emit('heartbeat');
+      mockHeartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
 
       // Message should still be pending (cleanup didn't run)
       expect(tracker.getPendingCount()).toBe(1);
@@ -358,7 +336,7 @@ describe('ChannelStatsTracker', () => {
   describe('Reset', () => {
     test('Clears all pending messages and samples', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');
@@ -380,7 +358,7 @@ describe('ChannelStatsTracker', () => {
   describe('getStats', () => {
     test('returns channel stats with RTT stats', () => {
       const tracker = new ChannelStatsTracker({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       tracker.recordMessageSent('msg1');

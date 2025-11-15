@@ -33,12 +33,15 @@ import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
   RETRY_WAIT_DURATION_MS: 200,
+  // We don't care about how fast the clients release in these tests
+  CLIENT_RELEASE_COUNTDOWN_MS: 0,
 }));
 
 jest.mock('./pid', () => ({
@@ -3534,8 +3537,13 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const pool = app.hl7Clients.get('mllp://localhost:58100') as Hl7ClientPool;
+
+      // Run client GC manually
+      pool.runClientGc();
+
       // Client should not be in the hl7Clients map (because keepAlive is false)
-      expect(app.hl7Clients.get('mllp://localhost:58100')?.size()).toStrictEqual(0);
+      expect(pool.size()).toStrictEqual(0);
 
       await app.stop();
       await hl7Server.stop();

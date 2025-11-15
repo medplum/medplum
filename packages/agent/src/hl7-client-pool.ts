@@ -97,7 +97,15 @@ export class Hl7ClientPool {
     }
   }
 
-  private runClientGc(): void {
+  /**
+   * Runs the Hl7Client garbage collection, when not in `keepAlive` mode.
+   *
+   * Clients that have not been used in `CLIENT_RELEASE_COUNTDOWN_MS` milliseconds (10 secs) are closed.
+   */
+  runClientGc(): void {
+    if (this.keepAlive) {
+      return;
+    }
     for (const client of this.clients) {
       // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago, call closeAndRemoveClient
       if ((this.lastUsedTimestamps.get(client) as number) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {

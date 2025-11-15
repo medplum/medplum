@@ -45,6 +45,7 @@ import type { ChannelStats } from './channel-stats-tracker';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
+  HEARTBEAT_PERIOD_MS,
   MAX_MISSED_HEARTBEATS,
   RETRY_WAIT_DURATION_MS,
 } from './constants';
@@ -55,6 +56,7 @@ import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats, updateStat } from './stats';
+import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(
@@ -88,9 +90,9 @@ export class App {
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
-  heartbeatPeriod = 10 * 1000;
+  heartbeatPeriod = HEARTBEAT_PERIOD_MS; // 10 seconds
   private heartbeatTimer?: NodeJS.Timeout;
-  readonly heartbeatEmitter = new TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>();
+  readonly heartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
   private outstandingHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;

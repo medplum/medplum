@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Hl7Message, ILogger, TypedEventTarget } from '@medplum/core';
+import type { Hl7Message, ILogger } from '@medplum/core';
 import type { Hl7ClientOptions } from '@medplum/hl7';
 import { Hl7Client } from '@medplum/hl7';
 import { ChannelStatsTracker } from './channel-stats-tracker';
+import type { HeartbeatEmitter } from './types';
 
 export interface ClientStatsTrackingOptions {
-  heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
+  heartbeatEmitter: HeartbeatEmitter;
 }
 
 export interface ExtendedHl7ClientOptions extends Hl7ClientOptions {

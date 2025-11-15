@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import type { ILogger } from '@medplum/core';
 import { LogLevel } from '@medplum/core';
 import { randomUUID } from 'node:crypto';

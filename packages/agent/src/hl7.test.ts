@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   AckCode,
+  AgentHeartbeatResponse,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
 } from '@medplum/core';
-import { allOk, ContentType, createReference, Hl7Message, LogLevel, sleep } from '@medplum/core';
+import { allOk, ContentType, createReference, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
@@ -24,6 +25,12 @@ import {
   shouldSendAppLevelAck,
 } from './hl7';
 import { createMockLogger } from './test-utils';
+
+jest.mock('./constants', () => ({
+  ...jest.requireActual('./constants'),
+  // We don't care about how fast the clients release in these tests
+  CLIENT_RELEASE_COUNTDOWN_MS: 0,
+}));
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -76,6 +83,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -152,6 +170,17 @@ describe('HL7', () => {
                 callback: command.callback,
                 body: 'Something bad happened',
               } satisfies AgentTransmitResponse)
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -234,6 +263,17 @@ describe('HL7', () => {
             )
           );
         }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
+            )
+          );
+        }
       });
     });
 
@@ -304,6 +344,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -386,6 +437,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -678,6 +740,9 @@ describe('HL7', () => {
     }
     expect(hl7Messages.length).toBe(1);
 
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
     // Make sure we are not keeping clients around yet
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
@@ -702,6 +767,10 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Update config and make agent reload config
@@ -832,6 +901,10 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(5);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     wsClient.send(
@@ -855,6 +928,10 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(6);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Shutdown everything
@@ -1227,7 +1304,7 @@ describe('HL7', () => {
       await sleep(20);
     }
 
-    // Pool should have exactly 10 clients
+    // Pool should have exactly 5 clients
     expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(5);
 
     // Send one more message - should wait since we're at limit
@@ -1267,7 +1344,12 @@ describe('HL7', () => {
       releaseMessages[i]();
     }
 
-    await sleep(100);
+    // Run GC manually
+    // This test sends a few messages very quickly and so its likely these clients are clearing out messages for a few ms
+    while (app.hl7Clients.get('mllp://localhost:57002')?.size()) {
+      await sleep(20);
+      app.hl7Clients.get('mllp://localhost:57002')?.runClientGc();
+    }
 
     // Should have no clients left in pool after all messages released
     expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(0);
@@ -1495,7 +1577,12 @@ describe('HL7', () => {
     // All 5 messages should eventually be processed
     expect(releaseMessages.length).toStrictEqual(5);
 
-    await sleep(0);
+    // Run GC manually
+    // We do it in a loop until all clients are idle and get cleaned up
+    while (app.hl7Clients.get('mllp://localhost:57004')?.size()) {
+      await sleep(20);
+      app.hl7Clients.get('mllp://localhost:57004')?.runClientGc();
+    }
 
     // Pool should have exactly 0 clients after all messages complete
     expect(app.hl7Clients.get('mllp://localhost:57004')?.size()).toStrictEqual(0);
@@ -1811,6 +1898,17 @@ describe('HL7', () => {
               );
             }
           }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
+              )
+            );
+          }
         });
       });
 
@@ -1983,6 +2081,17 @@ describe('HL7', () => {
                   contentType: ContentType.HL7_V2,
                   body: ackMessage.toString(),
                 } satisfies AgentTransmitResponse)
+              )
+            );
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
               )
             );
           }

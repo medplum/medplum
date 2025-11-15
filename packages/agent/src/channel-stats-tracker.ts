@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger, TypedEventTarget } from '@medplum/core';
+import type { ILogger } from '@medplum/core';
+import type { HeartbeatEmitter } from './types';
 
 /**
  * Interface for statistical data about message RTT (round-trip time).
@@ -28,7 +29,7 @@ export interface ChannelStatsTrackerOptions {
   /** Interval in milliseconds to cleanup pending messages (default: 60000 = 1 minute). */
   gcIntervalMs?: number;
   /** The TypedEventTarget to listen to for heartbeat events. Used for triggering GC cleanup on a set interval. */
-  heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
+  heartbeatEmitter: HeartbeatEmitter;
   /** Optional logger for the tracker. */
   log?: ILogger;
 }
@@ -47,7 +48,7 @@ export class ChannelStatsTracker {
   private readonly maxRttSamples: number;
   private readonly maxPendingAge: number;
   private readonly gcIntervalMs: number;
-  private readonly heartbeatEmitter: TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>;
+  private readonly heartbeatEmitter: HeartbeatEmitter;
   private readonly heartbeatListener: () => void;
 
   private lastGcRun = Date.now();

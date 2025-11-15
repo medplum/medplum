@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, Logger } from '@medplum/core';
+import { Hl7Message, Logger, TypedEventTarget } from '@medplum/core';
 // @ts-expect-error The __ functions are only exported for testing
 // eslint-disable-next-line import/named
 import { Hl7Server, __getCtorCallCount, __resetCtorCallCount } from '@medplum/hl7';
+import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
+import type { HeartbeatEmitter } from './types';
 
 jest.mock('@medplum/hl7', () => {
   const actual = jest.requireActual('@medplum/hl7');
@@ -25,15 +27,27 @@ jest.mock('@medplum/hl7', () => {
   };
 });
 
+/**
+ * Creates a fake EnhancedHl7Client for testing.
+ *
+ * @param opts - Optional overrides for the fake client.
+ * @param opts.closeMock - Mock to invoke when closing the client.
+ * @param opts.pendingMessages - Pending message count to simulate.
+ * @param opts.connection - Whether the client connection is established.
+ * @returns A mocked EnhancedHl7Client instance.
+ */
 function createFakeClient({
   closeMock,
   pendingMessages,
-}: { closeMock?: jest.Mock; pendingMessages?: number } = {}): EnhancedHl7Client {
+  connection = true,
+}: { closeMock?: jest.Mock; pendingMessages?: number; connection?: boolean } = {}): EnhancedHl7Client {
   return {
     close: closeMock ?? jest.fn().mockResolvedValue(undefined),
-    connection: {
-      getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
-    },
+    connection: connection
+      ? {
+          getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
+        }
+      : undefined,
   } as unknown as EnhancedHl7Client;
 }
 
@@ -69,6 +83,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 1,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // First request
@@ -96,6 +111,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 3,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Get 3 clients without releasing
@@ -118,6 +134,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 2,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Get 2 clients (max)
@@ -143,6 +160,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 1,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const msg = Hl7Message.parse(
@@ -166,6 +184,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 3,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Get multiple clients
@@ -188,6 +207,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 2,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const client = createFakeClient();
@@ -206,6 +226,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 2,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -216,6 +237,40 @@ describe('Hl7ClientPool', () => {
 
       expect(pool.size()).toBe(0);
       expect(closeMock).toHaveBeenCalledTimes(1);
+    });
+
+    test('getClient does not return undefined when next client was removed', async () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 2,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      const client1 = pool.getClient();
+      const client2 = pool.getClient();
+
+      pool.releaseClient(client1);
+      pool.releaseClient(client2);
+
+      const reusedClient = pool.getClient();
+      expect(reusedClient).toBe(client1);
+      pool.releaseClient(reusedClient);
+
+      pool.releaseClient(client2, true);
+
+      // Should be a new client
+      const nextClient = pool.getClient();
+      expect(nextClient).not.toBeUndefined();
+
+      expect(nextClient).not.toBe(client1);
+      expect(nextClient).not.toBe(client2);
+
+      await pool.closeAll();
     });
   });
 
@@ -229,6 +284,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 10,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // First request
@@ -257,6 +313,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 2,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Get 2 clients (max)
@@ -271,7 +328,7 @@ describe('Hl7ClientPool', () => {
       await pool.closeAll();
     });
 
-    test('releaseClient closes client when not keepAlive and no pending messages', () => {
+    test('releaseClient closes client when not keepAlive and no connection yet (or connection already closed)', () => {
       const log = new Logger(() => undefined);
 
       const pool = new Hl7ClientPool({
@@ -280,10 +337,12 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 10,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
-      const client = createFakeClient({ closeMock, pendingMessages: 0 });
+      // Connection not present yet, still connecting or already closed
+      const client = createFakeClient({ closeMock, connection: false });
       pool.getClients().push(client);
       expect(pool.size()).toBe(1);
 
@@ -301,6 +360,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 10,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -322,6 +382,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 10,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       const closeMock = jest.fn().mockResolvedValue(undefined);
@@ -335,6 +396,216 @@ describe('Hl7ClientPool', () => {
     });
   });
 
+  describe('Client GC', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('runClientGc removes clients idle past the countdown', () => {
+      const log = new Logger(() => undefined);
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 2,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+
+      pool.releaseClient(client);
+
+      // Client should still be in pool
+      expect(pool.size()).toBe(1);
+      expect(closeMock).not.toHaveBeenCalled();
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+      pool.runClientGc();
+
+      // Client should have been closed
+      expect(closeMock).toHaveBeenCalledTimes(1);
+      expect(pool.size()).toBe(0);
+    });
+
+    test('runClientGc keeps clients that are still within the idle window', () => {
+      const log = new Logger(() => undefined);
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 2,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+      pool.releaseClient(client);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS - 1);
+      pool.runClientGc();
+
+      expect(closeMock).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+    });
+
+    test('runClientGc skips clients reused before GC executes', () => {
+      const log = new Logger(() => undefined);
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 1,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+      pool.releaseClient(client);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+
+      const reusedClient = pool.getClient();
+      expect(reusedClient).toBe(client);
+      pool.releaseClient(reusedClient);
+
+      pool.runClientGc();
+
+      expect(closeMock).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+    });
+
+    test('runClientGc no-ops when keepAlive is enabled', () => {
+      const log = new Logger(() => undefined);
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 2,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+      pool.releaseClient(client);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+      pool.runClientGc();
+
+      expect(closeMock).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+    });
+
+    test('startAutoClientGc does not start when keepAlive is enabled', () => {
+      const log = new Logger(() => undefined);
+      const addEventListener = jest.fn();
+      const removeEventListener = jest.fn();
+      const heartbeatEmitter = {
+        addEventListener,
+        removeEventListener,
+      } as unknown as HeartbeatEmitter;
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 2,
+        log,
+        heartbeatEmitter,
+      });
+
+      pool.startAutoClientGc();
+
+      expect(addEventListener).not.toHaveBeenCalled();
+      expect(removeEventListener).not.toHaveBeenCalled();
+    });
+
+    test('stopAutoClientGc stops automatic cleanup', () => {
+      const log = new Logger(() => undefined);
+      const heartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 2,
+        log,
+        heartbeatEmitter,
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock });
+      pool.getClients().push(client);
+      pool.releaseClient(client);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+      heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+
+      expect(closeMock).toHaveBeenCalledTimes(1);
+      expect(pool.size()).toBe(0);
+
+      pool.stopAutoClientGc();
+
+      const closeMock2 = jest.fn().mockResolvedValue(undefined);
+      const client2 = createFakeClient({ closeMock: closeMock2 });
+      pool.getClients().push(client2);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS * 2);
+      pool.releaseClient(client2);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS * 2 + 1);
+      heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+
+      expect(closeMock2).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+    });
+
+    test('GC starts automatically when keepAlive is disabled', () => {
+      const log = new Logger(() => undefined);
+      const addEventListener = jest.fn();
+      const removeEventListener = jest.fn();
+      const heartbeatEmitter = {
+        addEventListener,
+        removeEventListener,
+      } as unknown as HeartbeatEmitter;
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 2,
+        log,
+        heartbeatEmitter,
+      });
+
+      expect(addEventListener).toHaveBeenCalledTimes(1);
+      pool.stopAutoClientGc();
+      expect(removeEventListener).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('closeAll', () => {
     test('Closes all clients in pool', async () => {
       const log = new Logger(() => undefined);
@@ -345,6 +616,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 3,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Create 3 clients
@@ -368,6 +640,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 1,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Close the pool
@@ -393,6 +666,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: true,
         maxClients: 3,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Send 5 concurrent requests with max 3 clients
@@ -431,6 +705,7 @@ describe('Hl7ClientPool', () => {
         keepAlive: false,
         maxClients: 3,
         log,
+        heartbeatEmitter: new TypedEventTarget(),
       });
 
       // Send 5 concurrent requests with max 3 clients
