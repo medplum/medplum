@@ -98,9 +98,6 @@ export class Hl7ClientPool {
   }
 
   private runClientGc(): void {
-    if (this.keepAlive) {
-      return;
-    }
     for (const client of this.clients) {
       // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago, call closeAndRemoveClient
       if ((this.lastUsedTimestamps.get(client) ?? 0) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {
