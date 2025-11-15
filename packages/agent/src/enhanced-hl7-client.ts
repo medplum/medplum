@@ -16,7 +16,6 @@ export interface ExtendedHl7ClientOptions extends Hl7ClientOptions {
 
 export class EnhancedHl7Client extends Hl7Client {
   stats?: ChannelStatsTracker;
-  closeTimeout?: NodeJS.Timeout;
   log?: ILogger;
 
   constructor(options: ExtendedHl7ClientOptions) {
