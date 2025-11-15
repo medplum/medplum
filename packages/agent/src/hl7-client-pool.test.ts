@@ -34,21 +34,41 @@ jest.mock('@medplum/hl7', () => {
  * @param opts.closeMock - Mock to invoke when closing the client.
  * @param opts.pendingMessages - Pending message count to simulate.
  * @param opts.connection - Whether the client connection is established.
+ * @param opts.stats - Optional fake stats tracker for RTT aggregation tests.
+ * @param opts.stats.getRttSamples - Function returning mock RTT samples.
+ * @param opts.stats.getPendingCount - Function returning mock pending counts.
  * @returns A mocked EnhancedHl7Client instance.
  */
 function createFakeClient({
   closeMock,
   pendingMessages,
   connection = true,
-}: { closeMock?: jest.Mock; pendingMessages?: number; connection?: boolean } = {}): EnhancedHl7Client {
-  return {
+  stats,
+}: {
+  closeMock?: jest.Mock;
+  pendingMessages?: number;
+  connection?: boolean;
+  stats?: { getRttSamples: () => number[]; getPendingCount: () => number };
+} = {}): EnhancedHl7Client {
+  const client = {
     close: closeMock ?? jest.fn().mockResolvedValue(undefined),
     connection: connection
       ? {
           getPendingMessageCount: jest.fn().mockReturnValue(pendingMessages ?? 0),
         }
       : undefined,
+    startTrackingStats: jest.fn(() => {
+      if (stats) {
+        client.stats = stats as any;
+      }
+    }),
+    stopTrackingStats: jest.fn(() => {
+      client.stats = undefined;
+    }),
+    stats: stats as any,
   } as unknown as EnhancedHl7Client;
+
+  return client;
 }
 
 describe('Hl7ClientPool', () => {
@@ -732,6 +752,53 @@ describe('Hl7ClientPool', () => {
 
       // After all releases, should have 0 clients
       expect(pool.size()).toBe(0);
+
+      await pool.closeAll();
+    });
+  });
+
+  describe('Stats tracking', () => {
+    test('Aggregates stats from tracked clients', async () => {
+      const log = new Logger(() => undefined);
+
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: true,
+        maxClients: 3,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      const clientAStats = {
+        getRttSamples: jest.fn().mockReturnValue([100, 120]),
+        getPendingCount: jest.fn().mockReturnValue(1),
+      };
+      const clientBStats = {
+        getRttSamples: jest.fn().mockReturnValue([200]),
+        getPendingCount: jest.fn().mockReturnValue(2),
+      };
+
+      const clientA = createFakeClient({ stats: clientAStats });
+      const clientB = createFakeClient({ stats: clientBStats });
+      const clientWithoutStats = createFakeClient();
+
+      pool.getClients().push(clientA, clientB, clientWithoutStats);
+
+      pool.startTrackingStats();
+
+      const poolStats = pool.getPoolStats();
+      expect(poolStats).toBeDefined();
+      expect(poolStats?.rtt).toStrictEqual({
+        count: 3,
+        min: 100,
+        max: 200,
+        average: 140,
+        p50: 120,
+        p95: 200,
+        p99: 200,
+        pendingCount: 3,
+      });
 
       await pool.closeAll();
     });

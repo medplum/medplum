@@ -136,55 +136,11 @@ export class ChannelStatsTracker {
   }
 
   /**
-   * Calculates a specific percentile from RTT samples.
-   * @param percentile - Percentile to calculate (0-100).
-   * @returns The percentile value, or -1 if no samples exist.
-   */
-  private calculatePercentile(percentile: number): number {
-    if (this.completedRtts.length === 0) {
-      return -1;
-    }
-
-    const sorted = [...this.completedRtts].sort((a, b) => a - b);
-    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-    return sorted[Math.max(0, index)];
-  }
-
-  /**
    * Gets current statistics about message RTT.
    * @returns RttStats object containing all statistics.
    */
   getRttStats(): RttStats {
-    const count = this.completedRtts.length;
-
-    if (count === 0) {
-      return {
-        count: 0,
-        min: -1,
-        max: -1,
-        average: -1,
-        p50: -1,
-        p95: -1,
-        p99: -1,
-        pendingCount: this.pendingMessages.size,
-      };
-    }
-
-    const sum = this.completedRtts.reduce((acc, rtt) => acc + rtt, 0);
-    const average = sum / count;
-    const min = Math.min(...this.completedRtts);
-    const max = Math.max(...this.completedRtts);
-
-    return {
-      count,
-      min,
-      max,
-      average,
-      p50: this.calculatePercentile(50),
-      p95: this.calculatePercentile(95),
-      p99: this.calculatePercentile(99),
-      pendingCount: this.pendingMessages.size,
-    };
+    return calculateRttStats(this.completedRtts, this.pendingMessages.size);
   }
 
   /**
@@ -220,9 +176,72 @@ export class ChannelStatsTracker {
   }
 
   /**
+   * Gets all the RTT samples for this tracker.
+   * @returns All the currently stored RTT samples.
+   */
+  getRttSamples(): number[] {
+    return [...this.completedRtts];
+  }
+
+  /**
    * Cleans up the ChannelStats instance.
    */
   cleanup(): void {
     this.heartbeatEmitter.removeEventListener('heartbeat', this.heartbeatListener);
   }
+}
+
+/**
+ * Calculates a specific percentile from RTT samples.
+ * @param rttSamples - The samples to calculate the percentile for.
+ * @param percentile - Percentile to calculate (0-100).
+ * @returns The percentile value, or -1 if no samples exist.
+ */
+export function calculatePercentile(rttSamples: number[], percentile: number): number {
+  if (rttSamples.length === 0) {
+    return -1;
+  }
+
+  const sorted = [...rttSamples].sort((a, b) => a - b);
+  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, index)];
+}
+
+/**
+ * Gets current statistics about message RTT.
+ * @param rttSamples - The samples to calculate the RTT stats for.
+ * @param pendingCount - The current pending count for related messages.
+ * @returns RttStats object containing all statistics.
+ */
+export function calculateRttStats(rttSamples: number[], pendingCount: number): RttStats {
+  const count = rttSamples.length;
+
+  if (count === 0) {
+    return {
+      count: 0,
+      min: -1,
+      max: -1,
+      average: -1,
+      p50: -1,
+      p95: -1,
+      p99: -1,
+      pendingCount,
+    };
+  }
+
+  const sum = rttSamples.reduce((acc, rtt) => acc + rtt, 0);
+  const average = sum / count;
+  const min = Math.min(...rttSamples);
+  const max = Math.max(...rttSamples);
+
+  return {
+    count,
+    min,
+    max,
+    average,
+    p50: calculatePercentile(rttSamples, 50),
+    p95: calculatePercentile(rttSamples, 95),
+    p99: calculatePercentile(rttSamples, 99),
+    pendingCount,
+  };
 }

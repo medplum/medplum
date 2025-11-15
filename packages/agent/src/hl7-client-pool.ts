@@ -3,6 +3,8 @@
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { DEFAULT_ENCODING } from '@medplum/hl7';
+import type { ChannelStats } from './channel-stats-tracker';
+import { calculateRttStats } from './channel-stats-tracker';
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import type { HeartbeatEmitter } from './types';
@@ -24,9 +26,9 @@ export interface Hl7ClientPoolOptions {
  * In non-keepAlive mode, tracks outstanding connections and enforces the limit.
  */
 export class Hl7ClientPool {
-  private readonly host: string;
-  private readonly port: number;
-  private readonly encoding?: string;
+  readonly host: string;
+  readonly port: number;
+  readonly encoding?: string;
   private readonly keepAlive: boolean;
   private maxClients: number;
   private readonly log: ILogger;
@@ -289,5 +291,17 @@ export class Hl7ClientPool {
 
   isTrackingStats(): boolean {
     return this.trackingStats;
+  }
+
+  getPoolStats(): ChannelStats | undefined {
+    if (!this.trackingStats) {
+      return undefined;
+    }
+    const allRttSamples = this.clients.flatMap((client) => client.stats?.getRttSamples() ?? []);
+    let totalPendingCount = 0;
+    for (const client of this.clients) {
+      totalPendingCount += client.stats?.getPendingCount() ?? 0;
+    }
+    return { rtt: calculateRttStats(allRttSamples, totalPendingCount) };
   }
 }

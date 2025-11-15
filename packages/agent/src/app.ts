@@ -435,11 +435,10 @@ export class App {
     );
 
     const pools = Array.from(this.hl7Clients.values());
-    const allClients = pools.flatMap((pool) => pool.getClients());
     const clientStats = Object.fromEntries(
-      allClients.map((client) => [
-        `mllp://${client.host}:${client.port}?encoding=${client.encoding ?? DEFAULT_ENCODING}`,
-        client.stats?.getStats() as ChannelStats,
+      pools.map((pool) => [
+        `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
+        pool.getPoolStats() as ChannelStats,
       ])
     );
 
