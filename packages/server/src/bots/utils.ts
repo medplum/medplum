@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -15,7 +15,6 @@ import {
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
-  AuditEvent,
   Bot,
   Login,
   OperationOutcome,
@@ -28,19 +27,14 @@ import type {
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
-import { getConfig } from '../config/loader';
 import type { AuthenticatedRequestContext } from '../context';
-import { buildTracingExtension } from '../context';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
-import { AuditEventOutcome, logAuditEvent } from '../util/auditevent';
-import { createAuditEventEntities, findProjectMembership } from '../workers/utils';
+import { findProjectMembership } from '../workers/utils';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
-
-const defaultOutputLength = 10 * 1024; // 10 KiB
 
 /**
  * Returns the bot's project membership.
@@ -288,81 +282,6 @@ export function getResponseContentType(req: Request): string {
 
   // Default to JSON
   return ContentType.JSON;
-}
-
-/**
- * Creates an AuditEvent for a subscription attempt.
- * @param request - The bot request.
- * @param startTime - The time the execution attempt started.
- * @param outcome - The outcome code.
- * @param outcomeDesc - The outcome description text.
- */
-export async function createAuditEvent(
-  request: BotExecutionRequest,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc: string
-): Promise<void> {
-  const { bot, runAs, requester, input, subscription, agent, device } = request;
-  const trigger = bot.auditEventTrigger ?? 'always';
-  if (
-    trigger === 'never' ||
-    (trigger === 'on-error' && outcome === AuditEventOutcome.Success) ||
-    (trigger === 'on-output' && outcomeDesc.length === 0)
-  ) {
-    return;
-  }
-
-  const auditEvent: AuditEvent = {
-    resourceType: 'AuditEvent',
-    meta: {
-      project: resolveId(runAs.project) as string,
-      account: bot.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: { system: 'https://medplum.com/CodeSystem/audit-event', code: 'execute' },
-    agent: [
-      {
-        who: requester as Reference<ProfileResource>,
-        requestor: true,
-      },
-      {
-        who: runAs.profile as Reference<ProfileResource>,
-        requestor: false,
-      },
-    ],
-    source: { observer: createReference(bot) },
-    entity: createAuditEventEntities(bot, input, subscription, agent, device),
-    outcome,
-    outcomeDesc,
-    extension: buildTracingExtension(),
-  };
-
-  const config = getConfig();
-  for (const destination of bot.auditEventDestination ?? ['resource']) {
-    switch (destination) {
-      case 'resource':
-        await getSystemRepo().createResource<AuditEvent>({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultOutputLength),
-        });
-        break;
-      case 'log':
-        logAuditEvent({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultOutputLength),
-        });
-        break;
-    }
-  }
-}
-
-function tail(str: string, n: number): string {
-  return str.substring(str.length - n);
 }
 
 /**

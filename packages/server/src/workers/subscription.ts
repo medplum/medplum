@@ -49,9 +49,9 @@ import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
-import { AuditEventOutcome } from '../util/auditevent';
+import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
-import { createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import { findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -549,7 +549,7 @@ async function sendRestHook(
     fetchEndTime = Date.now();
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
-    await createAuditEvent(
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -563,7 +563,7 @@ async function sendRestHook(
   } catch (ex) {
     fetchEndTime = Date.now();
     log.info('Subscription exception: ' + ex);
-    await createAuditEvent(
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,

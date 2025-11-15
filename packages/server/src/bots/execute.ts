@@ -3,9 +3,9 @@
 import { runInLambda } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
-import { AuditEventOutcome } from '../util/auditevent';
+import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
 import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
-import { createAuditEvent, getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
+import { getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
 import { runInVmContext } from './vmcontext';
 
 /**
@@ -48,7 +48,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
   recordHistogramValue('medplum.bot.execute.time', executionTime, { attributes });
 
-  await createAuditEvent(
+  await createBotAuditEvent(
     request,
     startTime,
     result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
