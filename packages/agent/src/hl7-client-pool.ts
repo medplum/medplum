@@ -100,7 +100,7 @@ export class Hl7ClientPool {
   private runClientGc(): void {
     for (const client of this.clients) {
       // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago, call closeAndRemoveClient
-      if ((this.lastUsedTimestamps.get(client) ?? 0) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {
+      if ((this.lastUsedTimestamps.get(client) as number) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {
         this.closeAndRemoveClient(client);
       }
     }
@@ -225,6 +225,12 @@ export class Hl7ClientPool {
       keepAlive: this.keepAlive,
       log: this.log,
     });
+
+    // If GC is running, we should add the current timestamp as last used for this client
+    if (this.gcListener) {
+      this.lastUsedTimestamps.set(client, Date.now());
+    }
+
     if (this.trackingStats) {
       client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
     }
