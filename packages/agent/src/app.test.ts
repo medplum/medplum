@@ -3583,7 +3583,7 @@ describe('App', () => {
         status: 'active',
         setting: [
           { name: 'keepAlive', valueBoolean: true },
-          { name: 'logStatsFreqSecs', valueInteger: 60 },
+          { name: 'logStatsFreqSecs', valueInteger: 1 },
         ],
       });
 
@@ -3635,12 +3635,16 @@ describe('App', () => {
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
 
+      // Wait a little less than 1000 ms since we are logging stats every 1 sec and we already waited ~100ms(?) above
+      await sleep(900);
+
       await app.stop();
       await hl7Server.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
 
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Agent stats'));
       console.log = originalConsoleLog;
     });
 

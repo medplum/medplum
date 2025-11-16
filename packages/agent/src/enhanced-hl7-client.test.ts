@@ -237,6 +237,7 @@ describe('EnhancedHl7Client', () => {
       // All RTTs should be recorded
       expect(client.stats?.getPendingCount()).toBe(0);
       expect(client.stats?.getSampleCount()).toBe(3);
+      expect(client.stats?.getRttSamples().length).toBe(3);
 
       const stats = client.stats?.getRttStats();
       expect(stats?.count).toBe(3);
