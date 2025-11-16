@@ -510,6 +510,47 @@ describe('Hl7ClientPool', () => {
       expect(pool.size()).toBe(1);
     });
 
+    test('runClientGc does not close clients with pending messages', async () => {
+      const log = new Logger(() => undefined);
+      const pool = new Hl7ClientPool({
+        host: 'localhost',
+        port,
+        keepAlive: false,
+        maxClients: 1,
+        log,
+        heartbeatEmitter: new TypedEventTarget(),
+      });
+
+      jest.useFakeTimers();
+      jest.setSystemTime(0);
+
+      const closeMock = jest.fn().mockResolvedValue(undefined);
+      const client = createFakeClient({ closeMock, connection: true });
+      const pendingSpy = client.connection?.getPendingMessageCount as jest.Mock;
+
+      pendingSpy.mockReturnValue(2);
+      pool.getClients().push(client);
+      pool.releaseClient(client);
+
+      jest.setSystemTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+      pool.runClientGc();
+
+      expect(closeMock).not.toHaveBeenCalled();
+      expect(pool.size()).toBe(1);
+
+      // Now release client again after pending messages are processed
+      pendingSpy.mockReturnValue(0);
+      pool.releaseClient(client);
+
+      jest.advanceTimersByTime(CLIENT_RELEASE_COUNTDOWN_MS + 1);
+      pool.runClientGc();
+
+      expect(closeMock).toHaveBeenCalledTimes(1);
+      expect(pool.size()).toBe(0);
+
+      await pool.closeAll();
+    });
+
     test('runClientGc no-ops when keepAlive is enabled', () => {
       const log = new Logger(() => undefined);
       const pool = new Hl7ClientPool({

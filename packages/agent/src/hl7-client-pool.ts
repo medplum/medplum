@@ -109,8 +109,12 @@ export class Hl7ClientPool {
       return;
     }
     for (const client of this.clients) {
-      // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago, call closeAndRemoveClient
-      if ((this.lastUsedTimestamps.get(client) as number) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now()) {
+      // If the last time the client was used was more than CLIENT_RELEASE_COUNTDOWN_MS milliseconds ago,
+      // and there are no pending messages, call closeAndRemoveClient
+      if (
+        (this.lastUsedTimestamps.get(client) as number) + CLIENT_RELEASE_COUNTDOWN_MS <= Date.now() &&
+        !client.connection?.getPendingMessageCount()
+      ) {
         this.closeAndRemoveClient(client);
       }
     }
@@ -220,6 +224,7 @@ export class Hl7ClientPool {
     // We use a naive round-robin strategy for getting the next client
     const client = this.clients[this.nextClientIdx];
     this.nextClientIdx = (this.nextClientIdx + 1) % this.clients.length;
+    this.lastUsedTimestamps.set(client, Date.now());
     return client;
   }
 
