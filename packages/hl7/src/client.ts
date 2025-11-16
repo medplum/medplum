@@ -210,6 +210,10 @@ export class Hl7Client extends Hl7Base {
       const connection = this.connection;
       delete this.connection;
       await connection.close();
+    } else {
+      // Emit close event because the connection will not be able to emit it for us
+      // Since it has not connected at this point
+      this.dispatchEvent(new Hl7CloseEvent());
     }
     // Close the socket if it exists
     if (this.socket) {

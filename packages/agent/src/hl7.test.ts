@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   AckCode,
+  AgentHeartbeatResponse,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
 } from '@medplum/core';
-import { allOk, ContentType, createReference, Hl7Message, LogLevel, sleep } from '@medplum/core';
+import { allOk, ContentType, createReference, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
@@ -24,6 +25,12 @@ import {
   shouldSendAppLevelAck,
 } from './hl7';
 import { createMockLogger } from './test-utils';
+
+jest.mock('./constants', () => ({
+  ...jest.requireActual('./constants'),
+  // We don't care about how fast the clients release in these tests
+  CLIENT_RELEASE_COUNTDOWN_MS: 0,
+}));
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -76,6 +83,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -152,6 +170,17 @@ describe('HL7', () => {
                 callback: command.callback,
                 body: 'Something bad happened',
               } satisfies AgentTransmitResponse)
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -234,6 +263,17 @@ describe('HL7', () => {
             )
           );
         }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
+            )
+          );
+        }
       });
     });
 
@@ -304,6 +344,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -386,6 +437,17 @@ describe('HL7', () => {
                 remote: command.remote,
                 body: ackMessage.toString(),
               })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
             )
           );
         }
@@ -678,8 +740,11 @@ describe('HL7', () => {
     }
     expect(hl7Messages.length).toBe(1);
 
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
     // Make sure we are not keeping clients around yet
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -702,7 +767,11 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Update config and make agent reload config
     const updatedAgent1 = await medplum.updateResource({
@@ -723,6 +792,9 @@ describe('HL7', () => {
     while (!state.reloadConfigResponse) {
       await sleep(20);
     }
+
+    // Size is zero again since we cleared out the pools
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -745,7 +817,19 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(3);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
+
+    // Capture the socket from the kept-alive client
+    const pool = app.hl7Clients.get('mllp://localhost:57001');
+    expect(pool).toBeDefined();
+    const clientsBeforeReload = pool?.getClients();
+    expect(clientsBeforeReload).toBeDefined();
+    expect(clientsBeforeReload?.length).toBe(1);
+    const clientBeforeReload = clientsBeforeReload?.[0];
+    expect(clientBeforeReload?.connection).toBeDefined();
+    expect(clientBeforeReload?.connection?.socket).toBeDefined();
+    const socketBeforeReload = clientBeforeReload?.connection?.socket;
+    expect(socketBeforeReload?.closed).toBe(false);
 
     wsClient.send(
       Buffer.from(
@@ -768,7 +852,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(4);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // Set the config back to keepAlive !== true
     const updatedAgent2 = await medplum.updateResource({
@@ -791,6 +875,11 @@ describe('HL7', () => {
       await sleep(20);
     }
 
+    // After reloading with keepAlive changed from true to false, all pools should be cleared
+    expect(app.hl7Clients.size).toStrictEqual(0);
+    // Verify the socket from before the reload is now closed
+    expect(socketBeforeReload?.closed).toBe(true);
+
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -812,7 +901,11 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(5);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -835,7 +928,11 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(6);
-    expect(app.hl7Clients.size).toStrictEqual(0);
+
+    // Run GC manually
+    app.hl7Clients.get('mllp://localhost:57001')?.runClientGc();
+
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     // Shutdown everything
     await hl7Server.stop();
@@ -941,15 +1038,15 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // After stopping the server (and therefore closing the connection),
     // We should no longer have an open client to the given server
     await hl7Server.stop();
-    while (app.hl7Clients.size !== 0) {
+    while (app.hl7Clients.get('mllp://localhost:57001')?.size() !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     await app.stop();
     mockServer.stop();
@@ -1063,11 +1160,15 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     // An error happened
-    const hl7Client = app.hl7Clients.get('mllp://localhost:57001');
-    expect(hl7Client).toBeDefined();
+    const hl7ClientPool = app.hl7Clients.get('mllp://localhost:57001');
+    expect(hl7ClientPool).toBeDefined();
+    const clients = hl7ClientPool?.getClients();
+    expect(clients).toBeDefined();
+    expect(clients?.length).toBeGreaterThan(0);
+    const hl7Client = clients?.[0];
     expect(hl7Client?.connection).toBeDefined();
     expect(hl7Client?.connection?.socket).toBeDefined();
 
@@ -1075,10 +1176,16 @@ describe('HL7', () => {
 
     // We should no longer have an open client to the given server
     // Since an error has occurred
-    while (app.hl7Clients.size !== 0) {
+    while (app.hl7Clients.get('mllp://localhost:57001')?.size() !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toStrictEqual(0);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
+      )
+    );
 
     // Set the socket to timeout on inactivity since we are not going to manually close the connection
     mode = 'TIMEOUT';
@@ -1106,19 +1213,648 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toStrictEqual(1);
+    expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(1);
 
     await hl7Server.stop();
     await app.stop();
     mockServer.stop();
 
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining(
-        `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
+    console.log = originalConsoleLog;
+  });
+
+  test('Default maxClientsPerRemote of 5 in non-keepAlive mode', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+    let mySocket: Client | undefined = undefined;
+
+    mockServer.on('connection', (socket) => {
+      mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    // Start an HL7 listener that doesn't respond immediately
+    const releaseMessages: (() => void)[] = [];
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        releaseMessages.push(() => {
+          conn.send(message.buildAck());
+        });
+      });
+    });
+    await hl7Server.start(57002);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!mySocket) {
+      await sleep(20);
+    }
+
+    const wsClient = mySocket as unknown as Client;
+
+    // Send 10 concurrent messages - should all get clients
+    const promises: Promise<void>[] = [];
+    for (let i = 0; i < 10; i++) {
+      promises.push(
+        new Promise<void>((resolve) => {
+          wsClient.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:transmit:request',
+                body:
+                  `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+                  'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+                remote: 'mllp://localhost:57002',
+                contentType: ContentType.HL7_V2,
+              } satisfies AgentTransmitRequest)
+            )
+          );
+          resolve();
+        })
+      );
+    }
+    await Promise.all(promises);
+
+    // Wait for all messages to be received
+    while (releaseMessages.length < 5) {
+      await sleep(20);
+    }
+
+    // Pool should have exactly 5 clients
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(5);
+
+    // Send one more message - should wait since we're at limit
+    wsClient.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          body:
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00010|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+          remote: 'mllp://localhost:57002',
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
-    console.log = originalConsoleLog;
+    // Give it a moment to process
+    await sleep(50);
+
+    // Should still be at 5 clients, not 6
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(5);
+
+    // Release one message
+    releaseMessages[0]();
+    await sleep(50);
+
+    // In non-keepAlive mode, releasing should allow the 11th message through
+    while (releaseMessages.length < 6) {
+      await sleep(20);
+    }
+
+    // Still should have at most 5 clients at any time
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toBeLessThanOrEqual(5);
+
+    // Release remaining messages
+    for (let i = 1; i < releaseMessages.length; i++) {
+      releaseMessages[i]();
+    }
+
+    // Run GC manually
+    // This test sends a few messages very quickly and so its likely these clients are clearing out messages for a few ms
+    while (app.hl7Clients.get('mllp://localhost:57002')?.size()) {
+      await sleep(20);
+      app.hl7Clients.get('mllp://localhost:57002')?.runClientGc();
+    }
+
+    // Should have no clients left in pool after all messages released
+    expect(app.hl7Clients.get('mllp://localhost:57002')?.size()).toStrictEqual(0);
+
+    await hl7Server.stop();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('Default maxClientsPerRemote of 1 in keepAlive mode', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+    let mySocket: Client | undefined = undefined;
+
+    mockServer.on('connection', (socket) => {
+      mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+      setting: [{ name: 'keepAlive', valueBoolean: true }],
+    });
+
+    const releaseMessages: (() => void)[] = [];
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        releaseMessages.push(() => {
+          conn.send(message.buildAck());
+        });
+      });
+    });
+    await hl7Server.start(57003);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!mySocket) {
+      await sleep(20);
+    }
+
+    const wsClient = mySocket as unknown as Client;
+
+    // Send 3 concurrent messages - only 1 should get a client immediately
+    for (let i = 0; i < 3; i++) {
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            body:
+              `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+            remote: 'mllp://localhost:57003',
+            contentType: ContentType.HL7_V2,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+    }
+
+    // Wait for first message to be received
+    while (releaseMessages.length < 1) {
+      await sleep(20);
+    }
+
+    // Pool should have exactly 1 client (default for keepAlive)
+    expect(app.hl7Clients.get('mllp://localhost:57003')?.size()).toStrictEqual(1);
+
+    // Second and third messages should be waiting
+    expect(releaseMessages.length).toStrictEqual(3);
+
+    // Release first message
+    releaseMessages[0]();
+
+    // Wait for second message
+    while (releaseMessages.length < 2) {
+      await sleep(20);
+    }
+
+    // Should still be 1 client (reused in keepAlive mode)
+    expect(app.hl7Clients.get('mllp://localhost:57003')?.size()).toStrictEqual(1);
+
+    // Release second message
+    releaseMessages[1]();
+
+    // Wait for third message
+    while (releaseMessages.length < 3) {
+      await sleep(20);
+    }
+
+    // Should still be 1 client
+    expect(app.hl7Clients.get('mllp://localhost:57003')?.size()).toStrictEqual(1);
+
+    // Release third message
+    releaseMessages[2]();
+
+    await sleep(50);
+
+    // Should still be 1 client
+    expect(app.hl7Clients.get('mllp://localhost:57003')?.size()).toStrictEqual(1);
+
+    await app.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+    mockServer.stop();
+  });
+
+  test('Setting maxClientsPerRemote in non-keepAlive mode', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+    let mySocket: Client | undefined = undefined;
+
+    mockServer.on('connection', (socket) => {
+      mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+      setting: [
+        { name: 'keepAlive', valueBoolean: false },
+        { name: 'maxClientsPerRemote', valueInteger: 3 },
+      ],
+    });
+
+    const releaseMessages: (() => void)[] = [];
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        releaseMessages.push(() => {
+          conn.send(message.buildAck());
+        });
+      });
+    });
+    await hl7Server.start(57004);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!mySocket) {
+      await sleep(20);
+    }
+
+    const wsClient = mySocket as unknown as Client;
+
+    // Send 5 concurrent messages - only 3 should get clients immediately
+    for (let i = 0; i < 5; i++) {
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            body:
+              `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+            remote: 'mllp://localhost:57004',
+            contentType: ContentType.HL7_V2,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+    }
+
+    // Wait for first 3 messages to be received
+    while (releaseMessages.length < 3) {
+      await sleep(20);
+    }
+
+    // Pool should have exactly 3 clients (our custom limit)
+    expect(app.hl7Clients.get('mllp://localhost:57004')?.size()).toStrictEqual(3);
+
+    await sleep(50);
+    expect(releaseMessages.length).toStrictEqual(5);
+
+    // Release first message
+    releaseMessages[0]();
+    await sleep(50);
+
+    // Should now receive 4th message
+    while (releaseMessages.length < 4) {
+      await sleep(20);
+    }
+
+    // Release remaining messages
+    for (let i = 1; i < releaseMessages.length; i++) {
+      releaseMessages[i]();
+      await sleep(30);
+    }
+
+    // All 5 messages should eventually be processed
+    expect(releaseMessages.length).toStrictEqual(5);
+
+    // Run GC manually
+    // We do it in a loop until all clients are idle and get cleaned up
+    while (app.hl7Clients.get('mllp://localhost:57004')?.size()) {
+      await sleep(20);
+      app.hl7Clients.get('mllp://localhost:57004')?.runClientGc();
+    }
+
+    // Pool should have exactly 0 clients after all messages complete
+    expect(app.hl7Clients.get('mllp://localhost:57004')?.size()).toStrictEqual(0);
+
+    await app.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+    mockServer.stop();
+  });
+
+  test('Setting maxClientsPerRemote in keepAlive mode', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+    let mySocket: Client | undefined = undefined;
+
+    mockServer.on('connection', (socket) => {
+      mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+      setting: [
+        { name: 'keepAlive', valueBoolean: true },
+        { name: 'maxClientsPerRemote', valueInteger: 6 },
+      ],
+    });
+
+    const releaseMessages: (() => void)[] = [];
+    const hl7Messages: Hl7Message[] = [];
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        hl7Messages.push(message);
+        releaseMessages.push(() => {
+          conn.send(message.buildAck());
+        });
+      });
+    });
+    await hl7Server.start(57005);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!mySocket) {
+      await sleep(20);
+    }
+
+    const wsClient = mySocket as unknown as Client;
+
+    // Send 8 concurrent messages - only 5 should get clients immediately
+    for (let i = 0; i < 9; i++) {
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            body:
+              `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+            remote: 'mllp://localhost:57005',
+            contentType: ContentType.HL7_V2,
+          } satisfies AgentTransmitRequest)
+        )
+      );
+    }
+
+    // Wait for first 5 messages to be received
+    while (releaseMessages.length < 6) {
+      await sleep(20);
+    }
+
+    // Pool should have exactly 5 clients (our custom limit for keepAlive)
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
+
+    // Should not have received more than 5 messages yet
+    await sleep(50);
+    expect(releaseMessages.length).toBeGreaterThanOrEqual(5);
+
+    // Release 3 messages to make clients available
+    for (let i = 0; i < 3; i++) {
+      releaseMessages[i]();
+      await sleep(30);
+    }
+
+    // Wait for next 3 messages (6, 7, 8) to be received
+    while (releaseMessages.length < 8) {
+      await sleep(20);
+    }
+
+    // Should still have 5 clients max (reused in keepAlive)
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
+
+    // All 8 messages should now be processed
+    expect(releaseMessages.length).toStrictEqual(9);
+
+    // Release remaining messages
+    for (let i = 6; i < releaseMessages.length; i++) {
+      releaseMessages[i]();
+    }
+
+    await sleep(50);
+
+    // Should still have 5 clients max
+    expect(app.hl7Clients.get('mllp://localhost:57005')?.size()).toStrictEqual(6);
+
+    await app.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+    mockServer.stop();
+  });
+
+  test('Updating maxClientsPerRemote without changing keepAlive updates pool limit', async () => {
+    const state = {
+      reloadConfigResponse: null as AgentReloadConfigResponse | null,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    let mySocket: Client | undefined = undefined;
+
+    mockServer.on('connection', (socket) => {
+      mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        } else if (command.type === 'agent:reloadconfig:response') {
+          state.reloadConfigResponse = command;
+        }
+      });
+    });
+
+    // Start with keepAlive = true and maxClientsPerRemote = 2
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+      setting: [
+        { name: 'keepAlive', valueBoolean: true },
+        { name: 'maxClientsPerRemote', valueInteger: 2 },
+      ],
+    });
+
+    const hl7Messages: Hl7Message[] = [];
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        hl7Messages.push(message);
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server.start(57006);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!mySocket) {
+      await sleep(20);
+    }
+
+    const wsClient = mySocket as unknown as Client;
+
+    // Send a message to create the pool
+    wsClient.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          body:
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-',
+          remote: 'mllp://localhost:57006',
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    // Wait for message to be received
+    while (hl7Messages.length < 1) {
+      await sleep(20);
+    }
+
+    // Pool should exist with maxClients = 2
+    const pool = app.hl7Clients.get('mllp://localhost:57006');
+    expect(pool).toBeDefined();
+    expect(pool?.getMaxClients()).toStrictEqual(2);
+
+    // Now update config: keepAlive stays true, but increase maxClientsPerRemote to 5
+    await medplum.updateResource({
+      ...agent,
+      setting: [
+        { name: 'keepAlive', valueBoolean: true },
+        { name: 'maxClientsPerRemote', valueInteger: 5 },
+      ],
+    });
+
+    wsClient.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:reloadconfig:request',
+          callback: randomUUID(),
+        } satisfies AgentReloadConfigRequest)
+      )
+    );
+
+    while (!state.reloadConfigResponse) {
+      await sleep(20);
+    }
+
+    // Pool should still exist since keepAlive didn't change
+    const poolAfterReload = app.hl7Clients.get('mllp://localhost:57006');
+    expect(poolAfterReload).toBeDefined();
+    // Verify maxClients was updated to 5
+    expect(poolAfterReload?.getMaxClients()).toStrictEqual(5);
+
+    // Now change to maxClientsPerRemote = 3 (keepAlive still true)
+    await medplum.updateResource({
+      ...agent,
+      setting: [
+        { name: 'keepAlive', valueBoolean: true },
+        { name: 'maxClientsPerRemote', valueInteger: 3 },
+      ],
+    });
+
+    state.reloadConfigResponse = null;
+    wsClient.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:reloadconfig:request',
+          callback: randomUUID(),
+        } satisfies AgentReloadConfigRequest)
+      )
+    );
+
+    while (!state.reloadConfigResponse) {
+      await sleep(20);
+    }
+
+    // Verify maxClients was updated to 3
+    expect(poolAfterReload?.getMaxClients()).toStrictEqual(3);
+
+    await app.stop();
+    await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+    mockServer.stop();
   });
 
   describe('Channel stats tracking', () => {
@@ -1161,6 +1897,17 @@ describe('HL7', () => {
                 )
               );
             }
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
+              )
+            );
           }
         });
       });
@@ -1334,6 +2081,17 @@ describe('HL7', () => {
                   contentType: ContentType.HL7_V2,
                   body: ackMessage.toString(),
                 } satisfies AgentTransmitResponse)
+              )
+            );
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
               )
             );
           }
