@@ -3635,8 +3635,8 @@ describe('App', () => {
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
 
-      // Wait a little less than 1000 ms since we are logging stats every 1 sec and we already waited ~100ms(?) above
-      await sleep(900);
+      // Wait at least 1000 ms since we are logging stats every 1 sec
+      await sleep(1000);
 
       await app.stop();
       await hl7Server.stop();
