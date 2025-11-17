@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && tsx src/scripts/deploy-bots.ts",
-    "clean": "rimraf dist",
+    "build:bots": "npm run clean && tsc && node --no-warnings esbuild-script.mjs && tsx src/scripts/deploy-bots.ts",
+    "clean": "rimraf dist data/example/example-bots.json",
     "dev": "vite",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
@@ -34,6 +34,7 @@
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
+    "esbuild": "0.27.0",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
