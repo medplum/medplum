@@ -20,8 +20,8 @@
     "@mantine/notifications": "8.3.7",
     "@medplum/core": "5.0.3",
     "@medplum/react": "5.0.3",
-    "@next/bundle-analyzer": "15.5.6",
-    "next": "15.5.6",
+    "@next/bundle-analyzer": "16.0.3",
+    "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "rfc6902": "5.1.2"
@@ -32,7 +32,7 @@
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.1",
-    "eslint-config-next": "15.5.6",
+    "eslint-config-next": "16.0.3",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "typescript": "5.9.3"
