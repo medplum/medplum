@@ -2765,6 +2765,20 @@ describe('AccessPolicy', () => {
       },
       'axp-3',
     ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?patient.name=Dave',
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?_has:DiagnosticReport:result:identifier=foo',
+      },
+      'axp-3',
+    ],
   ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
@@ -2772,6 +2786,21 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  it('Server accepts criteria that starts with escape code', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Device',
+              criteria: 'Device?identifier=foo', // Since \D is a character class, it could cause confusion
+            },
+          ],
+        })
+      ).resolves.toBeDefined();
+    }));
 
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {

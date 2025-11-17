@@ -33,12 +33,15 @@ import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
   RETRY_WAIT_DURATION_MS: 200,
+  // We don't care about how fast the clients release in these tests
+  CLIENT_RELEASE_COUNTDOWN_MS: 0,
 }));
 
 jest.mock('./pid', () => ({
@@ -3438,8 +3441,8 @@ describe('App', () => {
     // Verify that persistent clients were created
     expect(app.hl7Clients.size).toStrictEqual(2);
 
-    // Spy on client.close() to verify it's called
-    const closeSpies = Array.from(app.hl7Clients.values()).map((client) => jest.spyOn(client, 'close'));
+    // Spy on pool.closeAll() to verify it's called
+    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => jest.spyOn(pool, 'closeAll'));
 
     // Stop the app
     await app.stop();
@@ -3447,7 +3450,7 @@ describe('App', () => {
     expect(app.hl7Clients.size).toStrictEqual(0);
 
     // Verify that close was called on all clients
-    for (const closeSpy of closeSpies) {
+    for (const closeSpy of closeAllSpies) {
       expect(closeSpy).toHaveBeenCalled();
     }
 
@@ -3511,11 +3514,6 @@ describe('App', () => {
       });
       await hl7Server.start(58100);
 
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
-
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -3539,8 +3537,13 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const pool = app.hl7Clients.get('mllp://localhost:58100') as Hl7ClientPool;
+
+      // Run client GC manually
+      pool.runClientGc();
+
       // Client should not be in the hl7Clients map (because keepAlive is false)
-      expect(app.hl7Clients.size).toBe(0);
+      expect(pool.size()).toStrictEqual(0);
 
       await app.stop();
       await hl7Server.stop();
@@ -3580,7 +3583,7 @@ describe('App', () => {
         status: 'active',
         setting: [
           { name: 'keepAlive', valueBoolean: true },
-          { name: 'logStatsFreqSecs', valueInteger: 60 },
+          { name: 'logStatsFreqSecs', valueInteger: 1 },
         ],
       });
 
@@ -3599,11 +3602,6 @@ describe('App', () => {
         });
       });
       await hl7Server.start(58101);
-
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
 
       // Send a message
       const hl7MessageBody =
@@ -3628,12 +3626,17 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should be in the hl7Clients map and should have stats tracking
+      // Pool should be in the hl7Clients map and should have stats tracking
       expect(app.hl7Clients.size).toBe(1);
-      const client = app.hl7Clients.get('mllp://localhost:58101');
-      expect(client).toBeDefined();
+      const pool = app.hl7Clients.get('mllp://localhost:58101');
+      expect(pool).toBeDefined();
+      expect(pool?.isTrackingStats()).toBe(true);
+      const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
       expect(client?.stats?.getSampleCount()).toBe(1);
+
+      // Wait at least 1000 ms since we are logging stats every 1 sec
+      await sleep(1000);
 
       await app.stop();
       await hl7Server.stop();
@@ -3641,6 +3644,7 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Agent stats'));
       console.log = originalConsoleLog;
     });
 
@@ -3743,12 +3747,12 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Should have 2 clients with stats
+      // Should have 2 pools with stats tracking enabled
       expect(app.hl7Clients.size).toBe(2);
-      const client1 = app.hl7Clients.get('mllp://localhost:58102');
-      const client2 = app.hl7Clients.get('mllp://localhost:58103');
-      expect(client1?.stats).toBeDefined();
-      expect(client2?.stats).toBeDefined();
+      const pool1 = app.hl7Clients.get('mllp://localhost:58102');
+      const pool2 = app.hl7Clients.get('mllp://localhost:58103');
+      expect(pool1?.isTrackingStats()).toBe(true);
+      expect(pool2?.isTrackingStats()).toBe(true);
 
       // Update agent to disable keepAlive
       await medplum.updateResource<Agent>({
@@ -3838,11 +3842,6 @@ describe('App', () => {
       });
       await hl7Server.start(58104);
 
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
-
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -3866,10 +3865,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should have stats
+      // Pool should have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      const client = app.hl7Clients.get('mllp://localhost:58104');
-      expect(client?.stats).toBeDefined();
+      const pool = app.hl7Clients.get('mllp://localhost:58104');
+      expect(pool?.isTrackingStats()).toBe(true);
 
       // Update agent to disable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -3891,10 +3890,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should still exist but stats should be undefined
+      // Pool should still exist but stats tracking should be disabled
       expect(app.hl7Clients.size).toBe(1);
-      const clientAfterReload = app.hl7Clients.get('mllp://localhost:58104');
-      expect(clientAfterReload?.stats).toBeUndefined();
+      const poolAfterReload = app.hl7Clients.get('mllp://localhost:58104');
+      expect(poolAfterReload?.isTrackingStats()).toBe(false);
 
       await app.stop();
       await hl7Server.stop();
@@ -3954,11 +3953,6 @@ describe('App', () => {
       });
       await hl7Server.start(58105);
 
-      // Wait for server to start listening
-      while (!hl7Server.server?.listening) {
-        await sleep(100);
-      }
-
       // Send a message
       const hl7MessageBody =
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -3982,10 +3976,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should exist but not have stats
+      // Pool should exist but not have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      let client = app.hl7Clients.get('mllp://localhost:58105');
-      expect(client?.stats).toBeUndefined();
+      let pool = app.hl7Clients.get('mllp://localhost:58105');
+      expect(pool?.isTrackingStats()).toBe(false);
 
       // Update agent to enable logStatsFreqSecs
       await medplum.updateResource<Agent>({
@@ -4010,10 +4004,10 @@ describe('App', () => {
         await sleep(100);
       }
 
-      // Client should now have stats tracking
+      // Pool should now have stats tracking enabled
       expect(app.hl7Clients.size).toBe(1);
-      client = app.hl7Clients.get('mllp://localhost:58105');
-      expect(client?.stats).toBeDefined();
+      pool = app.hl7Clients.get('mllp://localhost:58105');
+      expect(pool?.isTrackingStats()).toBe(true);
 
       // Send another message to verify stats tracking works
       state.transmitResponses = [];
@@ -4039,6 +4033,7 @@ describe('App', () => {
       }
 
       // Stats should have recorded the new message
+      const client = pool?.getClients()[0];
       expect(client?.stats?.getSampleCount()).toBe(1);
 
       await app.stop();

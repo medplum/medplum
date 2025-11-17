@@ -10,7 +10,7 @@ import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';

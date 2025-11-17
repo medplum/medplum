@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -45,11 +45,11 @@
     "@google-cloud/secret-manager": "6.1.1",
     "@google-cloud/storage": "7.17.2",
     "@kubernetes/client-node": "1.4.0",
-    "@medplum/bot-layer": "5.0.2",
-    "@medplum/ccda": "5.0.2",
-    "@medplum/core": "5.0.2",
-    "@medplum/definitions": "5.0.2",
-    "@medplum/fhir-router": "5.0.2",
+    "@medplum/bot-layer": "5.0.3",
+    "@medplum/ccda": "5.0.3",
+    "@medplum/core": "5.0.3",
+    "@medplum/definitions": "5.0.3",
+    "@medplum/fhir-router": "5.0.3",
     "@modelcontextprotocol/sdk": "1.20.2",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.207.0",
     "@opentelemetry/exporter-trace-otlp-proto": "0.207.0",
@@ -99,7 +99,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "30.2.0",
-    "@medplum/fhirtypes": "5.0.2",
+    "@medplum/fhirtypes": "5.0.3",
     "@types/body-parser": "1.19.6",
     "@types/bytes": "3.1.5",
     "@types/compression": "1.8.1",

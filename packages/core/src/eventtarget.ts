@@ -53,6 +53,15 @@ export class EventTarget {
     // @ts-expect-error Normally listeners is read-only. In this case we are dumping all listeners
     this.listeners = {};
   }
+
+  /**
+   * Gets the number of listeners for the provided Event type.
+   * @param type - The name of the Event type.
+   * @returns The number of listeners for this Event type.
+   */
+  listenerCount(type: string): number {
+    return this.listeners[type]?.length ?? 0;
+  }
 }
 
 export class TypedEventTarget<TEvents extends Record<string, Event>> {
@@ -78,5 +87,14 @@ export class TypedEventTarget<TEvents extends Record<string, Event>> {
 
   removeAllListeners(): void {
     this.emitter.removeAllListeners();
+  }
+
+  /**
+   * Gets the number of listeners for the provided Event type.
+   * @param type - The name of the Event type.
+   * @returns The number of listeners for this Event type.
+   */
+  listenerCount<TEventType extends keyof TEvents & string>(type: TEventType): number {
+    return this.emitter.listenerCount(type);
   }
 }

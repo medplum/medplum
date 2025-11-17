@@ -20,15 +20,6 @@ tags: [community]
   </thead>
   <tbody>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Oct 30, 2025, 10:00 AM PT</td>
-      <td>**Scheduling Agents for Healthcare Operations**</td>
-      <td>[Zoom](https://luma.com/npl7y6cm)</td>
-      <td align="center">
-        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-        Cody Hall from Unity AI, [Medplum Team](https://github.com/reshmakh)
-      </td>
-    </tr>
-    <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Nov 18, 2025, 8:00 AM PT</td>
       <td>**FHIR Made Fast: Delivering Production-Ready Healthcare Apps in 12 Weeks with Medplum**</td>
       <td>[Zoom](https://luma.com/8uglwpry)</td>
@@ -73,6 +64,15 @@ tags: [community]
     </tr>
   </thead>
   <tbody>
+  <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Oct 30, 2025, 10:00 AM PT</td>
+      <td>**Scheduling Agents for Healthcare Operations**</td>
+      <td>[Zoom](https://luma.com/npl7y6cm)</td>
+      <td align="center">
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+        Cody Hall from Unity AI, [Medplum Team](https://github.com/reshmakh)
+      </td>
+    </tr>
   <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Oct 22, 2025, 5:00 PM PT</td>
       <td>**AI x Open source : Community evening with Hatchet, Medplum and SigNoz**</td>

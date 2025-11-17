@@ -37,19 +37,20 @@ The system supports two levels of configuration:
 - **[Service type-level defined availability](#service-level-availability)**: Defined on [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) and referenced by matching `Schedule.serviceType` codes
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
-    C1[Practitioner - *Dr. Smith*] --> B1
-    A[ActivityDefinition - *Initial Visit Defaults*<br/><br/><b>Service-level defined availability</b>] -.-> B1[Schedule - *Dr. Smith's Schedule*<br/><br/><b>Actor-level defined availability</b>]
-    A -.-> B2[Schedule - *Dr. Johnson's Schedule*<br/><br/><b>Actor-level defined availability</b>]
-    C2[Practitioner - *Dr. Johnson*] --> B2
+    C1[Practitioner<br/>*Dr. Smith*] --> B1
+    A[ActivityDefinition<br/>*Initial Visit Defaults*<br/><br/><b>Service-level<br/>defined availability</b>] -.-> B1[Schedule<br/>*Dr. Smith's Schedule*<br/><br/><b>Actor-level<br/>defined availability</b>]
+    A -.-> B2[Schedule<br/>*Dr. Johnson's Schedule*<br/><br/><b>Actor-level<br/>defined availability</b>]
+    C2[Practitioner<br/>*Dr. Johnson*] --> B2
 
-    B1 --> D1[Slot - *status: busy*]
-    B1 --> D2[Slot - *status: busy-unavailable*]
-    B2 --> D3[Slot - *status: busy*]
-    B2 --> D4[Slot - *status: busy-unavailable*]
+    B1 --> D1[Slot<br/>*status: busy*]
+    B1 --> D2[Slot<br/>*status: busy-unavailable*]
+    B2 --> D3[Slot<br/>*status: busy*]
+    B2 --> D4[Slot<br/>*status: busy-unavailable*]
     
-    D1 --> E1[Appointment 1 - *status: booked*]
-    D3 --> E2[Appointment 2 - *status: booked*]
+    D1 --> E1[Appointment 1<br/>*status: booked*]
+    D3 --> E2[Appointment 2<br/>*status: booked*]
     
     style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style B1 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
@@ -446,14 +447,15 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
 - 5-minute buffers **[from ActivityDefinition]**
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
-    A[ActivityDefinition - *Office Visit Defaults*] -.-> B[Schedule - *Dr. Johnson's Schedule*]
-    C[Practitioner - *Dr. Sarah Johnson*] --> B
+    A[ActivityDefinition<br/>*Office Visit Defaults*] -.-> B[Schedule<br/>*Dr. Johnson's Schedule*]
+    C[Practitioner<br/>*Dr. Sarah Johnson*] --> B
 
-    B --> D[Slot - *status: busy*]
+    B --> D[Slot<br/>*status: busy*]
 
     subgraph "Booking"
-        D --> E[Appointment - *status: booked*]
+        D --> E[Appointment<br/>*status: booked*]
     end
 
     style A fill:#e1f5fe
@@ -603,15 +605,16 @@ This Schedule shows how to configure default availability for all services (Mon-
 - **Follow-ups**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
-    A1[ActivityDefinition - *New Patient Visit*] -. overridden on Schedule .-> B[Schedule - *Dr. Chen's Schedule*]
-    A2[ActivityDefinition - *Follow-up Visit*] -.-> B
-    C[PractitionerRole - *Dr. Chen*] --> B
+    A1[ActivityDefinition<br/>*New Patient Visit*] -. overridden on<br/>Schedule .-> B[Schedule<br/>*Dr. Chen's Schedule*]
+    A2[ActivityDefinition<br/>*Follow-up Visit*] -.-> B
+    C[PractitionerRole<br/>*Dr. Chen*] --> B
 
-    B --> D1[Slot - *status: busy*<br/>new patient]
+    B --> D1[Slot<br/>*status: busy*<br/>new patient]
 
     subgraph "Booking"
-        D1 --> E1[Appointment - *status: booked*]
+        D1 --> E1[Appointment<br/>*status: booked*]
     end
 
     style A1 fill:#e1f5fe
@@ -809,21 +812,22 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
 **Result**: When booking a bariatric surgery, the system queries all three schedules, calculates the intersection of availability, and creates atomic transaction bundles to book all required resources simultaneously.
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
-    A[ActivityDefinition - *Defaults for Bariatric Surgery*] -.-> B1[Schedule - Operating Room 3's Schedule]
-    A -.-> B2[Schedule - *Surgeon Martinez's Schedule*]
-    A -.-> B3[Schedule - *Anesthesiologist Kim's Schedule*]
+    A[ActivityDefinition<br/>*Defaults for<br/>Bariatric Surgery*] -.-> B1[Schedule<br/>*Operating Room 3's<br/>Schedule*]
+    A -.-> B2[Schedule<br/>*Surgeon Martinez's<br/>Schedule*]
+    A -.-> B3[Schedule<br/>*Anesthesiologist Kim's<br/>Schedule*]
     
-    C1[Location - *Operating Room 3*] --> B1
-    C2[Practitioner - *Surgeon Martinez*] --> B2
-    C3[Practitioner - *Anesthesiologist Kim*] --> B3
+    C1[Location<br/>*Operating Room 3*] --> B1
+    C2[Practitioner<br/>*Surgeon Martinez*] --> B2
+    C3[Practitioner<br/>*Anesthesiologist Kim*] --> B3
 
-    B1 --> D1[Slot - *status: busy*]
-    B2 --> D2[Slot - *status: busy*]
-    B3 --> D3[Slot - *status: busy*]
+    B1 --> D1[Slot<br/>*status: busy*]
+    B2 --> D2[Slot<br/>*status: busy*]
+    B3 --> D3[Slot<br/>*status: busy*]
     
     subgraph "Transaction Bundle"
-        D1 --> E1[Appointment 1 - *status: booked*]
+        D1 --> E1[Appointment 1<br/>*status: booked*]
         D2 --> E1
         D3 --> E1
     end
@@ -866,14 +870,15 @@ Organization (Surgery Center)
 - Query: `Schedule?actor:Location.partof:Location.type=OR`
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
-    A[Location - *Operating Rooms*<br/>mode=kind, type=OR] --> B1[Location - *OR-1*<br/>mode=instance]
-    A --> B2[Location - *OR-2*<br/>mode=instance]
-    A --> B3[Location - *OR-3*<br/>mode=instance]
+    A[Location<br/>*Operating Rooms*<br/>mode=kind, type=OR] --> B1[Location<br/>*OR-1*<br/>mode=instance]
+    A --> B2[Location<br/>*OR-2*<br/>mode=instance]
+    A --> B3[Location<br/>*OR-3*<br/>mode=instance]
     
-    B1 --> C1[Schedule - *OR-1 Schedule*]
-    B2 --> C2[Schedule - *OR-2 Schedule*]
-    B3 --> C3[Schedule - *OR-3 Schedule*]
+    B1 --> C1[Schedule<br/>*OR-1 Schedule*]
+    B2 --> C2[Schedule<br/>*OR-2 Schedule*]
+    B3 --> C3[Schedule<br/>*OR-3 Schedule*]
 ```
 
 ### Best Practices

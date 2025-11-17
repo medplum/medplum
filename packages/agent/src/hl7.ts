@@ -11,6 +11,23 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import { getCurrentStats, updateStat } from './stats';
 
+/**
+ * Valid values for the appLevelAck query parameter.
+ * Based on MSH-16 (Application Acknowledgment Type) in the HL7v2 specification.
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Fields/MSH-16
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Tables/0155
+ */
+export const APP_LEVEL_ACK_MODES = ['AL', 'ER', 'NE', 'SU'] as const;
+export type AppLevelAckMode = (typeof APP_LEVEL_ACK_MODES)[number];
+export const APP_LEVEL_ACK_CODES = ['AA', 'AE', 'AR'] as const;
+export type AppLevelAckCode = (typeof APP_LEVEL_ACK_CODES)[number];
+
+export interface ShouldSendAppLevelAckOptions {
+  mode: AppLevelAckMode;
+  ackCode: AppLevelAckCode;
+  enhancedMode: boolean;
+}
+
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
@@ -19,6 +36,7 @@ export class AgentHl7Channel extends BaseChannel {
   readonly channelLog: ILogger;
   private prefix: string;
   stats?: ChannelStatsTracker;
+  private appLevelAckMode: AppLevelAckMode = 'AL'; // Default app level ack mode is AL (Always)
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -63,6 +81,25 @@ export class AgentHl7Channel extends BaseChannel {
     if (connection) {
       const hl7Message = Hl7Message.parse(msg.body);
       const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
+      const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+
+      if (
+        ackCode &&
+        isAppLevelAckCode(ackCode) &&
+        !shouldSendAppLevelAck({
+          mode: this.appLevelAckMode,
+          ackCode,
+          enhancedMode: this.server.getEnhancedMode(),
+        })
+      ) {
+        this.channelLog.debug(
+          `[Skipping ACK -- Mode: ${this.appLevelAckMode} -- ID: ${msgControlId ?? 'not provided'} -- ACK: ${
+            ackCode ?? 'unknown'
+          }]`
+        );
+        return;
+      }
+
       this.channelLog.info(`[Sending ACK -- ID: ${msgControlId}]: ${hl7Message.toString().replaceAll('\r', '\n')}`);
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
 
@@ -125,6 +162,7 @@ export class AgentHl7Channel extends BaseChannel {
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
+    const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
     let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
 
     if (messagesPerMin !== undefined && !Number.isInteger(messagesPerMin)) {
@@ -133,6 +171,9 @@ export class AgentHl7Channel extends BaseChannel {
       );
       messagesPerMin = undefined;
     }
+
+    this.appLevelAckMode = parseAppLevelAckMode(appLevelAckRaw, this.log);
+
     this.server.setEncoding(encoding);
     this.server.setEnhancedMode(enhancedMode);
     this.server.setMessagesPerMin(messagesPerMin);
@@ -205,5 +246,74 @@ export class AgentHl7ChannelConnection {
 
   close(): Promise<void> {
     return this.hl7Connection.close();
+  }
+}
+
+/**
+ * Normalizes and validates the configured application-level ACK behavior.
+ *
+ * In the case that the passed-in `rawValue` is not a valid application-level ACK mode in alignment with valid values for `MSH-16`,
+ * the function returns `AL` as a fallback, since that is the assumed default mode.
+ *
+ * @param rawValue - The raw query parameter value retrieved from the endpoint URL.
+ * @param logger - The Logger instance to use for logging.
+ * @returns The parsed application-level ACK mode, or `AL` if rawValue is invalid.
+ */
+export function parseAppLevelAckMode(rawValue: string | undefined, logger: ILogger): AppLevelAckMode {
+  if (!rawValue) {
+    return 'AL';
+  }
+
+  const normalizedValue = rawValue.toUpperCase();
+  if (isAppLevelAckMode(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  logger.warn(`Invalid appLevelAck value '${rawValue}'; expected one of ${APP_LEVEL_ACK_MODES.join(', ')}. Using AL.`);
+  return 'AL';
+}
+
+/**
+ * Determines whether an ACK code is an application-level one or not.
+ * @param code - The code to verify whether it is an application-level ACK code or not.
+ * @returns True if the ACK code is an application-level one; otherwise, false.
+ */
+export function isAppLevelAckCode(code: string): code is AppLevelAckCode {
+  return (APP_LEVEL_ACK_CODES as readonly string[]).includes(code);
+}
+
+/**
+ * Determines whether a value is  is an application-level one or not.
+ * @param candidate - The candidate to check.
+ * @returns True if the value is a valid application-level ACK mode (valid MSH-16 value); otherwise, false.
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Fields/MSH-16
+ * @see https://hl7-definition.caristix.com/v2/HL7v2.3/Tables/0155
+ */
+export function isAppLevelAckMode(candidate: string): candidate is AppLevelAckMode {
+  return (APP_LEVEL_ACK_MODES as readonly string[]).includes(candidate);
+}
+
+/**
+ * Determines whether an application-level ACK should be forwarded to the remote system.
+ * @param options - The configuration describing the ACK mode, current ACK code, and whether enhanced mode is enabled.
+ * @returns True if the ACK should be forwarded to the remote system; otherwise, false.
+ */
+export function shouldSendAppLevelAck(options: ShouldSendAppLevelAckOptions): boolean {
+  const { mode, ackCode, enhancedMode } = options;
+  if (!enhancedMode) {
+    return true;
+  }
+  switch (mode) {
+    case 'AL':
+      return true;
+    case 'NE':
+      return false;
+    case 'ER':
+      return ackCode !== 'AA';
+    case 'SU':
+      return ackCode === 'AA';
+    default:
+      mode satisfies never;
+      throw new Error('Invalid app-level ACK mode provided');
   }
 }

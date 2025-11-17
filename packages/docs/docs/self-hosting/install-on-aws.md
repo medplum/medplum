@@ -43,7 +43,7 @@ At a high level, the process of installing Medplum on AWS includes:
 The resulting AWS configuration will look like the following:
 
 ![Medplum AWS Architecture](./medplum-aws-architecture.png)
-*Diagram current as of 7/21/2025*
+_Diagram current as of 7/21/2025_
 
 <p>Use this video guide as you follow the instructions:</p>
 <div className="responsive-iframe-wrapper">
@@ -186,7 +186,7 @@ Upon completion, the tool will:
 
 Make note of the CDK config file name.
 
-See [Config Settings](/docs/self-hosting/config-settings) for more details on each of the individual configuration settings.
+See [Config Settings](/docs/self-hosting/aws-cdk-settings) for more details on each of the individual configuration settings.
 
 ### (Optional) Validate Certificates
 
@@ -362,7 +362,7 @@ npx medplum aws update-server demo
 
 ### Update the Server Config
 
-Use the Medplum CLI to update the [server configuration settings](/docs/self-hosting/config-settings#server-config).
+Use the Medplum CLI to update the [server configuration settings](/docs/self-hosting/server-config).
 
 First, create a new configuration file called `medplum.[env name].server.json` to store the server config settings.
 
@@ -378,7 +378,11 @@ For example:
 npx medplum aws update-config medplum.demo.server.json
 ```
 
-Check out our documentation [server configuration settings](/docs/self-hosting/config-settings#server-config) to see a full reference of of settings.
+Check out our documentation [server configuration settings](/docs/self-hosting/server-config) to see a full reference of of settings.
+
+### Step 5 - Deploy the server
+
+Now you are ready to deploy the server.
 
 ## Troubleshooting
 
