@@ -431,10 +431,12 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome, cause?: unknown) {
-    super(operationOutcomeToString(outcome));
+  constructor(outcome: OperationOutcome, options?: ErrorOptions) {
+    super(operationOutcomeToString(outcome), options);
+    Object.setPrototypeOf(this, OperationOutcomeError.prototype);
+    this.name = this.constructor.name;
     this.outcome = outcome;
-    this.cause = cause;
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 

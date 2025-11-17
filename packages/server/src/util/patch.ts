@@ -18,6 +18,6 @@ export function patchObject(obj: any, patch: Operation[]): void {
       throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
     }
   } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
   }
 }

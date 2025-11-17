@@ -537,7 +537,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Other errors should be treated as database errors
         throw err;
       }
-      throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
     }
   }
 
@@ -1129,11 +1129,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
       if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
-        throw new OperationOutcomeError(outcome, err);
+        throw new OperationOutcomeError(outcome, { cause: err });
       }
 
       if (isNotFound(outcome) && !this.canSetId()) {
-        throw new OperationOutcomeError(outcome, err);
+        throw new OperationOutcomeError(outcome, { cause: err });
       }
 
       // Otherwise, it is ok if the resource is not found.
