@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, getReferenceString } from '@medplum/core';
+import { badRequest, ContentType, getReferenceString, unsupportedMediaType } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
@@ -290,6 +290,21 @@ describe('App', () => {
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
     await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('UnsupportedMediaTypeError', async () => {
+    const app = express();
+    app.get('/throw', () => {
+      const err = new Error('UnsupportedMediaTypeError');
+      err.name = 'UnsupportedMediaTypeError';
+      throw err;
+    });
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app).get('/throw');
+    expect(res.status).toBe(415);
+    expect(res.body).toMatchObject(unsupportedMediaType);
     expect(await shutdownApp()).toBeUndefined();
   });
 });
