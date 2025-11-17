@@ -21,7 +21,7 @@ mkdir -p coverage/combined
 # It will try to work through dependencies first
 # We can instead reduce overhead of context switching by setting concurrency to 1 and allowing jest to handle concurrency within one test suite
 # We leave out the server tests from this batch since (for now) we need to manually run the seed test separately
-npx turbo run test --filter=@medplum/app --filter=@medplum/agent --concurrency=1
+npx turbo run test --filter=!@medplum/docs --filter=!@medplum/server --concurrency=1
 
 # Seed the database for server tests
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
