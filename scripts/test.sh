@@ -21,7 +21,7 @@ mkdir -p coverage/combined
 # It will try to work through dependencies first
 # We can instead reduce overhead of context switching by setting concurrency to 1 and allowing jest to handle concurrency within one test suite
 # We leave out the server tests from this batch since (for now) we need to manually run the seed test separately
-npx turbo run test --filter=!@medplum/docs --filter=!@medplum/server --concurrency=1
+npx turbo run test --filter=!@medplum/docs --filter=!@medplum/server --concurrency=2
 
 # Seed the database for server tests
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
@@ -31,10 +31,10 @@ SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=@medplum/serv
 cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
 # Finally run the rest of the server tests
-npx turbo run test --filter=@medplum/server --concurrency=1
+npx turbo run test --filter=@medplum/server
 
 # Now run tests for all examples
-npx turbo run test --filter="./examples/*" --concurrency=1
+npx turbo run test --filter="./examples/*" --concurrency=2
 
 # Find all coverage-final.json files in packages subdirectories
 for coverage_file in packages/*/coverage/coverage-final.json; do
