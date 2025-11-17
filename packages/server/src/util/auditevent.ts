@@ -16,7 +16,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
-import { buildTracingExtension } from '../context';
+import { buildTracingExtension, getAuthenticatedContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 
 /*
@@ -203,7 +203,7 @@ export function createAuditEvent(
     meta: { project: projectId },
     type,
     subtype: [subtype],
-    action: AuditEventActionLookup[subtype.code as keyof typeof AuditEventActionLookup],
+    action: AuditEventActionLookup[subtype.code],
     recorded: new Date().toISOString(),
     source: { observer: { identifier: { value: config.baseUrl } } },
     agent: [
@@ -238,7 +238,8 @@ function buildDurationExtension(duration: number): Extension {
 
 export function applyOptionalRedaction(ref: Reference | undefined): Reference | undefined {
   const config = getConfig();
-  if (config.redactAuditEvents) {
+  const { project } = getAuthenticatedContext();
+  if (config.redactAuditEvents || project.setting?.find((s) => s.name === 'redactAuditEvents')?.valueBoolean) {
     return { ...ref, display: undefined };
   } else {
     return ref;
@@ -275,6 +276,7 @@ export async function createBotAuditEvent(
     meta: {
       project: resolveId(runAs.project) as string,
       account: bot.meta?.account,
+      accounts: bot.meta?.accounts,
     },
     period: {
       start: startTime,
@@ -347,6 +349,7 @@ export async function createSubscriptionAuditEvent(
     meta: {
       project: auditedEvent.meta?.project,
       account: auditedEvent.meta?.account,
+      accounts: auditedEvent.meta?.accounts,
     },
     period: {
       start: startTime,
