@@ -135,7 +135,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   id="timing-dialog-period"
                   name="timing-dialog-period"
                   defaultValue={value.repeat.period || 1}
-                  onChange={(e) => setPeriod(parseInt(e.currentTarget.value, 10) || 1)}
+                  onChange={(e) => setPeriod(Number.parseInt(e.currentTarget.value, 10) || 1)}
                 />
                 <NativeSelect
                   disabled={repeatPeriodUnitProps?.readonly}

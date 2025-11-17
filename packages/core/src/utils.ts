@@ -1133,7 +1133,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return parseFloat(a.toFixed(precision));
+  return Number.parseFloat(a.toFixed(precision));
 }
 
 /**
@@ -1478,13 +1478,13 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
  */
 export function escapeHtml(unsafe: string): string {
   return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/“/g, '&ldquo;')
-    .replace(/”/g, '&rdquo;')
-    .replace(/‘/g, '&lsquo;')
-    .replace(/’/g, '&rsquo;')
-    .replace(/…/g, '&hellip;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('“', '&ldquo;')
+    .replaceAll('”', '&rdquo;')
+    .replaceAll('‘', '&lsquo;')
+    .replaceAll('’', '&rsquo;')
+    .replaceAll('…', '&hellip;');
 }

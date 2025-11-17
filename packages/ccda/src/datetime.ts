@@ -94,7 +94,7 @@ export function mapFhirToCcdaDate(date: string | undefined): string | undefined 
   if (!date) {
     return undefined;
   }
-  return date.substring(0, 10).replace(/-/g, '');
+  return date.substring(0, 10).replaceAll('-', '');
 }
 
 /**
@@ -113,8 +113,8 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
 
   const outTime = (time ?? '')
     .replaceAll(/\.\d+/g, '') // Remove decimal point seconds
-    .replaceAll(/:/g, '') // Remove colons
-    .replaceAll(/Z/g, '+0000'); // Replace Z with +0000
+    .replaceAll(':', '') // Remove colons
+    .replaceAll('Z', '+0000'); // Replace Z with +0000
 
   return `${outDate}${outTime}`;
 }

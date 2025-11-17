@@ -94,7 +94,7 @@ jobs:
                     if (!folder.endsWith('.0')) {
                         continue;
                     }
-                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    const folderVersion = Number.parseInt(folder.replaceAll('.',''));
                     if (folderVersion > maxVersion) {
                         const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
                         try {

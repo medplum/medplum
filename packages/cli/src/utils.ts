@@ -121,7 +121,7 @@ export async function createBot(
 }
 
 export function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replaceAll(String.raw`\*`, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
     return [];
@@ -196,7 +196,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 /**

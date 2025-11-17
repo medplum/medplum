@@ -18,7 +18,7 @@ At a high level, if you have:
 
 An implementation will be compliant and interoperability ready.
 
-Medplum supports: US Core 5.0.1 / USCDI v2
+Medplum supports: US Core 6.1.0 / USCDI v3
 
 ## Summary Table
 

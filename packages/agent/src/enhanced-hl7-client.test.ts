@@ -1,33 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger, TypedEventTarget } from '@medplum/core';
-import { Hl7Message, LogLevel } from '@medplum/core';
+import type { ILogger } from '@medplum/core';
+import { Hl7Message, TypedEventTarget } from '@medplum/core';
 import { Hl7Server } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
-
-// Mock TypedEventTarget for heartbeat events
-class MockHeartbeatEmitter {
-  private listeners = new Map<string, Set<() => void>>();
-
-  addEventListener(event: string, listener: () => void): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    this.listeners.get(event)?.add(listener);
-  }
-
-  removeEventListener(event: string, listener: () => void): void {
-    this.listeners.get(event)?.delete(listener);
-  }
-
-  emit(event: string): void {
-    this.listeners.get(event)?.forEach((listener) => listener());
-  }
-
-  getListenerCount(event: string): number {
-    return this.listeners.get(event)?.size ?? 0;
-  }
-}
+import { createMockLogger } from './test-utils';
+import type { HeartbeatEmitter } from './types';
 
 describe('EnhancedHl7Client', () => {
   const usedPorts = [] as number[];
@@ -42,19 +20,12 @@ describe('EnhancedHl7Client', () => {
     return port;
   }
 
-  let mockHeartbeatEmitter: MockHeartbeatEmitter;
+  let mockHeartbeatEmitter: HeartbeatEmitter;
   let mockLogger: ILogger;
 
   beforeEach(() => {
-    mockHeartbeatEmitter = new MockHeartbeatEmitter();
-    mockLogger = {
-      level: LogLevel.INFO,
-      clone: jest.fn().mockImplementation(() => mockLogger),
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
+    mockHeartbeatEmitter = new TypedEventTarget();
+    mockLogger = createMockLogger();
   });
 
   describe('send with tracking off', () => {
@@ -70,6 +41,7 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       const message = Hl7Message.parse(
@@ -99,6 +71,7 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       const message = Hl7Message.parse(
@@ -129,11 +102,11 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       expect(client.stats).toBeDefined();
@@ -165,11 +138,11 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       const message = Hl7Message.parse(
@@ -201,11 +174,11 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       expect(client.stats).toBeDefined();
@@ -244,11 +217,11 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       // Send multiple messages
@@ -264,6 +237,7 @@ describe('EnhancedHl7Client', () => {
       // All RTTs should be recorded
       expect(client.stats?.getPendingCount()).toBe(0);
       expect(client.stats?.getSampleCount()).toBe(3);
+      expect(client.stats?.getRttSamples().length).toBe(3);
 
       const stats = client.stats?.getRttStats();
       expect(stats?.count).toBe(3);
@@ -284,11 +258,11 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       const message = Hl7Message.parse(
@@ -313,27 +287,26 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port: 9999,
+        log: mockLogger,
       });
 
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       const firstStatsTracker = client.stats;
       expect(firstStatsTracker).toBeDefined();
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(1);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(1);
 
       // Try to start tracking again
       client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
-        log: mockLogger,
+        heartbeatEmitter: mockHeartbeatEmitter,
       });
 
       // Should still be the same stats tracker
       expect(client.stats).toBe(firstStatsTracker);
       // Should not have added another listener
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(1);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(1);
 
       await client.close();
     });
@@ -344,20 +317,20 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port: 9999,
-      });
-
-      client.startTrackingStats({
-        heartbeatEmitter: mockHeartbeatEmitter as unknown as TypedEventTarget<{ heartbeat: { type: 'heartbeat' } }>,
         log: mockLogger,
       });
 
+      client.startTrackingStats({
+        heartbeatEmitter: mockHeartbeatEmitter,
+      });
+
       expect(client.stats).toBeDefined();
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(1);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(1);
 
       client.stopTrackingStats();
 
       // Cleanup should have removed the heartbeat listener
-      expect(mockHeartbeatEmitter.getListenerCount('heartbeat')).toBe(0);
+      expect(mockHeartbeatEmitter.listenerCount('heartbeat')).toBe(0);
 
       await client.close();
     });
@@ -366,6 +339,7 @@ describe('EnhancedHl7Client', () => {
       const client = new EnhancedHl7Client({
         host: 'localhost',
         port: 9999,
+        log: mockLogger,
       });
 
       expect(client.stats).toBeUndefined();

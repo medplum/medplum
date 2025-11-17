@@ -246,11 +246,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_count':
-      searchRequest.count = parseInt(value, 10);
+      searchRequest.count = Number.parseInt(value, 10);
       break;
 
     case '_offset':
-      searchRequest.offset = parseInt(value, 10);
+      searchRequest.offset = Number.parseInt(value, 10);
       break;
 
     case '_total':

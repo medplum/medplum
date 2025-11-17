@@ -129,7 +129,7 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: answer.code,
           // valueString: question.type !== 'numeric' ? answer.value : undefined,
-          // valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          // valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),

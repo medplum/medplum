@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "5.0.0",
+  "version": "5.0.3",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",
@@ -45,12 +45,13 @@
   "types": "dist/esm/index.d.ts",
   "files": [
     "dist/cjs",
-    "dist/esm"
+    "dist/esm",
+    "dist/fhir"
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node build.mjs && npm run api-extractor",
-    "clean": "rimraf --glob \"dist/!(fhir)\"",
+    "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest"

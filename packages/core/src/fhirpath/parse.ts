@@ -6,6 +6,7 @@ import type { Atom, InfixParselet, Parser, PrefixParselet } from '../fhirlexer/p
 import { ParserBuilder } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
+import type { TypedValueWithPath } from '../typeschema/crawler';
 import {
   AndAtom,
   ArithemticOperatorAtom,
@@ -114,7 +115,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
 function parseQuantity(str: string): Quantity {
   const parts = str.split(' ');
-  const value = parseFloat(parts[0]);
+  const value = Number.parseFloat(parts[0]);
   let unit = parts[1];
   if (unit?.startsWith("'") && unit.endsWith("'")) {
     unit = unit.substring(1, unit.length - 1);
@@ -139,7 +140,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       parse: (_, token) =>
         new LiteralAtom({
           type: token.value.includes('.') ? PropertyType.decimal : PropertyType.integer,
-          value: parseFloat(token.value),
+          value: Number.parseFloat(token.value),
         }),
     })
     .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })
@@ -268,7 +269,7 @@ export function evalFhirPathTyped(
   input: TypedValue[],
   variables: Record<string, TypedValue> = {},
   cache: LRUCache<FhirPathAtom> | undefined = undefined
-): TypedValue[] {
+): (TypedValue | TypedValueWithPath)[] {
   let ast: FhirPathAtom;
   if (typeof expression === 'string') {
     const cachedAst = cache?.get(expression);
@@ -279,8 +280,14 @@ export function evalFhirPathTyped(
   } else {
     ast = expression;
   }
-  return ast.eval({ variables }, input).map((v) => ({
-    type: v.type,
-    value: v.value?.valueOf(),
-  }));
+  return ast.eval({ variables }, input).map((v) => {
+    const result: TypedValue & { path?: string } = {
+      type: v.type,
+      value: v.value?.valueOf(),
+    };
+    if ('path' in v) {
+      result.path = v.path as string;
+    }
+    return result;
+  });
 }

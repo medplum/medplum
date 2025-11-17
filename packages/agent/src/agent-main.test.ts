@@ -1,23 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
 import { LogLevel, sleep } from '@medplum/core';
 import fs from 'node:fs';
 import { agentMain } from './agent-main';
 import { App } from './app';
 import * as loggerModule from './logger';
-
-function mockLogger(level: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock } {
-  return {
-    warn: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    error: jest.fn(),
-    log: jest.fn(),
-    clone: jest.fn(),
-    level,
-  };
-}
+import { createMockLogger } from './test-utils';
 
 jest.mock('./constants', () => ({
   RETRY_WAIT_DURATION_MS: 150,
@@ -81,7 +69,7 @@ describe('Main', () => {
 
   test('Command line arguments with optional logLevel', async () => {
     const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config) => {
-      return mockLogger(config.logLevel);
+      return createMockLogger(config.logLevel);
     });
     jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
 
@@ -204,8 +192,8 @@ describe('Main', () => {
 
   test('Warnings from logger config parsing are logged', async () => {
     // Mock a logger that has warnings
-    const mockMainLogger = mockLogger(LogLevel.INFO);
-    const mockChannelLogger = mockLogger(LogLevel.INFO);
+    const mockMainLogger = createMockLogger(LogLevel.INFO);
+    const mockChannelLogger = createMockLogger(LogLevel.INFO);
 
     // Mock the WinstonWrapperLogger constructor to return our mock
     const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
@@ -264,7 +252,7 @@ describe('Main', () => {
       } else if (loggerType === 'channel') {
         capturedChannelLoggerConfig = config;
       }
-      return mockLogger(config.logLevel);
+      return createMockLogger(config.logLevel);
     });
 
     // Mock the logger module functions directly

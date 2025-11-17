@@ -1164,7 +1164,7 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -1215,7 +1215,7 @@ describe('Batch and Transaction processing', () => {
       type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -1467,7 +1467,9 @@ describe('Batch and Transaction processing', () => {
     const results = res.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
+      201, 429, 429, 429,
+    ]);
   });
 
   test('Async batch sleeps over rate limit', async () => {
@@ -1581,6 +1583,8 @@ describe('Batch and Transaction processing', () => {
     const results = res2.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
+      201, 201, 201, 201,
+    ]);
   });
 });

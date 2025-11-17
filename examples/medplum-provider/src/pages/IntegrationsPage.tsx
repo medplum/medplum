@@ -189,7 +189,7 @@ const integrations = [
   {
     name: 'Healthie',
     tags: ['EHR', 'Practice Management'],
-    description: 'Connect to your existing Helathie account to exchange clinical data.',
+    description: 'Connect to your existing Healthie account to exchange clinical data.',
     displayUrl: 'gethealthie.com',
     url: 'https://gethealthie.com',
     imageUrl: 'healthie.png',

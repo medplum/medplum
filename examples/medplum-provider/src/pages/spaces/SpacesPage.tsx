@@ -8,24 +8,28 @@ import { IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from '../../components/spaces/ResourceBox';
 import { ResourcePanel } from '../../components/spaces/ResourcePanel';
-import { SYSTEM_MESSAGE, SUMMARY_SYSTEM_MESSAGE, FHIR_TOOLS } from './ai-prompts';
 import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from './space-persistence';
 import { ConversationList } from './ConversationList';
 import { ChatInput } from './ChatInput';
-import classes from './SpacesPage.module.css';
 import type { Identifier } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
+import classes from './SpacesPage.module.css';
 import cx from 'clsx';
 
-const botId: Identifier = {
-  value: 'ai-api-bot',
+const fhirRequestToolsId: Identifier = {
+  value: 'ai-fhir-request-tools',
+  system: 'https://www.medplum.com/bots',
+};
+
+const resourceSummaryBotId: Identifier = {
+  value: 'ai-resource-summary',
   system: 'https://www.medplum.com/bots',
 };
 
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
-  const [messages, setMessages] = useState<Message[]>([SYSTEM_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
@@ -51,7 +55,7 @@ export function SpacesPage(): JSX.Element {
     try {
       setLoading(true);
       const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
-      setMessages([SYSTEM_MESSAGE, ...loadedMessages]);
+      setMessages([...loadedMessages]);
       setTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
@@ -97,13 +101,11 @@ export function SpacesPage(): JSX.Element {
       if (currentTopicId) {
         await saveMessage(medplum, currentTopicId, userMessage, currentMessages.length - 1);
       }
-      let response = await medplum.executeBot(botId, {
+      let response = await medplum.executeBot(fhirRequestToolsId, {
         resourceType: 'Parameters',
         parameter: [
           { name: 'messages', valueString: JSON.stringify(currentMessages) },
           { name: 'model', valueString: selectedModel },
-          { name: 'tools', valueString: JSON.stringify(FHIR_TOOLS) },
-          { name: 'temperature', valueString: '0.3' },
         ],
       });
 
@@ -194,22 +196,11 @@ export function SpacesPage(): JSX.Element {
           }
         }
 
-        // Second AI request: summarize the FHIR response
-        // Use the existing conversation context but replace system message with summary version
-        const summaryMessages = [
-          {
-            role: 'system',
-            content: SUMMARY_SYSTEM_MESSAGE,
-          },
-          ...currentMessages.slice(1), // Skip original system message, include all conversation
-        ];
-
-        response = await medplum.executeBot(botId, {
+        response = await medplum.executeBot(resourceSummaryBotId, {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'messages', valueString: JSON.stringify(summaryMessages) },
+            { name: 'messages', valueString: JSON.stringify(currentMessages) },
             { name: 'model', valueString: selectedModel },
-            { name: 'temperature', valueString: '0.3' },
           ],
         });
       }
@@ -250,68 +241,111 @@ export function SpacesPage(): JSX.Element {
   // Centered layout before first message
   if (!hasStarted) {
     return (
-      <Flex h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+      <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+        {/* Overlay Sidebar */}
         <Transition mounted={historyOpened} transition="slide-right" duration={200}>
           {(styles) => (
-            <Box
+            <Paper
+              className={classes.borderRight}
               w={320}
+              h="100%"
+              shadow="xl"
               style={{
                 ...styles,
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                zIndex: 10,
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
-            </Box>
+              <Group justify="space-between" p="md" className={classes.borderBottom}>
+                <Text size="lg" fw={600}>
+                  Conversations
+                </Text>
+                <CloseButton onClick={() => setHistoryOpened(false)} />
+              </Group>
+              <Box style={{ flex: 1, overflow: 'hidden' }}>
+                <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+              </Box>
+            </Paper>
           )}
         </Transition>
 
-        <Box p="md">
-          <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
-            <IconHistory size={20} />
-          </ActionIcon>
-        </Box>
-
-        <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
-          <Box
-            w="100%"
-            className={hasStarted ? classes.fadeOut : undefined}
-            style={{
-              maxWidth: '700px',
-            }}
-          >
-            <Text size="xl" fw={700} mb="xs">
-              Start a New Space
-            </Text>
-
-            <ChatInput
-              input={input}
-              onInputChange={setInput}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              loading={loading}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              backgroundColor="white"
-            />
+        {/* Main Content */}
+        <Flex h="100%" style={{ position: 'relative' }}>
+          <Box p="md">
+            <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
+              <IconHistory size={20} />
+            </ActionIcon>
           </Box>
-        </Stack>
-      </Flex>
+
+          <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
+            <Box
+              w="100%"
+              className={hasStarted ? classes.fadeOut : undefined}
+              style={{
+                maxWidth: '700px',
+              }}
+            >
+              <Text size="xl" fw={700} mb="xs">
+                Start a New Space
+              </Text>
+
+              <ChatInput
+                input={input}
+                onInputChange={setInput}
+                onKeyDown={handleKeyDown}
+                onSend={handleSend}
+                loading={loading}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                backgroundColor="white"
+              />
+            </Box>
+          </Stack>
+        </Flex>
+      </Box>
     );
   }
 
   // Chat layout after first message
   return (
-    <Flex h="calc(100vh - 68px)">
-      {/* History Sidebar */}
+    <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
+      {/* Overlay History Sidebar */}
       <Transition mounted={historyOpened} transition="slide-right" duration={200}>
         {(styles) => (
-          <Paper className={classes.borderRight} w={320} style={{ ...styles, position: 'relative' }}>
-            <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+          <Paper
+            className={classes.borderRight}
+            w={320}
+            h="100%"
+            shadow="xl"
+            style={{
+              ...styles,
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Group justify="space-between" p="md" className={classes.borderBottom}>
+              <Text size="lg" fw={600}>
+                Conversations
+              </Text>
+              <CloseButton onClick={() => setHistoryOpened(false)} />
+            </Group>
+            <Box style={{ flex: 1, overflow: 'hidden' }}>
+              <ConversationList key={refreshKey} currentTopicId={topicId} onSelectTopic={handleSelectTopic} />
+            </Box>
           </Paper>
         )}
       </Transition>
 
       {/* Main content column - chat/resource + input */}
-      <Flex direction="column" style={{ flex: 1 }}>
+      <Flex direction="column" h="100%">
         {/* Chat and Resource panels row */}
         <Flex style={{ overflow: 'hidden', flex: 1 }}>
           {/* Chat Section */}
@@ -400,6 +434,6 @@ export function SpacesPage(): JSX.Element {
           </Box>
         </Paper>
       </Flex>
-    </Flex>
+    </Box>
   );
 }

@@ -12,7 +12,7 @@ import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { EncounterHeader } from '../../components/encounter/EncounterHeader';
-import { TaskPanel } from '../../components/encountertasks/TaskPanel';
+import { TaskPanel } from '../../components/tasks/encounter/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { BillingTab } from './BillingTab';
 import { createReference, getReferenceString } from '@medplum/core';

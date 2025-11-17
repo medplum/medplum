@@ -1889,7 +1889,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         expression,
         target
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
@@ -2137,20 +2137,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async createResourceIfNoneExist<T extends Resource>(
     resource: T,
     query: string,
-    options?: MedplumRequestOptions
+    options: MedplumRequestOptions = {}
   ): Promise<WithId<T>> {
     const url = this.fhirUrl(resource.resourceType);
-    if (!options) {
-      options = { headers: { 'If-None-Exist': query } };
-    } else if (!options.headers) {
-      options.headers = { 'If-None-Exist': query };
-    } else if (Array.isArray(options.headers)) {
-      options.headers.push(['If-None-Exist', query]);
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('If-None-Exist', query);
-    } else {
-      options.headers['If-None-Exist'] = query;
-    }
+    this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post(url, resource, undefined, options);
     this.cacheResource(result);
@@ -3533,9 +3523,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       const name = parts[0].substring(1, parts[0].length - 1);
       const remainingPart = parts.find((p) => p.startsWith('r='));
-      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
+      const remainingUnits = remainingPart ? Number.parseInt(remainingPart.substring(2), 10) : NaN;
       const timePart = parts.find((p) => p.startsWith('t='));
-      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+      const secondsUntilReset = timePart ? Number.parseInt(timePart.substring(2), 10) : NaN;
       if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
@@ -3684,14 +3674,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param ifNoneExist - Optional flag to only set the header if it doesn't already exist.
    */
   private setRequestHeader(options: MedplumRequestOptions, key: string, value: string, ifNoneExist = false): void {
-    if (!options.headers) {
-      options.headers = {};
+    const headers = options.headers;
+    if (!headers) {
+      options.headers = { [key]: value };
+    } else if (Array.isArray(headers)) {
+      if (!ifNoneExist || !headers.some(([k]) => k.toLowerCase() === key.toLowerCase())) {
+        headers.push([key, value]);
+      }
+    } else if (headers instanceof Headers) {
+      if (!ifNoneExist || !headers.has(key)) {
+        headers.set(key, value);
+      }
+    } else if (isObject(headers)) {
+      if (!ifNoneExist || !headers[key]) {
+        headers[key] = value;
+      }
     }
-    const headers = options.headers as Record<string, string>;
-    if (ifNoneExist && headers[key]) {
-      return;
-    }
-    headers[key] = value;
   }
 
   /**
@@ -3939,6 +3937,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.basicAuth = encodeBase64(clientId + ':' + clientSecret);
+  }
+
+  /**
+   * Sets the verbose mode for the client.
+   * When verbose is enabled, the client will log all requests and responses to the console.
+   *
+   * @example
+   * ```typescript
+   * medplum.setVerbose(true);
+   * // Now all requests and responses will be logged
+   * await medplum.searchResources('Patient');
+   * ```
+   *
+   * @category HTTP
+   * @param verbose - Whether to enable verbose logging.
+   */
+  setVerbose(verbose: boolean): void {
+    this.options.verbose = verbose;
   }
 
   /**

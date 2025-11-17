@@ -1,6 +1,6 @@
 {
   "name": "create-medplum",
-  "version": "5.0.0",
+  "version": "5.0.3",
   "description": "Medplum NPM Initializer",
   "keywords": [
     "medplum",

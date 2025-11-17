@@ -616,10 +616,10 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   }
   items.forEach((item) => {
     if (item.id?.match(/^id-\d+$/)) {
-      nextId = Math.max(nextId, parseInt(item.id.substring(3), 10) + 1);
+      nextId = Math.max(nextId, Number.parseInt(item.id.substring(3), 10) + 1);
     }
     if (item.linkId?.match(/^q\d+$/)) {
-      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1), 10) + 1);
+      nextLinkId = Math.max(nextLinkId, Number.parseInt(item.linkId.substring(1), 10) + 1);
     }
   });
   return items.map((item) => ({
