@@ -10,13 +10,14 @@ import type {
   Coding,
   Extension,
   Practitioner,
+  Project,
   Reference,
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
-import { buildTracingExtension, getAuthenticatedContext } from '../context';
+import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 
 /*
@@ -238,8 +239,12 @@ function buildDurationExtension(duration: number): Extension {
 
 export function applyOptionalRedaction(ref: Reference | undefined): Reference | undefined {
   const config = getConfig();
-  const { project } = getAuthenticatedContext();
-  if (config.redactAuditEvents || project.setting?.find((s) => s.name === 'redactAuditEvents')?.valueBoolean) {
+  const ctx = tryGetRequestContext();
+  let project: Project | undefined;
+  if (ctx instanceof AuthenticatedRequestContext) {
+    project = ctx.project;
+  }
+  if (config.redactAuditEvents || project?.setting?.find((s) => s.name === 'redactAuditEvents')?.valueBoolean) {
     return { ...ref, display: undefined };
   } else {
     return ref;
