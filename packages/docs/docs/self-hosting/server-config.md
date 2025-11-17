@@ -382,6 +382,14 @@ This feature can be disabled if you want to preserve the original external URL o
 
 **Default:** `true`
 
+### redactAuditEvents
+
+If set, removes human-readable details from AuditEvent resources saved to the database and written to server logs.
+This removes personal information such as patient names and clinical descriptions from the events, rendering them safer
+for storage, while retaining the opaque, machine-readable identifiers.
+
+**Default:** `false`
+
 ### AWS Secrets
 
 Postgres and Redis connection details have special cases due the way CDK exposes them.
