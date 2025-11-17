@@ -35,7 +35,7 @@
     "@types/pg": "8.15.6",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
-    "fast-xml-parser": "5.3.0",
+    "fast-xml-parser": "5.3.1",
     "fhirpath": "4.6.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
