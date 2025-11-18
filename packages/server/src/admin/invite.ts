@@ -81,52 +81,55 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   let existingUser = false;
   let passwordResetUrl: string | undefined;
 
-  // Instantiate unsaved user record from the request
-  const userResource = await makeUserResource(request);
-
-  // If inviting with an email address, check for existing memberships tied to
-  // this project/email combination that are at a different scope than the one
-  // we would create. This avoids confusion of someone having separate
-  // server-scoped and project-scoped user records.
-  //
-  // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
-  if (!request.forceNewMembership && userResource.email) {
-    const projectFilter = userResource.project
-      ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
-      : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
-
-    const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      filters: [
-        { code: 'user:User.email', operator: Operator.EXACT, value: userResource.email },
-        { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
-        projectFilter,
-      ],
-    });
-
-    if (existingMemberships.length > 0) {
-      throw new OperationOutcomeError(conflict('User is already a member of this project'));
-    }
-  }
-
   // Upsert User resource
+  const userResource = await makeUserResource(request);
   let user: WithId<User>;
   if (email) {
-    const searchRequest: SearchRequest<User> = {
-      resourceType: 'User',
-      filters: [
-        {
-          code: 'email',
-          operator: Operator.EXACT,
-          value: email,
-        },
-        request.resourceType === 'Patient' || request.scope === 'project'
-          ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
-          : { code: 'project', operator: Operator.MISSING, value: 'true' },
-      ],
-    };
+    const { resource: result, outcome } = await systemRepo.withTransaction(
+      async () => {
+        // If inviting with an email address, check for existing memberships
+        // tied to this project/email combination that are at a different scope
+        // than the one we would create. This avoids confusion of someone
+        // having separate server-scoped and project-scoped user records.
+        //
+        // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
+        if (!request.forceNewMembership) {
+          const projectFilter = userResource.project
+            ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
+            : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
 
-    const { resource: result, outcome } = await systemRepo.conditionalCreate(userResource, searchRequest);
+          const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            filters: [
+              { code: 'user:User.email', operator: Operator.EXACT, value: email },
+              { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
+              projectFilter,
+            ],
+          });
+
+          if (existingMemberships.length > 0) {
+            throw new OperationOutcomeError(conflict('User is already a member of this project'));
+          }
+        }
+
+        const searchRequest: SearchRequest<User> = {
+          resourceType: 'User',
+          filters: [
+            {
+              code: 'email',
+              operator: Operator.EXACT,
+              value: email,
+            },
+            request.resourceType === 'Patient' || request.scope === 'project'
+              ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
+              : { code: 'project', operator: Operator.MISSING, value: 'true' },
+          ],
+        };
+
+        return systemRepo.conditionalCreate(userResource, searchRequest);
+      },
+      { serializable: true }
+    );
     user = result;
     existingUser = !isCreated(outcome);
   } else {
