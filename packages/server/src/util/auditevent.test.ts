@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AuditEvent, Observation } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { AuditEvent, Bot, Observation, ProjectMembership } from '@medplum/fhirtypes';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
+import type { BotExecutionRequest } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import {
   AuditEventOutcome,
   createAuditEvent,
+  createBotAuditEvent,
   CreateInteraction,
   logAuditEvent,
   RestfulOperationType,
@@ -72,5 +75,51 @@ describe('AuditEvent utils', () => {
     expect(auditLog).not.toContain('HIV');
     expect(auditLog).not.toContain('Test');
     expect(auditLog).not.toContain('User');
+  });
+
+  test.each<Bot['auditEventTrigger']>(['never', 'on-error', 'on-output'])(
+    'Skips creating audit event with `%s` trigger',
+    async (trigger) => {
+      const bot: WithId<Bot> = {
+        resourceType: 'Bot',
+        id: randomUUID(),
+        auditEventTrigger: trigger,
+        auditEventDestination: ['log'],
+      };
+      const runAs: WithId<ProjectMembership> = {
+        resourceType: 'ProjectMembership',
+        id: randomUUID(),
+        project: { reference: `Project/${randomUUID()}` },
+        user: { reference: `User/${randomUUID()}` },
+        profile: { reference: `Practitioner/${randomUUID()}` },
+      };
+      const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
+
+      // Successful execution with no output won't trigger on-error or on-output
+      console.log = jest.fn();
+      await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, '');
+      expect(console.log).not.toHaveBeenCalled();
+    }
+  );
+
+  test('Logs Bot output', async () => {
+    const bot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: randomUUID(),
+      auditEventTrigger: 'on-output',
+      auditEventDestination: ['log'],
+    };
+    const runAs: WithId<ProjectMembership> = {
+      resourceType: 'ProjectMembership',
+      id: randomUUID(),
+      project: { reference: `Project/${randomUUID()}` },
+      user: { reference: `User/${randomUUID()}` },
+      profile: { reference: `Practitioner/${randomUUID()}` },
+    };
+    const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
+
+    console.log = jest.fn();
+    await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
   });
 });
