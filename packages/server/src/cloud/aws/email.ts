@@ -22,7 +22,7 @@ export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   try {
     msg = await buildRawMessage(options);
   } catch (err) {
-    throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), err);
+    throw new OperationOutcomeError(badRequest('Invalid email options: ' + normalizeErrorString(err)), { cause: err });
   }
 
   const sesClient = new SESv2Client({ region: config.awsRegion });
@@ -44,6 +44,6 @@ export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
       })
     );
   } catch (err) {
-    throw new OperationOutcomeError(badRequest('Error sending email: ' + normalizeErrorString(err)), err);
+    throw new OperationOutcomeError(badRequest('Error sending email: ' + normalizeErrorString(err)), { cause: err });
   }
 }

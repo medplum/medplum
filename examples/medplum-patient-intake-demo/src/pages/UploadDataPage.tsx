@@ -4,14 +4,13 @@ import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { capitalize, getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
 import type { MedplumClient, WithId } from '@medplum/core';
-import type { Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from '@medplum/fhirtypes';
+import type { Binary, Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useContext, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
-import exampleBotData from '../../data/core/example-bots.json';
 import patientIntakeQuestionnaireData from '../../data/core/patient-intake-questionnaire.json';
 import valuesetsData from '../../data/core/valuesets.json';
 import exampleData from '../../data/example/example-organization-data.json';
@@ -140,11 +139,23 @@ async function uploadExampleData(medplum: MedplumClient): Promise<void> {
   }
 }
 
+const EXAMPLE_BOTS_JSON = '../../data/core/example-bots.json';
 async function uploadExampleBots(
   medplum: MedplumClient,
   profile: Practitioner,
   questionnaire: WithId<Questionnaire>
 ): Promise<void> {
+  let exampleBotData: Bundle;
+  try {
+    exampleBotData = await import(/* @vite-ignore */ EXAMPLE_BOTS_JSON);
+  } catch (err) {
+    console.log(err);
+    if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+      throw new Error('Error loading bot data. Run `npm run build:bots` and try again.');
+    }
+    throw err;
+  }
+
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
@@ -180,9 +191,17 @@ async function uploadExampleBots(
   for (const entry of botEntries) {
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
-    const distBinaryEntry = exampleBotData.entry.find((e: any) => e.fullUrl === distUrl);
+    const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
+      | BundleEntry<Binary>
+      | undefined;
+    if (!distBinaryEntry) {
+      throw new Error('Error finding Bundle entry with fullUrl: ' + distUrl);
+    }
+    if (!distBinaryEntry.resource?.data) {
+      throw new Error('Could not find encoded code for bot: ' + botName);
+    }
     // Decode the base64 encoded code and deploy
-    const code = atob(distBinaryEntry?.resource.data as string);
+    const code = atob(distBinaryEntry.resource.data);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
   }
 

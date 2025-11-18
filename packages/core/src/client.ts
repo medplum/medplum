@@ -3940,6 +3940,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Sets the verbose mode for the client.
+   * When verbose is enabled, the client will log all requests and responses to the console.
+   *
+   * @example
+   * ```typescript
+   * medplum.setVerbose(true);
+   * // Now all requests and responses will be logged
+   * await medplum.searchResources('Patient');
+   * ```
+   *
+   * @category HTTP
+   * @param verbose - Whether to enable verbose logging.
+   */
+  setVerbose(verbose: boolean): void {
+    this.options.verbose = verbose;
+  }
+
+  /**
    * Subscribes to a specified topic, listening for a list of specified events.
    *
    * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
@@ -4132,7 +4150,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         const error = await response.json();
         throw new OperationOutcomeError(badRequest(error.error_description));
       } catch (err) {
-        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), err);
+        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
       }
     }
     const tokens = await response.json();

@@ -372,4 +372,8 @@ export class Hl7Connection extends Hl7Base {
   getMessagesPerMin(): number | undefined {
     return this.messagesPerMin;
   }
+
+  getPendingMessageCount(): number {
+    return this.pendingMessages.size;
+  }
 }

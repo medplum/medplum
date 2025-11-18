@@ -22,7 +22,7 @@ import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { EncounterHeader } from './EncounterHeader';
 import { SignAddendumCard } from './SignAddemdum';
-import { TaskPanel } from '../encountertasks/TaskPanel';
+import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from '../../pages/encounter/BillingTab';
 import { Outlet } from 'react-router';
 

@@ -4,7 +4,7 @@ import type { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum
 import { StatusBadge, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
+import { showErrorNotification } from '../../../utils/notifications';
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { IconPlus } from '@tabler/icons-react';

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -25,23 +25,23 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@graphiql/react": "0.37.1",
+    "@graphiql/react": "0.37.2",
     "@graphiql/toolkit": "0.11.3",
-    "@mantine/core": "8.3.6",
-    "@mantine/hooks": "8.3.6",
-    "@medplum/core": "5.0.2",
-    "@medplum/fhirtypes": "5.0.2",
-    "@medplum/react": "5.0.2",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "graphiql": "5.2.0",
-    "graphql": "16.11.0",
+    "@mantine/core": "8.3.7",
+    "@mantine/hooks": "8.3.7",
+    "@medplum/core": "5.0.3",
+    "@medplum/fhirtypes": "5.0.3",
+    "@medplum/react": "5.0.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
+    "graphiql": "5.2.1",
+    "graphql": "16.12.0",
     "graphql-ws": "6.0.6",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "vite": "7.1.12",
+    "vite": "7.2.2",
     "vite-plugin-monaco-editor-esm": "2.0.2"
   },
   "engines": {

@@ -15,7 +15,7 @@ interface BotDescription {
 const Bots: BotDescription[] = [
   {
     src: 'src/bots/process-eligibility-request.ts',
-    dist: 'dist/process-eligibility-request.js',
+    dist: 'dist/bots/process-eligibility-request.js',
     criteria: 'CoverageEligibilityRequest',
   },
 ];
