@@ -51,7 +51,13 @@ import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
-import { createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  createAuditEvent,
+  findProjectMembership,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -92,6 +98,18 @@ export interface SubscriptionJobData {
   readonly verbose?: boolean;
 }
 
+function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string | undefined> {
+  return {
+    subscription: 'Subscription/' + job.data.subscriptionId,
+    resource: `${job.data.resourceType}/${job.data.id}`,
+    versionId: job.data.versionId,
+    interaction: job.data.interaction,
+    channelType: job.data.channelType,
+    requestId: job.data.requestId,
+    traceId: job.data.traceId,
+  };
+}
+
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
@@ -119,6 +137,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
       ...config.bullmq,
     }
   );
+  addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
   worker.on('active', (job) => {
     // Only record queuedDuration on the first attempt
     if (job.attemptsMade === 0) {
@@ -126,7 +145,6 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
     }
   });
   worker.on('completed', (job) => {
-    globalLogger.info(`Completed job ${job.id} successfully`);
     recordHistogramValue(
       'medplum.subscription.executionDuration',
       ((job.finishedOn as number) - (job.processedOn as number)) / 1000
@@ -136,8 +154,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
       ((job.finishedOn as number) - (job.timestamp as number)) / 1000
     );
   });
-  worker.on('failed', (job, err) => {
-    globalLogger.info(`Failed job ${job?.id} with ${err}`);
+  worker.on('failed', (job) => {
     if (job) {
       recordHistogramValue(
         'medplum.subscription.failedExecutionDuration',

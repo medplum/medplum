@@ -2099,20 +2099,32 @@ describe('Subscription Worker', () => {
 });
 
 describe('Subscription Worker Event Handling', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.resetModules();
+  });
+
   test('Worker event handlers work correctly', async () => {
     // Set up mocks for the bullmq module
-    const handlers = new Map<string, (job?: Job, error?: Error) => void>();
+    const handlers = new Map<string, ((job?: Job, error?: Error) => void)[] | undefined>();
     const mockWorker = {
+      name: 'MockSubscriptionWorker',
       on: jest.fn().mockImplementation((event: string, handler: () => void) => {
-        handlers.set(event, handler);
+        const handlerList = handlers.get(event);
+        if (handlerList) {
+          handlerList.push(handler);
+        } else {
+          handlers.set(event, [handler]);
+        }
         return mockWorker;
       }),
     };
     mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
     // Now import the subscription worker init function
 
+    jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+
     // Mock the logger and metrics functions
-    const infoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
     const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
 
     // Initialize the subscription worker with mock config
@@ -2138,10 +2150,10 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test the 'active' event handler with a first attempt job
     const firstAttemptJob = createTestJob('job-123', 0);
-    const activeHandler = handlers.get('active');
-    expect(activeHandler).toBeDefined();
-    if (activeHandler) {
-      activeHandler(firstAttemptJob);
+    const activeHandlers = handlers.get('active');
+    expect(activeHandlers).toBeDefined();
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(firstAttemptJob));
 
       // Verify recordHistogramValue was called for queuedDuration on first attempt
       expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.queuedDuration', expect.any(Number));
@@ -2150,8 +2162,8 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test 'active' handler with a subsequent attempt job
     const subsequentAttemptJob = createTestJob('job-123', 1);
-    if (activeHandler) {
-      activeHandler(subsequentAttemptJob);
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(subsequentAttemptJob));
 
       // Verify recordHistogramValue was NOT called for subsequent attempts
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
@@ -2160,50 +2172,40 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test the 'completed' event handler
     const completedJob = createTestJob('job-456');
-    const completedHandler = handlers.get('completed');
-    expect(completedHandler).toBeDefined();
-    if (completedHandler) {
-      completedHandler(completedJob);
+    const completedHandlers = handlers.get('completed');
+    expect(completedHandlers).toBeDefined();
+    if (completedHandlers) {
+      completedHandlers.forEach((handler) => handler(completedJob));
 
       // Verify completed job logging and metrics
-      expect(infoSpy).toHaveBeenCalledWith(`Completed job ${completedJob.id} successfully`);
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
         'medplum.subscription.executionDuration',
         expect.any(Number)
       );
       expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.totalDuration', expect.any(Number));
-      infoSpy.mockClear();
       recordHistogramValueSpy.mockClear();
     }
 
     // Test the 'failed' event handler with a job
     const failedJob = createTestJob('job-789');
     const error = new Error('Test error');
-    const failedHandler = handlers.get('failed');
-    expect(failedHandler).toBeDefined();
-    if (failedHandler) {
-      failedHandler(failedJob, error);
+    const failedHandlers = handlers.get('failed');
+    expect(failedHandlers).toBeDefined();
+    if (failedHandlers) {
+      failedHandlers.forEach((handler) => handler(failedJob, error));
 
       // Verify failed job logging and metrics
-      expect(infoSpy).toHaveBeenCalledWith(`Failed job ${failedJob.id} with ${error}`);
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
         'medplum.subscription.failedExecutionDuration',
         expect.any(Number)
       );
-      infoSpy.mockClear();
       recordHistogramValueSpy.mockClear();
 
       // Test 'failed' handler with undefined job
-      failedHandler(undefined, error);
+      failedHandlers.forEach((handler) => handler(undefined, error));
 
       // Verify logging for undefined job (no metrics)
-      expect(infoSpy).toHaveBeenCalledWith(`Failed job undefined with ${error}`);
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
     }
-
-    // Clean up
-    infoSpy.mockRestore();
-    recordHistogramValueSpy.mockRestore();
-    jest.resetModules();
   });
 });
