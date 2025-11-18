@@ -196,7 +196,7 @@ export function SpacesPage(): JSX.Element {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
-  const [_apiKey, _setApiKey] = useState<string>( );
+  const [_apiKey, _setApiKey] = useState<string>('');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [topicId, setTopicId] = useState<string | undefined>();
