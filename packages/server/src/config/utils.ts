@@ -160,6 +160,7 @@ const booleanKeys = new Set([
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
+  'redactAuditEvents',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
