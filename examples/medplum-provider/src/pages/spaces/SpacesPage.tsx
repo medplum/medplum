@@ -63,9 +63,7 @@ export async function callAIOperation(
   onError?: (error: Error) => void,
   onComplete?: () => void
 ): Promise<void> {
-
   const normalizedMessages = messages.map((msg) => {
-
     let content = msg.content;
     if (content === null || content === undefined) {
       content = '';
