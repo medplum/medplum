@@ -24,15 +24,6 @@ export type PatientPageTabInfo = {
   label: string;
 };
 
-export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
-  const result = PatientPageTabs.find((tab) => tab.id === tabId);
-
-  if (!result) {
-    throw new Error(`Could not find patient page tab with id ${tabId}`);
-  }
-  return result;
-}
-
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
