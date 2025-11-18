@@ -341,7 +341,7 @@ async function resolveByReference(source: any, _args: any, ctx: GraphQLContext):
   try {
     return await ctx.dataLoader.load(source);
   } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
   }
 }
 

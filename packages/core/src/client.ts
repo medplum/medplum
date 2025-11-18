@@ -4150,7 +4150,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         const error = await response.json();
         throw new OperationOutcomeError(badRequest(error.error_description));
       } catch (err) {
-        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), err);
+        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
       }
     }
     const tokens = await response.json();

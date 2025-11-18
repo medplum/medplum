@@ -379,7 +379,7 @@ async function resolveById(
   try {
     return await ctx.dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
   } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
   }
 }
 

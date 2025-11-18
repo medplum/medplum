@@ -97,7 +97,7 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
   try {
     return evalFhirPath(expression, resource);
   } catch (err) {
-    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), err);
+    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), { cause: err });
   }
 }
 
