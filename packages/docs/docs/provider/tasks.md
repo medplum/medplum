@@ -12,9 +12,23 @@ The Tasks section serves as a centralized management system for coordinating pat
    * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
 2. **Click the Create Button**  
    * At the top of the Task list section, click the blue “+” button to open the “Create New Task” modal  
-3. **Add Task Details**  
-   * Enter a Title and Status and any other information about the task:
-     * Description, Due Date, Priority, Patient (Subject), Assignee (Practitioner or Organization), and/or Performer Type
+3. **Add Task Details**
+* Required details:
+  * Title: add a short, descriptive name for the Task
+    * e.g. “Prescription medication refill” or “Complete PHQ-9”
+  * Status: select a value that represents where the task currently stands in its workflow
+    * e.g. “Ready” for Tasks ready to be actioned, “In Progress” for Tasks actively being worked on, etc.
+
+* Optional details:
+  * Description: enter information that explains what the Task involves
+    * e.g. requirements or relevant context
+  * Due Date: set a date by which the Task should be completed
+  * Priority: assign a level of importance or urgency to the Task to indicate how soon it should be addressed relative to other Tasks
+      * The standard FHIR priority levels are Routine, Urgent, ASAP, and STAT, ranging from normal priority (Routine) to requiring immediate action (STAT)
+  * Patient: select an individual for whom this Task is being performed
+  * Assignee: select a practitioner or organization responsible for completing this Task
+  * Performer Type: specify the role or type of staff who should complete this Task
+      * e.g. "Primary care physician,” "Registered nurse," "Physician assistant,” etc.
 4. **Confirm and Create**  
    * Review the Task details and then click “Create Task” to create the Task
    * This Task should now be visible in the Task list
