@@ -134,7 +134,7 @@ describe('useEncounterChart', () => {
     // Create resources in MockClient
     const createdEncounter = await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
-    
+
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
 
     const encounterRef: Reference<Encounter> = { reference: `Encounter/${createdEncounter.id}` };
@@ -301,13 +301,9 @@ describe('useEncounterChart', () => {
       expect(result.current.claim?.id).toBe('new-claim-123');
     });
 
-    expect(createClaimFromEncounter).toHaveBeenCalledWith(
-      medplum,
-      'patient-123',
-      'encounter-123',
-      'practitioner-123',
-      [mockChargeItem]
-    );
+    expect(createClaimFromEncounter).toHaveBeenCalledWith(medplum, 'patient-123', 'encounter-123', 'practitioner-123', [
+      mockChargeItem,
+    ]);
   });
 
   it('does not create claim if one already exists', async () => {
@@ -325,7 +321,7 @@ describe('useEncounterChart', () => {
 
     // Verify the existing claim is found (may have different ID due to MockClient)
     expect(result.current.claim?.id).toBe(createdClaim.id);
-    
+
     // Verify no new claim is created
     expect(createClaimFromEncounter).not.toHaveBeenCalled();
   });
@@ -406,7 +402,7 @@ describe('useEncounterChart', () => {
   it('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     await medplum.createResource(mockEncounter);
-    
+
     // Mock searchResources to fail
     medplum.searchResources = vi.fn().mockRejectedValue(error);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
