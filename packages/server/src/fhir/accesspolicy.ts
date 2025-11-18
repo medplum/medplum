@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { createReference, isResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import { createReference, isResource, isString, projectAdminResourceTypes, resolveId } from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -115,8 +115,13 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
+  const accessPolicyMap = new Map<string, AccessPolicy>();
   for (const entry of access) {
-    const replaced = await buildAccessPolicyResources(entry, membership.profile as Reference<ProfileResource>);
+    const replaced = await buildAccessPolicyResources(
+      entry,
+      membership.profile as Reference<ProfileResource>,
+      accessPolicyMap
+    );
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
@@ -154,14 +159,27 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  * Reads an access policy and replaces all variables.
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
+ * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
   access: ProjectMembershipAccess,
-  profile: Reference<ProfileResource>
+  profile: Reference<ProfileResource>,
+  accessPolicyMap: Map<string, AccessPolicy>
 ): Promise<AccessPolicy> {
   const systemRepo = getSystemRepo();
-  const original = await systemRepo.readReference(access.policy as Reference<AccessPolicy>);
+  const policyRef = access.policy;
+  const accessPolicyReference = policyRef.reference;
+  if (!isString(accessPolicyReference)) {
+    throw new Error('Access policy reference is required');
+  }
+
+  let original = accessPolicyMap.get(accessPolicyReference);
+  if (!original) {
+    original = await systemRepo.readReference(policyRef);
+    accessPolicyMap.set(accessPolicyReference, original);
+  }
+
   const params = access.parameter || [];
   params.push({ name: 'profile', valueReference: profile });
   if (!params.find((p) => p.name === 'patient')) {
