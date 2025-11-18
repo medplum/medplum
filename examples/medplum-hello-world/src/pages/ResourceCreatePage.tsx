@@ -4,14 +4,12 @@ import { Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, Loading, useMedplum } from '@medplum/react';
+import { Document, Loading, useMedplum, ResourceForm } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ResourceFormWithRequiredProfile } from '../components/ResourceFormWithRequiredProfile';
 import { usePatient } from '../hooks/usePatient';
 import { prependPatientPath } from './patient/PatientPage.utils';
-import { RESOURCE_PROFILE_URLS } from './utils';
 
 const PatientReferencesElements: Partial<Record<ResourceType, string[]>> = {
   Task: ['for'],
@@ -68,7 +66,6 @@ export function ResourceCreatePage(): JSX.Element {
     }
     return getDefaultValue(resourceType, patient);
   });
-  const profileUrl = resourceType && RESOURCE_PROFILE_URLS[resourceType];
 
   useEffect(() => {
     if (patient && resourceType) {
@@ -105,11 +102,10 @@ export function ResourceCreatePage(): JSX.Element {
     <Document shadow="xs">
       <Stack>
         <Text fw={500}>New&nbsp;{resourceType}</Text>
-        <ResourceFormWithRequiredProfile
+        <ResourceForm
           defaultValue={defaultValue}
           onSubmit={handleSubmit}
           outcome={outcome}
-          profileUrl={profileUrl}
         />
       </Stack>
     </Document>
