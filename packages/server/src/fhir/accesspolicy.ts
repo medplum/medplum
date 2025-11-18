@@ -168,16 +168,16 @@ async function buildAccessPolicyResources(
   accessPolicyMap: Map<string, AccessPolicy>
 ): Promise<AccessPolicy> {
   const systemRepo = getSystemRepo();
-  const policyRef = access.policy;
-  const accessPolicyReference = getReferenceString(policyRef);
-  if (!isString(accessPolicyReference)) {
+  const accessPolicyReference = access.policy;
+  const policyReferenceString = getReferenceString(accessPolicyReference);
+  if (!isString(policyReferenceString)) {
     throw new Error('Access policy reference is required');
   }
 
-  let original = accessPolicyMap.get(accessPolicyReference);
+  let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
-    original = await systemRepo.readReference(policyRef);
-    accessPolicyMap.set(accessPolicyReference, original);
+    original = await systemRepo.readReference(accessPolicyReference);
+    accessPolicyMap.set(policyReferenceString, original);
   }
 
   const params = access.parameter || [];
