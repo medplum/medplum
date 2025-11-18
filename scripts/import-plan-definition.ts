@@ -95,7 +95,7 @@ function resolvePlanDefinitionReferences(
               action.definitionCanonical = `${identifierInfo.resourceType}/${resourceId}`;
             } else {
               // Fallback: try to find resource type from response bundle
-              const entry = bundleResponse.entry?.find(e => e.fullUrl === ref);
+              const entry = bundleResponse.entry?.find((e) => e.fullUrl === ref);
               if (entry?.resource) {
                 action.definitionCanonical = `${entry.resource.resourceType}/${resourceId}`;
               }
@@ -150,20 +150,20 @@ export async function importPlanDefinitionBundle(
 
   // Check for errors in the response
   const errors = bundleResponse.entry.filter(
-    entry => entry.response?.status && !entry.response.status.startsWith('2')
+    (entry) => entry.response?.status && !entry.response.status.startsWith('2')
   );
 
   if (errors.length > 0) {
     console.warn(`⚠️  ${errors.length} entry/entries had errors during import:`);
     for (const error of errors) {
-      console.warn(`  - ${error.response?.status}: ${error.response?.outcome?.issue?.[0]?.details?.text || 'Unknown error'}`);
+      console.warn(
+        `  - ${error.response?.status}: ${error.response?.outcome?.issue?.[0]?.details?.text || 'Unknown error'}`
+      );
     }
   }
 
   // Find the PlanDefinition in the response
-  const planDefEntry = bundleResponse.entry.find(
-    entry => entry.resource?.resourceType === 'PlanDefinition'
-  );
+  const planDefEntry = bundleResponse.entry.find((entry) => entry.resource?.resourceType === 'PlanDefinition');
 
   if (!planDefEntry?.resource) {
     throw new Error('No PlanDefinition found in bundle response');
@@ -179,12 +179,7 @@ export async function importPlanDefinitionBundle(
 
   // Resolve the definitionCanonical references
   console.log('Resolving definitionCanonical references...');
-  const resolved = await resolvePlanDefinitionReferences(
-    medplum,
-    bundleResponse,
-    planDefinition,
-    fullUrlToIdentifier
-  );
+  const resolved = await resolvePlanDefinitionReferences(medplum, bundleResponse, planDefinition, fullUrlToIdentifier);
 
   // Count how many references were resolved
   let resolvedCount = 0;
@@ -354,9 +349,11 @@ const isMainModule = (() => {
       const currentFile = fileURLToPath(import.meta.url);
       const mainFile = process.argv[1];
       // Compare file paths (normalize for comparison)
-      return currentFile === mainFile ||
-             currentFile.replace(/\.ts$/, '.js') === mainFile ||
-             pathToFileURL(mainFile).href === import.meta.url;
+      return (
+        currentFile === mainFile ||
+        currentFile.replace(/\.ts$/, '.js') === mainFile ||
+        pathToFileURL(mainFile).href === import.meta.url
+      );
     } catch {
       // If we can't determine but it's a CLI invocation, assume it's the main module
       return process.argv.length > 1;

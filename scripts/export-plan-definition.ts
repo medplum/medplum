@@ -34,10 +34,10 @@ import type {
   Library,
   PlanDefinition,
   Questionnaire,
+  Reference,
   Resource,
   ResourceType,
   StructureMap,
-  Reference,
 } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -76,7 +76,10 @@ export class PlanDefinitionExporter {
   private medplum: MedplumClient;
   private resourceMap = new Map<string, string>(); // original reference -> internal reference
   private internalRefToResource = new Map<string, Resource>(); // internal reference -> resource
-  private fullUrlToIdentifier = new Map<string, { resourceType: string; identifier: { system: string; value: string } }>(); // fullUrl -> identifier
+  private fullUrlToIdentifier = new Map<
+    string,
+    { resourceType: string; identifier: { system: string; value: string } }
+  >(); // fullUrl -> identifier
   private processedResources = new Set<string>(); // track processed resource references
   private bundleEntries: BundleEntry[] = [];
   private options: Required<ExportOptions>;
@@ -311,7 +314,13 @@ export class PlanDefinitionExporter {
 
     // Try to find the resource by URL search
     // This handles canonical URLs that don't have explicit resource type/ID format
-    const resourceTypes: ResourceType[] = ['Questionnaire', 'ActivityDefinition', 'PlanDefinition', 'StructureMap', 'Library'];
+    const resourceTypes: ResourceType[] = [
+      'Questionnaire',
+      'ActivityDefinition',
+      'PlanDefinition',
+      'StructureMap',
+      'Library',
+    ];
 
     for (const resourceType of resourceTypes) {
       try {
@@ -521,25 +530,25 @@ export class PlanDefinitionExporter {
       ];
 
       if (allowedTypes.includes(resourceType)) {
-          const resource = await this.medplum.readResource(resourceType, id);
-          const originalRef = `${resourceType}/${resource.id}`;
+        const resource = await this.medplum.readResource(resourceType, id);
+        const originalRef = `${resourceType}/${resource.id}`;
 
-          if (!this.resourceMap.has(originalRef)) {
-            const internalRef = this.generateInternalReference(resourceType);
-            this.resourceMap.set(originalRef, internalRef);
-            this.internalRefToResource.set(internalRef, resource);
+        if (!this.resourceMap.has(originalRef)) {
+          const internalRef = this.generateInternalReference(resourceType);
+          this.resourceMap.set(originalRef, internalRef);
+          this.internalRefToResource.set(internalRef, resource);
 
-            // Ensure canonical URL and identifier before transformation
-            this.ensureCanonicalUrl(resource);
-            this.ensureIdentifier(resource);
+          // Ensure canonical URL and identifier before transformation
+          this.ensureCanonicalUrl(resource);
+          this.ensureIdentifier(resource);
 
-            // Process nested references
-            await this.processReferencesInResource(resource);
+          // Process nested references
+          await this.processReferencesInResource(resource);
 
-            // Transform and add to bundle
-            const transformed = this.transformReferences(resource);
-            this.addToBundleWithInternalReference(transformed, internalRef);
-          }
+          // Transform and add to bundle
+          const transformed = this.transformReferences(resource);
+          this.addToBundleWithInternalReference(transformed, internalRef);
+        }
       }
     } catch (error) {
       console.warn(`Failed to process reference ${refString}:`, error);
@@ -647,10 +656,12 @@ export class PlanDefinitionExporter {
       resource.url = `http://medplum.com/fhir/${resource.resourceType}/${identifier.value}`;
     } else {
       // Fallback: generate a URL from resource name or title
-      const name = ('name' in resource && resource.name) ||
-                   ('title' in resource && resource.title) ||
-                   resource.resourceType;
-      const urlSafeName = name.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const name =
+        ('name' in resource && resource.name) || ('title' in resource && resource.title) || resource.resourceType;
+      const urlSafeName = name
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-');
       resource.url = `http://medplum.com/fhir/${resource.resourceType}/${urlSafeName}`;
     }
   }
@@ -674,10 +685,9 @@ export class PlanDefinitionExporter {
           }
         }
         // If no ID match, try to match by name/title for deterministic matching
-        const mappedName = ('name' in mappedResource && mappedResource.name) ||
-                          ('title' in mappedResource && mappedResource.title);
-        const resourceName = ('name' in resource && resource.name) ||
-                            ('title' in resource && resource.title);
+        const mappedName =
+          ('name' in mappedResource && mappedResource.name) || ('title' in mappedResource && mappedResource.title);
+        const resourceName = ('name' in resource && resource.name) || ('title' in resource && resource.title);
         if (mappedName && resourceName && mappedName === resourceName) {
           for (const [originalRef, refInternalRef] of this.resourceMap.entries()) {
             if (refInternalRef === internalRef) {
@@ -695,15 +705,17 @@ export class PlanDefinitionExporter {
    */
   private generateStableId(resource: Resource): string {
     // Use name or title to create a deterministic ID
-    const name = ('name' in resource && resource.name) ||
-                 ('title' in resource && resource.title) ||
-                 resource.resourceType;
-    const nameStr = name.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const name =
+      ('name' in resource && resource.name) || ('title' in resource && resource.title) || resource.resourceType;
+    const nameStr = name
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
     // Create a hash-like string from the name
     let hash = 0;
     for (let i = 0; i < nameStr.length; i++) {
       const char = nameStr.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
@@ -761,7 +773,6 @@ export class PlanDefinitionExporter {
       }
     }
   }
-
 
   private findMappedReference(reference: string): string | null {
     // Try exact match first
@@ -893,7 +904,7 @@ export async function resolvePlanDefinitionReferences(
               action.definitionCanonical = `${identifierInfo.resourceType}/${resourceId}`;
             } else {
               // Fallback: try to find resource type from response bundle
-              const entry = bundleResponse.entry?.find(e => e.fullUrl === ref);
+              const entry = bundleResponse.entry?.find((e) => e.fullUrl === ref);
               if (entry?.resource) {
                 action.definitionCanonical = `${entry.resource.resourceType}/${resourceId}`;
               }
@@ -1012,7 +1023,7 @@ async function main(): Promise<void> {
         console.error('Possible reasons:');
         console.error('  1. The PlanDefinition ID is incorrect');
         console.error('  2. The PlanDefinition exists in a different project');
-        console.error('  3. You don\'t have permission to access this PlanDefinition');
+        console.error("  3. You don't have permission to access this PlanDefinition");
         console.error('');
         console.error('To find PlanDefinitions, you can search using:');
         console.error(`  medplum search PlanDefinition`);
@@ -1112,9 +1123,11 @@ const isMainModule = (() => {
       const currentFile = fileURLToPath(import.meta.url);
       const mainFile = process.argv[1];
       // Compare file paths (normalize for comparison)
-      return currentFile === mainFile ||
-             currentFile.replace(/\.ts$/, '.js') === mainFile ||
-             pathToFileURL(mainFile).href === import.meta.url;
+      return (
+        currentFile === mainFile ||
+        currentFile.replace(/\.ts$/, '.js') === mainFile ||
+        pathToFileURL(mainFile).href === import.meta.url
+      );
     } catch {
       // If we can't determine but it's a CLI invocation, assume it's the main module
       return process.argv.length > 1;
