@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { createReference, isResource, isString, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import { createReference, getReferenceString, isResource, isString, projectAdminResourceTypes, resolveId } from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -169,7 +169,7 @@ async function buildAccessPolicyResources(
 ): Promise<AccessPolicy> {
   const systemRepo = getSystemRepo();
   const policyRef = access.policy;
-  const accessPolicyReference = policyRef.reference;
+  const accessPolicyReference = getReferenceString(policyRef);
   if (!isString(accessPolicyReference)) {
     throw new Error('Access policy reference is required');
   }
