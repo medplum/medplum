@@ -102,11 +102,7 @@ export function ResourceCreatePage(): JSX.Element {
     <Document shadow="xs">
       <Stack>
         <Text fw={500}>New&nbsp;{resourceType}</Text>
-        <ResourceForm
-          defaultValue={defaultValue}
-          onSubmit={handleSubmit}
-          outcome={outcome}
-        />
+        <ResourceForm defaultValue={defaultValue} onSubmit={handleSubmit} outcome={outcome} />
       </Stack>
     </Document>
   );
