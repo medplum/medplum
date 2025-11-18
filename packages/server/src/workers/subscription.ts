@@ -38,26 +38,21 @@ import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
-import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import type { Repository, ResendSubscriptionsOptions } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
+import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
-import { AuditEventOutcome } from '../util/auditevent';
+import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
-import {
-  addVerboseQueueLogging,
-  createAuditEvent,
-  findProjectMembership,
-  isJobSuccessful,
-  queueRegistry,
-} from './utils';
+import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -95,6 +90,7 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  readonly authState?: AuthState;
   readonly verbose?: boolean;
 }
 
@@ -131,7 +127,10 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<SubscriptionJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+    (job) =>
+      job.data.authState
+        ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+        : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -320,6 +319,7 @@ export async function addSubscriptionJobs(
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        authState: ctx?.authState,
         verbose: options?.verbose,
       });
     }
@@ -566,7 +566,7 @@ async function sendRestHook(
     fetchEndTime = Date.now();
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
-    await createAuditEvent(
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -580,7 +580,7 @@ async function sendRestHook(
   } catch (ex) {
     fetchEndTime = Date.now();
     log.info('Subscription exception: ' + ex);
-    await createAuditEvent(
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
