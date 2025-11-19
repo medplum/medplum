@@ -544,6 +544,64 @@ When working with DoseSpot integration, it's important to understand the differe
 
 - **`MedicationRequest?intent=original-order`** - Medication histories from SureScripts and other providers. These represent historical medication data that has been retrieved from external sources. The DoseSpot Medication History Bot creates these.
 
+## Add a Default Pharmacy
+
+### Summary
+
+To set a default pharmacy for patients in a clinic, we expose a bot that can add a default for all patients or a specific subset, with dry-run support.
+
+### Usage
+
+#### Basic Example
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345
+  }'
+```
+
+#### With Specific Patients
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345,
+      "patientIds": ["patient-id-1", "patient-id-2"],
+      "dryRun": false
+  }'
+```
+
+### Request Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyRequest {
+  pharmacyId: number;              // Required: DoseSpot pharmacy ID
+  patientIds?: string[];           // Optional: Specific patient IDs to process
+  dryRun?: boolean;                 // Optional: Preview mode (default: false)
+  maxPatients?: number;             // Optional: Max patients to process (default: 100)
+}
+```
+
+### Response Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyResponse {
+  success: boolean;
+  processedCount: number;
+  successCount: number;
+  errorCount: number;
+  errors: Array<{
+    patientId: string;
+    doseSpotPatientId?: number;
+    error: string;
+  }>;
+  message: string;
+}
+```
+
 ## Processing DoseSpot Notifications
 
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
