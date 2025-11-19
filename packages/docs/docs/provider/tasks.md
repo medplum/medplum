@@ -9,13 +9,15 @@ The Tasks section serves as a centralized management system for coordinating pat
 ## **Creating a Task**
 
 1. **Navigate to Tasks**
-<img width="1360" height="752" alt="Tasks" src="https://github.com/user-attachments/assets/8ab17c93-0e44-44a9-9c13-bc9a30700816" />
+
+   ![Tasks](./tasks-page.png)
 
    * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
 3. **Click the Create Button**  
    * At the top of the Task list section, click the blue “+” button to open the “Create New Task” modal  
 4. **Add Task Details**
-<img width="1360" height="752" alt="Create New Task" src="https://github.com/user-attachments/assets/0ae11c3c-2dc7-43dc-b096-59f30cd2f125" />
+
+   ![Create New Task](./create-new-task.png)
 
 * Required details:
   * Title: add a short, descriptive name for the Task
@@ -85,7 +87,8 @@ Notes can be added within the main Task content area to communicate updates or o
    * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
    * Select a Task from the Tasks list
 2. **Draft and Submit a Note**
-<img width="1360" height="752" alt="Add Task Notes" src="https://github.com/user-attachments/assets/0bf5a186-0171-46ac-9fd9-97541d76fb46" />
+
+   ![Add Task Notes](./add-task-notes.png)
 
    * In the main Task content area, find the “Notes” section, add the note content as necessary, and then click the “Submit” button to add your Note
 
@@ -98,7 +101,8 @@ Notes can be added within the main Task content area to communicate updates or o
 1. **Navigate to Tasks**  
    * In the Medplum Provider app, navigate to the Tasks page by clicking the “Task” section in the left navigation menu
 2. **Open the Filter Options Menu**
-<img width="1360" height="752" alt="Filter Notes" src="https://github.com/user-attachments/assets/1749114b-73e8-422c-81d4-8a5a3f68bde0" />
+
+   ![Filter Tasks](./filter-tasks.png)
 
    * Click the filter button (shown as a funnel icon) at the top of the Tasks list to open the menu of filter options
 2. **Select a Filter Type**  
