@@ -262,6 +262,14 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  // websocket subscriptions are persisted differently than other subscriptions
+  // and are generally thought of as more transient in a way that firing subscriptions
+  // for websocket subscriptions themselves would be quite noisy and not particularly useful
+  // since they cannot be found through traditional means like reading by resource ID.
+  if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
+    return;
+  }
+
   const ctx = tryGetRequestContext();
   const logger = getLogger();
   const logFn = options?.verbose ? logger.info : logger.debug;

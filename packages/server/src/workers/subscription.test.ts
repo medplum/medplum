@@ -21,6 +21,7 @@ import type {
   ProjectMembership,
   Resource,
   Subscription,
+  SubscriptionChannel,
 } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -522,7 +523,7 @@ describe('Subscription Worker', () => {
         status: 'active',
         criteria: 'Patient',
         channel: {
-          type: 'email',
+          type: 'email', // this is what causes the subscription to be ignored
         },
       });
       expect(subscription).toBeDefined();
@@ -1765,7 +1766,7 @@ describe('Subscription Worker', () => {
       return args;
     }
 
-    test('WebSocket Subscription -- Enabled', () =>
+    test('Enabled', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
@@ -1826,7 +1827,54 @@ describe('Subscription Worker', () => {
         ]);
       }));
 
-    test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    test.each([
+      [{ type: 'websocket' }, false], // websocket subscriptions should not trigger subscriptions since they have a different persistence story
+      [{ type: 'rest-hook' }, true], // even though endpoint is missing, this is still valid as a trigger of (valid) subscriptions
+      [{ type: 'rest-hook', endpoint: 'https://example.com/subscription' }, true],
+      [{ type: 'message' }, true],
+    ] as [SubscriptionChannel, boolean][])(
+      'Ignore subscriptions on subscriptions with channel %j',
+      (subChannel, expectedToFire) =>
+        withTestContext(async () => {
+          const { repo: wsSubRepo } = await createTestProject({
+            project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
+            withRepo: true,
+          });
+
+          const subscription = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            reason: 'test',
+            status: 'active',
+            criteria: 'Subscription',
+            channel: {
+              type: 'rest-hook',
+              endpoint: 'https://example.com/subscription',
+            },
+          });
+          expect(subscription).toBeDefined();
+          expect(subscription.id).toBeDefined();
+
+          const queue = getSubscriptionQueue() as any;
+          queue.add.mockClear();
+
+          const sub = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            status: 'active',
+            reason: "raison d'être",
+            criteria: 'Patient?name=somethingrandom',
+            channel: subChannel,
+          });
+
+          expect(sub).toBeDefined();
+          if (expectedToFire) {
+            expect(queue.add).toHaveBeenCalledTimes(1);
+          } else {
+            expect(queue.add).not.toHaveBeenCalled();
+          }
+        })
+    );
+
+    test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
@@ -1865,7 +1913,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Access Policy Not Satisfied', () =>
+    test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1922,7 +1970,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Subscription Author Has No Membership', () =>
+    test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1979,7 +2027,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Error Occurred During Check', () =>
+    test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -2038,7 +2086,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Supported Interaction Extension', () =>
+    test('Supported Interaction Extension', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           withClient: true,
