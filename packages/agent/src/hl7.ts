@@ -37,6 +37,8 @@ export class AgentHl7Channel extends BaseChannel {
   private prefix: string;
   stats?: ChannelStatsTracker;
   private appLevelAckMode: AppLevelAckMode = 'AL'; // Default app level ack mode is AL (Always)
+  private assignSeqNo: boolean = false;
+  private lastSeqNo = -1;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -74,6 +76,14 @@ export class AgentHl7Channel extends BaseChannel {
     this.stats?.cleanup();
     this.started = false;
     this.log.info('Channel stopped successfully');
+  }
+
+  shouldAssignSeqNo(): boolean {
+    return this.assignSeqNo;
+  }
+
+  takeNextSeqNo(): number {
+    return ++this.lastSeqNo;
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
@@ -161,6 +171,7 @@ export class AgentHl7Channel extends BaseChannel {
     const address = new URL(this.getEndpoint().address as string);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
     const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
     let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
@@ -173,6 +184,12 @@ export class AgentHl7Channel extends BaseChannel {
     }
 
     this.appLevelAckMode = parseAppLevelAckMode(appLevelAckRaw, this.log);
+    this.assignSeqNo = assignSeqNo;
+
+    // If assignSeqNo is false or not set, set lastSeqNo to -1
+    if (!assignSeqNo) {
+      this.lastSeqNo = -1;
+    }
 
     this.server.setEncoding(encoding);
     this.server.setEnhancedMode(enhancedMode);
@@ -218,6 +235,13 @@ export class AgentHl7ChannelConnection {
       this.channel.channelLog.info(
         `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
       );
+
+      // Check if we should assign sequence no. If so, take the next one and set it in MSH.13
+      if (this.channel.shouldAssignSeqNo()) {
+        const seqNo = this.channel.takeNextSeqNo();
+        event.message.getSegment('MSH')?.setField(13, seqNo.toString());
+        this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${seqNo}`);
+      }
 
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
