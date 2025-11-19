@@ -4,7 +4,6 @@ import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@me
 import {
   AccessPolicyInteraction,
   ContentType,
-  OperationOutcomeError,
   Operator,
   createReference,
   deepClone,
@@ -17,7 +16,6 @@ import {
   normalizeOperationOutcome,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
-  serverError,
   stringify,
 } from '@medplum/core';
 import type {
@@ -61,16 +59,24 @@ import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRe
 const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
- * The upper limit on the number of times a job can be retried.
- * Using exponential backoff, 18 retries is about 73 hours.
+ * The upper limit on the number of times a job can be attempted.
+ * Using exponential backoff, 19 attempts is about 73 hours (2^18 seconds).
  */
-const MAX_JOB_ATTEMPTS = 18;
+const MAX_JOB_ATTEMPTS = 19;
 
 /**
- * The default number of times a job will be retried.
+ * The default number of times a job will be attempted.
  * This can be overridden by the subscription-max-attempts extension.
  */
-const DEFAULT_RETRIES = 3;
+const DEFAULT_ATTEMPTS = 4;
+
+/**
+ * The maximum number of attempts to get through the preamble (loading subscription and resource).
+ * Errors in the preamble point to issues with the Medplum server as opposed to the client's hook, bot, etc,
+ * so we limit the number of retries differently. Set to a large value to allow time for server issues to be resolved
+ * before dropping the job.
+ */
+const MAX_PREAMBLE_ATTEMPTS = MAX_JOB_ATTEMPTS;
 
 /*
  * The subscription worker inspects every resource change,
@@ -439,59 +445,70 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime, verbose } = job.data;
-  const logger = getLogger();
-  const logFn = verbose ? logger.info : logger.debug;
-
-  const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
-  if (!subscription) {
-    // If the subscription was deleted, then stop processing it.
-    logFn(`Subscription ${subscriptionId} not found`);
-    return;
-  }
-
-  if (subscription.status !== 'active') {
-    // If the subscription has been disabled, then stop processing it.
-    logFn(`Subscription ${subscriptionId} is not active`);
-    return;
-  }
-
-  if (interaction !== 'delete') {
-    const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
-    if (!currentVersion) {
-      // If the resource was deleted, then stop processing it.
-      logFn(`Resource ${resourceType}/${id} not found`);
-      return;
-    }
-
-    if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
-      // If this is a retry and the resource is not the current version, then stop processing it.
-      logFn(`Resource ${resourceType}/${id} is not the current version`);
-      return;
-    }
-  }
+  let subscription: WithId<Subscription> | undefined;
+  let rewrittenResource: Resource;
 
   try {
+    const systemRepo = getSystemRepo();
+    const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
+    const logger = getLogger();
+    const logFn = verbose ? logger.info : logger.debug;
+
+    subscription = await tryGetSubscription(systemRepo, subscriptionId, job.data.channelType);
+    if (!subscription) {
+      // If the subscription was deleted, then stop processing it.
+      logFn(`Subscription ${subscriptionId} not found`);
+      return;
+    }
+
+    const channelType = subscription.channel.type;
+    if (channelType !== 'rest-hook') {
+      logFn(`Subscription ${subscriptionId} has unsupported channel type ${channelType}`);
+      return;
+    }
+
+    if (subscription.status !== 'active') {
+      // If the subscription has been disabled, then stop processing it.
+      logFn(`Subscription ${subscriptionId} is not active`);
+      return;
+    }
+
+    if (job.data.interaction !== 'delete') {
+      const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
+      if (!currentVersion) {
+        // If the resource was deleted, then stop processing it.
+        logFn(`Resource ${resourceType}/${id} not found`);
+        return;
+      }
+
+      if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+        // If this is a retry and the resource is not the current version, then stop processing it.
+        logFn(`Resource ${resourceType}/${id} is not the current version`);
+        return;
+      }
+    }
+
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
     // They would get if they did a search
-    const rewrittenResource = await rewriteAttachments(
-      RewriteMode.PRESIGNED_URL,
-      systemRepo,
-      deepClone(versionedResource)
-    );
-    const channelType = subscription.channel?.type;
-    switch (channelType) {
-      case 'rest-hook':
-        if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(job, subscription, rewrittenResource, interaction, requestTime);
-        } else {
-          await sendRestHook(job, subscription, rewrittenResource, interaction, requestTime);
-        }
-        break;
-      default:
-        throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
+    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, deepClone(versionedResource));
+  } catch (err) {
+    if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
+      throw err;
+    }
+
+    // Too many errors in the preamble, give up
+    globalLogger.error('Subscription job preamble failed too many times, giving up', getLoggingFields(job));
+    return;
+  }
+
+  try {
+    // Errors in this try/catch are considered to be issues in the client's rest hook or bot
+    // and should trigger retries according to the subscription's max attempts
+    if (subscription.channel?.endpoint?.startsWith('Bot/')) {
+      await execBot(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+    } else {
+      await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
   } catch (err) {
     await catchJobError(subscription, job, err);
@@ -726,7 +743,7 @@ async function execBot(
 async function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? DEFAULT_RETRIES;
+      ?.valueInteger ?? DEFAULT_ATTEMPTS;
 
   if (job.attemptsMade < maxJobAttempts) {
     globalLogger.debug(`Retrying job due to error: ${err}`);

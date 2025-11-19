@@ -35,6 +35,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext } from '../context';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
@@ -736,6 +737,62 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
       expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Retries in preamble errors', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 3,
+          },
+        ],
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // causes an error to be thrown
+      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+        throw new Error('Logger not available for some weird reason');
+      });
+
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 0,
+        changePriority: jest.fn(),
+      } as unknown as Job;
+
+      // On the first attempt, throws
+      await expect(execSubscriptionJob(job)).rejects.toThrow('Logger not available for some weird reason');
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      // On a later attempt, should not throw
+      job.attemptsMade = 100000;
+      await execSubscriptionJob(job);
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      getLoggerSpy.mockRestore();
     }));
 
   test('Retry on 429', () =>
