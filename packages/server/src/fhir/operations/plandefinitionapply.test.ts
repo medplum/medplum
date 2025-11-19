@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
+  ActivityDefinition,
   Encounter,
   OperationOutcome,
   Patient,
@@ -11,6 +12,7 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -45,6 +47,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Questionnaire',
+        url: 'http://example.com/Questionnaire/patient-reg-' + randomUUID(),
         status: 'active',
         name: 'Patient Registration',
         title: 'Patient Registration',
@@ -71,7 +74,7 @@ describe('PlanDefinition apply', () => {
         action: [
           {
             title: res1.body.title,
-            definitionCanonical: getReferenceString(res1.body as Questionnaire),
+            definitionCanonical: (res1.body as Questionnaire).url,
           },
         ],
       });
@@ -104,8 +107,10 @@ describe('PlanDefinition apply', () => {
       });
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toStrictEqual('RequestGroup');
-    expect((res4.body as RequestGroup).action).toHaveLength(1);
-    expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+    const requestGroup = res4.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(1);
+    const taskReference = requestGroup.action?.[0]?.resource?.reference;
+    expect(taskReference).toContain('Task/');
 
     // 5. Verify the RequestGroup
     const res5 = await request(app)
@@ -115,13 +120,13 @@ describe('PlanDefinition apply', () => {
 
     // 6. Verify the Task
     const res6 = await request(app)
-      .get(`/fhir/R4/${(res4.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .get(`/fhir/R4/${taskReference}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.resourceType).toStrictEqual('Task');
-    expect(res6.body.code.text).toStrictEqual(res1.body.title);
-
     const resultTask = res6.body as Task;
+
+    expect(resultTask.code?.text).toStrictEqual(res1.body.title);
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
     expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
     expect(resultTask.input).toHaveLength(1);
@@ -145,6 +150,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Questionnaire',
+        url: 'http://example.com/Questionnaire/patient-reg-' + randomUUID(),
         status: 'active',
         name: 'Patient Registration',
         title: 'Patient Registration',
@@ -171,7 +177,7 @@ describe('PlanDefinition apply', () => {
         action: [
           {
             title: res1.body.title,
-            definitionCanonical: getReferenceString(res1.body as Questionnaire),
+            definitionCanonical: (res1.body as Questionnaire).url,
           },
         ],
       });
@@ -374,6 +380,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
         status: 'active',
         kind: 'ServiceRequest',
         name: 'CompleteBloodCountOrder',
@@ -424,7 +431,7 @@ describe('PlanDefinition apply', () => {
         action: [
           {
             title: 'Order a CBC',
-            definitionCanonical: getReferenceString(res1.body),
+            definitionCanonical: (res1.body as ActivityDefinition).url,
           },
         ],
       });
@@ -495,6 +502,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/bp-' + randomUUID(),
         status: 'active',
         kind: 'ServiceRequest',
         name: 'BloodPressureCheck',
@@ -547,6 +555,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/task-' + randomUUID(),
         status: 'active',
         kind: 'Task', // Different kind to test the fix
         name: 'GeneralTaskWithOwner',
@@ -595,11 +604,11 @@ describe('PlanDefinition apply', () => {
         action: [
           {
             title: res1a.body.title,
-            definitionCanonical: getReferenceString(res1a.body),
+            definitionCanonical: (res1a.body as ActivityDefinition).url,
           },
           {
             title: res1b.body.title,
-            definitionCanonical: getReferenceString(res1b.body),
+            definitionCanonical: (res1b.body as ActivityDefinition).url,
           },
         ],
       });
