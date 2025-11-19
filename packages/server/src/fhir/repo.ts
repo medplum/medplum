@@ -1274,44 +1274,46 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       await this.deleteCacheEntry(resourceType, id);
 
-      await this.ensureInTransaction(async (conn) => {
-        const lastUpdated = new Date();
-        const content = '';
-        const columns: Record<string, any> = {
-          id,
-          lastUpdated,
-          deleted: true,
-          projectId: resource.meta?.project ?? systemResourceProjectId,
-          content,
-          __version: -1,
-        };
-
-        if (resourceType !== 'Binary') {
-          columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-        }
-
-        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-          this.buildColumn({ resourceType } as Resource, columns, searchParam);
-        }
-
-        await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
-
-        await new InsertQuery(resourceType + '_History', [
-          {
+      if (!this.isCacheOnly(resource)) {
+        await this.ensureInTransaction(async (conn) => {
+          const lastUpdated = new Date();
+          const content = '';
+          const columns: Record<string, any> = {
             id,
-            versionId: this.generateId(),
             lastUpdated,
+            deleted: true,
+            projectId: resource.meta?.project ?? systemResourceProjectId,
             content,
-          },
-        ]).execute(conn);
+            __version: -1,
+          };
 
-        await this.deleteFromLookupTables(conn, resource);
-        const durationMs = Date.now() - startTime;
+          if (resourceType !== 'Binary') {
+            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+          }
 
-        await this.postCommit(async () => {
-          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
+          for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+            this.buildColumn({ resourceType } as Resource, columns, searchParam);
+          }
+
+          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+
+          await new InsertQuery(resourceType + '_History', [
+            {
+              id,
+              versionId: this.generateId(),
+              lastUpdated,
+              content,
+            },
+          ]).execute(conn);
+
+          await this.deleteFromLookupTables(conn, resource);
+          const durationMs = Date.now() - startTime;
+
+          await this.postCommit(async () => {
+            this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
+          });
         });
-      });
+      }
 
       await addSubscriptionJobs(resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
