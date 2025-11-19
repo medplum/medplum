@@ -1828,8 +1828,8 @@ describe('Subscription Worker', () => {
       }));
 
     test.each([
-      [{ type: 'websocket' }, false],
-      [{ type: 'rest-hook' }, true],
+      [{ type: 'websocket' }, false], // websocket subscriptions should not trigger subscriptions since they have a different persistence story
+      [{ type: 'rest-hook' }, true], // even though endpoint is missing, this is still valid as a trigger of (valid) subscriptions
       [{ type: 'rest-hook', endpoint: 'https://example.com/subscription' }, true],
       [{ type: 'message' }, true],
     ] as [SubscriptionChannel, boolean][])(
