@@ -13,7 +13,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
-import type { Request, Response } from 'express';
+import type { Response as ExpressResponse, Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
@@ -49,6 +49,8 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
       }
       return getOutParametersFromResult(result);
     });
+  } else if (sse) {
+    // SSE not supported for bot execution
   } else {
     const result = await executeOperation(req);
     if (isOperationOutcome(result)) {
@@ -70,7 +72,11 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
   }
 };
 
-async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
+async function executeOperation(
+  req: Request,
+  expressResponse?: ExpressResponse,
+  streaming?: boolean
+): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
@@ -94,6 +100,8 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     headers: req.headers,
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
+    streaming,
+    expressResponse,
   });
 
   return result;

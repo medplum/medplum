@@ -31,6 +31,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       ...request,
       accessToken: await getBotAccessToken(runAs),
       secrets: await getBotSecrets(bot, runAs),
+      streaming: request.streaming,
+      expressResponse: request.expressResponse,
     };
 
     if (bot.runtimeVersion === 'awslambda') {

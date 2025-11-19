@@ -32,11 +32,16 @@ export interface BotExecutionRequest {
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
+
+  readonly streaming?: boolean;
+  readonly expressResponse?: Express.Response;
 }
 
 export interface BotExecutionContext extends BotExecutionRequest {
   readonly accessToken: string;
   readonly secrets: Record<string, ProjectSetting>;
+  readonly streaming?: boolean;
+  readonly expressResponse?: Express.Response;
 }
 
 export interface BotExecutionResult {
