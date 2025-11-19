@@ -1765,7 +1765,7 @@ describe('Subscription Worker', () => {
       return args;
     }
 
-    test('WebSocket Subscription -- Enabled', () =>
+    test('Enabled', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
@@ -1826,7 +1826,9 @@ describe('Subscription Worker', () => {
         ]);
       }));
 
-    test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    test('Ignore subscriptions on websocket subscriptions', () => withTestContext(async () => {}));
+
+    test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
@@ -1865,7 +1867,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Access Policy Not Satisfied', () =>
+    test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1922,7 +1924,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Subscription Author Has No Membership', () =>
+    test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1979,7 +1981,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Error Occurred During Check', () =>
+    test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -2038,7 +2040,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Supported Interaction Extension', () =>
+    test('Supported Interaction Extension', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           withClient: true,
