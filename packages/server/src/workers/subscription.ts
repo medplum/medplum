@@ -529,7 +529,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    if (isGone(outcome)) {
+    if (isGone(outcome) || isNotFound(outcome)) {
       // If the resource was deleted, then stop processing it.
       return undefined;
     }
