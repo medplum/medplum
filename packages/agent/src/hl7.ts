@@ -38,7 +38,7 @@ export class AgentHl7Channel extends BaseChannel {
   stats?: ChannelStatsTracker;
   private appLevelAckMode: AppLevelAckMode = 'AL'; // Default app level ack mode is AL (Always)
   private assignSeqNo: boolean = false;
-  private lastSequenceNo = -1;
+  private lastSeqNo = -1;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -82,8 +82,8 @@ export class AgentHl7Channel extends BaseChannel {
     return this.assignSeqNo;
   }
 
-  takeNextSequenceNo(): number {
-    return ++this.lastSequenceNo;
+  takeNextSeqNo(): number {
+    return ++this.lastSeqNo;
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
@@ -186,9 +186,9 @@ export class AgentHl7Channel extends BaseChannel {
     this.appLevelAckMode = parseAppLevelAckMode(appLevelAckRaw, this.log);
     this.assignSeqNo = assignSeqNo;
 
-    // If not in serialized mode, set lastSerialNo to 0
+    // If assignSeqNo is false or not set, set lastSeqNo to -1
     if (!assignSeqNo) {
-      this.lastSequenceNo = -1;
+      this.lastSeqNo = -1;
     }
 
     this.server.setEncoding(encoding);
@@ -238,9 +238,9 @@ export class AgentHl7ChannelConnection {
 
       // Check if we should assign sequence no. If so, take the next one and set it in MSH.13
       if (this.channel.shouldAssignSeqNo()) {
-        const sequenceNo = this.channel.takeNextSequenceNo();
-        event.message.getSegment('MSH')?.setField(13, sequenceNo.toString());
-        this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${sequenceNo}`);
+        const seqNo = this.channel.takeNextSeqNo();
+        event.message.getSegment('MSH')?.setField(13, seqNo.toString());
+        this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${seqNo}`);
       }
 
       this.channel.app.addToWebSocketQueue({
