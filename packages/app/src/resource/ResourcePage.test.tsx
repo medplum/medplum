@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { OperationOutcomeError } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { Bot, Practitioner, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Practitioner, Questionnaire, Subscription, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
@@ -114,6 +114,48 @@ describe('ResourcePage', () => {
     });
 
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
+  });
+
+  test('Questionnaire preview tab appears', async () => {
+    await setup('/Questionnaire/123');
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
+  });
+
+  test('ValueSet preview', async () => {
+    const medplum = new MockClient();
+    const valueSet = await medplum.createResource<ValueSet>({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/valueset/test',
+      expansion: {
+        timestamp: '2023-01-01T00:00:00.000Z',
+        contains: [
+          {
+            system: 'http://example.com/codesystem',
+            code: 'code1',
+            display: 'Display 1',
+          },
+        ],
+      },
+    });
+
+    // Mock valueSetExpand
+    medplum.valueSetExpand = jest.fn().mockResolvedValue(valueSet);
+
+    await setup(`/ValueSet/${valueSet.id}/preview`, medplum);
+    expect(await screen.findByPlaceholderText('Select a value from the ValueSet')).toBeInTheDocument();
+  });
+
+  test('ValueSet preview tab appears', async () => {
+    const medplum = new MockClient();
+    const valueSet = await medplum.createResource<ValueSet>({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/valueset/test',
+    });
+
+    await setup(`/ValueSet/${valueSet.id}`, medplum);
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
   });
 
   test('Questionnaire bots -- create only (default)', async () => {
