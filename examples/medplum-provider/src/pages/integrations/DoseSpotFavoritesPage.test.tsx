@@ -27,8 +27,6 @@ vi.mock('../../utils/notifications', () => ({
   showErrorNotification: vi.fn(),
 }));
 
-
-
 describe('DoseSpotFavoritesPage', () => {
   let medplum: MockClient;
   let mockFormularyReturn: ReturnType<typeof useDoseSpotClinicFormulary>;
@@ -104,10 +102,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     await waitFor(() => {
-      expect(medplum.search).toHaveBeenCalledWith(
-        'MedicationKnowledge',
-        expect.stringContaining('code=')
-      );
+      expect(medplum.search).toHaveBeenCalledWith('MedicationKnowledge', expect.stringContaining('code='));
     });
   });
 
@@ -126,7 +121,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -134,7 +129,7 @@ describe('DoseSpotFavoritesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Medication')).toBeInTheDocument();
     });
-    
+
     expect(screen.getByPlaceholderText('Search medications...')).toBeInTheDocument();
   });
 
@@ -147,7 +142,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -158,14 +153,15 @@ describe('DoseSpotFavoritesPage', () => {
 
     // Find close button - it might be an X icon button or a button with aria-label
     const closeButtons = screen.getAllByRole('button');
-    const closeButton = closeButtons.find((btn) => 
-      btn.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-      btn.className.includes('mantine-Modal-close') ||
-      btn.querySelector('[class*="mantine-Modal-close"]')
+    const closeButton = closeButtons.find(
+      (btn) =>
+        btn.getAttribute('aria-label')?.toLowerCase().includes('close') ||
+        btn.className.includes('mantine-Modal-close') ||
+        btn.querySelector('[class*="mantine-Modal-close"]')
     );
-    
+
     expect(closeButton).toBeDefined();
-    
+
     if (closeButton) {
       await act(async () => {
         fireEvent.click(closeButton);
@@ -209,7 +205,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -253,7 +249,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -278,7 +274,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -307,7 +303,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -344,7 +340,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -354,7 +350,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addFavoriteButton = screen.getByRole('button', { name: 'Add Favorite' });
-    
+
     await act(async () => {
       fireEvent.click(addFavoriteButton);
     });
@@ -395,7 +391,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -405,7 +401,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addFavoriteButton = screen.getByRole('button', { name: 'Add Favorite' });
-    
+
     await act(async () => {
       fireEvent.click(addFavoriteButton);
     });
@@ -452,7 +448,7 @@ describe('DoseSpotFavoritesPage', () => {
     setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -462,7 +458,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addFavoriteButton = screen.getByRole('button', { name: 'Add Favorite' });
-    
+
     await act(async () => {
       fireEvent.click(addFavoriteButton);
     });
@@ -490,7 +486,7 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -501,13 +497,13 @@ describe('DoseSpotFavoritesPage', () => {
 
     // Find close button - it might be an X icon button or a button with aria-label
     const closeButtons = screen.getAllByRole('button');
-    const closeButton = closeButtons.find((btn) => 
-      btn.getAttribute('aria-label')?.toLowerCase().includes('close') ||
-      btn.className.includes('mantine-Modal-close')
+    const closeButton = closeButtons.find(
+      (btn) =>
+        btn.getAttribute('aria-label')?.toLowerCase().includes('close') || btn.className.includes('mantine-Modal-close')
     );
-    
+
     expect(closeButton).toBeDefined();
-    
+
     if (closeButton) {
       await act(async () => {
         fireEvent.click(closeButton);
@@ -517,4 +513,3 @@ describe('DoseSpotFavoritesPage', () => {
     }
   });
 });
-

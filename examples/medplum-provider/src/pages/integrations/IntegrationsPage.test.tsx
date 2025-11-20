@@ -10,7 +10,7 @@ describe('IntegrationsPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock window.location.href
     mockLocationHref = '';
     Object.defineProperty(window, 'location', {
@@ -71,9 +71,13 @@ describe('IntegrationsPage', () => {
   test('Renders integration descriptions', () => {
     setup();
 
-    expect(screen.getByText(/Implement SSO for healthcare staff with HIPAA-compliant authentication protocols/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Implement SSO for healthcare staff with HIPAA-compliant authentication protocols/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Manage identity access for patient portals/)).toBeInTheDocument();
-    expect(screen.getByText(/Place orders and receive lab results directly in your EHR from Labcorp/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Place orders and receive lab results directly in your EHR from Labcorp/)
+    ).toBeInTheDocument();
   });
 
   test('Renders integration tags', () => {
@@ -120,7 +124,9 @@ describe('IntegrationsPage', () => {
     expect(decodedHref).toContain('Hello Medplum team');
     expect(decodedHref).toContain('I would like to request an integration with Okta');
     expect(decodedHref).toContain('Name: Okta');
-    expect(decodedHref).toContain('Description: Implement SSO for healthcare staff with HIPAA-compliant authentication protocols.');
+    expect(decodedHref).toContain(
+      'Description: Implement SSO for healthcare staff with HIPAA-compliant authentication protocols.'
+    );
     expect(decodedHref).toContain('URL: https://www.okta.com');
     expect(decodedHref).toContain('Thank you!');
   });
@@ -136,7 +142,7 @@ describe('IntegrationsPage', () => {
     });
 
     expect(healthGorillaButton).toBeDefined();
-    
+
     if (healthGorillaButton) {
       fireEvent.click(healthGorillaButton);
 
@@ -159,7 +165,7 @@ describe('IntegrationsPage', () => {
     });
 
     expect(microsoftButton).toBeDefined();
-    
+
     if (microsoftButton) {
       fireEvent.click(microsoftButton);
 
@@ -167,7 +173,7 @@ describe('IntegrationsPage', () => {
       expect(mockLocationHref).toContain('mailto:hello@medplum.com');
       expect(mockLocationHref).toContain('subject=');
       expect(mockLocationHref).toContain('body=');
-      
+
       // Decoded should contain the correct content
       const decodedHref = decodeURIComponent(mockLocationHref);
       expect(decodedHref).toContain("Integrate Microsoft's identity platform");
@@ -226,4 +232,3 @@ describe('IntegrationsPage', () => {
     });
   });
 });
-

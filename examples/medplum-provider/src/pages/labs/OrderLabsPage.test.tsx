@@ -111,7 +111,7 @@ describe('OrderLabsPage', () => {
 
   function setup(props: { patientId?: string } = {}): void {
     vi.mocked(useParams).mockReturnValue({ patientId: props.patientId });
-    
+
     if (props.patientId) {
       vi.spyOn(medplum, 'readResource').mockResolvedValue(HomerSimpson as typeof HomerSimpson & { id: string });
     }
@@ -180,7 +180,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const insuranceRadio = screen.getByLabelText('Insurance');
-    
+
     await act(async () => {
       fireEvent.click(insuranceRadio);
     });
@@ -194,7 +194,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const notesInput = screen.getByLabelText('Order notes');
-    
+
     await act(async () => {
       fireEvent.change(notesInput, { target: { value: 'Test notes' } });
     });
@@ -218,7 +218,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const submitButton = screen.getByRole('button', { name: 'Submit Order' });
-    
+
     await act(async () => {
       fireEvent.click(submitButton);
     });
@@ -255,7 +255,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const submitButton = screen.getByRole('button', { name: 'Submit Order' });
-    
+
     await act(async () => {
       fireEvent.click(submitButton);
     });
@@ -289,7 +289,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const submitButton = screen.getByRole('button', { name: 'Submit Order' });
-    
+
     await act(async () => {
       fireEvent.click(submitButton);
     });
@@ -325,7 +325,7 @@ describe('OrderLabsPage', () => {
     setup();
 
     const submitButton = screen.getByRole('button', { name: 'Submit Order' });
-    
+
     // Click button to start submission
     fireEvent.click(submitButton);
 
@@ -335,13 +335,16 @@ describe('OrderLabsPage', () => {
     });
 
     resolveCreateOrder?.();
-    
+
     await createOrderPromise;
 
     // Wait for button to be enabled again
-    await waitFor(() => {
-      expect(submitButton).not.toBeDisabled();
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(submitButton).not.toBeDisabled();
+      },
+      { timeout: 2000 }
+    );
   });
 
   test('Renders specimen collection date time input', () => {
@@ -351,4 +354,3 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
   });
 });
-

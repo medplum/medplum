@@ -70,5 +70,4 @@ describe('SignInPage', () => {
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
-
 });
