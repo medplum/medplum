@@ -2,13 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Stack } from '@mantine/core';
 import type { Parameters, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import {
-  DescriptionList,
-  DescriptionListEntry,
-  Document,
-  useMedplum,
-  ValueSetAutocomplete,
-} from '@medplum/react';
+import { DescriptionList, DescriptionListEntry, Document, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
@@ -119,4 +113,3 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
     </Document>
   );
 }
-

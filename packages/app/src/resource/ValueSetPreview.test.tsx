@@ -85,7 +85,6 @@ describe('ValueSetPreview', () => {
       },
     });
 
-
     // Mock valueSetExpand
     medplum.valueSetExpand = jest.fn().mockResolvedValue(valueSet);
 
@@ -204,4 +203,3 @@ describe('ValueSetPreview', () => {
     expect(await screen.findByPlaceholderText('Select a value from the ValueSet')).toBeInTheDocument();
   });
 });
-

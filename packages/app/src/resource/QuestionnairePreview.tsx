@@ -28,4 +28,3 @@ export function QuestionnairePreview(props: QuestionnairePreviewProps): JSX.Elem
     </Document>
   );
 }
-

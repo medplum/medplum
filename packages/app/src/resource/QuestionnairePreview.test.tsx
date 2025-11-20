@@ -64,4 +64,3 @@ describe('QuestionnairePreview', () => {
     expect(await screen.findByText('Question 1')).toBeInTheDocument();
   });
 });
-

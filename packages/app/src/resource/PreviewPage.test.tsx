@@ -43,7 +43,6 @@ describe('PreviewPage', () => {
     jest.useRealTimers();
   });
 
-
   test('ValueSet preview tab appears in ResourcePage', async () => {
     const valueSet = await medplum.createResource<ValueSet>({
       resourceType: 'ValueSet',
@@ -104,4 +103,3 @@ describe('PreviewPage', () => {
     expect(await screen.findByPlaceholderText('Select a value from the ValueSet')).toBeInTheDocument();
   });
 });
-
