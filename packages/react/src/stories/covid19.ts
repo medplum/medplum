@@ -13,7 +13,6 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
-import { randomUUID } from 'node:crypto';
 
 export const Covid19AssessmentQuestionnaire: WithId<Questionnaire> = {
   resourceType: 'Questionnaire',
@@ -707,7 +706,7 @@ export const Covid19PCRObservationDefinition: WithId<ObservationDefinition> = {
 export const Covid19PCRTest: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
   id: 'covid19-pcr-test',
-  url: 'http://example.com/ActivityDefinition/covid-pcr-' + randomUUID(),
+  url: 'http://example.com/ActivityDefinition/covid-pcr',
   status: 'active',
   kind: 'ServiceRequest',
   title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
@@ -730,7 +729,7 @@ export const Covid19PCRTest: WithId<ActivityDefinition> = {
 
 export const Covid19ReviewReport: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
-  url: 'http://example.com/ActivityDefinition/review-covid-report-' + randomUUID(),
+  url: 'http://example.com/ActivityDefinition/review-covid-report',
   title: 'Review COVID-19 Report',
   name: 'Review COVID-19 Report',
   description: 'Review COVID-19 PCR diagnostic results',
