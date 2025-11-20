@@ -290,7 +290,7 @@ export class Hl7Connection extends Hl7Base {
   async close(): Promise<void> {
     // If we have already received the close event, then we can just return immediately
     if (this.isClosed()) {
-      return Promise.resolve();
+      return;
     }
     this.socket.end();
     this.socket.destroy();

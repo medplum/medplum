@@ -118,7 +118,7 @@ mfaRouter.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
-      return Promise.resolve();
+      return;
     }
 
     const systemRepo = getSystemRepo();
