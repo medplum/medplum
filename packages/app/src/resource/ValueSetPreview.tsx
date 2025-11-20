@@ -24,6 +24,26 @@ interface CodeSystemPropertyListProps {
 }
 
 /**
+ * Formats a property value from a ParametersParameter part.
+ * Handles various value types: code, string, boolean, integer, decimal, date, and dateTime.
+ *
+ * @param part - The ParametersParameter part containing the value
+ * @returns The formatted string value or 'N/A' if no value is present
+ */
+function formatPropertyValue(part: ParametersParameter): string {
+  return (
+    part.valueCode ||
+    part.valueString ||
+    (part.valueBoolean === undefined ? undefined : String(part.valueBoolean)) ||
+    (part.valueInteger === undefined ? undefined : String(part.valueInteger)) ||
+    (part.valueDecimal === undefined ? undefined : String(part.valueDecimal)) ||
+    part.valueDate ||
+    part.valueDateTime ||
+    'N/A'
+  );
+}
+
+/**
  * Renders a list of CodeSystem properties from a CodeSystem/$lookup operation result.
  * Each property displays its code, description, and value.
  *
@@ -58,14 +78,7 @@ function CodeSystemPropertyList(props: CodeSystemPropertyListProps): JSX.Element
                 if (part.name === 'value') {
                   return (
                     <DescriptionListEntry key="value" term="Value">
-                      {part.valueCode ||
-                        part.valueString ||
-                        (part.valueBoolean !== undefined ? String(part.valueBoolean) : undefined) ||
-                        (part.valueInteger !== undefined ? String(part.valueInteger) : undefined) ||
-                        (part.valueDecimal !== undefined ? String(part.valueDecimal) : undefined) ||
-                        part.valueDate ||
-                        part.valueDateTime ||
-                        'N/A'}
+                      {formatPropertyValue(part)}
                     </DescriptionListEntry>
                   );
                 }
@@ -116,7 +129,6 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
         const result = await medplum.get(url);
         setLookupResult(result as Parameters);
       } catch (error) {
-        console.error('Failed to lookup code:', error);
         setLookupError(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoadingLookup(false);
