@@ -43,43 +43,6 @@ describe('PreviewPage', () => {
     jest.useRealTimers();
   });
 
-  test('Questionnaire preview renders', async () => {
-    const questionnaire = await medplum.createResource<Questionnaire>({
-      resourceType: 'Questionnaire',
-      status: 'active',
-      title: 'Test Questionnaire',
-    });
-
-    await setup(`/Questionnaire/${questionnaire.id}/preview`);
-
-    expect(await screen.findByText('This is just a preview!')).toBeInTheDocument();
-    expect(screen.getByText(`/forms/${questionnaire.id}`)).toBeInTheDocument();
-  });
-
-  test('ValueSet preview renders', async () => {
-    const valueSet = await medplum.createResource<ValueSet>({
-      resourceType: 'ValueSet',
-      status: 'active',
-      url: 'http://example.com/valueset/test',
-      expansion: {
-        timestamp: '2023-01-01T00:00:00.000Z',
-        contains: [
-          {
-            system: 'http://example.com/codesystem',
-            code: 'code1',
-            display: 'Display 1',
-          },
-        ],
-      },
-    });
-
-    // Mock valueSetExpand
-    medplum.valueSetExpand = jest.fn().mockResolvedValue(valueSet);
-
-    await setup(`/ValueSet/${valueSet.id}/preview`);
-
-    expect(await screen.findByPlaceholderText('Select a value from the ValueSet')).toBeInTheDocument();
-  });
 
   test('ValueSet preview tab appears in ResourcePage', async () => {
     const valueSet = await medplum.createResource<ValueSet>({

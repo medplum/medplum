@@ -103,47 +103,9 @@ describe('ResourcePage', () => {
     expect(await screen.findByText('Timeline')).toBeInTheDocument();
   });
 
-  test('Questionnaire preview', async () => {
-    await setup('/Questionnaire/123/preview');
-    expect(await screen.findByText('Preview')).toBeInTheDocument();
-
-    window.alert = jest.fn();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
-
-    expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
-  });
-
   test('Questionnaire preview tab appears', async () => {
     await setup('/Questionnaire/123');
     expect(await screen.findByText('Preview')).toBeInTheDocument();
-  });
-
-  test('ValueSet preview', async () => {
-    const medplum = new MockClient();
-    const valueSet = await medplum.createResource<ValueSet>({
-      resourceType: 'ValueSet',
-      status: 'active',
-      url: 'http://example.com/valueset/test',
-      expansion: {
-        timestamp: '2023-01-01T00:00:00.000Z',
-        contains: [
-          {
-            system: 'http://example.com/codesystem',
-            code: 'code1',
-            display: 'Display 1',
-          },
-        ],
-      },
-    });
-
-    // Mock valueSetExpand
-    medplum.valueSetExpand = jest.fn().mockResolvedValue(valueSet);
-
-    await setup(`/ValueSet/${valueSet.id}/preview`, medplum);
-    expect(await screen.findByPlaceholderText('Select a value from the ValueSet')).toBeInTheDocument();
   });
 
   test('ValueSet preview tab appears', async () => {

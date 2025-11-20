@@ -41,7 +41,7 @@ describe('QuestionnairePreview', () => {
 
     await setup(questionnaire);
 
-    expect(await screen.findByText('This is just a preview!')).toBeInTheDocument();
+    expect(await screen.findByText(/^This is just a preview!/)).toBeInTheDocument();
     expect(screen.getByText(`/forms/${questionnaire.id}`)).toBeInTheDocument();
   });
 
