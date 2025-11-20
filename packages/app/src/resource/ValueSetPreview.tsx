@@ -31,17 +31,14 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
       return;
     }
 
-    setLoading(true);
     try {
       // Call CodeSystem/$lookup operation
-      const params = new URLSearchParams({system: newValue.system, code: newValue.code})
-      const url = medplum.fhirUrl('CodeSystem','$lookup') + '?' + params.toString();
+      const params = new URLSearchParams({ system: newValue.system, code: newValue.code });
+      const url = medplum.fhirUrl('CodeSystem', '$lookup') + '?' + params.toString();
       const result = await medplum.get(url);
       setLookupResult(result as Parameters);
     } catch (error) {
       console.error('Failed to lookup code:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -72,38 +69,47 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
 
               {lookupResult && (
                 <Stack gap="md">
-                  {lookupResult.parameter?.filter((param) => param === 'property' && param.part).map((param) =>
+                  {lookupResult.parameter
+                    ?.filter((param) => param.name === 'property' && param.part)
+                    .map((param) => (
                       <DescriptionList key={param.name}>
                         <DescriptionListEntry term="Property">
                           <Stack gap="xs">
-                            {param.part.map((part) => {
-                                  if (part.name === 'description') {
-                                    return (
-                                      <DescriptionListEntry key="description" term="Description">
-                                        {part.valueString}
-                                      </DescriptionListEntry>
-                                    );
-                                  }
-                                  if (part.name === 'value') {
-                                    return (
-                                      <DescriptionListEntry key="value" term="Value">
-                                        {part.valueCode ||
-                                          part.valueString ||
-                                          (part.valueBoolean !== undefined ? String(part.valueBoolean) : undefined) ||
-                                          (part.valueInteger !== undefined ? String(part.valueInteger) : undefined) ||
-                                          (part.valueDecimal !== undefined ? String(part.valueDecimal) : undefined) ||
-                                          part.valueDate ||
-                                          part.valueDateTime ||
-                                          'N/A'}
-                                      </DescriptionListEntry>
-                                    );
-                                  }
-                                  return null;
-                                })}
-                              </Stack>
-                            </DescriptionListEntry>
-                          </DescriptionList>
-                  )}
+                            {param.part?.map((part) => {
+                              if (part.name === 'code') {
+                                return (
+                                  <DescriptionListEntry key="code" term="Code">
+                                    {part.valueCode}
+                                  </DescriptionListEntry>
+                                );
+                              }
+                              if (part.name === 'description') {
+                                return (
+                                  <DescriptionListEntry key="description" term="Description">
+                                    {part.valueString}
+                                  </DescriptionListEntry>
+                                );
+                              }
+                              if (part.name === 'value') {
+                                return (
+                                  <DescriptionListEntry key="value" term="Value">
+                                    {part.valueCode ||
+                                      part.valueString ||
+                                      (part.valueBoolean !== undefined ? String(part.valueBoolean) : undefined) ||
+                                      (part.valueInteger !== undefined ? String(part.valueInteger) : undefined) ||
+                                      (part.valueDecimal !== undefined ? String(part.valueDecimal) : undefined) ||
+                                      part.valueDate ||
+                                      part.valueDateTime ||
+                                      'N/A'}
+                                  </DescriptionListEntry>
+                                );
+                              }
+                              return null;
+                            })}
+                          </Stack>
+                        </DescriptionListEntry>
+                      </DescriptionList>
+                    ))}
                 </Stack>
               )}
             </Stack>
