@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   ActivityDefinition,
+  CarePlan,
   Encounter,
   OperationOutcome,
   Patient,
@@ -106,17 +108,18 @@ describe('PlanDefinition apply', () => {
         ],
       });
     expect(res4.status).toBe(200);
-    expect(res4.body.resourceType).toStrictEqual('RequestGroup');
-    const requestGroup = res4.body as RequestGroup;
-    expect(requestGroup.action).toHaveLength(1);
-    const taskReference = requestGroup.action?.[0]?.resource?.reference;
-    expect(taskReference).toContain('Task/');
+    expect(res4.body.resourceType).toStrictEqual('CarePlan');
+    const carePlan = res4.body as WithId<CarePlan>;
 
     // 5. Verify the RequestGroup
     const res5 = await request(app)
-      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
+      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res5.status).toBe(200);
+    const requestGroup = res5.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(1);
+    const taskReference = requestGroup.action?.[0]?.resource?.reference;
+    expect(taskReference).toContain('Task/');
 
     // 6. Verify the Task
     const res6 = await request(app)
@@ -229,13 +232,22 @@ describe('PlanDefinition apply', () => {
         ],
       });
     expect(res5.status).toBe(200);
-    expect(res5.body.resourceType).toStrictEqual('RequestGroup');
-    expect((res5.body as RequestGroup).action).toHaveLength(1);
-    expect((res5.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+    expect(res5.body.resourceType).toStrictEqual('CarePlan');
+    const carePlan = res5.body as CarePlan;
+
+    const resRG = await request(app)
+      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRG.status).toBe(200);
+    expect(resRG.body.resourceType).toBe('RequestGroup');
+    const requestGroup = resRG.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(1);
+    const taskReference = requestGroup.action?.[0]?.resource?.reference;
+    expect(taskReference).toContain('Task/');
 
     // 6. Verify the Task
     const res6 = await request(app)
-      .get(`/fhir/R4/${(res5.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .get(`/fhir/R4/${taskReference}`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     const resultTask = res6.body as Task;
@@ -465,9 +477,11 @@ describe('PlanDefinition apply', () => {
       });
 
     expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toBe('CarePlan');
+    const carePlan = res4.body as WithId<CarePlan>;
 
     const res5 = await request(app)
-      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
+      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res5.status).toBe(200);
     expect(res5.body.resourceType).toBe('RequestGroup');
@@ -746,14 +760,24 @@ describe('PlanDefinition apply', () => {
         ],
       });
     expect(res7.status).toBe(200);
-    expect(res7.body.resourceType).toStrictEqual('RequestGroup');
-    expect((res7.body as RequestGroup).action).toHaveLength(2);
-    expect((res7.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
-    expect((res7.body as RequestGroup).action?.[1]?.resource?.reference).toBeDefined();
+    expect(res7.body.resourceType).toStrictEqual('CarePlan');
+    const carePlan = res7.body as CarePlan;
+
+    const resRG = await request(app)
+      .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRG.status).toBe(200);
+    expect(resRG.body.resourceType).toBe('RequestGroup');
+    const requestGroup = resRG.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(2);
+    const taskRef1 = requestGroup.action?.[0]?.resource?.reference;
+    expect(taskRef1).toContain('Task/');
+    const taskRef2 = requestGroup.action?.[1]?.resource?.reference;
+    expect(taskRef2).toContain('Task/');
 
     // 8a. Verify the first Task (ServiceRequest kind) includes all references
     const res8a = await request(app)
-      .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .get(`/fhir/R4/${taskRef1}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8a.status).toBe(200);
     expect(res8a.body.resourceType).toStrictEqual('Task');
@@ -771,7 +795,7 @@ describe('PlanDefinition apply', () => {
 
     // 8b. Verify the second Task (Task kind) also includes task-elements extension values
     const res8b = await request(app)
-      .get(`/fhir/R4/${(res7.body as RequestGroup).action?.[1]?.resource?.reference}`)
+      .get(`/fhir/R4/${taskRef2}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8b.status).toBe(200);
     expect(res8b.body.resourceType).toStrictEqual('Task');

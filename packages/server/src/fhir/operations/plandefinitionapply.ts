@@ -3,6 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
+  concatUrls,
   createReference,
   evalFhirPathTyped,
   getExtension,
@@ -14,6 +15,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   ActivityDefinition,
   Bot,
+  CarePlan,
   ClientApplication,
   CodeableConcept,
   Encounter,
@@ -31,6 +33,7 @@ import type {
   Task,
   TaskInput,
 } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
@@ -101,7 +104,10 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
 
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
-    instantiatesCanonical: [planDefinition.url ?? getReferenceString(planDefinition)],
+    instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
+    instantiatesUri: !planDefinition.url
+      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
+      : undefined,
     subject: subjectRef,
     status: 'active',
     intent: 'order',
@@ -109,7 +115,19 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     encounter: encounterRef,
   });
 
-  return [allOk, requestGroup];
+  const carePlan = await ctx.repo.createResource<CarePlan>({
+    resourceType: 'CarePlan',
+    status: 'active',
+    subject: subjectRef,
+    intent: 'plan',
+    instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
+    instantiatesUri: !planDefinition.url
+      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
+      : undefined,
+    activity: [{ reference: createReference(requestGroup) }],
+  });
+
+  return [allOk, carePlan];
 }
 
 /**

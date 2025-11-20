@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { PlanDefinition, Questionnaire, QuestionnaireResponse, RequestGroup, Task } from '@medplum/fhirtypes';
 import { DrAliceSmith } from './alice';
 import { HomerSimpson } from './simpsons';
@@ -83,7 +83,7 @@ export const ExampleWorkflowQuestionnaireResponse1: WithId<QuestionnaireResponse
   resourceType: 'QuestionnaireResponse',
   id: 'workflow-questionnaire-response-1',
   status: 'completed',
-  questionnaire: getReferenceString(ExampleWorkflowQuestionnaire1),
+  questionnaire: ExampleWorkflowQuestionnaire1.url,
   subject: createReference(HomerSimpson),
   source: createReference(HomerSimpson),
 };
