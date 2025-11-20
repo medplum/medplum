@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
 import type { Parameters, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import {
   DescriptionList,
@@ -22,13 +22,12 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
   const valueSetUrl = valueSet.url;
   const [selectedValue, setSelectedValue] = useState<ValueSetExpansionContains | undefined>();
   const [lookupResult, setLookupResult] = useState<Parameters | undefined>();
-  const [loading, setLoading] = useState(false);
 
   const handleValueChange = async (newValue: ValueSetExpansionContains | undefined): Promise<void> => {
     setSelectedValue(newValue);
     setLookupResult(undefined);
 
-    if (!newValue || !newValue.code || !newValue.system) {
+    if (!newValue?.code || !newValue?.system) {
       return;
     }
 
@@ -99,6 +98,7 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
                                       </DescriptionListEntry>
                                     );
                                   }
+                                  return null;
                                 })}
                               </Stack>
                             </DescriptionListEntry>
