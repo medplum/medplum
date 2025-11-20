@@ -101,7 +101,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
 
   const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
-    return Promise.reject(badRequest('Password found in breach database', 'password'));
+    throw badRequest('Password found in breach database', 'password');
   }
 
   globalLogger.info('User creation request received', { email });
