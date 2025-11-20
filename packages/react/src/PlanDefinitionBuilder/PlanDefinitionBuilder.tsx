@@ -323,7 +323,8 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
         if (newValue) {
           props.onChange({
             ...props.action,
-            definitionCanonical: 'url' in newValue ? newValue.url : getReferenceString(newValue),
+            definitionCanonical: 'url' in newValue ? newValue.url : undefined,
+            definitionUri: !('url' in newValue) ? getReferenceString(newValue) : undefined,
           });
         } else {
           props.onChange({ ...props.action, definitionCanonical: undefined });
