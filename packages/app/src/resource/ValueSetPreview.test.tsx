@@ -201,7 +201,7 @@ describe('ValueSetPreview', () => {
     await setup(valueSet);
 
     const input = await screen.findByPlaceholderText('Select a value from the ValueSet');
-    
+
     // We need to trigger the lookup by simulating a selection
     // Since we can't easily simulate autocomplete selection, we'll check the component structure
     expect(input).toBeInTheDocument();
