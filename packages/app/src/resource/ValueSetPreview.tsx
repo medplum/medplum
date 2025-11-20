@@ -36,8 +36,8 @@ function CodeSystemPropertyList(props: CodeSystemPropertyListProps): JSX.Element
 
   return (
     <Stack gap="md">
-      {properties.map((param) => (
-        <DescriptionList key={param.name}>
+      {properties.map((param, index) => (
+        <DescriptionList key={`${param.name}-${index}`}>
           <DescriptionListEntry term="Property">
             <Stack gap="xs">
               {param.part?.map((part) => {
