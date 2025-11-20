@@ -3,10 +3,10 @@
 import type { NewUserRequest, WithId } from '@medplum/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import type { ClientApplication, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';

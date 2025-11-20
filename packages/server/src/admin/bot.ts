@@ -5,7 +5,7 @@ import { ContentType, createReference, getReferenceString } from '@medplum/core'
 import type { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';

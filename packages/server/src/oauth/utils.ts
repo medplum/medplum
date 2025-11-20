@@ -31,14 +31,13 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { createHash } from 'crypto';
 import type { Request } from 'express';
 import type { IncomingMessage } from 'http';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
