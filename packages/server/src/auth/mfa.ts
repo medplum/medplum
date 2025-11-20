@@ -124,7 +124,7 @@ mfaRouter.post(
     const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
-    return sendLoginResult(res, result);
+    await sendLoginResult(res, result);
   }
 );
 
