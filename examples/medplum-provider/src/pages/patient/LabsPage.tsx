@@ -25,7 +25,7 @@ import { IconPlus } from '@tabler/icons-react';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
-import { OrderLabsPage } from '../OrderLabsPage';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
 import { usePatient } from '../../hooks/usePatient';
 import cx from 'clsx';
 import classes from './LabsPage.module.css';

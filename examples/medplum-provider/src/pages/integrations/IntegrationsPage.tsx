@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Flex } from '@mantine/core';
 import type { JSX } from 'react';
-import { IntegrationCard } from '../components/IntegrationCard';
+import { IntegrationCard } from '../../components/IntegrationCard';
 
 interface Integration {
   name: string;
