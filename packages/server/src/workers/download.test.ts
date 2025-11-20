@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Media } from '@medplum/fhirtypes';
+import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
@@ -78,6 +78,10 @@ describe('Download Worker', () => {
             traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
           },
         });
+
+        const updatedMedia = await repo.readResource<Media>('Media', media.id);
+        expect(updatedMedia.content?.url).toMatch(/^Binary\//);
+        expect(updatedMedia.meta?.author?.reference).toBe('system');
       },
       { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
     ));
@@ -391,6 +395,114 @@ describe('Download Worker', () => {
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Does not enqueue when mutating non-URL fields', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalledTimes(1);
+
+      queue.add.mockClear();
+
+      await repo.updateResource<Media>({
+        ...media,
+        status: 'in-progress',
+      });
+
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Updates only matching attachment paths', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const firstUrl = 'https://example.com/download-1';
+      const secondUrl = 'https://example.com/download-2';
+
+      const doc = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: firstUrl,
+            },
+          },
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: secondUrl,
+            },
+          },
+        ],
+      });
+      expect(doc).toBeDefined();
+      expect(queue.add).toHaveBeenCalledTimes(2);
+
+      const body1 = new Readable();
+      body1.push('foo1');
+      body1.push(null);
+
+      const body2 = new Readable();
+      body2.push('foo2');
+      body2.push(null);
+
+      (fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+        url === firstUrl
+          ? {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-1',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body1,
+            }
+          : {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-2',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body2,
+            }
+      );
+
+      const job1 = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job1);
+
+      const afterFirstDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterFirstDownload.content?.[0]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterFirstDownload.content?.[1]?.attachment?.url).toBe(secondUrl);
+      expect(afterFirstDownload.meta?.author?.reference).toBe('system');
+
+      const job2 = { id: 2, data: queue.add.mock.calls[1][1] } as unknown as Job;
+      await execDownloadJob(job2);
+
+      const afterSecondDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterSecondDownload.content?.[0]?.attachment?.url).toBe(afterFirstDownload.content[0].attachment.url);
+      expect(afterSecondDownload.content?.[1]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterSecondDownload.meta?.author?.reference).toBe('system');
     }));
 
   test('Stop retries if auto download disabled', () =>
