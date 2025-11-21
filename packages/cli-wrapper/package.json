@@ -1,6 +1,6 @@
 {
   "name": "medplum",
-  "version": "5.0.3",
+  "version": "5.0.4",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -43,8 +43,8 @@
     "medplum": "tsx src/index.ts"
   },
   "dependencies": {
-    "@medplum/cli": "5.0.3",
-    "@medplum/core": "5.0.3"
+    "@medplum/cli": "5.0.4",
+    "@medplum/core": "5.0.4"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
