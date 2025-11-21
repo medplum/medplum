@@ -100,7 +100,9 @@ describe('PatientPage.utils', () => {
         label: 'Test',
       };
       // replace() only replaces the first occurrence
-      expect(formatPatientPageTabUrl('patient-123', tab)).toBe('/Patient/patient-123/Resource?patient=patient-123&other=%patient.id');
+      expect(formatPatientPageTabUrl('patient-123', tab)).toBe(
+        '/Patient/patient-123/Resource?patient=patient-123&other=%patient.id'
+      );
     });
 
     test('handles complex query string with patient.id placeholder', () => {
@@ -132,12 +134,29 @@ describe('PatientPage.utils', () => {
     });
 
     test('throws error when tab not found', () => {
-      expect(() => getPatientPageTabOrThrow('nonexistent')).toThrow('Could not find patient page tab with id nonexistent');
-      expect(() => getPatientPageTabOrThrow('invalid-tab')).toThrow('Could not find patient page tab with id invalid-tab');
+      expect(() => getPatientPageTabOrThrow('nonexistent')).toThrow(
+        'Could not find patient page tab with id nonexistent'
+      );
+      expect(() => getPatientPageTabOrThrow('invalid-tab')).toThrow(
+        'Could not find patient page tab with id invalid-tab'
+      );
     });
 
     test('finds all defined tabs', () => {
-      const tabIds = ['timeline', 'edit', 'encounter', 'tasks', 'meds', 'labs', 'devices', 'documentreference', 'careplan', 'message', 'dosespot', 'export'];
+      const tabIds = [
+        'timeline',
+        'edit',
+        'encounter',
+        'tasks',
+        'meds',
+        'labs',
+        'devices',
+        'documentreference',
+        'careplan',
+        'message',
+        'dosespot',
+        'export',
+      ];
       for (const tabId of tabIds) {
         const tab = getPatientPageTabOrThrow(tabId);
         expect(tab).toBeDefined();
@@ -195,4 +214,3 @@ describe('PatientPage.utils', () => {
     });
   });
 });
-

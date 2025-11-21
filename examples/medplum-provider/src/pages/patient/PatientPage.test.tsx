@@ -28,7 +28,6 @@ vi.mock('react-router', async () => {
   };
 });
 
-
 const mockPatient: Patient = HomerSimpson;
 
 describe('PatientPage', () => {
@@ -39,7 +38,11 @@ describe('PatientPage', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (initialPath = '/Patient/patient-123', patient?: Patient, outcome?: OperationOutcome): ReturnType<typeof render>=> {
+  const setup = (
+    initialPath = '/Patient/patient-123',
+    patient?: Patient,
+    outcome?: OperationOutcome
+  ): ReturnType<typeof render> => {
     if (outcome) {
       // Simulate setOutcome being called
       mockUsePatient.mockImplementation((options?: { setOutcome?: (outcome: OperationOutcome) => void }) => {
@@ -151,7 +154,6 @@ describe('PatientPage', () => {
     expect(screen.queryByText('Timeline')).not.toBeInTheDocument();
   });
 
-
   it('defaults to timeline tab when URL does not match any tab', async () => {
     await act(async () => {
       setup('/Patient/patient-123/unknown-path', mockPatient);
@@ -177,7 +179,6 @@ describe('PatientPage', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Male')).toBeInTheDocument();
     expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
-
   });
 
   it('handles empty pathname correctly', async () => {
@@ -206,4 +207,3 @@ describe('PatientPage', () => {
     });
   });
 });
-
