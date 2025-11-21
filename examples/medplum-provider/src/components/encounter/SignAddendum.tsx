@@ -10,7 +10,7 @@ import { ChartNoteStatus } from '../../types/encounter';
 import { createReference, formatDate } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 
-interface SignAddendumCardProps {
+interface SignAddendumProps {
   provenances: Provenance[];
   chartNoteStatus: ChartNoteStatus;
   encounter: Encounter;
@@ -27,11 +27,7 @@ interface AddendumDisplay {
   text: string;
 }
 
-export const SignAddendumCard = ({
-  provenances,
-  chartNoteStatus,
-  encounter,
-}: SignAddendumCardProps): JSX.Element | null => {
+export const SignAddendum = ({ provenances, chartNoteStatus, encounter }: SignAddendumProps): JSX.Element | null => {
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const authorReference = author ? createReference(author) : undefined;

@@ -16,14 +16,14 @@ import type {
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { VisitDetailsPanel } from '../../components/encounter/VisitDetailsPanel';
+import { VisitDetailsPanel } from './VisitDetailsPanel';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 import { useMedplum } from '@medplum/react';
 import { createSelfPayCoverage } from '../../utils/coverage';
-import { ConditionList } from '../../components/Conditions/ConditionList';
+import { ConditionList } from '../Conditions/ConditionList';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
-import { ChargeItemList } from '../../components/ChargeItem/ChargeItemList';
+import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { calculateTotalPrice } from '../../utils/chargeitems';
