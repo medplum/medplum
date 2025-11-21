@@ -47,6 +47,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Tasks',
   },
   {
+    id: 'meds',
+    url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Meds',
+  },
+  {
     id: 'labs',
     url: 'labs',
     label: 'Labs',
