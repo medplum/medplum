@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { OperationOutcomeError } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { Bot, Practitioner, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Practitioner, Questionnaire, Subscription, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
@@ -103,17 +103,21 @@ describe('ResourcePage', () => {
     expect(await screen.findByText('Timeline')).toBeInTheDocument();
   });
 
-  test('Questionnaire preview', async () => {
-    await setup('/Questionnaire/123/preview');
+  test('Questionnaire preview tab appears', async () => {
+    await setup('/Questionnaire/123');
     expect(await screen.findByText('Preview')).toBeInTheDocument();
+  });
 
-    window.alert = jest.fn();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
+  test('ValueSet preview tab appears', async () => {
+    const medplum = new MockClient();
+    const valueSet = await medplum.createResource<ValueSet>({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/valueset/test',
     });
 
-    expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
+    await setup(`/ValueSet/${valueSet.id}`, medplum);
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
   });
 
   test('Questionnaire bots -- create only (default)', async () => {
