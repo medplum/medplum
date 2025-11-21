@@ -96,6 +96,8 @@ Once you have created your [`Questionnaire`](/docs/api/fhir/resources/questionna
 
 Each [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) represents an _individual response_ to a [`Questionnaire`](/docs/api/fhir/resources/questionnaire). An individual response could be one response per person or the same person responding multiple times to the same [`Questionnaire`](/docs/api/fhir/resources/questionnaire) over the course of their care.
 
+Use [Bots](/docs/bots/bot-for-questionnaire-response/bot-for-questionnaire-response) to automatically process `QuestionnaireResponse` resources when they are created, such as extracting data, scoring results, or triggering other workflows.
+
 A [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) should link to a specific [`Questionnaire`](/docs/api/fhir/resources/questionnaire). It does not necessarily need to provide answers to each question, but all required questions must be answered.
 
 :::caution Structuring Answers
