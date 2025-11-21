@@ -67,11 +67,6 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Documents',
   },
   {
-    id: 'billing',
-    url: 'Claim?_fields=_lastUpdated,status,patient,payor,created&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Billing',
-  },
-  {
     id: 'careplan',
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
