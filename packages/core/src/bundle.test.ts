@@ -9,7 +9,12 @@ import type {
   Resource,
   Specimen,
 } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle, reorderBundle } from './bundle';
+import {
+  convertContainedResourcesToBundle,
+  convertToTransactionBundle,
+  findResourceInBundle,
+  reorderBundle,
+} from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -330,7 +335,6 @@ describe('Bundle tests', () => {
       const result = convertToTransactionBundle(inputBundle);
       expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
     });
-
   });
 
   describe('convertContainedResourcesToBundle', () => {
