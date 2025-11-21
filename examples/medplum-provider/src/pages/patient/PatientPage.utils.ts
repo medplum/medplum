@@ -47,6 +47,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Tasks',
   },
   {
+    id: 'meds',
+    url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Meds',
+  },
+  {
     id: 'labs',
     url: 'labs',
     label: 'Labs',
@@ -60,6 +65,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     id: 'documentreference',
     url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Documents',
+  },
+  {
+    id: 'billing',
+    url: 'Claim?_fields=_lastUpdated,status,patient,payor,created&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Billing',
   },
   {
     id: 'careplan',
