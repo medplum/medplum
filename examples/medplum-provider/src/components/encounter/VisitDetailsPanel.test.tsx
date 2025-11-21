@@ -90,7 +90,7 @@ describe('VisitDetailsPanel', () => {
       // Check that the practitioner name is displayed
       expect(screen.getByText(/Dr\. Test/i)).toBeInTheDocument();
     });
-    
+
     // The onChange should be called when practitioner is actually changed via user interaction
     // For now, we verify the component renders correctly with the practitioner
     expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
@@ -182,4 +182,3 @@ describe('VisitDetailsPanel', () => {
     expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
   });
 });
-

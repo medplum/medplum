@@ -163,7 +163,6 @@ describe('BillingTab', () => {
 
   it('exports claim as CMS 1500 when option is selected', async () => {
     const user = userEvent.setup();
-   
 
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
     vi.spyOn(medplum, 'post').mockResolvedValue({
@@ -287,7 +286,6 @@ describe('BillingTab', () => {
   });
 
   it('fetches coverage on mount', async () => {
-
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
 
     await act(async () => {
@@ -315,4 +313,3 @@ describe('BillingTab', () => {
     });
   });
 });
-

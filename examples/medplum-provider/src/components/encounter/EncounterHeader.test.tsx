@@ -267,4 +267,3 @@ describe('EncounterHeader', () => {
     expect(screen.getByText(/Unknown Provider/)).toBeInTheDocument();
   });
 });
-

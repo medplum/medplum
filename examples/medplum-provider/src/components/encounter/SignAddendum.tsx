@@ -27,11 +27,7 @@ interface AddendumDisplay {
   text: string;
 }
 
-export const SignAddendum = ({
-  provenances,
-  chartNoteStatus,
-  encounter,
-}: SignAddendumProps): JSX.Element | null => {
+export const SignAddendum = ({ provenances, chartNoteStatus, encounter }: SignAddendumProps): JSX.Element | null => {
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const authorReference = author ? createReference(author) : undefined;

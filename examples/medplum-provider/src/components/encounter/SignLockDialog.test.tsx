@@ -123,4 +123,3 @@ describe('SignLockDialog', () => {
     expect(onSign).not.toHaveBeenCalled();
   });
 });
-
