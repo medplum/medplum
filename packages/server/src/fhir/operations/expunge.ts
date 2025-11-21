@@ -24,7 +24,10 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
 
   const { resourceType, id } = req.params;
   const { everything } = req.query;
-  if (everything === 'true') {
+  // Default to everything=true for Project resources, unless explicitly set to false
+  const shouldExpungeEverything =
+    everything === 'true' || (everything !== 'false' && resourceType === 'Project');
+  if (shouldExpungeEverything) {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));

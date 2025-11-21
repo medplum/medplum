@@ -108,6 +108,88 @@ describe('Expunge', () => {
     expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
   });
 
+  test('Expunge Project defaults to everything=true', async () => {
+    const { project, client, membership } = await createTestProject({ withClient: true });
+    expect(project).toBeDefined();
+    expect(client).toBeDefined();
+    expect(membership).toBeDefined();
+
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.id },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    const obs = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { project: project.id },
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: { reference: 'Patient/' + patient.id },
+    });
+    expect(obs).toBeDefined();
+
+    // Expunge the project without explicitly setting everything=true
+    // Should default to everything=true for Project resources
+    const res = await request(app)
+      .post(`/fhir/R4/Project/${project.id}/$expunge`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(res.status).toBe(202);
+
+    await waitForAsyncJob(res.headers['content-location'], app, superAdminAccessToken);
+
+    expect(await existsInDatabase('Project', project.id)).toBe(false);
+    expect(await existsInDatabase('ClientApplication', client.id)).toBe(false);
+    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
+    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
+    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
+  });
+
+  test('Expunge Project with everything=false only expunges Project', async () => {
+    const { project, client, membership } = await createTestProject({ withClient: true });
+    expect(project).toBeDefined();
+    expect(client).toBeDefined();
+    expect(membership).toBeDefined();
+
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.id },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    const obs = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { project: project.id },
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: { reference: 'Patient/' + patient.id },
+    });
+    expect(obs).toBeDefined();
+
+    // Expunge the project with everything=false explicitly set
+    // Should only expunge the Project resource, not everything in the compartment
+    const res = await request(app)
+      .post(`/fhir/R4/Project/${project.id}/$expunge?everything=false`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(res.status).toBe(200);
+
+    // Project should be expunged
+    expect(await existsInDatabase('Project', project.id)).toBe(false);
+    // But other resources should still exist
+    expect(await existsInDatabase('ClientApplication', client.id)).toBe(true);
+    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(true);
+    expect(await existsInDatabase('Patient', patient.id)).toBe(true);
+    expect(await existsInDatabase('Observation', obs.id)).toBe(true);
+  });
+
   test('Expunger.expunge() expunges all resource types', async () => {
     //setup
     const { project, client, membership } = await createTestProject({ withClient: true });
