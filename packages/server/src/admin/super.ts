@@ -13,10 +13,10 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { assert } from 'console';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
+import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import type { AuthenticatedRequestContext } from '../context';
@@ -264,7 +264,7 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
   requireSuperAdmin();
 
   const postDeployMigrations = getPostDeployMigrationVersions();
-  const conn = await getDatabasePool(DatabaseMode.WRITER);
+  const conn = getDatabasePool(DatabaseMode.WRITER);
   const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
   res.json({

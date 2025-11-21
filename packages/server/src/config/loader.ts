@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
-import { randomUUID } from 'crypto';
-import { mkdtempSync, readFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { randomUUID } from 'node:crypto';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';

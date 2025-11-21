@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
+import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
-import { env } from 'process';
 import { getLogger } from '../logger';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];

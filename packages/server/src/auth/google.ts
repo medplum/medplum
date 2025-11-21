@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, isString, isUUID, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';

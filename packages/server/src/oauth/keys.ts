@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Operator } from '@medplum/core';
 import type { JsonWebKey } from '@medplum/fhirtypes';
-import { randomBytes } from 'crypto';
 import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
+import { randomBytes } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';

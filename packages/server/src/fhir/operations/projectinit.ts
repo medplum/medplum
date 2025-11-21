@@ -11,7 +11,7 @@ import type {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';

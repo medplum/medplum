@@ -5,7 +5,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import type { IncomingMessage } from 'http';
+import type { IncomingMessage } from 'node:http';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';

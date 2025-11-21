@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger, ILoggerConfig, LoggerOptions, LogMessage } from '@medplum/core';
 import { isObject, LogLevel, LogLevelNames, normalizeErrorString, parseLogLevel, splitN } from '@medplum/core';
-import { normalize } from 'path';
+import { normalize } from 'node:path';
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import { DEFAULT_LOG_LIMIT, MAX_LOG_LIMIT } from './constants';

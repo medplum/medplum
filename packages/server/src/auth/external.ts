@@ -10,9 +10,9 @@ import {
   parseJWTPayload,
 } from '@medplum/core';
 import type { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getLogger, globalLogger } from '../logger';

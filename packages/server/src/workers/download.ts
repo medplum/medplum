@@ -6,7 +6,7 @@ import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import type { Readable } from 'stream';
+import type { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';

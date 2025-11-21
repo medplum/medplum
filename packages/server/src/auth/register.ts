@@ -3,7 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { createProject } from '../fhir/operations/projectinit';
 import { getSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';

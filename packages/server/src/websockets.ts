@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
-import { randomUUID } from 'crypto';
-import type http from 'http';
-import type { IncomingMessage } from 'http';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
+import type http from 'node:http';
+import type { IncomingMessage } from 'node:http';
 import type { RawData, Server, WebSocket } from 'ws';
 import { WebSocketServer } from 'ws';
 import { handleAgentConnection } from './agent/websockets';

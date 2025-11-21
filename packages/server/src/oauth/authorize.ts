@@ -3,7 +3,7 @@
 import { getDateProperty, Operator } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { URL } from 'url';
+import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';

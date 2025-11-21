@@ -3,7 +3,7 @@
 import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';

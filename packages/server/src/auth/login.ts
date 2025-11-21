@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { randomUUID } from 'node:crypto';
 import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';

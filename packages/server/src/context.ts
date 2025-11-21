@@ -11,8 +11,8 @@ import type {
   ProjectMembership,
   Reference,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { heartbeat } from './heartbeat';
 import { getRedis } from './redis';
 import { getServerVersion } from './util/version';
