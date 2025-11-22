@@ -4,27 +4,43 @@ import { ContentType, createReference, getReferenceString } from '@medplum/core'
 import type {
   AsyncJob,
   Encounter,
+  Login,
   Observation,
   OperationOutcome,
   Parameters,
   ParametersParameter,
   Patient,
+  Project,
+  ProjectMembership,
   ServiceRequest,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
 import express from 'express';
+import type { Job } from 'bullmq';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { runInAsyncContext } from '../../context';
+import { createTestProject, waitForAsyncJob } from '../../test.setup';
+import type { PatientMergeJobData } from '../../workers/patient-merge';
+import { execPatientMergeJob, getPatientMergeQueue } from '../../workers/patient-merge';
 
 const app = express();
 let accessToken: string;
+let login: WithId<Login>;
+let membership: WithId<ProjectMembership>;
+let project: WithId<Project>;
 
 describe('Patient Merge Operation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ accessToken, login, membership, project } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    }));
   });
 
   afterAll(async () => {
@@ -664,6 +680,125 @@ describe('Patient Merge Operation', () => {
 
       expect(mergeRes.status).toBe(202);
       expect(mergeRes.headers['content-location']).toBeDefined();
+    });
+
+    test('Uses worker queue for async execution', async () => {
+      const queue = getPatientMergeQueue() as any;
+      if (queue) {
+        queue.add.mockClear();
+      }
+
+      const sourceRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient', name: [{ given: ['Source'], family: 'Patient' }] } satisfies Patient);
+      const sourcePatient = sourceRes.body as Patient;
+
+      const targetRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient', name: [{ given: ['Target'], family: 'Patient' }] } satisfies Patient);
+      const targetPatient = targetRes.body as Patient;
+
+      const mergeRes = await request(app)
+        .post('/fhir/R4/Patient/$merge')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Prefer', 'respond-async')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'source-patient', valueReference: createReference(sourcePatient) },
+            { name: 'target-patient', valueReference: createReference(targetPatient) },
+          ],
+        });
+
+      expect(mergeRes.status).toBe(202);
+      expect(mergeRes.headers['content-location']).toBeDefined();
+
+      // Verify queue was called
+      if (queue) {
+        expect(queue.add).toHaveBeenCalledWith(
+          'PatientMergeJobData',
+          expect.objectContaining<Partial<PatientMergeJobData>>({
+            sourcePatient: expect.objectContaining({ reference: expect.stringContaining(sourcePatient.id as string) }),
+            targetPatient: expect.objectContaining({ reference: expect.stringContaining(targetPatient.id as string) }),
+          })
+        );
+      }
+    });
+
+    test('Worker job executes successfully', async () => {
+      const queue = getPatientMergeQueue() as any;
+      if (!queue) {
+        return; // Skip if queue not available (e.g., in test environment without Redis)
+      }
+
+      queue.add.mockClear();
+
+      const sourceRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient', name: [{ given: ['Source'], family: 'Patient' }] } satisfies Patient);
+      const sourcePatient = sourceRes.body as Patient;
+
+      const targetRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient', name: [{ given: ['Target'], family: 'Patient' }] } satisfies Patient);
+      const targetPatient = targetRes.body as Patient;
+
+      // Create an observation for source patient
+      const observationRes = await request(app)
+        .post('/fhir/R4/Observation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ system: 'http://loinc.org', code: 'test' }] },
+          subject: createReference(sourcePatient),
+        } satisfies Observation);
+
+      const mergeRes = await request(app)
+        .post('/fhir/R4/Patient/$merge')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Prefer', 'respond-async')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'source-patient', valueReference: createReference(sourcePatient) },
+            { name: 'target-patient', valueReference: createReference(targetPatient) },
+          ],
+        });
+
+      expect(mergeRes.status).toBe(202);
+
+      // Manually execute the job
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job<PatientMergeJobData>;
+      queue.add.mockClear();
+
+      await runInAsyncContext(
+        { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+        undefined,
+        undefined,
+        () => execPatientMergeJob(job)
+      );
+
+      // Wait for async job to complete
+      await waitForAsyncJob(mergeRes.headers['content-location'], app, accessToken);
+
+      // Verify merge completed
+      const updatedSourceRes = await request(app)
+        .get(`/fhir/R4/Patient/${sourcePatient.id}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(updatedSourceRes.body.active).toBe(false);
+
+      // Verify observation was updated
+      const updatedObsRes = await request(app)
+        .get(`/fhir/R4/Observation/${observationRes.body.id}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(updatedObsRes.body.subject.reference).toBe(getReferenceString(targetPatient));
     });
 
     test('Async job completes successfully', async () => {

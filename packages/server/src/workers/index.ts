@@ -9,6 +9,7 @@ import { addCronJobs, initCronWorker } from './cron';
 import { addDownloadJobs, initDownloadWorker } from './download';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
+import { initPatientMergeWorker } from './patient-merge';
 import { initSetAccountsWorker } from './set-accounts';
 import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
@@ -28,6 +29,7 @@ export function initWorkers(config: MedplumServerConfig): void {
     initBatchWorker,
     initPostDeployMigrationWorker,
     initSetAccountsWorker,
+    initPatientMergeWorker,
   ];
 
   for (const initializer of initializers) {

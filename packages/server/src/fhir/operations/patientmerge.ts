@@ -14,13 +14,13 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   OperationDefinition,
   OperationDefinitionParameter,
-  Parameters,
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
+import { addPatientMergeJobData } from '../../workers/patient-merge';
 import type { Repository } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
@@ -136,17 +136,15 @@ export async function patientMergeHandler(req: FhirRequest): Promise<FhirRespons
   if (preferHeader === 'respond-async') {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
-    await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
+    const asyncJob = await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-    exec.start(async () => {
-      const result = await executeMerge(ctx.repo, params['source-patient'], targetPatientRef);
-      return {
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'return', resource: result.target },
-          { name: 'resourcesUpdated', valueInteger: result.resourcesUpdated },
-        ],
-      } satisfies Parameters;
+    await exec.run(async () => {
+      await addPatientMergeJobData({
+        asyncJob,
+        sourcePatient: params['source-patient'],
+        targetPatient: targetPatientRef,
+        authState: getAuthenticatedContext().authState,
+      });
     });
 
     return [accepted(exec.getContentLocation(baseUrl))];
@@ -169,7 +167,7 @@ interface MergeResult {
  * @param targetRef - Reference to the target patient.
  * @returns The merge result containing the updated target patient and count of updated resources.
  */
-async function executeMerge(
+export async function executeMerge(
   repo: Repository,
   sourceRef: Reference<Patient>,
   targetRef: Reference<Patient>
