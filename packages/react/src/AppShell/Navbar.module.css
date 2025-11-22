@@ -1,54 +1,94 @@
+.navbar {
+  padding: 0;
+  transition-property: width;
+}
+
+.logoButton {
+  max-width: 45px;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+  transition: background-color 100ms ease;
+
+  &:hover {
+    background-color: var(--mantine-primary-color-light-hover);
+  }
+}
+
 .menuTitle {
   margin: 20px 0 4px 6px;
-  font-size: 9px;
-  font-weight: normal;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-6));
+}
+
+.menuTitle:empty,
+.menuTitle:blank {
+  display: none;
 }
 
 .link {
+  width: 100%;
+  height: 38px;
+  border-radius: var(--mantine-radius-md);
   display: flex;
   align-items: center;
-  text-decoration: none;
-  font-size: var(--mantine-font-size-sm);
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
-  padding: 8px 12px;
-  border-radius: var(--mantine-radius-sm);
-  font-weight: 500;
+  justify-content: start;
+  padding: 0 var(--mantine-spacing-sm);
+  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0));
+  outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &:hover {
-    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
-    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
-    text-decoration: none;
-
-    & svg {
-      color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
-    }
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
   }
 
-  & svg {
+  & > svg {
     color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
-    margin-right: var(--mantine-spacing-sm);
+    stroke-width: 1.5;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    max-width: 18px;
+  }
+
+  & > span {
+    margin-left: var(--mantine-spacing-sm);
+    white-space: nowrap;
+  }
+
+  &[data-active] {
+    &,
+    &:hover {
+      background-color: var(--mantine-color-blue-light);
+      color: var(--mantine-color-blue-light-color);
+
+      & svg {
+        color: var(--mantine-color-blue-light-color);
+      }
+    }
+  }
+}
+
+.link:focus-visible {
+  outline: none;
+}
+
+.toggleButton {
+  max-width: 45px;
+  height: 38px;
+  padding: 0 var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  transition: background-color 100ms ease;
+
+  & > svg {
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
     stroke-width: 1.5;
     width: 18px;
     height: 18px;
   }
-}
-
-.linkActive {
-  color: var(--mantine-primary-color-filled);
-  background-color: light-dark(var(--mantine-primary-color-light), var(--mantine-primary-color-dark));
 
   &:hover {
-    color: var(--mantine-primary-color-filled-hover);
-    background-color: light-dark(var(--mantine-primary-color-light-hover), var(--mantine-primary-color-dark-hover));
-
-    & svg {
-      color: var(--mantine-color-blue-light-color);
-    }
-  }
-
-  & svg {
-    color: var(--mantine-color-blue-light-color);
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
   }
 }
