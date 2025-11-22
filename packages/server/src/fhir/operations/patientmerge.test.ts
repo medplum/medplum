@@ -80,7 +80,10 @@ describe('Patient Merge Operation', () => {
           ],
         });
       expect(mergeRes.status).toBe(200);
-      const mergedTarget = mergeRes.body as Patient;
+      const result = mergeRes.body as Parameters;
+      expect(result.resourceType).toBe('Parameters');
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
       expect(mergedTarget.id).toBe(targetPatient.id);
       expect(mergedTarget.active).toBe(true);
 
@@ -215,7 +218,9 @@ describe('Patient Merge Operation', () => {
         });
 
       expect(mergeRes.status).toBe(200);
-      const mergedTarget = mergeRes.body as Patient;
+      const result = mergeRes.body as Parameters;
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
       expect(mergedTarget.id).toBe(targetPatient.id);
 
       // Verify references updated
@@ -413,7 +418,9 @@ describe('Patient Merge Operation', () => {
         });
 
       expect(mergeRes.status).toBe(200);
-      const mergedTarget = mergeRes.body as Patient;
+      const result = mergeRes.body as Parameters;
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
       expect(mergedTarget.id).toBe(targetPatient.id);
     });
   });
@@ -538,6 +545,45 @@ describe('Patient Merge Operation', () => {
 
       expect(mergeRes.status).toBeGreaterThanOrEqual(400);
     });
+
+    test('Returns error on inconsistent link structure', async () => {
+      const sourceRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Patient',
+          name: [{ given: ['Source'], family: 'Patient' }],
+          link: [{ other: { reference: 'Patient/target' }, type: 'replaced-by' }], // Source claims to be replaced by target
+        } satisfies Patient);
+      const sourcePatient = sourceRes.body as Patient;
+
+      const targetRes = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Patient',
+          name: [{ given: ['Target'], family: 'Patient' }],
+          // Target is missing the 'replaces' link back to source - inconsistent!
+        } satisfies Patient);
+      const targetPatient = targetRes.body as Patient;
+
+      const mergeRes = await request(app)
+        .post('/fhir/R4/Patient/$merge')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'source-patient', valueReference: createReference(sourcePatient) },
+            { name: 'target-patient', valueReference: createReference(targetPatient) },
+          ],
+        });
+
+      expect(mergeRes.status).toBe(400);
+      const outcome = mergeRes.body as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toBe('error');
+      expect(outcome.issue?.[0]?.details?.text).toContain('Inconsistent patient link structure');
+    });
   });
 
   describe('Idempotency', () => {
@@ -582,7 +628,9 @@ describe('Patient Merge Operation', () => {
         });
 
       expect(secondMergeRes.status).toBe(200);
-      const mergedTarget = secondMergeRes.body as Patient;
+      const result = secondMergeRes.body as Parameters;
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
       expect(mergedTarget.id).toBe(targetPatient.id);
     });
   });
@@ -703,7 +751,9 @@ describe('Patient Merge Operation', () => {
         });
 
       expect(mergeRes.status).toBe(200);
-      const mergedTarget = mergeRes.body as Patient;
+      const result = mergeRes.body as Parameters;
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
       expect(mergedTarget.id).toBe(targetPatient.id);
 
       // Verify source is inactive
@@ -740,7 +790,10 @@ describe('Patient Merge Operation', () => {
         });
 
       expect(mergeRes.status).toBe(200);
-      expect(mergeRes.body.id).toBe(targetPatient.id);
+      const result = mergeRes.body as Parameters;
+      const mergedTarget = result.parameter?.find((p) => p.name === 'return')?.resource as Patient;
+      expect(mergedTarget).toBeDefined();
+      expect(mergedTarget.id).toBe(targetPatient.id);
     });
 
     test('Instance-level operation requires source-patient parameter', async () => {

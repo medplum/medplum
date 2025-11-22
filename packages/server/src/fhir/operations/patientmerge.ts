@@ -24,7 +24,7 @@ import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
-import { parseInputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   linkPatientRecords,
   mergePatientRecords,
@@ -154,7 +154,7 @@ export async function patientMergeHandler(req: FhirRequest): Promise<FhirRespons
 
   // Synchronous execution
   const result = await executeMerge(ctx.repo, params['source-patient'], targetPatientRef);
-  return [allOk, result.target];
+  return [allOk, buildOutputParameters(operation, { return: result.target, resourcesUpdated: result.resourcesUpdated })];
 }
 
 interface MergeResult {
@@ -194,18 +194,23 @@ async function executeMerge(
     if (patientsAlreadyMerged(sourcePatient, targetPatient)) {
       // Already merged, return target as-is
       return {
-        target: targetPatient as WithId<Patient>,
+        target: targetPatient,
         resourcesUpdated: 0,
       };
     }
   } catch (err) {
     // If patientsAlreadyMerged throws, it means link structure is inconsistent
-    // We'll proceed with the merge anyway
-    getLogger().warn('Inconsistent link structure detected, proceeding with merge', { error: err });
+    // This is a data integrity issue that should be fixed, not ignored
+    getLogger().error('Inconsistent link structure detected', { error: err, sourceId, targetId });
+    throw new OperationOutcomeError(
+      badRequest(
+        `Inconsistent patient link structure detected. This indicates a data integrity issue. Error: ${err instanceof Error ? err.message : String(err)}`
+      )
+    );
   }
 
   // Link the patient records
-  const linkedPatients = linkPatientRecords(sourcePatient as WithId<Patient>, targetPatient as WithId<Patient>);
+  const linkedPatients = linkPatientRecords(sourcePatient, targetPatient);
 
   // Merge identifiers and contact info
   const mergedPatients = mergePatientRecords(linkedPatients.src, linkedPatients.target);
