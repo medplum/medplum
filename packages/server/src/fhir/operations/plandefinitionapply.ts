@@ -1,18 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
+  concatUrls,
   createReference,
   evalFhirPathTyped,
   getExtension,
   getReferenceString,
+  Operator,
   toTypedValue,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   ActivityDefinition,
   Bot,
+  CarePlan,
   ClientApplication,
   CodeableConcept,
   Encounter,
@@ -21,13 +24,16 @@ import type {
   PlanDefinition,
   PlanDefinitionAction,
   Practitioner,
+  Questionnaire,
   Reference,
   RequestGroup,
   RequestGroupAction,
+  Resource,
   ServiceRequest,
   Task,
   TaskInput,
 } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
@@ -98,7 +104,10 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
 
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
-    instantiatesCanonical: [getReferenceString(planDefinition)],
+    instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
+    instantiatesUri: !planDefinition.url
+      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
+      : undefined,
     subject: subjectRef,
     status: 'active',
     intent: 'order',
@@ -106,7 +115,19 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     encounter: encounterRef,
   });
 
-  return [allOk, requestGroup];
+  const carePlan = await ctx.repo.createResource<CarePlan>({
+    resourceType: 'CarePlan',
+    status: 'active',
+    subject: subjectRef,
+    intent: 'plan',
+    instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
+    instantiatesUri: !planDefinition.url
+      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
+      : undefined,
+    activity: [{ reference: createReference(requestGroup) }],
+  });
+
+  return [allOk, carePlan];
 }
 
 /**
@@ -131,52 +152,37 @@ async function createAction(
   practitioner?: Reference<Practitioner>,
   organization?: Reference<Organization>
 ): Promise<RequestGroupAction> {
-  if (action.definitionCanonical?.startsWith('Questionnaire/')) {
-    return createQuestionnaireTask(repo, planDefinition, requester, subject, action, encounter);
-  } else if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
-    return createActivityDefinitionTask(
-      repo,
-      planDefinition,
-      requester,
-      subject,
-      action,
-      encounter,
-      practitioner,
-      organization
-    );
+  let definition: WithId<Resource> | undefined;
+  if (action.definitionCanonical) {
+    definition = await readCanonical(repo, action.definitionCanonical);
   }
-  return createTask(repo, planDefinition, requester, subject, action, encounter);
-}
 
-/**
- * Creates a Task and RequestGroup action to complete a Questionnaire.
- * @param repo - The repository configured for the current user.
- * @param planDefinition - The plan definition.
- * @param requester - The user who requested the plan definition.
- * @param subject - The subject of the plan definition.
- * @param action - The PlanDefinition action.
- * @param encounter - Optional encounter reference.
- * @returns The RequestGroup action.
- */
-async function createQuestionnaireTask(
-  repo: Repository,
-  planDefinition: PlanDefinition,
-  requester: Reference<ProfileResource | Bot | ClientApplication>,
-  subject: Reference<Patient>,
-  action: PlanDefinitionAction,
-  encounter?: Reference<Encounter>
-): Promise<RequestGroupAction> {
-  return createTask(repo, planDefinition, requester, subject, action, encounter, undefined, undefined, [
-    {
-      type: {
-        text: 'Questionnaire',
-      },
-      valueReference: {
-        display: action.title,
-        reference: action.definitionCanonical,
-      },
-    },
-  ]);
+  switch (definition?.resourceType) {
+    case 'Questionnaire':
+      return createTask(repo, planDefinition, requester, subject, action, encounter, undefined, undefined, [
+        {
+          type: { text: 'Questionnaire' },
+          valueReference: {
+            display: action.title,
+            reference: getReferenceString(definition),
+          },
+        },
+      ]);
+    case 'ActivityDefinition':
+      return createActivityDefinitionTask(
+        repo,
+        planDefinition,
+        requester,
+        subject,
+        action,
+        definition,
+        encounter,
+        practitioner,
+        organization
+      );
+    default:
+      return createTask(repo, planDefinition, requester, subject, action, encounter);
+  }
 }
 
 /**
@@ -186,6 +192,7 @@ async function createQuestionnaireTask(
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
+ * @param activityDefinition - The resolved ActivityDefinition resource.
  * @param encounter - Optional encounter reference.
  * @param practitioner - Optional practitioner reference.
  * @param organization - Optional organization reference.
@@ -197,12 +204,11 @@ async function createActivityDefinitionTask(
   requester: Reference<Bot | ClientApplication | ProfileResource>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
+  activityDefinition: WithId<ActivityDefinition>,
   encounter: Reference<Encounter> | undefined,
   practitioner?: Reference<Practitioner>,
   organization?: Reference<Organization>
 ): Promise<RequestGroupAction> {
-  const activityDefinition = await repo.readReference<ActivityDefinition>({ reference: action.definitionCanonical });
-
   const parameters = {
     practitioner: practitioner,
     organization: organization,
@@ -317,4 +323,19 @@ async function createTask(
     title: action.title,
     resource: createReference(task),
   };
+}
+
+async function readCanonical<T extends Questionnaire | ActivityDefinition | PlanDefinition>(
+  repo: Repository,
+  canonical: string
+): Promise<WithId<T> | undefined> {
+  if (!canonical) {
+    return undefined;
+  }
+
+  return repo.searchOne({
+    resourceType: 'ActivityDefinition',
+    types: ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'],
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
+  });
 }
