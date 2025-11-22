@@ -43,6 +43,10 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 - date of birth
 - name (first and last)
 
+:::warning Pediatric Patients (Under 18)
+For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
+:::
+
 <details>
   <summary>See this example of a valid Patient that will be synced to DoseSpot</summary>
 
@@ -90,6 +94,101 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 ```
 </details>
 
+### Height and Weight for Pediatric Patients
+
+For patients under 18 years of age, DoseSpot requires Height and Weight observations to be synced. These must be recorded as [Observation](/docs/api/fhir/resources/observation) resources with the correct LOINC codes.
+
+<details>
+  <summary>Example of a valid Height Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "8302-2",
+        "display": "Body height"
+      }
+    ],
+    "text": "Body height"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 59,
+    "unit": "cm",
+    "system": "http://unitsofmeasure.org",
+    "code": "cm"
+  }
+}
+```
+</details>
+
+<details>
+  <summary>Example of a valid Weight Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "29463-7",
+        "display": "Body weight"
+      }
+    ],
+    "text": "Body weight"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 99,
+    "unit": "kg",
+    "system": "http://unitsofmeasure.org",
+    "code": "kg"
+  }
+}
+```
+</details>
+
+:::tip Required LOINC Codes
+- **Height**: `8302-2` (Body height)
+- **Weight**: `29463-7` (Body weight)
+
+These specific LOINC codes are required for successful sync to DoseSpot.
+:::
+
 
 **2. Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set. **[RxNorm](/docs/medications/medication-codes#rxnorm)** is recommended for best results with DoseSpot.
 
@@ -119,7 +218,6 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     }
   ]
   //...
-}
 }
 ```
 </details>
