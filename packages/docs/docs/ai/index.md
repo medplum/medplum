@@ -26,8 +26,8 @@ Medplum helps you put AI to work on real-world problems. Whether you're structur
 
 Explore our dedicated integrations to learn more:
 
-- **Medplum AI (MCP):** Our own AI platform for building and deploying intelligent workflows.
-- **AWS Textract:** Extract and analyze text from clinical documents, faxes, and other unstructured data sources.
-- **AWS Comprehend Medical:** Uncover valuable insights from clinical text, identifying medical conditions, medications, and treatments.
+- **[Medplum AI (MCP)](/docs/ai/mcp):** Our own AI platform for building and deploying intelligent workflows.
+- **[AWS Textract](/docs/ai/aws):** Extract and analyze text from clinical documents, faxes, and other unstructured data sources.
+- **[AWS Comprehend Medical](/docs/ai/aws):** Uncover valuable insights from clinical text, identifying medical conditions, medications, and treatments.
 
 Ready to see how Medplum can accelerate your AI journey? Get started with our documentation and a code example today.
