@@ -49,6 +49,7 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientMergeHandler } from './operations/patientmerge';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
@@ -317,6 +318,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
   router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
+
+  // Patient $merge operation (type-level and instance-level)
+  router.add('POST', '/Patient/$merge', patientMergeHandler);
+  router.add('POST', '/Patient/:id/$merge', patientMergeHandler);
 
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
