@@ -85,12 +85,10 @@ describe('NewTopicDialog', () => {
     });
   });
 
-
   it('calls onClose when modal is closed', async () => {
     const user = userEvent.setup();
     setup(true);
 
-    // Find the modal close button by its class (Mantine Modal close button)
     const closeButton = document.querySelector('.mantine-Modal-close');
     expect(closeButton).toBeInTheDocument();
     
