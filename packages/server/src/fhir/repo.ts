@@ -55,7 +55,6 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   SearchParameterType,
-  serverError,
   sleep,
   stringify,
   toPeriod,
@@ -894,14 +893,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     await this.setCacheEntry(resource);
 
-    // Handle special cases for resource caching
-    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const redis = getRedis();
-      const project = resource?.meta?.project;
-      if (!project) {
-        throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
-      }
-    }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
     }
