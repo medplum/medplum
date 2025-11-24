@@ -2948,7 +2948,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private async refreshProfile(): Promise<WithId<ProfileResource> | undefined> {
     if (!this.medplumServer) {
-      return Promise.resolve(undefined);
+      return undefined;
     }
 
     this.profilePromise = new Promise((resolve, reject) => {
