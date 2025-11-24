@@ -21,13 +21,13 @@ import {
   ValueSetAutocomplete,
 } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { PerformingLabInput } from '../components/PerformingLabInput';
-import { TestMetadataCardInput } from '../components/TestMetadataCardInput';
-import { CoverageInput } from '../components/CoverageInput';
+import { PerformingLabInput } from '../../components/PerformingLabInput';
+import { TestMetadataCardInput } from '../../components/TestMetadataCardInput';
+import { CoverageInput } from '../../components/CoverageInput';
 import { useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
-import { showErrorNotification } from '../utils/notifications';
+import { showErrorNotification } from '../../utils/notifications';
 import { showNotification } from '@mantine/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {

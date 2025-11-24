@@ -45,11 +45,7 @@ export interface EncounterChartProps {
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const { encounter: encounterProp } = props;
   const medplum = useMedplum();
-
-  // Resolve encounter reference to actual resource
   const encounterResource = useResource(encounterProp);
-
-  // Extract patient reference from encounter.subject
   const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
   const patientResource = useResource(patientReference);
 

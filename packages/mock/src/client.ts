@@ -425,7 +425,7 @@ export class MockFetchClient {
       console.log('MockClient', JSON.stringify(response, null, 2));
     }
 
-    return Promise.resolve({
+    return {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: new Headers({
@@ -434,7 +434,7 @@ export class MockFetchClient {
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
       text: () => Promise.resolve(response),
-    });
+    };
   }
 
   mockCreatePdf(

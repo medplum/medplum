@@ -13,7 +13,7 @@ import classes from './PatientPage.module.css';
 import { PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
 import type { PatientPageTabInfo } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
-import { OrderLabsPage } from '../OrderLabsPage';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';

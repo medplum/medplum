@@ -33,13 +33,16 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { tryGetRequestContext } from '../context';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
+import type { SubscriptionJobData } from './subscription';
 import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 
 jest.mock('node-fetch');
@@ -734,6 +737,62 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
       expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Retries in preamble errors', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 3,
+          },
+        ],
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // causes an error to be thrown
+      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+        throw new Error('Logger not available for some weird reason');
+      });
+
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 0,
+        changePriority: jest.fn(),
+      } as unknown as Job;
+
+      // On the first attempt, throws
+      await expect(execSubscriptionJob(job)).rejects.toThrow('Logger not available for some weird reason');
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      // On a later attempt, should not throw
+      job.attemptsMade = 100000;
+      await execSubscriptionJob(job);
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      getLoggerSpy.mockRestore();
     }));
 
   test('Retry on 429', () =>
@@ -1873,6 +1932,73 @@ describe('Subscription Worker', () => {
           }
         })
     );
+
+    test('execSubscriptionJob ignores resource versions that cannot be found', () =>
+      withTestContext(async () => {
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Subscription',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        const resource = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          status: 'active',
+          reason: "raison d'être",
+          criteria: 'Patient?name=somethingrandom',
+          channel: { type: 'websocket' },
+        });
+
+        expect(queue.add).not.toHaveBeenCalled();
+
+        // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
+        // if the job had made its way to the queue previously under different logic
+
+        const ctx = tryGetRequestContext();
+        const jobData: SubscriptionJobData = {
+          subscriptionId: subscription.id,
+          resourceType: resource.resourceType,
+          channelType: subscription.channel.type,
+          id: resource.id,
+          versionId: resource.meta?.versionId as string,
+          interaction: 'create',
+          requestTime: new Date().toISOString(),
+          requestId: ctx?.requestId,
+          traceId: ctx?.traceId,
+          authState: ctx?.authState,
+        };
+
+        // For a websocket subscription, this results in "not found" instead of "gone"
+        await repo.deleteResource(resource.resourceType, resource.id);
+
+        // Should not throw
+        await execSubscriptionJob({ id: '1', data: jobData } as Job);
+
+        // Fetch should not have been called
+        expect(fetch).not.toHaveBeenCalled();
+
+        // No AuditEvent resources should have been created
+        const bundle = await repo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+        expect(bundle.entry?.length).toStrictEqual(0);
+      }));
 
     test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {

@@ -27,7 +27,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
-import { IntegrationsPage } from './pages/IntegrationsPage';
+import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';

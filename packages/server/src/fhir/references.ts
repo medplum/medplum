@@ -13,7 +13,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
 import { getSystemRepo } from './repo';
 

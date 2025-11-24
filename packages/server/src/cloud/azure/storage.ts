@@ -4,8 +4,8 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
 import { isString, splitN } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import type { IncomingMessage } from 'http';
-import type { Readable } from 'stream';
+import type { IncomingMessage } from 'node:http';
+import type { Readable } from 'node:stream';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 

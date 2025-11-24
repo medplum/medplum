@@ -188,6 +188,12 @@ Make note of the CDK config file name.
 
 See [Config Settings](/docs/self-hosting/aws-cdk-settings) for more details on each of the individual configuration settings.
 
+:::caution
+After the init tool completes, check all parameters in **AWS Systems Manager > Parameter Store**.
+
+Ensure that all signing keys and configuration values are present (there should be approximately 13 parameters). If any are missing, you may run into deployment issues.
+:::
+
 ### (Optional) Validate Certificates
 
 If you are using Route 53 as your DNS service, we recommend you select `dns` method for validating domain ownership.
@@ -197,6 +203,11 @@ Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/usergui
 :::tip
 After creating records in Route 53, you may have to wait for your certificate in AWS Certificate Manager to change from `Pending validation` to `Issued` state before deploying. If the state doesn't change to `Issued` in 30 minutes, check on the status of your domain. AWS will reject your deploy without a fully-qualified domain for the certificate.
 :::
+
+If you encounter issues with certificate validation, check the following:
+
+*   **Regional Certificates**: If your cluster is not in `us-east-1`, ensure you validate the certificate for the API (in your region) **AND** the 2 CloudFront certificates (in `us-east-1`).
+*   **Name Servers**: If the certificate remains in `Pending validation` until timeout, the domain may not be pointing to AWS. You may need to configure the Name Servers on your registrar to point to the 4 NS values in your Route 53 Hosted Zone.
 
 ### CDK Bootstrap
 
@@ -385,6 +396,15 @@ Check out our documentation [server configuration settings](/docs/self-hosting/s
 Now you are ready to deploy the server.
 
 ## Troubleshooting
+
+### Inaccessible App or API
+
+If `app.[basedomain]` or `api.[basedomain]` are inaccessible from the browser:
+
+1.  **Check Bucket Policies**: Ensure that the CloudFront distribution has access to the S3 Bucket. Double check that you ran the `update-bucket-policies` command to ensure bucket policies are set correctly.
+2.  **Check Method**: Go to the hosted zone in Route 53 and verify records for `app.[basedomain]` and `api.[basedomain]` exist. If not, create them manually:
+    *   `app` points to the CloudFront distribution.
+    *   `api` points to the Load Balancer.
 
 ### Cannot assume role
 

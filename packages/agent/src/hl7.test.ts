@@ -1857,6 +1857,443 @@ describe('HL7', () => {
     mockServer.stop();
   });
 
+  describe('assignSeqNo functionality', () => {
+    test('Messages sent on websocket should have sequence numbers in order', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        transmitRequests: [] as AgentTransmitRequest[],
+      };
+
+      mockServer.on('connection', (socket) => {
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:transmit:request') {
+            state.transmitRequests.push(command);
+            const hl7Message = Hl7Message.parse(command.body);
+            const ackMessage = hl7Message.buildAck();
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:transmit:response',
+                  channel: command.channel,
+                  callback: command.callback,
+                  remote: command.remote,
+                  body: ackMessage.toString(),
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
+              )
+            );
+          }
+        });
+      });
+
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://0.0.0.0:57100?assignSeqNo=true',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 57100,
+      });
+
+      // Send multiple messages in sequence
+      for (let i = 0; i < 5; i++) {
+        await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+      }
+
+      // Wait for all messages to be processed
+      while (state.transmitRequests.length < 5) {
+        await sleep(20);
+      }
+
+      // Verify sequence numbers are in order (0, 1, 2, 3, 4)
+      expect(state.transmitRequests.length).toBe(5);
+      for (let i = 0; i < 5; i++) {
+        const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        expect(sequenceNo).toBe(i.toString());
+      }
+
+      await client.close();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('When channel is reloaded but name does not change, sequence number remains the same', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        transmitRequests: [] as AgentTransmitRequest[],
+        reloadConfigResponse: null as AgentReloadConfigResponse | null,
+        mySocket: undefined as Client | undefined,
+      };
+
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:transmit:request') {
+            state.transmitRequests.push(command);
+            const hl7Message = Hl7Message.parse(command.body);
+            const ackMessage = hl7Message.buildAck();
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:transmit:response',
+                  channel: command.channel,
+                  callback: command.callback,
+                  remote: command.remote,
+                  body: ackMessage.toString(),
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
+              )
+            );
+          }
+        });
+      });
+
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://0.0.0.0:57101?assignSeqNo=true',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(20);
+      }
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 57101,
+      });
+
+      // Send 3 messages before reload
+      for (let i = 0; i < 3; i++) {
+        await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+      }
+
+      // Wait for messages to be processed
+      while (state.transmitRequests.length < 3) {
+        await sleep(20);
+      }
+
+      // Verify sequence numbers are 0, 1, 2
+      expect(state.transmitRequests.length).toBe(3);
+      for (let i = 0; i < 3; i++) {
+        const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        expect(sequenceNo).toBe(i.toString());
+      }
+
+      // Reload config without changing channel name
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+            callback: randomUUID(),
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(20);
+      }
+
+      // Send 2 more messages after reload
+      for (let i = 3; i < 5; i++) {
+        await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+      }
+
+      // Wait for all messages to be processed
+      while (state.transmitRequests.length < 5) {
+        await sleep(20);
+      }
+
+      // Verify sequence numbers continue from where they left off (3, 4)
+      expect(state.transmitRequests.length).toBe(5);
+      for (let i = 0; i < 5; i++) {
+        const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        expect(sequenceNo).toBe(i.toString());
+      }
+
+      await client.close();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('When channel name changes, sequence number resets', async () => {
+      const mockServer = new Server('wss://example.com/ws/agent');
+      const state = {
+        transmitRequests: [] as AgentTransmitRequest[],
+        reloadConfigResponse: null as AgentReloadConfigResponse | null,
+        mySocket: undefined as Client | undefined,
+      };
+
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8'));
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:transmit:request') {
+            state.transmitRequests.push(command);
+            const hl7Message = Hl7Message.parse(command.body);
+            const ackMessage = hl7Message.buildAck();
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:transmit:response',
+                  channel: command.channel,
+                  callback: command.callback,
+                  remote: command.remote,
+                  body: ackMessage.toString(),
+                })
+              )
+            );
+          }
+
+          if (command.type === 'agent:reloadconfig:response') {
+            state.reloadConfigResponse = command;
+          }
+
+          if (command.type === 'agent:heartbeat:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:heartbeat:response',
+                  version: MEDPLUM_VERSION,
+                } satisfies AgentHeartbeatResponse)
+              )
+            );
+          }
+        });
+      });
+
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: 'mllp://0.0.0.0:57102?assignSeqNo=true',
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(20);
+      }
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 57102,
+      });
+
+      // Send 3 messages before reload
+      for (let i = 0; i < 3; i++) {
+        await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+      }
+
+      // Wait for messages to be processed
+      while (state.transmitRequests.length < 3) {
+        await sleep(20);
+      }
+
+      // Verify sequence numbers are 0, 1, 2
+      expect(state.transmitRequests.length).toBe(3);
+      for (let i = 0; i < 3; i++) {
+        const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        expect(sequenceNo).toBe(i.toString());
+      }
+
+      // Update agent to change channel name
+      await medplum.updateResource({
+        ...agent,
+        channel: [
+          {
+            name: 'test-renamed',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      // Reload config with new channel name
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:reloadconfig:request',
+            callback: randomUUID(),
+          } satisfies AgentReloadConfigRequest)
+        )
+      );
+
+      // Wait for reload to complete
+      while (!state.reloadConfigResponse) {
+        await sleep(20);
+      }
+
+      // Clear previous requests to track only new ones
+      state.transmitRequests = [];
+
+      // Send 2 more messages after reload with new channel name
+      for (let i = 0; i < 2; i++) {
+        await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG${i.toString().padStart(5, '0')}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+      }
+
+      // Wait for all messages to be processed
+      while (state.transmitRequests.length < 2) {
+        await sleep(20);
+      }
+
+      // Verify sequence numbers reset to 0, 1 (not 3, 4)
+      expect(state.transmitRequests.length).toBe(2);
+      for (let i = 0; i < 2; i++) {
+        const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        expect(sequenceNo).toBe(i.toString());
+      }
+
+      await client.close();
+      await app.stop();
+      mockServer.stop();
+    });
+  });
+
   describe('Channel stats tracking', () => {
     test('When logStatsFreqSecs is set, channel should track stats', async () => {
       const mockServer = new Server('wss://example.com/ws/agent');

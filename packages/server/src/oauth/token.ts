@@ -16,10 +16,10 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
