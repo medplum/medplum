@@ -643,9 +643,19 @@ export class BackEnd extends Construct {
       webAclArn: this.waf.attrArn,
     });
 
-    // Grant RDS access to the fargate group
     if (this.rdsCluster) {
+      // Grant RDS access to the fargate group
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+
+      // Retain RDS cluster security groups and their rules
+      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+        sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        sg.node.children.forEach((child) => {
+          if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
+            child.applyRemovalPolicy(RemovalPolicy.RETAIN);
+          }
+        });
+      });
     }
 
     // Grant RDS Proxy access to the fargate group
