@@ -335,16 +335,6 @@ See [BullMQ Job Removal](https://docs.bullmq.io/guide/jobs/auto-removal).
 
 **Default:** `false`
 
-### Environment Variables
-
-For nested objects like `bullmq`, `database`, `redis`, and `smtp`, you can use environment variables with the prefix `MEDPLUM_` followed by the object name and then the property name.
-
-For example, to set `bullmq.concurrency`, you would use the environment variable `MEDPLUM_BULLMQ_CONCURRENCY`.
-
-```bash
-export MEDPLUM_BULLMQ_CONCURRENCY=10
-```
-
 ### awsRegion
 
 The AWS Region identifier.
