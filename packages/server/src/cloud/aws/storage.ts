@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { concatUrls } from '@medplum/core';
+import { concatUrls, ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
@@ -115,5 +115,15 @@ export class S3Storage extends BaseBinaryStorage {
       privateKey: config.signingKey,
       passphrase: config.signingKeyPassphrase,
     });
+  }
+
+  async getPresignedUploadUrl(binary: Binary): Promise<string> {
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: this.getKey(binary),
+      ContentType: binary.contentType ?? ContentType.OCTET_STREAM,
+    });
+
+    return s3GetSignedUrl(this.client, command, { expiresIn: 3600 });
   }
 }

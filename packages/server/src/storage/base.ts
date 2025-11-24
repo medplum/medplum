@@ -35,4 +35,8 @@ export abstract class BaseBinaryStorage implements BinaryStorage {
   getKey(binary: Binary): string {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
+
+  getPresignedUploadUrl(_binary: Binary): Promise<string> {
+    throw new Error('Not implemented');
+  }
 }

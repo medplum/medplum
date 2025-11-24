@@ -35,7 +35,7 @@ dicomRouter.post('/studies/:study', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get(['/studies/:study/bulkdata', '/studies/:study/bulkdata/*'], (_req: Request, res: Response) => {
+dicomRouter.get(['/studies/:study/bulkdata', '/studies/:study/bulkdata/{*path}'], (_req: Request, res: Response) => {
   res
     .status(200)
     .contentType('application/octet-stream')
