@@ -1,0 +1,60 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { Temporal } from 'temporal-polyfill';
+import type { SchedulingParameters } from './scheduling-parameters';
+
+type Interval = {
+  start: Date;
+  end: Date;
+};
+
+type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+// Tricky: support zero-based and one-based indexing by including Sunday on both ends.
+// (Date#getDay() uses zero-based indexing and Temporal#dayOfWeek uses one-based indexing)
+const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
+  let t = Temporal.ZonedDateTime.from({
+    year: interval.start.getFullYear(),
+    month: interval.start.getMonth() + 1,
+    day: interval.start.getDate(),
+    timeZone,
+  });
+
+  const results: Temporal.ZonedDateTime[] = [];
+  while (t.epochMilliseconds < interval.end.valueOf()) {
+    results.push(t);
+    t = t.add({ days: 1 });
+  }
+  return results;
+}
+
+/**
+ * Returns intervals of availability from a SchedulingParameters definition and a range of time
+ *
+ * @param schedulingParameters - The SchedulingParameters definition to evaluate
+ * @param interval - The Interval to return availability within
+ * @param timeZone - The timezone to apply availability based on
+ * @returns An array of intervals of availability
+ */
+export function resolveAvailability(
+  schedulingParameters: SchedulingParameters,
+  interval: Interval,
+  timeZone: string
+): Interval[] {
+  return eachDayOfInterval(interval, timeZone).flatMap((dayStart) => {
+    const dayOfWeek = dayNames[dayStart.dayOfWeek];
+    return schedulingParameters.availability
+      .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
+      .flatMap((availability) =>
+        availability.timeOfDay.map((timeOfDay) => {
+          const [hour, minute, second] = timeOfDay.split(':').map(Number);
+          const start = dayStart.withPlainTime({ hour, minute, second });
+          const end = start.add({ minutes: availability.duration });
+          return { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
+        })
+      );
+  });
+}
