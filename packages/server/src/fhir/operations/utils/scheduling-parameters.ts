@@ -52,7 +52,7 @@ type SchedulingParametersAvailability = {
   duration: number; // minutes
 };
 
-type SchedulingParameters = {
+export type SchedulingParameters = {
   availability: SchedulingParametersAvailability[];
   bufferBefore: number; // minutes
   bufferAfter: number; // minutes
