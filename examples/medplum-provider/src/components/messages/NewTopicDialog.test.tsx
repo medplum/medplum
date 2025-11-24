@@ -85,7 +85,6 @@ describe('NewTopicDialog', () => {
     });
   });
 
-
   it('calls onClose when modal is closed', async () => {
     const user = userEvent.setup();
     setup(true);
@@ -93,7 +92,7 @@ describe('NewTopicDialog', () => {
     // Find the modal close button by its class (Mantine Modal close button)
     const closeButton = document.querySelector('.mantine-Modal-close');
     expect(closeButton).toBeInTheDocument();
-    
+
     if (closeButton) {
       await user.click(closeButton);
       expect(mockOnClose).toHaveBeenCalled();
@@ -106,4 +105,3 @@ describe('NewTopicDialog', () => {
     expect(notifications.showErrorNotification).toBeDefined();
   });
 });
-

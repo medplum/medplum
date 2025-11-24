@@ -104,11 +104,7 @@ describe('ThreadInbox', () => {
     mockSelectedThread.mockReturnValue(mockCommunication);
   });
 
-  const setup = (props?: {
-    threadId?: string;
-    showPatientSummary?: boolean;
-    subject?: Patient;
-  }): void => {
+  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: Patient }): void => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -167,7 +163,6 @@ describe('ThreadInbox', () => {
 
     expect(screen.getByTestId('thread-chat')).toBeInTheDocument();
   });
-
 
   it('shows patient summary when showPatientSummary is true and thread is selected', () => {
     mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
@@ -280,4 +275,3 @@ describe('ThreadInbox', () => {
     expect(messagesTexts.length).toBeGreaterThan(0);
   });
 });
-

@@ -210,4 +210,3 @@ describe('MessagesPage', () => {
     expect(screen.getByTestId('thread-id')).toHaveTextContent(messageId);
   });
 });
-

@@ -119,5 +119,3 @@ describe('ChatList', () => {
     expect(screen.getByTestId('chat-list-item-comm-1')).toBeInTheDocument();
   });
 });
-
-
