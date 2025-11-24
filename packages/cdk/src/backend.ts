@@ -20,6 +20,7 @@ import {
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { buildWaf } from './waf';
 
@@ -215,15 +216,34 @@ export class BackEnd extends Construct {
         writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy: config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
 
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      const secretAttachment = this.rdsCluster.secret;
+      if (!secretAttachment) {
+        throw new Error('RDS Cluster is missing secret');
+      }
+      secretAttachment satisfies secretsmanager.ISecret;
+      secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      // rdsCluster.secret is actually a SecretAttachment; not the secret itself
+      if (secretAttachment instanceof SecretTargetAttachment) {
+        // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+        const secret = secretAttachment.node.scope;
+        if (secret instanceof Secret) {
+          secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        } else {
+          console.warn('Expected secretAttachment scope to be a Secret', secret?.node.path);
+        }
+      } else {
+        console.warn('Expected rdsCluster.secret to be a SecretTargetAttachment', secretAttachment.node.path);
+      }
+
+      this.rdsSecretsArn = secretAttachment.secretArn;
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
           proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          secrets: [secretAttachment],
           vpc: this.vpc,
         });
       }
