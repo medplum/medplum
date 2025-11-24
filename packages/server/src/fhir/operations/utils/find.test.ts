@@ -76,4 +76,62 @@ describe('resolveAvailability', () => {
       { start: new Date('2025-12-01T20:20:00.000Z'), end: new Date('2025-12-02T06:20:00.000Z') },
     ]);
   });
+
+  test('availabilities crossing the start of the query range are clamped', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['tue'],
+          timeOfDay: ['10:00:00'],
+          duration: 360,
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceTypes: [],
+      wildcard: true,
+    };
+
+    const range = {
+      start: new TZDate('2025-12-02T12:00:00.000-05:00', 'America/New_York'), // Tue Oct 2, noon ET
+      end: new TZDate('2025-12-02T22:00:00.000-05:00', 'America/New_York'), // Tue Oct 2, 10pm ET
+    };
+
+    expect(coerceToRaw(resolveAvailability(schedulingParameters, range))).toEqual([
+      // Tue Dec 2, 12:00pm ET - Tue Dec 2, 4:00pm ET
+      { start: new Date('2025-12-02T17:00:00.000Z'), end: new Date('2025-12-02T21:00:00.000Z') },
+    ]);
+  });
+
+  test('availabilities crossing the end of the query range are clamped', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['tue'],
+          timeOfDay: ['10:00:00'],
+          duration: 360,
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceTypes: [],
+      wildcard: true,
+    };
+
+    const range = {
+      start: new TZDate('2025-12-02T04:00:00.000-05:00', 'America/New_York'), // Tue Oct 2, 4am ET
+      end: new TZDate('2025-12-02T14:30:00.000-05:00', 'America/New_York'), // Tue Oct 2, 2:30pm ET
+    };
+
+    expect(coerceToRaw(resolveAvailability(schedulingParameters, range))).toEqual([
+      // Tue Dec 2, 10:00am ET - Tue Dec 2, 2:30pm ET
+      { start: new Date('2025-12-02T15:00:00.000Z'), end: new Date('2025-12-02T19:30:00.000Z') },
+    ]);
+  });
 });
