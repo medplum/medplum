@@ -4,6 +4,7 @@
 /* eslint no-console: "off" */
 /* eslint-disable no-undef */
 
+import { execSync } from 'child_process';
 import esbuild from 'esbuild';
 import { cpSync, writeFileSync } from 'fs';
 
@@ -24,6 +25,18 @@ function copyDataFiles() {
   const srcFhirDir = './src/fhir';
   const distEsmFhirDir = './dist/fhir';
   cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
+}
+
+// Build FSH profiles first
+console.log('Building FSH profiles...');
+try {
+  execSync('npm run build:fsh', { stdio: 'inherit' });
+
+  // Merge FSH-generated profiles into profiles-medplum.json
+  execSync('node scripts/build-profiles.mjs', { stdio: 'inherit' });
+} catch (error) {
+  console.warn('Warning: FSH build failed or no profiles to merge:', error.message);
+  // Continue with regular build even if FSH build fails
 }
 
 esbuild
