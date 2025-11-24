@@ -91,7 +91,7 @@ describe('NewTopicDialog', () => {
 
     const closeButton = document.querySelector('.mantine-Modal-close');
     expect(closeButton).toBeInTheDocument();
-    
+
     if (closeButton) {
       await user.click(closeButton);
       expect(mockOnClose).toHaveBeenCalled();
@@ -104,4 +104,3 @@ describe('NewTopicDialog', () => {
     expect(notifications.showErrorNotification).toBeDefined();
   });
 });
-

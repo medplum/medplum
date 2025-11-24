@@ -24,7 +24,12 @@ const mockLastCommunication: Communication = {
   status: 'in-progress',
   sent: '2024-01-15T10:30:00Z',
   sender: { display: 'Dr. Smith' },
-  payload: [{ contentString: 'This is a test message that is longer than 100 characters to test the truncation functionality of the chat list item component' }],
+  payload: [
+    {
+      contentString:
+        'This is a test message that is longer than 100 characters to test the truncation functionality of the chat list item component',
+    },
+  ],
 };
 
 const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
@@ -38,11 +43,7 @@ describe('ChatListItem', () => {
     await medplum.createResource(HomerSimpson);
   });
 
-  const setup = (
-    topic: Communication,
-    lastCommunication: Communication | undefined,
-    isSelected: boolean
-  ): void => {
+  const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -88,7 +89,8 @@ describe('ChatListItem', () => {
   });
 
   it('truncates long messages when topic text is not available', async () => {
-    const longMessage = 'This is a very long message from Dr. Smith that is meant to exceed one hundred characters in length. It just keeps going and going beyond the limit of what is shown in the UI preview.';
+    const longMessage =
+      'This is a very long message from Dr. Smith that is meant to exceed one hundred characters in length. It just keeps going and going beyond the limit of what is shown in the UI preview.';
     const topicWithoutText: Communication = {
       ...mockTopic,
       topic: undefined,
@@ -164,4 +166,3 @@ describe('ChatListItem', () => {
     });
   });
 });
-
