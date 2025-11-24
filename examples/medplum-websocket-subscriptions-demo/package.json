@@ -17,9 +17,9 @@
   },
   "devDependencies": {
     "@emotion/react": "11.14.0",
-    "@mantine/core": "8.3.7",
-    "@mantine/hooks": "8.3.7",
-    "@mantine/notifications": "8.3.7",
+    "@mantine/core": "8.3.8",
+    "@mantine/hooks": "8.3.8",
+    "@mantine/notifications": "8.3.8",
     "@medplum/core": "5.0.4",
     "@medplum/eslint-config": "5.0.4",
     "@medplum/fhir-router": "5.0.4",
@@ -28,14 +28,14 @@
     "@medplum/react": "5.0.4",
     "@tabler/icons-react": "3.35.0",
     "@types/node": "22.19.1",
-    "@types/react": "19.2.4",
+    "@types/react": "19.2.6",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-router": "7.9.6",
     "typescript": "5.9.3",
-    "vite": "7.2.2"
+    "vite": "7.2.4"
   },
   "packageManager": "npm@10.9.4",
   "engines": {

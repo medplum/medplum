@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "fsh-sushi": "3.16.5",
-    "rimraf": "6.1.0"
+    "rimraf": "6.1.2"
   },
   "packageManager": "npm@10.9.4",
   "engines": {
