@@ -8,10 +8,6 @@ import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskInputNote } from './TaskInputNote';
 import type { Task } from '@medplum/fhirtypes';
 
-vi.mock('../../utils/notifications', () => ({
-  showErrorNotification: vi.fn(),
-}));
-
 describe('TaskInputNote', () => {
   let medplum: MockClient;
 

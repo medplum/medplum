@@ -10,8 +10,6 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskDetailPanel } from './TaskDetailPanel';
 
-vi.mock('../../hooks/useDebouncedUpdateResource');
-
 const mockTask: Task = {
   resourceType: 'Task',
   id: 'task-123',
@@ -37,14 +35,10 @@ const mockPatient: Patient = {
 
 describe('TaskDetailPanel', () => {
   let medplum: MockClient;
-  const mockDebouncedUpdateResource = vi.fn();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
-
-    const { useDebouncedUpdateResource } = await import('../../hooks/useDebouncedUpdateResource');
-    vi.mocked(useDebouncedUpdateResource).mockReturnValue(mockDebouncedUpdateResource);
   });
 
   const setup = (props: Partial<Parameters<typeof TaskDetailPanel>[0]> = {}): ReturnType<typeof render> => {
@@ -167,9 +161,8 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  test('calls debouncedUpdateResource once when task changes', async () => {
+  test('renders task detail panel with onTaskChange callback', async () => {
     const onTaskChange = vi.fn();
-    mockDebouncedUpdateResource.mockResolvedValue(mockTask);
 
     await act(async () => {
       setup({ onTaskChange });
@@ -178,10 +171,6 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('Properties')).toBeInTheDocument();
     });
-
-    // The mock is properly wired up and will be called once by the component
-    // when TaskInputNote or TaskProperties calls onTaskChange internally
-    expect(mockDebouncedUpdateResource).toBeDefined();
   });
 
   test('calls onDeleteTask after successful deletion', async () => {

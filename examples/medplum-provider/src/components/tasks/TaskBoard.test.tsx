@@ -10,10 +10,6 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskBoard } from './TaskBoard';
 
-vi.mock('../../utils/notifications', () => ({
-  showErrorNotification: vi.fn(),
-}));
-
 describe('TaskBoard', () => {
   let medplum: MockClient;
 

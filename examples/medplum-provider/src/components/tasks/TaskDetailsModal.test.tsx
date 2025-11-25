@@ -11,12 +11,6 @@ import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskDetailsModal } from './TaskDetailsModal';
 import * as usePatientModule from '../../hooks/usePatient';
 
-vi.mock('@mantine/notifications', () => ({
-  notifications: {
-    show: vi.fn(),
-  },
-}));
-
 describe('TaskDetailsModal', () => {
   let medplum: MockClient;
 
