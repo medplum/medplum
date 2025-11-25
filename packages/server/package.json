@@ -65,7 +65,7 @@
     "@smithy/util-retry": "4.2.5",
     "@smithy/util-stream": "4.5.6",
     "bcryptjs": "3.0.3",
-    "body-parser": "2.2.0",
+    "body-parser": "2.2.1",
     "bowser": "2.12.1",
     "bullmq": "5.63.1",
     "bytes": "3.1.2",
