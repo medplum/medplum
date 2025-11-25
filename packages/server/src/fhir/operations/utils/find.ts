@@ -74,3 +74,54 @@ export function resolveAvailability(
       .filter(isDefined);
   });
 }
+
+/**
+ * @param availableIntervals - normalized (sorted, non-overlapping) intervals of available time
+ * @param blockedIntervals - normalized (sorted, non-overlapping) intervals of blocked time
+ * @returns Intervals of remaining available time after blocks are excluded
+ */
+export function removeAvailability(availableIntervals: Interval[], blockedIntervals: Interval[]): Interval[] {
+  if (blockedIntervals.length === 0) {
+    return availableIntervals;
+  }
+
+  const result: Interval[] = [];
+  let blockedIndex = 0;
+
+  for (const available of availableIntervals) {
+    let currentStart = available.start;
+    const availableEnd = available.end;
+
+    // Skip blocked intervals that end before this available interval starts
+    while (blockedIndex < blockedIntervals.length && blockedIntervals[blockedIndex].end <= currentStart) {
+      blockedIndex++;
+    }
+
+    // Process all blocked intervals that overlap with the current available interval
+    while (blockedIndex < blockedIntervals.length && blockedIntervals[blockedIndex].start < availableEnd) {
+      const blocked = blockedIntervals[blockedIndex];
+
+      // If there's a gap before the block, add it to results
+      if (currentStart < blocked.start) {
+        result.push({ start: currentStart, end: blocked.start });
+      }
+
+      // Update currentStart to after the block
+      currentStart = blocked.end.valueOf() > currentStart.valueOf() ? blocked.end : currentStart;
+
+      // If the block extends beyond the available interval, we're done with this available interval
+      if (blocked.end >= availableEnd) {
+        break;
+      }
+
+      blockedIndex++;
+    }
+
+    // If there's remaining time after processing all overlapping blocks
+    if (currentStart < availableEnd) {
+      result.push({ start: currentStart, end: availableEnd });
+    }
+  }
+
+  return result;
+}
