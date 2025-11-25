@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { tz, TZDate } from '@date-fns/tz';
 import type { Interval } from 'date-fns';
-import { removeAvailability, resolveAvailability } from './find';
+import { normalizeIntervals, removeAvailability, resolveAvailability } from './find';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 const tzny = tz('America/New_York');
@@ -133,6 +133,32 @@ describe('resolveAvailability', () => {
       // Tue Dec 2, 10:00am ET - Tue Dec 2, 2:30pm ET
       { start: new Date('2025-12-02T15:00:00.000Z'), end: new Date('2025-12-02T19:30:00.000Z') },
     ]);
+  });
+});
+
+describe('normalizeIntervals', () => {
+  test('it sorts the input intervals', () => {
+    const intervals = [
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+
+    expect(normalizeIntervals(intervals)).toEqual([
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ]);
+  });
+
+  test('it merges overlapping intervals', () => {
+    const intervals = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-08') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-07'), end: new Date('2025-12-09') },
+    ];
+
+    expect(normalizeIntervals(intervals)).toEqual([{ start: new Date('2025-12-01'), end: new Date('2025-12-09') }]);
   });
 });
 

@@ -27,6 +27,25 @@ function intersectIntervals(left: Interval, right: Interval): Interval | undefin
 }
 
 /**
+ * Given two intervals, return the interval that overlaps either of them.
+ * Returns undefined if the intervals don't overlap at all.
+ *
+ * @param left - The first interval to consider
+ * @param right - The second interval to consider
+ * @returns An overlap interval, or undefined if none exists
+ */
+function mergeIntervals(left: Interval, right: Interval): Interval | undefined {
+  if (!areIntervalsOverlapping(left, right)) {
+    return undefined;
+  }
+
+  const start = left.start.valueOf() < right.start.valueOf() ? left.start : right.start;
+  const end = left.end.valueOf() > right.end.valueOf() ? left.end : right.end;
+
+  return { start, end };
+}
+
+/**
  * Returns intervals of availability from a SchedulingParameters definition and a range of time
  *
  * @param schedulingParameters - The SchedulingParameters definition to evaluate
@@ -56,6 +75,38 @@ export function resolveAvailability(
       )
       .filter(isDefined);
   });
+}
+
+/**
+ * Normalize a group of intervals for usage in resolution
+ * - Sorts intervals by start time
+ * - Merges overlapping intervals into a continuous interval
+ *
+ * @param intervals - The array of intervals to normalize
+ * @returns An array of normalized intervals
+ */
+export function normalizeIntervals(intervals: Interval[]): Interval[] {
+  if (intervals.length < 2) {
+    return intervals;
+  }
+  const sorted = intervals.concat().sort((a, b) => a.start.valueOf() - b.start.valueOf());
+  return sorted.reduce<Interval[]>((acc, interval) => {
+    // base case: push the first interval onto the accumulator.
+    if (acc.length === 0) {
+      return [interval];
+    }
+
+    // Try to merge the current interval into the last one seen
+    const merged = mergeIntervals(acc[acc.length - 1], interval);
+    if (merged) {
+      // Overlap found: update the last entry with the merged value
+      acc[acc.length - 1] = merged;
+    } else {
+      // No overlap; append interval to end
+      acc.push(interval);
+    }
+    return acc;
+  }, []);
 }
 
 /**
