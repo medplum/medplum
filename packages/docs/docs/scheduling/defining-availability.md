@@ -317,9 +317,9 @@ Here is an example Schedule that defines generic availability for all services a
 **All-or-nothing rule**: When a `scheduling-parameters` extension includes a `serviceType`, it **completely replaces** the default configuration for that service type. No attribute-level merging occurs.
 
 **Priority order** (highest to lowest):
-1. Schedule with `http://medplum.com/fhir/StructureDefinition/scheduling-parameters.serviceType` extension defined.
+1. Schedule where `http://medplum.com/fhir/StructureDefinition/scheduling-parameters.serviceType` extension matches `service-type` param on `$find` request.
 2. ActivityDefinition where `ActivityDefinition.code` matches `service-type` param on `$find` request. ActivityDefinition parameters are used.
-3. Schedule without `Schedule.serviceType` defined. Uses generic availability defined on the Schedule.
+3. Use generic availability defined on the Schedule.
 
 ### Blocking Time by Service Type
 
