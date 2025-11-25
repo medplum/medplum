@@ -23,7 +23,9 @@ describe('TaskDetailsModal', () => {
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue({ id: 'task-123', resourceType: 'Task' } as Task & { id: string });
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue({ id: 'task-123', resourceType: 'Task' } as Task & {
+      id: string;
+    });
   });
 
   const mockPatient: Patient = {
@@ -93,7 +95,7 @@ describe('TaskDetailsModal', () => {
     await medplum.createResource(mockTask);
     setup();
 
-    await waitFor(() => { 
+    await waitFor(() => {
       expect(screen.getByText('Status')).toBeInTheDocument();
     });
   });

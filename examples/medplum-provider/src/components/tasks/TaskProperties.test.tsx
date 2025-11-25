@@ -63,7 +63,7 @@ describe('TaskProperties', () => {
 
   it('renders due date field with value when restriction period is set', async () => {
     const dueDate = new Date('2024-12-31T00:00:00');
-    
+
     const taskWithDueDate: Task = {
       ...mockTask,
       restriction: {
@@ -72,9 +72,9 @@ describe('TaskProperties', () => {
         },
       },
     };
-    
+
     setup(taskWithDueDate);
-    
+
     await waitFor(() => {
       const dueDateInput = screen.getByLabelText('Due Date');
       expect(dueDateInput).toBeInTheDocument();
@@ -89,7 +89,6 @@ describe('TaskProperties', () => {
       expect(screen.getByText('routine')).toBeInTheDocument();
     });
   });
-
 
   it('shows ReferenceInput for basedOn when not present', async () => {
     setup(mockTask);
@@ -221,4 +220,3 @@ describe('TaskProperties', () => {
     });
   });
 });
-
