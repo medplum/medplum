@@ -21,7 +21,7 @@ medplum get 'Patient?_id=homer-simpson,marge-simpson,lisa-simpson'
 
 // start-block idCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson,marge-simpson,lisa-simpson' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block idCurl
 */
@@ -39,7 +39,7 @@ medplum get 'Communication?_lastUpdated=gt2023-10-01'
 
 // start-block lastUpdatedCurl
 curl 'https://api.medplum.com/fhir/R4/Communication?&_lastUpdated=gt2023-10-01' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block lastUpdatedCurl
 */
@@ -136,7 +136,7 @@ Example response:
 
 // start-block summaryCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_id=homer-simpson&_summary=true' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 
 Example response:
@@ -286,7 +286,7 @@ Example Response:
 
 // start-block elementsCurl
 curl 'https://api.medplum.com/fhir/R4/Observations?_elements=status,code,subject,performer' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 
 Example Response:
@@ -350,7 +350,7 @@ medplum get 'Observation?_tag=https://example.org/tags|critical'
 
 // start-block tagCurl
 curl 'https://api.medplum.com/fhir/R4/Observation?_tag=https://example.org/tags|critical' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block tagCurl
 */
@@ -368,7 +368,7 @@ medplum get 'Patient?_total=estimate'
 
 // start-block totalCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_total=estimate' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block totalCurl
 */
@@ -386,7 +386,7 @@ medplum get 'Observation?_profile=https://example.org/StructureDefinition/pediat
 
 // start-block profileCurl
 curl 'https://api.medplum.com/fhir/R4/Observation?_profile=https://example.org/StructureDefinition/pediatric-growth-chart' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block profileCurl
 */
@@ -404,7 +404,7 @@ medplum get 'Communication?_compartment=Patient/homer-simpson'
 
 // start-block compartmentCurl
 curl 'https://api.medplum.com/fhir/R4/Communication?_compartment=Patient/homer-simpson' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block compartmentCurl
 */
@@ -422,7 +422,7 @@ medplum get 'Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confiden
 
 // start-block securityCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block securityCurl
 */
@@ -440,7 +440,7 @@ medplum get 'Patient?_source=https://foomedical.com'
 
 // start-block sourceCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_source=https://foomedical.com' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block sourceCurl
 */
@@ -458,7 +458,7 @@ medplum get 'Patient?_deleted=true'
 
 // start-block deletedCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_deleted=true' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block deletedCurl
 */
@@ -476,7 +476,7 @@ medplum get 'Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c'
 
 // start-block projectCurl
 curl 'https://api.medplum.com/fhir/R4/Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block projectCurl
 */
@@ -492,7 +492,7 @@ medplum get 'fhir/R4?_type=Patient,Observation&name=Smith'
 
 // start-block typeCurl
 curl 'https://api.medplum.com/fhir/R4?_type=Patient,Observation&name=Smith' \
-	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block typeCurl
 */
