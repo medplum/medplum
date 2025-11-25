@@ -6,17 +6,9 @@ import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { SpaceInbox } from './SpaceInbox';
 import type { Communication } from '@medplum/fhirtypes';
-
-// Mock the persistence functions
-vi.mock('../../pages/spaces/space-persistence', () => ({
-  createConversationTopic: vi.fn(),
-  saveMessage: vi.fn(),
-  loadConversationMessages: vi.fn(),
-  loadRecentTopics: vi.fn(),
-}));
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -33,30 +25,29 @@ const mockTopic: Communication = {
   },
 };
 
+const mockProfile = {
+  resourceType: 'Practitioner' as const,
+  id: 'practitioner-123',
+};
+
 describe('SpaceInbox', () => {
   let medplum: MockClient;
-  let createConversationTopicMock: any;
-  let saveMessageMock: any;
-  let loadConversationMessagesMock: any;
   const onNewTopicMock = vi.fn();
   const onSelectedItemMock = vi.fn((topic: Communication) => `/Spaces/Communication/${topic.id}`);
 
-  beforeEach(async () => {
+  beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
-    // Mock scrollTo for tests
     Element.prototype.scrollTo = vi.fn();
-
-    const persistence = await import('../../pages/spaces/space-persistence');
-    createConversationTopicMock = vi.mocked(persistence.createConversationTopic);
-    saveMessageMock = vi.mocked(persistence.saveMessage);
-    loadConversationMessagesMock = vi.mocked(persistence.loadConversationMessages);
-
-    // Setup default mocks
-    createConversationTopicMock.mockResolvedValue(mockTopic);
-    saveMessageMock.mockResolvedValue({} as Communication);
-    loadConversationMessagesMock.mockResolvedValue([]);
+    medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
+    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.createResource = vi.fn().mockImplementation((resource: any) => {
+      if (resource.identifier?.[0]?.value === 'ai-message-topic') {
+        return Promise.resolve(mockTopic);
+      }
+      return Promise.resolve({ ...resource, id: 'message-123' } as Communication);
+    });
   });
 
   const setup = (topicId?: string): ReturnType<typeof render> => {
@@ -72,7 +63,7 @@ describe('SpaceInbox', () => {
   };
 
   describe('Initial state (before first message)', () => {
-    it('renders the initial state with Start a New Space heading', async () => {
+    test('renders the initial state with Start a New Space heading', async () => {
       await act(async () => {
         setup();
       });
@@ -81,7 +72,7 @@ describe('SpaceInbox', () => {
       expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
     });
 
-    it('shows history button', async () => {
+    test('shows history button', async () => {
       await act(async () => {
         setup();
       });
@@ -90,7 +81,7 @@ describe('SpaceInbox', () => {
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it('conversation list is in the DOM but hidden', async () => {
+    test('conversation list is in the DOM but hidden', async () => {
       await act(async () => {
         setup();
       });
@@ -100,7 +91,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('Sending messages', () => {
-    it('sends a message and creates a new conversation topic', async () => {
+    test('sends a message and creates a new conversation topic', async () => {
       const user = userEvent.setup();
       medplum.executeBot = vi.fn().mockResolvedValue({
         resourceType: 'Parameters',
@@ -118,11 +109,7 @@ describe('SpaceInbox', () => {
       await user.click(sendButton);
 
       await waitFor(() => {
-        expect(createConversationTopicMock).toHaveBeenCalledWith(medplum, 'Hello AI', 'gpt-5');
-      });
-
-      await waitFor(() => {
-        expect(saveMessageMock).toHaveBeenCalled();
+        expect(medplum.createResource).toHaveBeenCalled();
       });
 
       await waitFor(() => {
@@ -134,7 +121,7 @@ describe('SpaceInbox', () => {
       });
     });
 
-    it('does not send empty messages', async () => {
+    test('does not send empty messages', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
@@ -143,10 +130,10 @@ describe('SpaceInbox', () => {
       const sendButton = screen.getByRole('button', { name: 'Send message' });
       await user.click(sendButton);
 
-      expect(createConversationTopicMock).not.toHaveBeenCalled();
+      expect(medplum.createResource).not.toHaveBeenCalled();
     });
 
-    it('handles Enter key to send message', async () => {
+    test('handles Enter key to send message', async () => {
       const user = userEvent.setup();
       medplum.executeBot = vi.fn().mockResolvedValue({
         resourceType: 'Parameters',
@@ -163,13 +150,13 @@ describe('SpaceInbox', () => {
       await user.keyboard('{Enter}');
 
       await waitFor(() => {
-        expect(createConversationTopicMock).toHaveBeenCalled();
+        expect(medplum.createResource).toHaveBeenCalled();
       });
     });
   });
 
   describe('Chat state (after first message)', () => {
-    it('displays user and assistant messages', async () => {
+    test('displays user and assistant messages', async () => {
       const user = userEvent.setup();
       medplum.executeBot = vi.fn().mockResolvedValue({
         resourceType: 'Parameters',
@@ -199,7 +186,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('Tool calls and FHIR requests', () => {
-    it('handles fhir_request tool calls', async () => {
+    test('handles fhir_request tool calls', async () => {
       const user = userEvent.setup();
       const mockPatient = { resourceType: 'Patient', id: 'patient-123', name: [{ given: ['John'], family: 'Doe' }] };
 
@@ -241,7 +228,6 @@ describe('SpaceInbox', () => {
       await user.type(input, 'Get patient 123');
       await user.click(sendButton);
 
-      // Wait for medplum.get to be called
       await waitFor(
         () => {
           expect(medplum.get).toHaveBeenCalled();
@@ -249,13 +235,12 @@ describe('SpaceInbox', () => {
         { timeout: 3000 }
       );
 
-      // Verify the response appears
       await waitFor(() => {
         expect(screen.getByText('Found patient John Doe')).toBeInTheDocument();
       });
     });
 
-    it('handles FHIR request errors', async () => {
+    test('handles FHIR request errors', async () => {
       const user = userEvent.setup();
 
       medplum.executeBot = vi
@@ -308,7 +293,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('Resource display', () => {
-    it('displays resource boxes when resources are returned', async () => {
+    test('displays resource boxes when resources are returned', async () => {
       const user = userEvent.setup();
 
       medplum.executeBot = vi
@@ -362,7 +347,7 @@ describe('SpaceInbox', () => {
       });
     });
 
-    it('opens resource panel when clicking on resource box', async () => {
+    test('opens resource panel when clicking on resource box', async () => {
       const user = userEvent.setup();
 
       medplum.executeBot = vi
@@ -420,7 +405,7 @@ describe('SpaceInbox', () => {
       });
     });
 
-    it('closes resource panel when clicking close button', async () => {
+    test('closes resource panel when clicking close button', async () => {
       const user = userEvent.setup();
 
       medplum.executeBot = vi
@@ -475,8 +460,7 @@ describe('SpaceInbox', () => {
       await waitFor(() => {
         expect(screen.getByTestId('resource-panel')).toBeInTheDocument();
       });
-
-      // Find the CloseButton - it's the button with a specific class
+      
       const allButtons = screen.getAllByRole('button');
       const closeButton = allButtons.find((btn) => btn.className.includes('CloseButton'));
       if (!closeButton) {
@@ -492,7 +476,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('Error handling', () => {
-    it('displays error message when bot execution fails', async () => {
+    test('displays error message when bot execution fails', async () => {
       const user = userEvent.setup();
       medplum.executeBot = vi.fn().mockRejectedValue(new Error('Bot execution failed'));
 
@@ -513,7 +497,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('HTTP method support', () => {
-    it.each([
+    test.each([
       ['GET', 'get'],
       ['POST', 'post'],
       ['PUT', 'put'],
@@ -568,7 +552,7 @@ describe('SpaceInbox', () => {
   });
 
   describe('Bundle handling', () => {
-    it('extracts resource references from Bundle entries', async () => {
+    test('extracts resource references from Bundle entries', async () => {
       const user = userEvent.setup();
       const mockBundle = {
         resourceType: 'Bundle',

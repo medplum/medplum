@@ -1,31 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { SpacesPage } from './SpacesPage';
 import type { Communication } from '@medplum/fhirtypes';
 
-// Mock SpaceInbox component
-vi.mock('../../components/spaces/SpaceInbox', () => ({
-  SpaceInbox: vi.fn(({ topicId, onNewTopic, onSelectedItem }) => (
-    <div data-testid="space-inbox">
-      <span data-testid="topic-id">{topicId || 'none'}</span>
-      <button
-        data-testid="new-topic-btn"
-        onClick={() => onNewTopic({ resourceType: 'Communication', id: 'new-topic' } as Communication)}
-      >
-        New Topic
-      </button>
-      <span data-testid="selected-item-link">
-        {onSelectedItem({ resourceType: 'Communication', id: 'selected-topic' } as Communication)}
-      </span>
-    </div>
-  )),
-}));
+const mockTopic: Communication = {
+  resourceType: 'Communication',
+  id: 'topic-123',
+  status: 'in-progress',
+  identifier: [
+    {
+      system: 'http://medplum.com/ai-message',
+      value: 'ai-message-topic',
+    },
+  ],
+  topic: {
+    text: 'Test conversation',
+  },
+};
+
+const mockProfile = {
+  resourceType: 'Practitioner' as const,
+  id: 'practitioner-123',
+};
 
 describe('SpacesPage', () => {
   let medplum: MockClient;
@@ -33,6 +35,10 @@ describe('SpacesPage', () => {
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
+
+    Element.prototype.scrollTo = vi.fn();
+    medplum.getProfile = vi.fn().mockResolvedValue(mockProfile);
+    medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
   const setup = (initialEntries = ['/Spaces']): ReturnType<typeof render> => {
@@ -52,29 +58,40 @@ describe('SpacesPage', () => {
     );
   };
 
-  it('renders SpaceInbox with no topicId when at root', async () => {
+  test('renders SpaceInbox with no topicId when at root', async () => {
     await act(async () => {
       setup(['/Spaces']);
     });
 
-    expect(screen.getByTestId('space-inbox')).toBeInTheDocument();
-    expect(screen.getByTestId('topic-id')).toHaveTextContent('none');
+    expect(screen.getByText('Start a New Space')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
   });
 
-  it('renders SpaceInbox with topicId from URL', async () => {
+  test('renders SpaceInbox with topicId from URL', async () => {
     await act(async () => {
       setup(['/Spaces/Communication/123']);
     });
 
-    expect(screen.getByTestId('space-inbox')).toBeInTheDocument();
-    expect(screen.getByTestId('topic-id')).toHaveTextContent('123');
+    await waitFor(() => {
+      expect(medplum.searchResources).toHaveBeenCalledWith('Communication', {
+        'part-of': 'Communication/123',
+        _sort: '_lastUpdated',
+      });
+    });
   });
 
-  it('generates correct link for selected item', async () => {
+  test('generates correct link for selected item', async () => {
+    medplum.searchResources = vi.fn().mockResolvedValue([mockTopic]);
+
     await act(async () => {
       setup(['/Spaces']);
     });
 
-    expect(screen.getByTestId('selected-item-link')).toHaveTextContent('/Spaces/Communication/selected-topic');
+    await waitFor(() => {
+      expect(screen.getByText('Test conversation')).toBeInTheDocument();
+    });
+
+    const link = screen.getByText('Test conversation').closest('a');
+    expect(link).toHaveAttribute('href', '/Spaces/Communication/topic-123');
   });
 });
