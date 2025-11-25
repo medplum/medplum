@@ -311,6 +311,18 @@ The `_sort` parameter allows you to sort the results of your search based on dif
 
 The `_deleted` parameter allows you to search for resources that have been soft-deleted. By default, Medplum filters out deleted resources.
 
+:::warning Mixing `_deleted` with other parameters
+
+Mixing `_deleted` with most other search parameters will not work as expected. This is because the database columns backing other search parameters are not populated for deleted resources.
+
+The only exceptions are:
+- `_id`
+- `_lastUpdated`
+- `_project`
+- `_compartment`
+
+:::
+
 <details>
   <summary>Example: Searching for deleted patients</summary>
   <Tabs groupId="language">
