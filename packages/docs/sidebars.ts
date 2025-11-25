@@ -135,7 +135,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Patient Dedupliaction Architectures',
+          label: 'Patient Deduplication Architectures',
           link: {
             type: 'doc',
             id: 'fhir-datastore/patient-deduplication/patient-deduplication',
