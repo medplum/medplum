@@ -22,6 +22,7 @@ import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import assert from 'node:assert';
 import { buildWaf } from './waf';
 
 /**
@@ -219,24 +220,17 @@ export class BackEnd extends Construct {
       });
 
       const secretAttachment = this.rdsCluster.secret;
-      if (!secretAttachment) {
-        throw new Error('RDS Cluster is missing secret');
-      }
-      secretAttachment satisfies secretsmanager.ISecret;
+      assert(secretAttachment !== undefined, 'rdsCluster.secret is undefined');
+
       secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
       // rdsCluster.secret is actually a SecretAttachment; not the secret itself
-      if (secretAttachment instanceof SecretTargetAttachment) {
-        // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
-        const secret = secretAttachment.node.scope;
-        if (secret instanceof Secret) {
-          secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
-        } else {
-          console.warn('Expected secretAttachment scope to be a Secret', secret?.node.path);
-        }
-      } else {
-        console.warn('Expected rdsCluster.secret to be a SecretTargetAttachment', secretAttachment.node.path);
-      }
+      assert(secretAttachment instanceof SecretTargetAttachment, 'rdsCluster.secret is not a SecretTargetAttachment');
+
+      // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+      const secret = secretAttachment.node.scope;
+      assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
+      secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
       this.rdsSecretsArn = secretAttachment.secretArn;
 
