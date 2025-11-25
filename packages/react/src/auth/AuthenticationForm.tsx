@@ -196,12 +196,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           disabled
           rightSectionWidth={36}
           rightSection={
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={props.resetEmail}
-              aria-label="Change email"
-            >
+            <ActionIcon variant="subtle" color="gray" onClick={props.resetEmail} aria-label="Change email">
               <IconPencil size="1rem" stroke={1.5} />
             </ActionIcon>
           }
@@ -217,7 +212,15 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
         />
       </Stack>
       <Stack gap="xs">
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} pt="md" pb="xs" />
+        <Checkbox
+          id="remember"
+          name="remember"
+          label="Remember me"
+          size="xs"
+          style={{ lineHeight: 1 }}
+          pt="md"
+          pb="xs"
+        />
         <SubmitButton>Sign in</SubmitButton>
         {onForgotPassword && (
           <Text
