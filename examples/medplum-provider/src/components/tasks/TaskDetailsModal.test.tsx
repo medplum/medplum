@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { Task, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskDetailsModal } from './TaskDetailsModal';
 import * as usePatientModule from '../../hooks/usePatient';
 
@@ -61,7 +61,7 @@ describe('TaskDetailsModal', () => {
     );
   };
 
-  it('renders task details modal', async () => {
+  test('renders task details modal', async () => {
     await medplum.createResource(mockTask);
     setup();
 
@@ -71,7 +71,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('displays patient information', async () => {
+  test('displays patient information', async () => {
     await medplum.createResource(mockTask);
     await medplum.createResource(mockPatient);
     setup();
@@ -82,7 +82,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('allows changing due date', async () => {
+  test('allows changing due date', async () => {
     await medplum.createResource(mockTask);
     setup();
 
@@ -91,7 +91,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('allows changing task status', async () => {
+  test('allows changing task status', async () => {
     await medplum.createResource(mockTask);
     setup();
 
@@ -100,7 +100,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('allows adding a note', async () => {
+  test('allows adding a note', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
@@ -115,7 +115,7 @@ describe('TaskDetailsModal', () => {
     expect(noteInput).toHaveValue('This is a test note');
   });
 
-  it('saves changes when Save Changes button is clicked', async () => {
+  test('saves changes when Save Changes button is clicked', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
@@ -137,7 +137,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('shows success notification after saving', async () => {
+  test('shows success notification after saving', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
@@ -156,7 +156,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('handles save error gracefully', async () => {
+  test('handles save error gracefully', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
 
@@ -178,7 +178,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('closes modal when close button is clicked', async () => {
+  test('closes modal when close button is clicked', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
@@ -198,7 +198,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('handles task fetch error', async () => {
+  test('handles task fetch error', async () => {
     vi.spyOn(medplum, 'readResource').mockRejectedValueOnce(new Error('Task not found'));
 
     setup();
@@ -208,7 +208,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('updates task with all fields', async () => {
+  test('updates task with all fields', async () => {
     const user = userEvent.setup();
     const taskWithAllFields: Task = {
       ...mockTask,
@@ -241,7 +241,7 @@ describe('TaskDetailsModal', () => {
     });
   });
 
-  it('does not add empty notes', async () => {
+  test('does not add empty notes', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();

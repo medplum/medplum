@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 
@@ -16,12 +16,12 @@ describe('TaskFilterMenu', () => {
     );
   };
 
-  it('renders filter button', () => {
+  test('renders filter button', () => {
     setup();
     expect(screen.getByLabelText('Filter tasks')).toBeInTheDocument();
   });
 
-  it('calls onFilterChange when status is selected', async () => {
+  test('calls onFilterChange when status is selected', async () => {
     const user = userEvent.setup();
     const onFilterChange = vi.fn();
     setup({ onFilterChange });
@@ -43,7 +43,7 @@ describe('TaskFilterMenu', () => {
     expect(onFilterChange).toHaveBeenCalledWith(TaskFilterType.STATUS, 'in-progress');
   });
 
-  it('shows performer types when available', async () => {
+  test('shows performer types when available', async () => {
     const user = userEvent.setup();
     const performerTypes = [{ coding: [{ code: 'doctor', display: 'Doctor' }] }];
     setup({ performerTypes });
@@ -61,7 +61,7 @@ describe('TaskFilterMenu', () => {
     });
   });
 
-  it('calls onFilterChange when performer type is selected', async () => {
+  test('calls onFilterChange when performer type is selected', async () => {
     const user = userEvent.setup();
     const onFilterChange = vi.fn();
     const performerTypes = [{ coding: [{ code: 'doctor', display: 'Doctor' }] }];

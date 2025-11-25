@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, test, beforeEach } from 'vitest';
 import { TaskNoteItem } from './TaskNoteItem';
 import type { Annotation, Practitioner } from '@medplum/fhirtypes';
 
@@ -25,7 +25,7 @@ describe('TaskNoteItem', () => {
     );
   };
 
-  it('renders note text', () => {
+  test('renders note text', () => {
     const note: Annotation = {
       text: 'Test note content',
       time: '2023-01-01T12:00:00Z',
@@ -34,7 +34,7 @@ describe('TaskNoteItem', () => {
     expect(screen.getByText('Test note content')).toBeInTheDocument();
   });
 
-  it('renders author name', async () => {
+  test('renders author name', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
       id: 'practitioner-123',
@@ -53,7 +53,7 @@ describe('TaskNoteItem', () => {
     expect(await screen.findByText('Alice Wonderland')).toBeInTheDocument();
   });
 
-  it('renders links in text', () => {
+  test('renders links in text', () => {
     const note: Annotation = {
       text: 'Check this link: https://example.com',
       time: '2023-01-01T12:00:00Z',

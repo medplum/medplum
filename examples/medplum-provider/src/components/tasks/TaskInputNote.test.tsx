@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskInputNote } from './TaskInputNote';
 import type { Task } from '@medplum/fhirtypes';
 
@@ -42,7 +42,7 @@ describe('TaskInputNote', () => {
     note: [{ text: 'Existing note', time: '2023-01-01T12:00:00Z' }],
   };
 
-  it('renders existing notes', async () => {
+  test('renders existing notes', async () => {
     await medplum.createResource(mockTask);
     setup(mockTask);
 
@@ -52,7 +52,7 @@ describe('TaskInputNote', () => {
     });
   });
 
-  it('allows adding a new note', async () => {
+  test('allows adding a new note', async () => {
     await medplum.createResource(mockTask);
     const onTaskChange = vi.fn();
     setup(mockTask, { onTaskChange });
@@ -76,7 +76,7 @@ describe('TaskInputNote', () => {
     );
   });
 
-  it('shows delete confirmation modal', async () => {
+  test('shows delete confirmation modal', async () => {
     await medplum.createResource(mockTask);
     const onDeleteTask = vi.fn();
     setup(mockTask, { onDeleteTask });
@@ -94,7 +94,7 @@ describe('TaskInputNote', () => {
     });
   });
 
-  it('calls onDeleteTask when confirmed', async () => {
+  test('calls onDeleteTask when confirmed', async () => {
     await medplum.createResource(mockTask);
     const onDeleteTask = vi.fn();
     setup(mockTask, { onDeleteTask });
@@ -119,7 +119,7 @@ describe('TaskInputNote', () => {
     expect(onDeleteTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' }));
   });
 
-  it('marks task as completed', async () => {
+  test('marks task as completed', async () => {
     await medplum.createResource(mockTask);
     const onTaskChange = vi.fn();
     setup(mockTask, { onTaskChange });

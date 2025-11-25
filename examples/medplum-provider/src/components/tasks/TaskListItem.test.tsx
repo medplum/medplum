@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, test, beforeEach } from 'vitest';
 import { TaskListItem } from './TaskListItem';
 import type { Task, Patient, Practitioner } from '@medplum/fhirtypes';
 
@@ -37,12 +37,12 @@ describe('TaskListItem', () => {
     authoredOn: '2023-01-01T12:00:00Z',
   };
 
-  it('renders task details correctly', () => {
+  test('renders task details correctly', () => {
     setup(mockTask);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
   });
 
-  it('renders due date if present', () => {
+  test('renders due date if present', () => {
     const taskWithDueDate: Task = {
       ...mockTask,
       restriction: { period: { end: '2023-02-01' } },
@@ -51,7 +51,7 @@ describe('TaskListItem', () => {
     expect(screen.getByText(/Due/)).toBeInTheDocument();
   });
 
-  it('renders patient name if present', async () => {
+  test('renders patient name if present', async () => {
     const patient: Patient = {
       resourceType: 'Patient',
       id: 'patient-123',
@@ -69,7 +69,7 @@ describe('TaskListItem', () => {
     expect(await screen.findByText('For: John Doe')).toBeInTheDocument();
   });
 
-  it('renders assignee name if present', async () => {
+  test('renders assignee name if present', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
       id: 'practitioner-123',
@@ -87,7 +87,7 @@ describe('TaskListItem', () => {
     expect(await screen.findByText('Assigned to Jane Smith')).toBeInTheDocument();
   });
 
-  it('highlights selected task', () => {
+  test('highlights selected task', () => {
     setup(mockTask, mockTask);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
   });

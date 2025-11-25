@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
 
 describe('TaskSelectEmpty', () => {
@@ -14,7 +14,7 @@ describe('TaskSelectEmpty', () => {
     );
   };
 
-  it('renders "No task selected" message by default', () => {
+  test('renders "No task selected" message by default', () => {
     setup();
     expect(screen.getByText('No task selected')).toBeInTheDocument();
     expect(
@@ -22,7 +22,7 @@ describe('TaskSelectEmpty', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders "Task not found" message when notFound is true', () => {
+  test('renders "Task not found" message when notFound is true', () => {
     setup({ notFound: true });
     expect(screen.getByText('Task not found')).toBeInTheDocument();
     expect(

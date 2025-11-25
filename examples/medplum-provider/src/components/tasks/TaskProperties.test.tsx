@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Organization, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient, HomerSimpson } from '@medplum/mock';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskProperties } from './TaskProperties';
 
 describe('TaskProperties', () => {
@@ -40,7 +40,7 @@ describe('TaskProperties', () => {
     for: { reference: 'Patient/patient-123', display: 'Test Patient' },
   };
 
-  it('renders all task property fields', async () => {
+  test('renders all task property fields', async () => {
     setup(mockTask);
 
     await waitFor(() => {
@@ -53,7 +53,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('renders due date field', async () => {
+  test('renders due date field', async () => {
     setup(mockTask);
 
     await waitFor(() => {
@@ -61,7 +61,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('renders due date field with value when restriction period is set', async () => {
+  test('renders due date field with value when restriction period is set', async () => {
     const dueDate = new Date('2024-12-31T00:00:00');
 
     const taskWithDueDate: Task = {
@@ -82,7 +82,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('renders priority field with current priority value', async () => {
+  test('renders priority field with current priority value', async () => {
     setup(mockTask);
 
     await waitFor(() => {
@@ -90,7 +90,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('shows ReferenceInput for basedOn when not present', async () => {
+  test('shows ReferenceInput for basedOn when not present', async () => {
     setup(mockTask);
 
     await waitFor(() => {
@@ -99,7 +99,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('displays encounter when present', async () => {
+  test('displays encounter when present', async () => {
     const encounter: Encounter = {
       resourceType: 'Encounter',
       id: 'encounter-123',
@@ -121,7 +121,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('does not display encounter when not present', async () => {
+  test('does not display encounter when not present', async () => {
     setup(mockTask);
 
     await waitFor(() => {
@@ -131,7 +131,7 @@ describe('TaskProperties', () => {
     expect(screen.queryByText('Encounter')).not.toBeInTheDocument();
   });
 
-  it('updates task when initialTask changes', async () => {
+  test('updates task when initialTask changes', async () => {
     const { rerender } = setup(mockTask);
 
     await waitFor(() => {
@@ -156,7 +156,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('handles task with owner reference and displays owner', async () => {
+  test('handles task with owner reference and displays owner', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
       id: 'prac-123',
@@ -177,7 +177,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('handles task with organization owner and displays organization', async () => {
+  test('handles task with organization owner and displays organization', async () => {
     const organization: Organization = {
       resourceType: 'Organization',
       id: 'org-123',
@@ -198,7 +198,7 @@ describe('TaskProperties', () => {
     });
   });
 
-  it('displays encounter reference when encounter is present', async () => {
+  test('displays encounter reference when encounter is present', async () => {
     const encounter: Encounter = {
       resourceType: 'Encounter',
       id: 'encounter-123',

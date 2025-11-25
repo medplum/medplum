@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { Task, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskBoard } from './TaskBoard';
 
 vi.mock('../../utils/notifications', () => ({
@@ -43,7 +43,7 @@ describe('TaskBoard', () => {
     authoredOn: '2023-01-01T12:00:00Z',
   };
 
-  it('renders task board with My Tasks and All Tasks buttons', async () => {
+  test('renders task board with My Tasks and All Tasks buttons', async () => {
     setup();
 
     await waitFor(() => {
@@ -52,7 +52,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('displays tasks in the list', async () => {
+  test('displays tasks in the list', async () => {
     await medplum.createResource(mockTask);
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
 
@@ -66,7 +66,7 @@ describe('TaskBoard', () => {
     );
   });
 
-  it('shows empty state when no tasks are found', async () => {
+  test('shows empty state when no tasks are found', async () => {
     setup();
 
     await waitFor(() => {
@@ -74,7 +74,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('switches between My Tasks and All Tasks', async () => {
+  test('switches between My Tasks and All Tasks', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
@@ -88,7 +88,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('opens new task modal when plus button is clicked', async () => {
+  test('opens new task modal when plus button is clicked', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -108,7 +108,7 @@ describe('TaskBoard', () => {
     }
   });
 
-  it('displays selected task in detail panel', async () => {
+  test('displays selected task in detail panel', async () => {
     await medplum.createResource(mockTask);
     setup({ selectedTaskId: 'task-123' });
 
@@ -117,7 +117,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('shows TaskSelectEmpty when no task is selected', async () => {
+  test('shows TaskSelectEmpty when no task is selected', async () => {
     setup();
 
     await waitFor(() => {
@@ -125,7 +125,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('renders filter menu', async () => {
+  test('renders filter menu', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     await medplum.createResource({
@@ -151,7 +151,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('fetches and displays performer types', async () => {
+  test('fetches and displays performer types', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
       id: 'prac-123',
@@ -176,7 +176,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('handles task selection from URL parameter', async () => {
+  test('handles task selection from URL parameter', async () => {
     await medplum.createResource(mockTask);
     setup({ selectedTaskId: 'task-123' });
 
@@ -185,7 +185,7 @@ describe('TaskBoard', () => {
     });
   });
 
-  it('handles task not found scenario', async () => {
+  test('handles task not found scenario', async () => {
     setup({ selectedTaskId: 'non-existent-task' });
 
     await waitFor(() => {
