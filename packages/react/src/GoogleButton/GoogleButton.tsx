@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { GoogleCredentialResponse } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createScriptTag } from '../utils/script';
@@ -23,7 +22,6 @@ export interface GoogleButtonProps {
 }
 
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
-  const medplum = useMedplum();
   const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
@@ -45,14 +43,18 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
     }
 
     if (parentRef.current && !buttonRendered) {
-      google.accounts.id.renderButton(parentRef.current, {});
+      google.accounts.id.renderButton(parentRef.current, {
+        type: 'standard',
+        logo_alignment: 'center',
+        width: parentRef.current.clientWidth,
+      });
       setButtonRendered(true);
     }
-  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, handleGoogleCredential]);
+  }, [googleClientId, initialized, scriptLoaded, buttonRendered, handleGoogleCredential]);
 
   if (!googleClientId) {
     return null;
   }
 
-  return <div ref={parentRef} />;
+  return <div ref={parentRef} style={{ width: '100%', height: 40, display: 'flex', justifyContent: 'center' }} />;
 }

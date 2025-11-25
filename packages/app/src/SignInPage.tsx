@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
 import { getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect } from 'react';
@@ -36,7 +35,7 @@ export function SignInPage(): JSX.Element {
       projectId={searchParams.get('project') || undefined}
     >
       <Logo size={32} />
-      <Title>Sign in to {getAppName()}</Title>
+      <h2>Sign in to {getAppName()}</h2>
       {searchParams.get('project') === 'new' && <div>Sign in again to create a new project</div>}
     </SignInForm>
   );

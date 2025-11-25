@@ -68,7 +68,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
-          <Group justify="center" p="xl" style={{ height: 70 }}>
+          <div style={{ width: '100%', padding: '1rem 0' }}>
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
@@ -86,7 +86,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                 }
               }}
             />
-          </Group>
+          </div>
           <Divider label="or" labelPosition="center" my="lg" />
         </>
       )}

@@ -68,7 +68,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               onSuccess();
             }
           })
-          .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+          .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
       }
     },
     [medplum, onCode, onSuccess]
@@ -116,12 +116,12 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
       medplum
         .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
   }, [medplum, loginCode, loginRequested, login, handleAuthResponse]);
 
   return (
-    <Document width={450} px="sm" py="md">
+    <Document width={400} px="xl" py="xl" bdrs="md">
       {(() => {
         if (!login) {
           return (
