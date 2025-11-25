@@ -27,6 +27,11 @@ describe('TaskFilterMenu', () => {
     setup({ onFilterChange });
 
     await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Status')).toBeInTheDocument();
+    });
+
     await user.hover(screen.getByText('Status'));
 
     await waitFor(() => {
@@ -44,6 +49,11 @@ describe('TaskFilterMenu', () => {
     setup({ performerTypes });
 
     await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Performer Type')).toBeInTheDocument();
+    });
+
     await user.hover(screen.getByText('Performer Type'));
 
     await waitFor(() => {
@@ -58,6 +68,11 @@ describe('TaskFilterMenu', () => {
     setup({ onFilterChange, performerTypes });
 
     await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Performer Type')).toBeInTheDocument();
+    });
+
     await user.hover(screen.getByText('Performer Type'));
 
     await waitFor(() => {
