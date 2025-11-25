@@ -15,7 +15,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { LabOrderDetails } from './LabOrderDetails';
 
 // Mock the documentReference utility
@@ -276,7 +276,7 @@ describe('LabOrderDetails', () => {
   };
 
   describe('Basic rendering', () => {
-    it('renders order details with active status', async () => {
+    test('renders order details with active status', async () => {
       medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
         if (resourceType === 'Patient' && id === 'patient-123') {
           return Promise.resolve(mockPatient);
@@ -299,7 +299,7 @@ describe('LabOrderDetails', () => {
       expect(screen.getByText('Active')).toBeInTheDocument();
     });
 
-    it('renders order details with completed status', async () => {
+    test('renders order details with completed status', async () => {
       medplum.readResource = vi.fn().mockResolvedValue(mockPatient);
 
       await act(async () => {
@@ -313,7 +313,7 @@ describe('LabOrderDetails', () => {
       expect(screen.getByText('Completed')).toBeInTheDocument();
     });
 
-    it('displays multiple test codes', async () => {
+    test('displays multiple test codes', async () => {
       const orderWithMultipleCodes: ServiceRequest = {
         ...mockActiveServiceRequest,
         code: {
@@ -341,7 +341,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('falls back to first code display when no text field', async () => {
+    test('falls back to first code display when no text field', async () => {
       const orderWithoutText: ServiceRequest = {
         ...mockActiveServiceRequest,
         code: {
@@ -366,7 +366,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Tab switching', () => {
-    it('defaults to progress tracker for active orders', async () => {
+    test('defaults to progress tracker for active orders', async () => {
       await act(async () => {
         setup({ order: mockActiveServiceRequest });
       });
@@ -377,7 +377,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('defaults to report tab for completed orders', async () => {
+    test('defaults to report tab for completed orders', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
@@ -390,7 +390,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('switches to order details tab when clicked', async () => {
+    test('switches to order details tab when clicked', async () => {
       const user = userEvent.setup();
       medplum.readResource = vi.fn().mockResolvedValue(mockPractitioner);
 
@@ -425,7 +425,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('displays order information correctly', async () => {
+    test('displays order information correctly', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
@@ -452,7 +452,7 @@ describe('LabOrderDetails', () => {
       expect(screen.getByText('routine')).toBeInTheDocument();
     });
 
-    it('displays reason code and notes', async () => {
+    test('displays reason code and notes', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
@@ -470,7 +470,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('displays order detail if present', async () => {
+    test('displays order detail if present', async () => {
       const user = userEvent.setup();
       const orderWithDetails: ServiceRequest = {
         ...mockActiveServiceRequest,
@@ -495,7 +495,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Progress tracker', () => {
-    it('displays progress tracker for active orders', async () => {
+    test('displays progress tracker for active orders', async () => {
       await act(async () => {
         setup({ order: mockActiveServiceRequest });
       });
@@ -508,7 +508,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('marks steps as completed based on available data', async () => {
+    test('marks steps as completed based on available data', async () => {
       fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([mockLabOrderRequisitionDoc]);
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
@@ -522,7 +522,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('shows timestamps for completed steps', async () => {
+    test('shows timestamps for completed steps', async () => {
       await act(async () => {
         setup({ order: mockActiveServiceRequest });
       });
@@ -534,7 +534,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Diagnostic report', () => {
-    it('displays diagnostic report for completed orders', async () => {
+    test('displays diagnostic report for completed orders', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
       medplum.readResource = vi.fn().mockResolvedValue(mockObservation);
 
@@ -552,7 +552,7 @@ describe('LabOrderDetails', () => {
       );
     });
 
-    it('displays issue date', async () => {
+    test('displays issue date', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
@@ -564,7 +564,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('displays conclusion if present', async () => {
+    test('displays conclusion if present', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
@@ -581,7 +581,7 @@ describe('LabOrderDetails', () => {
       );
     });
 
-    it('displays lab document section with presentedForm', async () => {
+    test('displays lab document section with presentedForm', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
@@ -595,7 +595,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Document references', () => {
-    it('fetches and displays lab order requisition documents', async () => {
+    test('fetches and displays lab order requisition documents', async () => {
       const user = userEvent.setup();
       fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([mockLabOrderRequisitionDoc]);
 
@@ -612,7 +612,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('fetches and displays specimen label documents', async () => {
+    test('fetches and displays specimen label documents', async () => {
       const user = userEvent.setup();
       medplum.searchResources = vi.fn().mockImplementation(async (resourceType: string, params: any) => {
         const searchParams = new URLSearchParams(params);
@@ -638,7 +638,7 @@ describe('LabOrderDetails', () => {
       );
     });
 
-    it('displays message when no specimen label documents found', async () => {
+    test('displays message when no specimen label documents found', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
@@ -655,7 +655,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Questionnaire response', () => {
-    it('fetches and displays questionnaire response from current order', async () => {
+    test('fetches and displays questionnaire response from current order', async () => {
       const user = userEvent.setup();
       const orderWithQuestionnaire: ServiceRequest = {
         ...mockActiveServiceRequest,
@@ -683,7 +683,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('searches for questionnaire response from original order', async () => {
+    test('searches for questionnaire response from original order', async () => {
       const user = userEvent.setup();
       const originalOrder: ServiceRequest = {
         ...mockActiveServiceRequest,
@@ -715,7 +715,7 @@ describe('LabOrderDetails', () => {
       });
     });
 
-    it('handles different answer types in questionnaire response', async () => {
+    test('handles different answer types in questionnaire response', async () => {
       const user = userEvent.setup();
       const questionnaireWithMultipleAnswerTypes: QuestionnaireResponse = {
         ...mockQuestionnaireResponse,
@@ -796,7 +796,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Status badges', () => {
-    it.each([
+    test.each([
       ['active', 'Active'],
       ['completed', 'Completed'],
       ['draft', 'Draft'],
@@ -823,7 +823,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Error handling', () => {
-    it('handles error when fetching requisition documents fails', async () => {
+    test('handles error when fetching requisition documents fails', async () => {
       const user = userEvent.setup();
       fetchLabOrderRequisitionDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
 
@@ -841,7 +841,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Cleanup', () => {
-    it('cleans up documents when order changes', async () => {
+    test('cleans up documents when order changes', async () => {
       const { rerender } = await act(async () => {
         return setup();
       });
@@ -874,7 +874,7 @@ describe('LabOrderDetails', () => {
   });
 
   describe('onOrderChange callback', () => {
-    it('accepts onOrderChange prop', async () => {
+    test('accepts onOrderChange prop', async () => {
       const onOrderChange = vi.fn();
 
       await act(async () => {
