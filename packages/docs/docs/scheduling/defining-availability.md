@@ -250,7 +250,6 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [ActivityDef
   "resourceType": "Schedule",
   "id": "dr-smith-schedule",
   "actor": [{"reference": "Practitioner/dr-smith"}],
-  "serviceType": [{"coding": [{"code": "office-visit"}]}], // matches the ActivityDefinition.code
   //...
 }
 ```
@@ -319,7 +318,7 @@ Here is an example Schedule that defines generic availability for all services a
 
 **Priority order** (highest to lowest):
 1. Schedule with `http://medplum.com/fhir/StructureDefinition/scheduling-parameters.serviceType` extension defined.
-2. ActivityDefinition where `ActivityDefinition.code` matches `Schedule.serviceType`. ActivityDefinition parameters are used.
+2. ActivityDefinition where `ActivityDefinition.code` matches `service-type` param on `$find` request. ActivityDefinition parameters are used.
 3. Schedule without `Schedule.serviceType` defined. Uses generic availability defined on the Schedule.
 
 ### Blocking Time by Service Type
@@ -408,12 +407,6 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
   "resourceType": "Schedule",
   "id": "dr-johnson-schedule",
   "active": true,
-  "serviceType": [{
-    "coding": [{
-      "system": "http://example.org/appointment-types",
-      "code": "office-visit"
-    }]
-  }],
   "actor": [{
     "reference": "Practitioner/dr-johnson",
     "display": "Dr. Sarah Johnson"
@@ -441,10 +434,9 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
 
 </details>
 
-**Result**: Dr. Johnson's schedule inherits all the default parameters from the ActivityDefinition:
-- Dr. Johnson is available Mon-Fri 9am-5pm for 30-minute office visits **[from Schedule]**
-- Available to start every 15 minutes (:00, :15, :30, :45) **[from ActivityDefinition]**
-- 5-minute buffers **[from ActivityDefinition]**
+**Result**: Dr. Johnson's schedule inherits all the default parameters from the ActivityDefinition for an office visit:
+- $find called with `service-type!=office-visit`: Dr. Johnson is available Mon-Fri 9am-5pm for non-office visits **[from Schedule]**
+- $find called with `service-type=office-visit`: For office visits, available to start every 15 minutes (:00, :15, :30, :45) with 5-minute buffers **[from ActivityDefinition]**
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
@@ -547,10 +539,6 @@ This Schedule shows how to configure default availability for all services (Mon-
   "resourceType": "Schedule",
   "id": "dr-chen-schedule",
   "active": true,
-  "serviceType": [
-    {"coding": [{"code": "new-patient-visit"}]},
-    {"coding": [{"code": "follow-up"}]}
-  ],
   "actor": [{"reference": "PractitionerRole/dr-chen"}],
   "planningHorizon": {
     "start": "2025-01-01T00:00:00Z",
@@ -601,8 +589,8 @@ This Schedule shows how to configure default availability for all services (Mon-
 </details>
 
 **Result**:
-- **New patient visits**: Tue/Thu 9am-1pm only, 60 minutes, can start every 30 minutes, max 3 per day, 15-min buffers
-- **Follow-ups**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
+- **New patient visits (ie. `$find` called with `service-type=new-patient-visit`)**: Tue/Thu 9am-1pm only, 60 minutes, can start every 30 minutes, max 3 per day, 15-min buffers
+- **Follow-ups (ie. `$find` called with `service-type=follow-up`)**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
@@ -749,9 +737,6 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
   "resourceType": "Schedule",
   "id": "or-3-schedule",
   "active": true,
-  "serviceType": [
-    {"coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]}
-  ],
   "actor": [{
     "reference": "Location/or-3",
     "display": "Operating Room 3"
