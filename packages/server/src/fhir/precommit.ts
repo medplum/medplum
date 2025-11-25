@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobInteraction, WithId } from '@medplum/core';
 import {
+  badRequest,
   ContentType,
   createReference,
   getExtension,
+  getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -13,9 +15,11 @@ import {
 import type { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
 import { getSystemRepo } from './repo';
+import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
 
@@ -35,9 +39,13 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 export async function preCommitValidation<T extends Resource>(
   author: Reference,
   project: WithId<Project> | undefined,
-  resource: T,
+  resource: WithId<T>,
   interaction: BackgroundJobInteraction
 ): Promise<T | boolean | undefined> {
+  if (interaction === 'delete' && !project?.superAdmin) {
+    await checkReferencesForDelete(resource);
+  }
+
   // reject if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
@@ -123,4 +131,20 @@ export async function preCommitValidation<T extends Resource>(
   }
 
   return undefined;
+}
+
+async function checkReferencesForDelete(resource: WithId<Resource>): Promise<void> {
+  const db = getDatabasePool(DatabaseMode.WRITER);
+  const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
+    .column('resourceId')
+    .where('targetId', '=', resource.id);
+
+  const results = await checkForCriticalRefs.execute(db);
+  if (results.length) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Cannot delete ${getReferenceString(resource)}: referenced by ProjectMembership/${results[0].resourceId}`
+      )
+    );
+  }
 }
