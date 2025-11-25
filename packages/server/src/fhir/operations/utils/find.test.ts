@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { removeAvailability, resolveAvailability } from './find';
+import { normalizeIntervals, removeAvailability, resolveAvailability } from './find';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 describe('resolveAvailability', () => {
@@ -157,6 +157,32 @@ describe('resolveAvailability', () => {
     expect(resolveAvailability(schedulingParameters, fallRange, 'America/New_York')).toEqual([
       { start: new Date('2025-11-02T15:00:00.000Z'), end: new Date('2025-11-02T21:00:00.000Z') },
     ]);
+  });
+});
+
+describe('normalizeIntervals', () => {
+  test('it sorts the input intervals', () => {
+    const intervals = [
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+
+    expect(normalizeIntervals(intervals)).toEqual([
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ]);
+  });
+
+  test('it merges overlapping intervals', () => {
+    const intervals = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-08') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-07'), end: new Date('2025-12-09') },
+    ];
+
+    expect(normalizeIntervals(intervals)).toEqual([{ start: new Date('2025-12-01'), end: new Date('2025-12-09') }]);
   });
 });
 
