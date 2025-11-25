@@ -42,8 +42,14 @@ export async function preCommitValidation<T extends Resource>(
   resource: WithId<T>,
   interaction: BackgroundJobInteraction
 ): Promise<T | boolean | undefined> {
+  const logger = getLogger();
+
   if (interaction === 'delete' && !project?.superAdmin) {
-    await checkReferencesForDelete(resource);
+    try {
+      await checkReferencesForDelete(resource);
+    } catch (err) {
+      logger.warn('Deleting resource referenced by ProjectMembership', err as Error);
+    }
   }
 
   // reject if the server does not have pre-commit enabled
@@ -57,7 +63,6 @@ export async function preCommitValidation<T extends Resource>(
 
   resource.meta = { ...resource.meta, author };
   const systemRepo = getSystemRepo();
-  const logger = getLogger();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -133,6 +138,13 @@ export async function preCommitValidation<T extends Resource>(
   return undefined;
 }
 
+/**
+ * Ensures that critical references are not left dangling when a resource is deleted.
+ * Specifically, resources referenced by a ProjectMembership should not be deleted until all memberships
+ * that refer to them are deleted.
+ * @param resource - The resource to be deleted.
+ * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
+ */
 async function checkReferencesForDelete(resource: WithId<Resource>): Promise<void> {
   const db = getDatabasePool(DatabaseMode.WRITER);
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')

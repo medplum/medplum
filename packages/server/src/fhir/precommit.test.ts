@@ -7,6 +7,7 @@ import { createBot } from '../admin/bot';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { deployBot } from './operations/deploy';
 import type { Repository } from './repo';
@@ -136,15 +137,15 @@ describe('FHIR Repo', () => {
     }));
 
   test('Checks critical references', async () => {
-    const { profile, membership } = await inviteUser({
+    const { profile } = await inviteUser({
       project,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Doctor',
     });
 
-    await expect(repo.deleteResource('Practitioner', profile.id)).rejects.toThrow(
-      `Cannot delete Practitioner/${profile.id}: referenced by ProjectMembership/${membership.id}`
-    );
+    const logSpy = jest.spyOn(systemLogger, 'warn');
+    await expect(repo.deleteResource('Practitioner', profile.id)).resolves.toBeUndefined();
+    expect(logSpy).toHaveBeenCalledWith('Deleting resource referenced by ProjectMembership', expect.any(Error));
   });
 });
