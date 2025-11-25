@@ -119,6 +119,9 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
       currConfig = config.smtp = config.smtp ?? {};
+    } else if (key.startsWith('BULLMQ_')) {
+      key = key.substring('BULLMQ_'.length);
+      currConfig = config.bullmq = config.bullmq ?? {};
     } else if (key.startsWith('FISSION_')) {
       key = key.substring('FISSION_'.length);
       currConfig = config.fission = config.fission ?? {};
