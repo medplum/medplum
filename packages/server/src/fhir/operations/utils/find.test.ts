@@ -160,6 +160,15 @@ describe('normalizeIntervals', () => {
 
     expect(normalizeIntervals(intervals)).toEqual([{ start: new Date('2025-12-01'), end: new Date('2025-12-09') }]);
   });
+
+  test('it merges intervals that share an endpoint', () => {
+    const intervals = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-03') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+    ];
+
+    expect(normalizeIntervals(intervals)).toEqual([{ start: new Date('2025-12-01'), end: new Date('2025-12-04') }]);
+  });
 });
 
 describe('removeAvailability', () => {

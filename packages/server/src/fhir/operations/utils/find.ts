@@ -35,7 +35,7 @@ function intersectIntervals(left: Interval, right: Interval): Interval | undefin
  * @returns An overlap interval, or undefined if none exists
  */
 function mergeIntervals(left: Interval, right: Interval): Interval | undefined {
-  if (!areIntervalsOverlapping(left, right)) {
+  if (!areIntervalsOverlapping(left, right, { inclusive: true })) {
     return undefined;
   }
 
