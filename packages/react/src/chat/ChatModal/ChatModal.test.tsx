@@ -3,9 +3,9 @@
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import type { ChatModalProps } from './ChatModal';
 import { ChatModal } from './ChatModal';
 
 describe('ChatModal', () => {
@@ -15,10 +15,14 @@ describe('ChatModal', () => {
     defaultMedplum = new MockClient({ profile: DrAliceSmith });
   });
 
-  type TestComponentProps = Omit<ChatModalProps, 'children'>;
+  interface TestComponentProps {
+    open?: boolean;
+  }
+
   function TestComponent(props: TestComponentProps): JSX.Element | null {
+    const [open, setOpen] = useState(props.open ?? false);
     return (
-      <ChatModal {...props}>
+      <ChatModal open={open} setOpen={setOpen}>
         <div key="test-render">Rendered!</div>
       </ChatModal>
     );
@@ -53,34 +57,6 @@ describe('ChatModal', () => {
 
     await rerender();
     expect(await screen.findByRole('button', { name: 'Open chat' })).toBeInTheDocument();
-  });
-
-  test('Setting `open` to `true`', async () => {
-    const { rerender } = await setup();
-    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
-
-    await rerender({ open: true });
-    expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
-    expect(screen.getByText('Rendered!')).toBeInTheDocument();
-  });
-
-  test('Setting `open` to `false` then `true` then to `false` again', async () => {
-    const { rerender } = await setup({ open: false });
-    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
-
-    await rerender({ open: true });
-    expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
-
-    await rerender({ open: false });
-    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
-  });
-
-  test('Setting `open` to `true` then `undefined`', async () => {
-    const { rerender } = await setup({ open: true });
-    expect(screen.getByText('Rendered!')).toBeInTheDocument();
-
-    await rerender({ open: undefined });
-    expect(screen.getByText('Rendered!')).toBeInTheDocument();
   });
 
   test('Clicking toggles chat open and closed', async () => {

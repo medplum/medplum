@@ -6,7 +6,7 @@ import { Operator, deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -28,17 +28,10 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
-  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search) as SearchRequest);
-
-  const searchRef = useRef<SearchRequest>(search);
-  searchRef.current = search;
-
-  useEffect(() => {
-    setSearch(deepClone(props.search) as SearchRequest);
-  }, [props.search]);
+  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search));
 
   function onAddFilter(filter: Filter): void {
-    setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
+    setSearch((existing) => addFilter(existing, filter.code, filter.operator, filter.value));
   }
 
   const resourceType = props.search.resourceType;
@@ -53,7 +46,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
       opened={props.visible}
       onClose={props.onCancel}
     >
-      <Form onSubmit={() => props.onOk(searchRef.current)}>
+      <Form onSubmit={() => props.onOk(search)}>
         <div>
           <table>
             <colgroup>
@@ -81,9 +74,9 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                   onChange={(newFilter: Filter) => {
                     const newFilters = [...filters];
                     newFilters[index] = newFilter;
-                    setSearch(setFilters(searchRef.current, newFilters));
+                    setSearch((existing) => setFilters(existing, newFilters));
                   }}
-                  onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
+                  onDelete={() => setSearch((existing) => deleteFilter(existing, index))}
                 />
               ))}
             </tbody>
@@ -109,8 +102,7 @@ interface FilterRowInputProps {
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   const value: Filter = props.value;
-  const valueRef = useRef<Filter>(value);
-  valueRef.current = value;
+  const valueRef = useRef<Filter>(props.value);
 
   function setFilterCode(newCode: string): void {
     valueRef.current.code = newCode;

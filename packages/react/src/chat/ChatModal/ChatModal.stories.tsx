@@ -5,6 +5,7 @@ import { createReference, getReferenceString } from '@medplum/core';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { Document } from '../../Document/Document';
 import { withMockedDate } from '../../stories/decorators';
 import { BaseChat } from '../BaseChat/BaseChat';
@@ -17,13 +18,14 @@ export default {
 } as Meta;
 
 export const ChatClosed = (): JSX.Element => {
+  const [open, setOpen] = useState(false);
   const sent1 = new Date();
   const sent2 = new Date(sent1);
   sent2.setSeconds(sent1.getSeconds() + 1);
   return (
     <Document>
       <Text>Click on the button in the bottom right corner to open the chat!</Text>
-      <ChatModal>
+      <ChatModal open={open} setOpen={setOpen}>
         <BaseChat
           title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
@@ -56,11 +58,12 @@ export const ChatClosed = (): JSX.Element => {
 };
 
 export const ChatOpen = (): JSX.Element => {
+  const [open, setOpen] = useState(true);
   const sent1 = new Date();
   const sent2 = new Date(sent1);
   sent2.setSeconds(sent1.getSeconds() + 1);
   return (
-    <ChatModal open={true}>
+    <ChatModal open={open} setOpen={setOpen}>
       <BaseChat
         title="Chat with Homer Simpson"
         query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}

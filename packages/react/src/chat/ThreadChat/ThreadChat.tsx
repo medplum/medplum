@@ -3,9 +3,9 @@
 import type { ProfileResource } from '@medplum/core';
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
@@ -21,17 +21,16 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const { thread, title, onMessageSent, inputDisabled, excludeHeader, onError } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const prevThreadId = usePrevious<string | undefined>(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
+  const [currentThreadId, setCurrentThreadId] = useState<string | undefined>(thread?.id);
 
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
   const threadRef = useMemo(() => createReference(thread), [thread]);
 
-  useEffect(() => {
-    if (thread?.id !== prevThreadId) {
-      setCommunications([]);
-    }
-  }, [thread?.id, prevThreadId]);
+  if (thread?.id !== currentThreadId) {
+    setCommunications([]);
+    setCurrentThreadId(thread?.id);
+  }
 
   const sendMessage = useCallback(
     (message: string) => {

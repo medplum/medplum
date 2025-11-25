@@ -230,12 +230,12 @@ export const tsConfig = {
 
     // React Hooks
     'react-hooks/exhaustive-deps': 'error',
-    'react-hooks/set-state-in-effect': 'warn',
-    'react-hooks/refs': 'warn',
-    'react-hooks/immutability': 'warn',
-    'react-hooks/static-components': 'warn',
-    'react-hooks/preserve-manual-memoization': 'warn',
-    'react-hooks/purity': 'warn',
+    'react-hooks/set-state-in-effect': 'error',
+    'react-hooks/refs': 'error',
+    'react-hooks/immutability': 'error',
+    'react-hooks/static-components': 'error',
+    'react-hooks/preserve-manual-memoization': 'error',
+    'react-hooks/purity': 'error',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',

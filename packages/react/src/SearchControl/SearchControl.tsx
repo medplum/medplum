@@ -33,7 +33,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import type { ChangeEvent, JSX, MouseEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -117,12 +117,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
-
-  const [memoizedSearch, setMemoizedSearch] = useState(search);
-
-  if (!deepEquals(search, memoizedSearch)) {
-    setMemoizedSearch(search);
-  }
+  const [memoizedSearch, setMemoizedSearch] = useState<SearchRequest>({} as SearchRequest);
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -132,58 +127,57 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     filterDialogVisible: false,
   });
 
-  const stateRef = useRef<SearchControlState>(state);
-  stateRef.current = state;
-
-  const total = memoizedSearch.total ?? 'accurate';
-
   const loadResults = useCallback(
-    (options?: RequestInit) => {
+    (searchRequest: SearchRequest, options?: RequestInit) => {
       setOutcome(undefined);
       medplum
-        .requestSchema(memoizedSearch.resourceType as ResourceType)
+        .requestSchema(searchRequest.resourceType as ResourceType)
         .then(() =>
           medplum.search(
-            memoizedSearch.resourceType as ResourceType,
-            formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
+            searchRequest.resourceType as ResourceType,
+            formatSearchQuery({ ...searchRequest, fields: undefined }),
             options
           )
         )
         .then((response) => {
-          setState({ ...stateRef.current, searchResponse: response });
+          setState((existing) => ({ ...existing, searchResponse: response }));
           if (onLoad) {
             onLoad(new SearchLoadEvent(response));
           }
         })
         .catch((reason) => {
-          setState({ ...stateRef.current, searchResponse: undefined });
+          setState((existing) => ({ ...existing, searchResponse: undefined }));
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, memoizedSearch, total, onLoad]
+    [medplum, onLoad]
   );
 
   const refreshResults = useCallback(() => {
-    setState({ ...stateRef.current, searchResponse: undefined });
-    loadResults({ cache: 'reload' });
-  }, [loadResults]);
+    setState((existing) => ({ ...existing, searchResponse: undefined }));
+    loadResults(search, { cache: 'reload' });
+  }, [search, loadResults]);
 
-  useEffect(() => {
-    loadResults();
-  }, [loadResults]);
+  if (!deepEquals(search, memoizedSearch)) {
+    setMemoizedSearch(search);
+    loadResults(search);
+  }
 
   function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
-    const newSelected = { ...stateRef.current.selected };
-    if (checked) {
-      newSelected[id] = true;
-    } else {
-      delete newSelected[id];
-    }
-    setState({ ...stateRef.current, selected: newSelected });
+
+    setState((existing) => {
+      const newSelected = { ...existing.selected };
+      if (checked) {
+        newSelected[id] = true;
+      } else {
+        delete newSelected[id];
+      }
+      return { ...existing, selected: newSelected };
+    });
   }
 
   function handleAllCheckboxClick(e: ChangeEvent): void {
@@ -191,20 +185,22 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
-    const newSelected = {} as { [id: string]: boolean };
-    const searchResponse = stateRef.current.searchResponse;
-    if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach((entry) => {
-        if (entry.resource?.id) {
-          newSelected[entry.resource.id] = true;
-        }
-      });
-    }
-    setState({ ...stateRef.current, selected: newSelected });
+
+    setState((existing) => {
+      const newSelected = {} as { [id: string]: boolean };
+      const searchResponse = existing.searchResponse;
+      if (checked && searchResponse?.entry) {
+        searchResponse.entry.forEach((entry) => {
+          if (entry.resource?.id) {
+            newSelected[entry.resource.id] = true;
+          }
+        });
+      }
+      return { ...existing, selected: newSelected };
+    });
   }
 
   function isAllSelected(): boolean {
-    const state = stateRef.current;
     if (!state.searchResponse?.entry || state.searchResponse.entry.length === 0) {
       return false;
     }
@@ -293,7 +289,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconColumns size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true, dialogOpenTime: Date.now() })}
+              onClick={() =>
+                setState((existing) => ({ ...existing, fieldEditorVisible: true, dialogOpenTime: Date.now() }))
+              }
             >
               Fields
             </Button>
@@ -302,7 +300,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconFilter size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true, dialogOpenTime: Date.now() })}
+              onClick={() =>
+                setState((existing) => ({ ...existing, filterEditorVisible: true, dialogOpenTime: Date.now() }))
+              }
             >
               Filters
             </Button>
@@ -326,7 +326,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 onClick={
                   props.onExport
                     ? props.onExport
-                    : () => setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
+                    : () =>
+                        setState((existing) => ({ ...existing, exportDialogVisible: true, dialogOpenTime: Date.now() }))
                 }
               >
                 Export...
@@ -402,13 +403,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     search={memoizedSearch}
                     searchParams={field.searchParams}
                     onPrompt={(searchParam, filter) => {
-                      setState({
-                        ...stateRef.current,
+                      setState((existing) => ({
+                        ...existing,
                         filterDialogVisible: true,
                         filterDialogSearchParam: searchParam,
                         filterDialogFilter: filter,
                         dialogOpenTime: Date.now(),
-                      });
+                      }));
                     }}
                     onChange={(result) => {
                       emitSearchChange(result);
@@ -488,54 +489,54 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFieldEditor
         key={`search-field-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
-        visible={stateRef.current.fieldEditorVisible}
+        visible={state.fieldEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             fieldEditorVisible: false,
-          });
+          }));
         }}
         onCancel={() => {
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             fieldEditorVisible: false,
-          });
+          }));
         }}
       />
       <SearchFilterEditor
         key={`search-filter-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
-        visible={stateRef.current.filterEditorVisible}
+        visible={state.filterEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             filterEditorVisible: false,
-          });
+          }));
         }}
         onCancel={() => {
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             filterEditorVisible: false,
-          });
+          }));
         }}
       />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}
-        visible={stateRef.current.exportDialogVisible}
+        visible={state.exportDialogVisible}
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
         onCancel={() => {
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             exportDialogVisible: false,
-          });
+          }));
         }}
       />
       <SearchFilterValueDialog
         key={`search-filter-dialog-${state.dialogOpenTime}`}
-        visible={stateRef.current.filterDialogVisible}
+        visible={state.filterDialogVisible}
         title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
         searchParam={state.filterDialogSearchParam}
@@ -543,16 +544,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         defaultValue=""
         onOk={(filter) => {
           emitSearchChange(addFilter(memoizedSearch, filter.code, filter.operator, filter.value));
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             filterDialogVisible: false,
-          });
+          }));
         }}
         onCancel={() => {
-          setState({
-            ...stateRef.current,
+          setState((existing) => ({
+            ...existing,
             filterDialogVisible: false,
-          });
+          }));
         }}
       />
     </div>

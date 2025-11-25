@@ -4,7 +4,7 @@ import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } fr
 import { formatTiming } from '@medplum/core';
 import type { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
@@ -24,13 +24,10 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
   const [value, setValue] = useState<Timing | undefined>(props.defaultValue);
   const [open, setOpen] = useState(!props.disabled && (props.defaultModalOpen ?? false));
 
-  const valueRef = useRef<Timing>(value);
-  valueRef.current = value;
-
   return (
     <>
       <Group gap="xs" grow wrap="nowrap">
-        <span>{formatTiming(valueRef.current) || 'No repeat'}</span>
+        <span>{formatTiming(value) || 'No repeat'}</span>
         <Button disabled={props.disabled} onClick={() => setOpen(true)}>
           Edit
         </Button>
@@ -39,7 +36,7 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
         <TimingEditorDialog
           path={props.path}
           visible={open}
-          defaultValue={valueRef.current}
+          defaultValue={value}
           onOk={(newValue) => {
             if (props.onChange) {
               props.onChange(newValue);
@@ -80,27 +77,33 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     [getExtendedProps, props.path]
   );
 
-  const valueRef = useRef<Timing>(value);
-  valueRef.current = value;
-
   function setStart(newStart: string): void {
-    setValue({ ...valueRef.current, event: [newStart] });
+    setValue((existing) => ({ ...existing, event: [newStart] }));
   }
 
   function setRepeat(repeat: TimingRepeat | undefined): void {
-    setValue({ ...valueRef.current, repeat });
+    setValue((existing) => ({ ...existing, repeat }));
   }
 
   function setPeriod(newPeriod: number | undefined): void {
-    setRepeat({ ...valueRef.current?.repeat, period: newPeriod });
+    setValue((existing) => ({
+      ...existing,
+      repeat: { ...existing.repeat, period: newPeriod },
+    }));
   }
 
   function setPeriodUnit(newPeriodUnit: PeriodUnit | undefined): void {
-    setRepeat({ ...valueRef.current?.repeat, periodUnit: newPeriodUnit });
+    setValue((existing) => ({
+      ...existing,
+      repeat: { ...existing.repeat, periodUnit: newPeriodUnit },
+    }));
   }
 
   function setDaysOfWeek(newDaysOfWeek: DayOfWeek[] | undefined): void {
-    setRepeat({ ...valueRef.current?.repeat, dayOfWeek: newDaysOfWeek });
+    setValue((existing) => ({
+      ...existing,
+      repeat: { ...existing.repeat, dayOfWeek: newDaysOfWeek },
+    }));
   }
 
   return (

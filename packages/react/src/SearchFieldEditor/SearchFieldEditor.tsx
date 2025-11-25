@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
 import type { InternalTypeSchema, SearchRequest } from '@medplum/core';
-import { getDataType, getSearchParameters, sortStringArray, stringify } from '@medplum/core';
+import { deepClone, getDataType, getSearchParameters, sortStringArray } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
@@ -17,15 +17,8 @@ export interface SearchFieldEditorProps {
 
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
   const wasDropdownOpen = useRef(false);
-  const [state, setState] = useState({
-    search: JSON.parse(stringify(props.search)) as SearchRequest,
-  });
-
+  const [state, setState] = useState<SearchRequest>(deepClone(props.search));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    setState({ search: props.search });
-  }, [props.search]);
 
   const allFields = useMemo(() => {
     if (!props.visible) {
@@ -41,7 +34,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   }, [props.visible, props.search.resourceType]);
 
   function handleChange(newFields: string[]): void {
-    setState({ search: { ...state.search, fields: newFields } });
+    setState((existing) => ({ ...existing, fields: newFields }));
   }
 
   return (
@@ -100,7 +93,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           style={{ width: 550 }}
           placeholder="Select fields to display"
           data={allFields}
-          value={state.search.fields ?? []}
+          value={state.fields ?? []}
           onChange={handleChange}
           onDropdownOpen={() => setIsDropdownOpen(true)}
           onDropdownClose={() => setIsDropdownOpen(false)}
@@ -112,7 +105,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           searchable
         />
         <Group justify="flex-end">
-          <Button onClick={() => props.onOk(state.search)}>OK</Button>
+          <Button onClick={() => props.onOk(state)}>OK</Button>
         </Group>
       </Stack>
     </Modal>

@@ -8,7 +8,7 @@ import type { Reference, Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import SignaturePad from 'signature_pad';
 
 export interface SignatureInputProps extends PaperProps {
@@ -24,13 +24,11 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
   const { width = 500, height = 200, defaultValue, who, onChange, ...rest } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad>(null);
-
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const handleChange = useEffectEvent(onChange ?? (() => {}));
 
   useEffect(() => {
     function handleEndStroke(): void {
-      onChangeRef.current?.({
+      handleChange({
         type: [
           {
             system: HTTP_HL7_ORG + '/fhir/signature-type',
@@ -55,7 +53,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
 
     return () => {
       if (signaturePadRef.current) {
-        signaturePadRef.current.removeEventListener('beginStroke', handleEndStroke);
+        signaturePadRef.current.removeEventListener('endStroke', handleEndStroke);
       }
     };
   }, [medplum, defaultValue, who]);
@@ -64,7 +62,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
     if (signaturePadRef.current) {
       signaturePadRef.current.clear();
     }
-    onChangeRef.current?.(undefined);
+    onChange?.(undefined);
   };
 
   return (
