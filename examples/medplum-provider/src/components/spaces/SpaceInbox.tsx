@@ -3,7 +3,7 @@
 import { Stack, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition, CloseButton } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useResource } from '@medplum/react';
 import { IconHistory } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from './ResourceBox';
@@ -12,7 +12,7 @@ import type { Message } from '../../types/spaces';
 import { createConversationTopic, saveMessage, loadConversationMessages } from '../../pages/spaces/space-persistence';
 import { ConversationList } from '../../pages/spaces/ConversationList';
 import { ChatInput } from '../../pages/spaces/ChatInput';
-import type { Identifier, Communication } from '@medplum/fhirtypes';
+import type { Identifier, Communication, Reference } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
 import classes from '../../pages/spaces/SpacesPage.module.css';
 import cx from 'clsx';
@@ -28,27 +28,30 @@ const resourceSummaryBotId: Identifier = {
 };
 
 interface SpaceInboxProps {
-  topicId: string | undefined;
+  topic: Communication | Reference<Communication> | undefined;
   onNewTopic: (topic: Communication) => void;
   onSelectedItem: (topic: Communication) => string;
 }
 
-export function SpaceInbox({ topicId, onNewTopic, onSelectedItem }: SpaceInboxProps): JSX.Element {
+export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
+  const { topic: topicRef, onNewTopic, onSelectedItem } = props;
   const medplum = useMedplum();
+  const topic = useResource(topicRef);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gpt-5');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topicId);
+  const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
   const [historyOpened, setHistoryOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
 
-  // Load conversation when topicId changes
+  // Load conversation when topic changes
   useEffect(() => {
+    const topicId = topic?.id;
     if (topicId) {
       const loadTopic = async (): Promise<void> => {
         try {
@@ -72,7 +75,7 @@ export function SpaceInbox({ topicId, onNewTopic, onSelectedItem }: SpaceInboxPr
       setCurrentTopicId(undefined);
       setSelectedResource(undefined);
     }
-  }, [topicId, medplum]);
+  }, [topic, medplum]);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;

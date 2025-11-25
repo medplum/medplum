@@ -42,6 +42,14 @@ describe('SpaceInbox', () => {
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
     medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.readReference = vi.fn().mockImplementation((ref: any) => {
+      if (ref.reference?.startsWith('Communication/')) {
+        return Promise.resolve(mockTopic);
+      }
+      // For other references, return a basic resource with resourceType and id
+      const [resourceType, id] = ref.reference?.split('/') || [];
+      return Promise.resolve({ resourceType, id, meta: {} } as any);
+    });
     medplum.createResource = vi.fn().mockImplementation((resource: any) => {
       if (resource.identifier?.[0]?.value === 'ai-message-topic') {
         return Promise.resolve(mockTopic);
@@ -50,12 +58,12 @@ describe('SpaceInbox', () => {
     });
   });
 
-  const setup = (topicId?: string): ReturnType<typeof render> => {
+  const setup = (topicRef?: { reference: string }): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <SpaceInbox topicId={topicId} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} />
+            <SpaceInbox topic={topicRef} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>

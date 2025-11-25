@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -39,6 +40,7 @@ describe('SpacesPage', () => {
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
   });
 
   const setup = (initialEntries = ['/Spaces']): ReturnType<typeof render> => {
@@ -67,25 +69,40 @@ describe('SpacesPage', () => {
     expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
   });
 
-  test('renders SpaceInbox with topicId from URL', async () => {
+  test('renders SpaceInbox with topic reference from URL', async () => {
     await act(async () => {
       setup(['/Spaces/Communication/123']);
     });
 
     await waitFor(() => {
-      expect(medplum.searchResources).toHaveBeenCalledWith('Communication', {
-        'part-of': 'Communication/123',
-        _sort: '_lastUpdated',
-      });
+      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Communication/123' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('AI Assistant')).toBeInTheDocument();
     });
   });
 
   test('generates correct link for selected item', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([mockTopic]);
+    const user = userEvent.setup();
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: string, query: any) => {
+      if (query?.identifier === 'http://medplum.com/ai-message|ai-message-topic') {
+        return Promise.resolve([mockTopic]);
+      }
+      return Promise.resolve([]);
+    });
 
     await act(async () => {
       setup(['/Spaces']);
     });
+
+    const historyButton = screen.getAllByRole('button').find((btn) => {
+      const svg = btn.querySelector('svg');
+      return svg?.classList.contains('tabler-icon-history');
+    });
+    if (historyButton) {
+      await user.click(historyButton);
+    }
 
     await waitFor(() => {
       expect(screen.getByText('Test conversation')).toBeInTheDocument();
