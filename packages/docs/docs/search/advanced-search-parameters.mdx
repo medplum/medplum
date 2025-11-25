@@ -23,6 +23,11 @@ The FHIR search framework allows for special search parameters that enable more 
 - [\_source](#_source)
 - [\_filter](#_filter)
 - [\_sort](#_sort)
+- [\_deleted](#_deleted)
+- [\_project](#_project)
+- [\_fields](#_fields)
+- [\_type](#_type)
+- [\_cursor](#_cursor)
 
 ## \_id
 
@@ -302,3 +307,82 @@ The `_filter` parameter can be used to filter for more complex queries. For more
 ## \_sort
 
 The `_sort` parameter allows you to sort the results of your search based on different parameters. For details on how to use the `_sort` parameter, see the [Sorting the Results docs](/docs/search/basic-search#sorting-the-results).
+
+## \_deleted
+
+The `_deleted` parameter allows you to search for resources that have been soft-deleted. By default, Medplum filters out deleted resources.
+
+<details>
+  <summary>Example: Searching for deleted patients</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="deletedTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="deletedCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="deletedCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+## \_project
+
+The `_project` parameter allows you to filter resources by their project ID. This is useful when logged in as [Super Admin](/docs/self-hosting/super-admin-guide) or working with linked projects to ensure data isolation.
+
+<details>
+  <summary>Example: Searching for patients in a specific project</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="projectTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="projectCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="projectCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+## \_type
+
+The `_type` parameter allows you to restrict the search to specific resource types. This is particularly useful when performing a system-wide search or when searching across multiple resource types.
+
+<details>
+  <summary>Example: Searching for Patients and Observations</summary>
+  <Tabs groupId="language">
+    <TabItem value="ts" label="Typescript">
+      <MedplumCodeBlock language="ts" selectBlocks="typeTs">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="cli" label="CLI">
+      <MedplumCodeBlock language="bash" selectBlocks="typeCli">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+    <TabItem value="curl" label="cURL">
+      <MedplumCodeBlock language="bash" selectBlocks="typeCurl">
+        {ExampleCode}
+      </MedplumCodeBlock>
+    </TabItem>
+  </Tabs>
+</details>
+
+## \_cursor
+
+The `_cursor` parameter is used for [cursor-based pagination](/docs/search/paginated-search#cursor-based-pagination). It is generally not constructed manually but is returned in the `link` section of a bundle response for the next page of results. Using `_cursor` is more efficient than `_offset` for deep pagination.

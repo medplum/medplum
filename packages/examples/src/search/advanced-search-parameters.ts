@@ -444,3 +444,55 @@ curl 'https://api.medplum.com/fhir/R4/Patient?_source=https://foomedical.com' \
   -H 'content-type: application/fhir+json' \
 // end-block sourceCurl
 */
+
+// start-block deletedTs
+await medplum.searchResources('Patient', {
+  _deleted: true,
+});
+// end-block deletedTs
+
+/*
+// start-block deletedCli
+medplum get 'Patient?_deleted=true'
+// end-block deletedCli
+
+// start-block deletedCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_deleted=true' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block deletedCurl
+*/
+
+// start-block projectTs
+await medplum.searchResources('Patient', {
+  _project: '85283598-1859-408c-8c4c-a2c093d2d38c',
+});
+// end-block projectTs
+
+/*
+// start-block projectCli
+medplum get 'Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c'
+// end-block projectCli
+
+// start-block projectCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_project=85283598-1859-408c-8c4c-a2c093d2d38c' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block projectCurl
+*/
+
+// start-block typeTs
+await medplum.get('fhir/R4?_type=Patient,Observation&name=Smith');
+// end-block typeTs
+
+/*
+// start-block typeCli
+medplum get 'fhir/R4?_type=Patient,Observation&name=Smith'
+// end-block typeCli
+
+// start-block typeCurl
+curl 'https://api.medplum.com/fhir/R4?_type=Patient,Observation&name=Smith' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+// end-block typeCurl
+*/
