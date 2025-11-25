@@ -32,5 +32,8 @@ export async function main(context?: Record<string, string>): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch(console.error);
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
