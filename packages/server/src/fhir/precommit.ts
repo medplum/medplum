@@ -12,12 +12,13 @@ import {
   Operator,
   resourceMatchesSubscriptionCriteria,
 } from '@medplum/core';
-import type { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Resource, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
+import type { Repository } from './repo';
 import { getSystemRepo } from './repo';
 import { SelectQuery } from './sql';
 
@@ -30,27 +31,27 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 /**
  * Performs pre-commit validation for a resource by executing any associated pre-commit bots.
  * Throws an error if the bot execution fails.
- * @param author - The author of the resource, used to check against blacklisted authors for pre-commit
- * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
+ * @param repo - The user's FHIR repository.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
  * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation<T extends Resource>(
-  author: Reference,
-  project: WithId<Project> | undefined,
+  repo: Repository,
   resource: WithId<T>,
   interaction: BackgroundJobInteraction
 ): Promise<T | boolean | undefined> {
   const logger = getLogger();
 
-  if (interaction === 'delete' && !project?.superAdmin) {
+  if (interaction === 'delete' && !repo.isSuperAdmin()) {
     try {
       await checkReferencesForDelete(resource);
     } catch (err) {
       logger.warn('Deleting resource referenced by ProjectMembership', err as Error);
     }
   }
+
+  const project = repo.currentProject();
 
   // reject if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
@@ -61,7 +62,7 @@ export async function preCommitValidation<T extends Resource>(
     return undefined;
   }
 
-  resource.meta = { ...resource.meta, author };
+  resource.meta = { ...resource.meta, author: repo.getAuthor() };
   const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',

@@ -758,12 +758,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let validatedResource = this.checkResourcePermissions(resource, interaction);
     const { resourceType, id } = validatedResource;
 
-    const preCommitResult = await preCommitValidation(
-      this.context.author,
-      this.context.projects?.[0],
-      validatedResource,
-      'update'
-    );
+    const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
 
     if (
       isResourceWithId(preCommitResult, validatedResource.resourceType) &&
@@ -1270,7 +1265,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
-      await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'delete');
+      await preCommitValidation(this, resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
 
@@ -1995,11 +1990,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The FHIR resource.
    * @returns The author value.
    */
-  private getAuthor(resource: Resource): Reference {
+  getAuthor(resource?: Resource): Reference {
     // If the resource has an author (whether provided or from existing),
     // and the current context is allowed to write meta,
     // then use the provided value.
-    const author = resource.meta?.author;
+    const author = resource?.meta?.author;
     if (author && this.canWriteProtectedMeta()) {
       return author;
     }
