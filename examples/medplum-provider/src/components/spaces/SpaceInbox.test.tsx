@@ -460,7 +460,7 @@ describe('SpaceInbox', () => {
       await waitFor(() => {
         expect(screen.getByTestId('resource-panel')).toBeInTheDocument();
       });
-      
+
       const allButtons = screen.getAllByRole('button');
       const closeButton = allButtons.find((btn) => btn.className.includes('CloseButton'));
       if (!closeButton) {
