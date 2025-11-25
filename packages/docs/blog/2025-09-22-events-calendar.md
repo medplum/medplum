@@ -20,17 +20,8 @@ tags: [community]
   </thead>
   <tbody>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Nov 18, 2025, 8:00 AM PT</td>
-      <td>**FHIR Made Fast: Delivering Production-Ready Healthcare Apps in 12 Weeks with Medplum**</td>
-      <td>[Zoom](https://luma.com/8uglwpry)</td>
-      <td align="center">
-        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-        [Medplum](https://github.com/medplum), TechMagic
-      </td>
-    </tr>
-    <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Dec 4, 2025, 10:00 AM PT</td>
-      <td>**Visualizing Patient Flow: A "Marauder's Map" Reference App for Healthcare IT**</td>
+      <td>**Visualizing Patient Flow: A Blueprint Reference App for Healthcare IT**</td>
       <td>[Zoom](https://luma.com/a3ye1r18)</td>
       <td align="center">
         <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
@@ -64,6 +55,15 @@ tags: [community]
     </tr>
   </thead>
   <tbody>
+  <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Nov 18, 2025, 8:00 AM PT</td>
+      <td>**FHIR Made Fast: Delivering Production-Ready Healthcare Apps in 12 Weeks with Medplum**</td>
+      <td>[YouTube](https://youtu.be/4M4tG-7-AmQ)</td>
+      <td align="center">
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Medplum](https://github.com/medplum), TechMagic
+      </td>
+    </tr>
   <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Oct 30, 2025, 10:00 AM PT</td>
       <td>**Scheduling Agents for Healthcare Operations**</td>

@@ -1,0 +1,6 @@
+{
+  "buildStage": "type-checking",
+  "buildOptions": {
+    "useBuildWorker": "true"
+  }
+}
