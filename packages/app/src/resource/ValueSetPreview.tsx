@@ -12,8 +12,8 @@ import {
   ValueSetAutocomplete,
 } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useCallback, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import classes from './ValueSetPreview.module.css';
 
 export interface ValueSetPreviewProps {
