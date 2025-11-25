@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { tz, TZDate } from '@date-fns/tz';
 import type { Interval } from 'date-fns';
-import { resolveAvailability } from './find';
+import { removeAvailability, resolveAvailability } from './find';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 const tzny = tz('America/New_York');
@@ -132,6 +132,71 @@ describe('resolveAvailability', () => {
     expect(coerceToRaw(resolveAvailability(schedulingParameters, range))).toEqual([
       // Tue Dec 2, 10:00am ET - Tue Dec 2, 2:30pm ET
       { start: new Date('2025-12-02T15:00:00.000Z'), end: new Date('2025-12-02T19:30:00.000Z') },
+    ]);
+  });
+});
+
+describe('removeAvailability', () => {
+  test('no blocks returns all the availability', () => {
+    const availability = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+
+    expect(removeAvailability(availability, [])).toEqual(availability);
+  });
+
+  test('no blocks overlapping returns all the availability', () => {
+    const availability = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+
+    const blocks = [{ start: new Date('2025-12-02T10:00:00Z'), end: new Date('2025-12-02T14:00:00Z') }];
+    expect(removeAvailability(availability, blocks)).toEqual(availability);
+  });
+
+  test('Blocks in the middle of an availability window split it', () => {
+    const availability = [{ start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-02T00:00:00Z') }];
+
+    const blocks = [
+      { start: new Date('2025-12-01T02:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
+      { start: new Date('2025-12-01T06:00:00Z'), end: new Date('2025-12-01T09:00:00Z') },
+      { start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') },
+    ];
+    expect(removeAvailability(availability, blocks)).toEqual([
+      { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
+      { start: new Date('2025-12-01T03:00:00Z'), end: new Date('2025-12-01T06:00:00Z') },
+      { start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+      { start: new Date('2025-12-01T15:00:00Z'), end: new Date('2025-12-02T00:00:00Z') },
+    ]);
+  });
+
+  test('Blocks partially covering an availability window truncate it', () => {
+    const availability = [{ start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-02T00:00:00Z') }];
+
+    const blocks = [
+      { start: new Date('2025-11-30T23:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
+      { start: new Date('2025-12-01T23:00:00Z'), end: new Date('2025-12-02T03:00:00Z') },
+    ];
+    expect(removeAvailability(availability, blocks)).toEqual([
+      { start: new Date('2025-12-01T03:00:00Z'), end: new Date('2025-12-01T23:00:00Z') },
+    ]);
+  });
+
+  test('Exact overlaps remove matching availability intervals', () => {
+    const availability = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+
+    const blocks = [{ start: new Date('2025-12-03'), end: new Date('2025-12-04') }];
+    expect(removeAvailability(availability, blocks)).toEqual([
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
     ]);
   });
 });
