@@ -1,28 +1,20 @@
 .propertyTable {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
   margin: 0;
 }
 
-.propertyTable > dt,
-.propertyTable > dd {
+.propertyTable th,
+.propertyTable td {
   padding: var(--mantine-spacing-sm);
   border-top: 0.1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
-  margin: 0;
 }
 
-.propertyTable > dt:first-of-type,
-.propertyTable > dd:first-of-type {
+.propertyTable thead th {
   border-top: 0;
   padding-top: 0;
-}
-
-.propertyTable > dt:last-of-type,
-.propertyTable > dd:last-of-type {
-  padding-bottom: 0;
-}
-
-.headerCell {
   font-weight: 600;
+}
+
+.propertiesTitle {
+  padding-left: var(--mantine-spacing-sm);
 }
 

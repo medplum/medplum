@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Loader, Stack, Text } from '@mantine/core';
+import { Alert, Group, Loader, Stack, Table, Text } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import {
@@ -12,7 +12,7 @@ import {
   ValueSetAutocomplete,
 } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import classes from './ValueSetPreview.module.css';
 
@@ -75,21 +75,24 @@ function CodeSystemPropertyList(props: CodeSystemPropertyListProps): JSX.Element
   });
 
   return (
-    <dl className={classes.propertyTable}>
-      {/* Header row */}
-      <dt className={classes.headerCell}>Code</dt>
-      <dd className={classes.headerCell}>Description</dd>
-      <dd className={classes.headerCell}>Value</dd>
-
-      {/* Property rows */}
-      {propertyData.map((property, index) => (
-        <React.Fragment key={`property-${index}`}>
-          <dt>{property.code}</dt>
-          <dd>{property.description}</dd>
-          <dd>{property.value}</dd>
-        </React.Fragment>
-      ))}
-    </dl>
+    <Table className={classes.propertyTable}>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Code</Table.Th>
+          <Table.Th>Description</Table.Th>
+          <Table.Th>Value</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {propertyData.map((property, index) => (
+          <Table.Tr key={`property-${index}`}>
+            <Table.Td>{property.code}</Table.Td>
+            <Table.Td>{property.description}</Table.Td>
+            <Table.Td>{property.value}</Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
   );
 }
 
@@ -182,7 +185,12 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
             )}
             {!isLoadingLookup && !lookupError && hasProperties && (
               <ErrorBoundary>
-                <CodeSystemPropertyList properties={properties} />
+                <Stack gap="xs" mt="lg">
+                  <Text fw={500} size="sm" c="dimmed" className={classes.propertiesTitle}>
+                    Properties
+                  </Text>
+                  <CodeSystemPropertyList properties={properties} />
+                </Stack>
               </ErrorBoundary>
             )}
           </Stack>
