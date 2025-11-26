@@ -15,42 +15,7 @@ import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
-
-vi.mock('../../../utils/notifications', () => ({
-  showErrorNotification: vi.fn(),
-}));
-
-vi.mock('@medplum/react', async () => {
-  const actual = await vi.importActual('@medplum/react');
-  return {
-    ...actual,
-    QuestionnaireForm: vi.fn(({ questionnaire, questionnaireResponse, onChange }) => (
-      <div data-testid="questionnaire-form">
-        <div data-testid="questionnaire-id">{questionnaire?.id}</div>
-        <div data-testid="questionnaire-response-id">{questionnaireResponse?.id}</div>
-        <button
-          data-testid="questionnaire-form-change"
-          onClick={() => {
-            onChange?.({
-              resourceType: 'QuestionnaireResponse',
-              id: questionnaireResponse?.id || 'new-response',
-              status: 'in-progress',
-              item: [{ linkId: 'q1', answer: [{ valueString: 'test answer' }] }],
-            });
-          }}
-        >
-          Change
-        </button>
-      </div>
-    )),
-    QuestionnaireResponseDisplay: vi.fn(({ questionnaireResponse }) => (
-      <div data-testid="questionnaire-response-display">
-        <div data-testid="response-id">{questionnaireResponse?.id}</div>
-        <div data-testid="response-status">{questionnaireResponse?.status}</div>
-      </div>
-    )),
-  };
-});
+import userEvent from '@testing-library/user-event';
 
 const mockQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
@@ -192,11 +157,8 @@ describe('TaskQuestionnaireForm', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
-      expect(screen.getByTestId('questionnaire-id')).toHaveTextContent('questionnaire-123');
-      expect(screen.getByTestId('questionnaire-response-id')).toHaveTextContent('response-123');
+      expect(screen.getByText('Test Questionnaire')).toBeInTheDocument();
     });
-
-    expect(screen.queryByTestId('questionnaire-response-display')).not.toBeInTheDocument();
   });
 
   test('displays questionnaire response when task is completed', async () => {
@@ -218,15 +180,14 @@ describe('TaskQuestionnaireForm', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('questionnaire-response-display')).toBeInTheDocument();
-      expect(screen.getByTestId('response-id')).toHaveTextContent('response-123');
-      expect(screen.getByTestId('response-status')).toHaveTextContent('completed');
+      expect(screen.getByText('Initial answer')).toBeInTheDocument();
     });
 
     expect(screen.queryByTestId('questionnaire-form')).not.toBeInTheDocument();
   });
 
   test('calls onChangeResponse when questionnaire form changes', async () => {
+    const user = userEvent.setup();
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -250,16 +211,14 @@ describe('TaskQuestionnaireForm', () => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     });
 
-    const changeButton = screen.getByTestId('questionnaire-form-change');
-    await act(async () => {
-      changeButton.click();
-    });
+    const input = screen.getByLabelText('Question 1');
+    await user.type(input, 'test answer');
 
     await waitFor(() => {
-      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+      expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[0][0];
+    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
     expect(callArgs.resourceType).toBe('QuestionnaireResponse');
     expect(callArgs.status).toBe('in-progress');
     expect(callArgs.item).toBeDefined();
@@ -268,6 +227,7 @@ describe('TaskQuestionnaireForm', () => {
   });
 
   test('includes encounter in onChangeResponse when task has encounter', async () => {
+    const user = userEvent.setup();
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
     await medplum.createResource(mockEncounter);
@@ -295,21 +255,20 @@ describe('TaskQuestionnaireForm', () => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     });
 
-    const changeButton = screen.getByTestId('questionnaire-form-change');
-    await act(async () => {
-      changeButton.click();
-    });
+    const input = screen.getByLabelText('Question 1');
+    await user.type(input, 'test answer');
 
     await waitFor(() => {
-      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+      expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[0][0];
+    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
     expect(callArgs.encounter).toBeDefined();
     expect(callArgs.encounter?.reference).toBe('Encounter/encounter-123');
   });
 
   test('does not include encounter in onChangeResponse when task has no encounter', async () => {
+    const user = userEvent.setup();
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -333,16 +292,14 @@ describe('TaskQuestionnaireForm', () => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     });
 
-    const changeButton = screen.getByTestId('questionnaire-form-change');
-    await act(async () => {
-      changeButton.click();
-    });
+    const input = screen.getByLabelText('Question 1');
+    await user.type(input, 'test answer');
 
     await waitFor(() => {
-      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+      expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[0][0];
+    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
     // When task has no encounter, encounter should be undefined
     expect(callArgs.encounter).toBeUndefined();
   });
@@ -363,16 +320,22 @@ describe('TaskQuestionnaireForm', () => {
 
     medplum.updateResource = vi.fn().mockResolvedValue(mockCompletedQuestionnaireResponse);
 
-    await act(async () => {
-      setup(mockTask);
-    });
+    const { rerender } = setup(mockTask);
 
     await waitFor(() => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     });
 
     await act(async () => {
-      setup(mockCompletedTask);
+      rerender(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <TaskQuestionnaireForm task={mockCompletedTask} />
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
     });
 
     await waitFor(() => {
@@ -402,12 +365,8 @@ describe('TaskQuestionnaireForm', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
-      expect(screen.getByTestId('questionnaire-id')).toHaveTextContent('questionnaire-123');
+      expect(screen.getByText('Test Questionnaire')).toBeInTheDocument();
     });
-
-    // Response ID should be empty or show new response
-    const responseIdElement = screen.getByTestId('questionnaire-response-id');
-    expect(responseIdElement.textContent).toBe('');
   });
 
   test('handles missing questionnaire gracefully', async () => {
@@ -426,7 +385,7 @@ describe('TaskQuestionnaireForm', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('questionnaire-form')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('questionnaire-response-display')).not.toBeInTheDocument();
+      expect(screen.queryByText('Initial answer')).not.toBeInTheDocument();
     });
   });
 
@@ -456,11 +415,12 @@ describe('TaskQuestionnaireForm', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('questionnaire-form')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('questionnaire-response-display')).not.toBeInTheDocument();
+      expect(screen.queryByText('Initial answer')).not.toBeInTheDocument();
     });
   });
 
   test('creates new questionnaire response when onChange is called without existing response', async () => {
+    const user = userEvent.setup();
     await medplum.createResource(mockQuestionnaire);
 
     const onChangeResponse = vi.fn();
@@ -480,16 +440,14 @@ describe('TaskQuestionnaireForm', () => {
       expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     });
 
-    const changeButton = screen.getByTestId('questionnaire-form-change');
-    await act(async () => {
-      changeButton.click();
-    });
+    const input = screen.getByLabelText('Question 1');
+    await user.type(input, 'test answer');
 
     await waitFor(() => {
-      expect(onChangeResponse).toHaveBeenCalledTimes(1);
+      expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[0][0];
+    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
     expect(callArgs.resourceType).toBe('QuestionnaireResponse');
     expect(callArgs.status).toBe('in-progress');
     expect(callArgs.item).toBeDefined();
