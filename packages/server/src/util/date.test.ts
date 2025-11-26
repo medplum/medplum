@@ -1,6 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { areIntervalsOverlapping, clamp } from './date';
+import { addMinutes, areIntervalsOverlapping, clamp } from './date';
+
+describe('addMinutes', () => {
+  test('adds the given number of minutes', () => {
+    const date = new Date('2026-01-10T12:00:00Z');
+    expect(addMinutes(date, 30)).toEqual(new Date('2026-01-10T12:30:00Z'));
+  });
+
+  test('does not mutate the input date', () => {
+    const date = new Date('2026-01-10T12:00:00Z');
+    addMinutes(date, 30);
+    expect(date).toEqual(new Date('2026-01-10T12:00:00Z'));
+  });
+});
 
 describe('areIntervalsOverlapping', () => {
   test('returns true when intervals overlap', () => {

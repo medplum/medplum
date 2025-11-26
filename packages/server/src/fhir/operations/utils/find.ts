@@ -3,7 +3,7 @@
 
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
-import { areIntervalsOverlapping, clamp } from '../../../util/date';
+import { addMinutes, areIntervalsOverlapping, clamp } from '../../../util/date';
 import { isDefined } from '../../../util/types';
 import type { SchedulingParameters } from './scheduling-parameters';
 
@@ -177,4 +177,63 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
   }
 
   return result;
+}
+
+// Given a date that could have a seconds / milliseconds component, return
+// the input date if it does not have any, and the start of the next minute
+// if it does.
+function advanceToMinuteMark(date: Date): Date {
+  const start = new Date(date);
+  start.setSeconds(0, 0);
+  if (start.valueOf() !== date.valueOf()) {
+    return addMinutes(start, 1);
+  }
+  return start;
+}
+
+// JS `%` operator is "remainder", not "modulo", and can return negative numbers.
+// Introducing our own mod function lets us guarantee that the result is in the
+// range [0, d).
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Remainder
+function mod(n: number, d: number): number {
+  return ((n % d) + d) % d;
+}
+
+/**
+ * Given an interval and slot duration and alignment information, return
+ * intervals for each matching slot timing within that interval
+ *
+ * @param interval - The interval to find slots within
+ * @param options - The alignment parameters
+ * @param options.alignment - An hour divisor to align to; should be in range [1, 60]
+ * @param options.offsetMinutes - A number of minutes to offset the alignment by
+ * @param options.durationMinutes - How long each slot should last
+ * @returns An array of aligned slot intervals
+ */
+export function findAlignedSlotTimes(
+  interval: Interval,
+  options: {
+    alignment: number;
+    offsetMinutes: number;
+    durationMinutes: number;
+  }
+): Interval[] {
+  const firstMinuteStart = advanceToMinuteMark(interval.start);
+
+  // Find how much we need to shift the interval start to hit an alignment
+  const remainder = mod(firstMinuteStart.getMinutes() - options.offsetMinutes, options.alignment);
+  const toAlign = remainder === 0 ? 0 : options.alignment - remainder;
+
+  // set start/end to the first interval boundaries
+  let start = addMinutes(firstMinuteStart, toAlign);
+  let end = addMinutes(start, options.durationMinutes);
+
+  // Find all aligned slots within the interval
+  const results = [];
+  while (end <= interval.end) {
+    results.push({ start, end });
+    start = addMinutes(start, options.alignment);
+    end = addMinutes(start, options.durationMinutes);
+  }
+  return results;
 }

@@ -11,6 +11,11 @@ export type Interval = {
   end: Date;
 };
 
+// Add the specified number of minutes to the given date.
+export function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.valueOf() + minutes * 60 * 1000);
+}
+
 // Is the given time interval overlapping with another time interval? Adjacent
 // intervals do not count as overlapping unless inclusive is set to true.
 export function areIntervalsOverlapping(left: Interval, right: Interval, options?: { inclusive: boolean }): boolean {
