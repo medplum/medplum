@@ -92,5 +92,4 @@ describe('NewTopicDialog', () => {
       expect(mockOnClose).toHaveBeenCalled();
     }
   });
-
 });

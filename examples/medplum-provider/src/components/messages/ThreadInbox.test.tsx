@@ -29,7 +29,7 @@ describe('ThreadInbox', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
     await medplum.createResource(HomerSimpson);
-    
+
     // Mock search and graphql to return empty results by default
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
@@ -73,7 +73,7 @@ describe('ThreadInbox', () => {
   });
 
   test('shows loading skeletons when loading', async () => {
-    medplum.search = vi.fn().mockImplementation(() => new Promise(() => {})); 
+    medplum.search = vi.fn().mockImplementation(() => new Promise(() => {}));
     setup();
 
     await waitFor(() => {
@@ -131,7 +131,7 @@ describe('ThreadInbox', () => {
     });
 
     medplum.graphql = vi.fn().mockResolvedValue({
-      data: { 
+      data: {
         CommunicationList: lastMessages.map((msg) => ({
           id: msg.id,
           partOf: msg.partOf,
@@ -144,13 +144,15 @@ describe('ThreadInbox', () => {
 
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Topic Alpha')).toBeInTheDocument();
-      expect(screen.getByText('Topic Beta')).toBeInTheDocument();
-      expect(screen.getByText('Topic Gamma')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Topic Alpha')).toBeInTheDocument();
+        expect(screen.getByText('Topic Beta')).toBeInTheDocument();
+        expect(screen.getByText('Topic Gamma')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
-
 
   test('shows no messages state when no thread is selected', async () => {
     setup();
@@ -173,15 +175,18 @@ describe('ThreadInbox', () => {
 
     setup({ threadId: 'comm-123' });
 
-    await waitFor(() => {
-      const topicTexts = screen.getAllByText('Test Topic');
-      expect(topicTexts.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const topicTexts = screen.getAllByText('Test Topic');
+        expect(topicTexts.length).toBeGreaterThan(0);
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {
     await medplum.createResource(mockCommunication);
-    
+
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -190,18 +195,21 @@ describe('ThreadInbox', () => {
     medplum.graphql = vi.fn().mockResolvedValue({
       data: { CommunicationList: [] },
     });
-    
+
     setup({ showPatientSummary: true, threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-     expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+        expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('does not show patient summary when showPatientSummary is false', async () => {
     await medplum.createResource(mockCommunication);
-    
+
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -210,13 +218,16 @@ describe('ThreadInbox', () => {
     medplum.graphql = vi.fn().mockResolvedValue({
       data: { CommunicationList: [] },
     });
-    
+
     setup({ showPatientSummary: true, threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
-     expect(screen.queryByText('1956-05-12 (069Y)')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
+        expect(screen.queryByText('1956-05-12 (069Y)')).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('opens new topic dialog when plus button is clicked', async () => {
@@ -260,7 +271,7 @@ describe('ThreadInbox', () => {
       topic: undefined,
     };
     await medplum.createResource(commWithoutTopic);
-    
+
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -269,12 +280,15 @@ describe('ThreadInbox', () => {
     medplum.graphql = vi.fn().mockResolvedValue({
       data: { CommunicationList: [] },
     });
-    
+
     setup({ threadId: 'comm-123' });
 
-    await waitFor(() => {
-      const messagesTexts = screen.getAllByText('Messages');
-      expect(messagesTexts.length).toBeGreaterThan(0);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const messagesTexts = screen.getAllByText('Messages');
+        expect(messagesTexts.length).toBeGreaterThan(0);
+      },
+      { timeout: 3000 }
+    );
   });
 });
