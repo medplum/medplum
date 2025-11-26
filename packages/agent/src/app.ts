@@ -1168,7 +1168,7 @@ export class App {
    */
   private async checkAgentStatus(): Promise<{ status: string; lastUpdated?: string } | undefined> {
     try {
-      const response = await this.medplum.get(`Agent/${this.agentId}/$status`);
+      const response = await this.medplum.get(`Agent/${this.agentId}/$status`, { cache: 'reload' });
       const parameters = response as { parameter?: Array<{ name: string; valueCode?: string; valueInstant?: string }> };
       const statusParam = parameters.parameter?.find((p) => p.name === 'status');
       const lastUpdatedParam = parameters.parameter?.find((p) => p.name === 'lastUpdated');
