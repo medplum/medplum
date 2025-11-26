@@ -53,7 +53,7 @@ describe('ChatList', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    
+
     // Create patient resources
     await medplum.createResource(mockPatient1);
     await medplum.createResource(mockPatient2);

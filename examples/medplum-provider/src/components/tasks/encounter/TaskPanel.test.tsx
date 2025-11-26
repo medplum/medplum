@@ -48,7 +48,7 @@ describe('TaskPanel', () => {
     const onUpdateTask = vi.fn();
     medplum.readReference = vi.fn().mockResolvedValue({ resourceType: 'Questionnaire', id: '123' });
     setup(task, onUpdateTask);
-    
+
     await waitFor(() => {
       expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Questionnaire/123' });
     });
@@ -67,7 +67,7 @@ describe('TaskPanel', () => {
       code: { text: 'Test Service Request' },
     });
     setup(task, onUpdateTask);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test Service Request')).toBeInTheDocument();
     });
