@@ -7,10 +7,10 @@
     "^.+\\.(js|jsx|ts|tsx|mjs)$": "babel-jest"
   },
   "moduleFileExtensions": ["ts", "js", "mjs", "json", "node"],
-  "testMatch": ["**/src/**/*.test.ts", "**/scripts/**/*.test.ts"],
+  "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*", "**/scripts/**/*.ts"],
+  "collectCoverageFrom": ["**/src/**/*"],
   "transformIgnorePatterns": [],
   "extensionsToTreatAsEsm": [".ts"],
   "globals": {

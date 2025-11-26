@@ -34,7 +34,7 @@ function buildFshProfiles() {
     execSync('npm run build:fsh', { stdio: 'inherit' });
 
     // Merge FSH-generated profiles into profiles-medplum.json
-    execSync('tsx scripts/build-profiles.ts', { stdio: 'inherit' });
+    execSync('tsx src/scripts/build-profiles.ts', { stdio: 'inherit' });
   } catch (error) {
     console.error('Error: FSH build failed:', error.message);
     process.exit(1);

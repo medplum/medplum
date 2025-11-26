@@ -13,16 +13,21 @@ function getScriptDir(): string {
   }
 
   // Fallback: use process.cwd() relative path
-  // This works for both test and runtime environments
-  return resolve(process.cwd(), 'packages/definitions/scripts');
+  // Check if we're already in the definitions package directory
+  const cwd = process.cwd();
+  if (cwd.endsWith('packages/definitions') || cwd.endsWith('packages/definitions/')) {
+    return resolve(cwd, 'src/scripts');
+  }
+  // Otherwise assume we're at the repo root
+  return resolve(cwd, 'packages/definitions/src/scripts');
 }
 
 // Use function call to get paths - evaluated at runtime
 export function getDefaultPaths(): { fshGeneratedDir: string; profilesMedplumPath: string } {
   const scriptDir = getScriptDir();
   return {
-    fshGeneratedDir: resolve(scriptDir, '../dist/fsh-generated/resources'),
-    profilesMedplumPath: resolve(scriptDir, '../dist/fhir/r4/profiles-medplum.json'),
+    fshGeneratedDir: resolve(scriptDir, '../../dist/fsh-generated/resources'),
+    profilesMedplumPath: resolve(scriptDir, '../../dist/fhir/r4/profiles-medplum.json'),
   };
 }
 
@@ -192,6 +197,7 @@ export function main(profilesMedplumPath = PROFILES_MEDPLUM_PATH): void {
 // Only run main if this file is executed directly (not imported)
 // Check by comparing process.argv[1] with the script path
 // This avoids import.meta which causes issues with Jest/Babel
-if (require.main === module || process.argv[1]?.includes('build-profiles')) {
+if (process.argv[1]?.includes('build-profiles')) {
   main();
 }
+
