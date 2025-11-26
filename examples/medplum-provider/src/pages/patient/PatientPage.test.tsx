@@ -2,97 +2,64 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Routes, Route } from 'react-router';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { PatientPage } from './PatientPage';
-
-// Mock the usePatient hook
-const mockUsePatient = vi.fn();
-vi.mock('../../hooks/usePatient', () => ({
-  usePatient: (options?: { setOutcome?: (outcome: OperationOutcome) => void }) => {
-    return mockUsePatient(options);
-  },
-}));
-
-// Mock the Outlet component
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router');
-  return {
-    ...actual,
-    Outlet: () => <div data-testid="outlet">Outlet Content</div>,
-  };
-});
-
-
-const mockPatient: Patient = HomerSimpson;
+import { TimelineTab } from './TimelineTab';
+import { EditTab } from './EditTab';
 
 describe('PatientPage', () => {
   let medplum: MockClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    await medplum.createResource(HomerSimpson);
   });
 
-  const setup = (initialPath = '/Patient/patient-123', patient?: Patient, outcome?: OperationOutcome): ReturnType<typeof render>=> {
-    if (outcome) {
-      // Simulate setOutcome being called
-      mockUsePatient.mockImplementation((options?: { setOutcome?: (outcome: OperationOutcome) => void }) => {
-        if (options?.setOutcome) {
-          // Call setOutcome asynchronously to simulate the hook behavior
-          setTimeout(() => options.setOutcome?.(outcome), 0);
-        }
-        return undefined;
-      });
-    } else {
-      mockUsePatient.mockReturnValue(patient);
-    }
-
+  const setup = (initialPath = '/Patient/patient-123'): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <PatientPage />
+            <Routes>
+              <Route path="/Patient/:patientId/*" element={<PatientPage />}>
+                <Route path="edit" element={<EditTab />} />
+                <Route path="" element={<TimelineTab />} />
+                <Route path="*" element={<TimelineTab />} />
+              </Route>
+            </Routes>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
   };
 
-  it('shows loader when patient is loading', async () => {
-    mockUsePatient.mockReturnValue(undefined);
-    await act(async () => {
-      setup('/Patient/patient-123', undefined);
-    });
-
+  test('shows loader when patient is loading', async () => {
+    // Use a non-existent patient ID to simulate loading
+    setup('/Patient/non-existent-patient');
+    
     await waitFor(() => {
       const loader = document.querySelector('.mantine-Loader-root');
       expect(loader).toBeInTheDocument();
     });
   });
 
-  it('renders patient page when patient is loaded', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123', mockPatient);
-    });
+  test('renders patient page when patient is loaded', async () => {
+    setup(`/Patient/${HomerSimpson.id}`);
 
     await waitFor(() => {
-      expect(screen.getByTestId('outlet')).toBeInTheDocument();
+      expect(screen.getByText('Timeline')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Timeline')).toBeInTheDocument();
   });
 
-  it('renders all tabs in navigation', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123', mockPatient);
-    });
+  test('renders all tabs in navigation', async () => {
+    setup(`/Patient/${HomerSimpson.id}`);
 
     await waitFor(() => {
       expect(screen.getByText('Timeline')).toBeInTheDocument();
@@ -105,10 +72,8 @@ describe('PatientPage', () => {
     expect(screen.getByText('Meds')).toBeInTheDocument();
   });
 
-  it('sets initial tab from URL path', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123/edit', mockPatient);
-    });
+  test('sets initial tab from URL path', async () => {
+    setup(`/Patient/${HomerSimpson.id}/edit`);
 
     await waitFor(() => {
       const editTab = screen.getByText('Edit');
@@ -117,11 +82,9 @@ describe('PatientPage', () => {
     });
   });
 
-  it('handles tab change when clicking on tab', async () => {
+  test('handles tab change when clicking on tab', async () => {
     const user = userEvent.setup();
-    await act(async () => {
-      setup('/Patient/patient-123', mockPatient);
-    });
+    setup(`/Patient/${HomerSimpson.id}`);
 
     await waitFor(() => {
       expect(screen.getByText('Timeline')).toBeInTheDocument();
@@ -137,11 +100,8 @@ describe('PatientPage', () => {
     });
   });
 
-  it('does not show tabs when patient is loading', async () => {
-    mockUsePatient.mockReturnValue(undefined);
-    await act(async () => {
-      setup('/Patient/patient-123', undefined);
-    });
+  test('does not show tabs when patient is loading', async () => {
+    setup('/Patient/non-existent-patient');
 
     await waitFor(() => {
       const loader = document.querySelector('.mantine-Loader-root');
@@ -152,10 +112,8 @@ describe('PatientPage', () => {
   });
 
 
-  it('defaults to timeline tab when URL does not match any tab', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123/unknown-path', mockPatient);
-    });
+  test('defaults to timeline tab when URL does not match any tab', async () => {
+    setup(`/Patient/${HomerSimpson.id}/unknown-path`);
 
     await waitFor(() => {
       const timelineTab = screen.getByText('Timeline');
@@ -164,26 +122,19 @@ describe('PatientPage', () => {
     });
   });
 
-  it('renders homer summary information in sidebar', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123', mockPatient);
-    });
+  test('renders homer summary information in sidebar', async () => {
+    setup(`/Patient/${HomerSimpson.id}`);
 
-    // Wait for outlet to ensure sidebar/page structure rendered
     await waitFor(() => {
-      expect(screen.getByTestId('outlet')).toBeInTheDocument();
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Male')).toBeInTheDocument();
     expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
-
   });
 
-  it('handles empty pathname correctly', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123/', mockPatient);
-    });
+  test('handles empty pathname correctly', async () => {
+    setup(`/Patient/${HomerSimpson.id}/`);
 
     await waitFor(() => {
       const timelineTab = screen.getByText('Timeline');
@@ -192,16 +143,12 @@ describe('PatientPage', () => {
     });
   });
 
-  it('highlights the Edit tab in a case-insensitive way even when /EDIT is used', async () => {
-    await act(async () => {
-      setup('/Patient/patient-123/EDIT', mockPatient);
-    });
+  test('highlights the Edit tab in a case-insensitive way even when /EDIT is used', async () => {
+    setup(`/Patient/${HomerSimpson.id}/EDIT`);
 
     await waitFor(() => {
       const editTab = screen.getByText('Edit');
       expect(editTab).toBeInTheDocument();
-
-      // Mantine's Tab component adds an aria-selected="true" on the selected tab
       expect(editTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
     });
   });
