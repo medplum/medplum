@@ -343,7 +343,7 @@ describe('Subscription Worker', () => {
               valueCode: 'delete',
             },
             {
-              url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-secret',
               valueString: secret,
             },
           ],
@@ -413,7 +413,7 @@ describe('Subscription Worker', () => {
           },
           extension: [
             {
-              url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-secret',
               valueString: secret,
             },
           ],

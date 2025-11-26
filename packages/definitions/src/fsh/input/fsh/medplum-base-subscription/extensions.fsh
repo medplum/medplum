@@ -19,7 +19,7 @@ Extension: SubscriptionSecret
 Id: subscription-secret
 Title: "Subscription Secret"
 Description: "Cryptographically secure secret used to generate HMAC signatures for webhook verification."
-* ^url = "https://www.medplum.com/fhir/StructureDefinition/subscription-secret"
+* ^url = "https://medplum.com/fhir/StructureDefinition/subscription-secret"
 * value[x] only string
 * valueString 1..1 MS
 
