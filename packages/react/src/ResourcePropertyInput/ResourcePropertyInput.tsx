@@ -321,6 +321,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.base64Binary:
     case PropertyType.markdown:
+    case PropertyType.xhtml:
       return (
         <Textarea
           {...getPrimitiveInputProps()}

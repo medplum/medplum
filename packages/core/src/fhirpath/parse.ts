@@ -209,7 +209,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .infixLeft(
       'div',
       OperatorPrecedence.Divide,
-      (left, _, right) => new ArithemticOperatorAtom('div', left, right, (x, y) => (x / y) | 0)
+      (left, _, right) => new ArithemticOperatorAtom('div', left, right, (x, y) => Math.trunc(x / y))
     )
     .infixLeft('in', OperatorPrecedence.In, (left, _, right) => new InAtom(left, right))
     .infixLeft('is', OperatorPrecedence.Is, (left, _, right) => new IsAtom(left, right))

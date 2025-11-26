@@ -4,8 +4,8 @@ import { ContentType, allOk, badRequest, created, isResource } from '@medplum/co
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import type { Readable } from 'stream';
-import zlib from 'zlib';
+import type { Readable } from 'node:stream';
+import zlib from 'node:zlib';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';

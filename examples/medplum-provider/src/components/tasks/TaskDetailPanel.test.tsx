@@ -7,10 +7,8 @@ import { MedplumProvider } from '@medplum/react';
 import type { Patient, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskDetailPanel } from './TaskDetailPanel';
-
-vi.mock('../../hooks/useDebouncedUpdateResource');
 
 const mockTask: Task = {
   resourceType: 'Task',
@@ -37,14 +35,10 @@ const mockPatient: Patient = {
 
 describe('TaskDetailPanel', () => {
   let medplum: MockClient;
-  const mockDebouncedUpdateResource = vi.fn();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
-
-    const { useDebouncedUpdateResource } = await import('../../hooks/useDebouncedUpdateResource');
-    vi.mocked(useDebouncedUpdateResource).mockReturnValue(mockDebouncedUpdateResource);
   });
 
   const setup = (props: Partial<Parameters<typeof TaskDetailPanel>[0]> = {}): ReturnType<typeof render> => {
@@ -59,7 +53,7 @@ describe('TaskDetailPanel', () => {
     );
   };
 
-  it('no task selected', async () => {
+  test('no task selected', async () => {
     medplum.readResource = vi.fn().mockRejectedValue(new Error('Not found'));
 
     setup({ task: { reference: 'Task/non-existent' } });
@@ -72,7 +66,7 @@ describe('TaskDetailPanel', () => {
     expect(screen.queryByText('Properties')).not.toBeInTheDocument();
   });
 
-  it('renders task detail with task object', async () => {
+  test('renders task detail with task object', async () => {
     await act(async () => {
       setup();
     });
@@ -89,7 +83,7 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('renders task detail with task reference', async () => {
+  test('renders task detail with task reference', async () => {
     medplum.readResource = vi.fn().mockResolvedValue(mockTask);
 
     await act(async () => {
@@ -104,7 +98,7 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('shows patient summary tab when patient exists', async () => {
+  test('shows patient summary tab when patient exists', async () => {
     medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
       if (resourceType === 'Patient' && id === 'patient-123') {
         return Promise.resolve(mockPatient);
@@ -121,7 +115,7 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('does not show patient summary tab when no patient', async () => {
+  test('does not show patient summary tab when no patient', async () => {
     const taskWithoutPatient = { ...mockTask, for: undefined };
 
     await act(async () => {
@@ -133,7 +127,7 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('switches between tabs', async () => {
+  test('switches between tabs', async () => {
     const user = userEvent.setup();
     medplum.readResource = vi.fn().mockResolvedValue(mockPatient);
     medplum.readHistory = vi.fn().mockResolvedValue({ resourceType: 'Bundle', entry: [] });
@@ -167,9 +161,8 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('calls debouncedUpdateResource once when task changes', async () => {
+  test('renders task detail panel with onTaskChange callback', async () => {
     const onTaskChange = vi.fn();
-    mockDebouncedUpdateResource.mockResolvedValue(mockTask);
 
     await act(async () => {
       setup({ onTaskChange });
@@ -178,13 +171,9 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('Properties')).toBeInTheDocument();
     });
-
-    // The mock is properly wired up and will be called once by the component
-    // when TaskInputNote or TaskProperties calls onTaskChange internally
-    expect(mockDebouncedUpdateResource).toBeDefined();
   });
 
-  it('calls onDeleteTask after successful deletion', async () => {
+  test('calls onDeleteTask after successful deletion', async () => {
     const onDeleteTask = vi.fn();
     medplum.deleteResource = vi.fn().mockResolvedValue({});
 
@@ -223,7 +212,7 @@ describe('TaskDetailPanel', () => {
     expect(onDeleteTask).toHaveBeenCalledWith(mockTask);
   });
 
-  it('shows error notification on delete failure', async () => {
+  test('shows error notification on delete failure', async () => {
     const onDeleteTask = vi.fn();
     const error = new Error('Delete failed');
     medplum.deleteResource = vi.fn().mockRejectedValue(error);
@@ -261,7 +250,7 @@ describe('TaskDetailPanel', () => {
     expect(onDeleteTask).not.toHaveBeenCalled();
   });
 
-  it('loads patient data when task has patient reference', async () => {
+  test('loads patient data when task has patient reference', async () => {
     medplum.readResource = vi.fn().mockImplementation((resourceType: string, id: string) => {
       if (resourceType === 'Patient' && id === 'patient-123') {
         return Promise.resolve(mockPatient);
@@ -280,7 +269,7 @@ describe('TaskDetailPanel', () => {
     });
   });
 
-  it('handles task reference properly', async () => {
+  test('handles task reference properly', async () => {
     const taskReference = { reference: 'Task/task-123' };
     medplum.readResource = vi.fn().mockResolvedValue(mockTask);
 

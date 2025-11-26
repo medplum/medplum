@@ -118,13 +118,13 @@ mfaRouter.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
-      return Promise.resolve();
+      return;
     }
 
     const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
-    return sendLoginResult(res, result);
+    await sendLoginResult(res, result);
   }
 );
 

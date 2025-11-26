@@ -20,7 +20,9 @@ import {
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import assert from 'node:assert';
 import { buildWaf } from './waf';
 
 /**
@@ -215,15 +217,27 @@ export class BackEnd extends Construct {
         writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy: config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
 
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      const secretAttachment = this.rdsCluster.secret;
+      assert(secretAttachment !== undefined, 'rdsCluster.secret is undefined');
+
+      secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      // rdsCluster.secret is actually a SecretAttachment; not the secret itself
+      assert(secretAttachment instanceof SecretTargetAttachment, 'rdsCluster.secret is not a SecretTargetAttachment');
+
+      // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+      const secret = secretAttachment.node.scope;
+      assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
+      secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      this.rdsSecretsArn = secretAttachment.secretArn;
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
           proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          secrets: [secretAttachment],
           vpc: this.vpc,
         });
       }
@@ -623,9 +637,19 @@ export class BackEnd extends Construct {
       webAclArn: this.waf.attrArn,
     });
 
-    // Grant RDS access to the fargate group
     if (this.rdsCluster) {
+      // Grant RDS access to the fargate group
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+
+      // Retain RDS cluster security groups and their rules
+      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+        sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        sg.node.children.forEach((child) => {
+          if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
+            child.applyRemovalPolicy(RemovalPolicy.RETAIN);
+          }
+        });
+      });
     }
 
     // Grant RDS Proxy access to the fargate group

@@ -3,7 +3,7 @@
 import { Stack, Text, Group, ScrollArea, Box, Divider, Paper, Flex } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useEffect } from 'react';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, MedplumLink } from '@medplum/react';
 import type { Communication } from '@medplum/fhirtypes';
 import { loadRecentTopics } from './space-persistence';
 import { showErrorNotification } from '../../utils/notifications';
@@ -12,8 +12,9 @@ import { formatDate } from '@medplum/core';
 interface ConversationListProps {
   currentTopicId?: string;
   onSelectTopic: (topicId: string) => void;
+  onSelectedItem: (topic: Communication) => string;
 }
-export function ConversationList({ currentTopicId, onSelectTopic }: ConversationListProps): JSX.Element {
+export function ConversationList({ currentTopicId, onSelectedItem }: ConversationListProps): JSX.Element {
   const medplum = useMedplum();
   const [topics, setTopics] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,27 +54,24 @@ export function ConversationList({ currentTopicId, onSelectTopic }: Conversation
               topics.length > 0 &&
               topics.map((topic, index) => (
                 <Stack gap={0} key={topic.id}>
-                  <Box
-                    bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
-                    p="sm"
-                    style={{
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      if (topic.id) {
-                        onSelectTopic(topic.id);
-                      }
-                    }}
-                  >
-                    <Text size="sm" fw={500} lineClamp={2}>
-                      {topic.topic?.text || 'Untitled conversation'}
-                    </Text>
-                    <Group gap="xs" mt={4}>
-                      <Text size="xs" c="dimmed">
-                        {formatDate(topic.meta?.lastUpdated)}
+                  <MedplumLink to={onSelectedItem(topic)} c="dark">
+                    <Box
+                      bg={currentTopicId === topic.id ? 'gray.1' : 'transparent'}
+                      p="sm"
+                      style={{
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Text size="sm" fw={500} lineClamp={2}>
+                        {topic.topic?.text || 'Untitled conversation'}
                       </Text>
-                    </Group>
-                  </Box>
+                      <Group gap="xs" mt={4}>
+                        <Text size="xs" c="dimmed">
+                          {formatDate(topic.meta?.lastUpdated)}
+                        </Text>
+                      </Group>
+                    </Box>
+                  </MedplumLink>
                   {index < topics.length - 1 && <Divider />}
                 </Stack>
               ))}

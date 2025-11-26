@@ -13,7 +13,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 
 vi.mock('../../../utils/notifications', () => ({
@@ -172,7 +172,7 @@ describe('TaskQuestionnaireForm', () => {
     );
   };
 
-  it('fetches and displays questionnaire form when task is not completed', async () => {
+  test('fetches and displays questionnaire form when task is not completed', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -199,7 +199,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(screen.queryByTestId('questionnaire-response-display')).not.toBeInTheDocument();
   });
 
-  it('displays questionnaire response when task is completed', async () => {
+  test('displays questionnaire response when task is completed', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockCompletedQuestionnaireResponse);
 
@@ -226,7 +226,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(screen.queryByTestId('questionnaire-form')).not.toBeInTheDocument();
   });
 
-  it('calls onChangeResponse when questionnaire form changes', async () => {
+  test('calls onChangeResponse when questionnaire form changes', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -267,7 +267,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(callArgs.source).toBeDefined();
   });
 
-  it('includes encounter in onChangeResponse when task has encounter', async () => {
+  test('includes encounter in onChangeResponse when task has encounter', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
     await medplum.createResource(mockEncounter);
@@ -309,7 +309,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(callArgs.encounter?.reference).toBe('Encounter/encounter-123');
   });
 
-  it('does not include encounter in onChangeResponse when task has no encounter', async () => {
+  test('does not include encounter in onChangeResponse when task has no encounter', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -347,7 +347,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(callArgs.encounter).toBeUndefined();
   });
 
-  it('updates questionnaire response status to completed when task becomes completed', async () => {
+  test('updates questionnaire response status to completed when task becomes completed', async () => {
     await medplum.createResource(mockQuestionnaire);
     await medplum.createResource(mockQuestionnaireResponse);
 
@@ -386,7 +386,7 @@ describe('TaskQuestionnaireForm', () => {
     });
   });
 
-  it('handles missing questionnaire response gracefully', async () => {
+  test('handles missing questionnaire response gracefully', async () => {
     await medplum.createResource(mockQuestionnaire);
 
     medplum.readReference = vi.fn().mockImplementation(async (ref: Reference) => {
@@ -410,7 +410,7 @@ describe('TaskQuestionnaireForm', () => {
     expect(responseIdElement.textContent).toBe('');
   });
 
-  it('handles missing questionnaire gracefully', async () => {
+  test('handles missing questionnaire gracefully', async () => {
     await medplum.createResource(mockQuestionnaireResponse);
 
     medplum.readReference = vi.fn().mockImplementation(async (ref: Reference) => {
@@ -430,7 +430,7 @@ describe('TaskQuestionnaireForm', () => {
     });
   });
 
-  it('displays error when resource fetch fails', async () => {
+  test('displays error when resource fetch fails', async () => {
     const error = new Error('Failed to fetch');
     medplum.readReference = vi.fn().mockRejectedValue(error);
 
@@ -443,7 +443,7 @@ describe('TaskQuestionnaireForm', () => {
     });
   });
 
-  it('handles task without input or output', async () => {
+  test('handles task without input or output', async () => {
     const taskWithoutInputOutput: Task = {
       ...mockTask,
       input: undefined,
@@ -460,7 +460,7 @@ describe('TaskQuestionnaireForm', () => {
     });
   });
 
-  it('creates new questionnaire response when onChange is called without existing response', async () => {
+  test('creates new questionnaire response when onChange is called without existing response', async () => {
     await medplum.createResource(mockQuestionnaire);
 
     const onChangeResponse = vi.fn();

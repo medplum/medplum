@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { normalizeInfraConfig } from './config';
 import { MedplumStack } from './stack';
 
@@ -32,5 +32,8 @@ export async function main(context?: Record<string, string>): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch(console.error);
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

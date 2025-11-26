@@ -2344,7 +2344,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     );
     logAuditEvent(auditEvent);
 
-    if (options?.durationMs && outcome === AuditEventOutcome.Success) {
+    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {

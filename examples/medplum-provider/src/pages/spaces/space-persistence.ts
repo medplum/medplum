@@ -17,7 +17,7 @@ export async function createConversationTopic(
   title: string,
   model: string
 ): Promise<Communication> {
-  const profile = medplum.getProfile();
+  const profile = await medplum.getProfile();
   if (!profile?.id) {
     throw new Error('Profile not found');
   }
