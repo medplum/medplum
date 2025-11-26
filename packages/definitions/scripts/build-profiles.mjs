@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-/* eslint-disable no-console */
+/* global console */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
@@ -14,7 +14,7 @@ const PROFILES_MEDPLUM_PATH = resolve(__dirname, '../dist/fhir/r4/profiles-medpl
 
 /**
  * Removes id and differential properties from a StructureDefinition
- * @param {object} sd - StructureDefinition to clean
+ * @param sd - StructureDefinition to clean
  */
 function cleanStructureDefinition(sd) {
   delete sd.id;
@@ -23,7 +23,7 @@ function cleanStructureDefinition(sd) {
 
 /**
  * Reads all StructureDefinition JSON files from the fsh-generated directory
- * @returns {Array<object>} Array of StructureDefinition objects
+ * @returns Array of StructureDefinition objects
  */
 function readGeneratedStructureDefinitions() {
   const structureDefinitions = [];
@@ -63,8 +63,8 @@ function readGeneratedStructureDefinitions() {
 
 /**
  * Merges new StructureDefinitions into the existing profiles-medplum.json Bundle
- * @param {Array<object>} newStructureDefinitions - Array of StructureDefinition objects to merge
- * @param {object} bundle - Existing Bundle object
+ * @param newStructureDefinitions - Array of StructureDefinition objects to merge
+ * @param bundle - Existing Bundle object
  */
 function mergeStructureDefinitions(newStructureDefinitions, bundle) {
   if (!bundle.entry) {

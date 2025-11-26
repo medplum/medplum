@@ -1,4 +1,3 @@
-FSHOnly: true
+FSHOnly: true # Disabled to generate snapshots
 fhirVersion: 4.0.1
 canonical: https://medplum.com/fhir
-

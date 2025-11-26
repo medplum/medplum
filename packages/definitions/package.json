@@ -51,7 +51,7 @@
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node build.mjs && npm run api-extractor",
-    "build:fsh": "sushi src/fsh -o dist",
+    "build:fsh": "sushi src/fsh -o dist --snapshot",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
