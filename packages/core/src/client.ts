@@ -3719,15 +3719,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch request init options.
    * @returns The result of the retry.
    */
-  private handleUnauthenticated(method: string, url: string, options: MedplumRequestOptions): Promise<any> {
+  private async handleUnauthenticated(method: string, url: string, options: MedplumRequestOptions): Promise<any> {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
     this.clear();
-    if (this.onUnauthenticated) {
-      this.onUnauthenticated();
-    }
-    return Promise.reject(new OperationOutcomeError(unauthorized));
+    this.onUnauthenticated?.();
+    throw new OperationOutcomeError(unauthorized);
   }
 
   /**
@@ -4146,6 +4144,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     if (!response.ok) {
       this.clearActiveLogin();
+      this.onUnauthenticated?.();
       try {
         const error = await response.json();
         throw new OperationOutcomeError(badRequest(error.error_description));
