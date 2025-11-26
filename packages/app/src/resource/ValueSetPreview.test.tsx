@@ -316,7 +316,7 @@ describe('ValueSetPreview', () => {
     // Verify that Code, System, and Display are shown
     expect(await screen.findByText('code1')).toBeInTheDocument();
     // But no properties section should be rendered
-    expect(screen.queryByText('Property')).not.toBeInTheDocument();
+    expect(screen.queryByText('Properties')).not.toBeInTheDocument();
   });
 
   test('Renders properties when lookup returns properties', async () => {
@@ -360,7 +360,7 @@ describe('ValueSetPreview', () => {
 
     // Wait for properties to be rendered
     await waitFor(() => {
-      expect(screen.getByText('Property')).toBeInTheDocument();
+      expect(screen.getByText('Properties')).toBeInTheDocument();
       expect(screen.getByText('parent')).toBeInTheDocument();
       expect(screen.getByText('parent-code')).toBeInTheDocument();
       expect(screen.getByText('Parent code')).toBeInTheDocument();
@@ -614,7 +614,7 @@ describe('ValueSetPreview', () => {
 
     // Wait for properties to be rendered
     await waitFor(() => {
-      expect(screen.getByText('Property')).toBeInTheDocument();
+      expect(screen.getByText('Properties')).toBeInTheDocument();
       expect(screen.getByText('test')).toBeInTheDocument();
       expect(screen.getByText('Test property')).toBeInTheDocument();
     });
