@@ -5,7 +5,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { JSX } from 'react';
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { useThreadInbox } from './useThreadInbox';
 import { showErrorNotification } from '../utils/notifications';
 import type { WithId } from '@medplum/core';
@@ -50,7 +50,7 @@ describe('useThreadInbox', () => {
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
 
-  it('returns initial loading state', () => {
+  test('returns initial loading state', () => {
     const { result } = renderHook(() => useThreadInbox({ query: '', threadId: undefined }), { wrapper });
 
     expect(result.current.loading).toBe(true);
@@ -59,7 +59,7 @@ describe('useThreadInbox', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('fetches thread messages without partOf field', async () => {
+  test('fetches thread messages without partOf field', async () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
     await medplum.createResource(mockCommunication3);
@@ -90,7 +90,7 @@ describe('useThreadInbox', () => {
     expect(graphqlSpy).toHaveBeenCalled();
   });
 
-  it('selects thread by threadId', async () => {
+  test('selects thread by threadId', async () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
 
@@ -119,7 +119,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('reads thread from API when threadId not found in messages', async () => {
+  test('reads thread from API when threadId not found in messages', async () => {
     await medplum.createResource(mockCommunication1);
 
     vi.spyOn(medplum, 'search').mockResolvedValue({
@@ -150,7 +150,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('does not select thread with partOf field when reading from API', async () => {
+  test('does not select thread with partOf field when reading from API', async () => {
     const communicationWithPartOf: Communication = {
       ...mockCommunication1,
       partOf: [{ reference: 'Communication/comm-0' }],
@@ -183,7 +183,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('handles thread status update', async () => {
+  test('handles thread status update', async () => {
     await medplum.createResource(mockCommunication1);
 
     vi.spyOn(medplum, 'search').mockResolvedValue({
@@ -221,7 +221,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('does not update status when no thread is selected', async () => {
+  test('does not update status when no thread is selected', async () => {
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -249,7 +249,7 @@ describe('useThreadInbox', () => {
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
-  it('handles update errors gracefully', async () => {
+  test('handles update errors gracefully', async () => {
     await medplum.createResource(mockCommunication1);
 
     vi.spyOn(medplum, 'search').mockResolvedValue({
@@ -282,7 +282,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('adds new thread message', async () => {
+  test('adds new thread message', async () => {
     const newMessage: Communication = {
       resourceType: 'Communication',
       id: 'comm-new',
@@ -322,7 +322,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('handles search errors gracefully', async () => {
+  test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     vi.spyOn(medplum, 'search').mockRejectedValue(error);
 
@@ -336,7 +336,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('handles readResource errors gracefully', async () => {
+  test('handles readResource errors gracefully', async () => {
     const error = new Error('Read failed');
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
@@ -365,7 +365,7 @@ describe('useThreadInbox', () => {
     });
   });
 
-  it('clears selected thread when threadId becomes undefined', async () => {
+  test('clears selected thread when threadId becomes undefined', async () => {
     await medplum.createResource(mockCommunication1);
 
     vi.spyOn(medplum, 'search').mockResolvedValue({

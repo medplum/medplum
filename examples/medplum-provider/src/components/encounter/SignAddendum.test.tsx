@@ -7,12 +7,10 @@ import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Provenance } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { SignAddendum } from './SignAddendum';
 import { ChartNoteStatus } from '../../types/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-
-vi.mock('../../utils/notifications');
 
 const mockEncounter: Encounter = {
   resourceType: 'Encounter',
@@ -60,17 +58,16 @@ describe('SignAddendumCard', () => {
     );
   };
 
-  it('returns null when no provenances', async () => {
+  test('returns null when no provenances', async () => {
     await act(async () => {
       const { container } = setup({ provenances: [] });
       await waitFor(() => {
-        // Component returns null when no provenances after useEffect runs
         expect(container.firstChild).toBeNull();
       });
     });
   });
 
-  it('renders provenance information', async () => {
+  test('renders provenance information', async () => {
     await act(async () => {
       setup({ provenances: [mockProvenance] });
     });
@@ -81,7 +78,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('displays signed and locked status for last provenance', async () => {
+  test('displays signed and locked status for last provenance', async () => {
     await act(async () => {
       setup({
         provenances: [mockProvenance],
@@ -94,7 +91,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('displays addendum form', async () => {
+  test('displays addendum form', async () => {
     await act(async () => {
       setup({ provenances: [mockProvenance] });
     });
@@ -105,7 +102,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('creates addendum when form is submitted', async () => {
+  test('creates addendum when form is submitted', async () => {
     const user = userEvent.setup();
     const createResourceSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({
       resourceType: 'DocumentReference',
@@ -134,7 +131,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('disables submit button when textarea is empty', async () => {
+  test('disables submit button when textarea is empty', async () => {
     await act(async () => {
       setup({ provenances: [mockProvenance] });
     });
@@ -148,7 +145,7 @@ describe('SignAddendumCard', () => {
     expect(submitButton).toBeDisabled();
   });
 
-  it('disables submit button when only whitespace', async () => {
+  test('disables submit button when only whitespace', async () => {
     const user = userEvent.setup();
     await act(async () => {
       setup({ provenances: [mockProvenance] });
@@ -167,7 +164,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('loads and displays addendums from DocumentReference', async () => {
+  test('loads and displays addendums from DocumentReference', async () => {
     const mockDocumentReference = {
       resourceType: 'DocumentReference' as const,
       id: 'doc-123',
@@ -196,7 +193,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('handles errors when loading addendums', async () => {
+  test('handles errors when loading addendums', async () => {
     const error = new Error('Failed to load addendums');
     vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
 
@@ -209,7 +206,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('handles errors when creating addendum', async () => {
+  test('handles errors when creating addendum', async () => {
     const user = userEvent.setup();
     const error = new Error('Failed to create addendum');
     vi.spyOn(medplum, 'createResource').mockRejectedValue(error);
@@ -233,7 +230,7 @@ describe('SignAddendumCard', () => {
     });
   });
 
-  it('displays multiple provenances', async () => {
+  test('displays multiple provenances', async () => {
     const provenance2: Provenance = {
       ...mockProvenance,
       id: 'provenance-456',

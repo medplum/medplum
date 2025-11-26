@@ -5,7 +5,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { JSX } from 'react';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { usePatient } from './usePatient';
 
 vi.mock('react-router', async () => {
@@ -31,7 +31,7 @@ describe('usePatient', () => {
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
 
-  it('returns undefined when patient ID is not found in params', () => {
+  test('returns undefined when patient ID is not found in params', () => {
     vi.mocked(useParams).mockReturnValue({});
 
     expect(() => {
@@ -39,7 +39,7 @@ describe('usePatient', () => {
     }).toThrow('Patient ID not found');
   });
 
-  it('returns undefined when patient ID is missing but ignoreMissingPatientId is true', () => {
+  test('returns undefined when patient ID is missing but ignoreMissingPatientId is true', () => {
     vi.mocked(useParams).mockReturnValue({});
 
     const { result } = renderHook(() => usePatient({ ignoreMissingPatientId: true }), { wrapper });
@@ -47,7 +47,7 @@ describe('usePatient', () => {
     expect(result.current).toBeUndefined();
   });
 
-  it('loads patient resource by ID from URL params', async () => {
+  test('loads patient resource by ID from URL params', async () => {
     const mockPatient: Patient = {
       resourceType: 'Patient',
       id: 'patient-123',
@@ -67,7 +67,7 @@ describe('usePatient', () => {
     });
   });
 
-  it('calls setOutcome callback when patient is not found', async () => {
+  test('calls setOutcome callback when patient is not found', async () => {
     const setOutcome = vi.fn();
     vi.mocked(useParams).mockReturnValue({ patientId: 'patient-nonexistent' });
 
@@ -80,7 +80,7 @@ describe('usePatient', () => {
     expect(result.current).toBeUndefined();
   });
 
-  it('handles patient reference correctly', async () => {
+  test('handles patient reference correctly', async () => {
     const mockPatient: Patient = {
       resourceType: 'Patient',
       id: 'patient-456',

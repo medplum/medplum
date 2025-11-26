@@ -5,7 +5,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { JSX } from 'react';
 import type { Encounter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { useEncounter } from './useEncounter';
 
 vi.mock('react-router', async () => {
@@ -31,7 +31,7 @@ describe('useEncounter', () => {
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
 
-  it('returns undefined when encounter ID is not found in params', () => {
+  test('returns undefined when encounter ID is not found in params', () => {
     vi.mocked(useParams).mockReturnValue({});
 
     const { result } = renderHook(() => useEncounter(), { wrapper });
@@ -39,7 +39,7 @@ describe('useEncounter', () => {
     expect(result.current).toBeUndefined();
   });
 
-  it('loads encounter resource by ID from URL params', async () => {
+  test('loads encounter resource by ID from URL params', async () => {
     const mockEncounter: Encounter = {
       resourceType: 'Encounter',
       id: 'encounter-123',
@@ -61,7 +61,7 @@ describe('useEncounter', () => {
     });
   });
 
-  it('handles different encounter IDs correctly', async () => {
+  test('handles different encounter IDs correctly', async () => {
     const mockEncounter: Encounter = {
       resourceType: 'Encounter',
       id: 'encounter-456',
@@ -82,7 +82,7 @@ describe('useEncounter', () => {
     });
   });
 
-  it('returns undefined when encounter does not exist', async () => {
+  test('returns undefined when encounter does not exist', async () => {
     vi.mocked(useParams).mockReturnValue({ encounterId: 'encounter-nonexistent' });
 
     const { result } = renderHook(() => useEncounter(), { wrapper });

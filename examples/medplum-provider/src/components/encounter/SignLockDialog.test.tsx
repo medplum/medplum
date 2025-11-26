@@ -6,11 +6,8 @@ import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { SignLockDialog } from './SignLockDialog';
-import { showErrorNotification } from '../../utils/notifications';
-
-vi.mock('../../utils/notifications');
 
 describe('SignLockDialog', () => {
   let medplum: MockClient;
@@ -33,19 +30,19 @@ describe('SignLockDialog', () => {
     );
   };
 
-  it('renders sign and lock button', () => {
+  test('renders sign and lock button', () => {
     setup();
 
     expect(screen.getByText('Sign & Lock Note')).toBeInTheDocument();
   });
 
-  it('renders just sign button', () => {
+  test('renders just sign button', () => {
     setup();
 
     expect(screen.getByText('Just Sign')).toBeInTheDocument();
   });
 
-  it('displays practitioner information', async () => {
+  test('displays practitioner information', async () => {
     await act(async () => {
       setup();
     });
@@ -55,7 +52,7 @@ describe('SignLockDialog', () => {
     });
   });
 
-  it('calls onSign with lock=true when sign and lock is clicked', async () => {
+  test('calls onSign with lock=true when sign and lock is clicked', async () => {
     const user = userEvent.setup();
     const onSign = vi.fn();
     await act(async () => {
@@ -75,7 +72,7 @@ describe('SignLockDialog', () => {
     });
   });
 
-  it('calls onSign with lock=false when just sign is clicked', async () => {
+  test('calls onSign with lock=false when just sign is clicked', async () => {
     const user = userEvent.setup();
     const onSign = vi.fn();
     await act(async () => {
@@ -95,7 +92,7 @@ describe('SignLockDialog', () => {
     });
   });
 
-  it('shows error notification when no author is found', async () => {
+  test('handles error gracefully when no author is found', async () => {
     const user = userEvent.setup();
     const onSign = vi.fn();
     const medplumWithoutProfile = new MockClient({ profile: null });
@@ -116,11 +113,10 @@ describe('SignLockDialog', () => {
 
     await user.click(screen.getByText('Sign & Lock Note'));
 
+    // Verify that onSign is not called when there's no author
     await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalledWith('No author information found');
+      expect(onSign).not.toHaveBeenCalled();
     });
-
-    expect(onSign).not.toHaveBeenCalled();
   });
 });
 

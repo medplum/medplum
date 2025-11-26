@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { EncounterHeader } from './EncounterHeader';
 import { ChartNoteStatus } from '../../types/encounter';
 
@@ -48,20 +48,20 @@ describe('EncounterHeader', () => {
     );
   };
 
-  it('renders encounter title and details', () => {
+  test('renders encounter title and details', () => {
     setup({ practitioner: mockPractitioner });
 
     expect(screen.getByText('Visit')).toBeInTheDocument();
     expect(screen.getByText(/Dr\. Test/)).toBeInTheDocument();
   });
 
-  it('displays status button', () => {
+  test('displays status button', () => {
     setup();
 
     expect(screen.getByText('In Progress')).toBeInTheDocument();
   });
 
-  it('shows status menu for active encounters', async () => {
+  test('shows status menu for active encounters', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -74,7 +74,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('calls onStatusChange when status is changed', async () => {
+  test('calls onStatusChange when status is changed', async () => {
     const user = userEvent.setup();
     const onStatusChange = vi.fn();
     setup({ onStatusChange });
@@ -93,7 +93,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('shows confirmation modal when cancelling encounter', async () => {
+  test('shows confirmation modal when cancelling encounter', async () => {
     const user = userEvent.setup();
     const onStatusChange = vi.fn();
     setup({ onStatusChange });
@@ -112,7 +112,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('confirms cancellation when user clicks yes', async () => {
+  test('confirms cancellation when user clicks yes', async () => {
     const user = userEvent.setup();
     const onStatusChange = vi.fn();
     setup({ onStatusChange });
@@ -137,7 +137,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('cancels cancellation when user clicks no', async () => {
+  test('cancels cancellation when user clicks no', async () => {
     const user = userEvent.setup();
     const onStatusChange = vi.fn();
     setup({ onStatusChange });
@@ -164,7 +164,7 @@ describe('EncounterHeader', () => {
     expect(onStatusChange).not.toHaveBeenCalled();
   });
 
-  it('calls onTabChange when tab is changed', async () => {
+  test('calls onTabChange when tab is changed', async () => {
     const user = userEvent.setup();
     const onTabChange = vi.fn();
     setup({ onTabChange });
@@ -177,7 +177,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('shows sign button for finished unsigned encounters', () => {
+  test('shows sign button for finished unsigned encounters', () => {
     const finishedEncounter: Encounter = {
       ...mockEncounter,
       status: 'finished',
@@ -188,7 +188,7 @@ describe('EncounterHeader', () => {
     expect(signButtons.length).toBeGreaterThan(0);
   });
 
-  it('opens sign dialog when sign button is clicked', async () => {
+  test('opens sign dialog when sign button is clicked', async () => {
     const user = userEvent.setup();
     const finishedEncounter: Encounter = {
       ...mockEncounter,
@@ -207,7 +207,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('calls onSign when signing', async () => {
+  test('calls onSign when signing', async () => {
     const user = userEvent.setup();
     const onSign = vi.fn();
     const finishedEncounter: Encounter = {
@@ -233,7 +233,7 @@ describe('EncounterHeader', () => {
     });
   });
 
-  it('does not show sign button for cancelled encounters', () => {
+  test('does not show sign button for cancelled encounters', () => {
     const cancelledEncounter: Encounter = {
       ...mockEncounter,
       status: 'cancelled',
@@ -245,23 +245,23 @@ describe('EncounterHeader', () => {
     expect(hasSignIcon).toBe(false);
   });
 
-  it('displays correct status for finished encounters', () => {
+  test('displays correct status for finished encounters', () => {
     setup({ encounter: { ...mockEncounter, status: 'finished' } });
     expect(screen.getByText('Finished')).toBeInTheDocument();
   });
 
-  it('displays correct status for cancelled encounters', () => {
+  test('displays correct status for cancelled encounters', () => {
     setup({ encounter: { ...mockEncounter, status: 'cancelled' } });
     expect(screen.getByText('Cancelled')).toBeInTheDocument();
   });
 
-  it('renders with practitioner name', () => {
+  test('renders with practitioner name', () => {
     setup({ practitioner: mockPractitioner });
 
     expect(screen.getByText(/Dr\. Test/)).toBeInTheDocument();
   });
 
-  it('renders with unknown provider when practitioner is not provided', () => {
+  test('renders with unknown provider when practitioner is not provided', () => {
     setup({ practitioner: undefined });
 
     expect(screen.getByText(/Unknown Provider/)).toBeInTheDocument();

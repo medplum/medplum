@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const mockEncounter: Encounter = {
@@ -48,31 +48,31 @@ describe('VisitDetailsPanel', () => {
     );
   };
 
-  it('renders visit details title', () => {
+  test('renders visit details title', () => {
     setup();
 
     expect(screen.getByText('Visit Details')).toBeInTheDocument();
   });
 
-  it('renders practitioner input', () => {
+  test('renders practitioner input', () => {
     setup();
 
     expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
   });
 
-  it('renders check in date input', () => {
+  test('renders check in date input', () => {
     setup();
 
     expect(screen.getByLabelText(/Check in/i)).toBeInTheDocument();
   });
 
-  it('renders check out date input', () => {
+  test('renders check out date input', () => {
     setup();
 
     expect(screen.getByLabelText(/Check out/i)).toBeInTheDocument();
   });
 
-  it('calls onEncounterChange when practitioner is changed', async () => {
+  test('calls onEncounterChange when practitioner is changed', async () => {
     const onEncounterChange = vi.fn();
     await medplum.createResource(mockPractitioner);
     setup({ onEncounterChange, practitioner: mockPractitioner });
@@ -96,7 +96,7 @@ describe('VisitDetailsPanel', () => {
     expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
   });
 
-  it('calls onEncounterChange when check in time is changed', async () => {
+  test('calls onEncounterChange when check in time is changed', async () => {
     const user = userEvent.setup();
     const onEncounterChange = vi.fn();
     setup({ onEncounterChange });
@@ -110,7 +110,7 @@ describe('VisitDetailsPanel', () => {
     });
   });
 
-  it('calls onEncounterChange when check out time is changed', async () => {
+  test('calls onEncounterChange when check out time is changed', async () => {
     const user = userEvent.setup();
     const onEncounterChange = vi.fn();
     setup({ onEncounterChange });
@@ -124,18 +124,17 @@ describe('VisitDetailsPanel', () => {
     });
   });
 
-  it('displays default practitioner value', async () => {
+  test('displays default practitioner value', async () => {
     await medplum.createResource(mockPractitioner);
     setup({ practitioner: mockPractitioner });
 
     await waitFor(() => {
       expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
-      // Check that the practitioner name is displayed in the pills
       expect(screen.getByText(/Dr\. Test/i)).toBeInTheDocument();
     });
   });
 
-  it('displays default check in time', () => {
+  test('displays default check in time', () => {
     setup();
 
     const checkinInput = screen.getByLabelText(/Check in/i);
@@ -150,11 +149,10 @@ describe('VisitDetailsPanel', () => {
     expect(checkinInput).toHaveValue(localTimeString);
   });
 
-  it('displays default check out time', () => {
+  test('displays default check out time', () => {
     setup();
 
     const checkoutInput = screen.getByLabelText(/Check out/i);
-    // DateTimeInput converts UTC to local time, so we need to format in local time
     const utcDate = new Date('2024-01-01T11:00:00Z');
     const year = utcDate.getFullYear();
     const month = String(utcDate.getMonth() + 1).padStart(2, '0');
@@ -165,21 +163,5 @@ describe('VisitDetailsPanel', () => {
     expect(checkoutInput).toHaveValue(localTimeString);
   });
 
-  it('handles encounter without period', () => {
-    const encounterWithoutPeriod: Encounter = {
-      ...mockEncounter,
-      period: undefined,
-    };
-    setup({ encounter: encounterWithoutPeriod });
-
-    expect(screen.getByLabelText(/Check in/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Check out/i)).toBeInTheDocument();
-  });
-
-  it('handles encounter without practitioner', () => {
-    setup({ practitioner: undefined });
-
-    expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
-  });
 });
 

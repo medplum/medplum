@@ -3,7 +3,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import type { Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { useDebouncedUpdateResource, DEFAULT_SAVE_TIMEOUT_MS } from './useDebouncedUpdateResource';
 
 describe('useDebouncedUpdateResource', () => {
@@ -13,7 +13,7 @@ describe('useDebouncedUpdateResource', () => {
     medplum = new MockClient();
   });
 
-  it('debounces resource updates with default timeout', async () => {
+  test('debounces resource updates with default timeout', async () => {
     const { result } = renderHook(() => useDebouncedUpdateResource(medplum));
 
     const mockPatient = { ...HomerSimpson } as Patient & { id: string };
@@ -50,7 +50,7 @@ describe('useDebouncedUpdateResource', () => {
     );
   });
 
-  it('debounces resource updates with custom timeout', async () => {
+  test('debounces resource updates with custom timeout', async () => {
     const customTimeout = 100;
     const { result } = renderHook(() => useDebouncedUpdateResource(medplum, customTimeout));
 
@@ -74,7 +74,7 @@ describe('useDebouncedUpdateResource', () => {
     );
   });
 
-  it('returns the resource payload immediately', async () => {
+  test('returns the resource payload immediately', async () => {
     const { result } = renderHook(() => useDebouncedUpdateResource(medplum));
 
     const mockPatient = { ...HomerSimpson } as Patient & { id: string };
@@ -85,7 +85,7 @@ describe('useDebouncedUpdateResource', () => {
     expect(returnedValue).toEqual(mockPatient);
   });
 
-  it('cancels previous pending updates when new update is called', async () => {
+  test('cancels previous pending updates when new update is called', async () => {
     const { result } = renderHook(() => useDebouncedUpdateResource(medplum));
 
     const mockPatient1 = { ...HomerSimpson, name: [{ given: ['First'], family: 'Simpson' }] } as Patient & {
@@ -121,7 +121,7 @@ describe('useDebouncedUpdateResource', () => {
     );
   });
 
-  it('handles update errors gracefully', async () => {
+  test('handles update errors gracefully', async () => {
     const { result } = renderHook(() => useDebouncedUpdateResource(medplum));
 
     const mockPatient = { ...HomerSimpson } as Patient & { id: string };
