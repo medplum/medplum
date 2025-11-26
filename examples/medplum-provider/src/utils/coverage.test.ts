@@ -20,9 +20,7 @@ describe('createSelfPayCoverage', () => {
       beneficiary: { reference: 'Patient/patient-123' },
       payor: [{ reference: 'Patient/patient-123' }],
       type: {
-        coding: [
-          { code: 'SELFPAY', display: 'Self Pay' },
-        ],
+        coding: [{ code: 'SELFPAY', display: 'Self Pay' }],
       },
       period: {
         start: new Date().toISOString(),
@@ -48,5 +46,3 @@ describe('createSelfPayCoverage', () => {
     expect(result).toBe(createdCoverage);
   });
 });
-
-

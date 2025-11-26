@@ -44,14 +44,24 @@ describe('documentReference utils', () => {
     });
 
     test('returns undefined when not present', () => {
-      const request: ServiceRequest = { resourceType: 'ServiceRequest', status: 'active', intent: 'order', subject: { reference: 'Patient/patient-1' } };
+      const request: ServiceRequest = {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-1' },
+      };
       expect(getHealthGorillaRequisitionId(request)).toBeUndefined();
     });
   });
 
   describe('fetchLabOrderRequisitionDocuments', () => {
     test('returns empty array when requisition id missing', async () => {
-      const request: ServiceRequest = { resourceType: 'ServiceRequest', status: 'active', intent: 'order', subject: { reference: 'Patient/patient-1' } };
+      const request: ServiceRequest = {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-1' },
+      };
       const searchSpy = vi.spyOn(medplum, 'searchResources');
 
       const result = await fetchLabOrderRequisitionDocuments(medplum as any, request);
@@ -90,5 +100,3 @@ describe('documentReference utils', () => {
     });
   });
 });
-
-

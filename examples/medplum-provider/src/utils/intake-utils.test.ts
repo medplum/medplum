@@ -125,7 +125,7 @@ describe('intake utils', () => {
 
     test('getGroupRepeatedAnswers flattens repeating groups', () => {
       const questionnaire: Questionnaire = {
-        status: 'active', 
+        status: 'active',
         resourceType: 'Questionnaire',
         item: [{ linkId: 'allergies', type: 'group', item: [{ linkId: 'allergy-substance', type: 'string' }] }],
       };
@@ -252,5 +252,3 @@ describe('intake utils', () => {
     });
   });
 });
-
-

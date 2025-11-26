@@ -109,13 +109,33 @@ describe('chargeitems utils', () => {
   describe('calculateTotalPrice', () => {
     test('sums up price overrides', () => {
       const items: ChargeItem[] = [
-        { resourceType: 'ChargeItem', id: '1', status: 'billable', priceOverride: { value: 10 }, code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] }, subject: { reference: 'Patient/patient-1' } },
-        { resourceType: 'ChargeItem', id: '2', status: 'billable', priceOverride: { value: 15.5 }, code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] }, subject: { reference: 'Patient/patient-1' } },
-        { resourceType: 'ChargeItem', id: '3', status: 'billable', priceOverride: { value: 20 }, code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] }, subject: { reference: 'Patient/patient-1' } },
+        {
+          resourceType: 'ChargeItem',
+          id: '1',
+          status: 'billable',
+          priceOverride: { value: 10 },
+          code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] },
+          subject: { reference: 'Patient/patient-1' },
+        },
+        {
+          resourceType: 'ChargeItem',
+          id: '2',
+          status: 'billable',
+          priceOverride: { value: 15.5 },
+          code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] },
+          subject: { reference: 'Patient/patient-1' },
+        },
+        {
+          resourceType: 'ChargeItem',
+          id: '3',
+          status: 'billable',
+          priceOverride: { value: 20 },
+          code: { text: 'Test Charge Item', coding: [{ system: 'http://example.com', code: '1234' }] },
+          subject: { reference: 'Patient/patient-1' },
+        },
       ];
 
       expect(calculateTotalPrice(items)).toBe(45.5);
     });
   });
 });
-

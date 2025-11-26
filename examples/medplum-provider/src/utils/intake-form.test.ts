@@ -142,9 +142,7 @@ describe('onboardPatient', () => {
   });
 });
 
-function buildResponseFromAnswers(
-  answers: Record<string, QuestionnaireResponseItemAnswer>
-): QuestionnaireResponse {
+function buildResponseFromAnswers(answers: Record<string, QuestionnaireResponseItemAnswer>): QuestionnaireResponse {
   return {
     resourceType: 'QuestionnaireResponse',
     status: 'completed',
@@ -154,4 +152,3 @@ function buildResponseFromAnswers(
     })),
   };
 }
-

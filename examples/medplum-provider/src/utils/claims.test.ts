@@ -79,8 +79,34 @@ describe('claims utils', () => {
     ];
 
     test('creates claim using existing coverage', async () => {
-      const coverage: Coverage = { resourceType: 'Coverage', id: 'coverage-1', status: 'active', beneficiary: { reference: 'Patient/patient-1' }, payor: [{ reference: 'Organization/organization-1' }] };
-      const claim: Claim = { resourceType: 'Claim', id: 'claim-1', status: 'draft', type: { coding: [{ code: 'professional' }] }, use: 'claim', created: new Date().toISOString(), patient: { reference: 'Patient/patient-1' }, provider: { reference: 'Practitioner/practitioner-1' }, priority: { coding: [{ code: 'normal' }] }, insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-1' } }], item: [{ sequence: 1, encounter: [{ reference: 'Encounter/encounter-1' }], productOrService: { coding: [{ system: CPT, code: '1111' }], text: 'Visit' }, net: { value: 25 } }], total: { value: 25 }  };
+      const coverage: Coverage = {
+        resourceType: 'Coverage',
+        id: 'coverage-1',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-1' },
+        payor: [{ reference: 'Organization/organization-1' }],
+      };
+      const claim: Claim = {
+        resourceType: 'Claim',
+        id: 'claim-1',
+        status: 'draft',
+        type: { coding: [{ code: 'professional' }] },
+        use: 'claim',
+        created: new Date().toISOString(),
+        patient: { reference: 'Patient/patient-1' },
+        provider: { reference: 'Practitioner/practitioner-1' },
+        priority: { coding: [{ code: 'normal' }] },
+        insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/coverage-1' } }],
+        item: [
+          {
+            sequence: 1,
+            encounter: [{ reference: 'Encounter/encounter-1' }],
+            productOrService: { coding: [{ system: CPT, code: '1111' }], text: 'Visit' },
+            net: { value: 25 },
+          },
+        ],
+        total: { value: 25 },
+      };
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([coverage] as any);
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(claim as any);
 
@@ -109,7 +135,13 @@ describe('claims utils', () => {
 
     test('creates self-pay coverage when no coverage exists', async () => {
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
-      const createdCoverage: Coverage = { resourceType: 'Coverage', id: 'coverage-self', status: 'active', beneficiary: { reference: 'Patient/patient-1' }, payor: [{ reference: 'Organization/organization-1' }] };
+      const createdCoverage: Coverage = {
+        resourceType: 'Coverage',
+        id: 'coverage-self',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-1' },
+        payor: [{ reference: 'Organization/organization-1' }],
+      };
       const coverageSpy = vi.spyOn(coverageModule, 'createSelfPayCoverage').mockResolvedValue(createdCoverage);
       vi.spyOn(medplum, 'createResource').mockResolvedValue({ resourceType: 'Claim' } as any);
 
@@ -119,5 +151,3 @@ describe('claims utils', () => {
     });
   });
 });
-
-

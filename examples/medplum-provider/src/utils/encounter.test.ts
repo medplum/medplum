@@ -51,21 +51,19 @@ describe('encounter utils', () => {
         ],
       } as any);
       vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
-      const readReferenceSpy = vi
-        .spyOn(medplum, 'readReference')
-        .mockResolvedValue({
-          resourceType: 'ServiceRequest',
-          id: 'sr-1',
-          encounter: { reference: 'Encounter/enc-1' },
-          code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '1234' }] },
-          occurrenceDateTime: '2020-01-01T12:00:00Z',
-          extension: [
-            {
-              url: 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition',
-              valueCanonical: 'ChargeItemDefinition/1',
-            },
-          ],
-        } as any);
+      const readReferenceSpy = vi.spyOn(medplum, 'readReference').mockResolvedValue({
+        resourceType: 'ServiceRequest',
+        id: 'sr-1',
+        encounter: { reference: 'Encounter/enc-1' },
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '1234' }] },
+        occurrenceDateTime: '2020-01-01T12:00:00Z',
+        extension: [
+          {
+            url: 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition',
+            valueCanonical: 'ChargeItemDefinition/1',
+          },
+        ],
+      } as any);
 
       const planDefinition: PlanDefinition = {
         resourceType: 'PlanDefinition',
@@ -130,8 +128,12 @@ describe('encounter utils', () => {
 
       const updatedEncounter = await updateEncounterStatus(medplum as any, encounter, appointment, 'in-progress');
 
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Appointment', status: 'checked-in' }));
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Encounter', status: 'in-progress' }));
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'Appointment', status: 'checked-in' })
+      );
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'Encounter', status: 'in-progress' })
+      );
       expect(updatedEncounter.period?.start).toBeDefined();
 
       // Move to finished state
@@ -165,5 +167,3 @@ describe('encounter utils', () => {
     });
   });
 });
-
-

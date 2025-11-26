@@ -25,4 +25,3 @@ describe('notifications utils', () => {
     showSpy.mockRestore();
   });
 });
-
