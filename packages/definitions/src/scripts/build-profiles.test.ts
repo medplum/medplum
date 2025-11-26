@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, mkdirSync, rmdirSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import {
   cleanStructureDefinition,
+  main,
   mergeStructureDefinitions,
   readGeneratedStructureDefinitions,
 } from './build-profiles';
@@ -274,5 +275,99 @@ describe('build-profiles', () => {
       expect(bundle.entry).toHaveLength(0);
     });
   });
-});
 
+  describe('readGeneratedStructureDefinitions error handling', () => {
+    test('throws non-ENOENT errors', () => {
+      // Use a directory that exists but will cause a different error
+      // We'll use a file instead of a directory to trigger a non-ENOENT error
+      const testFile = join(testDir, 'not-a-dir');
+      writeFileSync(testFile, 'not a directory');
+
+      expect(() => {
+        readGeneratedStructureDefinitions(testFile);
+      }).toThrow();
+    });
+  });
+
+  describe('main', () => {
+    test('handles empty StructureDefinitions gracefully', () => {
+      const testProfilesPath = join(testDir, 'profiles-medplum.json');
+      const nonExistentFshDir = join(testDir, 'non-existent-fsh-dir');
+
+      // Call main with explicit paths to non-existent FSH directory
+      // This will trigger the ENOENT path and return empty array
+      const logSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      main(testProfilesPath, nonExistentFshDir);
+
+      expect(logSpy).toHaveBeenCalledWith('No StructureDefinitions found to merge.');
+      expect(existsSync(testProfilesPath)).toBe(false);
+
+      logSpy.mockRestore();
+    });
+
+    test('creates new bundle when file does not exist', () => {
+      const testProfilesPath = join(testDir, 'profiles-medplum.json');
+      const fshDir = join(testDir, 'fsh-generated', 'resources');
+      mkdirSync(fshDir, { recursive: true });
+
+      const sd = {
+        resourceType: 'StructureDefinition',
+        url: 'https://medplum.com/fhir/StructureDefinition/test',
+        name: 'Test',
+        snapshot: { element: [] },
+      };
+
+      writeFileSync(join(fshDir, 'StructureDefinition-test.json'), JSON.stringify(sd));
+
+      // Call main with explicit paths
+      main(testProfilesPath, fshDir);
+
+      expect(existsSync(testProfilesPath)).toBe(true);
+      const bundle = JSON.parse(readFileSync(testProfilesPath, 'utf8'));
+      expect(bundle.resourceType).toBe('Bundle');
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry[0].resource.url).toBe('https://medplum.com/fhir/StructureDefinition/test');
+    });
+
+    test('updates existing bundle', () => {
+      const testProfilesPath = join(testDir, 'profiles-medplum.json');
+      const fshDir = join(testDir, 'fsh-generated', 'resources');
+      mkdirSync(fshDir, { recursive: true });
+
+      // Create existing bundle
+      const existingBundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'https://medplum.com/fhir/StructureDefinition/test',
+            resource: {
+              resourceType: 'StructureDefinition',
+              url: 'https://medplum.com/fhir/StructureDefinition/test',
+              name: 'OldName',
+              snapshot: { element: [] },
+            },
+          },
+        ],
+      };
+      writeFileSync(testProfilesPath, JSON.stringify(existingBundle));
+
+      // Create new StructureDefinition
+      const sd = {
+        resourceType: 'StructureDefinition',
+        url: 'https://medplum.com/fhir/StructureDefinition/test',
+        name: 'NewName',
+        snapshot: { element: [{ id: 'new-element' }] },
+      };
+      writeFileSync(join(fshDir, 'StructureDefinition-test.json'), JSON.stringify(sd));
+
+      // Call main with explicit paths
+      main(testProfilesPath, fshDir);
+
+      const bundle = JSON.parse(readFileSync(testProfilesPath, 'utf8'));
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry[0].resource.name).toBe('NewName');
+    });
+  });
+});

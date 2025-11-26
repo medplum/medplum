@@ -67,7 +67,7 @@ export function cleanStructureDefinition(sd: StructureDefinition): void {
  * @param fshGeneratedDir - Path to the fsh-generated directory (defaults to standard path)
  * @returns Array of StructureDefinition objects
  */
-export function readGeneratedStructureDefinitions(fshGeneratedDir = FSH_GENERATED_DIR): StructureDefinition[] {
+export function readGeneratedStructureDefinitions(fshGeneratedDir: string = FSH_GENERATED_DIR): StructureDefinition[] {
   const structureDefinitions: StructureDefinition[] = [];
 
   try {
@@ -153,10 +153,13 @@ export function mergeStructureDefinitions(newStructureDefinitions: StructureDefi
 /**
  * Main function to build and merge profiles
  * @param profilesMedplumPath - Path to profiles-medplum.json (defaults to standard path)
+ * @param fshGeneratedDir - Optional path to fsh-generated directory (defaults to standard path)
  */
-export function main(profilesMedplumPath = PROFILES_MEDPLUM_PATH): void {
+export function main(profilesMedplumPath: string = PROFILES_MEDPLUM_PATH, fshGeneratedDir?: string): void {
   console.log('Reading generated StructureDefinitions...');
-  const newStructureDefinitions = readGeneratedStructureDefinitions();
+  const newStructureDefinitions = fshGeneratedDir
+    ? readGeneratedStructureDefinitions(fshGeneratedDir)
+    : readGeneratedStructureDefinitions();
 
   if (newStructureDefinitions.length === 0) {
     console.log('No StructureDefinitions found to merge.');
@@ -200,4 +203,3 @@ export function main(profilesMedplumPath = PROFILES_MEDPLUM_PATH): void {
 if (process.argv[1]?.includes('build-profiles')) {
   main();
 }
-
