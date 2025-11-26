@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Slot } from '@medplum/fhirtypes';
 import type { ContextFn, Interval as DateFnsInterval } from 'date-fns';
 import {
   addMinutes,
@@ -10,6 +11,7 @@ import {
   isEqual as dateEqual,
   eachDayOfInterval,
   getMinutes,
+  interval,
   startOfMinute,
 } from 'date-fns';
 import { isDefined } from '../../../util/types';
@@ -18,7 +20,6 @@ import type { SchedulingParameters } from './scheduling-parameters';
 type Interval = DateFnsInterval<Date, Date>;
 
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
-
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 /**
@@ -170,6 +171,38 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
 
   return result;
 }
+
+/**
+ * Applies overrides from existing Slots to an availability window
+ *
+ * @param availability - Ranges of available time
+ * @param slots - Slot resources to consider
+ * @param range - Interval of time to restrict availability to
+ * @param opts - Options to customize the result
+ * @param opts.in - The timezone context to use in the function
+ * @returns Updated availability information
+ */
+export function applyExistingSlots(
+  availability: Interval[],
+  slots: Slot[],
+  range: Interval,
+  opts?: { in?: ContextFn<Date> }
+): Interval[] {
+  const freeSlotIntervals = slots
+    .filter((slot) => slot.status === 'free')
+    .map((slot) => interval(new Date(slot.start), new Date(slot.end), { ...opts, assertPositive: true }))
+    .map((interval) => intersectIntervals(interval, range))
+    .filter(isDefined);
+
+  const busySlotIntervals = normalizeIntervals(
+    slots
+      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .map((slot) => interval(new Date(slot.start), new Date(slot.end), { ...opts, assertPositive: true }))
+  );
+  const allAvailability = normalizeIntervals(availability.concat(freeSlotIntervals));
+  return removeAvailability(allAvailability, busySlotIntervals);
+}
+
 // Given a date that could have a seconds / milliseconds component, return
 // the input date if it does not have any, and the start of the next minute
 // if it does.

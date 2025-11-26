@@ -1,11 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { tz, TZDate } from '@date-fns/tz';
+import { createReference, generateId } from '@medplum/core';
+import type { Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
 import type { Interval } from 'date-fns';
-import { findAlignedSlots, normalizeIntervals, removeAvailability, resolveAvailability } from './find';
+import {
+  applyExistingSlots,
+  findAlignedSlots,
+  normalizeIntervals,
+  removeAvailability,
+  resolveAvailability,
+} from './find';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 const tzny = tz('America/New_York');
+
+const project: Project = {
+  resourceType: 'Project',
+  id: generateId(),
+};
+
+const practitioner: Practitioner = {
+  resourceType: 'Practitioner',
+  id: generateId(),
+  meta: { project: project.id },
+};
+
+const schedule: Schedule = {
+  resourceType: 'Schedule',
+  id: generateId(),
+  meta: { project: project.id },
+  actor: [createReference(practitioner)],
+};
 
 // Jest matchers don't show a good diff when comparing Date and TZDate instances.
 // Converting results to UTC and stripping timezone info makes debugging easier.
@@ -232,6 +258,100 @@ describe('removeAvailability', () => {
     expect(removeAvailability(availability, blocks)).toEqual([
       { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
       { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ]);
+  });
+});
+
+function makeSlots(schedule: Schedule, intervals: Interval<Date, Date>[], status: Slot['status'] = 'busy'): Slot[] {
+  return intervals.map((interval) => ({
+    resourceType: 'Slot',
+    schedule: { reference: `Schedule/${schedule.id}` },
+    status,
+    start: interval.start.toISOString(),
+    end: interval.end.toISOString(),
+  }));
+}
+
+describe('applyExistingSlots', () => {
+  test('with no availability or free slots', () => {
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots([], [], range)).toEqual([]);
+  });
+
+  test('returns the input availability when no slot overrides exist', () => {
+    const availability = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots(availability, [], range)).toEqual(availability);
+  });
+
+  test('returns free slots as available time', () => {
+    const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const freeSlots = makeSlots(schedule, freeIntervals, 'free');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots([], freeSlots, range)).toEqual(freeIntervals);
+  });
+
+  test('free slots wider than the queried range are truncated', () => {
+    const freeIntervals = [{ start: new Date('2025-12-01'), end: new Date('2025-12-07') }];
+    const freeSlots = makeSlots(schedule, freeIntervals, 'free');
+    const range = { start: new Date('2025-12-02'), end: new Date('2025-12-04') };
+    expect(applyExistingSlots([], freeSlots, range)).toEqual([range]);
+  });
+
+  test('it removes busy slots from the availability', () => {
+    const availability = [
+      { start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
+    ];
+    const busyIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const busySlots = makeSlots(schedule, busyIntervals, 'busy');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots(availability, busySlots, range, { in: tzny })).toEqual([
+      { start: new Date('2025-12-01T14:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
+    ]);
+  });
+
+  test('it removes busy-unavailable slots from the availability', () => {
+    const availability = [
+      { start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
+    ];
+    const busyUnavailableIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const slots = makeSlots(schedule, busyUnavailableIntervals, 'busy-unavailable');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots(availability, slots, range)).toEqual([
+      { start: new Date('2025-12-01T14:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
+    ]);
+  });
+
+  test('busy slots override free slots', () => {
+    const availability = [
+      { start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
+    ];
+    const busyIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const freeIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const busySlots = makeSlots(schedule, busyIntervals, 'busy');
+    const freeSlots = makeSlots(schedule, freeIntervals, 'free');
+    const slots = [...busySlots, ...freeSlots];
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots(availability, slots, range)).toEqual([
+      { start: new Date('2025-12-01T14:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+      { start: new Date('2025-12-03T12:00:00-05:00'), end: new Date('2025-12-03T16:00:00-05:00') },
     ]);
   });
 });
