@@ -207,7 +207,6 @@ describe('SignAddendumCard', () => {
     });
   });
 
-
   test('handles errors when creating addendum', async () => {
     const user = userEvent.setup();
     const error = new Error('Failed to create addendum');
