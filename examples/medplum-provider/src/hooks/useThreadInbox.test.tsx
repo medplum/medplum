@@ -203,7 +203,9 @@ describe('useThreadInbox', () => {
       status: 'in-progress',
     };
 
-    const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedCommunication as WithId<Communication>);
+    const updateSpy = vi
+      .spyOn(medplum, 'updateResource')
+      .mockResolvedValue(updatedCommunication as WithId<Communication>);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
       wrapper,
@@ -380,13 +382,10 @@ describe('useThreadInbox', () => {
       },
     } as any);
 
-    const { result, rerender } = renderHook(
-      ({ threadId }) => useThreadInbox({ query: 'status=completed', threadId }),
-      {
-        wrapper,
-        initialProps: { threadId: 'comm-1' as string | undefined },
-      }
-    );
+    const { result, rerender } = renderHook(({ threadId }) => useThreadInbox({ query: 'status=completed', threadId }), {
+      wrapper,
+      initialProps: { threadId: 'comm-1' as string | undefined },
+    });
 
     await waitFor(() => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
@@ -399,4 +398,3 @@ describe('useThreadInbox', () => {
     });
   });
 });
-

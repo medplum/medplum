@@ -28,7 +28,7 @@ describe('useDebouncedUpdateResource', () => {
 
     // Call the debounced function multiple times rapidly
     const debouncedUpdate = result.current;
-    debouncedUpdate(mockPatient).catch(() => { });
+    debouncedUpdate(mockPatient).catch(() => {});
     debouncedUpdate(updatedPatient1).catch(() => {
       // Ignore promise rejections
     });
@@ -70,7 +70,7 @@ describe('useDebouncedUpdateResource', () => {
         expect(updateSpy).toHaveBeenCalledTimes(1);
         expect(updateSpy).toHaveBeenCalledWith(mockPatient);
       },
-      { timeout: customTimeout + 100}
+      { timeout: customTimeout + 100 }
     );
   });
 
@@ -164,4 +164,3 @@ describe('useDebouncedUpdateResource', () => {
     }
   });
 });
-
