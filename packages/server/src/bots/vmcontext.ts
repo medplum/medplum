@@ -51,7 +51,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require: typeof require !== 'undefined' ? require : createRequire(import.meta.url),
+    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
