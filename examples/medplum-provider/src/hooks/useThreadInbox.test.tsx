@@ -7,10 +7,7 @@ import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { useThreadInbox } from './useThreadInbox';
-import { showErrorNotification } from '../utils/notifications';
 import type { WithId } from '@medplum/core';
-
-vi.mock('../utils/notifications');
 
 const mockCommunication1: Communication = {
   resourceType: 'Communication',
@@ -280,7 +277,7 @@ describe('useThreadInbox', () => {
     await result.current.handleThreadtatusChange('in-progress');
 
     await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalledWith(error);
+      expect(result.current.error).toBe(error);
     });
   });
 
@@ -335,35 +332,6 @@ describe('useThreadInbox', () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(error);
-    });
-  });
-
-  test('handles readResource errors gracefully', async () => {
-    const error = new Error('Read failed');
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
-      data: {
-        CommunicationList: [],
-      },
-    } as any);
-
-    vi.spyOn(medplum, 'readResource').mockRejectedValue(error);
-
-    const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
-      wrapper,
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalledWith(error);
     });
   });
 

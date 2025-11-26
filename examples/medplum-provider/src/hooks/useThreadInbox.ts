@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import { useState, useEffect } from 'react';
 import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { createReference, getReferenceString } from '@medplum/core';
-import { showErrorNotification } from '../utils/notifications';
 
 export interface UseThreadInboxOptions {
   query: string;
@@ -118,7 +116,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
               setSelectedThread(communication);
             }
           } catch (error) {
-            showErrorNotification(error);
+            setError(error as Error);
           }
         }
       } else {
@@ -142,7 +140,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       });
       setSelectedThread(updatedThread);
     } catch (error) {
-      showErrorNotification(error);
+      setError(error as Error);
     }
   };
 

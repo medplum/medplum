@@ -10,7 +10,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { SignAddendum } from './SignAddendum';
 import { ChartNoteStatus } from '../../types/encounter';
-import { showErrorNotification } from '../../utils/notifications';
+import * as notifications from '../../utils/notifications';
 
 const mockEncounter: Encounter = {
   resourceType: 'Encounter',
@@ -196,20 +196,23 @@ describe('SignAddendumCard', () => {
   test('handles errors when loading addendums', async () => {
     const error = new Error('Failed to load addendums');
     vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
+    const errorNotificationSpy = vi.spyOn(notifications, 'showErrorNotification');
 
     await act(async () => {
       setup({ provenances: [mockProvenance] });
     });
 
     await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalledWith(error);
+      expect(errorNotificationSpy).toHaveBeenCalledWith(error);
     });
   });
+
 
   test('handles errors when creating addendum', async () => {
     const user = userEvent.setup();
     const error = new Error('Failed to create addendum');
     vi.spyOn(medplum, 'createResource').mockRejectedValue(error);
+    const errorNotificationSpy = vi.spyOn(notifications, 'showErrorNotification');
 
     await act(async () => {
       setup({ provenances: [mockProvenance] });
@@ -226,7 +229,7 @@ describe('SignAddendumCard', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(showErrorNotification).toHaveBeenCalledWith(error);
+      expect(errorNotificationSpy).toHaveBeenCalledWith(error);
     });
   });
 
