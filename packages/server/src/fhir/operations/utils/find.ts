@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { addMinutes, areIntervalsOverlapping, clamp } from '../../../util/date';
@@ -179,6 +180,29 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
   return result;
 }
 
+/**
+ * Applies overrides from existing Slots to an availability window
+ *
+ * @param availability - Ranges of available time
+ * @param slots - Slot resources to consider
+ * @param range - Interval of time to restrict availability to
+ * @returns Updated availability information
+ */
+export function applyExistingSlots(availability: Interval[], slots: Slot[], range: Interval): Interval[] {
+  const freeSlotIntervals = slots
+    .filter((slot) => slot.status === 'free')
+    .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, range))
+    .filter(isDefined);
+
+  const busySlotIntervals = normalizeIntervals(
+    slots
+      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
+  );
+  const allAvailability = normalizeIntervals(availability.concat(freeSlotIntervals));
+  return removeAvailability(allAvailability, busySlotIntervals);
+}
+
 // Given a date that could have a seconds / milliseconds component, return
 // the input date if it does not have any, and the start of the next minute
 // if it does.
@@ -236,4 +260,33 @@ export function findAlignedSlotTimes(
     end = addMinutes(start, options.durationMinutes);
   }
   return results;
+}
+
+/**
+ * Given scheduling parameters and availability information, compute the slot
+ * times within those availability windows, accounting for things like buffer
+ * time and alignment requirements.
+ *
+ * @param schedulingParameters - The SchedulingParameters definition to use
+ * @param availability - An array of intervals to consider
+ * @returns An array of slot intervals
+ */
+export function findSlotTimes(schedulingParameters: SchedulingParameters, availability: Interval[]): Interval[] {
+  const alignmentOptions = {
+    // Search for slots that are large enough to include the duration with any
+    // buffer before/after included.
+    durationMinutes:
+      schedulingParameters.duration + schedulingParameters.bufferBefore + schedulingParameters.bufferAfter,
+    alignment: schedulingParameters.alignmentInterval,
+    // Shift our search alignment by any `bufferBefore`; Example: if we are
+    // trying to find a slot at :30 with a 10 minute bufferBefore free, we need
+    // to find slots starting at :20 (with the buffer included in the duration)
+    offsetMinutes: schedulingParameters.alignmentOffset - schedulingParameters.bufferBefore,
+  };
+  return availability
+    .flatMap((interval) => findAlignedSlotTimes(interval, alignmentOptions))
+    .map((interval) => ({
+      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
+      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+    }));
 }
