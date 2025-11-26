@@ -47,7 +47,9 @@ import {
   DEFAULT_PING_TIMEOUT,
   HEARTBEAT_PERIOD_MS,
   MAX_MISSED_HEARTBEATS,
+  PRIMARY_DISCONNECT_THRESHOLD_MS,
   RETRY_WAIT_DURATION_MS,
+  STATUS_POLL_INTERVAL_MS,
 } from './constants';
 import { AgentDicomChannel } from './dicom';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
@@ -104,6 +106,9 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
+  autoFailoverMode = false;
+  primaryAgent = true;
+  private statusPollTimer?: NodeJS.Timeout;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel?: LogLevel, options?: AppOptions) {
     App.instance = this;
@@ -116,9 +121,14 @@ export class App {
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
 
-    await this.startWebSocket();
-
     await this.reloadConfig();
+
+    // Check if autoFailover mode is enabled and determine primary/secondary status
+    if (this.autoFailoverMode) {
+      await this.determinePrimaryStatus();
+    }
+
+    await this.startWebSocket();
 
     // We do this after starting WebSockets so that we can send a message if we finished upgrading
     // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
@@ -200,11 +210,22 @@ export class App {
   }
 
   private async startWebSocket(): Promise<void> {
+    // In autoFailover mode, only start heartbeat if we are primary
+    if (this.autoFailoverMode && !this.isPrimary) {
+      this.log.info('Agent is in secondary mode. Skipping WebSocket connection and heartbeat.');
+      return;
+    }
+
     await this.connectWebSocket();
     this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
   private async heartbeat(): Promise<void> {
+    // In autoFailover mode, check status before sending heartbeat
+    if (this.autoFailoverMode && !this.isPrimary) {
+      return;
+    }
+
     this.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
 
     if (!this.webSocket) {
@@ -249,6 +270,11 @@ export class App {
     });
 
     this.webSocket.addEventListener('open', async () => {
+      // In autoFailover mode, check status before connecting
+      if (this.autoFailoverMode) {
+        await this.checkStatusOnReconnect();
+      }
+
       await this.sendToWebSocket({
         type: 'agent:connect:request',
         accessToken: this.medplum.getAccessToken() as string,
@@ -361,6 +387,7 @@ export class App {
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
+    const autoFailover = agent?.setting?.find((setting) => setting.name === 'autoFailover')?.valueBoolean;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -386,6 +413,7 @@ export class App {
 
     this.config = agent;
     this.keepAlive = keepAlive ?? false;
+    this.autoFailoverMode = autoFailover ?? false;
 
     // Determine maxClientsPerRemote: default is 10, but becomes 1 when keepAlive is true (unless explicitly set)
     if (maxClientsPerRemote !== undefined) {
@@ -643,6 +671,11 @@ export class App {
       this.logStatsTimer = undefined;
     }
 
+    if (this.statusPollTimer) {
+      clearInterval(this.statusPollTimer);
+      this.statusPollTimer = undefined;
+    }
+
     if (this.webSocket) {
       this.webSocket.close();
       this.webSocket = undefined;
@@ -667,6 +700,11 @@ export class App {
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
+    // Gate: Don't send messages if we're in secondary mode
+    if (this.autoFailoverMode && !this.isPrimary) {
+      this.log.debug('Skipping message send - agent is in secondary mode');
+      return;
+    }
     this.webSocketQueue.push(message);
     this.startWebSocketWorker();
   }
@@ -986,6 +1024,11 @@ export class App {
   }
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
+    // Gate: Don't send messages if we're in secondary mode
+    if (this.autoFailoverMode && !this.isPrimary) {
+      this.log.debug('Skipping message send - agent is in secondary mode');
+      return;
+    }
     if (!this.webSocket) {
       throw new Error('WebSocket not connected');
     }
@@ -1117,5 +1160,158 @@ export class App {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Checks the Agent/$status endpoint to determine if another agent instance is active.
+   * @returns The agent status information, or undefined if the check fails.
+   */
+  private async checkAgentStatus(): Promise<{ status: string; lastUpdated?: string } | undefined> {
+    try {
+      const response = await this.medplum.get(`Agent/${this.agentId}/$status`);
+      const parameters = response as { parameter?: Array<{ name: string; valueCode?: string; valueInstant?: string }> };
+      const statusParam = parameters.parameter?.find((p) => p.name === 'status');
+      const lastUpdatedParam = parameters.parameter?.find((p) => p.name === 'lastUpdated');
+      return {
+        status: statusParam?.valueCode ?? 'unknown',
+        lastUpdated: lastUpdatedParam?.valueInstant,
+      };
+    } catch (err) {
+      this.log.error(`Failed to check agent status: ${normalizeErrorString(err)}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Determines if this agent should be primary or secondary based on the Agent/$status endpoint.
+   * If status is not active (disconnected/unknown), this agent becomes primary.
+   * Otherwise, this agent becomes secondary and starts polling.
+   */
+  private async determinePrimaryStatus(): Promise<void> {
+    const statusInfo = await this.checkAgentStatus();
+    if (!statusInfo) {
+      // If we can't check status, default to primary
+      this.promoteToPrimary();
+      return;
+    }
+
+    if (statusInfo.status === 'connected') {
+      // Another agent is active, become secondary
+      this.demoteToSecondary();
+    } else {
+      // No active agent, become primary
+      this.promoteToPrimary();
+    }
+  }
+
+  /**
+   * Promotes this agent to primary mode.
+   * Stops status polling and enables normal operation.
+   */
+  private promoteToPrimary(): void {
+    if (this.isPrimary) {
+      return;
+    }
+    this.isPrimary = true;
+    this.log.info('Agent promoted to primary mode');
+    this.stopStatusPolling();
+
+    // Start WebSocket and heartbeat if not already started
+    if (!this.webSocket && !this.heartbeatTimer) {
+      this.startWebSocket().catch((err) => {
+        this.log.error(normalizeErrorString(err));
+      });
+    }
+  }
+
+  /**
+   * Demotes this agent to secondary mode.
+   * Starts status polling and disables normal operation.
+   */
+  private demoteToSecondary(): void {
+    if (!this.isPrimary) {
+      return;
+    }
+    this.isPrimary = false;
+    this.log.info('Agent demoted to secondary mode');
+    this.startStatusPolling();
+
+    // Stop WebSocket and heartbeat
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
+    }
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = undefined;
+    }
+    this.live = false;
+  }
+
+  /**
+   * Starts polling the Agent/$status endpoint to check if primary has disconnected.
+   * If primary is disconnected or status is unknown, promotes this agent to primary.
+   */
+  private startStatusPolling(): void {
+    if (this.statusPollTimer) {
+      return;
+    }
+    this.log.info('Starting status polling for secondary agent');
+    this.statusPollTimer = setInterval(async () => {
+      const statusInfo = await this.checkAgentStatus();
+      if (!statusInfo || statusInfo.status !== 'connected') {
+        // Primary has disconnected or status is unknown, promote to primary
+        this.log.info('Primary agent disconnected. Promoting to primary.');
+        this.promoteToPrimary();
+      } else if (statusInfo.lastUpdated) {
+        // Check if last heartbeat is too old
+        const lastUpdated = new Date(statusInfo.lastUpdated);
+        const now = new Date();
+        const timeSinceLastHeartbeat = now.getTime() - lastUpdated.getTime();
+        if (timeSinceLastHeartbeat > PRIMARY_DISCONNECT_THRESHOLD_MS) {
+          this.log.info('Primary agent heartbeat is stale. Promoting to primary.');
+          this.promoteToPrimary();
+        }
+      }
+    }, STATUS_POLL_INTERVAL_MS);
+  }
+
+  /**
+   * Stops polling the Agent/$status endpoint.
+   */
+  private stopStatusPolling(): void {
+    if (this.statusPollTimer) {
+      clearInterval(this.statusPollTimer);
+      this.statusPollTimer = undefined;
+      this.log.info('Stopped status polling');
+    }
+  }
+
+  /**
+   * Checks agent status on reconnection to determine if we should demote to secondary.
+   * This prevents a demoted primary from taking over once another node has promoted itself.
+   */
+  private async checkStatusOnReconnect(): Promise<void> {
+    if (!this.autoFailoverMode || !this.isPrimary) {
+      return;
+    }
+
+    const statusInfo = await this.checkAgentStatus();
+    if (!statusInfo) {
+      return;
+    }
+
+    // If status shows connected and last heartbeat is recent, demote to secondary
+    if (statusInfo.status === 'connected' && statusInfo.lastUpdated) {
+      const lastUpdated = new Date(statusInfo.lastUpdated);
+      const now = new Date();
+      const timeSinceLastHeartbeat = now.getTime() - lastUpdated.getTime();
+
+      // If another agent is active and heartbeat is recent, demote ourselves
+      if (timeSinceLastHeartbeat <= PRIMARY_DISCONNECT_THRESHOLD_MS) {
+        this.log.info('Another agent is active. Demoting to secondary.');
+        this.demoteToSecondary();
+      }
+    }
   }
 }

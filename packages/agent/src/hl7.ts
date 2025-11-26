@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
+import { ContentType, Hl7Message, Hl7Segment, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
 import { Hl7Server } from '@medplum/hl7';
@@ -231,6 +231,32 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
+      // If agent is in secondary mode, immediately reject with AR/ERR
+      if (this.channel.app.autoFailoverMode && !this.channel.app.isPrimary) {
+        const errMsg = 'Agent is currently in secondary mode';
+        const nack = event.message.buildAck({
+          ackCode: 'AR',
+          errSegment: new Hl7Segment(
+            [
+              'ERR',
+              '', // Error Code and Location (ERR.1) - empty
+              '207', // Error Code (ERR.2.1) - 207 = Application internal error
+              'Application', // Error Code (ERR.2.2) - Application
+              'E', // Severity (ERR.3) - Error
+              errMsg, // Error Location (ERR.4) - error message
+            ],
+            event.message.context
+          ),
+        });
+
+        this.hl7Connection.send(nack);
+
+        // Theoretically if routing is handled properly, we shouldn't be getting messages on the secondary agent
+        // We warn the user that the messages are getting rejected automatically if they do come in on the secondary agent
+        this.channel.log.warn('Rejected message - agent is in secondary mode');
+        return;
+      }
+
       const msgControlId = event.message.getSegment('MSH')?.getField(10)?.toString();
       this.channel.channelLog.info(
         `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
