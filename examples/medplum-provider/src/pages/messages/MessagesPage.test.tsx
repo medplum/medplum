@@ -89,12 +89,18 @@ describe('MessagesPage', () => {
 
     setup('comm-123');
 
-    await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Messages')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
-    await waitFor(() => {
-      expect(screen.getByText('Test Topic')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Test Topic')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 });
