@@ -4,11 +4,18 @@
     "globalsCleanup": "on"
   },
   "transform": {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx|mjs)$": "babel-jest"
   },
-  "moduleFileExtensions": ["ts", "js", "json", "node"],
-  "testMatch": ["**/src/**/*.test.ts"],
+  "moduleFileExtensions": ["ts", "js", "mjs", "json", "node"],
+  "testMatch": ["**/src/**/*.test.ts", "**/scripts/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*"]
+  "collectCoverageFrom": ["**/src/**/*", "**/scripts/**/*.ts"],
+  "transformIgnorePatterns": [],
+  "extensionsToTreatAsEsm": [".ts"],
+  "globals": {
+    "ts-jest": {
+      "useESM": true
+    }
+  }
 }

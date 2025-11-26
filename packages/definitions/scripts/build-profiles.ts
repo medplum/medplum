@@ -1,43 +1,80 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-/* global console */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Get directory path - use environment variable or fallback to cwd-based path
+// This avoids import.meta issues with Jest/Babel transformation
+function getScriptDir(): string {
+  // In test environment or when __dirname is available, use it
+  if (typeof __dirname !== 'undefined') {
+    return __dirname;
+  }
 
-const FSH_GENERATED_DIR = resolve(__dirname, '../dist/fsh-generated/resources');
-const PROFILES_MEDPLUM_PATH = resolve(__dirname, '../dist/fhir/r4/profiles-medplum.json');
+  // Fallback: use process.cwd() relative path
+  // This works for both test and runtime environments
+  return resolve(process.cwd(), 'packages/definitions/scripts');
+}
+
+// Use function call to get paths - evaluated at runtime
+export function getDefaultPaths(): { fshGeneratedDir: string; profilesMedplumPath: string } {
+  const scriptDir = getScriptDir();
+  return {
+    fshGeneratedDir: resolve(scriptDir, '../dist/fsh-generated/resources'),
+    profilesMedplumPath: resolve(scriptDir, '../dist/fhir/r4/profiles-medplum.json'),
+  };
+}
+
+const { fshGeneratedDir: FSH_GENERATED_DIR, profilesMedplumPath: PROFILES_MEDPLUM_PATH } = getDefaultPaths();
+
+interface StructureDefinition {
+  id?: string;
+  url?: string;
+  name?: string;
+  differential?: unknown;
+  snapshot?: unknown;
+  resourceType?: string;
+}
+
+interface BundleEntry {
+  fullUrl?: string;
+  resource?: StructureDefinition;
+}
+
+interface Bundle {
+  resourceType: string;
+  type: string;
+  entry?: BundleEntry[];
+}
 
 /**
  * Removes id and differential properties from a StructureDefinition
  * @param sd - StructureDefinition to clean
  */
-function cleanStructureDefinition(sd) {
+export function cleanStructureDefinition(sd: StructureDefinition): void {
   delete sd.id;
   delete sd.differential;
 }
 
 /**
  * Reads all StructureDefinition JSON files from the fsh-generated directory
+ * @param fshGeneratedDir - Path to the fsh-generated directory (defaults to standard path)
  * @returns Array of StructureDefinition objects
  */
-function readGeneratedStructureDefinitions() {
-  const structureDefinitions = [];
+export function readGeneratedStructureDefinitions(fshGeneratedDir = FSH_GENERATED_DIR): StructureDefinition[] {
+  const structureDefinitions: StructureDefinition[] = [];
 
   try {
-    const files = readdirSync(FSH_GENERATED_DIR);
+    const files = readdirSync(fshGeneratedDir);
     const jsonFiles = files.filter((file) => file.endsWith('.json'));
 
     for (const file of jsonFiles) {
-      const filePath = resolve(FSH_GENERATED_DIR, file);
-      const content = JSON.parse(readFileSync(filePath, 'utf8'));
+      const filePath = resolve(fshGeneratedDir, file);
+      const content = JSON.parse(readFileSync(filePath, 'utf8')) as StructureDefinition | Bundle;
 
       // Handle both single StructureDefinition and Bundle formats
-      if (content.resourceType === 'Bundle' && content.entry) {
+      if (content.resourceType === 'Bundle' && 'entry' in content && content.entry) {
         for (const entry of content.entry) {
           if (entry.resource?.resourceType === 'StructureDefinition') {
             cleanStructureDefinition(entry.resource);
@@ -49,10 +86,14 @@ function readGeneratedStructureDefinitions() {
         structureDefinitions.push(content);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 'ENOENT') {
-      console.warn(`Warning: fsh-generated directory not found at ${FSH_GENERATED_DIR}`);
-      console.warn('Run "npm run build:fsh" first to generate StructureDefinitions');
+      console.warn(`Warning: fsh-generated directory not found at ${fshGeneratedDir}`);
+      console.warn('This usually means SUSHI has not been run yet.');
+      console.warn('Expected FSH setup:');
+      console.warn('  1. FSH source files in: src/fsh/input/fsh/');
+      console.warn('  2. SUSHI config at: src/fsh/sushi-config.yaml');
+      console.warn('  3. Run "npm run build:fsh" to generate StructureDefinitions');
       return [];
     }
     throw error;
@@ -66,13 +107,13 @@ function readGeneratedStructureDefinitions() {
  * @param newStructureDefinitions - Array of StructureDefinition objects to merge
  * @param bundle - Existing Bundle object
  */
-function mergeStructureDefinitions(newStructureDefinitions, bundle) {
+export function mergeStructureDefinitions(newStructureDefinitions: StructureDefinition[], bundle: Bundle): void {
   if (!bundle.entry) {
     bundle.entry = [];
   }
 
   // Create a map of existing entries by URL for quick lookup
-  const existingEntriesMap = new Map();
+  const existingEntriesMap = new Map<string, BundleEntry>();
   for (const entry of bundle.entry) {
     if (entry.resource?.url) {
       existingEntriesMap.set(entry.resource.url, entry);
@@ -106,8 +147,9 @@ function mergeStructureDefinitions(newStructureDefinitions, bundle) {
 
 /**
  * Main function to build and merge profiles
+ * @param profilesMedplumPath - Path to profiles-medplum.json (defaults to standard path)
  */
-function main() {
+export function main(profilesMedplumPath = PROFILES_MEDPLUM_PATH): void {
   console.log('Reading generated StructureDefinitions...');
   const newStructureDefinitions = readGeneratedStructureDefinitions();
 
@@ -119,16 +161,16 @@ function main() {
   console.log(`Found ${newStructureDefinitions.length} StructureDefinition(s) to merge`);
 
   // Ensure the dist directory exists
-  const distDir = dirname(PROFILES_MEDPLUM_PATH);
+  const distDir = dirname(profilesMedplumPath);
   if (!existsSync(distDir)) {
     mkdirSync(distDir, { recursive: true });
   }
 
   // Read existing bundle or create a new one
-  let bundle;
-  if (existsSync(PROFILES_MEDPLUM_PATH)) {
+  let bundle: Bundle;
+  if (existsSync(profilesMedplumPath)) {
     console.log('Reading existing profiles-medplum.json...');
-    bundle = JSON.parse(readFileSync(PROFILES_MEDPLUM_PATH, 'utf8'));
+    bundle = JSON.parse(readFileSync(profilesMedplumPath, 'utf8')) as Bundle;
   } else {
     console.log('Creating new profiles-medplum.json...');
     bundle = {
@@ -142,9 +184,14 @@ function main() {
   mergeStructureDefinitions(newStructureDefinitions, bundle);
 
   console.log('Writing updated profiles-medplum.json...');
-  writeFileSync(PROFILES_MEDPLUM_PATH, JSON.stringify(bundle, null, 2), 'utf8');
+  writeFileSync(profilesMedplumPath, JSON.stringify(bundle, null, 2), 'utf8');
 
   console.log('Done!');
 }
 
-main();
+// Only run main if this file is executed directly (not imported)
+// Check by comparing process.argv[1] with the script path
+// This avoids import.meta which causes issues with Jest/Babel
+if (require.main === module || process.argv[1]?.includes('build-profiles')) {
+  main();
+}
