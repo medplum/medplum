@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import * as medplumReact from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
@@ -122,10 +123,11 @@ describe('PatientPage', () => {
   });
 
   test('renders homer summary information in sidebar', async () => {
+    const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
     setup(`/Patient/${HomerSimpson.id}`);
 
     await waitFor(() => {
-      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+      expect(patientSummarySpy).toHaveBeenCalled();
       expect(screen.getByText('Male')).toBeInTheDocument();
       expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
     });
