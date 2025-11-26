@@ -227,14 +227,8 @@ describe('BillingTab', () => {
     expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
   });
 
-<<<<<<< HEAD
   test('fetches coverage on mount', async () => {
-
-=======
-  it('fetches coverage on mount', async () => {
->>>>>>> 7ecdb68888d8a8e95cc555129c3fc7a811e7f4fe
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
-
     await act(async () => {
       setup();
     });
