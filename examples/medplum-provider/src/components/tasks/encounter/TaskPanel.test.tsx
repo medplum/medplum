@@ -1,34 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskPanel } from './TaskPanel';
 import type { Task } from '@medplum/fhirtypes';
-
-// Mock sub-components
-vi.mock('./TaskQuestionnaireForm', () => ({
-  TaskQuestionnaireForm: () => <div data-testid="task-questionnaire-form">TaskQuestionnaireForm</div>,
-}));
-
-vi.mock('./TaskServiceRequest', () => ({
-  TaskServiceRequest: () => <div data-testid="task-service-request">TaskServiceRequest</div>,
-}));
-
-vi.mock('./SimpleTask', () => ({
-  SimpleTask: () => <div data-testid="simple-task">SimpleTask</div>,
-}));
-
-vi.mock('./TaskStatusPanel', () => ({
-  TaskStatusPanel: ({ onChangeStatus }: { onChangeStatus: (status: string) => void }) => (
-    <div data-testid="task-status-panel">
-      <button onClick={() => onChangeStatus('completed')}>Complete Task</button>
-    </div>
-  ),
-}));
 
 describe('TaskPanel', () => {
   let medplum: MockClient;
@@ -55,59 +35,75 @@ describe('TaskPanel', () => {
     id: 'task-123',
     status: 'in-progress',
     intent: 'order',
+    code: { text: 'Test Task Code' },
+    description: 'Test Task Description',
   };
 
-  it('renders TaskQuestionnaireForm when focus is Questionnaire', () => {
+  test('renders TaskQuestionnaireForm when focus is Questionnaire', async () => {
     const task: Task = {
       ...mockTask,
       focus: { reference: 'Questionnaire/123' },
+      input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: 'Questionnaire/123' } }],
     };
     const onUpdateTask = vi.fn();
+    medplum.readReference = vi.fn().mockResolvedValue({ resourceType: 'Questionnaire', id: '123' });
     setup(task, onUpdateTask);
-    expect(screen.getByTestId('task-questionnaire-form')).toBeInTheDocument();
-    expect(screen.queryByTestId('task-service-request')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('simple-task')).not.toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Questionnaire/123' });
+    });
   });
 
-  it('renders TaskServiceRequest when focus is ServiceRequest', () => {
+  test('renders TaskServiceRequest when focus is ServiceRequest', async () => {
     const task: Task = {
       ...mockTask,
       focus: { reference: 'ServiceRequest/123' },
+      input: [{ type: { text: 'ServiceRequest' }, valueReference: { reference: 'ServiceRequest/123' } }],
     };
     const onUpdateTask = vi.fn();
-    setup(task, onUpdateTask);
-    expect(screen.getByTestId('task-service-request')).toBeInTheDocument();
-    expect(screen.queryByTestId('task-questionnaire-form')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('simple-task')).not.toBeInTheDocument();
-  });
-
-  it('renders SimpleTask when focus is neither Questionnaire nor ServiceRequest', () => {
-    const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
-    expect(screen.getByTestId('simple-task')).toBeInTheDocument();
-    expect(screen.queryByTestId('task-questionnaire-form')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('task-service-request')).not.toBeInTheDocument();
-  });
-
-  it('renders TaskStatusPanel', () => {
-    const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
-    expect(screen.getByTestId('task-status-panel')).toBeInTheDocument();
-  });
-
-  it('updates task status when changed in TaskStatusPanel', async () => {
-    const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
-
-    const updateResourceSpy = vi.spyOn(medplum, 'updateResource');
-
-    const completeButton = screen.getByText('Complete Task');
-    await act(async () => {
-      fireEvent.click(completeButton);
+    medplum.readReference = vi.fn().mockResolvedValue({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      code: { text: 'Test Service Request' },
     });
+    setup(task, onUpdateTask);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Service Request')).toBeInTheDocument();
+    });
+  });
+
+  test('renders SimpleTask when focus is neither Questionnaire nor ServiceRequest', () => {
+    const onUpdateTask = vi.fn();
+    setup(mockTask, onUpdateTask);
+    expect(screen.getByText('Test Task Code')).toBeInTheDocument();
+    expect(screen.getByText('Test Task Description')).toBeInTheDocument();
+  });
+
+  test('renders TaskStatusPanel', () => {
+    const onUpdateTask = vi.fn();
+    setup(mockTask, onUpdateTask);
+    expect(screen.getByText('Task Status:')).toBeInTheDocument();
+  });
+
+  test('updates task status when changed in TaskStatusPanel', async () => {
+    const user = userEvent.setup();
+    const onUpdateTask = vi.fn();
+    medplum.updateResource = vi.fn().mockResolvedValue({ ...mockTask, status: 'completed' });
+    setup(mockTask, onUpdateTask);
+
+    const statusBadge = screen.getByText('In Progress');
+    await user.click(statusBadge);
 
     await waitFor(() => {
-      expect(updateResourceSpy).toHaveBeenCalledWith(
+      const completedOption = screen.getByText('Completed');
+      expect(completedOption).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Completed'));
+
+    await waitFor(() => {
+      expect(medplum.updateResource).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'task-123',
           status: 'completed',

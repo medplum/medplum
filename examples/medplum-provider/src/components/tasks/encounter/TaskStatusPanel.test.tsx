@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskStatusPanel } from './TaskStatusPanel';
 
 const mockTask: Task = {
@@ -35,22 +35,22 @@ describe('TaskStatusPanel', () => {
     );
   };
 
-  it('renders task status label', () => {
+  test('renders task status label', () => {
     setup(mockTask);
     expect(screen.getByText('Task Status:')).toBeInTheDocument();
   });
 
-  it('renders formatted task status when enabled', () => {
+  test('renders formatted task status when enabled', () => {
     setup(mockTask, true);
     expect(screen.getByText('In Progress')).toBeInTheDocument();
   });
 
-  it('renders formatted task status when disabled', () => {
+  test('renders formatted task status when disabled', () => {
     setup(mockTask, false);
     expect(screen.getByText('In Progress')).toBeInTheDocument();
   });
 
-  it('formats status text correctly for different statuses', () => {
+  test('formats status text correctly for different statuses', () => {
     const statuses: Task['status'][] = ['in-progress', 'on-hold', 'completed', 'cancelled', 'ready'];
     statuses.forEach((status) => {
       const task = { ...mockTask, status };
@@ -61,18 +61,18 @@ describe('TaskStatusPanel', () => {
     });
   });
 
-  it('shows edit button when enabled', () => {
+  test('shows edit button when enabled', () => {
     setup(mockTask, true);
     const editButton = screen.getByRole('button', { name: 'Edit Task' });
     expect(editButton).toBeInTheDocument();
   });
 
-  it('does not show edit button when disabled', () => {
+  test('does not show edit button when disabled', () => {
     setup(mockTask, false);
     expect(screen.queryByRole('button', { name: 'Edit Task' })).not.toBeInTheDocument();
   });
 
-  it('calls onActionButtonClicked when edit button is clicked', async () => {
+  test('calls onActionButtonClicked when edit button is clicked', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 
@@ -82,7 +82,7 @@ describe('TaskStatusPanel', () => {
     expect(mockOnActionButtonClicked).toHaveBeenCalledTimes(1);
   });
 
-  it('shows menu dropdown when badge is clicked', async () => {
+  test('shows menu dropdown when badge is clicked', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 
@@ -100,7 +100,7 @@ describe('TaskStatusPanel', () => {
     });
   });
 
-  it('calls onChangeStatus when menu item is clicked', async () => {
+  test('calls onChangeStatus when menu item is clicked', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 
@@ -117,7 +117,7 @@ describe('TaskStatusPanel', () => {
     expect(mockOnChangeStatus).toHaveBeenCalledWith('completed');
   });
 
-  it('shows checkmark for current status in menu', async () => {
+  test('shows checkmark for current status in menu', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 
@@ -133,7 +133,7 @@ describe('TaskStatusPanel', () => {
     });
   });
 
-  it('handles all status options in menu', async () => {
+  test('handles all status options in menu', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 
@@ -152,7 +152,7 @@ describe('TaskStatusPanel', () => {
     });
   });
 
-  it('calls onChangeStatus with correct status for each menu item', async () => {
+  test('calls onChangeStatus with correct status for each menu item', async () => {
     const user = userEvent.setup();
     setup(mockTask, true);
 

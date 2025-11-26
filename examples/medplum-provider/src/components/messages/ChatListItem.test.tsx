@@ -6,7 +6,7 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ChatListItem } from './ChatListItem';
 import { createReference } from '@medplum/core';
 
@@ -60,7 +60,7 @@ describe('ChatListItem', () => {
     );
   };
 
-  it('renders topic with patient name', async () => {
+  test('renders topic with patient name', async () => {
     setup(mockTopic, mockLastCommunication, false);
 
     await waitFor(() => {
@@ -68,7 +68,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('renders topic text when available', async () => {
+  test('renders topic text when available', async () => {
     setup(mockTopic, mockLastCommunication, false);
 
     await waitFor(() => {
@@ -76,7 +76,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('renders last message when topic text is not available', async () => {
+  test('renders last message when topic text is not available', async () => {
     const topicWithoutText: Communication = {
       ...mockTopic,
       topic: undefined,
@@ -88,7 +88,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('truncates long messages when topic text is not available', async () => {
+  test('truncates long messages when topic text is not available', async () => {
     const longMessage =
       'This is a very long message from Dr. Smith that is meant to exceed one hundred characters in length. It just keeps going and going beyond the limit of what is shown in the UI preview.';
     const topicWithoutText: Communication = {
@@ -106,7 +106,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('shows topic text when available, even without last communication', async () => {
+  test('shows topic text when available, even without last communication', async () => {
     setup(mockTopic, undefined, false);
 
     await waitFor(() => {
@@ -114,7 +114,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('displays formatted date when last communication exists', async () => {
+  test('displays formatted date when last communication exists', async () => {
     setup(mockTopic, mockLastCommunication, false);
 
     await waitFor(() => {
@@ -124,7 +124,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('applies selected class when isSelected is true', async () => {
+  test('applies selected class when isSelected is true', async () => {
     setup(mockTopic, mockLastCommunication, true);
 
     await waitFor(() => {
@@ -133,7 +133,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('generates correct link from onSelectedItem', async () => {
+  test('generates correct link from onSelectedItem', async () => {
     setup(mockTopic, mockLastCommunication, false);
 
     await waitFor(() => {
@@ -142,7 +142,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('handles message without sender display', async () => {
+  test('handles message without sender display', async () => {
     const commWithoutSender: Communication = {
       ...mockLastCommunication,
       sender: undefined,
@@ -154,7 +154,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  it('handles short messages without truncation', async () => {
+  test('handles short messages without truncation', async () => {
     const shortMessage: Communication = {
       ...mockLastCommunication,
       payload: [{ contentString: 'Short message' }],

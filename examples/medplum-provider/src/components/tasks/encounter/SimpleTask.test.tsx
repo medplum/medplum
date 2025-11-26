@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { SimpleTask } from './SimpleTask';
 import type { Task } from '@medplum/fhirtypes';
 import { MantineProvider } from '@mantine/core';
@@ -24,13 +24,13 @@ describe('SimpleTask', () => {
     );
   };
 
-  it('renders task details correctly', () => {
+  test('renders task details correctly', () => {
     setup(mockTask);
     expect(screen.getByText('Test Task Code')).toBeInTheDocument();
     expect(screen.getByText('Test Task Description')).toBeInTheDocument();
   });
 
-  it('renders View Service Request button when focus is ServiceRequest', () => {
+  test('renders View Service Request button when focus is ServiceRequest', () => {
     const taskWithFocus: Task = {
       ...mockTask,
       focus: { reference: 'ServiceRequest/123' },
@@ -40,7 +40,7 @@ describe('SimpleTask', () => {
     expect(screen.getByText('View Service Request').closest('a')).toHaveAttribute('href', '/ServiceRequest/123');
   });
 
-  it('does not render View Service Request button when focus is not ServiceRequest', () => {
+  test('does not render View Service Request button when focus is not ServiceRequest', () => {
     setup(mockTask);
     expect(screen.queryByText('View Service Request')).not.toBeInTheDocument();
   });

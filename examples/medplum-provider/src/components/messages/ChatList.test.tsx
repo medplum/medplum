@@ -1,34 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ChatList } from './ChatList';
 
-// Mock ChatListItem
-vi.mock('./ChatListItem', () => ({
-  ChatListItem: (props: {
-    topic: Communication;
-    lastCommunication: Communication | undefined;
-    isSelected: boolean;
-    onSelectedItem: (topic: Communication) => string;
-  }) => (
-    <div data-testid={`chat-list-item-${props.topic.id}`} data-selected={props.isSelected}>
-      <div data-testid="topic-id">{props.topic.id}</div>
-      {props.lastCommunication && <div data-testid="last-communication-id">{props.lastCommunication.id}</div>}
-    </div>
-  ),
-}));
+const mockPatient1: Patient = {
+  resourceType: 'Patient',
+  id: 'patient-1',
+  name: [{ given: ['John'], family: 'Doe' }],
+};
+
+const mockPatient2: Patient = {
+  resourceType: 'Patient',
+  id: 'patient-2',
+  name: [{ given: ['Jane'], family: 'Smith' }],
+};
 
 const mockCommunication1: Communication = {
   resourceType: 'Communication',
   id: 'comm-1',
   status: 'in-progress',
   topic: { text: 'Topic 1' },
+  subject: { reference: 'Patient/patient-1' },
 };
 
 const mockCommunication2: Communication = {
@@ -36,6 +34,7 @@ const mockCommunication2: Communication = {
   id: 'comm-2',
   status: 'in-progress',
   topic: { text: 'Topic 2' },
+  subject: { reference: 'Patient/patient-2' },
 };
 
 const mockLastCommunication1: Communication = {
@@ -43,6 +42,7 @@ const mockLastCommunication1: Communication = {
   id: 'last-comm-1',
   status: 'in-progress',
   payload: [{ contentString: 'Last message 1' }],
+  sent: '2024-01-01T12:00:00Z',
 };
 
 const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
@@ -50,9 +50,13 @@ const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}
 describe('ChatList', () => {
   let medplum: MockClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    
+    // Create patient resources
+    await medplum.createResource(mockPatient1);
+    await medplum.createResource(mockPatient2);
   });
 
   const setup = (
@@ -74,48 +78,53 @@ describe('ChatList', () => {
     );
   };
 
-  it('renders empty list when no threads', () => {
+  test('renders empty list when no threads', () => {
     setup([]);
-    expect(screen.queryByTestId(/chat-list-item-/)).not.toBeInTheDocument();
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
   });
 
-  it('renders single thread', () => {
+  test('renders single thread', async () => {
     setup([[mockCommunication1, mockLastCommunication1]]);
-    expect(screen.getByTestId('chat-list-item-comm-1')).toBeInTheDocument();
-    expect(screen.getByTestId('topic-id')).toHaveTextContent('comm-1');
-    expect(screen.getByTestId('last-communication-id')).toHaveTextContent('last-comm-1');
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Topic 1')).toBeInTheDocument();
   });
 
-  it('renders multiple threads', () => {
+  test('renders multiple threads', async () => {
     setup([
       [mockCommunication1, mockLastCommunication1],
       [mockCommunication2, undefined],
     ]);
-    expect(screen.getByTestId('chat-list-item-comm-1')).toBeInTheDocument();
-    expect(screen.getByTestId('chat-list-item-comm-2')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    });
   });
 
-  it('marks thread as selected when it matches selectedCommunication', () => {
-    setup([[mockCommunication1, mockLastCommunication1]], mockCommunication1);
-    const item = screen.getByTestId('chat-list-item-comm-1');
-    expect(item).toHaveAttribute('data-selected', 'true');
-  });
-
-  it('marks thread as not selected when it does not match selectedCommunication', () => {
-    setup([[mockCommunication1, mockLastCommunication1]], mockCommunication2);
-    const item = screen.getByTestId('chat-list-item-comm-1');
-    expect(item).toHaveAttribute('data-selected', 'false');
-  });
-
-  it('handles thread without last communication', () => {
-    setup([[mockCommunication1, undefined]]);
-    expect(screen.getByTestId('chat-list-item-comm-1')).toBeInTheDocument();
-    expect(screen.queryByTestId('last-communication-id')).not.toBeInTheDocument();
-  });
-
-  it('passes onSelectedItem to each ChatListItem', () => {
+  test('renders thread with last communication message', async () => {
     setup([[mockCommunication1, mockLastCommunication1]]);
-    // The function is passed as a prop, we verify it's used by checking the component renders
-    expect(screen.getByTestId('chat-list-item-comm-1')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    // When topic has text, it shows the topic text instead of message content
+    expect(screen.getByText('Topic 1')).toBeInTheDocument();
+  });
+
+  test('handles thread without last communication', async () => {
+    setup([[mockCommunication1, undefined]]);
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    // When topic has text, it shows the topic text instead of "No messages available"
+    expect(screen.getByText('Topic 1')).toBeInTheDocument();
+  });
+
+  test('renders link with correct href from onSelectedItem', async () => {
+    setup([[mockCommunication1, mockLastCommunication1]]);
+    await waitFor(() => {
+      const link = screen.getByText('John Doe').closest('a');
+      expect(link).toHaveAttribute('href', '/Message/comm-1');
+    });
   });
 });

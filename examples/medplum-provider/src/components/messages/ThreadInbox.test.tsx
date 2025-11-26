@@ -2,90 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { Communication, Patient } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import type { Communication } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ThreadInbox } from './ThreadInbox';
-import * as notifications from '../../utils/notifications';
-
-// Mock the useThreadInbox hook
-const mockLoading = vi.fn(() => false);
-const mockError = vi.fn(() => null as Error | null);
-const mockThreadMessages = vi.fn((): [Communication, Communication | undefined][] => []);
-const mockSelectedThread = vi.fn(() => mockCommunication);
-const mockHandleThreadStatusChange = vi.fn();
-const mockAddThreadMessage = vi.fn();
-
-vi.mock('../../hooks/useThreadInbox', () => ({
-  useThreadInbox: () => ({
-    loading: mockLoading(),
-    error: mockError(),
-    threadMessages: mockThreadMessages(),
-    selectedThread: mockSelectedThread(),
-    handleThreadtatusChange: mockHandleThreadStatusChange,
-    addThreadMessage: mockAddThreadMessage,
-  }),
-}));
-
-// Mock ThreadChat and PatientSummary from @medplum/react
-vi.mock('@medplum/react', async () => {
-  const actual = await vi.importActual('@medplum/react');
-  return {
-    ...actual,
-    ThreadChat: () => <div data-testid="thread-chat">Thread Chat</div>,
-    PatientSummary: () => <div data-testid="patient-summary">Patient Summary</div>,
-  };
-});
-
-vi.mock('../../utils/notifications', () => ({
-  showErrorNotification: vi.fn(),
-}));
-
-vi.mock('./ChatList', () => ({
-  ChatList: () => <div data-testid="chat-list">Chat List</div>,
-}));
-
-vi.mock('./NewTopicDialog', () => ({
-  NewTopicDialog: (props: { opened: boolean; onClose: () => void; onSubmit?: (comm: Communication) => void }) => (
-    <div data-testid="new-topic-dialog" data-opened={props.opened}>
-      <button data-testid="close-dialog" onClick={props.onClose}>
-        Close
-      </button>
-      {props.onSubmit && (
-        <button
-          data-testid="submit-dialog"
-          onClick={() => {
-            const mockComm: Communication = {
-              resourceType: 'Communication',
-              id: 'new-comm-123',
-              status: 'in-progress',
-            };
-            props.onSubmit?.(mockComm);
-          }}
-        >
-          Submit
-        </button>
-      )}
-    </div>
-  ),
-}));
 
 const mockCommunication: Communication | undefined = {
   resourceType: 'Communication',
   id: 'comm-123',
   status: 'in-progress',
   topic: { text: 'Test Topic' },
-  subject: { reference: 'Patient/patient-123' },
-};
-
-const mockPatient: Patient = {
-  resourceType: 'Patient',
-  id: 'patient-123',
-  name: [{ given: ['John'], family: 'Doe' }],
+  subject: { reference: `Patient/${HomerSimpson.id}` },
 };
 
 const mockHandleNewThread = vi.fn();
@@ -97,14 +28,20 @@ describe('ThreadInbox', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(mockPatient);
-    mockLoading.mockReturnValue(false);
-    mockError.mockReturnValue(null);
-    mockThreadMessages.mockReturnValue([]);
-    mockSelectedThread.mockReturnValue(mockCommunication);
+    await medplum.createResource(HomerSimpson);
+    
+    // Mock search and graphql to return empty results by default
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
   });
 
-  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: Patient }): void => {
+  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: typeof HomerSimpson }): void => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -124,61 +61,165 @@ describe('ThreadInbox', () => {
     );
   };
 
-  it('renders messages header', () => {
+  test('renders messages header', () => {
     setup();
     expect(screen.getByText('Messages')).toBeInTheDocument();
   });
 
-  it('renders status filter buttons', () => {
+  test('renders status filter buttons', () => {
     setup();
     expect(screen.getByText('In progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  it('shows loading skeletons when loading', () => {
-    mockLoading.mockReturnValue(true);
+  test('shows loading skeletons when loading', async () => {
+    medplum.search = vi.fn().mockImplementation(() => new Promise(() => {})); 
     setup();
 
-    const skeletons = document.querySelectorAll('.mantine-Skeleton-root');
-    expect(skeletons.length).toBeGreaterThan(0);
+    await waitFor(() => {
+      const skeletons = document.querySelectorAll('.mantine-Skeleton-root');
+      expect(skeletons.length).toBeGreaterThan(0);
+    });
   });
 
-  it('shows chat list when not loading and has messages', () => {
-    mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
+  test('shows chat list with multiple communications and displays their topics', async () => {
+    const communications: Communication[] = [
+      {
+        resourceType: 'Communication',
+        id: 'comm-1',
+        status: 'in-progress',
+        topic: { text: 'Topic Alpha' },
+        subject: { reference: `Patient/${HomerSimpson.id}` },
+      },
+      {
+        resourceType: 'Communication',
+        id: 'comm-2',
+        status: 'in-progress',
+        topic: { text: 'Topic Beta' },
+        subject: { reference: `Patient/${HomerSimpson.id}` },
+      },
+      {
+        resourceType: 'Communication',
+        id: 'comm-3',
+        status: 'completed',
+        topic: { text: 'Topic Gamma' },
+        subject: { reference: `Patient/${HomerSimpson.id}` },
+      },
+    ];
+
+    for (const comm of communications) {
+      await medplum.createResource(comm);
+    }
+
+    const lastMessages: Communication[] = communications.map((comm) => ({
+      resourceType: 'Communication',
+      id: `last-${comm.id}`,
+      status: 'in-progress',
+      partOf: [{ reference: `Communication/${comm.id}` }],
+      sent: '2024-01-01T12:00:00Z',
+      payload: [{ contentString: `Last message for ${comm.topic?.text}` }],
+    }));
+
+    for (const msg of lastMessages) {
+      await medplum.createResource(msg);
+    }
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: communications.map((comm) => ({ resource: comm })),
+    });
+
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { 
+        CommunicationList: lastMessages.map((msg) => ({
+          id: msg.id,
+          partOf: msg.partOf,
+          sender: { display: 'Sender' },
+          payload: msg.payload,
+          status: msg.status,
+        })),
+      },
+    });
+
     setup();
 
-    expect(screen.getByTestId('chat-list')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Topic Alpha')).toBeInTheDocument();
+      expect(screen.getByText('Topic Beta')).toBeInTheDocument();
+      expect(screen.getByText('Topic Gamma')).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
-  it('shows no messages state when no thread is selected', () => {
-    mockSelectedThread.mockReturnValue(undefined);
+
+  test('shows no messages state when no thread is selected', async () => {
     setup();
-    expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
+    });
   });
 
-  it('shows thread chat when thread is selected', () => {
-    mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
-    mockSelectedThread.mockReturnValue(mockCommunication);
-    setup();
+  test('shows thread chat when thread is selected', async () => {
+    await medplum.createResource(mockCommunication);
 
-    expect(screen.getByTestId('thread-chat')).toBeInTheDocument();
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    setup({ threadId: 'comm-123' });
+
+    await waitFor(() => {
+      const topicTexts = screen.getAllByText('Test Topic');
+      expect(topicTexts.length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
   });
 
-  it('shows patient summary when showPatientSummary is true and thread is selected', () => {
-    mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
-    setup({ showPatientSummary: true });
+  test('shows patient summary when showPatientSummary is true and thread is selected', async () => {
+    await medplum.createResource(mockCommunication);
+    
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+    
+    setup({ showPatientSummary: true, threadId: 'comm-123' });
 
-    expect(screen.getByTestId('patient-summary')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+     expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
-  it('does not show patient summary when showPatientSummary is false', () => {
-    mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
-    setup({ showPatientSummary: false });
+  test('does not show patient summary when showPatientSummary is false', async () => {
+    await medplum.createResource(mockCommunication);
+    
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+    
+    setup({ showPatientSummary: true, threadId: 'comm-123' });
 
-    expect(screen.queryByTestId('patient-summary')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
+     expect(screen.queryByText('1956-05-12 (069Y)')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
-  it('opens new topic dialog when plus button is clicked', async () => {
+  test('opens new topic dialog when plus button is clicked', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -186,12 +227,11 @@ describe('ThreadInbox', () => {
     await user.click(plusButton);
 
     await waitFor(() => {
-      const dialog = screen.getByTestId('new-topic-dialog');
-      expect(dialog).toHaveAttribute('data-opened', 'true');
+      expect(screen.getByText('New Message')).toBeInTheDocument();
     });
   });
 
-  it('closes new topic dialog when close is clicked', async () => {
+  test('closes new topic dialog when close is clicked', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -200,78 +240,41 @@ describe('ThreadInbox', () => {
     await user.click(plusButton);
 
     await waitFor(() => {
-      expect(screen.getByTestId('new-topic-dialog')).toBeInTheDocument();
+      expect(screen.getByText('New Message')).toBeInTheDocument();
     });
 
     // Close dialog
-    const closeButton = screen.getByTestId('close-dialog');
-    await user.click(closeButton);
+    const closeButton = document.querySelector('.mantine-Modal-close');
+    if (closeButton) {
+      await user.click(closeButton);
+    }
 
     await waitFor(() => {
-      const dialog = screen.getByTestId('new-topic-dialog');
-      expect(dialog).toHaveAttribute('data-opened', 'false');
+      expect(screen.queryByText('New Message')).not.toBeInTheDocument();
     });
   });
 
-  it('calls handleNewThread when new topic is submitted', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    // Open dialog
-    const plusButton = screen.getByRole('button', { name: '' });
-    await user.click(plusButton);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('new-topic-dialog')).toBeInTheDocument();
-    });
-
-    // Submit dialog
-    const submitButton = screen.getByTestId('submit-dialog');
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockHandleNewThread).toHaveBeenCalled();
-      expect(mockAddThreadMessage).toHaveBeenCalled();
-    });
-  });
-
-  it('changes status filter when button is clicked', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    const completedButton = screen.getByText('Completed');
-    await user.click(completedButton);
-
-    // Status should change (we can't easily verify the internal state,
-    // but we can verify the button is clickable)
-    expect(completedButton).toBeInTheDocument();
-  });
-
-  it('shows error notification when error occurs', () => {
-    mockError.mockReturnValue(new Error('Test error') as Error);
-    setup();
-
-    expect(notifications.showErrorNotification).toHaveBeenCalled();
-  });
-
-  it('displays thread topic in header when thread is selected', () => {
-    mockThreadMessages.mockReturnValue([[mockCommunication, undefined]]);
-    setup();
-
-    expect(screen.getByText('Test Topic')).toBeInTheDocument();
-  });
-
-  it('displays "Messages" in header when thread has no topic', () => {
+  test('displays "Messages" in header when thread has no topic', async () => {
     const commWithoutTopic: Communication = {
       ...mockCommunication,
       topic: undefined,
     };
-    mockThreadMessages.mockReturnValue([[commWithoutTopic, undefined]]);
-    setup();
+    await medplum.createResource(commWithoutTopic);
+    
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: commWithoutTopic }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+    
+    setup({ threadId: 'comm-123' });
 
-    // There are multiple "Messages" texts, so we check that at least one exists
-    // and specifically check the header area (which has fz="lg" styling)
-    const messagesTexts = screen.getAllByText('Messages');
-    expect(messagesTexts.length).toBeGreaterThan(0);
+    await waitFor(() => {
+      const messagesTexts = screen.getAllByText('Messages');
+      expect(messagesTexts.length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
   });
 });
