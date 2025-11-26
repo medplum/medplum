@@ -231,11 +231,11 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
-      // If agent is in secondary mode, immediately reject with AR/ERR
-      if (this.channel.app.autoFailoverMode && !this.channel.app.isPrimary) {
+      // If agent is in secondary mode, immediately reject with AE/ERR
+      if (this.channel.app.autoFailoverMode && !this.channel.app.primaryAgent) {
         const errMsg = 'Agent is currently in secondary mode';
         const nack = event.message.buildAck({
-          ackCode: 'AR',
+          ackCode: 'AE',
           errSegment: new Hl7Segment(
             [
               'ERR',

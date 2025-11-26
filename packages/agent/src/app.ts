@@ -211,7 +211,7 @@ export class App {
 
   private async startWebSocket(): Promise<void> {
     // In autoFailover mode, only start heartbeat if we are primary
-    if (this.autoFailoverMode && !this.isPrimary) {
+    if (this.autoFailoverMode && !this.primaryAgent) {
       this.log.info('Agent is in secondary mode. Skipping WebSocket connection and heartbeat.');
       return;
     }
@@ -222,7 +222,7 @@ export class App {
 
   private async heartbeat(): Promise<void> {
     // In autoFailover mode, check status before sending heartbeat
-    if (this.autoFailoverMode && !this.isPrimary) {
+    if (this.autoFailoverMode && !this.primaryAgent) {
       return;
     }
 
@@ -701,7 +701,7 @@ export class App {
 
   addToWebSocketQueue(message: AgentMessage): void {
     // Gate: Don't send messages if we're in secondary mode
-    if (this.autoFailoverMode && !this.isPrimary) {
+    if (this.autoFailoverMode && !this.primaryAgent) {
       this.log.debug('Skipping message send - agent is in secondary mode');
       return;
     }
@@ -1025,7 +1025,7 @@ export class App {
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
     // Gate: Don't send messages if we're in secondary mode
-    if (this.autoFailoverMode && !this.isPrimary) {
+    if (this.autoFailoverMode && !this.primaryAgent) {
       this.log.debug('Skipping message send - agent is in secondary mode');
       return;
     }
@@ -1209,10 +1209,10 @@ export class App {
    * Stops status polling and enables normal operation.
    */
   private promoteToPrimary(): void {
-    if (this.isPrimary) {
+    if (this.primaryAgent) {
       return;
     }
-    this.isPrimary = true;
+    this.primaryAgent = true;
     this.log.info('Agent promoted to primary mode');
     this.stopStatusPolling();
 
@@ -1229,10 +1229,10 @@ export class App {
    * Starts status polling and disables normal operation.
    */
   private demoteToSecondary(): void {
-    if (!this.isPrimary) {
+    if (!this.primaryAgent) {
       return;
     }
-    this.isPrimary = false;
+    this.primaryAgent = false;
     this.log.info('Agent demoted to secondary mode');
     this.startStatusPolling();
 
@@ -1292,7 +1292,7 @@ export class App {
    * This prevents a demoted primary from taking over once another node has promoted itself.
    */
   private async checkStatusOnReconnect(): Promise<void> {
-    if (!this.autoFailoverMode || !this.isPrimary) {
+    if (!this.autoFailoverMode || !this.primaryAgent) {
       return;
     }
 
