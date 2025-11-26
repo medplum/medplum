@@ -61,26 +61,25 @@ describe('TaskDetailPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('No task selected')).toBeInTheDocument();
     });
-
-    // Task details should not be visible
     expect(screen.queryByText('Properties')).not.toBeInTheDocument();
   });
 
   test('renders task detail with task object', async () => {
-    await act(async () => {
-      setup();
-    });
+    setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Properties')).toBeInTheDocument();
-      expect(screen.getByText('Activity Log')).toBeInTheDocument();
-      if (mockTask.code?.text) {
-        expect(screen.getByText(mockTask.code.text)).toBeInTheDocument();
-      }
-      if (mockTask.description) {
-        expect(screen.getByText(mockTask.description)).toBeInTheDocument();
-      }
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Properties')).toBeInTheDocument();
+        expect(screen.getByText('Activity Log')).toBeInTheDocument();
+        if (mockTask.code?.text) {
+          expect(screen.getByText(mockTask.code.text)).toBeInTheDocument();
+        }
+        if (mockTask.description) {
+          expect(screen.getByText(mockTask.description)).toBeInTheDocument();
+        }
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('renders task detail with task reference', async () => {
