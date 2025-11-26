@@ -126,10 +126,9 @@ describe('PatientPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByText('Male')).toBeInTheDocument();
+      expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Male')).toBeInTheDocument();
-    expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
   });
 
   test('handles empty pathname correctly', async () => {
