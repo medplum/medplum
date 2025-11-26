@@ -1169,7 +1169,7 @@ export class App {
   private async checkAgentStatus(): Promise<{ status: string; lastUpdated?: string } | undefined> {
     try {
       const response = await this.medplum.get(`Agent/${this.agentId}/$status`, { cache: 'reload' });
-      const parameters = response as { parameter?: Array<{ name: string; valueCode?: string; valueInstant?: string }> };
+      const parameters = response as { parameter?: { name: string; valueCode?: string; valueInstant?: string }[] };
       const statusParam = parameters.parameter?.find((p) => p.name === 'status');
       const lastUpdatedParam = parameters.parameter?.find((p) => p.name === 'lastUpdated');
       return {
@@ -1259,7 +1259,7 @@ export class App {
     this.log.info('Starting status polling for secondary agent');
     this.statusPollTimer = setInterval(async () => {
       const statusInfo = await this.checkAgentStatus();
-      if (!statusInfo || statusInfo.status !== 'connected') {
+      if (statusInfo?.status !== 'connected') {
         // Primary has disconnected or status is unknown, promote to primary
         this.log.info('Primary agent disconnected. Promoting to primary.');
         this.promoteToPrimary();
