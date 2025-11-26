@@ -43,7 +43,7 @@ describe('PatientPage', () => {
   test('shows loader when patient is loading', async () => {
     // Use a non-existent patient ID to simulate loading
     setup('/Patient/non-existent-patient');
-    
+
     await waitFor(() => {
       const loader = document.querySelector('.mantine-Loader-root');
       expect(loader).toBeInTheDocument();
@@ -111,7 +111,6 @@ describe('PatientPage', () => {
     expect(screen.queryByText('Timeline')).not.toBeInTheDocument();
   });
 
-
   test('defaults to timeline tab when URL does not match any tab', async () => {
     setup(`/Patient/${HomerSimpson.id}/unknown-path`);
 
@@ -153,4 +152,3 @@ describe('PatientPage', () => {
     });
   });
 });
-
