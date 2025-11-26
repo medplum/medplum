@@ -162,5 +162,4 @@ describe('VisitDetailsPanel', () => {
     const localTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
     expect(checkoutInput).toHaveValue(localTimeString);
   });
-
 });
