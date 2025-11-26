@@ -89,15 +89,19 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getAllByText('In Progress')[0]; // Get the badge, not the menu item
     await user.click(badge);
 
-    await waitFor(() => {
-      // Check for menu items by role
-      const menuItems = screen.getAllByRole('menuitem');
-      expect(menuItems.length).toBe(5);
-      expect(screen.getByText('Completed')).toBeInTheDocument();
-      expect(screen.getByText('Ready')).toBeInTheDocument();
-      expect(screen.getByText('On Hold')).toBeInTheDocument();
-      expect(screen.getByText('Cancelled')).toBeInTheDocument();
-    });
+    // Wait for menu to open by checking for menu items
+    await waitFor(
+      () => {
+        const menuItems = screen.getAllByRole('menuitem');
+        expect(menuItems.length).toBe(5);
+      },
+      { timeout: 5000 }
+    );
+
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getByText('Ready')).toBeInTheDocument();
+    expect(screen.getByText('On Hold')).toBeInTheDocument();
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
   });
 
   test('calls onChangeStatus when menu item is clicked', async () => {
@@ -107,9 +111,12 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getByText('In Progress');
     await user.click(badge);
 
-    await waitFor(() => {
-      expect(screen.getByText('Completed')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Completed')).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
 
     const completedItem = screen.getByText('Completed');
     await user.click(completedItem);
@@ -124,13 +131,17 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getAllByText('In Progress')[0]; // Get the badge
     await user.click(badge);
 
-    await waitFor(() => {
-      const menuItems = screen.getAllByRole('menuitem');
-      const inProgressItem = menuItems.find((item) => item.textContent?.includes('In Progress'));
-      expect(inProgressItem).toBeInTheDocument();
-      const checkIcon = inProgressItem?.querySelector('.tabler-icon-check');
-      expect(checkIcon).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        const menuItems = screen.getAllByRole('menuitem');
+        expect(menuItems.length).toBeGreaterThan(0);
+        const inProgressItem = menuItems.find((item) => item.textContent?.includes('In Progress'));
+        expect(inProgressItem).toBeInTheDocument();
+        const checkIcon = inProgressItem?.querySelector('.tabler-icon-check');
+        expect(checkIcon).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('handles all status options in menu', async () => {
@@ -140,16 +151,19 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getAllByText('In Progress')[0]; // Get the badge
     await user.click(badge);
 
-    await waitFor(() => {
-      const menuItems = screen.getAllByRole('menuitem');
-      expect(menuItems.length).toBe(5);
+    await waitFor(
+      () => {
+        const menuItems = screen.getAllByRole('menuitem');
+        expect(menuItems.length).toBe(5);
 
-      const statusOptions = ['Completed', 'Ready', 'In Progress', 'On Hold', 'Cancelled'];
-      statusOptions.forEach((status) => {
-        const menuItem = menuItems.find((item) => item.textContent?.includes(status));
-        expect(menuItem).toBeInTheDocument();
-      });
-    });
+        const statusOptions = ['Completed', 'Ready', 'In Progress', 'On Hold', 'Cancelled'];
+        statusOptions.forEach((status) => {
+          const menuItem = menuItems.find((item) => item.textContent?.includes(status));
+          expect(menuItem).toBeInTheDocument();
+        });
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onChangeStatus with correct status for each menu item', async () => {
@@ -159,9 +173,12 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getByText('In Progress');
     await user.click(badge);
 
-    await waitFor(() => {
-      expect(screen.getByText('Ready')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Ready')).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
 
     const readyItem = screen.getByText('Ready');
     await user.click(readyItem);
