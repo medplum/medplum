@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, Center, Stack, Text, TextInput } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -37,9 +37,9 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
     >
       <Center style={{ flexDirection: 'column' }}>
         <Logo size={32} />
-        <Title>Create project</Title>
+        <h2>Create project</h2>
       </Center>
-      <Stack gap="xl">
+      <Stack gap="sm">
         <TextInput
           name="projectName"
           label="Project Name"
@@ -55,9 +55,9 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
       </Stack>
-      <Group justify="flex-end" mt="xl" wrap="nowrap">
-        <SubmitButton>Create project</SubmitButton>
-      </Group>
+      <Stack gap="xs">
+        <SubmitButton fullWidth>Create project</SubmitButton>
+      </Stack>
     </Form>
   );
 }
