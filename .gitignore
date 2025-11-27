@@ -16,11 +16,7 @@ prettier-fmt1.err
 # Output
 dist/
 packages/core/docs/
-!packages/definitions/dist/
-packages/definitions/dist/**/*.js
-packages/definitions/dist/**/*.js.map
-packages/definitions/dist/**/*.d.ts
-packages/definitions/dist/**/*.d.ts.map
+!packages/definitions/dist/fhir/
 packages/generator/output/
 packages/generator/compare.html
 packages/graphiql/public/
@@ -36,6 +32,7 @@ coverage/
 
 # TypeScript incremental build
 tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
 
 # Server tarball
 medplum-server.tar.gz

@@ -3,7 +3,8 @@
 import { Alert, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
@@ -43,7 +44,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
           </Stack>
         )}
         <Stack>
-          <TextInput name="token" label="MFA code" required autoFocus />
+          <TextInput name="token" label="MFA code" autoComplete="one-time-code" required autoFocus />
         </Stack>
         <Group justify="flex-end" mt="xl">
           <SubmitButton>{props.buttonText}</SubmitButton>

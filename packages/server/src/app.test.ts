@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { badRequest, ContentType, getReferenceString, unsupportedMediaType } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
@@ -10,9 +10,20 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
-import { createTestProject, initTestAuth } from './test.setup';
+import type { TestRedisConfig } from './test.setup';
+import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
+  let stdOutSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    stdOutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    stdOutSpy.mockRestore();
+  });
+
   test('Get HTTP config', async () => {
     const app = express();
     const config = await loadTestConfig();
@@ -105,30 +116,26 @@ describe('App', () => {
 
   describe('loggingMiddleware', () => {
     let app: express.Express;
-    let originalWrite: any;
 
     beforeEach(async () => {
       app = express();
       const config = await loadTestConfig();
       config.logLevel = 'info';
       config.logRequests = true;
-      originalWrite = process.stdout.write;
-      process.stdout.write = jest.fn();
       await initApp(app, config);
     });
 
     afterEach(async () => {
       await shutdownApp();
-      process.stdout.write = originalWrite;
     });
 
     test('X-Forwarded-For spoofing', async () => {
       const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
       expect(res.status).toBe(200);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj.ip).toBe('2.2.2.2');
     });
 
@@ -146,11 +153,10 @@ describe('App', () => {
         .send(patient);
       expect(res1.status).toBe(201);
       expect(res1.body).toMatchObject(patient);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const calls = (process.stdout.write as jest.Mock).mock.calls;
-      const logLine = calls[calls.length - 1][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
     });
 
@@ -197,11 +203,10 @@ describe('App', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(`>kjaysgdfsk;sdfgjsdrg<`); // Send malformed data that will fail in the body parser middleware
       expect(res1.status).toBe(400);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const calls = (process.stdout.write as jest.Mock).mock.calls;
-      const logLine = calls[calls.length - 1][0];
-      const logObj = JSON.parse(logLine);
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
     });
   });
@@ -274,14 +279,32 @@ describe('App', () => {
     const app = express();
     const config = await loadTestConfig();
     config.defaultRateLimit = 1;
-    config.redis.db = 6; // Use different temp Redis instance for this test only
+
+    const testRedisConfig = config.redis as TestRedisConfig;
+    testRedisConfig.db = 6; // Use different temp Redis instance for this test only
+    testRedisConfig.keyPrefix = 'server-rate-limit:';
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await getRedis().flushdb();
+    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('UnsupportedMediaTypeError', async () => {
+    const app = express();
+    app.get('/throw', () => {
+      const err = new Error('UnsupportedMediaTypeError');
+      err.name = 'UnsupportedMediaTypeError';
+      throw err;
+    });
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app).get('/throw');
+    expect(res.status).toBe(415);
+    expect(res.body).toMatchObject(unsupportedMediaType);
     expect(await shutdownApp()).toBeUndefined();
   });
 });

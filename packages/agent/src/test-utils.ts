@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import type { ILogger } from '@medplum/core';
 import { LogLevel } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { AgentLoggerConfig, DEFAULT_LOGGER_CONFIG, LoggerType, WinstonWrapperLogger } from './logger';
+import type { AgentLoggerConfig } from './logger';
+import { DEFAULT_LOGGER_CONFIG, LoggerType, WinstonWrapperLogger } from './logger';
 
 /**
  * Creates a Winston logger for testing purposes similar to how it's done in agent-main.ts
@@ -33,6 +34,19 @@ export function createTestWinstonLogger(
   };
 
   return [new WinstonWrapperLogger(config, loggerType), cleanup];
+}
+
+export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock; clone: jest.Mock } {
+  const logger: Record<string, any> = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  };
+  logger.level = logLevel;
+  logger.clone = jest.fn(() => logger);
+  return logger as ILogger & { log: jest.Mock; clone: jest.Mock };
 }
 
 /**

@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import { useState, useEffect } from 'react';
-import { Communication } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { createReference, getReferenceString } from '@medplum/core';
-import { showErrorNotification } from '../utils/notifications';
 
 export interface UseThreadInboxOptions {
   query: string;
@@ -41,8 +39,13 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
   useEffect(() => {
     const fetchAllCommunications = async (): Promise<void> => {
       const searchParams = new URLSearchParams(query);
+      searchParams.append('identifier:not', 'ai-message');
       searchParams.append('part-of:missing', 'true');
-      const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+      const searchResultBundle = await medplum.search('Communication', searchParams, { cache: 'no-cache' });
+
+      // Extract resources from the Bundle
+      const searchResult =
+        searchResultBundle?.entry?.map((entry) => entry.resource).filter((r) => r !== undefined) ?? [];
 
       const partOfReferences = searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ');
 
@@ -113,7 +116,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
               setSelectedThread(communication);
             }
           } catch (error) {
-            showErrorNotification(error);
+            setError(error as Error);
           }
         }
       } else {
@@ -137,7 +140,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       });
       setSelectedThread(updatedThread);
     } catch (error) {
-      showErrorNotification(error);
+      setError(error as Error);
     }
   };
 

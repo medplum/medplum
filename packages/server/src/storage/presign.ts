@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
-import { createSign } from 'crypto';
+import type { Binary } from '@medplum/fhirtypes';
+import { createSign } from 'node:crypto';
 import { getConfig } from '../config/loader';
 
 /**

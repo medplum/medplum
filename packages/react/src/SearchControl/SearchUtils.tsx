@@ -1,21 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  capitalize,
-  DEFAULT_SEARCH_COUNT,
-  evalFhirPathTyped,
-  Filter,
-  formatDateTime,
-  InternalSchemaElement,
-  Operator,
-  SearchRequest,
-} from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
+import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
+import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { SearchControlField } from './SearchControlField';
+import type { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -498,13 +490,13 @@ export function buildFieldNameString(key: string): string {
   tmp = tmp.replace('[x]', '');
 
   // Convert camel case to space separated
-  tmp = tmp.replace(/([A-Z])/g, ' $1');
+  tmp = tmp.replaceAll(/([A-Z])/g, ' $1');
 
   // Convert dashes and underscores to spaces
-  tmp = tmp.replace(/[-_]/g, ' ');
+  tmp = tmp.replaceAll(/[-_]/g, ' ');
 
   // Normalize whitespace to single space character
-  tmp = tmp.replace(/\s+/g, ' ');
+  tmp = tmp.replaceAll(/\s+/g, ' ');
 
   // Trim
   tmp = tmp.trim();
@@ -539,12 +531,12 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   // Priority 1: InternalSchemaElement by exact match
-  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+  if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
 
   // Priority 2: SearchParameter by exact match
-  if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
+  if (field.searchParams?.length === 1 && field.name === field.searchParams[0].code) {
     return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 

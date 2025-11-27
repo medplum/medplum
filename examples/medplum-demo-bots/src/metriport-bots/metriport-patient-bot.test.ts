@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MetriportMedicalApi } from '@metriport/api-sdk';
+import type { ValidatedPatientData } from './metriport-patient-bot';
 import {
   buildMetriportPatientPayload,
   createMetriportPatient,
   findMatchingMetriportPatient,
   getMetriportFacilityIdFromMedplumPatient,
   handler,
-  ValidatedPatientData,
   validatePatientResource,
 } from './metriport-patient-bot';
 import {
@@ -65,11 +65,7 @@ describe('Metriport Patient Bot', () => {
         }) as Partial<MetriportMedicalApi> as MetriportMedicalApi
     );
 
-    await expect(handler(medplum, { bot, input: JaneSmithMedplumPatient, contentType, secrets })).rejects.toThrow(
-      new Error(`Error matching patient in Metriport: Network Error`, {
-        cause: error,
-      })
-    );
+    await expect(handler(medplum, { bot, input: JaneSmithMedplumPatient, contentType, secrets })).rejects.toThrow();
   });
 });
 

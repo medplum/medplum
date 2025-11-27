@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
 import fs from 'fs';
 import path from 'path';
 
@@ -13,12 +13,12 @@ interface BotDescription {
 const Bots: BotDescription[] = [
   {
     src: 'src/bots/example/create-review-report-task.ts',
-    dist: 'dist/example/create-review-report-task.js',
+    dist: 'dist/bots/example/create-review-report-task.js',
     criteria: 'DiagnosticReport',
   },
   {
     src: 'src/bots/example/create-respond-to-message-task.ts',
-    dist: 'dist/example/create-respond-to-message-task.js',
+    dist: 'dist/bots/example/create-respond-to-message-task.js',
     criteria: 'Communication?part-of:missing=true',
   },
 ];

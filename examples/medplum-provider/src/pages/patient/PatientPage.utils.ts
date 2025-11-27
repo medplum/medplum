@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -53,7 +53,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'labs',
-    url: 'ServiceRequest?_fields=_lastUpdated,code,status,orderDetail,category&_offset=0&_sort=-_lastUpdated&category=108252007&patient=%patient.id',
+    url: 'labs',
     label: 'Labs',
   },
   {
@@ -62,19 +62,9 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Devices',
   },
   {
-    id: 'diagnosticreports',
-    url: 'DiagnosticReport?_fields=_lastUpdated,category,code,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Reports',
-  },
-  {
     id: 'documentreference',
     url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Documents',
-  },
-  {
-    id: 'appointments',
-    url: 'Appointment?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Appointments',
   },
   {
     id: 'careplan',

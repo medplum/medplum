@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildBinaryIds } from './utils/binary';
 
@@ -24,7 +24,7 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
 
   const { resourceType, id } = req.params;
   const { everything } = req.query;
-  if (everything === 'true') {
+  if (resourceType === 'Project' || everything === 'true') {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ProfileResource, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import {
   AppShell,
   Loading,
@@ -15,21 +16,23 @@ import {
   IconMail,
   IconPencil,
   IconPill,
+  IconPuzzle,
   IconTimeDuration0,
   IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import { Suspense } from 'react';
+import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
-import { IntegrationsPage } from './pages/IntegrationsPage';
+import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
-import { EncounterChart } from './pages/encounter/EncounterChart';
+import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
@@ -39,6 +42,7 @@ import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TimelineTab } from './pages/patient/TimelineTab';
+import { LabsPage } from './pages/patient/LabsPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
@@ -47,6 +51,7 @@ import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
+import { SpacesPage } from './pages/spaces/SpacesPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -64,6 +69,10 @@ export function App(): JSX.Element | null {
     <AppShell
       logo={<Logo size={24} />}
       menus={[
+        {
+          title: 'Spaces',
+          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
+        },
         {
           title: 'Charts',
           links: [
@@ -123,6 +132,10 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
+              <Route path="/Spaces/Communication" element={<SpacesPage />}>
+                <Route index element={<SpacesPage />} />
+                <Route path=":topicId" element={<SpacesPage />} />
+              </Route>
               <Route
                 path="/"
                 element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}
@@ -130,7 +143,7 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<EncounterChart />}>
+                <Route path="Encounter/:encounterId" element={<EncounterChartPage />}>
                   <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />
@@ -139,6 +152,8 @@ export function App(): JSX.Element | null {
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
+                <Route path="labs" element={<LabsPage />} />
+                <Route path="labs/:labId" element={<LabsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>

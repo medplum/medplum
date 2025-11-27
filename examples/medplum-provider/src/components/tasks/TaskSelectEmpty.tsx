@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Center, Flex, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconClipboardList } from '@tabler/icons-react';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 
 interface TaskSelectEmptyProps {
   notFound?: boolean;

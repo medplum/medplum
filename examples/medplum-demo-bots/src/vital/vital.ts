@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, isObject, MedplumClient } from '@medplum/core';
-import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
+import { isObject } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
+  ProjectSetting,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+} from '@medplum/fhirtypes';
 
 type GetLabTestEvent = {
   endpoint: 'get_lab_tests';
@@ -123,7 +129,7 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: answer.code,
           // valueString: question.type !== 'numeric' ? answer.value : undefined,
-          // valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          // valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),

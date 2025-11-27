@@ -11,7 +11,7 @@ import {
   parseSearchRequest,
   singularize,
 } from '@medplum/core';
-import {
+import type {
   CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
   OperationOutcome,
@@ -19,11 +19,14 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
-import { Operation } from 'rfc6902';
-import { LogEvent, processBatch } from './batch';
+import type { Operation } from 'rfc6902';
+import type { LogEvent } from './batch';
+import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from './repo';
-import { HttpMethod, RouteResult, Router } from './urlrouter';
+import type { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
+import { RepositoryMode } from './repo';
+import type { HttpMethod, RouteResult } from './urlrouter';
+import { Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -373,11 +376,11 @@ function parseIntegerQueryParam(query: Record<string, string | string[] | undefi
   const value = query[key];
   let strValue: string | undefined;
   if (Array.isArray(value)) {
-    strValue = value[value.length - 1];
+    strValue = value.at(-1);
   } else {
     strValue = value;
   }
-  return strValue ? parseInt(strValue, 10) : undefined;
+  return strValue ? Number.parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

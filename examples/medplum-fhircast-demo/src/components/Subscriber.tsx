@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/core';
-import { FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
+import type { FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
 import { Document, useMedplum, usePrevious } from '@medplum/react';
 import { IconMessage2Exclamation } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useClientId } from '../hooks';
 import ConnectionHandler from './ConnectionHandler';
 import TopicLoader from './TopicLoader';

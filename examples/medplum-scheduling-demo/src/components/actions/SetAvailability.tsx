@@ -3,7 +3,7 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getAllQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   Coding,
   Questionnaire,
   QuestionnaireItemAnswerOption,
@@ -12,8 +12,9 @@ import {
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { JSX, useContext } from 'react';
-import { SetAvailabilityEvent } from '../../bots/core/set-availability';
+import { useContext } from 'react';
+import type { JSX } from 'react';
+import type { SetAvailabilityEvent } from '../../bots/core/set-availability';
 import { ScheduleContext } from '../../Schedule.context';
 
 interface SetAvailabilityProps {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { MouseEvent, SyntheticEvent } from 'react';
+import type { MouseEvent, SyntheticEvent } from 'react';
 
 /**
  * Kills a browser event.
@@ -92,7 +92,7 @@ export function exportJsonFile(jsonString: string, fileName?: string): void {
   const link = document.createElement('a');
   link.href = url;
 
-  const linkName = fileName ?? new Date().toISOString().replace(/\D/g, '');
+  const linkName = fileName ?? new Date().toISOString().replaceAll(/\D/g, '');
   link.download = `${linkName}.json`;
 
   document.body.appendChild(link);

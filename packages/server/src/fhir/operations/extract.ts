@@ -1,25 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { CrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
 import {
   allOk,
   badRequest,
-  CrawlerVisitor,
   crawlTypedValue,
   deepClone,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
-  InternalTypeSchema,
   OperationOutcomeError,
   Operator,
   singleton,
   toTypedValue,
-  TypedValue,
-  TypedValueWithPath,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Bundle,
   BundleEntry,
   Extension,
@@ -31,7 +28,8 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { applyPatch, Operation } from 'rfc6902';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { parseInputParameters } from './utils/parameters';
 
@@ -170,6 +168,7 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
 
 type TemplateExtractionContext = {
   path: string;
+  indexOffset: number;
   values: TypedValue[];
 };
 
@@ -195,7 +194,7 @@ class TemplateExtractor implements CrawlerVisitor {
 
     // Initialize FHIRPath context stack and variables
     const typedResponse = toTypedValue(response);
-    this.context = [{ path: 'Questionnaire', values: [typedResponse] }];
+    this.context = [{ path: 'Questionnaire', values: [typedResponse], indexOffset: 0 }];
     this.variables = variables ?? Object.create(null);
     this.variables['%resource'] = typedResponse;
 
@@ -204,25 +203,63 @@ class TemplateExtractor implements CrawlerVisitor {
     this.bundle = { resourceType: 'Bundle', type: 'transaction', entry: [] };
   }
 
-  private currentContext(): TemplateExtractionContext {
-    return this.context[this.context.length - 1];
+  private currentContext(path?: string): TemplateExtractionContext {
+    path = path ? trimArrayIndex(path) : undefined;
+    return (
+      this.context.findLast((c) => path?.startsWith(c.path) && c.path !== path) ??
+      (this.context.at(-1) as TemplateExtractionContext)
+    );
   }
 
-  private evaluateExpression(expression: string | undefined, type: string): TypedValue | undefined;
-  private evaluateExpression(expression: string | undefined): TypedValue[];
-  private evaluateExpression(expression: string | undefined, type?: string): TypedValue[] | TypedValue | undefined {
+  private enterContext(path: string, values: TypedValue[]): void {
+    path = trimArrayIndex(path);
+    const currentContext = this.currentContext();
+    if (currentContext.path === path) {
+      currentContext.indexOffset += currentContext.values.length - 1;
+      currentContext.values = values;
+    } else {
+      this.exitContext(path);
+      this.context.push({ path, values, indexOffset: 0 });
+    }
+  }
+
+  private exitContext(path: string): void {
+    if (this.context.length === 1) {
+      return; // Cannot exit top context frame
+    }
+    const currentPath = this.currentContext().path;
+    if (currentPath.startsWith(path)) {
+      this.context.pop();
+    }
+  }
+
+  private checkCurrentContext(path: string): void {
+    if (!path.startsWith(this.currentContext().path)) {
+      this.exitContext(this.currentContext().path);
+    }
+  }
+
+  private evaluateExpression(path: string, expression: string | undefined, type: string): TypedValue | undefined;
+  private evaluateExpression(path: string, expression: string | undefined): TypedValue[];
+  private evaluateExpression(
+    path: string,
+    expression: string | undefined,
+    type?: string
+  ): TypedValue[] | TypedValue | undefined {
     if (!expression) {
       return type ? undefined : [];
     }
-    const context = this.currentContext().values;
+    const context = this.currentContext(path).values;
     const results = evalFhirPathTyped(expression, context, this.variables);
     return type ? singleton(results, type) : results;
   }
 
   onExitObject(_path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
-    if (value.path === this.currentContext().path) {
-      this.context.pop();
-    }
+    this.exitContext(value.path);
+  }
+
+  onExitResource(path: string, _value: TypedValueWithPath, _schema: InternalTypeSchema): void {
+    this.exitContext(path);
   }
 
   private getTopLevelExtensions(
@@ -267,8 +304,8 @@ class TemplateExtractor implements CrawlerVisitor {
     const extensions = this.getTopLevelExtensions(path, propertyValues);
     if (extensions?.length) {
       for (const extension of extensions) {
-        const handler = this.extensionHandler(extension.value as Extension);
-        handler?.(extension, parent);
+        this.checkCurrentContext(parent.path);
+        this.extensionHandler(extension.value as Extension)?.(extension, parent);
       }
     }
   }
@@ -282,7 +319,7 @@ class TemplateExtractor implements CrawlerVisitor {
     let results: TypedValue[];
     const { valueString, valueExpression } = extension.value as Extension;
     if (valueString) {
-      results = this.evaluateExpression(valueString);
+      results = this.evaluateExpression(parent.path, valueString);
     } else if (valueExpression) {
       const { expression, language, name } = valueExpression;
       if (!expression || language !== 'text/fhirpath') {
@@ -291,7 +328,7 @@ class TemplateExtractor implements CrawlerVisitor {
         );
       }
 
-      results = this.evaluateExpression(expression);
+      results = this.evaluateExpression(parent.path, expression);
 
       // Assign named expressions as FHIRPath variables for evaluation of expressions on or underneath this element
       if (name) {
@@ -301,19 +338,24 @@ class TemplateExtractor implements CrawlerVisitor {
       throw new OperationOutcomeError(badRequest('Invalid extraction context extension', extension.path));
     }
 
-    this.context.push({ path: parent.path, values: results });
+    this.enterContext(parent.path, results);
     this.makePatch(results, parent.path, parent.value, extension);
   }
 
   private processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
     const { valueString: expression } = extension.value as Extension;
     const path = parent.path;
-    const contextValues = this.currentContext().values;
+    const context = this.currentContext();
 
     // Manually evaluate expression for each context value, in order to set the correct path based on value index
-    for (let i = 0; i < contextValues.length; i++) {
-      const results = expression ? evalFhirPathTyped(expression, [contextValues[i]], this.variables) : [];
-      this.makePatch(results, replacePathIndex(path, i, path.lastIndexOf('.')), parent.value, extension);
+    for (let i = 0; i < context.values.length; i++) {
+      const results = expression ? evalFhirPathTyped(expression, [context.values[i]], this.variables) : [];
+      this.makePatch(
+        results,
+        replacePathIndex(path, context.indexOffset + i, path.lastIndexOf('.')),
+        parent.value,
+        extension
+      );
     }
   }
 
@@ -327,21 +369,22 @@ class TemplateExtractor implements CrawlerVisitor {
       path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
     }
 
-    if (!results.length) {
-      this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
-      return;
-    }
-
     const isArrayElement = path.endsWith(']');
     if (isArrayElement) {
+      path = replacePathIndex(path, this.currentContext().indexOffset);
       this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Remove template element before inserting copies
+    } else if (!results.length) {
+      if (!isPrimitiveExtension) {
+        this.patch.push({ op: 'remove', path: asJsonPath(path) }); // Null value: remove element from template
+      }
+      return;
     }
 
     switch (extension.value.url) {
       case contextExtension:
         for (let i = 0; i < results.length; i++) {
           if (isArrayElement && i) {
-            path = replacePathIndex(path, i);
+            path = replacePathIndex(path, this.currentContext().indexOffset);
           }
 
           // Clone template object and remove SDC extension from it
@@ -356,7 +399,7 @@ class TemplateExtractor implements CrawlerVisitor {
       case valueExtension:
         if (isArrayElement) {
           // Replace the entire array directly with values
-          const arrayPath = path.slice(0, path.lastIndexOf('['));
+          const arrayPath = trimArrayIndex(path);
           this.patch.push({
             op: isPrimitiveExtension ? 'add' : 'replace',
             path: asJsonPath(arrayPath),
@@ -389,7 +432,7 @@ class TemplateExtractor implements CrawlerVisitor {
     const contextValues = this.getExtractionContext(parent);
     for (const value of contextValues) {
       // Scan template resource and evaluate expressions to compute inserted values
-      this.context.push({ path: template.type, values: [value] });
+      this.enterContext(template.type, [value]);
       crawlTypedValue(template, this, { skipMissingProperties: true });
 
       // Insert values into template resource and add to transaction Bundle
@@ -405,7 +448,7 @@ class TemplateExtractor implements CrawlerVisitor {
     // @see https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-templateExtract.html
     const values: Record<string, string> = Object.create(null);
     for (const field of ['resourceId', 'fullUrl', 'ifMatch', 'ifNoneMatch', 'ifNoneExist', 'ifModifiedSince']) {
-      values[field] = this.evaluateExpression(getExtension(extension, field)?.valueString, 'string')?.value;
+      values[field] = this.evaluateExpression('', getExtension(extension, field)?.valueString, 'string')?.value;
     }
 
     const { resourceId, fullUrl, ifMatch, ifNoneMatch, ifNoneExist, ifModifiedSince } = values;
@@ -474,12 +517,27 @@ function asJsonPath(path: string): string {
   return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
 }
 
-function replacePathIndex(path: string, index: number, before?: number): string {
-  let arrayIndex: number;
+function replacePathIndex(path: string, offset: number, before?: number): string {
+  let arrayStart: number;
   if (before && before >= 0) {
-    arrayIndex = path.lastIndexOf('[', before);
+    arrayStart = path.lastIndexOf('[', before);
   } else {
-    arrayIndex = path.lastIndexOf('[');
+    arrayStart = path.lastIndexOf('[');
   }
-  return arrayIndex < 0 ? path : path.slice(0, arrayIndex + 1) + index + path.slice(path.indexOf(']', arrayIndex));
+  if (arrayStart < 0) {
+    return path;
+  }
+
+  const arrayClose = path.indexOf(']', arrayStart);
+  const currentIndex = Number.parseInt(path.slice(arrayStart + 1, arrayClose), 10);
+  return path.slice(0, arrayStart + 1) + (currentIndex + offset) + path.slice(path.indexOf(']', arrayStart));
+}
+
+function trimArrayIndex(path: string): string {
+  const index = path.lastIndexOf('[');
+  if (index > 0) {
+    return path.slice(0, index);
+  } else {
+    return path;
+  }
 }

@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
-  ProfileResource,
-  WithId,
   createReference,
   getStatus,
   isJwt,
@@ -16,18 +15,19 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { Request, RequestHandler, Response } from 'express';
-import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
-import { asyncWrap } from '../async';
+import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Request, RequestHandler, Response } from 'express';
+import type { JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
+import type { MedplumRefreshTokenClaims } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,
@@ -53,8 +53,10 @@ type FhircastProps = { 'hub.topic': string; 'hub.url': string };
  *  3) Refresh - for "remember me" long term access
  *
  * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+ * @param req - The request object
+ * @param res - The response object
  */
-export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const tokenHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   if (!req.is(ContentType.FORM_URL_ENCODED)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -82,7 +84,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
     default:
       sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
   }
-});
+};
 
 /**
  * Handles the "Client Credentials" OAuth flow.
@@ -349,7 +351,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
-  return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);
+  return exchangeExternalAuthToken(
+    req,
+    res,
+    req.body.client_id,
+    req.body.subject_token,
+    req.body.subject_token_type,
+    req.body.membership_id
+  );
 }
 
 /**
@@ -360,13 +369,15 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
  * @param clientId - The client application ID.
  * @param subjectToken - The subject token. Only access tokens are currently supported.
  * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ * @param membershipId - Optional membership ID to restrict the exchange to.
  */
 export async function exchangeExternalAuthToken(
   req: Request,
   res: Response,
   clientId: string,
   subjectToken: string,
-  subjectTokenType: OAuthTokenType
+  subjectTokenType: OAuthTokenType,
+  membershipId?: string
 ): Promise<void> {
   if (!clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -419,6 +430,8 @@ export async function exchangeExternalAuthToken(
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    forceUseFirstMembership: true,
+    membershipId,
   });
 
   await sendTokenResponse(res, login, client);

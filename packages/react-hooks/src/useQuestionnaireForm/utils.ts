@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '@medplum/core';
 import {
   HTTP_HL7_ORG,
   PropertyType,
-  TypedValue,
   capitalize,
   deepClone,
   evalFhirPathTyped,
@@ -16,7 +16,7 @@ import {
   toTypedValue,
   typedValueToString,
 } from '@medplum/core';
-import {
+import type {
   Encounter,
   Questionnaire,
   QuestionnaireItem,

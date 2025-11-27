@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient } from '@medplum/core';
-import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
+import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { createReadStream, writeFile } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -37,7 +37,7 @@ bulkExportCommand
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
-      const fileName = `${type}_${fileUrl.pathname}`.replace(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
+      const fileName = `${type}_${fileUrl.pathname}`.replaceAll(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
       const path = resolve(targetDirectory ?? '', fileName);
 
       writeFile(`${path}`, await data.text(), () => {

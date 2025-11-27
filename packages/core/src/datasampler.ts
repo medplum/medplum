@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
+import type { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
 import { getReferenceString } from './utils';
 
 export type StatsFn = (data: number[]) => number | Quantity;
@@ -124,7 +124,9 @@ function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
 }
 
 export function expandSampledData(sample: SampledData): number[] {
-  return sample.data?.split(' ').map((d) => parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
+  return (
+    sample.data?.split(' ').map((d) => Number.parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? []
+  );
 }
 
 function compressSampledData(data: number[], sampling?: SamplingInfo): string | undefined {

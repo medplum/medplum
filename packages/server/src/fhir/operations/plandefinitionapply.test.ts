@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import {
+import type {
   Encounter,
   OperationOutcome,
   Patient,
@@ -320,7 +320,7 @@ describe('PlanDefinition apply', () => {
       });
     expect(res4.status).toBe(400);
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
-      'Expected 1..NaN value(s) for input parameter subject, but 0 provided'
+      'Expected 1..* value(s) for input parameter subject, but 0 provided'
     );
   });
 

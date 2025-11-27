@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { DOMWindow, JSDOM } from 'jsdom';
+import type { DOMWindow } from 'jsdom';
+import { JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
 import { resolve } from 'path/posix';
 import * as unzipper from 'unzipper';
 
-import {
+import type {
   DocumentationLocation,
   PropertyDocInfo,
   PropertyTypeDocInfo,
@@ -35,7 +36,7 @@ let documentedTypes: Record<string, DocumentationLocation>;
 let lowerCaseResourceNames: Record<string, string>;
 
 export async function main(): Promise<void> {
-  const outputFolder = path.resolve(__dirname, '..', 'output');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output');
   if (!fs.existsSync(outputFolder)) {
     fs.mkdirSync(outputFolder);
   }
@@ -118,7 +119,7 @@ function buildDocsDefinition(
   const elements = resourceDefinition.snapshot?.element || [];
   for (const element of elements) {
     const parts = element.path?.split('.') || [];
-    const name = parts[parts.length - 1];
+    const name = parts.at(-1) as string;
     const { path, min, max, short, definition, comment } = element;
     result.properties.push({
       name,
@@ -266,13 +267,13 @@ function writeDocs(
     const resourceType = definition.name;
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
+      resolve(import.meta.dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2) + '\n',
       'utf8'
     );
 
     writeFileSync(
-      resolve(__dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
+      resolve(import.meta.dirname, `../../docs${getMedplumDocsPath(resourceType)}.mdx`),
       buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
@@ -476,7 +477,7 @@ function extractResourceDescriptions(
       for (const div of divs) {
         const h2 = div.querySelector('h2');
         if (h2) {
-          const h2Text = h2.textContent?.toLowerCase().replace(/\s/g, '') || '';
+          const h2Text = h2.textContent?.toLowerCase().replaceAll(/\s/g, '') || '';
 
           const paragraphHTML = sanitizeNodeContent(div, dom.window);
 
@@ -617,8 +618,8 @@ async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
   const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
-  const zipFile = path.resolve(__dirname, '..', 'output', 'fhir-spec.zip');
-  const outputFolder = path.resolve(__dirname, '..', 'output', 'fhir-spec');
+  const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
+  const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');
   if (!fs.existsSync(outputFolder)) {
     return downloadAndUnzip(downloadURL, zipFile, outputFolder).then(() => {

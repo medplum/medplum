@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumClient, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   Questionnaire,
   QuestionnaireItem,
@@ -10,8 +11,10 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { Marker, handler } from './vital';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
+import { handler } from './vital';
+import type { Marker } from './vital';
 
 global.fetch = vi.fn();
 
@@ -392,7 +395,7 @@ function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: question.type !== 'numeric' ? answer.value : undefined,
-          valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),

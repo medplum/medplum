@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Bot,
   Bundle,
   Identifier,
@@ -16,19 +16,19 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
-import {
-  DEFAULT_ACCEPT,
+import type {
   FetchLike,
   InviteRequest,
   LoginState,
-  MedplumClient,
   MedplumClientEventMap,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
 } from './client';
+import { DEFAULT_ACCEPT, MedplumClient } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
+import * as environment from './environment';
 import {
   OperationOutcomeError,
   accepted,
@@ -44,7 +44,20 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, WithId, createReference, sleep } from './utils';
+import type { ProfileResource, WithId } from './utils';
+import { createReference, sleep } from './utils';
+
+// Mock the environment module
+jest.mock('./environment');
+
+const mockEnvironment = environment as jest.Mocked<typeof environment> & {
+  locationUtils: {
+    assign: jest.MockedFunction<(url: string) => void>;
+    reload: jest.MockedFunction<() => void>;
+    getSearch: jest.MockedFunction<() => string>;
+    getOrigin: jest.MockedFunction<() => string>;
+  };
+};
 
 const EXAMPLE_XML = `
 <note>
@@ -189,8 +202,7 @@ const profileExtensionSD = {
     ],
   },
 };
-const originalWindow = globalThis.window;
-const originalBuffer = globalThis.Buffer;
+// Default environment mocks - will be overridden in specific tests
 
 describe('Client', () => {
   beforeAll(() => {
@@ -200,8 +212,12 @@ describe('Client', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
-    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
+    jest.resetAllMocks();
+    // Default to browser environment for most tests
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
+    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getBuffer.mockReturnValue(undefined);
   });
 
   afterAll(() => {
@@ -298,6 +314,45 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
+  test('storagePrefix option', () => {
+    localStorage.clear();
+
+    // Create client with custom storage prefix
+    const client = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      storagePrefix: '@myapp:',
+      fetch: mockFetch(200, {}),
+    });
+
+    // Set some data through the client's storage
+    const storage = (client as any).storage;
+    storage.setString('testKey', 'testValue');
+
+    // Verify it's stored with the correct prefix in localStorage
+    expect(localStorage.getItem('@myapp:testKey')).toBe('testValue');
+    expect(localStorage.getItem('testKey')).toBeNull();
+
+    // Verify we can retrieve it through the storage
+    expect(storage.getString('testKey')).toBe('testValue');
+
+    // Test with objects
+    const testObject = { foo: 'bar', nested: { value: 123 } };
+    storage.setObject('config', testObject);
+    expect(localStorage.getItem('@myapp:config')).toBeTruthy();
+    expect(storage.getObject('config')).toMatchObject(testObject);
+
+    // Create another client without prefix - should not see prefixed data
+    const clientWithoutPrefix = new MedplumClient({
+      baseUrl: 'https://example.com/',
+      fetch: mockFetch(200, {}),
+    });
+    const unprefixedStorage = (clientWithoutPrefix as any).storage;
+    expect(unprefixedStorage.getString('testKey')).toBeUndefined();
+    expect(unprefixedStorage.getObject('config')).toBeUndefined();
+
+    localStorage.clear();
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
@@ -325,7 +380,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123' },
           membership: { resourceType: 'ProjectMembership', id: '123' },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -382,7 +437,7 @@ describe('Client', () => {
         return {
           project: { resourceType: 'Project', id: '123', superAdmin: true },
           membership: { resourceType: 'ProjectMembership', id: '123', admin: true },
-          profile: { resouceType: 'Practitioner', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
           accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
@@ -431,12 +486,10 @@ describe('Client', () => {
   });
 
   test('SignInWithRedirect', async () => {
-    // Mock window.location.assign
+    // Mock locationUtils.assign and locationUtils.getSearch
     const assign = jest.fn();
-    Object.defineProperty(window, 'location', {
-      value: { assign },
-      writable: true,
-    });
+    mockEnvironment.locationUtils.assign.mockImplementation(assign);
+    mockEnvironment.locationUtils.getSearch.mockReturnValue('');
 
     const fetch = mockFetch(200, (url) => {
       if (url.includes('/oauth2/token')) {
@@ -460,13 +513,7 @@ describe('Client', () => {
     expect(assign).toHaveBeenCalledWith(expect.stringMatching(/authorize\?.+scope=/));
 
     // Mock response code
-    Object.defineProperty(window, 'location', {
-      value: {
-        assign: jest.fn(),
-        search: new URLSearchParams({ code: 'test-code' }),
-      },
-      writable: true,
-    });
+    mockEnvironment.locationUtils.getSearch.mockReturnValue('?code=test-code');
 
     // Next, test processing the response code
     const result2 = await client.signInWithRedirect();
@@ -474,27 +521,19 @@ describe('Client', () => {
   });
 
   test('SignOutWithRedirect', async () => {
-    // Mock window.location.assign
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        assign: jest.fn(),
-      },
-      writable: true,
-    });
+    // Mock locationUtils.assign
+    const assign = jest.fn();
+    mockEnvironment.locationUtils.assign.mockImplementation(assign);
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     client.signOutWithRedirect();
-    expect(window.location.assign).toHaveBeenCalled();
+    expect(assign).toHaveBeenCalled();
   });
 
   test('Sign in with external auth', async () => {
     const assign = jest.fn();
-    Object.defineProperty(window, 'location', {
-      value: { assign },
-      writable: true,
-    });
+    mockEnvironment.locationUtils.assign.mockImplementation(assign);
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -514,10 +553,7 @@ describe('Client', () => {
 
   test('Sign in with external auth -- disabled PKCE', async () => {
     const assign = jest.fn();
-    Object.defineProperty(window, 'location', {
-      value: { assign },
-      writable: true,
-    });
+    mockEnvironment.locationUtils.assign.mockImplementation(assign);
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -536,12 +572,8 @@ describe('Client', () => {
   });
 
   test('Sign in with external auth -- no crypto.subtle', async () => {
-    const originalAssign = window.location.assign;
     const assign = jest.fn();
-    Object.defineProperty(window, 'location', {
-      value: { assign },
-      writable: true,
-    });
+    mockEnvironment.locationUtils.assign.mockImplementation(assign);
 
     const originalSubtle = crypto.subtle;
     Object.defineProperty(crypto, 'subtle', {
@@ -566,11 +598,6 @@ describe('Client', () => {
 
     Object.defineProperty(crypto, 'subtle', {
       value: originalSubtle,
-      writable: true,
-    });
-
-    Object.defineProperty(window, 'location', {
-      value: { assign: originalAssign },
       writable: true,
     });
   });
@@ -925,8 +952,11 @@ describe('Client', () => {
   });
 
   test('Basic auth in browser', async () => {
-    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
-    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
+    // Mock browser environment (already set in beforeEach, but explicit for clarity)
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
+    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getBuffer.mockReturnValue(undefined);
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
@@ -952,8 +982,11 @@ describe('Client', () => {
   });
 
   test('Basic auth in Node.js', async () => {
-    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
-    Object.defineProperty(globalThis, 'window', { get: () => undefined });
+    // Mock Node.js environment
+    mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
+    mockEnvironment.getWindow.mockReturnValue(undefined);
+    mockEnvironment.isNodeEnvironment.mockReturnValue(true);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
@@ -2712,17 +2745,13 @@ describe('Client', () => {
   });
 
   test('Storage events', async () => {
-    // Make window.location writeable
-    Object.defineProperty(window, 'location', {
-      value: { assign: {} },
-      writable: true,
-    });
+    // Mock locationUtils.reload
+    const mockReload = jest.fn();
+    mockEnvironment.locationUtils.reload.mockImplementation(mockReload);
 
     const mockAddEventListener = jest.fn();
-    const mockReload = jest.fn();
 
     window.addEventListener = mockAddEventListener;
-    window.location.reload = mockReload;
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -3284,7 +3313,7 @@ describe('Client', () => {
       const mockMe = {
         project: { resourceType: 'Project', id: '123' },
         membership: { resourceType: 'ProjectMembership', id: '123' },
-        profile: { resouceType: 'Practitioner', id: '123' },
+        profile: { resourceType: 'Practitioner', id: '123' },
         config: { resourceType: 'UserConfiguration', id: '123' },
         accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
       };
@@ -3353,18 +3382,11 @@ describe('Client', () => {
     const baseUrl = 'https://api.medplum.com/';
     const fhirUrlPath = 'fhir/R4/';
     const accessToken = 'fake';
-    let fetch: FetchLike;
-    let client: MedplumClient;
-
-    beforeAll(() => {
-      fetch = mockFetch(200, (url: string) => ({
-        text: () => Promise.resolve(url),
-      }));
-      client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
-      client.setAccessToken(accessToken);
-    });
 
     test('Downloading resources via URL', async () => {
+      const fetch = mockFetch(200, (url: string) => url);
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
       const blob = await client.download(baseUrl);
       expect(fetch).toHaveBeenCalledWith(
         baseUrl,
@@ -3380,6 +3402,9 @@ describe('Client', () => {
     });
 
     test('Downloading resources via `Binary/{id}` URL', async () => {
+      const fetch = mockFetch(200, (url: string) => url);
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
       const blob = await client.download('Binary/fake-id');
       expect(fetch).toHaveBeenCalledWith(
         `${baseUrl}${fhirUrlPath}Binary/fake-id`,
@@ -3636,6 +3661,50 @@ describe('Client', () => {
     expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
     expect(console.log).toHaveBeenCalledWith('< 200 OK');
     expect(console.log).toHaveBeenCalledWith('< foo: bar');
+  });
+
+  test('setVerbose', async () => {
+    const fetch = jest.fn(() => {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => ContentType.FHIR_JSON,
+          forEach: (cb: (value: string, key: string) => void) => cb('bar', 'foo'),
+        },
+        json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+      });
+    });
+
+    console.log = jest.fn();
+    const client = new MedplumClient({ fetch });
+
+    // First request without verbose mode - should not log
+    let result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
+
+    // Enable verbose mode using setVerbose
+    client.setVerbose(true);
+
+    // Second request with verbose mode enabled - should log
+    result = await client.readResource('Patient', '456');
+    expect(result).toBeDefined();
+    expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/456');
+    expect(console.log).toHaveBeenCalledWith('> Accept: application/fhir+json, */*; q=0.1');
+    expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
+    expect(console.log).toHaveBeenCalledWith('< 200 OK');
+    expect(console.log).toHaveBeenCalledWith('< foo: bar');
+
+    // Disable verbose mode using setVerbose
+    (console.log as jest.Mock).mockClear();
+    client.setVerbose(false);
+
+    // Third request with verbose mode disabled - should not log
+    result = await client.readResource('Patient', '789');
+    expect(result).toBeDefined();
+    expect(console.log).not.toHaveBeenCalled();
   });
 
   test('Disable extended mode', async () => {

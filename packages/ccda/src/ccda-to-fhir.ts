@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
-import {
+import type {
   Address,
   AllergyIntolerance,
   AllergyIntoleranceReaction,
@@ -93,7 +93,7 @@ import {
   US_CORE_MEDICATION_REQUEST_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import {
+import type {
   Ccda,
   CcdaAct,
   CcdaAddr,
@@ -1204,7 +1204,7 @@ class CcdaToFhirConverter {
         case 'PQ': // Physical Quantity
         case 'CO': // Count of individuals
           result.valueQuantity = {
-            value: observation.value['@_value'] ? parseFloat(observation.value['@_value']) : undefined,
+            value: observation.value['@_value'] ? Number.parseFloat(observation.value['@_value']) : undefined,
             unit: observation.value['@_unit'],
             system: UCUM,
             code: observation.value['@_unit'],
@@ -1221,7 +1221,9 @@ class CcdaToFhirConverter {
           break;
 
         case 'INT': // Integer
-          result.valueInteger = observation.value['@_value'] ? parseInt(observation.value['@_value'], 10) : undefined;
+          result.valueInteger = observation.value['@_value']
+            ? Number.parseInt(observation.value['@_value'], 10)
+            : undefined;
           break;
 
         default:

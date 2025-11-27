@@ -1,21 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  badRequest,
-  forbidden,
-  getReferenceString,
-  OperationOutcomeError,
-  Operator,
-  SearchRequest,
-  WithId,
-} from '@medplum/core';
-import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { Operation } from 'rfc6902';
+import type { SearchRequest, WithId } from '@medplum/core';
+import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { patchObject } from '../util/patch';
-import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
+import type { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
 
 /**
  * Searches for users in the project.
@@ -88,13 +81,13 @@ export async function createScimUser(
   scimUser: ScimUser
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);
-  if (!resourceType) {
-    throw new OperationOutcomeError(badRequest('Missing Medplum user type'));
-  }
 
-  const accessPolicy = project.defaultPatientAccessPolicy;
-  if (!accessPolicy) {
-    throw new OperationOutcomeError(badRequest('Missing defaultPatientAccessPolicy'));
+  let accessPolicy: Reference<AccessPolicy> | undefined = undefined;
+  if (resourceType === 'Patient') {
+    accessPolicy = project.defaultPatientAccessPolicy;
+    if (!accessPolicy) {
+      throw new OperationOutcomeError(badRequest('Missing defaultPatientAccessPolicy'));
+    }
   }
 
   const { user, membership } = await inviteUser({

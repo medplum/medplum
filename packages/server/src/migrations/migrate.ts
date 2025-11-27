@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
-  FileBuilder,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -11,14 +11,14 @@ import {
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Client, escapeIdentifier } from 'pg';
+import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
-import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import type { SearchParameterImplementation } from '../fhir/searchparameter';
+import { getSearchParameterImplementation } from '../fhir/searchparameter';
+import type { SqlFunctionDefinition } from '../fhir/sql';
+import { TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -30,7 +30,7 @@ import {
   TableNameAbbreviations,
   tsVectorExpression,
 } from './migrate-utils';
-import {
+import type {
   CheckConstraintDefinition,
   ColumnDefinition,
   DbClient,
@@ -39,11 +39,9 @@ import {
   MigrationAction,
   MigrationActionResult,
   SchemaDefinition,
-  SerialColumnTypes,
   TableDefinition,
 } from './types';
-
-const SCHEMA_DIR = resolve(__dirname, 'schema');
+import { SerialColumnTypes } from './types';
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -60,55 +58,6 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 
     if (!isPopulated(bundle.entry)) {
       throw new Error('Empty search parameter bundle: ' + filename);
-    }
-  }
-}
-
-export async function main(): Promise<void> {
-  const dryRun = process.argv.includes('--dryRun');
-
-  indexStructureDefinitionsAndSearchParameters();
-
-  const dbClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'medplum',
-    user: 'medplum',
-    password: 'medplum',
-  });
-  const options: BuildMigrationOptions = {
-    dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
-    dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
-    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
-    writeSchema: process.argv.includes('--writeSchema'),
-    skipMigration: process.argv.includes('--skipMigration'),
-  };
-
-  if (!options.skipMigration) {
-    await dbClient.connect();
-
-    const b = new FileBuilder();
-    await buildMigration(b, options);
-
-    await dbClient.end();
-
-    if (dryRun) {
-      console.log(b.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-      rewriteMigrationExports();
-    }
-  }
-
-  if (options.writeSchema) {
-    const schemaBuilder = new FileBuilder();
-    buildSchema(schemaBuilder);
-    if (dryRun) {
-      console.log(schemaBuilder.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
     }
   }
 }
@@ -194,7 +143,12 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+      ctx.postDeployAction(
+        () => {
+          actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+        },
+        `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
+      );
     }
   }
 
@@ -299,6 +253,9 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingTable(result);
   buildCodingPropertyTable(result);
   buildCodeSystemPropertyTable(result);
+  buildConceptMappingTable(result);
+  buildCodingSystemTable(result);
+  buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -786,6 +743,63 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   });
 }
 
+function buildConceptMappingTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'conceptMap', type: 'UUID', notNull: true },
+      { name: 'sourceSystem', type: 'BIGINT', notNull: true },
+      { name: 'sourceCode', type: 'TEXT', notNull: true },
+      { name: 'targetSystem', type: 'BIGINT', notNull: true },
+      { name: 'targetCode', type: 'TEXT', notNull: true },
+      { name: 'relationship', type: 'TEXT' },
+      { name: 'sourceDisplay', type: 'TEXT' },
+      { name: 'targetDisplay', type: 'TEXT' },
+      { name: 'comment', type: 'TEXT' },
+    ],
+    indexes: [
+      {
+        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
+        unique: true,
+      },
+      {
+        indexNameOverride: 'ConceptMapping_map_reverse_idx',
+        indexType: 'btree',
+        columns: ['conceptMap', 'targetSystem', 'targetCode', 'sourceSystem'],
+      },
+    ],
+  });
+}
+
+function buildCodingSystemTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodingSystem',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'system', type: 'TEXT', notNull: true },
+    ],
+    indexes: [{ columns: ['system'], indexType: 'btree', unique: true, include: ['id'] }],
+  });
+}
+
+function buildConceptMappingAttributeTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'ConceptMapping_Attribute',
+    columns: [
+      { name: 'mapping', type: 'BIGINT', notNull: true },
+      { name: 'uri', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'value', type: 'TEXT', notNull: true },
+      { name: 'kind', type: 'TEXT', notNull: true },
+    ],
+    compositePrimaryKey: ['mapping', 'uri', 'type', 'value', 'kind'],
+    indexes: [],
+  });
+}
+
 function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'DatabaseMigration',
@@ -1142,7 +1156,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
 
   queries.push(
     [
-      `CREATE TABLE ${options.includeIfExists ? ' IF NOT EXISTS' : ''}${escapeIdentifier(tableDef.name)} (`,
+      `CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS ' : ''}${escapeIdentifier(tableDef.name)} (`,
       createTableLines.join(',\n'),
       ')',
     ].join('\n')
@@ -1392,40 +1406,6 @@ function buildIndexSql(
   return result;
 }
 
-function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
-}
-
-function getVersionFromFilename(filename: string): number {
-  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
-}
-
-function getNextSchemaVersion(): number {
-  const [lastSchemaVersion] = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => b - a);
-
-  return lastSchemaVersion + 1;
-}
-
-function rewriteMigrationExports(): void {
-  const b = new FileBuilder();
-  const filenamesWithoutExt = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => a - b)
-    .map((version) => `v${version}`);
-  for (const filename of filenamesWithoutExt) {
-    b.append(`export * as ${filename} from './${filename}';`);
-    if (filename === 'v9') {
-      b.append('/* CAUTION: LOAD-BEARING COMMENT */');
-      b.append(
-        '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */'
-      );
-    }
-  }
-  writeFileSync(`${SCHEMA_DIR}/index.ts`, b.toString(), { flag: 'w' });
-}
-
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
@@ -1447,12 +1427,13 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
 
 /**
  * Translate SERIAL types to INT types based on {@link https://www.postgresql.org/docs/16/datatype-numeric.html#DATATYPE-SERIAL}
+ * Translate IDENTITY types to NOT NULL
  *
  * @param tableDef - the table definition
  * @param inputColumnDef - the column definition to desugar
- * @returns the desugared column definition if it was a SERIAL type, otherwise the original column definition
+ * @returns the desugared column definition if it was a SERIAL/IDENTITY column, otherwise the original column definition
  */
-function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
+function desugarColumnDefinition(tableDef: TableDefinition, inputColumnDef: ColumnDefinition): ColumnDefinition {
   if (SerialColumnTypes.has(inputColumnDef.type.toLocaleUpperCase())) {
     const columnDef = deepClone(inputColumnDef);
     columnDef.type = columnDef.type.toLocaleUpperCase().replace('SERIAL', 'INT');
@@ -1461,6 +1442,14 @@ function desugarSerialColumnTypes(tableDef: TableDefinition, inputColumnDef: Col
     columnDef.defaultValue = `nextval('${escapeIdentifier(sequenceName)}'::regclass)`;
     return columnDef;
   }
+
+  if (inputColumnDef.identity) {
+    const columnDef = deepClone(inputColumnDef);
+    columnDef.identity = undefined;
+    columnDef.notNull = true;
+    return columnDef;
+  }
+
   return inputColumnDef;
 }
 
@@ -1473,7 +1462,7 @@ export function columnDefinitionsEqual(table: TableDefinition, a: ColumnDefiniti
   }
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
-  return deepEquals(desugarSerialColumnTypes(table, a), desugarSerialColumnTypes(table, b));
+  return deepEquals(desugarColumnDefinition(table, a), desugarColumnDefinition(table, b));
 }
 
 export function constraintDefinitionsEqual(a: CheckConstraintDefinition, b: CheckConstraintDefinition): boolean {
@@ -1499,11 +1488,4 @@ function ensureEndsWithSemicolon(query: string): string {
     return query;
   }
   return query + ';';
-}
-
-if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }

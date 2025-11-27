@@ -3,9 +3,10 @@
 import { Button, Group, Modal, Stack, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { JSX, ReactNode, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { ConfigureGINIndexesForm } from './ConfigureGINIndexesForm';
 import { SearchableSelect } from './SearchableSelect';
 import { formatValue, getAvailableTables } from './utils';

@@ -1,18 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect } from '@mantine/core';
-import {
-  LRUCache,
-  MedplumClient,
-  ReadablePromise,
-  createReference,
-  isEmpty,
-  isPopulated,
-  tryGetProfile,
-} from '@medplum/core';
-import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
+import { LRUCache, ReadablePromise, createReference, isEmpty, isPopulated, tryGetProfile } from '@medplum/core';
+import type { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
@@ -277,7 +271,7 @@ async function fetchResourceTypeOfProfile(
         name,
         title,
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
   const response = (await medplum.graphql(query)) as ResourceTypeGraphQLResponse;
 

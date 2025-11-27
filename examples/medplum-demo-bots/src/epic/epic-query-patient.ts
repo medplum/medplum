@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BotEvent, createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
 import fetch from 'node-fetch';
@@ -21,7 +22,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   }
 
   // Handles unknown issue with newlines in private key
-  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replace(/\\n/g, '\n');
+  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replaceAll('\\n', '\n');
   if (!privateKeyString) {
     throw new Error('Missing EPIC_PRIVATE_KEY');
   }

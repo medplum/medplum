@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { OID_RESULT_ORGANIZER } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import { CcdaCode, CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import type { CcdaCode, CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
+import type { FhirToCcdaConverter } from '../convert';
 import { mapIdentifiers } from '../utils';
 import { createCcdaObservation } from './observation';
 
@@ -14,7 +14,7 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
   if (resource.result) {
     for (const member of resource.result) {
       const child = converter.findResourceByReference(member);
-      if (!child || child.resourceType !== 'Observation') {
+      if (child?.resourceType !== 'Observation') {
         continue;
       }
 

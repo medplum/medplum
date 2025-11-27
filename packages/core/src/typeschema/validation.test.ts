@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Account,
   Address,
   Appointment,
@@ -43,6 +43,29 @@ import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
 
+const VALID_BP: Observation = {
+  resourceType: 'Observation',
+  status: 'final',
+  category: [
+    {
+      coding: [{ code: 'vital-signs', system: 'http://terminology.hl7.org/CodeSystem/observation-category' }],
+    },
+  ],
+  code: { coding: [{ code: '85354-9', system: LOINC }] },
+  subject: { reference: 'Patient/example' },
+  effectiveDateTime: '2023-05-31T17:03:45-07:00',
+  component: [
+    {
+      dataAbsentReason: { coding: [{ code: '8480-6', system: LOINC }] },
+      code: { coding: [{ code: '8480-6', system: LOINC }] },
+    },
+    {
+      dataAbsentReason: { coding: [{ code: '8480-6', system: LOINC }] },
+      code: { coding: [{ code: '8462-4', system: LOINC }] },
+    },
+  ],
+};
+
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
   let resourcesBundle: Bundle;
@@ -52,8 +75,6 @@ describe('FHIR resource validation', () => {
   let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
-    console.log = jest.fn();
-
     typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
     resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
     medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
@@ -178,70 +199,6 @@ describe('FHIR resource validation', () => {
   });
 
   describe('US Core Blood Pressure profile', () => {
-    const VALID_BP: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
     test('Valid resource under constraining profile', () => {
       const observation: Observation = deepClone(VALID_BP);
       expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
@@ -1765,6 +1722,85 @@ describe('FHIR resource validation', () => {
     );
   });
 
+  describe('Value collection', () => {
+    // Test resource containing several required terminology bindings
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: 'example',
+      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+      active: true,
+      name: [
+        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+        { use: 'usual', given: ['Jim'] },
+        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+      ],
+      telecom: [
+        { use: 'home', system: 'url', value: 'http://example.com' },
+        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+      ],
+      gender: 'male',
+      birthDate: '1974-12-25',
+      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+      contact: [
+        {
+          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+          gender: 'female',
+        },
+      ],
+    };
+
+    // Flattened list of tokens expected from above Patient resource
+    const expectedTokens = [
+      { path: 'Patient.identifier[0].use', type: 'code', value: 'usual' },
+      { path: 'Patient.name[0].use', type: 'code', value: 'official' },
+      { path: 'Patient.name[1].use', type: 'code', value: 'usual' },
+      { path: 'Patient.name[2].use', type: 'code', value: 'maiden' },
+      { path: 'Patient.contact[0].name.use', type: 'code', value: 'usual' },
+      { path: 'Patient.telecom[0].system', type: 'code', value: 'url' },
+      { path: 'Patient.telecom[1].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[2].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[3].system', type: 'code', value: 'phone' },
+      { path: 'Patient.contact[0].telecom[0].system', type: 'code', value: 'phone' },
+      { path: 'Patient.telecom[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.telecom[1].use', type: 'code', value: 'work' },
+      { path: 'Patient.telecom[2].use', type: 'code', value: 'mobile' },
+      { path: 'Patient.telecom[3].use', type: 'code', value: 'old' },
+      { path: 'Patient.contact[0].telecom[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.gender', type: 'code', value: 'male' },
+      { path: 'Patient.address[0].use', type: 'code', value: 'home' },
+      { path: 'Patient.contact[0].address.use', type: 'code', value: 'home' },
+      { path: 'Patient.address[0].type', type: 'code', value: 'both' },
+      { path: 'Patient.contact[0].address.type', type: 'code', value: 'both' },
+      { path: 'Patient.contact[0].gender', type: 'code', value: 'female' },
+    ];
+
+    test('Gather tokens', () => {
+      const tokens = Object.create(null);
+      const issues = validateResource(patient, { collect: { tokens } });
+      expect(issues).toHaveLength(0);
+
+      const results = Object.values(tokens).flat();
+      expect(results).toStrictEqual(expect.arrayContaining(expectedTokens));
+      expect(results).toHaveLength(expectedTokens.length);
+    });
+
+    test('Gather tokens with profile', () => {
+      // US Core Patient profile does not add any new required terminology bindings;
+      // it should produce the same set as the base resource validation
+      const tokens = Object.create(null);
+      const issues = validateResource(patient, { collect: { tokens }, profile: patientProfile });
+      expect(issues).toHaveLength(0);
+
+      const results = Object.values(tokens).flat();
+      expect(results).toStrictEqual(expect.arrayContaining(expectedTokens));
+      expect(results).toHaveLength(expectedTokens.length);
+    });
+  });
+
   test('Element type code different than path', () => {
     // ClinicalDocument.realmCode
     // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/ClinicalDocument.xml
@@ -1779,20 +1815,8 @@ describe('FHIR resource validation', () => {
       type: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
       snapshot: {
         element: [
-          {
-            path: 'CS',
-          },
-          {
-            path: 'CS.code',
-            min: 0,
-            max: '1',
-            base: {
-              path: 'CD.code',
-              min: 0,
-              max: '1',
-            },
-            type: [{ code: 'code' }],
-          },
+          { path: 'CS' },
+          { path: 'CS.code', min: 0, max: '1', base: { path: 'CD.code', min: 0, max: '1' }, type: [{ code: 'code' }] },
         ],
       },
     };
@@ -1808,23 +1832,13 @@ describe('FHIR resource validation', () => {
       type: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
       snapshot: {
         element: [
-          {
-            path: 'ClinicalDocument',
-          },
+          { path: 'ClinicalDocument' },
           {
             path: 'ClinicalDocument.realmCode',
             min: 0,
             max: '*',
-            base: {
-              path: 'ClinicalDocument.realmCode',
-              min: 0,
-              max: '*',
-            },
-            type: [
-              {
-                code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
-              },
-            ],
+            base: { path: 'ClinicalDocument.realmCode', min: 0, max: '*' },
+            type: [{ code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS' }],
           },
         ],
       },

@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Avatar, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
-import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
+import type { LoginAuthenticationResponse } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 
@@ -76,7 +78,12 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   );
 }
 
+function getMembershipLabel(membership: ProjectMembership): string | undefined {
+  return membership.identifier?.find((i) => i.system === 'https://medplum.com/identifier/label')?.value;
+}
+
 function SelectOption(membership: ProjectMembership): JSX.Element {
+  const label = getMembershipLabel(membership);
   return (
     <Group>
       <Avatar radius="xl" />
@@ -85,7 +92,7 @@ function SelectOption(membership: ProjectMembership): JSX.Element {
           {membership.profile?.display}
         </Text>
         <Text fz="xs" opacity={0.6}>
-          {membership.project?.display}
+          {membership.project?.display} {label ? ` - ${label}` : ''}
         </Text>
       </div>
     </Group>

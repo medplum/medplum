@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   createReference,
   encodeBase64,
@@ -8,9 +9,8 @@ import {
   normalizeErrorString,
   Operator,
   parseSearchRequest,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
@@ -2765,6 +2765,20 @@ describe('AccessPolicy', () => {
       },
       'axp-3',
     ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?patient.name=Dave',
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?_has:DiagnosticReport:result:identifier=foo',
+      },
+      'axp-3',
+    ],
   ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
@@ -2772,6 +2786,21 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  it('Server accepts criteria that starts with escape code', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Device',
+              criteria: 'Device?identifier=foo', // Since \D is a character class, it could cause confusion
+            },
+          ],
+        })
+      ).resolves.toBeDefined();
+    }));
 
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {

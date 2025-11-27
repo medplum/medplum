@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -143,7 +145,6 @@ export * from './Organization';
 export * from './OrganizationAffiliation';
 export * from './ParameterDefinition';
 export * from './Parameters';
-export * from './PasswordChangeRequest';
 export * from './Patient';
 export * from './PaymentNotice';
 export * from './PaymentReconciliation';

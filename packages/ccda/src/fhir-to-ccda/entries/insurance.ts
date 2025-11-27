@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Account, Organization, RelatedPerson } from '@medplum/fhirtypes';
+import type { Account, Organization, RelatedPerson } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate } from '../../datetime';
 import {
   OID_COVERAGE_ACTIVITY,
@@ -12,8 +12,8 @@ import {
   OID_POLICY_HOLDER_PARTICIPANT,
 } from '../../oids';
 import { INSURANCE_COVERAGE_TYPE_MAPPER } from '../../systems';
-import { CcdaEntry, CcdaEntryRelationship, CcdaId, CcdaParticipant } from '../../types';
-import { FhirToCcdaConverter } from '../convert';
+import type { CcdaEntry, CcdaEntryRelationship, CcdaId, CcdaParticipant } from '../../types';
+import type { FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
   mapFhirAddressArrayToCcdaAddressArray,
@@ -28,7 +28,7 @@ export function createInsuranceEntry(converter: FhirToCcdaConverter, account: Ac
   if (account.coverage) {
     for (const accountCoverage of account.coverage) {
       const coverage = converter.findResourceByReference(accountCoverage.coverage);
-      if (!coverage || coverage.resourceType !== 'Coverage') {
+      if (coverage?.resourceType !== 'Coverage') {
         continue;
       }
 

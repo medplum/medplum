@@ -1,18 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Logger, ProfileResource, WithId, isUUID, parseLogLevel } from '@medplum/core';
-import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { NextFunction, Request, Response } from 'express';
+import type { ProfileResource, WithId } from '@medplum/core';
+import { Logger, isUUID, parseLogLevel } from '@medplum/core';
+import type {
+  Bot,
+  ClientApplication,
+  Extension,
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
-import { Repository, getSystemRepo } from './fhir/repo';
+import type { Repository } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger, systemLogger } from './logger';
-import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import type { AuthState } from './oauth/middleware';
+import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';
-import { IRequestContext, requestContextStore } from './request-context-store';
+import type { IRequestContext } from './request-context-store';
+import { requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext implements IRequestContext {

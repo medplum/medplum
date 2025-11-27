@@ -10,7 +10,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
+import type {
   Binary,
   Bundle,
   Encounter,
@@ -1314,5 +1314,87 @@ describe('GraphQL', () => {
     const firstId = data1.EncounterConnection.edges[0].resource.id;
     expect([encounter1.id, encounter2.id]).toContain(firstId);
     expect(data1.EncounterConnection.next).toBeDefined();
+  });
+
+  test('Patch Patient Record', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+          patch: [
+            { op: "replace", path: "/name/0/family", value: "Smith" },
+            { op: "replace", path: "/gender", value: "male" }
+          ]
+        ) {
+          id
+          gender
+          name { family given }
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+    const data = (res[1] as any).data;
+    expect(data.PatientPatch).toBeDefined();
+    expect(data.PatientPatch.gender).toBe('male');
+    expect(data.PatientPatch.name[0].family).toBe('Smith');
+
+    // Confirm in repo
+    const updated = await repo.readResource<Patient>('Patient', testPatient.id ?? '');
+    expect(updated.gender).toBe('male');
+    expect(updated.name?.[0].family).toBe('Smith');
+  });
+
+  test('Invalid Patch Mutation', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+        ) {
+          id
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    // GraphQL validation happens before our resolver, so we get a validation error in the OperationOutcome
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+      /Field "PatientPatch" argument "patch" of type "\[PatchOperationInput!\]!" is required/
+    );
+  });
+
+  test('Invalid Patch Operations', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+          patch: "not-an-array"
+        ) {
+          id
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    // GraphQL type validation catches this before our resolver
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+      /Expected value of type "\[PatchOperationInput!\]!", found "not-an-array"/
+    );
   });
 });

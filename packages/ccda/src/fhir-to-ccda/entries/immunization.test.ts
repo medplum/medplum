@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import {
+import type {
   Bundle,
   Composition,
   Immunization,
@@ -12,7 +12,7 @@ import {
   PractitionerRole,
 } from '@medplum/fhirtypes';
 import { OID_IMMUNIZATION_ACTIVITY } from '../../oids';
-import { CcdaText } from '../../types';
+import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createImmunizationEntry, mapImmunizationPerformerToCcdaPerformer } from './immunization';
 

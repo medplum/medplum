@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client } from 'pg';
+import type { Client, PoolClient } from 'pg';
+import type { CTE, Operator } from './sql';
 import {
-  CTE,
   Column,
   Condition,
+  Constant,
+  InsertQuery,
   Negation,
-  Operator,
   SelectQuery,
   SqlBuilder,
   UnionAllBuilder,
@@ -14,6 +15,8 @@ import {
   ValuesQuery,
   isValidTableName,
   periodToRangeString,
+  resetSqlDebug,
+  setSqlDebug,
 } from './sql';
 
 describe('SqlBuilder', () => {
@@ -159,6 +162,65 @@ describe('SqlBuilder', () => {
       );
     });
 
+    test('Select with subquery', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Condition(new Column(joinName, 'id'), '=', new Column('MyJoinTable', 'id'));
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('INNER JOIN', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" INNER JOIN (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON "T1"."id" = "MyJoinTable"."id"'
+      );
+    });
+
+    test('Select with simple lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('MyTable')
+        .column('id')
+        .join('LEFT JOIN LATERAL', new SelectQuery('MyJoinTable').column('id'), joinName, joinOnExpression)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" LEFT JOIN LATERAL (SELECT "MyJoinTable"."id" FROM "MyJoinTable") AS "T1" ON true'
+      );
+    });
+
+    test('Select with realistic lateral join', () => {
+      const sql = new SqlBuilder();
+
+      const joinName = 'T1';
+      const joinOnExpression = new Constant('true');
+
+      new SelectQuery('Patient')
+        .column('id')
+        .join(
+          'LEFT JOIN LATERAL',
+          new SelectQuery('HumanName')
+            .column('resourceId')
+            .column('name')
+            .where(new Column('HumanName', 'resourceId'), '=', new Column('Patient', 'id'))
+            .orderBy(new Column('HumanName', 'resourceId'), false)
+            .limit(1),
+          joinName,
+          joinOnExpression
+        )
+        .orderBy(new Column('T1', 'name'), false)
+        .buildSql(sql);
+
+      expect(sql.toString()).toBe(
+        'SELECT "Patient"."id" FROM "Patient" LEFT JOIN LATERAL (SELECT "HumanName"."resourceId", "HumanName"."name" FROM "HumanName" WHERE "HumanName"."resourceId" = "Patient"."id" ORDER BY "HumanName"."resourceId" LIMIT 1) AS "T1" ON true ORDER BY "T1"."name"'
+      );
+    });
+
     test('Select distinct on sorting', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable')
@@ -219,6 +281,12 @@ describe('SqlBuilder', () => {
 
       await sql.execute(conn);
       expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+    });
+
+    test('Empty insert is no-op', async () => {
+      const db = { query: jest.fn() } as unknown as PoolClient;
+      await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
+      expect(db.query).not.toHaveBeenCalled();
     });
 
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {
@@ -313,4 +381,34 @@ test('isValidTableName', () => {
   expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
   expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
   expect(isValidTableName('Observation History')).toStrictEqual(false);
+});
+
+test('debug', async () => {
+  const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+  const conn = {
+    query: jest.fn(() => ({ rows: [] })),
+  } as unknown as Client;
+
+  const query = new SelectQuery('MyTable').column('id');
+
+  async function executeQuery(): Promise<void> {
+    const sql = new SqlBuilder();
+    query.buildSql(sql);
+    await sql.execute(conn);
+  }
+
+  setSqlDebug('literally anything');
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+
+  setSqlDebug(undefined);
+
+  consoleLogSpy.mockClear();
+  await executeQuery();
+  expect(consoleLogSpy).not.toHaveBeenCalled();
+
+  resetSqlDebug();
 });

@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, WithId } from '@medplum/core';
-import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
-import { getSystemRepo, Repository } from '../../repo';
+import type { Repository } from '../../repo';
+import { getSystemRepo } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
@@ -21,8 +23,15 @@ class BulkFileWriter {
     this.writerPromise = getBinaryStorage().writeBinary(binary, filename, NDJSON_CONTENT_TYPE, this.stream);
   }
 
-  write(resource: Resource): void {
-    this.stream.write(JSON.stringify(resource) + '\n');
+  async write(resource: Resource): Promise<void> {
+    const data = JSON.stringify(resource) + '\n';
+    // Handle backpressure - if write buffer is full, wait for drain
+    if (!this.stream.write(data)) {
+      await new Promise<void>((resolve, reject) => {
+        this.stream.once('drain', () => resolve());
+        this.stream.once('error', (err) => reject(err));
+      });
+    }
   }
 
   close(): Promise<void> {
@@ -35,7 +44,7 @@ export class BulkExporter {
   readonly repo: Repository;
   private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
-  readonly resourceSet = new Set<string>();
+  readonly resourceSets = new Map<string, Set<string>>();
 
   constructor(repo: Repository) {
     this.repo = repo;
@@ -64,6 +73,17 @@ export class BulkExporter {
     return writer;
   }
 
+  async closeWriter(resourceType: string): Promise<void> {
+    const writer = this.writers[resourceType];
+    if (writer) {
+      await writer.close();
+      // Keep reference for formatOutput(), but free the stream resources
+    }
+
+    // Clear tracking for this resource type to free memory
+    this.resourceSets.delete(resourceType);
+  }
+
   async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
@@ -75,22 +95,35 @@ export class BulkExporter {
   }
 
   async writeResource(resource: WithId<Resource>): Promise<void> {
+    const resourceType = resource.resourceType;
     const ref = getReferenceString(resource);
-    if (!this.resourceSet.has(ref)) {
-      const writer = await this.getWriter(resource.resourceType);
-      writer.write(resource);
-      this.resourceSet.add(ref);
+
+    // Get or create the Set for this resource type
+    let exportedResources = this.resourceSets.get(resourceType);
+    if (!exportedResources) {
+      exportedResources = new Set<string>();
+      this.resourceSets.set(resourceType, exportedResources);
+    }
+
+    // Only write if not already tracked
+    if (!exportedResources.has(ref)) {
+      const writer = await this.getWriter(resourceType);
+      await writer.write(resource);
+      exportedResources.add(ref);
     }
   }
 
   async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
-      throw new Error('Export muse be started before calling close()');
+      throw new Error('Export must be started before calling close()');
     }
 
     for (const writer of Object.values(this.writers)) {
       await writer.close();
     }
+
+    // Clear remaining tracked resources to free memory immediately
+    this.resourceSets.clear();
 
     // Update the AsyncJob
     const systemRepo = getSystemRepo();

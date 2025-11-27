@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message } from '@medplum/core';
+import type { Hl7Message } from '@medplum/core';
 import assert from 'node:assert';
-import { connect, Socket } from 'node:net';
+import type { Socket } from 'node:net';
+import { connect } from 'node:net';
 import { Hl7Base } from './base';
-import { Hl7Connection, SendAndWaitOptions } from './connection';
+import type { SendAndWaitOptions } from './connection';
+import { Hl7Connection } from './connection';
 import { Hl7CloseEvent, Hl7ErrorEvent } from './events';
 
 export interface Hl7ClientOptions {
@@ -208,6 +210,10 @@ export class Hl7Client extends Hl7Base {
       const connection = this.connection;
       delete this.connection;
       await connection.close();
+    } else {
+      // Emit close event because the connection will not be able to emit it for us
+      // Since it has not connected at this point
+      this.dispatchEvent(new Hl7CloseEvent());
     }
     // Close the socket if it exists
     if (this.socket) {

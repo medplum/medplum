@@ -14,10 +14,11 @@ import {
   TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import type { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import type { JSX, MouseEvent, SyntheticEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -354,8 +355,8 @@ let nextId = 1;
 function generateId(existing?: string): string {
   if (existing) {
     if (existing.startsWith('id-')) {
-      const existingNum = parseInt(existing.substring(3), 10);
-      if (!isNaN(existingNum)) {
+      const existingNum = Number.parseInt(existing.substring(3), 10);
+      if (!Number.isNaN(existingNum)) {
         nextId = Math.max(nextId, existingNum + 1);
       }
     }

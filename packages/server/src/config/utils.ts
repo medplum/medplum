@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
-import { MedplumServerConfig } from './types';
+import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { getLogger } from '../logger';
+import type { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -44,8 +46,32 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
-
   config.defaultFhirQuota ??= 50_000;
+
+  // Automatically generate a signing key if using built-in storage and no signing key is provided
+  if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
+    getLogger().warn(
+      'Generating temporary signing key. Storage URLs will not work in cluster environments, and will be invalid after server restart.'
+    );
+    const passphrase = randomUUID();
+    const signingKey = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs1',
+        format: 'pem',
+        cipher: 'aes-256-cbc',
+        passphrase,
+      },
+    });
+    config.signingKeyId = 'medplum-generated-key';
+    config.signingKey = signingKey.privateKey;
+    config.signingKeyPassphrase = passphrase;
+  }
+
   return config as ServerConfig;
 }
 
@@ -92,6 +118,7 @@ const integerKeys = new Set([
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -134,6 +161,8 @@ const booleanKeys = new Set([
   'registerEnabled',
   'require',
   'rejectUnauthorized',
+  'fhirSearchDiscourageSeqScan',
+  'redactAuditEvents',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
@@ -144,4 +173,28 @@ const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaul
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
+}
+
+export function setValue(config: Record<string, unknown>, key: string, value: string): void {
+  const keySegments = key.split('.');
+  let obj = config;
+
+  while (keySegments.length > 1) {
+    const segment = keySegments.shift() as string;
+    if (!obj[segment]) {
+      obj[segment] = {};
+    }
+    obj = obj[segment] as Record<string, unknown>;
+  }
+
+  let parsedValue: any = value;
+  if (isIntegerConfig(key)) {
+    parsedValue = Number.parseInt(value, 10);
+  } else if (isBooleanConfig(key)) {
+    parsedValue = value === 'true';
+  } else if (isObjectConfig(key)) {
+    parsedValue = JSON.parse(value);
+  }
+
+  obj[keySegments[0]] = parsedValue;
 }

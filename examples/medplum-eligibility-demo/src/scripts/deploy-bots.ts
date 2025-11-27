@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -15,7 +15,7 @@ interface BotDescription {
 const Bots: BotDescription[] = [
   {
     src: 'src/bots/process-eligibility-request.ts',
-    dist: 'dist/process-eligibility-request.js',
+    dist: 'dist/bots/process-eligibility-request.js',
     criteria: 'CoverageEligibilityRequest',
   },
 ];

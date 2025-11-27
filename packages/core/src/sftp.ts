@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Readable } from 'stream';
+import type { Readable } from 'node:stream';
 
 /**
  * Reads data from a Readable stream and returns a Promise that resolves with a Buffer containing all the data.

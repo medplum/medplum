@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, TextInput, Title } from '@mantine/core';
-import { FhircastEventContext } from '@medplum/core';
+import type { FhircastEventContext } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import TopicGenerator from './TopicGenerator';
 
 function createFhircastMessageContext(patientId: string): FhircastEventContext<'Patient-open'> {

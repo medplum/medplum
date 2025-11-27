@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Communication } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import type { Communication } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { ThreadInbox } from '../../components/messages/ThreadInbox';
 import { useNavigate, useParams } from 'react-router';
 

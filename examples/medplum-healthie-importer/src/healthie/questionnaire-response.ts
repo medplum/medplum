@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Patient,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import { HealthieClient } from './client';
+import type { HealthieClient } from './client';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
 
 // TypeScript interfaces for Healthie API structures
@@ -135,9 +135,9 @@ export function convertHealthieFormAnswerGroupToFhir(
 export function createSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replaceAll(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replaceAll(/\s+/g, '-') // Replace spaces with hyphens
+    .replaceAll(/-+/g, '-') // Replace multiple hyphens with single
     .trim();
 }
 
@@ -272,7 +272,7 @@ function convertHealthieAnswerValueToFhir(answer: HealthieFormAnswer): Questionn
 
     case 'number':
     case 'Body Fat %':
-      return [{ valueQuantity: { value: parseFloat(answerValue) } }];
+      return [{ valueQuantity: { value: Number.parseFloat(answerValue) } }];
 
     case 'signature': {
       // TODO: Use FHIR SDC extension for signatures

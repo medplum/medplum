@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /*
  * This is a generated file
  * Do not edit manually.
@@ -114,7 +116,6 @@ import { OperationOutcome } from './OperationOutcome';
 import { Organization } from './Organization';
 import { OrganizationAffiliation } from './OrganizationAffiliation';
 import { Parameters } from './Parameters';
-import { PasswordChangeRequest } from './PasswordChangeRequest';
 import { Patient } from './Patient';
 import { PaymentNotice } from './PaymentNotice';
 import { PaymentReconciliation } from './PaymentReconciliation';
@@ -278,7 +279,6 @@ export type Resource = AccessPolicy
   | Organization
   | OrganizationAffiliation
   | Parameters
-  | PasswordChangeRequest
   | Patient
   | PaymentNotice
   | PaymentReconciliation

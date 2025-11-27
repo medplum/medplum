@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, forbidden } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import type { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { getDefaultNormalizer } from '@testing-library/react';
@@ -69,16 +69,6 @@ describe('SuperAdminPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
-  test('Start data migration', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Start Migration'));
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();

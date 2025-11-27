@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -7,15 +8,14 @@ import {
   isOk,
   isOperationOutcome,
   isResource,
+  notFound,
   OperationOutcomeError,
   Operator,
-  WithId,
 } from '@medplum/core';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
+import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
-import { BotExecutionResult } from '../../bots/types';
+import type { BotExecutionResult } from '../../bots/types';
 import {
   getBotDefaultHeaders,
   getBotProjectMembership,
@@ -37,8 +37,10 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * Then executes the bot.
  * Returns the outcome of the bot execution.
  * Assumes that input content-type is output content-type.
+ * @param req - The request object
+ * @param res - The response object
  */
-export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
+export const executeHandler = async (req: Request, res: Response): Promise<void> => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
       const result = await executeOperation(req);
@@ -66,7 +68,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
     res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
   }
-});
+};
 
 async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
@@ -103,7 +105,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
  * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
  * Otherwise, returns undefined.
  * @param req - The HTTP request.
- * @returns The bot, or undefined if not found.
+ * @returns The bot, or undefined if no ID or identifier is provided.
  */
 async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
@@ -116,10 +118,16 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return ctx.repo.searchOne<Bot>({
+    const bot = await ctx.repo.searchOne<Bot>({
       resourceType: 'Bot',
       filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
     });
+
+    if (!bot) {
+      throw new OperationOutcomeError(notFound);
+    }
+
+    return bot;
   }
 
   // If no bot ID or identifier, return undefined

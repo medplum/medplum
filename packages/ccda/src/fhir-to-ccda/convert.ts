@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Address,
   Bundle,
   CareTeam,
@@ -41,7 +41,7 @@ import {
   mapCodeableConceptToCcdaCode,
 } from '../systems';
 import { CCDA_TEMPLATE_IDS, LOINC_TO_TEMPLATE_IDS, REFERRAL_TEMPLATE_IDS } from '../templates';
-import {
+import type {
   Ccda,
   CcdaAuthor,
   CcdaCode,
@@ -470,7 +470,7 @@ export class FhirToCcdaConverter {
     }
 
     const resource = this.findResourceByReference(recipient[0]);
-    if (!resource || resource.resourceType !== 'Practitioner') {
+    if (resource?.resourceType !== 'Practitioner') {
       return undefined;
     }
 

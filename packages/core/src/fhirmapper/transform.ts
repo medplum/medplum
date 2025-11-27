@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   ConceptMap,
   ExtractResource,
   ResourceType,
@@ -16,8 +16,9 @@ import {
 import { generateId } from '../crypto';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
-import { TypedValue } from '../types';
-import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
+import type { TypedValue } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
+import { tryGetDataType } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
 /**
@@ -296,7 +297,7 @@ function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule
 function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule): boolean {
   // First, check if this is actually a shorthand rule
   // Shorthand rule has exactly one target, no transform, no rule, and no dependent
-  if (!rule.target || rule.target.length !== 1 || rule.target[0].transform || rule.rule || rule.dependent) {
+  if (rule.target?.length !== 1 || rule.target[0].transform || rule.rule || rule.dependent) {
     return false;
   }
 
@@ -441,7 +442,7 @@ function evalListMode(source: StructureMapGroupRuleSource, sourceValue: TypedVal
     case 'not_first':
       return sourceValue.slice(1);
     case 'last':
-      return [sourceValue[sourceValue.length - 1]];
+      return [sourceValue.at(-1) as TypedValue];
     case 'not_last':
       return sourceValue.slice(0, sourceValue.length - 1);
     case 'only_one':

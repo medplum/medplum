@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, HTTP_HL7_ORG } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
+import type { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -150,7 +150,7 @@ describe('StructureDefinition $expand-profile', () => {
       expect(bundle.entry?.some((entry) => entry.resource?.url === sdUrl)).toStrictEqual(true);
     }
 
-    const missingSdUrl = sdUrls[sdUrls.length - 1];
+    const missingSdUrl = sdUrls.at(-1);
     expect(bundle.entry?.some((entry) => entry.resource?.url === missingSdUrl)).toStrictEqual(false);
   });
 });

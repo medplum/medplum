@@ -1,27 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  AgentConnectRequest,
-  AgentMessage,
-  AgentTransmitRequest,
-  ContentType,
-  Hl7Message,
-  MEDPLUM_VERSION,
-  getReferenceString,
-  normalizeErrorString,
-} from '@medplum/core';
-import { Agent, Bot, Reference } from '@medplum/fhirtypes';
-import { Redis } from 'ioredis';
+import type { AgentConnectRequest, AgentMessage, AgentTransmitRequest } from '@medplum/core';
+import { ContentType, Hl7Message, MEDPLUM_VERSION, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
+import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { IncomingMessage } from 'node:http';
-import ws from 'ws';
+import type { IncomingMessage } from 'node:http';
+import type { RawData, WebSocket } from 'ws';
 import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis, getRedisSubscriber } from '../redis';
-import { AgentConnectionState, AgentInfo } from './utils';
+import type { AgentInfo } from './utils';
+import { AgentConnectionState } from './utils';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
@@ -31,7 +24,7 @@ const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */
-export async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
+export async function handleAgentConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
   const remoteAddress = request.socket.remoteAddress;
   let agentId: string | undefined = undefined;
 
@@ -45,7 +38,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   socket.on(
     'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+    AsyncLocalStorage.bind(async (data: RawData) => {
       try {
         const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         switch (command.type) {

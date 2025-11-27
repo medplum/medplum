@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Bundle,
   CodeableConcept,
   Coding,
@@ -12,8 +12,9 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
-import { SearchParameterDetails } from './search/details';
-import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
+import type { SearchParameterDetails } from './search/details';
+import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
+import { getAllDataTypes, tryGetDataType } from './typeschema/types';
 import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
@@ -33,7 +34,7 @@ export interface TypedValue {
 
 /**
  * List of property types.
- * http://www.hl7.org/fhir/valueset-defined-types.html
+ * http://www.hl7.org/fhir/R4/valueset-defined-types.html
  * The list here includes additions found from StructureDefinition resources.
  */
 export const PropertyType = {
@@ -52,6 +53,8 @@ export const PropertyType = {
   Distance: 'Distance',
   Dosage: 'Dosage',
   Duration: 'Duration',
+  Element: 'Element',
+  ElementDefinition: 'ElementDefinition',
   Expression: 'Expression',
   Extension: 'Extension',
   HumanName: 'HumanName',
@@ -59,6 +62,7 @@ export const PropertyType = {
   MarketingStatus: 'MarketingStatus',
   Meta: 'Meta',
   Money: 'Money',
+  MoneyQuantity: 'MoneyQuantity',
   Narrative: 'Narrative',
   ParameterDefinition: 'ParameterDefinition',
   Period: 'Period',
@@ -72,6 +76,7 @@ export const PropertyType = {
   RelatedArtifact: 'RelatedArtifact',
   SampledData: 'SampledData',
   Signature: 'Signature',
+  SimpleQuantity: 'SimpleQuantity',
   SubstanceAmount: 'SubstanceAmount',
   SystemString: 'http://hl7.org/fhirpath/System.String',
   Timing: 'Timing',
@@ -96,6 +101,7 @@ export const PropertyType = {
   uri: 'uri',
   url: 'url',
   uuid: 'uuid',
+  xhtml: 'xhtml',
 } as const;
 
 /**
@@ -351,7 +357,7 @@ export function getPropertyDisplayName(propertyName: string): string {
   // Then normalize whitespace to single space character
   // For example, for property name "birthDate",
   // the display name is "Birth Date".
-  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replace(/\s+/g, ' ');
+  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replaceAll(/\s+/g, ' ');
 }
 
 const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);

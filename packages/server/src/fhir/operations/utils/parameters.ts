@@ -11,15 +11,15 @@ import {
   isTypedValue,
   validateResource,
 } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import {
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
   OperationDefinition,
   OperationDefinitionParameter,
   Parameters,
   ParametersParameter,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -102,16 +102,16 @@ function parseStringifiedParameter(
     case 'positiveInt':
     case 'unsignedInt':
       {
-        const n = parseInt(value, 10);
-        if (!isNaN(n)) {
+        const n = Number.parseInt(value, 10);
+        if (!Number.isNaN(n)) {
           return n;
         }
       }
       break;
     case 'decimal':
       {
-        const n = parseFloat(value);
-        if (!isNaN(n)) {
+        const n = Number.parseFloat(value);
+        if (!Number.isNaN(n)) {
           return n;
         }
       }
@@ -135,12 +135,13 @@ function parseStringifiedParameter(
 function validateInputParam(param: OperationDefinitionParameter, value: unknown): unknown {
   // Check parameter cardinality (min and max)
   const min = param.min ?? 0;
-  const max = parseInt(param.max ?? '1', 10);
+  const maxStr = param.max ?? '1';
+  const max = maxStr === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(maxStr, 10);
   if (Array.isArray(value)) {
     if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
         badRequest(
-          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+          `Expected ${min === max ? maxStr : min + '..' + maxStr} value(s) for input parameter ${param.name}, but ${
             value.length
           } provided`
         )
@@ -173,6 +174,14 @@ function parseParams(
         const paramType = param.type ?? 'string';
         if (paramType === 'Resource' || isResourceType(paramType)) {
           return v.resource;
+        } else if (paramType === 'Any') {
+          // Parse as TypedValue
+          for (const key of Object.keys(v)) {
+            if (key.startsWith('value')) {
+              return { type: key.substring(5), value: v[key as keyof ParametersParameter] };
+            }
+          }
+          return undefined;
         } else {
           return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
         }
@@ -187,7 +196,7 @@ function parseParams(
 export function buildOutputParameters(operation: OperationDefinition, output: object | undefined): Parameters {
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
-  if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
+  if (outputParameters?.length === 1 && param1?.name === 'return') {
     if (!isResource(output, param1.type as ResourceType | undefined)) {
       throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
     } else {
@@ -234,7 +243,7 @@ function checkMinMax(param: OperationDefinitionParameter, value: unknown): void 
   const count = Array.isArray(value) ? value.length : +(value !== undefined);
   if (param.min && param.min > 0 && count < param.min) {
     throw new Error(`Expected ${param.min} or more values for output parameter '${param.name}', got ${count}`);
-  } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
+  } else if (param.max && param.max !== '*' && count > Number.parseInt(param.max, 10)) {
     throw new Error(`Expected at most ${param.max} values for output parameter '${param.name}', got ${count}`);
   }
 }

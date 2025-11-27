@@ -1,16 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  capitalize,
-  getAllDataTypes,
-  indexStructureDefinitionBundle,
-  InternalSchemaElement,
-  InternalTypeSchema,
-} from '@medplum/core';
+import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
+import { capitalize, getAllDataTypes, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
-import { JSONSchema6, JSONSchema6Definition } from 'json-schema';
+import type { JSONSchema6, JSONSchema6Definition } from 'json-schema';
 import { resolve } from 'path';
 import { getValueSetValues } from './valuesets';
 
@@ -71,7 +66,7 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(__dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
+    resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
     JSON.stringify(fhirSchema, undefined, 2)
       .replaceAll("'", '\\u0027')
       .replaceAll('<', '\\u003c')
@@ -202,6 +197,6 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   return undefined;
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main();
 }

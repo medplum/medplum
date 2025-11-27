@@ -1,0 +1,40 @@
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.borderRight {
+  border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+}
+
+.borderTop {
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+}
+
+.fadeOut {
+  animation: fadeOut 0.3s ease-out;
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.previewResource {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

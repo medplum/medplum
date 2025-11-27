@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, normalizeOperationOutcome, OperationOutcomeError } from '@medplum/core';
-import { applyPatch, Operation } from 'rfc6902';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 
 /**
  * Applies a JSON patch to an object in-place.
@@ -17,6 +18,6 @@ export function patchObject(obj: any, patch: Operation[]): void {
       throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
     }
   } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
   }
 }

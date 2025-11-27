@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   OperationOutcomeError,
   Operator,
-  SearchRequest,
-  SortRule,
-  WithId,
   allOk,
   badRequest,
   created,
@@ -20,8 +18,9 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
-import { Operation, applyPatch } from 'rfc6902';
+import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -465,7 +464,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     const parts = reference.reference?.split('/');
-    if (!parts || parts.length !== 2) {
+    if (parts?.length !== 2) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
-import { AccessPolicy } from '@medplum/fhirtypes';
+import type { AccessPolicy } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -166,7 +166,7 @@ describe('SCIM Routes', () => {
     expect(patchResponse.body.active).toBe(false);
   });
 
-  test.skip('Create missing medplum user type', async () => {
+  test('Create, missing medplum user type, creates a Practitioner', async () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -179,8 +179,8 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');
+    expect(res.status).toBe(201);
+    expect(res.body.userType).toBe('Practitioner');
   });
 
   test('Search users as super admin', async () => {

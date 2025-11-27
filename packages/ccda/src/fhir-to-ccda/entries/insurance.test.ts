@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import { Account, Bundle, Composition, Coverage, Organization, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import type { Account, Bundle, Composition, Coverage, Organization, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { FhirToCcdaConverter } from '../convert';
 import { createInsuranceEntry } from './insurance';
 

@@ -8,10 +8,10 @@ import {
   getDisplayString,
   HTTP_HL7_ORG,
 } from '@medplum/core';
-import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
-import path from 'path';
-import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
+import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
+import { imageData } from './cms1500.png';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -105,7 +105,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: path.relative(process.cwd(), path.resolve(__dirname, '../../../../static/cms1500.png')),
+        image: imageData,
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
@@ -349,7 +349,7 @@ export function getSimplePhone(phone: string | undefined): string | undefined {
   }
 
   // Remove all remaining non-digit characters
-  return result.replace(/\D/g, '');
+  return result.replaceAll(/\D/g, '');
 }
 
 function getPhoneAreaCode(phone: string | undefined): string | undefined {

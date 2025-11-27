@@ -1,7 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, DiagnosticReport, Observation, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle, findResourceInBundle } from './bundle';
+import type {
+  Bundle,
+  BundleEntry,
+  DiagnosticReport,
+  Observation,
+  Patient,
+  Resource,
+  Specimen,
+} from '@medplum/fhirtypes';
+import {
+  convertContainedResourcesToBundle,
+  convertToTransactionBundle,
+  findResourceInBundle,
+  reorderBundle,
+} from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -404,6 +417,79 @@ describe('Bundle tests', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('reorderBundle', () => {
+    test('Preserves entries without fullUrl and appends them at the end', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          // Entry with fullUrl that references Patient (should be reordered)
+          createResourceWithReference('DiagnosticReport', 'urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620', {
+            subject: { reference: 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13' },
+          }),
+          // Entry with fullUrl (should come first after reordering)
+          createResourceWithReference('Patient', 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13'),
+          // Entry without fullUrl (PATCH operation - should be preserved and appended at end)
+          {
+            request: {
+              method: 'PATCH',
+              url: 'Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'application/json-patch+json',
+              data: 'W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6dHJ1ZX1d',
+            },
+          },
+          // Another entry without fullUrl (should also be preserved)
+          {
+            request: {
+              method: 'PATCH',
+              url: 'Observation/123',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'application/json-patch+json',
+              data: 'W3sib3AiOiJhZGQiLCJwYXRoIjoiL3N0YXR1cyIsInZhbHVlIjoiZmluYWwifV0=',
+            },
+          },
+          {
+            fullUrl: 'urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'test' },
+              subject: { reference: 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13' },
+              derivedFrom: [{ reference: 'urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620' }],
+            },
+          },
+        ],
+      };
+
+      const reorderedBundle = reorderBundle(inputBundle);
+
+      // Entries with fullUrl should be reordered (Patient before DiagnosticReport)
+      expect(reorderedBundle?.entry?.length).toBe(5);
+      expect(reorderedBundle?.entry?.[0]?.resource?.resourceType).toBe('Patient');
+      expect(reorderedBundle?.entry?.[0]?.fullUrl).toBe('urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle?.entry?.[1]?.resource?.resourceType).toBe('DiagnosticReport');
+      expect(reorderedBundle?.entry?.[1]?.fullUrl).toBe('urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620');
+      expect(reorderedBundle?.entry?.[2]?.resource?.resourceType).toBe('Observation');
+      expect(reorderedBundle?.entry?.[2]?.fullUrl).toBe('urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+
+      // Entries without fullUrl should be preserved and appended at the end
+      expect(reorderedBundle?.entry?.[3]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle?.entry?.[3]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle?.entry?.[3]?.request?.url).toBe('Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle?.entry?.[3]?.resource?.resourceType).toBe('Binary');
+      expect(reorderedBundle?.entry?.[4]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle?.entry?.[4]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle?.entry?.[4]?.request?.url).toBe('Observation/123');
+      expect(reorderedBundle?.entry?.[4]?.resource?.resourceType).toBe('Binary');
     });
   });
 

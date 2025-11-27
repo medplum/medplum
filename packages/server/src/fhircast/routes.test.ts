@@ -1,24 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ContentType,
-  createFhircastMessagePayload,
-  CurrentContext,
-  FhircastEventContext,
-  FhircastEventPayload,
-  generateId,
-  isOperationOutcome,
-  WithId,
-} from '@medplum/core';
-import { DiagnosticReport, Project } from '@medplum/fhirtypes';
+import type { CurrentContext, FhircastEventContext, FhircastEventPayload, WithId } from '@medplum/core';
+import { ContentType, createFhircastMessagePayload, generateId, isOperationOutcome } from '@medplum/core';
+import type { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
-import { ChainableCommander } from 'ioredis';
+import type { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
+import type { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';
@@ -70,7 +62,7 @@ describe('FHIRcast routes', () => {
     tokenForAnotherProject = _accessToken2;
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
+      server.listen(0, 'localhost', 8517, resolve);
     });
   });
 

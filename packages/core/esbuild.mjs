@@ -1,6 +1,8 @@
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* global process */
-/* eslint no-console: "off" */
+/* global console */
 
 import { execSync } from 'child_process';
 import esbuild from 'esbuild';
@@ -9,7 +11,7 @@ import packageJson from './package.json' with { type: 'json' };
 
 let gitHash;
 try {
-  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  gitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
 } catch (_error) {
   gitHash = 'unknown'; // Default value when not in a git repository
 }

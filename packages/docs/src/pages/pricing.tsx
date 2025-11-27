@@ -414,7 +414,7 @@ export default function PricingPage(): JSX.Element {
                 <td>Log Streaming</td>
                 <td></td>
                 <td></td>
-                <td></td>
+                <td>✔️</td>
                 <td>✔️</td>
                 <td>DIY</td>
                 <td>✔️</td>

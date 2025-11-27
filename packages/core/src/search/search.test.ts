@@ -1,17 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import {
-  Operator,
-  SearchRequest,
-  formatSearchQuery,
-  parseSearchRequest,
-  parseXFhirQuery,
-  splitSearchOnComma,
-} from './search';
+import type { SearchRequest } from './search';
+import { Operator, formatSearchQuery, parseSearchRequest, parseXFhirQuery, splitSearchOnComma } from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
@@ -223,6 +217,31 @@ describe('Search Utils', () => {
     });
   });
 
+  test.each([
+    [
+      'Patient?_lastUpdated:in=2025-10-15',
+      { resourceType: 'Patient', filters: [{ code: '_lastUpdated', operator: Operator.IN, value: '2025-10-15' }] },
+    ],
+    [
+      'Patient?_lastUpdated:not-in=2025-10-15',
+      { resourceType: 'Patient', filters: [{ code: '_lastUpdated', operator: Operator.NOT_IN, value: '2025-10-15' }] },
+    ],
+    [
+      'Patient?_lastUpdated:above=2025-10-15',
+      { resourceType: 'Patient', filters: [{ code: '_lastUpdated', operator: Operator.ABOVE, value: '2025-10-15' }] },
+    ],
+    [
+      'Patient?_lastUpdated:foobar=2025-10-15',
+      { resourceType: 'Patient', filters: [{ code: '_lastUpdated', operator: 'foobar', value: '2025-10-15' }] },
+    ],
+  ])('Invalid modifiers still parsed in %p', (url, expected) => {
+    if (expected instanceof Error) {
+      expect(() => parseSearchRequest(url)).toThrow(expected);
+    } else {
+      expect(parseSearchRequest(url)).toMatchObject(expected);
+    }
+  });
+
   test('Parse chained search parameters', () => {
     const searchReq = parseSearchRequest(
       'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
@@ -240,6 +259,22 @@ describe('Search Utils', () => {
           code: '_has:Observation:subject:performer:Practitioner.name',
           operator: Operator.EQUALS,
           value: 'Alice',
+        },
+      ],
+    });
+  });
+
+  test('Parsed chained search', () => {
+    const searchReq = parseSearchRequest(
+      `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
+    );
+    expect(searchReq).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected',
+          operator: Operator.EQUALS,
+          value: '2023',
         },
       ],
     });

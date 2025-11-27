@@ -1,12 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
-import { Period } from '@medplum/fhirtypes';
-import { Client, Pool, PoolClient } from 'pg';
-import { env } from 'process';
+import type { Period } from '@medplum/fhirtypes';
+import { env } from 'node:process';
+import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
 
-const DEBUG = env['SQL_DEBUG'];
+let DEBUG: string | undefined = env['SQL_DEBUG'];
+
+export function setSqlDebug(value: string | undefined): void {
+  DEBUG = value;
+}
+
+export function resetSqlDebug(): void {
+  DEBUG = env['SQL_DEBUG'];
+}
 
 export const ColumnType = {
   UUID: 'uuid',
@@ -197,16 +205,28 @@ function formatTsquery(filter: string | undefined): string | undefined {
     return undefined;
   }
 
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  const noPunctuation = filter.replaceAll(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
   if (!noPunctuation) {
     return undefined;
   }
 
-  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
+  return noPunctuation.replaceAll(/\s+/g, ':* & ') + ':*';
 }
 
 export interface Expression {
   buildSql(builder: SqlBuilder): void;
+}
+
+abstract class Executable implements Expression {
+  buildSql(_builder: SqlBuilder): void {
+    throw new Error('Method not implemented');
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    const sql = new SqlBuilder();
+    sql.appendExpression(this);
+    return (await sql.execute(conn)).rows;
+  }
 }
 
 export class Column implements Expression {
@@ -232,6 +252,18 @@ export class Column implements Expression {
 
   buildSql(sql: SqlBuilder): void {
     sql.appendColumn(this);
+  }
+}
+
+export class Constant implements Expression {
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
   }
 }
 
@@ -397,20 +429,29 @@ export class UnionAllBuilder {
   }
 }
 
-export class Union implements Expression {
+export class Union extends Executable implements Expression {
   readonly queries: SelectQuery[];
+  private allFlag = false;
+
   constructor(...queries: SelectQuery[]) {
+    super();
     this.queries = queries;
+  }
+
+  all(): this {
+    this.allFlag = true;
+    return this;
   }
 
   buildSql(sql: SqlBuilder): void {
     for (let i = 0; i < this.queries.length; i++) {
       if (i > 0) {
         sql.append(' UNION ');
+        if (this.allFlag) {
+          sql.append('ALL ');
+        }
       }
-      sql.append('(');
       sql.appendExpression(this.queries[i]);
-      sql.append(')');
     }
   }
 }
@@ -494,6 +535,8 @@ export class SqlBuilder {
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
+    } else if (value === null || value === undefined) {
+      this.append('NULL');
     } else {
       this.values.push(value);
       this.sql.push('$' + this.values.length);
@@ -598,12 +641,13 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
-export abstract class BaseQuery {
+export abstract class BaseQuery extends Executable {
   readonly actualTableName: string;
   readonly predicate: Conjunction;
   explain: boolean | string[] = false;
 
   constructor(tableName: string) {
+    super();
     this.actualTableName = tableName;
     this.predicate = new Conjunction([]);
   }
@@ -640,8 +684,8 @@ export interface CTE {
   recursive?: boolean;
 }
 
-export class SelectQuery extends BaseQuery implements Expression {
-  readonly innerQuery?: SelectQuery | Union | ValuesQuery;
+export class SelectQuery extends BaseQuery {
+  readonly innerQuery?: BaseQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
@@ -653,7 +697,7 @@ export class SelectQuery extends BaseQuery implements Expression {
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string, innerQuery?: SelectQuery | Union | ValuesQuery, alias?: string) {
+  constructor(tableName: string, innerQuery?: BaseQuery | Union | ValuesQuery, alias?: string) {
     super(tableName);
     this.innerQuery = innerQuery;
     this.distinctOns = [];
@@ -670,8 +714,13 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this.alias || this.actualTableName;
   }
 
+  withCte(name: string, expr: Expression): this {
+    this.with = { name, expr };
+    return this;
+  }
+
   withRecursive(name: string, expr: Expression): this {
-    this.with = { name, expr: expr, recursive: true };
+    this.with = { name, expr, recursive: true };
     return this;
   }
 
@@ -768,12 +817,6 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(' OFFSET ');
       sql.append(this.offset_);
     }
-  }
-
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
-    sql.appendExpression(this);
-    return (await sql.execute(conn)).rows;
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
@@ -1002,8 +1045,7 @@ export class InsertQuery extends BaseQuery {
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
-    const sql = new SqlBuilder();
+  buildSql(sql: SqlBuilder): void {
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.actualTableName);
     if (this.values) {
@@ -1015,9 +1057,8 @@ export class InsertQuery extends BaseQuery {
     }
     this.appendMerge(sql);
     if (this.returnColumns) {
-      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+      sql.append(` RETURNING ${this.returnColumns.join(', ')}`);
     }
-    return sql.execute(conn);
   }
 
   private appendColumns(sql: SqlBuilder, columnNames: string[]): void {
@@ -1101,18 +1142,26 @@ export class InsertQuery extends BaseQuery {
       first = false;
     }
   }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    if (!this.values?.length) {
+      return [];
+    }
+    return super.execute(conn);
+  }
 }
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
 
   using(...tableNames: string[]): this {
-    this.usingTables = tableNames;
+    for (const table of tableNames) {
+      this.usingTables = append(this.usingTables, table);
+    }
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
+  buildSql(sql: SqlBuilder): void {
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.actualTableName);
 
@@ -1129,7 +1178,6 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
-    return (await sql.execute(conn)).rows;
   }
 }
 

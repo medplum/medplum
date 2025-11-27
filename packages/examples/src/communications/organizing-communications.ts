@@ -3,7 +3,7 @@
 
 // start-block imports
 import { MedplumClient, SNOMED } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -56,7 +56,7 @@ await medplum.searchResources('Communication', {
 
 /*
 // start-block searchThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude:Communication:part-of'
+medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
 // end-block searchThreadsWithMessagesCli
 
 // start-block searchThreadsWithMessagesCurl

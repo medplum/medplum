@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Resource } from '@medplum/fhirtypes';
-import { ElementsContextType } from './elements-context';
-import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
-import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
-import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
+import type { Resource } from '@medplum/fhirtypes';
+import type { ElementsContextType } from './elements-context';
+import type { SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
+import { SchemaCrawler } from './schema-crawler';
+import type { SliceDefinitionWithTypes } from './typeschema/slices';
+import { getValueSliceName } from './typeschema/slices';
+import type { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isEmpty, isObject, isPopulated } from './utils';
 
 /**
@@ -95,11 +97,11 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   private get schema(): InternalTypeSchema {
-    return this.schemaStack[this.schemaStack.length - 1];
+    return this.schemaStack.at(-1) as InternalTypeSchema;
   }
 
   private get value(): ValueContext {
-    return this.valueStack[this.valueStack.length - 1];
+    return this.valueStack.at(-1) as ValueContext;
   }
 
   onEnterSchema(schema: InternalTypeSchema): void {

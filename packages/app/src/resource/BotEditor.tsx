@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { MedplumClient, PatchOperation } from '@medplum/core';
+import { ContentType, isUUID, normalizeErrorString } from '@medplum/core';
+import type { Bot } from '@medplum/fhirtypes';
 import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { JSX, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
+import type { JSX, SyntheticEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
@@ -34,6 +36,7 @@ export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
+  const [module, setModule] = useState<'commonjs' | 'esnext'>();
   const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
@@ -47,6 +50,7 @@ export function BotEditor(): JSX.Element | null {
       .readResource('Bot', id)
       .then(async (newBot: Bot) => {
         setBot(newBot);
+        setModule(newBot.runtimeVersion === 'vmcontext' ? 'commonjs' : 'esnext');
         setDefaultCode(await getBotCode(medplum, newBot));
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
@@ -81,12 +85,12 @@ export function BotEditor(): JSX.Element | null {
         const sourceCode = await medplum.createAttachment({
           data: code,
           filename: 'index.ts',
-          contentType: 'text/typescript',
+          contentType: ContentType.TYPESCRIPT,
         });
         const executableCode = await medplum.createAttachment({
           data: codeOutput,
-          filename: 'index.js',
-          contentType: 'text/typescript',
+          filename: module === 'commonjs' ? 'index.cjs' : 'index.mjs',
+          contentType: ContentType.JAVASCRIPT,
         });
         const operations: PatchOperation[] = [
           {
@@ -108,7 +112,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCode, getCodeOutput]
+    [medplum, id, module, getCode, getCodeOutput]
   );
 
   const deployBot = useCallback(
@@ -161,7 +165,7 @@ export function BotEditor(): JSX.Element | null {
           <CodeEditor
             iframeRef={codeFrameRef}
             language="typescript"
-            module="commonjs"
+            module={module}
             testId="code-frame"
             defaultValue={defaultCode}
             minHeight="528px"

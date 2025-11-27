@@ -1,23 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import {
+import type {
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
-import { MigrationAction } from '../migrations/types';
-import { getRegisteredServers, ServerRegistryInfo } from '../server-registry';
+import type { MigrationAction } from '../migrations/types';
+import type { ServerRegistryInfo } from '../server-registry';
+import { getRegisteredServers } from '../server-registry';
 import { withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';

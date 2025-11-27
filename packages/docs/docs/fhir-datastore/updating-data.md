@@ -80,6 +80,31 @@ The below operation searches for a patient to add a name to, and creates it if i
 </Tabs>
 </details>
 
+### Preventing Lost Updates with Version Checking
+
+When updating resources in a multi-user environment, it's important to prevent **lost updates** that can occur when multiple clients update the same resource concurrently. Without version checking, the last write wins, which can overwrite changes made by other users.
+
+To prevent this, you can use the `If-Match` header (or `ifMatch` option) to specify the expected version of the resource. If the resource's current version doesn't match, the update will fail with a `412 Precondition Failed` error.
+
+<details>
+<summary>Example: Safe Update with Version Checking</summary>
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="safeUpdateTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="safeUpdateCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+</details>
+
+**For transaction bundles**, you can use version checking with `ifMatch` in bundle entry requests. See the [Version Checking in Transaction Bundle](/docs/fhir-datastore/fhir-batch-requests#preventing-lost-updates-with-version-checking) section for details.
+
+
 ## Patch Operation
 
 The `patch` operation is performed by sending an HTTP `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.

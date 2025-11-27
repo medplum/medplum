@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { heartbeat } from './heartbeat';
 import { getRedis } from './redis';
 import { getServerVersion } from './util/version';
@@ -140,7 +140,7 @@ export async function getClusterStatus(servers: ServerRegistryInfo[]): Promise<C
     totalServers: servers.length,
     versions: versionCounts,
     oldestVersion: versions[0],
-    newestVersion: versions[versions.length - 1],
+    newestVersion: versions.at(-1),
     isHomogeneous: versions.length === 1,
     servers: servers.map((server) => addComputedFields(now, server)),
   };

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -15,7 +15,7 @@ import {
   Timing,
   TimingRepeat,
 } from '@medplum/fhirtypes';
-import { TypedValue } from './types';
+import type { TypedValue } from './types';
 import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {
@@ -182,7 +182,7 @@ export function formatFamilyName(name: HumanName): string {
  * @returns Returns true if the date is a valid date.
  */
 export function isValidDate(date: Date): boolean {
-  return date instanceof Date && !isNaN(date.getTime());
+  return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 /**
@@ -433,7 +433,7 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   if (quantity.unit) {
-    if (quantity.unit !== '%' && result[result.length - 1] !== ' ') {
+    if (quantity.unit !== '%' && result.at(-1) !== ' ') {
       result.push(' ');
     }
     result.push(quantity.unit);

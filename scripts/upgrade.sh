@@ -81,8 +81,7 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-# @graphiql/react - v0.35+ is only compatible with graphiql v5+
-EXCLUDE="@graphiql/react"
+EXCLUDE=""
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -90,22 +89,15 @@ if [ -n "$ADDITIONAL_EXCLUDES" ]; then
     EXCLUDE="$EXCLUDE $ADDITIONAL_EXCLUDES"
 fi
 
-# @mantine/* - Holding back Mantine 8 until Medplum 5
-# @storybook/* - Holding back Storybook 9 until Medplum 5
-# storybook-mantine-addon - Holding back until Mantine 8 is released
-# @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
-# eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
-# jest - version 30+ conflicts with jest-expo, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-# express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
-# graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express hibp jest jest-* jose node-fetch npm storybook storybook-* zod graphiql uuid"
+# next eslint-config-next @next/bundle-analyzer - 16 of course is a non-trivial upgrade 
+MAJOR_EXCLUDE="@types/node commander hibp jose node-fetch npm zod uuid next eslint-config-next @next/bundle-analyzer"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -117,7 +109,7 @@ if [ "$LAST_STEP" -lt 1 ]; then
     # --target - Determines the version to upgrade to
     # "minor" - Upgrade to the highest minor version without bumping the major version
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
 
     # Commit and push before running NPM install
     git add -u .
@@ -158,7 +150,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

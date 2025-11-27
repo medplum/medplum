@@ -1,16 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import {
+import type {
   ExternalSecret,
   ExternalSecretPrimitive,
   ExternalSecretPrimitiveType,
   MedplumInfraConfig,
   MedplumSourceInfraConfig,
-  OperationOutcomeError,
-  badRequest,
-  validationError,
 } from '@medplum/core';
+import { OperationOutcomeError, badRequest, validationError } from '@medplum/core';
 
 const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];
 const ssmClients = {} as Record<string, SSMClient>;
@@ -160,7 +158,7 @@ export function normalizeFetchedValue(
     }
     return normalized === 'true';
   } else if (typeOfVal === 'string' && expectedType === 'number') {
-    const parsed = parseInt(rawValue as string, 10);
+    const parsed = Number.parseInt(rawValue as string, 10);
     if (Number.isNaN(parsed)) {
       throw new OperationOutcomeError(
         validationError(`Invalid value found for key '${key}'; expected integer value but got '${rawValue}'`)

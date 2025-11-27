@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
-import { FhirPathAtom } from '../fhirpath/atoms';
+import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
@@ -14,19 +14,20 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isReference, isResource } from '../types';
-import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
-import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
-import {
+import type { TypedValue } from '../types';
+import { PropertyType, isReference, isResource } from '../types';
+import { append, arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import type { CrawlerVisitor, TypedValueWithPath } from './crawler';
+import { crawlTypedValue, getNestedProperty } from './crawler';
+import type {
   Constraint,
   InternalSchemaElement,
   InternalTypeSchema,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
-  getDataType,
-  parseStructureDefinition,
 } from './types';
+import { getDataType, isResourceType, parseStructureDefinition } from './types';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -101,21 +102,24 @@ export const validationRegexes: Record<string, RegExp> = {
  */
 const skippedConstraintKeys: Record<string, boolean> = {
   'ele-1': true,
-  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requires "descendants()")
   'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
   'sdf-19': true, // FHIR Specification models only use FHIR defined types
 };
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
+  collect?: {
+    tokens?: Record<string, TypedValueWithPath[]>;
+  };
   base64BinaryMaxBytes?: number;
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
-  if (!resource.resourceType) {
-    throw new OperationOutcomeError(validationError('Missing resource type'));
+  if (!isResourceType(resource.resourceType)) {
+    throw new OperationOutcomeError(validationError('Invalid resource type'));
   }
-  return new ResourceValidator(toTypedValue(resource), options).validate();
+  return validateTypedValue(toTypedValue(resource), options);
 }
 
 export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOptions): OperationOutcomeIssue[] {
@@ -125,16 +129,17 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
 class ResourceValidator implements CrawlerVisitor {
   private readonly issues: OperationOutcomeIssue[];
   private readonly root: TypedValue;
-  private currentResource: Resource[];
+  private resourceStack: Resource[];
   private readonly schema: InternalTypeSchema;
   private readonly base64BinaryMaxBytes: number;
+  private readonly collect: ValidatorOptions['collect'];
 
   constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
     this.root = typedValue;
-    this.currentResource = [];
+    this.resourceStack = [];
     if (isResource(typedValue.value)) {
-      this.currentResource.push(typedValue.value);
+      this.resourceStack.push(typedValue.value);
     }
     if (!options?.profile) {
       this.schema = getDataType(typedValue.type);
@@ -142,33 +147,29 @@ class ResourceValidator implements CrawlerVisitor {
       this.schema = parseStructureDefinition(options.profile);
     }
     this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 1 * 1024 * 1024;
+    this.collect = options?.collect;
+  }
+
+  currentResource(): Resource | undefined {
+    return this.resourceStack.at(-1);
   }
 
   validate(): OperationOutcomeIssue[] {
-    // Check root constraints
-    this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
-
     checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
+    // Check root constraints
+    this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
     crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
-    const issues = this.issues;
-
-    let foundError = false;
-    for (const issue of issues) {
+    for (const issue of this.issues) {
       if (issue.severity === 'error') {
-        foundError = true;
+        throw new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: this.issues,
+        });
       }
     }
-
-    if (foundError) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        issue: issues,
-      });
-    }
-
-    return issues;
+    return this.issues;
   }
 
   onExitObject(_path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
@@ -178,11 +179,11 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   onEnterResource(_path: string, obj: TypedValueWithPath): void {
-    this.currentResource.push(obj.value);
+    this.resourceStack.push(obj.value);
   }
 
   onExitResource(): void {
-    this.currentResource.pop();
+    this.resourceStack.pop();
   }
 
   visitProperty(
@@ -239,6 +240,7 @@ class ResourceValidator implements CrawlerVisitor {
         this.constraintsCheck(value, element);
         this.referenceTypeCheck(value, element);
         this.checkPropertyValue(value);
+        this.collectValue(value, element);
 
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -452,14 +454,45 @@ class ResourceValidator implements CrawlerVisitor {
     );
   }
 
+  private collectValue(value: TypedValueWithPath, element: InternalSchemaElement): void {
+    if (element.binding?.valueSet && element.binding.strength === 'required' && isTerminologyType(value.type)) {
+      this.appendToken(element.binding.valueSet, value);
+    }
+  }
+
+  private appendToken(url: string, value: TypedValueWithPath): void {
+    if (!this.collect?.tokens) {
+      return;
+    }
+
+    let tokens = this.collect.tokens[url];
+    if (!tokens) {
+      const existingKeys = Object.keys(this.collect.tokens);
+      for (const key of existingKeys) {
+        if (key.startsWith(url + '|')) {
+          tokens = this.collect.tokens[key];
+        }
+      }
+    }
+    if (tokens?.length) {
+      for (const token of tokens) {
+        if (token.path === value.path) {
+          return; // Token already exists
+        }
+      }
+    }
+    this.collect.tokens[url] = append(tokens, value);
+  }
+
   private isExpressionTrue(constraint: Constraint, value: TypedValueWithPath): boolean {
     const variables: Record<string, TypedValue> = {
       '%context': value,
       '%ucum': toTypedValue(UCUM),
     };
 
-    if (this.currentResource.length > 0) {
-      variables['%resource'] = toTypedValue(this.currentResource[this.currentResource.length - 1]);
+    const resource = this.currentResource();
+    if (resource) {
+      variables['%resource'] = toTypedValue(resource);
     }
 
     if (isResource(this.root.value)) {
@@ -735,4 +768,24 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
     { type: v.type, value: primitiveValue },
     { type: 'Element', value: extensionElement },
   ];
+}
+
+/**
+ * Check if a given type can have a terminology binding, i.e. be restricted to a specific set of values.
+ * @param type - The data type.
+ * @returns Whether the type can have a terminology binding.
+ * @see {@link https://hl7.org/fhir/R4/elementdefinition.html#ElementDefinition-inv|eld-11}
+ */
+function isTerminologyType(type: string): boolean {
+  switch (type) {
+    case 'CodeableConcept':
+    case 'Coding':
+    case 'code':
+    case 'Quantity':
+    case 'string':
+    case 'uri':
+      return true;
+    default:
+      return false;
+  }
 }

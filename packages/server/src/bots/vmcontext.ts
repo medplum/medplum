@@ -8,15 +8,16 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Binary, Reference } from '@medplum/fhirtypes';
+import type { Binary, Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
-import { BotExecutionContext, BotExecutionResult } from './types';
+import type { BotExecutionContext, BotExecutionResult } from './types';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
@@ -50,7 +51,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require,
+    require: typeof require !== 'undefined' ? require : createRequire(import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,

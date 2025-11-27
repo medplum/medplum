@@ -6,13 +6,9 @@ sidebar_position: 7
 
 This document is intended to guide users through the deployment of Medplum on Azure using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Network (Vnet), Azure Kubernetes Services (AKS) cluster, PostgreSQL database, Storage accounts, CDN, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Medplum’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
 
-:::danger
-
-Medplum on Azure is in beta.
-
-:::
-
 :::caution
+
+This deployment option has been validated for production use and offers a robust foundation for your implementation. However, it provides a less-automated setup and requires significant operational expertise.
 
 This is a complex multi-step process, and requires high proficiency with Azure, Terraform, Node.js, and command line tools.
 
@@ -196,9 +192,6 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
     "appBaseUrl": "http://localhost:3000/",
     "binaryStorage": "file:./binary/",
     "storageBaseUrl": "http://localhost:8103/storage/",
-    "signingKeyId": "my-key-id",
-    "signingKey": "-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: DES-EDE3-CBC,4C2E1B45FFF24610\n\n0SOZn3P0Bd9lZgv2eSWWLMQ4JqxhbJ+dWM+V1TtSwqxe3VP24z4bys5VRpmsEpqn\nROKxdXCeqAbYsLo8V9dOQvwaxo2TTWFgUFj7sQYklyr1g5S9+KCp+1B/5E7UgNDd\nhXA2u4uhz6Bck0mTPwoy3oHjNUaNBZilMdwiR3qeiGYC0DyX69+IJgwFUTt2a1jc\nU5aUyellGYa47QRZcePgyk7Cl4FcBW9YA0pS4rNpO4wNVN6GGuZti4c0Y3PHXSRE\nDse95ZN9iWBtufjpjk4s8MX0rzqMWcjbAhTs2N5YBgKsv2czm5YMdXsYH6tGL7a1\nPyNia0r1AnHAD3pK+vzaZGaLrvubZikrt7dr+Tp1U45b2YaZlMMaXwGU6WEK7kwr\n4sbl9hqQf/+oqBAdyJIgxIhFumK+ukUIlCV+b/XUuoatDXD127JwEyEM78Nzg5Bc\n/bKGEo9uehXpuIi0jp1BtegUIkfoV543PZZgslGVdzq0vXOir+PiHJBLlbWXXSAb\nEWKOQW2/bZ8JIHhi3Ag7KDlTVF1XetJ2TqYOOP9izfMp4lJ2vLtkH7P+jEKG8z6b\nurnXYkDWYEbzhG1frEssVQN0GP3wdyEK+n6LBCuj52Uje/M7LwahPX6dJRYPOpL9\nbApSNNJLahRRQREHp1wqEWism3r4+yRa4ha/BGc4dfKTsUtJEiHqdWvDzomN5C6A\nC7u3zjUv3ZZLoCLCbBUsiVdlJZJ5u/ymky5LKVbsscmZj93HE7/FL56I17bmTlDo\npvkJWk9SmVXvs3lwMMBRbykj974ZWEMw9EjCoP9rDJ0UNsy2kVRFfXoPMKL5S01D\niBRVSZB7k7qJofGtlBpDfooHOw4uAJ/6A0l8vpOm/Vpk8tdiRLL/RuzEKz5G3ltm\nrXPn83avfNc5+EvaM8IIKyPTvHegE5XszGK3NNlzUO1Ydze/xQPhdrp4QYFzJOuB\nXVIazLeXSJ5EjJ1ylWAWgNzsx+42NWeA2CZAZz+IJFw6C2iHEB8f8Nw6iJmFfm3I\nWsrvCRbuwIsW9fjtHTpOCCpxXu5EcvN5BKwFXeBatB7xqR6EnPbk6xDxZdroEKhH\nEZU4PlHu+BwTKKCwa4Ynwn1Qpu453qgNzaxgHLbdFipW5/AkreNWK5Il+5Bl8G90\no/MhO66eBXv3JbOtMUAqs9+Qyl5K1TaNqbStWmsiq+36Niz4ZRg7L/7W6zjG/hTH\npignoDyJYPjFFQ/sTsTUv0oKVI6KIYFlIHBDnGGnH09926sd+U/isSeMDP+Qa32m\nhHzScmDPsdyjdFsdXsJjZHe7mqCijGXu/LW4CoWoqln4y29c5BMJazwnIwegrLjJ\nQeW6InUhGZLy+uJbs1ZWxlqzOmMoTx2VVgoABdOHn/mQEC/AreUdvPMkVVYEuxel\nmAMOoefncx/EPxn7gY2SrEdmSnk9VuzR30KMC1qSw196QbQHR1G2vxKcXPwe/LH9\n7Pa0gwwqCaS2ggYt5Rvlxm7DeBIGHzGtPILnl1qyVGaqn64244JeLi9bY/O+E+uq\nBSgQmt2NwPK2RQgzzt/ETUXoOFHKiwS1v2Vp4H2PPDI8CzvlRralsQ==\n-----END RSA PRIVATE KEY-----",
-    "signingKeyPassphrase": "top_secret",
     "supportEmail": "\"Medplum\" <support@medplum.com>",
     "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
     "googleClientSecret": "",
@@ -237,6 +230,7 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
 
 - Replace **YOUR_DB_HOST** and **YOUR_REDIS_HOST** with your database's hostnames or IP addresses and Redis instances.
 - Ensure the JSON content is correctly formatted and that any variables or placeholders are replaced with actual values.
+- See [/docs/self-hosting/presigned-urls] to setup presigned URLs
 
 **3\. Create a secret in the KeyVault:**  
 Use the az cli to add the secret data to your secret.

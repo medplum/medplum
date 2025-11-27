@@ -1,23 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Pool, PoolClient } from 'pg';
+import type { WithId } from '@medplum/core';
+import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
+import type { AsyncJob } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
-import { PostDeployMigration } from './data/types';
+import dataVersionManifest from './data/data-version-manifest.json' with { type: 'json' };
+import type { PostDeployMigration } from './data/types';
 import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
-import { PreDeployMigration } from './schema/types';
+import type { PreDeployMigration } from './schema/types';
 
 /**
  * Gets the next post-deploy migration that needs to be run.
@@ -83,11 +84,9 @@ export function getPostDeployMigration(migrationNumber: number): PostDeployMigra
 
 export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
-  requiredBefore: string | undefined;
+  requiredBefore?: string;
 } {
-  const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
-  ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+  const manifest = dataVersionManifest as Record<string, { serverVersion: string; requiredBefore?: string }>;
   return manifest['v' + migrationNumber];
 }
 

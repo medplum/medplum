@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, WithId } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getOperationDefinition } from './definitions';
@@ -30,16 +31,16 @@ type CodeSystemValidateCodeParameters = {
 export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
 
-  let codeSystem: WithId<CodeSystem>;
+  let codeSystem: WithId<CodeSystem> | undefined;
+  const url = params.url ?? params.coding?.system;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
-  } else if (params.url) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.url, { version: params.version });
-  } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, {
-      version: params.version,
-    });
-  } else {
+  } else if (url) {
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', url, { version: params.version }).catch(
+      () => undefined
+    );
+  }
+  if (!codeSystem && !url) {
     return [badRequest('No code system specified')];
   }
 
@@ -47,12 +48,12 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   if (params.coding) {
     coding = params.coding;
   } else if (params.code) {
-    coding = { system: params.url ?? codeSystem.url, code: params.code };
+    coding = { system: url ?? codeSystem?.url, code: params.code };
   } else {
     return [badRequest('No coding specified')];
   }
 
-  const result = await validateCoding(codeSystem, coding);
+  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding);
 
   const output: Record<string, any> = Object.create(null);
   if (result) {
@@ -64,8 +65,15 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCoding(codeSystem: WithId<CodeSystem>, coding: Coding): Promise<Coding | undefined> {
-  return validateCodings(codeSystem, [coding]).then((results) => results[0]);
+export async function validateCoding(
+  codeSystem: WithId<CodeSystem> | string,
+  coding: Coding
+): Promise<Coding | undefined> {
+  if (typeof codeSystem === 'string') {
+    // Fallback to validating system URL if full CodeSystem not available
+    return coding.system === codeSystem ? coding : undefined;
+  }
+  return (await validateCodings(codeSystem, [coding]))[0];
 }
 
 export async function validateCodings(

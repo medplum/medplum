@@ -1,5 +1,8 @@
 {
   "testEnvironment": "jsdom",
+  "testEnvironmentOptions": {
+    "globalsCleanup": "on"
+  },
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
@@ -8,5 +11,5 @@
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": ["**/src/**/*.ts"],
-  "setupFiles": ["./test.setup.cjs"]
+  "setupFiles": ["./src/test.setup.ts"]
 }

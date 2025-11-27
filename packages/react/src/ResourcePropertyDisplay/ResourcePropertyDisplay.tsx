@@ -1,17 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
-import {
-  InternalSchemaElement,
-  PropertyType,
-  formatDateTime,
-  formatPeriod,
-  formatTiming,
-  isEmpty,
-} from '@medplum/core';
-import { ElementDefinitionType } from '@medplum/fhirtypes';
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType, formatDateTime, formatPeriod, formatTiming, isEmpty } from '@medplum/core';
+import type { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
-import { JSX, useState } from 'react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -118,6 +113,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
+    case PropertyType.xhtml:
       return <>{value}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;

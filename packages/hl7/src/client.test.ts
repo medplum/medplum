@@ -1,18 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
-import net, { createServer, Socket } from 'node:net';
+import type { AckCode } from '@medplum/core';
+import { Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
+import type { Socket } from 'node:net';
+import net, { createServer } from 'node:net';
 import { Hl7Client } from './client';
-import { Hl7Connection, ReturnAckCategory } from './connection';
-import { Hl7ErrorEvent } from './events';
+import type { Hl7Connection } from './connection';
+import { ReturnAckCategory } from './connection';
+import type { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 import { MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
+  const usedPorts = [] as number[];
+
   // Helper function to get a random port number
   // This helps avoid conflicts when running tests in parallel
   function getRandomPort(): number {
-    return Math.floor(Math.random() * 10000) + 30000;
+    let port = Math.floor(Math.random() * 10000) + 30000;
+    while (usedPorts.includes(port)) {
+      port = Math.floor(Math.random() * 10000) + 30000;
+    }
+
+    // Once we have an unused port, add it to used ports and return it
+    usedPorts.push(port);
+    return port;
   }
 
   describe('sendAndWait', () => {
@@ -36,7 +48,7 @@ describe('Hl7Client', () => {
           }
         });
       });
-      hl7Server.start(port);
+      await hl7Server.start(port);
     });
 
     beforeEach(async () => {
@@ -270,7 +282,8 @@ describe('Hl7Client', () => {
           Hl7Message.parse(
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
               'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
-          )
+          ),
+          { returnAck: ReturnAckCategory.FIRST }
         );
 
         expect(response).toBeDefined();
@@ -502,7 +515,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    server.start(port);
+    await server.start(port);
 
     // Second connection attempt should succeed
     await client.connect();
@@ -537,7 +550,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    server.start(port);
+    await server.start(port);
 
     // Create client
     const client = new Hl7Client({
@@ -583,7 +596,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    server.start(port);
+    await server.start(port);
 
     // Create client with keepAlive = true
     const client = new Hl7Client({
@@ -647,7 +660,7 @@ describe('Hl7Client', () => {
         });
       });
 
-      hl7Server.start(9001);
+      await hl7Server.start(9001);
 
       // Create client with keepAlive = true
       const client = new Hl7Client({

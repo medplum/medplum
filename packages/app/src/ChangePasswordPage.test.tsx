@@ -3,7 +3,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { ChangePasswordPage } from './ChangePasswordPage';
-import { render, screen, UserEvent, userEvent, waitFor } from './test-utils/render';
+import type { UserEvent } from './test-utils/render';
+import { render, screen, userEvent, waitFor } from './test-utils/render';
 
 const medplum = new MockClient();
 

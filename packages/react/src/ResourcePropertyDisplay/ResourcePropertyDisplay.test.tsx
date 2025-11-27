@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
-import {
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import type {
   Address,
   Annotation,
   Attachment,
@@ -19,7 +20,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen, userEvent } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';

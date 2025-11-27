@@ -1,5 +1,5 @@
 # This is the main production Dockerfile.
-# It depends on medplum-server.tar.gz which is created by scripts/deploy-server.sh.
+# It depends on medplum-server.tar.gz which is created by scripts/build-docker-server.sh.
 # This is a production ready image.
 # It does not include any development dependencies.
 
@@ -11,7 +11,7 @@
 # linux/amd64, linux/arm64, linux/arm/v7
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
-FROM node:20-slim
+FROM node:24-slim
 
 ENV NODE_ENV=production
 

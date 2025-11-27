@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { getGroupRepeatedAnswers } from './intake-utils';
 import { intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';

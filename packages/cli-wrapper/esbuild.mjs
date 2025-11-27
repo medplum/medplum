@@ -1,6 +1,8 @@
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /* global process */
-/* eslint no-console: "off" */
+/* global console */
 
 import esbuild from 'esbuild';
 import { writeFileSync } from 'node:fs';
@@ -39,6 +41,7 @@ esbuild
     ...options,
     format: 'cjs',
     outfile: './dist/cjs/index.cjs',
+    define: { 'import.meta.main': 'true' },
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
   .catch((err) => {

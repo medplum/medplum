@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Reference, User } from '@medplum/fhirtypes';
-import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
+import {
+  badRequest,
+  getStatus,
+  isReference,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
+} from '@medplum/core';
+import type { User } from '@medplum/fhirtypes';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
@@ -28,8 +36,10 @@ scimRouter.post(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    // TODO: Fix this value
-    const result = await createScimUser(ctx.login.user as Reference<User>, ctx.project, req.body);
+    if (!isReference<User>(ctx.login.user, 'User')) {
+      throw new OperationOutcomeError(badRequest('Disallowed login user type'));
+    }
+    const result = await createScimUser(ctx.login.user, ctx.project, req.body);
     res.status(201).json(result);
   })
 );

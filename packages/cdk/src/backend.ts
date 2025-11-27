@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumInfraConfig } from '@medplum/core';
+import type { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -20,7 +20,9 @@ import {
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import assert from 'node:assert';
 import { buildWaf } from './waf';
 
 /**
@@ -205,6 +207,7 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
         removalPolicy: RemovalPolicy.RETAIN,
+        autoMinorVersionUpgrade: config.rdsAutoMinorVersionUpgrade,
       };
 
       const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
@@ -214,15 +217,27 @@ export class BackEnd extends Construct {
         writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy: config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
 
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      const secretAttachment = this.rdsCluster.secret;
+      assert(secretAttachment !== undefined, 'rdsCluster.secret is undefined');
+
+      secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      // rdsCluster.secret is actually a SecretAttachment; not the secret itself
+      assert(secretAttachment instanceof SecretTargetAttachment, 'rdsCluster.secret is not a SecretTargetAttachment');
+
+      // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+      const secret = secretAttachment.node.scope;
+      assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
+      secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      this.rdsSecretsArn = secretAttachment.secretArn;
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
           proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          secrets: [secretAttachment],
           vpc: this.vpc,
         });
       }
@@ -291,8 +306,6 @@ export class BackEnd extends Construct {
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
     if (config.containerInsightsV2) {
       clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
-    } else {
-      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
     }
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
@@ -467,9 +480,18 @@ export class BackEnd extends Construct {
       });
     }
 
+    let containerRegistryCredentials: secretsmanager.ISecret | undefined = undefined;
+    if (config.containerRegistryCredentialsSecretArn) {
+      containerRegistryCredentials = secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'RegistryCredentialsSecret',
+        config.containerRegistryCredentialsSecretArn
+      );
+    }
+
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -484,7 +506,7 @@ export class BackEnd extends Construct {
       for (const container of config.additionalContainers) {
         this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
           containerName: container.name,
-          image: this.getContainerImage(config, container.image),
+          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
           command: container.command,
           environment: container.environment,
           logging: this.logDriver,
@@ -615,9 +637,19 @@ export class BackEnd extends Construct {
       webAclArn: this.waf.attrArn,
     });
 
-    // Grant RDS access to the fargate group
     if (this.rdsCluster) {
+      // Grant RDS access to the fargate group
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+
+      // Retain RDS cluster security groups and their rules
+      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+        sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        sg.node.children.forEach((child) => {
+          if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
+            child.applyRemovalPolicy(RemovalPolicy.RETAIN);
+          }
+        });
+      });
     }
 
     // Grant RDS Proxy access to the fargate group
@@ -689,9 +721,14 @@ export class BackEnd extends Construct {
    * Otherwise, the image name is assumed to be a Docker Hub image.
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
+   * @param credentials - The credentials for the image repository.
    * @returns The container image.
    */
-  private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {
+  private getContainerImage(
+    config: MedplumInfraConfig,
+    imageName: string,
+    credentials: secretsmanager.ISecret | undefined
+  ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
       `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
@@ -710,7 +747,7 @@ export class BackEnd extends Construct {
     }
 
     // Otherwise, use the standard container image
-    return ecs.ContainerImage.fromRegistry(imageName);
+    return ecs.ContainerImage.fromRegistry(imageName, { credentials });
   }
 }
 

@@ -3,9 +3,10 @@
 import { Group, Modal, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
-import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
+import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -127,11 +128,11 @@ export function Vitals(props: VitalsProps): JSX.Element {
         createCompoundObservation(patient, encounter, BP, 'Blood pressure', [
           {
             code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
+            valueQuantity: createQuantity(Number.parseFloat(formData['systolic']), 'mm[Hg]'),
           },
           {
             code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
+            valueQuantity: createQuantity(Number.parseFloat(formData['diastolic']), 'mm[Hg]'),
           },
         ])
       );
@@ -146,7 +147,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
             encounter,
             meta.code,
             meta.title,
-            createQuantity(parseFloat(formData[meta.name]), meta.unit)
+            createQuantity(Number.parseFloat(formData[meta.name]), meta.unit)
           )
         );
       }

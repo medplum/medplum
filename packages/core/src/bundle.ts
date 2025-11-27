@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, BundleEntryRequest, ExtractResource, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  BundleEntry,
+  BundleEntryRequest,
+  ExtractResource,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -93,10 +100,15 @@ export function reorderBundle(bundle: Bundle): Bundle {
   const { sorted: sortedFullUrls, cycles } = topologicalSortWithCycles(adjacencyList);
 
   const entryMap: Record<string, BundleEntry> = {};
+  const entriesWithoutFullUrl: BundleEntry[] = [];
 
   for (const entry of bundle.entry ?? []) {
     if (entry.fullUrl) {
       entryMap[entry.fullUrl] = entry;
+    } else {
+      // Preserve entries without fullUrl (e.g., PATCH operations)
+      // These don't need topological sorting since they operate on existing resources
+      entriesWithoutFullUrl.push(entry);
     }
   }
 
@@ -116,6 +128,9 @@ export function reorderBundle(bundle: Bundle): Bundle {
       reorderedEntries.push(putEntry);
     }
   }
+
+  // Append entries without fullUrl at the end (e.g., PATCH operations that update existing resources)
+  reorderedEntries.push(...entriesWithoutFullUrl);
 
   return { ...bundle, entry: reorderedEntries };
 }

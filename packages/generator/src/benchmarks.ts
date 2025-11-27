@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { indexStructureDefinitionBundle, validateResource } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { Bench, BenchEvent } from 'tinybench';
+import type { AuditEvent, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { BenchEvent } from 'tinybench';
+import { Bench } from 'tinybench';
 
 const resourcesData = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
 const typesData = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
@@ -32,7 +33,7 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
   }
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   runBenchmarks(
     { title: 'Patient resource validation', fn: validatePatient },
     { title: 'StructureDefinition Bundle validation', fn: validateBundle },

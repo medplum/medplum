@@ -1,22 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ILogger, LogLevel, sleep } from '@medplum/core';
+import { LogLevel, sleep } from '@medplum/core';
 import fs from 'node:fs';
 import { agentMain } from './agent-main';
 import { App } from './app';
 import * as loggerModule from './logger';
-
-function mockLogger(level: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock } {
-  return {
-    warn: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    error: jest.fn(),
-    log: jest.fn(),
-    clone: jest.fn(),
-    level,
-  };
-}
+import { createMockLogger } from './test-utils';
 
 jest.mock('./constants', () => ({
   RETRY_WAIT_DURATION_MS: 150,
@@ -74,6 +63,30 @@ describe('Main', () => {
 
   test('Command line arguments success', async () => {
     const app = await agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
+    await app.stop();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  test('Command line arguments with optional logLevel', async () => {
+    const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config) => {
+      return createMockLogger(config.logLevel);
+    });
+    jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
+
+    const app = await agentMain([
+      'node',
+      'index.js',
+      'http://example.com',
+      'clientId',
+      'clientSecret',
+      'agentId',
+      'DEBUG',
+    ]);
+
+    // Verify both loggers were created with DEBUG level
+    expect(app.log.level).toStrictEqual(LogLevel.DEBUG);
+    expect(app.channelLog.level).toStrictEqual(LogLevel.DEBUG);
+
     await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
@@ -179,8 +192,8 @@ describe('Main', () => {
 
   test('Warnings from logger config parsing are logged', async () => {
     // Mock a logger that has warnings
-    const mockMainLogger = mockLogger(LogLevel.INFO);
-    const mockChannelLogger = mockLogger(LogLevel.INFO);
+    const mockMainLogger = createMockLogger(LogLevel.INFO);
+    const mockChannelLogger = createMockLogger(LogLevel.INFO);
 
     // Mock the WinstonWrapperLogger constructor to return our mock
     const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
@@ -239,21 +252,11 @@ describe('Main', () => {
       } else if (loggerType === 'channel') {
         capturedChannelLoggerConfig = config;
       }
-      return mockLogger(config.logLevel);
+      return createMockLogger(config.logLevel);
     });
-
-    // Mock parseLoggerConfigFromArgs to return empty warnings
-    const mockParseLoggerConfigFromArgs = jest.fn().mockReturnValue([
-      {
-        main: { logDir: '/tmp', maxFileSizeMb: 10, filesToKeep: 10, logLevel: LogLevel.INFO },
-        channel: { logDir: '/tmp', maxFileSizeMb: 10, filesToKeep: 10, logLevel: LogLevel.INFO },
-      },
-      [],
-    ]);
 
     // Mock the logger module functions directly
     jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
-    jest.spyOn(loggerModule, 'parseLoggerConfigFromArgs').mockImplementation(mockParseLoggerConfigFromArgs);
 
     // Call with command line log level INFO (which should override DEBUG from properties)
     const app = await agentMain([

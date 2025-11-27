@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedplumSourceInfraConfig } from '@medplum/core';
+import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { normalizeInfraConfig } from './config';
 import { MedplumStack } from './stack';
 
@@ -31,6 +31,9 @@ export async function main(context?: Record<string, string>): Promise<void> {
   app.synth();
 }
 
-if (require.main === module) {
-  main().catch(console.error);
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

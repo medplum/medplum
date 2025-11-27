@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ProfileResource,
-  WithId,
-  createReference,
-  isResource,
-  projectAdminResourceTypes,
-  resolveId,
-} from '@medplum/core';
-import {
+import type { ProfileResource, WithId } from '@medplum/core';
+import { createReference, isResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
@@ -18,7 +12,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
-import { AuthState } from '../oauth/middleware';
+import type { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
@@ -74,6 +68,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
+    validateTerminology: project.features?.some((f) => f === 'validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
   });
 }
@@ -248,11 +243,6 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
       readonlyFields: ['project', 'user'],
-    });
-
-    accessPolicy.resource.push({
-      resourceType: 'PasswordChangeRequest',
-      readonly: true,
     });
 
     accessPolicy.resource.push({

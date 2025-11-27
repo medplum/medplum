@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getExtension } from '@medplum/core';
-import {
+import type {
   Encounter,
   Questionnaire,
   QuestionnaireItem,

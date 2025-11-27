@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
 import {
   accepted,
   AccessPolicyInteraction,
@@ -7,11 +8,10 @@ import {
   getResourceTypes,
   Operator,
   protectedResourceTypes,
-  SearchRequest,
   singularize,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
@@ -104,6 +104,9 @@ export async function exportResourceType<T extends Resource>(
   await repo.processAllResources(searchRequest, async (resource) => {
     await exporter.writeResource(resource);
   });
+
+  // Close writer and free memory for this resource type immediately
+  await exporter.closeWriter(resourceType);
 }
 
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {

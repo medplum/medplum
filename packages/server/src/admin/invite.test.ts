@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -1045,10 +1046,10 @@ describe('Admin Invite', () => {
     expect(setPasswordUrl).toBeDefined();
 
     const setPasswordUrlParts = setPasswordUrl?.split('/') as string[];
-    const setPasswordId = setPasswordUrlParts[setPasswordUrlParts.length - 2].trim();
-    const setPasswordSecret = setPasswordUrlParts[setPasswordUrlParts.length - 1].trim();
-    expect(setPasswordId).toBeDefined();
-    expect(setPasswordSecret).toBeDefined();
+    const setPasswordId = setPasswordUrlParts.at(-2)?.trim();
+    const setPasswordSecret = setPasswordUrlParts.at(-1)?.trim();
+    expect(setPasswordId).toBeTruthy();
+    expect(setPasswordSecret).toBeTruthy();
 
     // Set the password
     const bobPassword = randomUUID();

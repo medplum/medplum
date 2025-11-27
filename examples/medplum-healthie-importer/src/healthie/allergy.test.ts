@@ -6,13 +6,13 @@ import { HEALTHIE_ALLERGY_CODE_SYSTEM, HEALTHIE_ALLERGY_ID_SYSTEM, HEALTHIE_REAC
 import {
   convertHealthieAllergyToFhir,
   fetchAllergySensitivities,
-  HealthieAllergySensitivity,
   mapHealthieStatusToClinicalStatus,
   mapHealthieCategoryToType,
   mapHealthieCategoryTypeToCategory,
   mapHealthieSeverityToCriticality,
   mapHealthieSeverityToReactionSeverity,
 } from './allergy';
+import type { HealthieAllergySensitivity } from './allergy';
 
 type MockResponse = {
   json: () => Promise<any>;

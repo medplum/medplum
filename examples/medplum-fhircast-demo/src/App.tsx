@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
-import { JSX, Suspense } from 'react';
+import type { JSX } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import classes from './App.module.css';
 import DemoInstructionsPage from './components/DemoInstructionsPage';

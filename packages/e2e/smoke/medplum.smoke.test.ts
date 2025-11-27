@@ -1,4 +1,7 @@
-import { expect, Page, test } from '@playwright/test';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import path from 'node:path';
 
 test.describe('Medplum App Smoke Tests', () => {
@@ -81,9 +84,7 @@ test.describe('Medplum App Smoke Tests', () => {
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
     await expect(page.getByText('An identifier for this patient.', { exact: true })).toBeVisible();
-    await page
-      .getByTestId('upload-file-input')
-      .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));
+    await page.getByTestId('upload-file-input').setInputFiles(path.resolve('./content/frodo_baggins.png'));
     await expect(page.getByTestId('attachment-image')).toBeVisible();
     await page.getByRole('button', { name: 'Update' }).click();
 

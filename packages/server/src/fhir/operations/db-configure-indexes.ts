@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
-import { escapeIdentifier, Pool, PoolClient } from 'pg';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { OperationDefinition } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
+import { escapeIdentifier } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
@@ -28,7 +29,7 @@ const operation: OperationDefinition = {
       use: 'in',
       name: 'tableName',
       type: 'string',
-      min: 0,
+      min: 1,
       max: '*',
     },
     {
@@ -73,7 +74,7 @@ const operation: OperationDefinition = {
 };
 
 type InputParameters = {
-  tableName?: string[];
+  tableName: string[];
   fastUpdateAction?: 'set' | 'reset';
   fastUpdateValue?: boolean;
   ginPendingListLimitAction?: 'set' | 'reset';
@@ -94,15 +95,14 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   const params = parseInputParameters<InputParameters>(operation, req);
   const config: GinIndexConfig = {};
 
-  let tableNames: string[];
-  if (params.tableName && params.tableName.length > 0) {
-    for (const table of params.tableName) {
-      if (!isValidTableName(table)) {
-        throw new OperationOutcomeError(badRequest('Invalid tableName'));
-      }
+  for (const table of params.tableName) {
+    if (!isValidTableName(table)) {
+      throw new OperationOutcomeError(badRequest('Invalid tableName'));
     }
-    tableNames = params.tableName;
-  } else {
+  }
+  const tableNames = params.tableName;
+
+  if (tableNames.length === 0) {
     throw new OperationOutcomeError(badRequest('tableName must be specified'));
   }
 

@@ -23,6 +23,7 @@ import {
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
 } from '@medplum/ccda';
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   createReference,
@@ -34,12 +35,10 @@ import {
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  ProfileResource,
   resolveId,
-  WithId,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   Account,
   AllergyIntolerance,
   Bundle,
@@ -68,9 +67,11 @@ import {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
+import type { AuthenticatedRequestContext } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
+import type { PatientEverythingParameters } from './patienteverything';
+import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
 export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
@@ -765,7 +766,7 @@ export class PatientSummaryBuilder {
     if (resource.result) {
       for (const result of resource.result) {
         const r = this.getByReference(result);
-        if (r && r.resourceType === 'Observation') {
+        if (r?.resourceType === 'Observation') {
           this.buildResultRows(rows, r);
         }
       }
@@ -782,7 +783,7 @@ export class PatientSummaryBuilder {
     if (resource.hasMember) {
       for (const member of resource.hasMember) {
         const m = this.getByReference(member);
-        if (m && m.resourceType === 'Observation') {
+        if (m?.resourceType === 'Observation') {
           this.buildResultRows(rows, m);
         }
       }
@@ -803,7 +804,7 @@ export class PatientSummaryBuilder {
       if (resource.activity) {
         for (const activity of resource.activity) {
           const a = this.getByReference(activity.reference);
-          if (a && a.resourceType === 'ServiceRequest') {
+          if (a?.resourceType === 'ServiceRequest') {
             rows.push([formatCodeableConcept(a.code), formatDate(a.authoredOn)]);
           }
         }

@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
+import type {
   BinarySource,
-  ContentType,
   CreateBinaryOptions,
   LoginState,
-  MedplumClient,
   MedplumClientOptions,
   MedplumRequestOptions,
-  OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
   WithId,
+} from '@medplum/core';
+import {
+  ContentType,
+  MedplumClient,
+  OperationOutcomeError,
   allOk,
   badRequest,
   generateId,
@@ -21,8 +23,9 @@ import {
   loadDataType,
   normalizeCreateBinaryOptions,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
+import type {
   Agent,
   Binary,
   Bot,
@@ -422,7 +425,7 @@ export class MockFetchClient {
       console.log('MockClient', JSON.stringify(response, null, 2));
     }
 
-    return Promise.resolve({
+    return {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: new Headers({
@@ -431,7 +434,7 @@ export class MockFetchClient {
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
       text: () => Promise.resolve(response),
-    });
+    };
   }
 
   mockCreatePdf(

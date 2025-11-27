@@ -1,11 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type {
+  BackgroundJobInteraction,
+  Filter,
+  SearchParameterDetails,
+  SearchRequest,
+  TypedValue,
+  TypedValueWithPath,
+  ValidatorOptions,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
-  arrayify,
-  BackgroundJobInteraction,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -19,7 +27,7 @@ import {
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
-  Filter,
+  extractAccountReferences,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
@@ -46,44 +54,39 @@ import {
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
-  SearchParameterDetails,
   SearchParameterType,
-  SearchRequest,
   serverError,
   sleep,
   stringify,
   toPeriod,
   toTypedValue,
-  TypedValue,
   validateResource,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
-  CreateResourceOptions,
-  FhirRepository,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import {
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
+import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Coding,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Project,
   Reference,
   Resource,
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { Pool, PoolClient } from 'pg';
-import { Operation } from 'rfc6902';
+import type { Pool, PoolClient } from 'pg';
+import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
@@ -93,9 +96,9 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
-  AuditEventSubtype,
   createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
@@ -111,30 +114,34 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
-import { FhirRateLimiter } from './fhirquota';
+import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { getHumanNameSortValue, HumanNameResource } from './lookups/humanname';
+import type { HumanNameResource } from './lookups/humanname';
+import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
+import { findTerminologyResource } from './operations/utils/terminology';
+import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
-import { ResourceCap } from './resource-cap';
+import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { SearchOptions } from './search';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
   DeleteQuery,
   Disjunction,
-  Expression,
   InsertQuery,
   normalizeDatabaseError,
   periodToRangeString,
   PostgresError,
   SelectQuery,
-  TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
@@ -213,6 +220,8 @@ export interface RepositoryContext {
    */
   checkReferencesOnWrite?: boolean;
 
+  validateTerminology?: boolean;
+
   /**
    * Optional flag to include Medplum extended meta fields.
    * Medplum tracks additional metadata for each resource, such as:
@@ -278,9 +287,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *  8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
    *  9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
    * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
-   *
+   * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    */
-  static readonly VERSION: number = 10;
+  static readonly VERSION: number = 11;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -528,7 +537,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Other errors should be treated as database errors
         throw err;
       }
-      throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
     }
   }
 
@@ -936,17 +945,35 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const logger = getLogger();
     const start = process.hrtime.bigint();
 
-    const issues = validateResource(resource, { base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes });
+    // Prepare validator options
+    let options: ValidatorOptions | undefined;
+    if (this.context.validateTerminology) {
+      const tokens = Object.create(null);
+      options = { ...options, collect: { tokens } };
+    }
+
+    // Validate resource against base FHIR spec
+    const issues = validateResource(resource, { base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes }, options);
 
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
 
+    // Validate profiles after verifying compliance with base spec
     const profileUrls = resource.meta?.profile;
     if (profileUrls) {
-      await this.validateProfiles(resource, profileUrls);
+      await this.validateProfiles(resource, profileUrls, options);
     }
 
+    // (Optionally) check any required terminology bindings found
+    if (this.context.validateTerminology && options?.collect?.tokens) {
+      await this.validateTerminology(options.collect.tokens, issues);
+      if (issues.some((iss) => iss.severity === 'error')) {
+        throw new OperationOutcomeError({ resourceType: 'OperationOutcome', issue: issues });
+      }
+    }
+
+    // Track latency for successful validation
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
     recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
@@ -958,7 +985,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+  private async validateProfiles(resource: Resource, profileUrls: string[], options?: ValidatorOptions): Promise<void> {
     const logger = getLogger();
     for (const url of profileUrls) {
       const loadStart = process.hrtime.bigint();
@@ -973,13 +1000,65 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       const validateStart = process.hrtime.bigint();
-      validateResource(resource, { profile });
+      validateResource(resource, { ...options, profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       logger.debug('Profile loaded', {
         url,
         loadTime,
         validateTime,
       });
+    }
+  }
+
+  private async validateTerminology(
+    tokens: Record<string, TypedValueWithPath[]>,
+    issues: OperationOutcomeIssue[]
+  ): Promise<void> {
+    for (const [url, values] of Object.entries(tokens)) {
+      const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+
+      const resultCache: Record<string, boolean | undefined> = Object.create(null);
+      for (const value of values) {
+        let codings: Coding[] | undefined;
+        switch (value.type) {
+          case 'CodeableConcept':
+            codings = (value.value as CodeableConcept).coding;
+            break;
+          case 'Coding':
+            codings = [value.value as Coding];
+            break;
+          default: {
+            const cachedResult = resultCache[`${value.type}|${value.value}`];
+            if (cachedResult === false) {
+              issues.push({
+                severity: 'error',
+                code: 'value',
+                details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+                expression: [value.path],
+              });
+            }
+            if (cachedResult !== undefined) {
+              continue;
+            }
+            codings = [{ code: value.value as string }];
+            break;
+          }
+        }
+        if (!codings?.length) {
+          continue;
+        }
+
+        const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+        resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
+        if (!matchedCoding) {
+          issues.push({
+            severity: 'error',
+            code: 'value',
+            details: { text: `Value ${JSON.stringify(value.value)} did not satisfy terminology binding ${url}` },
+            expression: [value.path],
+          });
+        }
+      }
     }
   }
 
@@ -1057,11 +1136,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
       if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
-        throw new OperationOutcomeError(outcome, err);
+        throw new OperationOutcomeError(outcome, { cause: err });
       }
 
       if (isNotFound(outcome) && !this.canSetId()) {
-        throw new OperationOutcomeError(outcome, err);
+        throw new OperationOutcomeError(outcome, { cause: err });
       }
 
       // Otherwise, it is ok if the resource is not found.
@@ -1202,44 +1281,46 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       await this.deleteCacheEntry(resourceType, id);
 
-      await this.ensureInTransaction(async (conn) => {
-        const lastUpdated = new Date();
-        const content = '';
-        const columns: Record<string, any> = {
-          id,
-          lastUpdated,
-          deleted: true,
-          projectId: resource.meta?.project ?? systemResourceProjectId,
-          content,
-          __version: -1,
-        };
-
-        if (resourceType !== 'Binary') {
-          columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-        }
-
-        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-          this.buildColumn({ resourceType } as Resource, columns, searchParam);
-        }
-
-        await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
-
-        await new InsertQuery(resourceType + '_History', [
-          {
+      if (!this.isCacheOnly(resource)) {
+        await this.ensureInTransaction(async (conn) => {
+          const lastUpdated = new Date();
+          const content = '';
+          const columns: Record<string, any> = {
             id,
-            versionId: this.generateId(),
             lastUpdated,
+            deleted: true,
+            projectId: resource.meta?.project ?? systemResourceProjectId,
             content,
-          },
-        ]).execute(conn);
+            __version: -1,
+          };
 
-        await this.deleteFromLookupTables(conn, resource);
-        const durationMs = Date.now() - startTime;
+          if (resourceType !== 'Binary') {
+            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+          }
 
-        await this.postCommit(async () => {
-          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
+          for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+            this.buildColumn({ resourceType } as Resource, columns, searchParam);
+          }
+
+          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+
+          await new InsertQuery(resourceType + '_History', [
+            {
+              id,
+              versionId: this.generateId(),
+              lastUpdated,
+              content,
+            },
+          ]).execute(conn);
+
+          await this.deleteFromLookupTables(conn, resource);
+          const durationMs = Date.now() - startTime;
+
+          await this.postCommit(async () => {
+            this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
+          });
         });
-      });
+      }
 
       await addSubscriptionJobs(resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
@@ -1947,7 +2028,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<Reference[] | undefined> {
     if (updated.meta && this.canWriteAccount()) {
       // If the user specifies accounts, and they have permission, then use the provided accounts.
-      const updatedAccounts = this.extractAccountReferences(updated.meta);
+      const updatedAccounts = extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
 
@@ -1962,7 +2043,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (updated.resourceType === 'Patient') {
       // When examining a Patient resource, we only look at the individual patient
       // We should not call `getPatients` and `readReference`
-      const existingAccounts = this.extractAccountReferences(existing?.meta);
+      const existingAccounts = extractAccountReferences(existing?.meta);
       if (existingAccounts?.length) {
         for (const account of existingAccounts) {
           accounts.add(account.reference as string);
@@ -1978,7 +2059,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
 
         // If the patient has an account, then use it as the resource account.
-        const patientAccounts = this.extractAccountReferences(patient.meta);
+        const patientAccounts = extractAccountReferences(patient.meta);
         if (patientAccounts?.length) {
           for (const account of patientAccounts) {
             if (account.reference) {
@@ -1998,21 +2079,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       result.push({ reference });
     }
     return result;
-  }
-
-  private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
-    if (!meta) {
-      return undefined;
-    }
-    if (meta.accounts && meta.account) {
-      const accounts = meta.accounts;
-      if (accounts.some((a) => a.reference === meta.account?.reference)) {
-        return accounts;
-      }
-      return [meta.account, ...accounts];
-    } else {
-      return arrayify(meta.accounts ?? meta.account);
-    }
   }
 
   /**
@@ -2285,7 +2351,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     );
     logAuditEvent(auditEvent);
 
-    if (options?.durationMs && outcome === AuditEventOutcome.Success) {
+    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
@@ -2350,7 +2416,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param err - Optional error to remove the connection from the pool.
    */
   private releaseConnection(err?: boolean | Error): void {
-    if (this.conn) {
+    if (this.conn && this.disposable) {
       this.conn.release(err);
       this.conn = undefined;
     }
@@ -2580,14 +2646,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return new Array(references.length);
     }
-    const referenceKeys = references.map((r) => r.reference as string);
+
+    const referenceKeys: string[] = [];
+
+    // Build referenceKeys only for valid input references and track
+    // their indices in the original array so that the result array
+    // is constructed in the correct order.
+    const referenceKeyIndices: number[] = new Array(references.length);
+    for (let i = 0; i < references.length; i++) {
+      const r = references[i];
+      if (r.reference) {
+        referenceKeys.push(r.reference);
+        referenceKeyIndices[i] = referenceKeys.length - 1;
+      }
+    }
+
     if (referenceKeys.length === 0) {
       // Return early to avoid calling mget() with no args, which is an error
-      return [];
+      return new Array(references.length);
     }
-    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
-      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-    );
+
+    const cachedValues = await getRedis().mget(referenceKeys);
+
+    const result = new Array<CacheEntry | undefined>(references.length);
+    for (let i = 0; i < references.length; i++) {
+      if (referenceKeyIndices[i] === undefined) {
+        result[i] = undefined;
+      } else {
+        const cachedValue = cachedValues[referenceKeyIndices[i]];
+        result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+      }
+    }
+    return result;
   }
 
   /**
@@ -2662,15 +2752,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
-    if (this.disposable) {
-      if (this.transactionDepth > 0) {
-        // Bad state, remove connection from pool
-        getLogger().error('Closing Repository with active transaction');
-        this.releaseConnection(new Error('Closing Repository with active transaction'));
-      } else {
-        // Good state, return healthy connection to pool
-        this.releaseConnection(removeConnection);
-      }
+    if (this.transactionDepth > 0) {
+      // Bad state, remove connection from pool
+      getLogger().error('Closing Repository with active transaction');
+      this.releaseConnection(new Error('Closing Repository with active transaction'));
+    } else {
+      // Good state, return healthy connection to pool
+      this.releaseConnection(removeConnection);
     }
     this.closed = true;
   }

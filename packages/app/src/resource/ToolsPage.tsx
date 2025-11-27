@@ -16,10 +16,11 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
-import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
+import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
-import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
 type UpgradeConfirmContentProps = {
@@ -152,8 +153,10 @@ export function ToolsPage(): JSX.Element | null {
   const handleUpgrade = useCallback(
     (force: boolean) => {
       setUpgrading(true);
+      const upgradeUrl = medplum.fhirUrl('Agent', id, '$upgrade');
+      upgradeUrl.searchParams.set('force', String(force));
       medplum
-        .get(medplum.fhirUrl('Agent', id, '$upgrade', `?force=${force}`), { cache: 'reload' })
+        .get(upgradeUrl, { cache: 'reload' })
         .then((_result: Bundle<Parameters>) => {
           showSuccess('Agent upgraded successfully.');
         })

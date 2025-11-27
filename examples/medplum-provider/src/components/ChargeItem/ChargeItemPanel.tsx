@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
-import { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
+import type { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
 import { CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconTrash } from '@tabler/icons-react';
-import { JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { applyChargeItemDefinition } from '../../utils/chargeitems';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;

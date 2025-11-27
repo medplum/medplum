@@ -1,0 +1,1654 @@
+{
+  "resourceType": "Bundle",
+  "id": "medplumSearchParams",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project",
+        "code": "identifier",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the project",
+        "code": "name",
+        "base": ["Project"],
+        "type": "string",
+        "expression": "Project.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-owner",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-owner",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-owner",
+        "version": "4.0.1",
+        "name": "owner",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user who owns the project",
+        "code": "owner",
+        "base": ["Project"],
+        "type": "reference",
+        "expression": "Project.owner",
+        "target": ["User"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-google-client-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-google-client-id",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-google-client-id",
+        "version": "4.0.1",
+        "name": "google-client-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Google Client ID of the project",
+        "code": "google-client-id",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.site.googleClientId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-recaptcha-site-key",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-recaptcha-site-key",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-recaptcha-site-key",
+        "version": "4.0.1",
+        "name": "recaptcha-site-key",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The reCAPTCHA site key of the project",
+        "code": "recaptcha-site-key",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.site.recaptchaSiteKey"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-project",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
+        "version": "4.0.1",
+        "name": "project",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The project associated with the project membership",
+        "code": "project",
+        "base": ["ProjectMembership"],
+        "type": "reference",
+        "expression": "ProjectMembership.project",
+        "target": ["Project"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-user",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user",
+        "version": "4.0.1",
+        "name": "user",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user associated with the project membership",
+        "code": "user",
+        "base": ["ProjectMembership"],
+        "type": "reference",
+        "expression": "ProjectMembership.user",
+        "target": ["Bot", "ClientApplication", "User"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-profile",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile",
+        "version": "4.0.1",
+        "name": "profile",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user profile associated with the project membership",
+        "code": "profile",
+        "base": ["ProjectMembership"],
+        "type": "reference",
+        "expression": "ProjectMembership.profile",
+        "target": ["Bot", "ClientApplication", "Patient", "Practitioner", "RelatedPerson"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-profile-type",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+        "version": "4.0.1",
+        "name": "profile-type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Resource type of the user profile associated with the project membership",
+        "code": "profile-type",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.profile.resolve().resourceType"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-user-name",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+        "version": "4.0.1",
+        "name": "user-name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The SCIM userName of the user",
+        "code": "user-name",
+        "base": ["ProjectMembership"],
+        "type": "string",
+        "expression": "ProjectMembership.userName"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-external-id",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
+        "version": "4.0.1",
+        "name": "external-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The externalID of the user",
+        "code": "external-id",
+        "base": ["ProjectMembership"],
+        "type": "string",
+        "expression": "ProjectMembership.externalId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-access-policy",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-access-policy",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-access-policy",
+        "version": "4.0.1",
+        "name": "access-policy",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The access policy of the user",
+        "code": "access-policy",
+        "base": ["ProjectMembership"],
+        "type": "reference",
+        "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy",
+        "target": ["AccessPolicy"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project membership",
+        "code": "identifier",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ClientApplication-name",
+        "url": "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the client application",
+        "code": "name",
+        "base": ["ClientApplication"],
+        "type": "string",
+        "expression": "ClientApplication.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "JsonWebKey-active",
+        "url": "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
+        "version": "4.0.1",
+        "name": "active",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Whether the JWK is active",
+        "code": "active",
+        "base": ["JsonWebKey"],
+        "type": "token",
+        "expression": "JsonWebKey.active"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/User-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the user",
+        "code": "identifier",
+        "base": ["User"],
+        "type": "token",
+        "expression": "User.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-email",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-email",
+        "url": "https://medplum.com/fhir/SearchParameter/User-email",
+        "version": "4.0.1",
+        "name": "email",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The email address of the user",
+        "code": "email",
+        "base": ["User"],
+        "type": "string",
+        "expression": "User.email"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-external-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-external-id",
+        "url": "https://medplum.com/fhir/SearchParameter/User-external-id",
+        "version": "4.0.1",
+        "name": "external-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The externalID of the user",
+        "code": "external-id",
+        "base": ["User"],
+        "type": "string",
+        "expression": "User.externalId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-project",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-project",
+        "url": "https://medplum.com/fhir/SearchParameter/User-project",
+        "version": "4.0.1",
+        "name": "project",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The project that contains the user",
+        "code": "project",
+        "base": ["User"],
+        "type": "reference",
+        "expression": "User.project",
+        "target": ["Project"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-user",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Login-user",
+        "url": "https://medplum.com/fhir/SearchParameter/Login-user",
+        "version": "4.0.1",
+        "name": "user",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user of the login",
+        "code": "user",
+        "base": ["Login"],
+        "type": "reference",
+        "expression": "Login.user",
+        "target": ["Bot", "ClientApplication", "User"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Login-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Login-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The code of the login",
+        "code": "code",
+        "base": ["Login"],
+        "type": "token",
+        "expression": "Login.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-cookie",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Login-cookie",
+        "url": "https://medplum.com/fhir/SearchParameter/Login-cookie",
+        "version": "4.0.1",
+        "name": "cookie",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The cookie code of the login",
+        "code": "cookie",
+        "base": ["Login"],
+        "type": "token",
+        "expression": "Login.cookie"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Bot-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the bot",
+        "code": "identifier",
+        "base": ["Bot"],
+        "type": "token",
+        "expression": "Bot.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Bot-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Bot-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Bot-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the bot",
+        "code": "name",
+        "base": ["Bot"],
+        "type": "string",
+        "expression": "Bot.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Bot-category",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Bot-category",
+        "url": "https://medplum.com/fhir/SearchParameter/Bot-category",
+        "version": "4.0.1",
+        "name": "category",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The category of the bot for the classification for service",
+        "code": "category",
+        "base": ["Bot"],
+        "type": "token",
+        "expression": "Bot.category"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/UserConfiguration-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "UserConfiguration-name",
+        "url": "https://medplum.com/fhir/SearchParameter/UserConfiguration-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the user configuration",
+        "code": "name",
+        "base": ["UserConfiguration"],
+        "type": "string",
+        "expression": "UserConfiguration.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AccessPolicy-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AccessPolicy-name",
+        "url": "https://medplum.com/fhir/SearchParameter/AccessPolicy-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the access policy",
+        "code": "name",
+        "base": ["AccessPolicy"],
+        "type": "string",
+        "expression": "AccessPolicy.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/BulkDataExport-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "BulkDataExport-status",
+        "url": "https://medplum.com/fhir/SearchParameter/BulkDataExport-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the access policy",
+        "code": "status",
+        "base": ["BulkDataExport"],
+        "type": "token",
+        "expression": "BulkDataExport.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "OperationDefinition-code",
+        "url": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The code of the observation definition.",
+        "code": "code",
+        "base": ["ObservationDefinition"],
+        "type": "token",
+        "expression": "ObservationDefinition.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-publisher",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "OperationDefinition-publisher",
+        "url": "https://medplum.com/fhir/SearchParameter/ObservationDefinition-publisher",
+        "version": "4.0.1",
+        "name": "publisher",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The publisher of the observation definition.",
+        "code": "publisher",
+        "base": ["ObservationDefinition"],
+        "type": "reference",
+        "expression": "ObservationDefinition.publisher",
+        "target": ["Practitioner", "PractitionerRole", "Organization"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DomainConfiguration-domain",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DomainConfiguration-domain",
+        "url": "https://medplum.com/fhir/SearchParameter/DomainConfiguration-domain",
+        "version": "4.0.1",
+        "name": "domain",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The publisher of the observation definition.",
+        "code": "domain",
+        "base": ["DomainConfiguration"],
+        "type": "token",
+        "expression": "DomainConfiguration.domain"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "UserSecurityRequest-user",
+        "url": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+        "version": "4.0.1",
+        "name": "user",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user for the security request.",
+        "code": "user",
+        "base": ["UserSecurityRequest"],
+        "type": "reference",
+        "expression": "UserSecurityRequest.user",
+        "target": ["User"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Task-due-date",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Task-due-date",
+        "url": "https://medplum.com/fhir/SearchParameter/Task-due-date",
+        "version": "4.0.1",
+        "name": "due-date",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search by period Task is/was due",
+        "code": "due-date",
+        "base": ["Task"],
+        "type": "date",
+        "expression": "Task.restriction.period",
+        "comparator": ["eq", "ne", "gt", "ge", "lt", "le", "sa", "eb", "ap"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the agent",
+        "code": "identifier",
+        "base": ["Agent"],
+        "type": "token",
+        "expression": "Agent.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for Agent by name",
+        "code": "name",
+        "base": ["Agent"],
+        "type": "string",
+        "expression": "Agent.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Agent-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Agent-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for Agent by status",
+        "code": "status",
+        "base": ["Agent"],
+        "type": "token",
+        "expression": "Agent.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/priority-order",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "priority-order",
+        "url": "https://medplum.com/fhir/SearchParameter/priority-order",
+        "version": "4.0.1",
+        "name": "priority-order",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
+        "code": "priority-order",
+        "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
+        "type": "number",
+        "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "CareTeam-name",
+        "url": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the care team",
+        "code": "name",
+        "base": ["CareTeam"],
+        "type": "string",
+        "expression": "CareTeam.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the group",
+        "code": "name",
+        "base": ["Group"],
+        "type": "string",
+        "expression": "Group.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Communication-topic",
+        "url": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+        "version": "4.0.1",
+        "name": "topic",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Description of the purpose/content",
+        "code": "topic",
+        "base": ["Communication"],
+        "type": "token",
+        "expression": "Communication.topic"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Subscription-author",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Subscription-author",
+        "url": "https://medplum.com/fhir/SearchParameter/Subscription-author",
+        "version": "4.0.1",
+        "name": "author",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The author of the Subscription resource",
+        "code": "author",
+        "base": ["Subscription"],
+        "type": "reference",
+        "expression": "Subscription.meta.author",
+        "target": ["Patient", "Practitioner", "RelatedPerson", "ClientApplication", "Bot"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Location-physical-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Location-physical-type",
+        "url": "https://medplum.com/fhir/SearchParameter/Location-physical-type",
+        "version": "4.0.1",
+        "name": "physical-type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The physical type of the Location resource",
+        "code": "physical-type",
+        "base": ["Location"],
+        "type": "token",
+        "expression": "Location.physicalType"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Appointment-end",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Appointment-end",
+        "url": "https://medplum.com/fhir/SearchParameter/Appointment-end",
+        "version": "4.0.1",
+        "name": "end",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The end time of the Appointment",
+        "code": "end",
+        "base": ["Appointment"],
+        "type": "date",
+        "expression": "Appointment.end",
+        "target": ["Appointment"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Slot-end",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Slot-end",
+        "url": "https://medplum.com/fhir/SearchParameter/Slot-end",
+        "version": "4.0.1",
+        "name": "end",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The end time of the Slot",
+        "code": "end",
+        "base": ["Slot"],
+        "type": "date",
+        "expression": "Slot.end",
+        "target": ["Slot"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DiagnosticReport-study",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DiagnosticReport-study",
+        "url": "https://medplum.com/fhir/SearchParameter/DiagnosticReport-study",
+        "version": "4.0.1",
+        "name": "study",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Studies associated with the diagnostic report",
+        "code": "study",
+        "base": ["DiagnosticReport"],
+        "type": "reference",
+        "expression": "DiagnosticReport.imagingStudy",
+        "target": ["ImagingStudy"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-classifier",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-classifier",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-classifier",
+        "version" : "5.0.0",
+        "name" : "classifier",
+        "status" : "draft",
+        "description" : "Classification for the study",
+        "code" : "classifier",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.classifier"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-condition",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-condition",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-condition",
+        "version" : "5.0.0",
+        "name" : "condition",
+        "status" : "draft",
+        "description" : "Condition being studied",
+        "code" : "condition",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.condition"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-date",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-date",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-date",
+        "version" : "5.0.0",
+        "name" : "date",
+        "status" : "draft",
+        "description" : "When the study began and ended",
+        "code" : "date",
+        "base" : ["ResearchStudy"],
+        "type" : "date",
+        "expression" : "ResearchStudy.period",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-description",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-description",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-description",
+        "version" : "5.0.0",
+        "name" : "description",
+        "status" : "draft",
+        "description" : "Detailed narrative of the study",
+        "code" : "description",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.description"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-eligibility",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-eligibility",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-eligibility",
+        "version" : "5.0.0",
+        "name" : "eligibility",
+        "status" : "draft",
+        "description" : "Inclusion and exclusion criteria",
+        "code" : "eligibility",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.recruitment.eligibility",
+        "target" : ["Group",
+        "EvidenceVariable"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-identifier",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-identifier",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-identifier",
+        "version" : "5.0.0",
+        "name" : "identifier",
+        "status" : "draft",
+        "description" : "Business Identifier for study",
+        "code" : "identifier",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.identifier"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-keyword",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-keyword",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-keyword",
+        "version" : "5.0.0",
+        "name" : "keyword",
+        "status" : "draft",
+        "description" : "Used to search for the study",
+        "code" : "keyword",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.keyword"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-name",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-name",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-name",
+        "version" : "5.0.0",
+        "name" : "name",
+        "status" : "draft",
+        "description" : "Name for this study",
+        "code" : "name",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.name"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-description",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-objective-description",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-description",
+        "version" : "5.0.0",
+        "name" : "objective-description",
+        "status" : "draft",
+        "description" : "Free text description of the objective of the study",
+        "code" : "objective-description",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.objective.description"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-type",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-objective-type",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-type",
+        "version" : "5.0.0",
+        "name" : "objective-type",
+        "status" : "draft",
+        "description" : "The kind of study objective",
+        "code" : "objective-type",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.objective.type"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-part-of",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-part-of",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-part-of",
+        "version" : "5.0.0",
+        "name" : "part-of",
+        "status" : "draft",
+        "description" : "Part of larger study",
+        "code" : "part-of",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.partOf",
+        "target" : ["ResearchStudy"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-phase",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-phase",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-phase",
+        "version" : "5.0.0",
+        "name" : "phase",
+        "status" : "draft",
+        "description" : "The stage in the progression of a study",
+        "code" : "phase",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.phase"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-protocol",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-protocol",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-protocol",
+        "version" : "5.0.0",
+        "name" : "protocol",
+        "status" : "draft",
+        "description" : "Steps followed in executing study",
+        "code" : "protocol",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.protocol",
+        "target" : ["PlanDefinition"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-recruitment-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-actual",
+        "version" : "5.0.0",
+        "name" : "recruitment-actual",
+        "status" : "draft",
+        "description" : "Actual number of participants enrolled in study across all groups",
+        "code" : "recruitment-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "number",
+        "expression" : "ResearchStudy.recruitment.actualNumber",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-target",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-recruitment-target",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-target",
+        "version" : "5.0.0",
+        "name" : "recruitment-target",
+        "status" : "draft",
+        "description" : "Target number of participants enrolled in study across all groups",
+        "code" : "recruitment-target",
+        "base" : ["ResearchStudy"],
+        "type" : "number",
+        "expression" : "ResearchStudy.recruitment.targetNumber",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-region",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-region",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-region",
+        "version" : "5.0.0",
+        "name" : "region",
+        "status" : "draft",
+        "description" : "Geographic area for the study",
+        "code" : "region",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.region"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-site",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-site",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-site",
+        "version" : "5.0.0",
+        "name" : "site",
+        "status" : "draft",
+        "description" : "Facility where study activities are conducted",
+        "code" : "site",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.site",
+        "target" : ["Organization",
+        "ResearchStudy",
+        "Location"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-status",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-status",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-status",
+        "version" : "5.0.0",
+        "name" : "status",
+        "status" : "draft",
+        "description" : "active | active-but-not-recruiting | administratively-completed | approved | closed-to-accrual | closed-to-accrual-and-intervention | completed | disapproved | enrolling-by-invitation | in-review | not-yet-recruiting | recruiting | temporarily-closed-to-accrual | temporarily-closed-to-accrual-and-intervention | terminated | withdrawn",
+        "code" : "status",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.status"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-study-design",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-study-design",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-study-design",
+        "version" : "5.0.0",
+        "name" : "study-design",
+        "status" : "draft",
+        "description" : "Classifications of the study design characteristics",
+        "code" : "study-design",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.studyDesign"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-title",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-title",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-title",
+        "version" : "5.0.0",
+        "name" : "title",
+        "status" : "draft",
+        "description" : "The human readable name of the research study",
+        "code" : "title",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.title"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-actual",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-actual",
+        "status" : "draft",
+        "description" : "Status of study by state and actual",
+        "code" : "progress-status-state-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-actual",
+          "expression" : "actual"
+        }]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-period",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-period",
+        "status" : "draft",
+        "description" : "Status of study by state and period",
+        "code" : "progress-status-state-period",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-period",
+          "expression" : "period"
+        }]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-period-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period-actual",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-period-actual",
+        "status" : "draft",
+        "description" : "Status of study by state, period and actual",
+        "code" : "progress-status-state-period-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-period",
+          "expression" : "period"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-actual",
+          "expression" : "actual"
+        }]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ResearchStudy-outcome-measure-reference",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ResearchStudy-outcome-measure-reference",
+        "url": "https://medplum.com/fhir/SearchParameter/ResearchStudy-outcome-measure-reference",
+        "version": "4.0.1",
+        "name": "outcome-measure-reference",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The research study outcome measure reference",
+        "code": "outcome-measure-reference",
+        "base": ["ResearchStudy"],
+        "type": "reference",
+        "target": ["EvidenceVariable"],
+        "expression": "ResearchStudy.outcomeMeasure.reference"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EvidenceVariable-characteristic-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EvidenceVariable-characteristic-type",
+        "url": "https://medplum.com/fhir/SearchParameter/EvidenceVariable-characteristic-type",
+        "version": "4.0.1",
+        "name": "characteristic-type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The evidence variable characteristic type",
+        "code": "characteristic-type",
+        "base": ["EvidenceVariable"],
+        "type": "token",
+        "expression": "EvidenceVariable.characteristic.definitionCodeableConcept | EvidenceVariable.characteristic.definitionByTypeAndValue.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-characteristic-range",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-characteristic-range",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-characteristic-range",
+        "version": "4.0.1",
+        "name": "characteristic-range",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the client application",
+        "code": "characteristic-range",
+        "base": ["Group"],
+        "type": "quantity",
+        "expression": "Group.characteristic.value.ofType(Range)"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-category",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-category",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-category",
+        "version": "4.0.1",
+        "name": "category",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The category of the flag, such as clinical, administrative, etc.",
+        "code": "category",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.category"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "active | inactive | entered-in-error",
+        "code": "status",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-type",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by type",
+        "code": "type",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-status",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by status",
+        "code": "status",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Practitioner-qualification-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+        "version": "4.0.1",
+        "name": "qualification-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The type of qualification",
+        "code": "qualification-code",
+        "base": ["Practitioner"],
+        "type": "token",
+        "expression": "Practitioner.qualification.code"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "Immunization-encounter",
+        "extension" : [{
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+          "valueCode" : "trial-use"
+        },
+        {
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+          "valueCode" : "pher"
+        }],
+        "url" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+        "version" : "6.0.0-ballot3",
+        "name" : "encounter",
+        "status" : "draft",
+        "experimental" : false,
+        "date" : "2025-04-01T12:16:37+11:00",
+        "publisher" : "HL7 International / Public Health",
+        "contact" : [{
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/fiwg"
+          }]
+        },
+        {
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/pher"
+          }]
+        }],
+        "description" : "The Encounter this Immunization was part of",
+        "jurisdiction" : [{
+          "coding" : [{
+            "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+            "code" : "001",
+            "display" : "World"
+          }]
+        }],
+        "code" : "encounter",
+        "base" : ["Immunization"],
+        "type" : "reference",
+        "expression" : "Immunization.encounter",
+        "target" : ["Encounter"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AllergyIntolerance-encounter",
+        "url": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+        "version": "4.0.1",
+        "name": "encounter",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Encounter this AllergyIntolerance was part of",
+        "code": "encounter",
+        "base": ["AllergyIntolerance"],
+        "type": "reference",
+        "target": ["Encounter"],
+        "expression": "AllergyIntolerance.encounter"
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/SearchParameter/Group-characteristic-reference",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-characteristic-reference",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+            "valueCode": "trial-use"
+          }
+        ],
+        "url": "http://hl7.org/fhir/SearchParameter/Group-characteristic-reference",
+        "version": "5.0.0",
+        "name": "characteristic-reference",
+        "status": "draft",
+        "experimental": false,
+        "date": "2023-03-26T15:21:02+11:00",
+        "publisher": "Health Level Seven International (FHIR Infrastructure)",
+        "contact": [
+          {
+            "telecom": [
+              {
+                "system": "url",
+                "value": "http://hl7.org/fhir"
+              }
+            ]
+          },
+          {
+            "telecom": [
+              {
+                "system": "url",
+                "value": "http://www.hl7.org/Special/committees/fiwg/index.cfm"
+              }
+            ]
+          }
+        ],
+        "description": "An entity referenced in a characteristic",
+        "jurisdiction": [
+          {
+            "coding": [
+              {
+                "system": "http://unstats.un.org/unsd/methods/m49/m49.htm",
+                "code": "001",
+                "display": "World"
+              }
+            ]
+          }
+        ],
+        "code": "characteristic-reference",
+        "base": [
+          "Group"
+        ],
+        "type": "reference",
+        "expression": "(Group.characteristic.value.ofType(Reference))",
+        "target": [
+          "Account",
+          "ActivityDefinition",
+          "ActorDefinition",
+          "AdministrableProductDefinition",
+          "AdverseEvent",
+          "AllergyIntolerance",
+          "Appointment",
+          "AppointmentResponse",
+          "ArtifactAssessment",
+          "AuditEvent",
+          "Basic",
+          "Binary",
+          "BiologicallyDerivedProduct",
+          "BiologicallyDerivedProductDispense",
+          "BodyStructure",
+          "Bundle",
+          "CapabilityStatement",
+          "CarePlan",
+          "CareTeam",
+          "ChargeItem",
+          "ChargeItemDefinition",
+          "Citation",
+          "Claim",
+          "ClaimResponse",
+          "ClinicalImpression",
+          "ClinicalUseDefinition",
+          "CodeSystem",
+          "Communication",
+          "CommunicationRequest",
+          "CompartmentDefinition",
+          "Composition",
+          "ConceptMap",
+          "Condition",
+          "ConditionDefinition",
+          "Consent",
+          "Contract",
+          "Coverage",
+          "CoverageEligibilityRequest",
+          "CoverageEligibilityResponse",
+          "DetectedIssue",
+          "Device",
+          "DeviceAssociation",
+          "DeviceDefinition",
+          "DeviceDispense",
+          "DeviceMetric",
+          "DeviceRequest",
+          "DeviceUsage",
+          "DiagnosticReport",
+          "DocumentReference",
+          "Encounter",
+          "EncounterHistory",
+          "Endpoint",
+          "EnrollmentRequest",
+          "EnrollmentResponse",
+          "EpisodeOfCare",
+          "EventDefinition",
+          "Evidence",
+          "EvidenceReport",
+          "EvidenceVariable",
+          "ExampleScenario",
+          "ExplanationOfBenefit",
+          "FamilyMemberHistory",
+          "Flag",
+          "FormularyItem",
+          "GenomicStudy",
+          "Goal",
+          "GraphDefinition",
+          "Group",
+          "GuidanceResponse",
+          "HealthcareService",
+          "ImagingSelection",
+          "ImagingStudy",
+          "Immunization",
+          "ImmunizationEvaluation",
+          "ImmunizationRecommendation",
+          "ImplementationGuide",
+          "Ingredient",
+          "InsurancePlan",
+          "InventoryItem",
+          "InventoryReport",
+          "Invoice",
+          "Library",
+          "Linkage",
+          "List",
+          "Location",
+          "ManufacturedItemDefinition",
+          "Measure",
+          "MeasureReport",
+          "Medication",
+          "MedicationAdministration",
+          "MedicationDispense",
+          "MedicationKnowledge",
+          "MedicationRequest",
+          "MedicationStatement",
+          "MedicinalProductDefinition",
+          "MessageDefinition",
+          "MessageHeader",
+          "MolecularSequence",
+          "NamingSystem",
+          "NutritionIntake",
+          "NutritionOrder",
+          "NutritionProduct",
+          "Observation",
+          "ObservationDefinition",
+          "OperationDefinition",
+          "OperationOutcome",
+          "Organization",
+          "OrganizationAffiliation",
+          "PackagedProductDefinition",
+          "Parameters",
+          "Patient",
+          "PaymentNotice",
+          "PaymentReconciliation",
+          "Permission",
+          "Person",
+          "PlanDefinition",
+          "Practitioner",
+          "PractitionerRole",
+          "Procedure",
+          "Provenance",
+          "Questionnaire",
+          "QuestionnaireResponse",
+          "RegulatedAuthorization",
+          "RelatedPerson",
+          "RequestOrchestration",
+          "Requirements",
+          "ResearchStudy",
+          "ResearchSubject",
+          "RiskAssessment",
+          "Schedule",
+          "SearchParameter",
+          "ServiceRequest",
+          "Slot",
+          "Specimen",
+          "SpecimenDefinition",
+          "StructureDefinition",
+          "StructureMap",
+          "Subscription",
+          "SubscriptionStatus",
+          "SubscriptionTopic",
+          "Substance",
+          "SubstanceDefinition",
+          "SubstanceNucleicAcid",
+          "SubstancePolymer",
+          "SubstanceProtein",
+          "SubstanceReferenceInformation",
+          "SubstanceSourceMaterial",
+          "SupplyDelivery",
+          "SupplyRequest",
+          "Task",
+          "TerminologyCapabilities",
+          "TestPlan",
+          "TestReport",
+          "TestScript",
+          "Transport",
+          "ValueSet",
+          "VerificationResult",
+          "VisionPrescription"
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reason-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ServiceRequest-reason-code",
+        "url": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reason-code",
+        "version": "4.0.1",
+        "name": "reason-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Coded value representing the reason for this ServiceRequest.  NOTE: The underlying field will change in FHIR R6 to ServiceRequest.reason.concept",
+        "code": "reason-code",
+        "base": ["ServiceRequest"],
+        "type": "token",
+        "expression": "ServiceRequest.reasonCode"
+      }
+    }
+  ]
+}

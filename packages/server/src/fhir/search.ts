@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -8,16 +9,14 @@ import {
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
-  FhirFilterExpression,
   FhirFilterNegation,
-  Filter,
   flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
   getSearchParameter,
-  IncludeTarget,
+  invalidSearchOperator,
   isResource,
   isUUID,
   OperationOutcomeError,
@@ -27,18 +26,15 @@ import {
   parseParameter,
   PropertyType,
   SearchParameterType,
-  SearchRequest,
   serverError,
-  SortRule,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
   validateResourceType,
-  WithId,
 } from '@medplum/core';
-import {
+import type {
   Bundle,
   BundleEntry,
   BundleLink,
@@ -52,9 +48,11 @@ import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
-import { Repository } from './repo';
+import type { Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation } from './searchparameter';
+import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
   Column,
@@ -63,11 +61,9 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
   Negation,
   periodToRangeString,
   SelectQuery,
-  Operator as SQL,
   SqlFunction,
   Union,
   UnionAllBuilder,
@@ -312,10 +308,32 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const rowCount = rows.length;
+  const config = getConfig();
+  const originalLimit = builder.limit_;
+
+  if (config.fhirSearchMinLimit !== undefined && config.fhirSearchMinLimit > builder.limit_) {
+    builder.limit(config.fhirSearchMinLimit);
+  }
+
+  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  let rows: any[];
+  try {
+    if (config.fhirSearchDiscourageSeqScan) {
+      // Despite the name, this doesn't truly remove the possibility of a sequential scan,
+      // just massively inflates the cost of a sequential scan to the planner.
+      await client.query('SET enable_seqscan = off');
+    }
+    rows = await builder.execute(client);
+  } finally {
+    if (config.fhirSearchDiscourageSeqScan) {
+      await client.query('RESET enable_seqscan');
+    }
+  }
+
+  const rowCount = Math.min(rows.length, originalLimit);
   const resources = [];
-  for (const row of rows) {
+  for (let i = 0; i < rowCount; i++) {
+    const row = rows[i];
     if (row.content) {
       resources.push(JSON.parse(row.content));
     } else {
@@ -721,7 +739,7 @@ function parseV1Cursor(cursor: string): Cursor | undefined {
   if (!nextId) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString() };
 }
 
@@ -736,7 +754,7 @@ function parseV2Cursor(cursor: string): Cursor | undefined {
   if (!nextInstant) {
     return undefined;
   }
-  const date = new Date(parseInt(nextInstant, 10));
+  const date = new Date(Number.parseInt(nextInstant, 10));
   return { version, nextInstant: date.toISOString(), excludedIds: excludedIds?.split(',') };
 }
 
@@ -851,7 +869,7 @@ async function getEstimateCount(repo: Repository, searchRequest: SearchRequest):
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      return parseInt(match[1], 10);
+      return Number.parseInt(match[1], 10);
     }
   }
   return 0;
@@ -1020,12 +1038,12 @@ function buildNormalSearchFilterExpression(
     case 'token':
     case 'uri':
       if (impl.type === SearchParameterType.BOOLEAN) {
-        return buildBooleanSearchFilter(table, impl, filter.operator, filter.value);
+        return buildBooleanSearchFilter(table, impl, filter);
       } else {
         return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
       }
     case 'reference':
-      return buildReferenceSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
+      return buildReferenceSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
     case 'date':
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
@@ -1068,8 +1086,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('id'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
@@ -1091,8 +1108,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('deleted'),
         },
-        filter.operator,
-        filter.value
+        filter
       );
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
@@ -1117,8 +1133,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('projectId'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     }
     case '_compartment': {
@@ -1131,8 +1146,7 @@ function trySpecialSearchParameter(
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('compartments'),
         },
-        filter.operator,
-        splitSearchOnComma(filter.value)
+        filter
       );
     }
     case '_filter':
@@ -1231,18 +1245,15 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
  * Adds an ID search filter as "WHERE" clause to the query builder.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(
-  table: string,
-  impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  values: string[]
-): Expression {
-  const column = new Column(table, impl.columnName);
+function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
 
+  const values = splitSearchOnComma(filter.value);
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
@@ -1252,8 +1263,8 @@ function buildIdSearchFilter(
     }
   }
 
-  const condition = buildEqualityCondition(impl, values, column);
-  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
+  const condition = buildEqualityCondition(impl, values, new Column(table, impl.columnName));
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
     return new Negation(condition);
   }
   return condition;
@@ -1285,17 +1296,19 @@ const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
-  value: string
+  filter: Filter
 ): Expression {
-  if (!allowedBooleanValues.includes(value)) {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
+  if (!allowedBooleanValues.includes(filter.value)) {
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
   return new Condition(
     new Column(table, impl.columnName),
-    operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
-    value
+    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
+    filter.value
   );
 }
 
@@ -1303,16 +1316,19 @@ function buildBooleanSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
+ * @param filter - The search filter.
  * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
+  filter: Filter,
   values: string[] | Column
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
     values = values.map((v) =>
@@ -1329,7 +1345,9 @@ function buildReferenceSearchFilter(
   } else {
     condition = new Condition(column, 'IN', values);
   }
-  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
+  return filter.operator === Operator.NOT || filter.operator === Operator.NOT_EQUALS
+    ? new Negation(condition)
+    : condition;
 }
 
 function buildReferenceEqualsCondition(
@@ -1367,7 +1385,7 @@ function validateDateValue(value: string): void {
   }
 
   const dateValue = new Date(value);
-  if (isNaN(dateValue.getTime())) {
+  if (Number.isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
   }
 }
@@ -1384,6 +1402,9 @@ export function buildDateSearchFilter(
   impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
+  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+    throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
+  }
   validateDateValue(filter.value);
 
   if (table === 'MeasureReport' && impl.columnName === 'period') {
@@ -1450,7 +1471,7 @@ function buildQuantitySearchFilter(
     // 	 The value for the parameter in the resource is approximately the same to the provided value.
     //   Note that the recommended value for the approximation is 10% of the stated value
     //   (or for a date, 10% of the gap between now and the date), but systems may choose other values where appropriate
-    const numberValue = parseFloat(number);
+    const numberValue = Number.parseFloat(number);
     return new Conjunction([
       new Condition(new Column(table, impl.columnName), '>=', numberValue * 0.9),
       new Condition(new Column(table, impl.columnName), '<=', numberValue * 1.1),

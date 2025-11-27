@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Client, Pool, PoolClient } from 'pg';
-import { SqlFunctionDefinition } from '../fhir/sql';
+import type { Client, Pool, PoolClient } from 'pg';
+import type { SqlFunctionDefinition } from '../fhir/sql';
 
 export type DbClient = Client | Pool | PoolClient;
 
@@ -29,7 +29,7 @@ export interface ColumnDefinition {
   identity?: 'ALWAYS' | 'BY DEFAULT';
 }
 
-export const IndexTypes = ['btree', 'gin', 'gist'] as const;
+export const IndexTypes = ['btree', 'gin', 'gist', 'brin'] as const;
 export type IndexType = (typeof IndexTypes)[number];
 
 export type IndexColumn = {

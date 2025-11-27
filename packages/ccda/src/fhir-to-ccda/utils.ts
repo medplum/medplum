@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { capitalize, getExtension } from '@medplum/core';
-import {
+import type {
   Address,
   ContactPoint,
   Extension,
@@ -23,7 +23,7 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from '../systems';
-import {
+import type {
   CcdaAddr,
   CcdaCode,
   CcdaEffectiveTime,
@@ -99,7 +99,7 @@ export function mapBirthDate(birthDate: string | undefined): CcdaTimeStamp | und
     return undefined;
   }
   return {
-    '@_value': birthDate.replace(/-/g, ''),
+    '@_value': birthDate.replaceAll('-', ''),
   };
 }
 

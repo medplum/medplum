@@ -1,16 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  CheckIcon,
-  Combobox,
-  Group,
-  Pill,
-  PillsInput,
-  PillsInputFieldProps,
-  PillsInputProps,
-  useCombobox,
-} from '@mantine/core';
-import { JSX, useMemo, useState } from 'react';
+import type { PillsInputFieldProps, PillsInputProps } from '@mantine/core';
+import { CheckIcon, Combobox, Group, Pill, PillsInput, useCombobox } from '@mantine/core';
+import type { JSX } from 'react';
+import { useMemo, useState } from 'react';
 
 const MAX_DISPLAYED_OPTIONS = 8;
 

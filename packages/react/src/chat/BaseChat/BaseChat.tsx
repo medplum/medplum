@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
   Group,
   LoadingOverlay,
   Paper,
-  PaperProps,
   ScrollArea,
   Skeleton,
   Stack,
@@ -15,11 +15,13 @@ import {
 } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, WithId, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import type { ProfileResource, WithId } from '@medplum/core';
+import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
-import { JSX, LegacyRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, LegacyRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
@@ -384,7 +386,9 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
         {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
         &nbsp;&middot;&nbsp;
         <Text span c="dimmed" fz="xs">
-          {isNaN(sentTime.getTime()) ? '' : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          {Number.isNaN(sentTime.getTime())
+            ? ''
+            : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
         </Text>
       </Text>
       <div

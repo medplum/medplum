@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
-import { mkdtempSync, readFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join, resolve } from 'path';
+import { randomUUID } from 'node:crypto';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
-import { MedplumServerConfig } from './types';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, ServerConfig } from './utils';
+import type { MedplumServerConfig } from './types';
+import type { ServerConfig } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -86,6 +88,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.defaultSuperAdminClientId = randomUUID();
+  config.defaultSuperAdminClientSecret = randomUUID();
   return config;
 }
 
@@ -115,18 +119,21 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
       currConfig = config.smtp = config.smtp ?? {};
+    } else if (key.startsWith('BULLMQ_')) {
+      key = key.substring('BULLMQ_'.length);
+      currConfig = config.bullmq = config.bullmq ?? {};
     } else if (key.startsWith('FISSION_')) {
       key = key.substring('FISSION_'.length);
       currConfig = config.fission = config.fission ?? {};
     }
 
     // Convert key from CAPITAL_CASE to camelCase
-    key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    key = key.toLowerCase().replaceAll(/_([a-z])/g, (g) => g[1].toUpperCase());
 
     if (isIntegerConfig(key)) {
-      currConfig[key] = parseInt(value ?? '', 10);
+      currConfig[key] = Number.parseInt(value ?? '', 10);
     } else if (isFloatConfig(key)) {
-      currConfig[key] = parseFloat(value ?? '');
+      currConfig[key] = Number.parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(key)) {
@@ -146,5 +153,5 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(resolve(__dirname, '../../', path), { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(path, { encoding: 'utf8' }));
 }

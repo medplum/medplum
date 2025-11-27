@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, encodeBase64, MedplumClient, WithId } from '@medplum/core';
-import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { ContentType, encodeBase64 } from '@medplum/core';
+import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
@@ -120,7 +121,7 @@ export async function createBot(
 }
 
 export function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replaceAll(String.raw`\*`, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
     return [];
@@ -195,7 +196,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 /**

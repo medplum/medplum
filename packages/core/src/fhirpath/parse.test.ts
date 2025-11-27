@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Encounter, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Encounter, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
@@ -426,11 +426,11 @@ describe('FHIRPath parser', () => {
   test('Boolean values', () => {
     const patient1: Patient = { resourceType: 'Patient', active: true };
     const result1 = evalFhirPathTyped('active', [toTypedValue(patient1)]);
-    expect(result1).toStrictEqual([{ type: PropertyType.boolean, value: true }]);
+    expect(result1).toStrictEqual([{ type: PropertyType.boolean, value: true, path: 'active' }]);
 
     const patient2: Patient = { resourceType: 'Patient', active: false };
     const result2 = evalFhirPathTyped('active', [toTypedValue(patient2)]);
-    expect(result2).toStrictEqual([{ type: PropertyType.boolean, value: false }]);
+    expect(result2).toStrictEqual([{ type: PropertyType.boolean, value: false, path: 'active' }]);
   });
 
   test('Schema type lookup', () => {
@@ -446,10 +446,12 @@ describe('FHIRPath parser', () => {
       {
         type: PropertyType.ContactPoint,
         value: { system: 'phone', value: '555-555-5555' },
+        path: 'telecom[0]',
       },
       {
         type: PropertyType.ContactPoint,
         value: { system: 'email', value: 'alice@example.com' },
+        path: 'telecom[1]',
       },
     ]);
   });
@@ -580,10 +582,12 @@ describe('FHIRPath parser', () => {
       {
         type: PropertyType.Quantity,
         value: { value: 100, unit: 'mg' },
+        path: 'value',
       },
       {
         type: PropertyType.string,
         value: 'foo',
+        path: 'value',
       },
     ]);
   });
@@ -615,6 +619,7 @@ describe('FHIRPath parser', () => {
       {
         type: PropertyType.Quantity,
         value: { value: 5, unit: '%' },
+        path: 'ObservationList[1].value',
       },
     ]);
   });

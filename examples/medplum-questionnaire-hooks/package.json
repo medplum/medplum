@@ -1,11 +1,11 @@
 {
   "name": "medplum-questionnaire-hooks",
+  "version": "5.0.4",
   "private": true,
-  "version": "4.4.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "dev": "vite",
     "preview": "vite preview"
   },
   "prettier": {
@@ -13,26 +13,21 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
-    "@medplum/core": "4.4.1",
-    "@medplum/eslint-config": "4.4.1",
-    "@medplum/fhirtypes": "4.4.1",
-    "@medplum/react-hooks": "4.4.1",
-    "@types/react": "19.1.13",
-    "@types/react-dom": "19.1.9",
-    "@vitejs/plugin-react": "5.0.3",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "typescript": "5.9.2",
-    "vite": "7.1.7"
+    "@medplum/core": "5.0.4",
+    "@medplum/eslint-config": "5.0.4",
+    "@medplum/fhirtypes": "5.0.4",
+    "@medplum/react-hooks": "5.0.4",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.2.2"
   },
-  "packageManager": "npm@10.9.3",
+  "packageManager": "npm@10.9.4",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

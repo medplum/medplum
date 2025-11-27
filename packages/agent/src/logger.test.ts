@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { LogLevel, LogLevelNames, parseLogLevel, sleep } from '@medplum/core';
+import type { LogLevelNames } from '@medplum/core';
+import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -809,7 +810,7 @@ describe('Agent Logger', () => {
 
       const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
       const logLines = logContent.trim().split('\n');
-      const logEntry = JSON.parse(logLines[logLines.length - 1]);
+      const logEntry = JSON.parse(logLines.at(-1) as string);
 
       // Check the format transformation
       expect(logEntry.level).toBe('INFO'); // Should be uppercase
