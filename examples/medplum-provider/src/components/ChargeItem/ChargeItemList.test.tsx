@@ -88,25 +88,25 @@ describe('ChargeItemList', () => {
   test('calculates total price', () => {
     const item2 = { ...mockChargeItem, id: 'charge-456', priceOverride: { value: 50 } };
     setup({ chargeItems: [mockChargeItem, item2] });
-    
+
     expect(screen.getByDisplayValue('$150')).toBeInTheDocument();
   });
 
   test('deletes charge item', async () => {
     const updateChargeItems = vi.fn();
     const user = userEvent.setup();
-    
+
     vi.spyOn(medplum, 'deleteResource').mockResolvedValue({} as any);
-    
+
     setup({ chargeItems: [mockChargeItem], updateChargeItems });
-    
+
     const buttons = screen.getAllByRole('button', { hidden: true });
-    const deleteButton = buttons.find(btn => btn.getAttribute('aria-haspopup') === 'menu');
-    
+    const deleteButton = buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+
     if (!deleteButton) {
       throw new Error('Delete button not found');
     }
-    
+
     await user.click(deleteButton);
 
     const deleteMenuItem = await screen.findByText('Delete');
@@ -129,13 +129,13 @@ describe('ChargeItemList', () => {
     });
 
     expect(screen.getByText('Add Charge Item', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
-    
+
     expect(screen.getByText('CPT Code')).toBeInTheDocument();
     expect(screen.getByText('Charge Item Definition')).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
-    expect(addButtons.length).toBeGreaterThan(1); 
+    expect(addButtons.length).toBeGreaterThan(1);
   });
 
   test('closes modal on cancel', async () => {

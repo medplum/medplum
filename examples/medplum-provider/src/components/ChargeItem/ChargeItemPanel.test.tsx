@@ -42,12 +42,7 @@ describe('ChargeItemPanel', () => {
     return render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
-          <ChargeItemPanel
-            chargeItem={mockChargeItem}
-            onChange={vi.fn()}
-            onDelete={vi.fn()}
-            {...props}
-          />
+          <ChargeItemPanel chargeItem={mockChargeItem} onChange={vi.fn()} onDelete={vi.fn()} {...props} />
         </MantineProvider>
       </MedplumProvider>
     );
@@ -68,18 +63,18 @@ describe('ChargeItemPanel', () => {
   test('handles delete charge item', async () => {
     const onDelete = vi.fn();
     const user = userEvent.setup();
-    
+
     vi.spyOn(medplum, 'deleteResource').mockResolvedValue({ resourceType: 'ChargeItem' } as ChargeItem);
 
     setup({ onDelete });
 
     const buttons = screen.getAllByRole('button', { hidden: true });
-    const deleteMenuButton = buttons.find(btn => btn.getAttribute('aria-haspopup') === 'menu');
-    
+    const deleteMenuButton = buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+
     if (!deleteMenuButton) {
       throw new Error('Delete menu button not found');
     }
-    
+
     await user.click(deleteMenuButton);
 
     const deleteButton = await screen.findByText('Delete');
@@ -94,7 +89,7 @@ describe('ChargeItemPanel', () => {
   test('displays updated price', () => {
     const itemWithPrice: ChargeItem = {
       ...mockChargeItem,
-      priceOverride: { value: 150.50, currency: 'USD' },
+      priceOverride: { value: 150.5, currency: 'USD' },
     };
     setup({ chargeItem: itemWithPrice });
 
@@ -125,7 +120,7 @@ describe('ChargeItemPanel', () => {
     };
 
     setup({ chargeItem: itemWithModifier });
-    
+
     expect(screen.getByText('Modifiers')).toBeInTheDocument();
   });
 

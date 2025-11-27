@@ -47,7 +47,7 @@ const mockTask: Task = {
   id: 'task-123',
   status: 'in-progress',
   intent: 'order',
-    encounter: createReference(mockEncounter),
+  encounter: createReference(mockEncounter),
   authoredOn: '2024-01-01T10:00:00Z',
 };
 
@@ -244,4 +244,3 @@ describe('EncounterChart', () => {
     });
   });
 });
-

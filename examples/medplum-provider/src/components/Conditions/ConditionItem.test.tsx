@@ -26,14 +26,7 @@ describe('ConditionItem', () => {
   const setup = (props: Partial<Parameters<typeof ConditionItem>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MantineProvider>
-        <ConditionItem
-          condition={mockCondition}
-          rank={1}
-          total={3}
-          onChange={vi.fn()}
-          onRemove={vi.fn()}
-          {...props}
-        />
+        <ConditionItem condition={mockCondition} rank={1} total={3} onChange={vi.fn()} onRemove={vi.fn()} {...props} />
       </MantineProvider>
     );
   };
@@ -86,7 +79,7 @@ describe('ConditionItem', () => {
       },
     };
     setup({ condition: conditionWithoutDisplay });
-    
+
     expect(screen.queryByText('Acute bronchitis')).not.toBeInTheDocument();
   });
 
@@ -97,4 +90,3 @@ describe('ConditionItem', () => {
     expect(removeButton).toBeInTheDocument();
   });
 });
-

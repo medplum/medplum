@@ -37,12 +37,7 @@ describe('ConditionModal', () => {
     return render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
-          <ConditionModal
-            patient={mockPatient}
-            encounter={mockEncounter}
-            onSubmit={vi.fn()}
-            {...props}
-          />
+          <ConditionModal patient={mockPatient} encounter={mockEncounter} onSubmit={vi.fn()} {...props} />
         </MantineProvider>
       </MedplumProvider>
     );
@@ -83,4 +78,3 @@ describe('ConditionModal', () => {
     expect(form).toBeInTheDocument();
   });
 });
-
