@@ -5,6 +5,7 @@ import { XSI_URL } from './systems';
 import type { Ccda } from './types';
 
 const ARRAY_PATHS = [
+  'ClinicalDocument.participant',
   'ClinicalDocument.recordTarget',
 
   // Always arrays
