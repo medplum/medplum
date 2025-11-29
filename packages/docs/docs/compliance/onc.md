@@ -41,6 +41,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [a14](/docs/charting/implantable-devices) | Implantable Device List  |
 | [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
+| c1                                                  | Clinical Quality Measures Record and Export          |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d2](/docs/api/fhir/resources/auditevent) | Auditable Events and Tamper Resistance  |
 | d3 | Audit report  |
