@@ -768,6 +768,21 @@ export const OAuthClientAssertionType = {
 } as const;
 export type OAuthClientAssertionType = (typeof OAuthClientAssertionType)[keyof typeof OAuthClientAssertionType];
 
+/**
+ * OAuth Signing Algorithms
+ * See {@link https://datatracker.ietf.org/doc/html/rfc7519 | RFC 7519} for full details.
+ */
+export const OAuthSigningAlgorithm = {
+  ES256: 'ES256',
+  ES384: 'ES384',
+  ES512: 'ES512',
+  HS256: 'HS256',
+  RS256: 'RS256',
+  RS384: 'RS384',
+  RS512: 'RS512',
+} as const;
+export type OAuthSigningAlgorithm = (typeof OAuthSigningAlgorithm)[keyof typeof OAuthSigningAlgorithm];
+
 interface SessionDetails {
   project: Project;
   membership: ProjectMembership;
