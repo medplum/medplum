@@ -6,7 +6,14 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
+import {
+  ContentType,
+  deepClone,
+  OAuthGrantType,
+  OAuthSigningAlgorithm,
+  OAuthTokenAuthMethod,
+  splitN,
+} from '@medplum/core';
 import type { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import qs from 'node:querystring';
@@ -50,7 +57,11 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
         OAuthTokenAuthMethod.ClientSecretPost,
         OAuthTokenAuthMethod.PrivateKeyJwt,
       ],
-      token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],
+      token_endpoint_auth_signing_alg_values_supported: [
+        OAuthSigningAlgorithm.RS256,
+        OAuthSigningAlgorithm.RS384,
+        OAuthSigningAlgorithm.ES384,
+      ],
       scopes_supported: [
         'patient/*.rs',
         'user/*.cruds',

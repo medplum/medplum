@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, isString, isUUID, Operator } from '@medplum/core';
+import { badRequest, isString, isUUID, OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -78,7 +78,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: 'https://accounts.google.com',
-    algorithms: ['RS256'],
+    algorithms: [OAuthSigningAlgorithm.RS256],
     audience: googleClientId,
   };
 
