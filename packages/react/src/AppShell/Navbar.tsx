@@ -76,13 +76,14 @@ export function Navbar(props: NavbarProps): JSX.Element {
 
   return (
     <>
-      <MantineAppShell.Navbar className={classes.navbar}>
+      <MantineAppShell.Navbar id="navbar" className={classes.navbar}>
         {props.logo && (
           <MantineAppShell.Section px="sm" py="xs">
             <UnstyledButton
               className={classes.logoButton}
               onClick={props.navbarToggle}
-              data-navopened={opened || undefined}
+              aria-expanded={opened}
+              aria-controls="navbar"
             >
               {props.logo}
             </UnstyledButton>
@@ -146,7 +147,8 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 className={classes.toggleButton}
                 aria-label="Toggle navbar"
                 onClick={props.navbarToggle}
-                data-navopened={opened || undefined}
+                aria-expanded={opened}
+                aria-controls="navbar"
               >
                 <IconLayoutSidebar />
               </UnstyledButton>

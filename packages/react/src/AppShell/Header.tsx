@@ -33,7 +33,8 @@ export function Header(props: HeaderProps): JSX.Element {
         <Group gap="xs">
           <UnstyledButton
             className={classes.logoButton}
-            data-navopened={props.navbarOpen || undefined}
+            aria-expanded={props.navbarOpen}
+            aria-controls="navbar"
             onClick={() => props.navbarToggle()}
           >
             {props.logo}

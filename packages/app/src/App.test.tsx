@@ -107,7 +107,7 @@ describe('App', () => {
 });
 
 function isNavOpen(): boolean {
-  return screen.getByTitle('Medplum Logo').closest('button')?.getAttribute('data-navopened') === 'true';
+  return screen.getByTitle('Medplum Logo').closest('button')?.getAttribute('aria-expanded') === 'true';
 }
 
 async function openNav(user: UserEvent): Promise<void> {
