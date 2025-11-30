@@ -186,6 +186,12 @@ export interface Bot {
   executableCode?: Attachment;
 
   /**
+   * CDS service definition if the bot is used as a CDS Hooks service. See
+   * https://cds-hooks.hl7.org/ for more details.
+   */
+  cdsService?: BotCdsService;
+
+  /**
    * @deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode
    * instead.
    */
@@ -196,3 +202,59 @@ export interface Bot {
  * A schedule for the bot to be executed.
  */
 export type BotCron = string | Timing;
+
+/**
+ * CDS service definition if the bot is used as a CDS Hooks service. See
+ * https://cds-hooks.hl7.org/ for more details.
+ */
+export interface BotCdsService {
+
+  /**
+   * The hook this service should be invoked on. See
+   * https://cds-hooks.hl7.org/#hooks for possible values.
+   */
+  hook: string;
+
+  /**
+   * The human-friendly name of this CDS service.
+   */
+  title: string;
+
+  /**
+   * The description of this CDS service.
+   */
+  description: string;
+
+  /**
+   * Optional human-friendly description of any preconditions for the use
+   * of this CDS Service.
+   */
+  usageRequirements?: string;
+
+  /**
+   * An object containing key/value pairs of FHIR queries that this service
+   * is requesting the CDS Client to perform and provide on each service
+   * call.
+   */
+  prefetch?: BotCdsServicePrefetch[];
+}
+
+/**
+ * An object containing key/value pairs of FHIR queries that this service
+ * is requesting the CDS Client to perform and provide on each service
+ * call.
+ */
+export interface BotCdsServicePrefetch {
+
+  /**
+   * The type of data being requested. See
+   * https://cds-hooks.hl7.org/#prefetch-template
+   */
+  key: string;
+
+  /**
+   * The FHIR query used to retrieve the requested data. See
+   * https://cds-hooks.hl7.org/#prefetch-template
+   */
+  query: string;
+}
