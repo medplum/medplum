@@ -161,7 +161,7 @@ describe('CDS Hooks', () => {
     expect(res.body.cards).toBeDefined();
   });
 
-  test('Error on calling normal bot', async () => {
+  test('Cannot call normal bot as CDS service', async () => {
     const res = await request(app)
       .post(`/cds-services/${normalBot.id}`)
       .set('Content-Type', ContentType.FHIR_JSON)

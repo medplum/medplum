@@ -5,7 +5,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { getBotDefaultHeaders, getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
+import { getBotDefaultHeaders, getResponseBodyFromResult } from '../bots/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 
@@ -19,12 +19,17 @@ cdsRouter.get('/', async (_req: Request, res: Response) => {
   const { repo } = getAuthenticatedContext();
   repo.setExtendedMode(true);
 
+  // The CDS Hooks spec does not define pagination for discovery
+  // Most servers will have under 10 CDS services, so we set a high max count.
+  const maxCount = 100;
+
   const bots = await repo.searchResources<Bot>({
     resourceType: 'Bot',
-    filters: [{ code: 'cds-hook', operator: Operator.PRESENT, value: 'true' }],
-    count: 1000, // The CDS Hooks spec does not define pagination for discovery
+    filters: [{ code: 'cds-hook', operator: Operator.MISSING, value: 'false' }],
+    count: maxCount,
   });
 
+  // All bots will have a cdsService defined due to the search filter
   const response = {
     services: bots.map((bot) => ({
       id: bot.id,
@@ -48,6 +53,9 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   ctx.repo.setExtendedMode(true); // Need extended mode for meta.project
 
+  // Read the bot by ID
+  // The `repo.readResource` method can throw on "Not Found", "Gone", "Forbidden", etc.
+  // We rely on existing middleware to handle those errors appropriately.
   const bot = await ctx.repo.readResource<Bot>('Bot', id);
 
   if (!bot.cdsService) {
@@ -55,6 +63,8 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
     return;
   }
 
+  // Execute the bot
+  // This also handles logging, auditing, etc.
   const result = await executeBot({
     bot,
     runAs: ctx.membership,
@@ -68,5 +78,5 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
 
   const responseBody = getResponseBodyFromResult(result);
   const outcome = result.success ? allOk : badRequest(result.logResult);
-  res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
+  res.status(getStatus(outcome)).type(ContentType.JSON).send(responseBody);
 });

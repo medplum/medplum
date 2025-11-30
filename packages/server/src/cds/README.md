@@ -34,13 +34,13 @@ The Discovery endpoint filters for all `Bot` resources where the custom FHIR Sea
 
 The following fields must be configured on a `Bot` resource to expose it as a CDS Service.
 
-| Field                         | Required/Optional | CDS Hook Field      | Description                                                                                       |
-| :---------------------------- | :---------------- | :------------------ | :------------------------------------------------------------------------------------------------ |
-| `cdsService.hook`             | REQUIRED          | `hook`              | The event trigger (e.g., `patient-view`, `order-sign`). Used for the `cds-hook` search parameter. |
-| `cdsService.description`      | REQUIRED          | `description`       | Summary of the Bot's function.                                                                    |
-| `cdsService.title`            | REQUIRED          | `title`             | Human-friendly name for the service.                                                              |
-| `cdsServie.usageRequirements` | OPTIONAL          | `usageRequirements` | Optional human-friendly description of any preconditions for the use of this CDS Service.         |
-| `cdsService.prefetch`         | OPTIONAL          | `prefetch`          | An array of key/query templates used to request FHIR data from the EHR _before_ invoking the Bot. |
+| Field                          | Required/Optional | CDS Hook Field      | Description                                                                                       |
+| :----------------------------- | :---------------- | :------------------ | :------------------------------------------------------------------------------------------------ |
+| `cdsService.hook`              | REQUIRED          | `hook`              | The event trigger (e.g., `patient-view`, `order-sign`). Used for the `cds-hook` search parameter. |
+| `cdsService.description`       | REQUIRED          | `description`       | Summary of the Bot's function.                                                                    |
+| `cdsService.title`             | REQUIRED          | `title`             | Human-friendly name for the service.                                                              |
+| `cdsService.usageRequirements` | OPTIONAL          | `usageRequirements` | Optional human-friendly description of any preconditions for the use of this CDS Service.         |
+| `cdsService.prefetch`          | OPTIONAL          | `prefetch`          | An array of key/query templates used to request FHIR data from the EHR _before_ invoking the Bot. |
 
 ### Prefetch Structure
 
