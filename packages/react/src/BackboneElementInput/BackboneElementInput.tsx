@@ -50,6 +50,8 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     return <div>{type}&nbsp;not implemented</div>;
   }
 
+  const isNested = parentElementsContext.path !== '';
+
   return maybeWrapWithContext(
     ElementsContext.Provider,
     contextValue,
@@ -60,6 +62,15 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
       defaultValue={defaultValue}
       onChange={props.onChange}
       outcome={props.outcome}
+      stackProps={
+        isNested
+          ? {
+              pl: 'md',
+              pt: 'md',
+              pb: 'sm',
+            }
+          : undefined
+      }
     />
   );
 }
