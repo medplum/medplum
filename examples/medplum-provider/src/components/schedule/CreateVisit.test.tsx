@@ -129,7 +129,6 @@ describe('CreateVisit', () => {
     });
   });
 
-
   describe('PlanDefinition Actions', () => {
     test('does not display included tasks card initially', async () => {
       await act(async () => {
@@ -143,7 +142,6 @@ describe('CreateVisit', () => {
   });
 
   describe('Date/Time Formatting', () => {
-
     test('updates formatted date/time when appointmentSlot changes', async () => {
       const { rerender } = await act(async () => {
         return setup(mockSlotInfo);
@@ -193,4 +191,3 @@ describe('CreateVisit', () => {
     });
   });
 });
-
