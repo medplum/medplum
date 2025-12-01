@@ -103,8 +103,7 @@
     "signature_pad": "5.1.2",
     "sinon": "21.0.0",
     "storybook": "10.1.2",
-    "typescript": "5.9.3",
-    "vite-plugin-turbosnap": "1.0.3"
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
     "@mantine/core": "^8.0.0",
