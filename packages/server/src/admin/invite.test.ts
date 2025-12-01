@@ -784,6 +784,86 @@ describe('Admin Invite', () => {
     expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
 
+  test('Inviting a project-scoped user when there is already a server-scoped user who is a member with the same email address', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob first time as server-scoped user - should succeed
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('ProjectMembership');
+
+    // Invite Bob second time as project scoped user - should fail
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'project',
+      });
+    expect(res3.status).toBe(409);
+    expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
+  });
+
+  test('Inviting a server-scoped user when there is already a project-scoped user who is a member with the same email address', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob first time as project-scoped user - should succeed
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'project',
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('ProjectMembership');
+
+    // Invite Bob second time as server-scoped user - should fail
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res3.status).toBe(409);
+    expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
+  });
+
   test('Invite user with forceNewMembership in different cases', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
