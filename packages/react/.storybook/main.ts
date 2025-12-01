@@ -1,10 +1,10 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { mergeConfig } from 'vite';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
@@ -21,15 +21,26 @@ const config: StorybookConfig = {
         // plugins: [turbosnap({ rootDir: config.root ?? process.cwd() })],
       });
     } else if (configType === 'DEVELOPMENT') {
+      const aliasEntries: Record<string, string> = {
+        '@medplum/core': path.resolve(__dirname, '../../core/src'),
+        '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
+        '@medplum/mock': path.resolve(__dirname, '../../mock/src'),
+        '@medplum/fhir-router': path.resolve(__dirname, '../../fhir-router/src'),
+        '@medplum/definitions': path.resolve(__dirname, '../../definitions/src'),
+      };
+
+      // Only add aliases for paths that exist
+      const alias = Object.fromEntries(
+        Object.entries(aliasEntries).filter(([, aliasPath]) => existsSync(aliasPath))
+      );
+
       config = mergeConfig(config, {
         resolve: {
-          alias: {
-            '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
-            '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
-          },
+          alias,
         },
-      });
-    }
+        server: {
+          fs: {
+            allow: [path.resolve(__dirname, '../..')],
           },
         },
       });
