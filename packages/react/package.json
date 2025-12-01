@@ -91,7 +91,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
-    "@vueless/storybook-dark-mode": "9.0.10",
+    "@vueless/storybook-dark-mode": "10.0.4",
     "chromatic": "13.3.4",
     "dotenv": "17.2.3",
     "postcss": "8.5.6",
