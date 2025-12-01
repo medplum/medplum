@@ -139,7 +139,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest<T extends Resource = Resource>(
-  url: T['resourceType'] | URL | string,
+  url: URL | string,
   query?: Record<string, string[] | string | undefined>
 ): SearchRequest<T> {
   if (!url) {
