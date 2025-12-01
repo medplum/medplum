@@ -184,10 +184,7 @@ describe('Deduplication', () => {
       if (url.includes('$everything')) {
         return {
           resourceType: 'Bundle',
-          entry: [
-            { resource: { resourceType: 'Patient', id: 'src' } },
-            { resource: { ...clinicalResource } },
-          ],
+          entry: [{ resource: { resourceType: 'Patient', id: 'src' } }, { resource: { ...clinicalResource } }],
         };
       } else if (url.includes('ServiceRequest/123')) {
         return {
