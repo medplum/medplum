@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import type { Message } from '../../types/spaces';
+import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
 
 /**
@@ -119,7 +119,10 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
           sequenceNumber: data.sequenceNumber || 0,
         });
       } catch (error) {
-        throw new Error(`Failed to parse message: ${error}`);
+        if (error instanceof Error) {
+          throw new Error(`Failed to parse message: ${error.message}`);
+        }
+        throw new Error(`Failed to parse message: ${String(error)}`);
       }
     }
   }
@@ -133,7 +136,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
  * @param limit - Maximum number of topics to return
  * @returns Array of conversation topic Communications
  */
-export async function loadRecentTopics(medplum: MedplumClient, limit: number = 10): Promise<Communication[]> {
+export async function loadRecentTopics(medplum: MedplumClient, limit = 10): Promise<Communication[]> {
   const profile = await medplum.getProfile();
   return medplum.searchResources('Communication', {
     identifier: 'http://medplum.com/ai-message|ai-message-topic',

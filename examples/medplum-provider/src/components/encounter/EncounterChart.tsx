@@ -24,7 +24,6 @@ import { EncounterHeader } from './EncounterHeader';
 import { SignAddendum } from './SignAddendum';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
-import { Outlet } from 'react-router';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
 const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
@@ -278,7 +277,6 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
         </Box>
       </Stack>
-      <Outlet />
     </>
   );
 };

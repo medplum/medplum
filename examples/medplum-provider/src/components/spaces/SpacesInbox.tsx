@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Paper, Text, Box, ScrollArea, Group, Flex, ActionIcon, Transition, CloseButton } from '@mantine/core';
+import { Stack, Text, Box, ScrollArea, Group, ActionIcon, CloseButton, Avatar, ThemeIcon } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum, useResource } from '@medplum/react';
-import { IconHistory } from '@tabler/icons-react';
+import { IconRobot, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlus } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import type { Message } from '../../types/spaces';
-import { createConversationTopic, saveMessage, loadConversationMessages } from '../../pages/spaces/space-persistence';
-import { ConversationList } from '../../pages/spaces/ConversationList';
+import { createConversationTopic, saveMessage, loadConversationMessages } from '../../utils/spacePersistence';
+import { HistoryList } from './HistoryList';
 import { ChatInput } from '../../pages/spaces/ChatInput';
 import type { Identifier, Communication, Reference } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import classes from '../../pages/spaces/SpacesPage.module.css';
+import classes from './SpacesInbox.module.css';
 import cx from 'clsx';
 
 const fhirRequestToolsId: Identifier = {
@@ -31,10 +31,11 @@ interface SpaceInboxProps {
   topic: Communication | Reference<Communication> | undefined;
   onNewTopic: (topic: Communication) => void;
   onSelectedItem: (topic: Communication) => string;
+  onAdd?: () => void;
 }
 
-export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
-  const { topic: topicRef, onNewTopic, onSelectedItem } = props;
+export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
+  const { topic: topicRef, onNewTopic, onSelectedItem, onAdd } = props;
   const medplum = useMedplum();
   const topic = useResource(topicRef);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -44,7 +45,7 @@ export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
-  const [historyOpened, setHistoryOpened] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -102,11 +103,6 @@ export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const handleHistoryClick = (): void => {
-    setRefreshKey((prev) => prev + 1); // Refresh the conversation list
-    setHistoryOpened((prev) => !prev);
-  };
-
   const handleSend = async (): Promise<void> => {
     if (!input.trim()) {
       return;
@@ -131,6 +127,7 @@ export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
         const topic = await createConversationTopic(medplum, input.substring(0, 100), selectedModel);
         activeTopicId = topic.id;
         setCurrentTopicId(activeTopicId);
+        setRefreshKey((prev) => prev + 1); // Refresh list to show new topic
         // Notify parent to navigate to the new topic
         onNewTopic(topic);
       }
@@ -276,200 +273,108 @@ export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
     (m) => m.role !== 'system' && m.role !== 'tool' && !(m.role === 'assistant' && m.tool_calls)
   );
 
-  // Centered layout before first message
-  if (!hasStarted) {
-    return (
-      <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
-        {/* Overlay Sidebar */}
-        <Transition mounted={historyOpened} transition="slide-right" duration={200}>
-          {(styles) => (
-            <Paper
-              className={classes.borderRight}
-              w={320}
-              h="100%"
-              shadow="xl"
-              style={{
-                ...styles,
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                zIndex: 10,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Group justify="space-between" p="md" className={classes.borderBottom}>
-                <Text size="lg" fw={600}>
-                  Conversations
-                </Text>
-                <CloseButton onClick={() => setHistoryOpened(false)} />
-              </Group>
-              <Box style={{ flex: 1, overflow: 'hidden' }}>
-                <ConversationList
-                  key={refreshKey}
-                  currentTopicId={currentTopicId}
-                  onSelectTopic={handleSelectTopic}
-                  onSelectedItem={onSelectedItem}
-                />
-              </Box>
-            </Paper>
-          )}
-        </Transition>
-
-        {/* Main Content */}
-        <Flex h="100%" style={{ position: 'relative' }}>
-          <Box p="md">
-            <ActionIcon size="lg" variant="subtle" onClick={handleHistoryClick} c="gray">
-              <IconHistory size={20} />
-            </ActionIcon>
-          </Box>
-
-          <Stack justify="center" align="center" p="sm" style={{ flex: 1 }}>
-            <Box
-              w="100%"
-              className={hasStarted ? classes.fadeOut : undefined}
-              style={{
-                maxWidth: '700px',
-              }}
-            >
-              <Text size="xl" fw={700} mb="xs">
-                Start a New Space
-              </Text>
-
-              <ChatInput
-                input={input}
-                onInputChange={setInput}
-                onKeyDown={handleKeyDown}
-                onSend={handleSend}
-                loading={loading}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                backgroundColor="white"
-              />
-            </Box>
-          </Stack>
-        </Flex>
-      </Box>
-    );
-  }
-
-  // Chat layout after first message
   return (
-    <Box h="calc(100vh - 68px)" style={{ position: 'relative' }}>
-      {/* Overlay History Sidebar */}
-      <Transition mounted={historyOpened} transition="slide-right" duration={200}>
-        {(styles) => (
-          <Paper
-            className={classes.borderRight}
-            w={320}
-            h="100%"
-            shadow="xl"
-            style={{
-              ...styles,
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              zIndex: 10,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <Group justify="space-between" p="md" className={classes.borderBottom}>
-              <Text size="lg" fw={600}>
-                Conversations
+    <>
+      {/* Sidebar */}
+      <Box className={classes.sidebar} style={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}>
+        <div className={classes.sidebarHeader}>
+          <Text className={classes.sidebarTitle}>Conversations</Text>
+          <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(false)}>
+            <IconLayoutSidebarLeftCollapse size={18} />
+          </ActionIcon>
+        </div>
+        <div className={classes.sidebarContent}>
+          <HistoryList
+            key={refreshKey}
+            currentTopicId={currentTopicId}
+            onSelectTopic={handleSelectTopic}
+            onSelectedItem={onSelectedItem}
+          />
+        </div>
+      </Box>
+
+      {/* Main Chat Area */}
+      <div className={classes.chatContainer}>
+        <div className={classes.chatHeader}>
+          <div>
+            {!sidebarOpen && (
+              <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(true)} mr="md">
+                <IconLayoutSidebarLeftExpand size={16} />
+              </ActionIcon>
+            )}
+          </div>
+          {onAdd && (
+            <ActionIcon variant="subtle" color="gray" size="sm" onClick={onAdd} aria-label="New conversation">
+              <IconPlus size={16} />
+            </ActionIcon>
+          )}
+        </div>
+
+        <div className={classes.messagesArea}>
+          {!hasStarted ? (
+            <div className={classes.emptyState}>
+              <ThemeIcon size={64} radius="xl" variant="light" color="gray" className={classes.emptyStateIcon}>
+                <IconRobot size={32} />
+              </ThemeIcon>
+              <Text size="xl" fw={500} mb="sm">
+                How can I help you today?
               </Text>
-              <CloseButton onClick={() => setHistoryOpened(false)} />
-            </Group>
-            <Box style={{ flex: 1, overflow: 'hidden' }}>
-              <ConversationList
-                key={refreshKey}
-                currentTopicId={currentTopicId}
-                onSelectTopic={handleSelectTopic}
-                onSelectedItem={onSelectedItem}
-              />
-            </Box>
-          </Paper>
-        )}
-      </Transition>
-
-      {/* Main content column - chat/resource + input */}
-      <Flex direction="column" h="100%">
-        {/* Chat and Resource panels row */}
-        <Flex style={{ overflow: 'hidden', flex: 1 }}>
-          {/* Chat Section */}
-          <Paper
-            className={cx(classes.fadeIn, selectedResource ? classes.borderRight : undefined)}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <Group justify="space-between" p="md">
-              <Group gap="xs">
-                <ActionIcon size="lg" variant="subtle" c="gray" onClick={handleHistoryClick}>
-                  <IconHistory size={20} />
-                </ActionIcon>
-
-                <Text size="xl" fw={700}>
-                  AI Assistant
-                </Text>
-              </Group>
-            </Group>
-
+              <Text c="dimmed" size="sm" maw={400}>
+                I can help you search for patients, create resources, or answer clinical questions.
+              </Text>
+            </div>
+          ) : (
             <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
-              <Stack gap="md" p="md">
+              <Stack gap="xl" p="xs">
                 {visibleMessages.map((message, index) => (
-                  <Box
+                  <div
                     key={index}
-                    style={{
-                      alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                      maxWidth: '70%',
-                      width: message.role === 'assistant' && message.resources ? '100%' : undefined,
-                    }}
+                    className={cx(
+                      classes.messageWrapper,
+                      message.role === 'user' ? classes.userMessage : classes.assistantMessage
+                    )}
                   >
-                    <Paper p="md" withBorder bg={message.role === 'user' ? 'violet.0' : undefined}>
+                    <Group align="flex-start" gap="sm" mb={4}>
+                      {message.role === 'assistant' && (
+                        <Avatar radius="xl" size="sm" color="blue">
+                          <IconRobot size={14} />
+                        </Avatar>
+                      )}
+                      <Text fw={600} size="sm" c="dimmed">
+                        {message.role === 'user' ? 'You' : 'AI Assistant'}
+                      </Text>
+                    </Group>
+                    <div className={classes.messageContent}>
                       <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
-                    </Paper>
-
+                    </div>
                     {message.resources && message.resources.length > 0 && (
-                      <Stack gap="xs" mt="sm">
+                      <Stack gap="xs" mt="sm" ml={message.role === 'assistant' ? 0 : 'auto'}>
                         {message.resources.map((resourceRef, idx) => (
                           <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
                         ))}
                       </Stack>
                     )}
-                  </Box>
+                  </div>
                 ))}
                 {loading && (
-                  <Paper p="md" withBorder style={{ alignSelf: 'flex-start', maxWidth: '70%' }}>
-                    <Text c="dimmed">{currentFhirRequest ? `Executing ${currentFhirRequest}` : 'Thinking...'}</Text>
-                  </Paper>
+                  <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
+                    <Group align="center" gap="sm">
+                      <Avatar radius="xl" size="sm" color="blue">
+                        <IconRobot size={14} />
+                      </Avatar>
+                      <Text size="sm" c="dimmed" fs="italic">
+                        {currentFhirRequest ? `Executing ${currentFhirRequest}...` : 'Thinking...'}
+                      </Text>
+                    </Group>
+                  </div>
                 )}
               </Stack>
             </ScrollArea>
-          </Paper>
-
-          {/* Right Panel for Resource Details */}
-          {selectedResource && (
-            <Paper className={classes.previewResource}>
-              <Group justify="space-between" p="md">
-                <Text size="lg" fw={600}>
-                  Resource Details
-                </Text>
-                <CloseButton onClick={() => setSelectedResource(undefined)} />
-              </Group>
-              <ScrollArea style={{ flex: 1 }} p="md">
-                <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
-              </ScrollArea>
-            </Paper>
           )}
-        </Flex>
+        </div>
 
-        {/* Input at bottom */}
-        <Paper className={classes.borderTop}>
-          <Box w="50%" style={{ margin: '0 auto' }} p="md">
+        <div className={classes.inputArea}>
+          <div className={classes.inputWrapper}>
             <ChatInput
               input={input}
               onInputChange={setInput}
@@ -478,10 +383,26 @@ export function SpaceInbox(props: SpaceInboxProps): JSX.Element {
               loading={loading}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
+              backgroundColor="transparent"
             />
-          </Box>
-        </Paper>
-      </Flex>
-    </Box>
+          </div>
+        </div>
+      </div>
+
+      {/* Resource Panel */}
+      {selectedResource && (
+        <div className={classes.resourcePanel}>
+          <div className={classes.resourceHeader}>
+            <Text fw={600} size="sm">
+              Resource Details
+            </Text>
+            <CloseButton onClick={() => setSelectedResource(undefined)} />
+          </div>
+          <ScrollArea style={{ flex: 1 }} p="md">
+            <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
+          </ScrollArea>
+        </div>
+      )}
+    </>
   );
 }
