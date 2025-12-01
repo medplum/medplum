@@ -1,4 +1,4 @@
-import { useMantineColorScheme } from '@mantine/core';
+import { MantineProvider, createTheme, useMantineColorScheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { addons } from 'storybook/preview-api';
 import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
-import { themes } from './themes';
 
 export const parameters = {
   layout: 'fullscreen',
@@ -23,6 +22,25 @@ export const parameters = {
     codePanel: true,
   },
 };
+
+const medplumDefaultTheme = createTheme({
+  headings: {
+    sizes: {
+      h1: {
+        fontSize: '1.125rem',
+        fontWeight: '500',
+        lineHeight: '2.0',
+      },
+    },
+  },
+  fontSizes: {
+    xs: '0.6875rem',
+    sm: '0.875rem',
+    md: '0.875rem',
+    lg: '1.0rem',
+    xl: '1.125rem',
+  },
+});
 
 // wrap initialization of MockClient and initial page navigation
 // so that resources created in MockFetchClient#initMockRepo have
@@ -45,17 +63,21 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export const decorators = [
-  themes,
-  (Story) => (
+  (Story: any) => (
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
         <Story />
       </MedplumProvider>
     </BrowserRouter>
   ),
-  (Story) => (
+  (Story: any) => (
     <ColorSchemeWrapper>
       <Story />
     </ColorSchemeWrapper>
+  ),
+  (Story: any) => (
+    <MantineProvider theme={medplumDefaultTheme}>
+      <Story />
+    </MantineProvider>
   ),
 ];

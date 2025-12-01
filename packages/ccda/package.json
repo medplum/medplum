@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@medplum/core": "5.0.5",
-    "fast-xml-parser": "5.3.1"
+    "fast-xml-parser": "5.3.2"
   },
   "devDependencies": {
     "@medplum/definitions": "5.0.5",

@@ -32,8 +32,8 @@
     "@types/node": "22.19.1",
     "@types/node-fetch": "2.6.13",
     "@types/ssh2-sftp-client": "9.0.5",
-    "@vitest/coverage-v8": "4.0.9",
-    "@vitest/ui": "4.0.9",
+    "@vitest/coverage-v8": "4.0.14",
+    "@vitest/ui": "4.0.14",
     "commander": "12.1.0",
     "dotenv": "17.2.3",
     "esbuild": "0.27.0",
@@ -41,6 +41,6 @@
     "node-fetch": "2.7.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "vitest": "4.0.9"
+    "vitest": "4.0.14"
   }
 }

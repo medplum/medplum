@@ -67,22 +67,22 @@ export class EventTarget {
 export class TypedEventTarget<TEvents extends Record<string, Event>> {
   private readonly emitter = new EventTarget();
 
-  dispatchEvent<TEventType extends keyof TEvents & string>(event: TEvents[TEventType]): void {
+  dispatchEvent<TEventType extends keyof TEvents>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);
   }
 
-  addEventListener<TEventType extends keyof TEvents & string>(
+  addEventListener<TEventType extends keyof TEvents>(
     type: TEventType,
     handler: (event: TEvents[TEventType]) => void
   ): void {
-    this.emitter.addEventListener(type, handler as any);
+    this.emitter.addEventListener(type as string, handler as any);
   }
 
-  removeEventListener<TEventType extends keyof TEvents & string>(
+  removeEventListener<TEventType extends keyof TEvents>(
     type: TEventType,
     handler: (event: TEvents[TEventType]) => void
   ): void {
-    this.emitter.removeEventListener(type, handler as any);
+    this.emitter.removeEventListener(type as string, handler as any);
   }
 
   removeAllListeners(): void {
@@ -94,7 +94,7 @@ export class TypedEventTarget<TEvents extends Record<string, Event>> {
    * @param type - The name of the Event type.
    * @returns The number of listeners for this Event type.
    */
-  listenerCount<TEventType extends keyof TEvents & string>(type: TEventType): number {
-    return this.emitter.listenerCount(type);
+  listenerCount<TEventType extends keyof TEvents>(type: TEventType): number {
+    return this.emitter.listenerCount(type as string);
   }
 }

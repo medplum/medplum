@@ -518,7 +518,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 async function tryGetSubscription(
   systemRepo: Repository,
   subscriptionId: string,
-  channelType: SubscriptionJobData['channelType'] | undefined
+  channelType: SubscriptionJobData['channelType']
 ): Promise<WithId<Subscription> | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
