@@ -91,8 +91,10 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
+export interface MockClientOptions extends Pick<
+  MedplumClientOptions,
+  'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'
+> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in

@@ -8,7 +8,8 @@ import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSet
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
-  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
+  extends
+    Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
     ComplexTypeInputProps<CodeableConcept> {
   readonly onChange?: (value: CodeableConcept | undefined) => void;
 }

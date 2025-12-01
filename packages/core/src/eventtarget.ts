@@ -67,7 +67,7 @@ export class EventTarget {
 export class TypedEventTarget<TEvents extends Record<string, Event>> {
   private readonly emitter = new EventTarget();
 
-  // This unions with string 
+  // This unions with string
   dispatchEvent<TEventType extends keyof TEvents>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);
   }
