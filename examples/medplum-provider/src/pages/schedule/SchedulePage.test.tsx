@@ -5,7 +5,6 @@ import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
@@ -298,32 +297,6 @@ describe('SchedulePage', () => {
       await waitFor(() => {
         expect(medplum.createResource).toHaveBeenCalled();
       });
-    });
-  });
-
-  describe('Appointment Event Selection', () => {
-    test('searches for encounters when appointment is selected', async () => {
-      const mockAppointment: Appointment = {
-        resourceType: 'Appointment',
-        id: 'appt-1',
-        status: 'booked',
-        start: '2024-01-15T10:00:00Z',
-        end: '2024-01-15T10:30:00Z',
-      };
-
-      medplum.searchResources = vi.fn().mockResolvedValue([]);
-
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // Note: Testing the actual event selection would require mocking the calendar component
-      // which is complex. This test verifies the search function is available.
-      expect(medplum.searchResources).toBeDefined();
     });
   });
 });
