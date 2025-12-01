@@ -288,8 +288,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *  9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
    * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
    * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
+   * 12. 12/01/25 - Added search param `Bot-cds-hook` (https://github.com/medplum/medplum/pull/7933)
    */
-  static readonly VERSION: number = 11;
+  static readonly VERSION: number = 12;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
