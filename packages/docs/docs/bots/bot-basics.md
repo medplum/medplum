@@ -81,8 +81,8 @@ The following function arguments are available to the Bot code, to enable it to 
 
 | Name                | Type                                                                                         | Description                                                                                              |
 | ------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `medplum`           | [MedplumClient](../sdk/core.medplumclient)                                                   | An instance of the medplum JS SDK ([documentation](../sdk/))                                             |
-| `event`             | [BotEvent](../sdk/core.botevent)                                                             | The event object that triggered the Bot                                                                  |
+| `medplum`           | [MedplumClient](/docs/sdk/core.medplumclient)                                                | An instance of the medplum JS SDK ([documentation](/docs/sdk))                                           |
+| `event`             | [BotEvent](/docs/sdk/core.botevent)                                                          | The event object that triggered the Bot                                                                  |
 | `event.bot`         | `Reference<Bot>`                                                                             | Reference to the Bot resource that is executing                                                          |
 | `event.contentType` | `string`                                                                                     | The content type of the input (e.g., `application/fhir+json`, `text/plain`)                              |
 | `event.input`       | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>`                  | The bot input, usually a FHIR resource or content that was posted to a bot endpoint                      |

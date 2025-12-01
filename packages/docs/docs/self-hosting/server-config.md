@@ -159,14 +159,14 @@ If using reCAPTCHA, this is the reCAPTCHA secret key.
 
 ### botLambdaRoleArn
 
-If using Medplum Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html).
+If using Medplum Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html). See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
 
 **Created by:** `cdk`
 **Default:** None
 
 ### botLambdaLayerName
 
-If using Medplum Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`.
+If using Medplum Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`. See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
 
 **Default:** `medplum-bot-layer`
 
@@ -282,7 +282,7 @@ Optional AWS CloudWatch Log Stream name for `AuditEvent` logs. Only applies if `
 
 ### registerEnabled
 
-Optional flag whether new user registration is enabled.
+Optional flag whether new user registration is enabled. See [Open Patient Registration](/docs/user-management/open-patient-registration) for more details.
 
 **Default:** `true`
 
