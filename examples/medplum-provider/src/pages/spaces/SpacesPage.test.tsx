@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -51,6 +50,7 @@ describe('SpacesPage', () => {
             <Routes>
               <Route path="/Spaces" element={<SpacesPage />}>
                 <Route index element={<SpacesPage />} />
+                <Route path="Communication" element={<SpacesPage />} />
                 <Route path="Communication/:topicId" element={<SpacesPage />} />
               </Route>
             </Routes>
@@ -65,7 +65,7 @@ describe('SpacesPage', () => {
       setup(['/Spaces']);
     });
 
-    expect(screen.getByText('Start a New Space')).toBeInTheDocument();
+    expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
   });
 
@@ -77,14 +77,9 @@ describe('SpacesPage', () => {
     await waitFor(() => {
       expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Communication/123' });
     });
-
-    await waitFor(() => {
-      expect(screen.getByText('AI Assistant')).toBeInTheDocument();
-    });
   });
 
   test('generates correct link for selected item', async () => {
-    const user = userEvent.setup();
     medplum.searchResources = vi.fn().mockImplementation((resourceType: string, query: any) => {
       if (query?.identifier === 'http://medplum.com/ai-message|ai-message-topic') {
         return Promise.resolve([mockTopic]);
@@ -96,14 +91,7 @@ describe('SpacesPage', () => {
       setup(['/Spaces']);
     });
 
-    const historyButton = screen.getAllByRole('button').find((btn) => {
-      const svg = btn.querySelector('svg');
-      return svg?.classList.contains('tabler-icon-history');
-    });
-    if (historyButton) {
-      await user.click(historyButton);
-    }
-
+    // Sidebar is open by default, so we don't need to click history button
     await waitFor(() => {
       expect(screen.getByText('Test conversation')).toBeInTheDocument();
     });

@@ -7,8 +7,8 @@ import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { SpaceInbox } from './SpaceInbox';
 import type { Communication } from '@medplum/fhirtypes';
+import { SpacesInbox } from './SpacesInbox';
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -30,7 +30,7 @@ const mockProfile = {
   id: 'practitioner-123',
 };
 
-describe('SpaceInbox', () => {
+describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
   const onSelectedItemMock = vi.fn((topic: Communication) => `/Spaces/Communication/${topic.id}`);
@@ -63,7 +63,7 @@ describe('SpaceInbox', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <SpaceInbox topic={topicRef} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} />
+            <SpacesInbox topic={topicRef} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -71,12 +71,12 @@ describe('SpaceInbox', () => {
   };
 
   describe('Initial state (before first message)', () => {
-    test('renders the initial state with Start a New Space heading', async () => {
+    test('renders the initial state with How can I help you today? heading', async () => {
       await act(async () => {
         setup();
       });
 
-      expect(screen.getByText('Start a New Space')).toBeInTheDocument();
+      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
     });
 
@@ -94,7 +94,7 @@ describe('SpaceInbox', () => {
         setup();
       });
 
-      expect(screen.getByText('Start a New Space')).toBeInTheDocument();
+      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
     });
   });
 
