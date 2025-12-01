@@ -16,6 +16,8 @@ let heartbeatHandler: (() => void) | undefined;
 
 const websocketMap = new Map<WebSocket, string>();
 const topicRefCountMap = new Map<string, number>();
+let fhircastMessagesSent = 0;
+let fhircastMessagesReceived = 0;
 
 export function initFhircastHeartbeat(): void {
   if (!heartbeatHandler) {
@@ -42,8 +44,13 @@ export function initFhircastHeartbeat(): void {
           .catch(console.error);
       }
 
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
       setGauge('medplum.fhircast.websocketCount', websocketMap.size, METRIC_OPTIONS);
       setGauge('medplum.fhircast.topicCount', topicRefCountMap.size, METRIC_OPTIONS);
+      setGauge('medplum.fhircast.messagesSentPerSec', fhircastMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge('medplum.fhircast.messagesReceivedPerSec', fhircastMessagesReceived / heartbeatSeconds, METRIC_OPTIONS);
+      fhircastMessagesSent = 0;
+      fhircastMessagesReceived = 0;
     };
 
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
@@ -79,6 +86,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
       }),
       { binary: false }
     );
+    fhircastMessagesSent++;
     socket.close();
     return;
   }
@@ -100,11 +108,13 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   redisSubscriber.on('message', (_channel: string, message: string) => {
     // Forward the message to the client
     socket.send(message, { binary: false });
+    fhircastMessagesSent++;
   });
 
   socket.on(
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
+      fhircastMessagesReceived++;
       const message = JSON.parse((data as Buffer).toString('utf8'));
       globalLogger.debug('message', message);
     })
@@ -141,4 +151,5 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
     }),
     { binary: false }
   );
+  fhircastMessagesSent++;
 }
