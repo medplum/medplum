@@ -118,7 +118,11 @@ function ensureHeartbeatHandler(): void {
       setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
       setGauge('medplum.subscription.eventsFiredPerSec', subscriptionEventsFired / heartbeatSeconds, METRIC_OPTIONS);
       setGauge('medplum.subscription.messagesSentPerSec', subscriptionMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
-      setGauge('medplum.subscription.messagesReceivedPerSec', subscriptionMessagesReceived / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge(
+        'medplum.subscription.messagesReceivedPerSec',
+        subscriptionMessagesReceived / heartbeatSeconds,
+        METRIC_OPTIONS
+      );
       subscriptionEventsFired = 0;
       subscriptionMessagesSent = 0;
       subscriptionMessagesReceived = 0;
