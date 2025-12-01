@@ -1,14 +1,12 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import path from 'path';
 import { mergeConfig } from 'vite';
-import turbosnap from 'vite-plugin-turbosnap';
 
 const config: StorybookConfig = {
   stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
   addons: [
     '@storybook/addon-links',
     '@storybook/addon-docs',
-    'storybook-addon-mantine',
     '@vueless/storybook-dark-mode',
   ],
   staticDirs: ['../public'],
@@ -19,16 +17,12 @@ const config: StorybookConfig = {
   async viteFinal(inputConfig, { configType }) {
     let config = inputConfig;
 
-    if (configType === 'PRODUCTION') {
-      config = mergeConfig(config, {
-        plugins: [turbosnap({ rootDir: config.root ?? process.cwd() })],
-      });
-    } else if (configType === 'DEVELOPMENT') {
+    if (configType === 'DEVELOPMENT') {
       config = mergeConfig(config, {
         resolve: {
           alias: {
-            '@medplum/core': path.resolve(__dirname, '../../core/src'),
-            '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
+            '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
+            '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
           },
         },
       });
