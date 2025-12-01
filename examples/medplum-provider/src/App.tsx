@@ -71,7 +71,7 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Spaces',
-          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/spaces' }],
+          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
         },
         {
           title: 'Charts',
@@ -132,7 +132,10 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
-              <Route path="/spaces" element={<SpacesPage />} />
+              <Route path="/Spaces/Communication" element={<SpacesPage />}>
+                <Route index element={<SpacesPage />} />
+                <Route path=":topicId" element={<SpacesPage />} />
+              </Route>
               <Route
                 path="/"
                 element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}

@@ -21,10 +21,9 @@ import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { EncounterHeader } from './EncounterHeader';
-import { SignAddendumCard } from './SignAddemdum';
+import { SignAddendum } from './SignAddendum';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
-import { BillingTab } from '../../pages/encounter/BillingTab';
-import { Outlet } from 'react-router';
+import { BillingTab } from './BillingTab';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
 const FHIR_PROVENANCE_PARTICIPANT_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/provenance-participant-type';
@@ -237,7 +236,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
         <Box p="md">
           {activeTab === 'notes' && (
             <Stack gap="md">
-              <SignAddendumCard encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
+              <SignAddendum encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
 
               {clinicalImpression && (
                 <Card withBorder shadow="sm" mt="md">
@@ -278,7 +277,6 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
         </Box>
       </Stack>
-      <Outlet />
     </>
   );
 };

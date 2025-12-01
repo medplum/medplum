@@ -51,10 +51,11 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require: typeof require !== 'undefined' ? require : createRequire(import.meta.url),
+    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
+    TextDecoder,
     TextEncoder,
     URL,
     URLSearchParams,
@@ -86,7 +87,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -103,7 +104,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }

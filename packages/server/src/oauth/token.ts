@@ -5,6 +5,7 @@ import {
   ContentType,
   OAuthClientAssertionType,
   OAuthGrantType,
+  OAuthSigningAlgorithm,
   OAuthTokenType,
   Operator,
   createReference,
@@ -524,7 +525,14 @@ async function parseClientAssertion(
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: clientId,
-    algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+    algorithms: [
+      OAuthSigningAlgorithm.RS256,
+      OAuthSigningAlgorithm.RS384,
+      OAuthSigningAlgorithm.RS512,
+      OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.ES384,
+      OAuthSigningAlgorithm.ES512,
+    ],
     audience: tokenUrl,
   };
 

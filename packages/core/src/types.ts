@@ -34,7 +34,7 @@ export interface TypedValue {
 
 /**
  * List of property types.
- * http://www.hl7.org/fhir/valueset-defined-types.html
+ * http://www.hl7.org/fhir/R4/valueset-defined-types.html
  * The list here includes additions found from StructureDefinition resources.
  */
 export const PropertyType = {
@@ -53,6 +53,8 @@ export const PropertyType = {
   Distance: 'Distance',
   Dosage: 'Dosage',
   Duration: 'Duration',
+  Element: 'Element',
+  ElementDefinition: 'ElementDefinition',
   Expression: 'Expression',
   Extension: 'Extension',
   HumanName: 'HumanName',
@@ -60,6 +62,7 @@ export const PropertyType = {
   MarketingStatus: 'MarketingStatus',
   Meta: 'Meta',
   Money: 'Money',
+  MoneyQuantity: 'MoneyQuantity',
   Narrative: 'Narrative',
   ParameterDefinition: 'ParameterDefinition',
   Period: 'Period',
@@ -73,6 +76,7 @@ export const PropertyType = {
   RelatedArtifact: 'RelatedArtifact',
   SampledData: 'SampledData',
   Signature: 'Signature',
+  SimpleQuantity: 'SimpleQuantity',
   SubstanceAmount: 'SubstanceAmount',
   SystemString: 'http://hl7.org/fhirpath/System.String',
   Timing: 'Timing',
@@ -97,6 +101,7 @@ export const PropertyType = {
   uri: 'uri',
   url: 'url',
   uuid: 'uuid',
+  xhtml: 'xhtml',
 } as const;
 
 /**

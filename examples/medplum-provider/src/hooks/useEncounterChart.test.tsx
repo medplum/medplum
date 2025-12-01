@@ -15,7 +15,7 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { useEncounterChart } from './useEncounterChart';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
 import { createClaimFromEncounter } from '../utils/claims';
@@ -118,7 +118,7 @@ describe('useEncounterChart', () => {
     <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
   );
 
-  it('returns initial state when no encounter provided', () => {
+  test('returns initial state when no encounter provided', () => {
     const { result } = renderHook(() => useEncounterChart(undefined), { wrapper });
 
     expect(result.current.encounter).toBeUndefined();
@@ -130,7 +130,7 @@ describe('useEncounterChart', () => {
     expect(result.current.appointment).toBeUndefined();
   });
 
-  it('resolves encounter reference and loads data', async () => {
+  test('resolves encounter reference and loads data', async () => {
     // Create resources in MockClient
     const createdEncounter = await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
@@ -150,7 +150,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('loads charge items for encounter', async () => {
+  test('loads charge items for encounter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
@@ -163,7 +163,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('fetches existing claim for encounter', async () => {
+  test('fetches existing claim for encounter', async () => {
     const createdEncounter = await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     const claimWithEncounter: Claim = {
@@ -189,7 +189,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('fetches tasks for encounter', async () => {
+  test('fetches tasks for encounter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockTask);
@@ -203,7 +203,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('sorts tasks by authoredOn date', async () => {
+  test('sorts tasks by authoredOn date', async () => {
     const olderTask: Task = {
       ...mockTask,
       id: 'task-old',
@@ -230,7 +230,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('fetches clinical impression for encounter', async () => {
+  test('fetches clinical impression for encounter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockClinicalImpression);
@@ -243,7 +243,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('fetches practitioner from encounter participant', async () => {
+  test('fetches practitioner from encounter participant', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
@@ -255,7 +255,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('fetches appointment from encounter', async () => {
+  test('fetches appointment from encounter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockAppointment);
@@ -268,7 +268,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('creates claim when all conditions are met', async () => {
+  test('creates claim when all conditions are met', async () => {
     const newClaim: Claim = {
       resourceType: 'Claim',
       id: 'new-claim-123',
@@ -306,7 +306,7 @@ describe('useEncounterChart', () => {
     ]);
   });
 
-  it('does not create claim if one already exists', async () => {
+  test('does not create claim if one already exists', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockPatient);
@@ -326,7 +326,7 @@ describe('useEncounterChart', () => {
     expect(createClaimFromEncounter).not.toHaveBeenCalled();
   });
 
-  it('does not create claim if patient is missing', async () => {
+  test('does not create claim if patient is missing', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
@@ -344,7 +344,7 @@ describe('useEncounterChart', () => {
     expect(createClaimFromEncounter).not.toHaveBeenCalled();
   });
 
-  it('does not create claim if practitioner is missing', async () => {
+  test('does not create claim if practitioner is missing', async () => {
     const encounterWithoutPractitioner: Encounter = {
       ...mockEncounter,
       participant: [],
@@ -365,7 +365,7 @@ describe('useEncounterChart', () => {
     expect(createClaimFromEncounter).not.toHaveBeenCalled();
   });
 
-  it('does not create claim if charge items are empty', async () => {
+  test('does not create claim if charge items are empty', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
@@ -382,7 +382,7 @@ describe('useEncounterChart', () => {
     expect(createClaimFromEncounter).not.toHaveBeenCalled();
   });
 
-  it('handles charge item fetch errors gracefully', async () => {
+  test('handles charge item fetch errors gracefully', async () => {
     const error = new Error('Failed to fetch charge items');
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
@@ -399,7 +399,7 @@ describe('useEncounterChart', () => {
     expect(result.current.chargeItems).toEqual([]);
   });
 
-  it('handles search errors gracefully', async () => {
+  test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     await medplum.createResource(mockEncounter);
 
@@ -419,7 +419,7 @@ describe('useEncounterChart', () => {
     expect(result.current.clinicalImpression).toBeUndefined();
   });
 
-  it('resolves patient reference when provided', async () => {
+  test('resolves patient reference when provided', async () => {
     await medplum.createResource(mockPatient);
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
@@ -434,7 +434,7 @@ describe('useEncounterChart', () => {
     });
   });
 
-  it('allows manual state updates via setters', async () => {
+  test('allows manual state updates via setters', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
@@ -455,7 +455,7 @@ describe('useEncounterChart', () => {
     expect(result.current.encounter?.status).toBe('finished');
   });
 
-  it('updates claim via setter', async () => {
+  test('updates claim via setter', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);

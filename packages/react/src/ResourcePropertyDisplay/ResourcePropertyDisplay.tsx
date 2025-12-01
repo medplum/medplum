@@ -113,6 +113,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
+    case PropertyType.xhtml:
       return <>{value}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;

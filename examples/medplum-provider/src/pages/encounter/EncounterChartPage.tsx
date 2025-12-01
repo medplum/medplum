@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Encounter, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useParams } from 'react-router';
+import { Outlet, useParams } from 'react-router';
 import { EncounterChart } from '../../components/encounter/EncounterChart';
 import { showErrorNotification } from '../../utils/notifications';
 
@@ -18,5 +18,10 @@ export const EncounterChartPage = (): JSX.Element | null => {
     reference: `Encounter/${encounterId}`,
   };
 
-  return <EncounterChart encounter={encounterRef} />;
+  return (
+    <>
+      <EncounterChart encounter={encounterRef} />
+      <Outlet />
+    </>
+  );
 };

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Loader, Stack, Text } from '@mantine/core';
+import { Alert, Group, Loader, Stack, Table, Text } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import {
@@ -14,6 +14,7 @@ import {
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import classes from './ValueSetPreview.module.css';
 
 export interface ValueSetPreviewProps {
   readonly valueSet: ValueSet;
@@ -45,7 +46,7 @@ function formatPropertyValue(part: ParametersParameter): string {
 
 /**
  * Renders a list of CodeSystem properties from a CodeSystem/$lookup operation result.
- * Each property displays its code, description, and value.
+ * Each property displays its code, description, and value in a tabular format.
  *
  * @param props - Component props
  * @param props.properties - Array of filtered ParametersParameter objects representing CodeSystem properties
@@ -54,41 +55,44 @@ function formatPropertyValue(part: ParametersParameter): string {
 function CodeSystemPropertyList(props: CodeSystemPropertyListProps): JSX.Element {
   const { properties } = props;
 
+  // Extract values from each property
+  const propertyData = properties.map((param) => {
+    let code = '';
+    let description = '';
+    let value = '';
+
+    param.part?.forEach((part) => {
+      if (part.name === 'code') {
+        code = part.valueCode || '';
+      } else if (part.name === 'description') {
+        description = part.valueString || '';
+      } else if (part.name === 'value') {
+        value = formatPropertyValue(part);
+      }
+    });
+
+    return { code, description, value };
+  });
+
   return (
-    <Stack gap="md">
-      {properties.map((param, index) => (
-        <DescriptionList key={`${param.name}-${index}`}>
-          <DescriptionListEntry term="Property">
-            <Stack gap="xs">
-              {param.part?.map((part) => {
-                if (part.name === 'code') {
-                  return (
-                    <DescriptionListEntry key="code" term="Code">
-                      {part.valueCode}
-                    </DescriptionListEntry>
-                  );
-                }
-                if (part.name === 'description') {
-                  return (
-                    <DescriptionListEntry key="description" term="Description">
-                      {part.valueString}
-                    </DescriptionListEntry>
-                  );
-                }
-                if (part.name === 'value') {
-                  return (
-                    <DescriptionListEntry key="value" term="Value">
-                      {formatPropertyValue(part)}
-                    </DescriptionListEntry>
-                  );
-                }
-                return null;
-              })}
-            </Stack>
-          </DescriptionListEntry>
-        </DescriptionList>
-      ))}
-    </Stack>
+    <Table className={classes.propertyTable}>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th>Code</Table.Th>
+          <Table.Th>Description</Table.Th>
+          <Table.Th>Value</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {propertyData.map((property, index) => (
+          <Table.Tr key={`property-${index}`}>
+            <Table.Td>{property.code}</Table.Td>
+            <Table.Td>{property.description}</Table.Td>
+            <Table.Td>{property.value}</Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
   );
 }
 
@@ -181,7 +185,12 @@ export function ValueSetPreview(props: ValueSetPreviewProps): JSX.Element {
             )}
             {!isLoadingLookup && !lookupError && hasProperties && (
               <ErrorBoundary>
-                <CodeSystemPropertyList properties={properties} />
+                <Stack gap="xs" mt="lg">
+                  <Text fw={500} size="sm" c="dimmed" className={classes.propertiesTitle}>
+                    Properties
+                  </Text>
+                  <CodeSystemPropertyList properties={properties} />
+                </Stack>
               </ErrorBoundary>
             )}
           </Stack>
