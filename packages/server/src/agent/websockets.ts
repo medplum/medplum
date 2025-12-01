@@ -6,14 +6,14 @@ import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
+import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
-import os from 'node:os';
-import { setGauge } from '../otel/otel';
 import { getLoginForAccessToken } from '../oauth/utils';
+import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
 import type { AgentInfo } from './utils';
 import { AgentConnectionState } from './utils';
@@ -27,12 +27,6 @@ let agentHeartbeatHandler: (() => void) | undefined;
 let agentMessagesSent = 0;
 let agentMessagesReceived = 0;
 
-/**
- * Handles a new WebSocket connection to the agent service.
- * The agent service executes a bot and returns the result.
- * @param socket - The WebSocket connection.
- * @param request - The HTTP request.
- */
 function initAgentHeartbeat(): void {
   if (!agentHeartbeatHandler) {
     agentHeartbeatHandler = (): void => {
@@ -47,6 +41,12 @@ function initAgentHeartbeat(): void {
   }
 }
 
+/**
+ * Handles a new WebSocket connection to the agent service.
+ * The agent service executes a bot and returns the result.
+ * @param socket - The WebSocket connection.
+ * @param request - The HTTP request.
+ */
 export async function handleAgentConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
   agentWebSockets.add(socket);
   initAgentHeartbeat();
