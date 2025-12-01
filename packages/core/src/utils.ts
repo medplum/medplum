@@ -650,13 +650,13 @@ export function isEmpty(v: unknown): boolean {
   return false;
 }
 
-export type CanBePopulated = { length: number } | object;
+export type CanBePopulated = { length: number } | Record<string, any>;
 /**
  * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  * @param arg - Any value
  * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  */
-export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+export function isPopulated<T extends { length: number } | Record<string, any>>(arg: CanBePopulated | undefined | null): arg is T {
   if (arg === null || arg === undefined) {
     return false;
   }
