@@ -166,8 +166,10 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export interface ElementDefinitionTypeInputProps
-  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'> {
+export interface ElementDefinitionTypeInputProps extends Pick<
+  ResourcePropertyInputProps,
+  'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'
+> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;

@@ -8,7 +8,8 @@ import type { ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSet
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodingInputProps
-  extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange' | 'disabled' | 'name'>,
+  extends
+    Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange' | 'disabled' | 'name'>,
     ComplexTypeInputProps<Coding> {
   readonly response?: QuestionnaireResponseItem;
 }

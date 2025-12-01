@@ -42,7 +42,7 @@ export interface WebSocketSubMetadata {
   rawToken: string;
 }
 
-export type WebSocketSubToken = JWTPayload & MedplumBaseClaims & AdditionalWsBindingClaims;
+export type WebSocketSubToken = MedplumBaseClaims & AdditionalWsBindingClaims;
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
