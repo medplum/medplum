@@ -106,7 +106,7 @@ function SelectOption(membership: ProjectMembership): JSX.Element {
         <Text size="sm" fw={500}>
           {membership.project?.display} {label ? ` - ${label}` : ''}
         </Text>
-        <Text size="xs" c="dimmed" >
+        <Text size="xs" c="dimmed">
           {membership.profile?.display}
         </Text>
       </div>

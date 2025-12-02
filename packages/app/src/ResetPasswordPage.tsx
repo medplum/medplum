@@ -78,18 +78,18 @@ export function ResetPasswordPage(): JSX.Element {
             <Stack gap="xs">
               <SubmitButton fullWidth>Reset Password</SubmitButton>
               <Text
-                  size="sm"
-                  mt="lg"
-                  c="dimmed"
-                  style={{ textAlign: 'center' }}
-                  data-dashlane-ignore="true"
-                  data-lp-ignore="true"
-                  data-no-autofill="true"
-                  data-form-type="navigation"
-                >
-                  <Anchor onClick={() => navigate('/signin')?.catch(console.error)}>Back to Sign In</Anchor>
-                </Text>
-                {isRegisterEnabled() && (
+                size="sm"
+                mt="lg"
+                c="dimmed"
+                style={{ textAlign: 'center' }}
+                data-dashlane-ignore="true"
+                data-lp-ignore="true"
+                data-no-autofill="true"
+                data-form-type="navigation"
+              >
+                <Anchor onClick={() => navigate('/signin')?.catch(console.error)}>Back to Sign In</Anchor>
+              </Text>
+              {isRegisterEnabled() && (
                 <Text
                   size="sm"
                   mt="none"
@@ -100,7 +100,8 @@ export function ResetPasswordPage(): JSX.Element {
                   data-no-autofill="true"
                   data-form-type="navigation"
                 >
-                  Don't have an account? <Anchor onClick={() => navigate('/register')?.catch(console.error)}>Sign Up</Anchor>
+                  Don't have an account?{' '}
+                  <Anchor onClick={() => navigate('/register')?.catch(console.error)}>Sign Up</Anchor>
                 </Text>
               )}
             </Stack>
