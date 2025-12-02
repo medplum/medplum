@@ -13,7 +13,7 @@ export default {
 
 export function FewMemberships(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Document width={400} px="xl" py="xl" bdrs="md">
         <ChooseProfileForm
           login="x"
@@ -34,7 +34,7 @@ export function ManyMemberships(): JSX.Element {
     memberships.push(makeMembership('membership' + i, 'Project ' + i, 'Profile ' + i));
   }
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Document width={400} px="xl" py="xl" bdrs="md">
         <ChooseProfileForm login="x" memberships={memberships} handleAuthResponse={console.log} />
       </Document>
@@ -49,7 +49,7 @@ export function MultipleMembershipsInProject(): JSX.Element {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Document width={400} px="xl" py="xl" bdrs="md">
         <ChooseProfileForm login="x" memberships={memberships} handleAuthResponse={console.log} />
       </Document>

@@ -14,7 +14,7 @@ const recaptchaSiteKey = 'abc';
 
 export function Basic(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <h2>Create a new account</h2>
@@ -25,7 +25,7 @@ export function Basic(): JSX.Element {
 
 export function WithFooter(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <h2>Create a new account</h2>
@@ -36,7 +36,7 @@ export function WithFooter(): JSX.Element {
 
 export function WithGoogle(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <RegisterForm
         type="project"
         recaptchaSiteKey={recaptchaSiteKey}

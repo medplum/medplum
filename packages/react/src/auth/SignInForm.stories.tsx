@@ -13,7 +13,7 @@ export default {
 
 export function Basic(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <SignInForm onSuccess={() => alert('Signed in!')}>
         <Logo size={32} />
         <h2>Sign in to {getAppName()}</h2>
@@ -24,7 +24,7 @@ export function Basic(): JSX.Element {
 
 export function WithLinks(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <SignInForm
         onSuccess={() => alert('Signed in!')}
         onForgotPassword={() => alert('Forgot password')}
@@ -39,7 +39,7 @@ export function WithLinks(): JSX.Element {
 
 export function WithFooter(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <SignInForm
         onSuccess={() => alert('Signed in!')}
         onForgotPassword={() => alert('Forgot password')}
@@ -54,7 +54,7 @@ export function WithFooter(): JSX.Element {
 
 export function WithGoogle(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <SignInForm
         onSuccess={() => alert('Signed in!')}
         onForgotPassword={() => alert('Forgot password')}
@@ -70,7 +70,7 @@ export function WithGoogle(): JSX.Element {
 
 export function GoogleOnly(): JSX.Element {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <SignInForm
         onSuccess={() => alert('Signed in!')}
         onForgotPassword={() => alert('Forgot password')}
