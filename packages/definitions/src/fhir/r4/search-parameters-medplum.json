@@ -436,6 +436,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Bot-cds-hook",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Bot-cds-hook",
+        "url": "https://medplum.com/fhir/SearchParameter/Bot-cds-hook",
+        "version": "4.0.1",
+        "name": "cds-hook",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The CDS hook this Bot should be invoked on.",
+        "code": "cds-hook",
+        "base": ["Bot"],
+        "type": "token",
+        "expression": "Bot.cdsService.hook"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/UserConfiguration-name",
       "resource": {
         "resourceType": "SearchParameter",

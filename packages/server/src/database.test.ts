@@ -18,8 +18,9 @@ import {
   releaseAdvisoryLock,
 } from './database';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
-import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+import { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } from './migrations/migration-versions';
 
+const preDeployVersion = getPreDeployMigrationVersions().length;
 const latestVersion = getLatestPostDeployMigrationVersion();
 
 describe('Database config', () => {
@@ -48,6 +49,9 @@ describe('Database config', () => {
           };
           if (sql === 'SELECT pg_try_advisory_lock($1)') {
             result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
+          }
+          if (sql === mockQueries.GetVersionSql) {
+            result.rows = [{ version: preDeployVersion } as unknown as R];
           }
           if (sql === mockQueries.GetDataVersionSql) {
             result.rows = [{ dataVersion: latestVersion } as unknown as R];

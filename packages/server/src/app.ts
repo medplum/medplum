@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { adminRouter } from './admin/routes';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
+import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
@@ -206,6 +207,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
   apiRouter.use('/auth/', authRouter);
+  apiRouter.use('/cds-services/', cdsRouter);
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);

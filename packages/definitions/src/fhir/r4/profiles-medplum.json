@@ -2195,6 +2195,126 @@
             }]
           },
           {
+            "id" : "Bot.cdsService",
+            "path" : "Bot.cdsService",
+            "definition" : "CDS service definition if the bot is used as a CDS Hooks service. See https://cds-hooks.hl7.org/ for more details.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Bot.cdsService",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.hook",
+            "path" : "Bot.cdsService.hook",
+            "definition" : "The hook this service should be invoked on. See https://cds-hooks.hl7.org/#hooks for possible values.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Bot.cdsService.hook",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.title",
+            "path" : "Bot.cdsService.title",
+            "definition" : "The human-friendly name of this CDS service.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Bot.cdsService.title",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.description",
+            "path" : "Bot.cdsService.description",
+            "definition" : "The description of this CDS service.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Bot.cdsService.description",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.usageRequirements",
+            "path" : "Bot.cdsService.usageRequirements",
+            "definition" : "Optional human-friendly description of any preconditions for the use of this CDS Service.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Bot.cdsService.usageRequirements",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.prefetch",
+            "path" : "Bot.cdsService.prefetch",
+            "definition" : "An object containing key/value pairs of FHIR queries that this service is requesting the CDS Client to perform and provide on each service call.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base": {
+              "path" : "Bot.cdsService.prefetch",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.prefetch.key",
+            "path" : "Bot.cdsService.prefetch.key",
+            "definition" : "The type of data being requested. See https://cds-hooks.hl7.org/#prefetch-template",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base": {
+              "path" : "Bot.cdsService.prefetch.key",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.cdsService.prefetch.query",
+            "path" : "Bot.cdsService.prefetch.query",
+            "definition" : "The FHIR query used to retrieve the requested data. See https://cds-hooks.hl7.org/#prefetch-template",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "Bot.cdsService.prefetch.query",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.code",
             "path" : "Bot.code",
             "definition" : "@deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
