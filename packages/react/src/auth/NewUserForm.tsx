@@ -65,7 +65,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       }}
     >
       <Center style={{ flexDirection: 'column' }}>{props.children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
           <Box style={{ minHeight: 40 }}>

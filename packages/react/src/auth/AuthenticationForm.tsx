@@ -114,7 +114,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   return (
     <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
           <Box style={{ minHeight: 40 }}>
