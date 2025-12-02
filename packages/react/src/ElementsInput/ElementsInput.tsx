@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { StackProps } from '@mantine/core';
 import { Stack } from '@mantine/core';
 import type { TypedValue } from '@medplum/core';
 import { getPathDisplayName } from '@medplum/core';
@@ -19,7 +18,6 @@ export interface ElementsInputProps extends BaseInputProps {
   readonly defaultValue: any;
   readonly onChange: ((value: any) => void) | undefined;
   readonly testId?: string;
-  readonly stackProps?: StackProps;
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
@@ -39,7 +37,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const typedValue: TypedValue = { type: props.type, value };
 
   return (
-    <Stack style={{ flexGrow: 1 }} data-testid={props.testId} {...props.stackProps}>
+    <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
       {elementsToRender.map(([key, element]) => {
         const [propertyValue, propertyType] = getValueAndTypeFromElement(typedValue, key, element);
         const required = element.min !== undefined && element.min > 0;

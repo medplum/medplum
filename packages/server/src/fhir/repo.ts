@@ -319,10 +319,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = mode;
   }
 
-  setExtendedMode(extendedMode: boolean): void {
-    this.context.extendedMode = extendedMode;
-  }
-
   private rateLimiter(): FhirRateLimiter | undefined {
     return !this.isSuperAdmin() ? tryGetRequestContext()?.fhirRateLimiter : undefined;
   }

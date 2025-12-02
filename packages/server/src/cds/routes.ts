@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { executeBot } from '../bots/execute';
 import { getBotDefaultHeaders, getResponseBodyFromResult } from '../bots/utils';
 import { getAuthenticatedContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 
 // CDS Hooks
@@ -15,9 +16,8 @@ import { authenticateRequest } from '../oauth/middleware';
 export const cdsRouter = Router().use(authenticateRequest);
 
 // Discovery: https://cds-hooks.hl7.org/#discovery
-cdsRouter.get('/', async (_req: Request, res: Response) => {
+cdsRouter.get('/', async (req: Request, res: Response) => {
   const { repo } = getAuthenticatedContext();
-  repo.setExtendedMode(true);
 
   // The CDS Hooks spec does not define pagination for discovery
   // Most servers will have under 10 CDS services, so we set a high max count.
@@ -48,20 +48,21 @@ cdsRouter.get('/', async (_req: Request, res: Response) => {
 
 // Calling a CDS Service: https://cds-hooks.hl7.org/#calling-a-cds-service
 cdsRouter.post('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params as { id: string };
-
   const ctx = getAuthenticatedContext();
-  ctx.repo.setExtendedMode(true); // Need extended mode for meta.project
+  const { id } = req.params as { id: string };
 
   // Read the bot by ID
   // The `repo.readResource` method can throw on "Not Found", "Gone", "Forbidden", etc.
   // We rely on existing middleware to handle those errors appropriately.
-  const bot = await ctx.repo.readResource<Bot>('Bot', id);
-
-  if (!bot.cdsService) {
+  const userBot = await ctx.repo.readResource<Bot>('Bot', id);
+  if (!userBot.cdsService) {
     res.sendStatus(404);
     return;
   }
+
+  // Read the bot again as system repo to get full bot details
+  const systemRepo = getSystemRepo();
+  const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   // This also handles logging, auditing, etc.
