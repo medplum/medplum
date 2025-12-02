@@ -26,7 +26,7 @@ describe('AuthenticationForm', () => {
     const input = screen.getByTestId('auth.email');
     await act(async () => fireEvent.change(input, { target: { value: emailAddress } }));
 
-    const button = screen.getByRole('button', { name: 'Next' });
+    const button = screen.getByRole('button', { name: 'Continue' });
     await act(async () => fireEvent.click(button));
 
     expect(screen.getByTestId('auth.password')).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('AuthenticationForm', () => {
     await act(async () => fireEvent.change(input, { target: { value: emailAddress } }));
 
     // advance the screen
-    const button = screen.getByRole('button', { name: 'Next' });
+    const button = screen.getByRole('button', { name: 'Continue' });
     await act(async () => fireEvent.click(button));
 
     expect(screen.getByTestId('auth.password')).toBeInTheDocument();

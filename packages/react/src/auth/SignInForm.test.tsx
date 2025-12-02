@@ -239,7 +239,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -271,7 +271,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -299,7 +299,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -331,7 +331,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -371,7 +371,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -413,7 +413,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -452,7 +452,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -486,7 +486,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -515,7 +515,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -547,7 +547,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
@@ -584,7 +584,7 @@ describe('SignInForm', () => {
     });
 
     expect(screen.queryByText('Email', { exact: false })).toBeNull();
-    expect(screen.queryByText('Next')).toBeNull();
+    expect(screen.queryByText('Continue')).toBeNull();
     expect(screen.queryByText('or')).toBeNull();
   });
 
@@ -732,7 +732,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await waitFor(() => expect(assignSpy).toHaveBeenCalled());
@@ -753,7 +753,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByText('Continue'));
     });
 
     await act(async () => {
