@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, InternalSchemaElement, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
+  flatMapFilter,
+  getDataType,
   getExtension,
   getReferenceString,
   normalizeOperationOutcome,
@@ -12,7 +14,7 @@ import {
   Operator,
   resourceMatchesSubscriptionCriteria,
 } from '@medplum/core';
-import type { Bot, Resource, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -43,7 +45,11 @@ export async function preCommitValidation<T extends Resource>(
 ): Promise<T | boolean | undefined> {
   const logger = getLogger();
 
-  if (interaction === 'delete' && !repo.isSuperAdmin()) {
+  if (
+    interaction === 'delete' &&
+    !repo.isSuperAdmin() &&
+    getCriticalReferenceTargets().includes(resource.resourceType)
+  ) {
     try {
       await checkReferencesForDelete(resource);
     } catch (err) {
@@ -139,6 +145,27 @@ export async function preCommitValidation<T extends Resource>(
   return undefined;
 }
 
+const criticalProjectMembershipReferences = ['profile', 'user', 'access-policy', 'accessPolicy'];
+const targetPrefix = '/StructureDefinition/';
+
+function getCriticalReferenceTargets(): ResourceType[] {
+  const schema = getDataType('ProjectMembership');
+  const targets = criticalProjectMembershipReferences.map((ref) => schema.elements[ref]);
+  return flatMapFilter(targets, getTargetResourceTypes);
+}
+
+function getTargetResourceTypes(element: InternalSchemaElement | undefined): ResourceType[] {
+  const types = element?.type ?? [];
+  const targetTypes: ResourceType[] = [];
+  for (const type of types) {
+    const resourceTypes = type.targetProfile?.map((url) => url.slice(url.indexOf(targetPrefix) + targetPrefix.length));
+    if (resourceTypes) {
+      targetTypes.push(...(resourceTypes as ResourceType[]));
+    }
+  }
+  return targetTypes;
+}
+
 /**
  * Ensures that critical references are not left dangling when a resource is deleted.
  * Specifically, resources referenced by a ProjectMembership should not be deleted until all memberships
@@ -150,7 +177,8 @@ async function checkReferencesForDelete(resource: WithId<Resource>): Promise<voi
   const db = getDatabasePool(DatabaseMode.WRITER);
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
-    .where('targetId', '=', resource.id);
+    .where('targetId', '=', resource.id)
+    .where('code', 'IN', criticalProjectMembershipReferences);
 
   const results = await checkForCriticalRefs.execute(db);
   if (results.length) {
