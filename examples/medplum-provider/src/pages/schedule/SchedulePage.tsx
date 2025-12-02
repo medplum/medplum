@@ -16,12 +16,8 @@ import { Calendar, dayjsLocalizer } from 'react-big-calendar';
 import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router';
-import { BlockAvailability } from '../components/schedule/BlockAvailability';
-import { CreateUpdateSlot } from '../components/schedule/CreateUpdateSlot';
-import { SetAvailability } from '../components/schedule/SetAvailability';
-import { SlotDetails } from '../components/schedule/SlotDetails';
-import { CreateVisit } from '../components/schedule/CreateVisit';
-import { showErrorNotification } from '../utils/notifications';
+import { CreateVisit } from '../../components/schedule/CreateVisit';
+import { showErrorNotification } from '../../utils/notifications';
 
 type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
 type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
@@ -29,8 +25,7 @@ type ScheduleEvent = AppointmentEvent | SlotEvent;
 
 /**
  * Schedule page that displays the practitioner's schedule.
- * Allows the practitioner to set availability, block availability, create/update slots, and create
- * appointments.
+ * Allows the practitioner to create/update slots and create appointments.
  * @returns A React component that displays the schedule page.
  */
 export function SchedulePage(): JSX.Element | null {
@@ -42,14 +37,9 @@ export function SchedulePage(): JSX.Element | null {
   const [view, setView] = useState<View>('week');
   const [date, setDate] = useState<Date>(new Date());
   const [range, setRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
-  const [blockAvailabilityOpened, blockAvailabilityHandlers] = useDisclosure(false);
-  const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
-  const [slotDetailsOpened, slotDetailsHandlers] = useDisclosure(false);
-  const [createUpdateSlotOpened, createUpdateSlotHandlers] = useDisclosure(false);
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [slotEvents, setSlotEvents] = useState<ScheduleEvent[]>();
   const [appointmentEvents, setAppointmentEvents] = useState<ScheduleEvent[]>();
-  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent>();
 
   const [appointmentSlot, setAppointmentSlot] = useState<SlotInfo>();
 
@@ -163,7 +153,6 @@ export function SchedulePage(): JSX.Element | null {
    * When an existing event (slot/appointment) is selected, set the event object and open the
    * appropriate modal.
    * - If the event is a free slot, open the create appointment modal.
-   * - If the event is a busy-unavailable slot, open the slot details modal.
    * - If the event is an appointment, navigate to the appointment page.
    */
   const handleSelectEvent = useCallback(
@@ -171,11 +160,8 @@ export function SchedulePage(): JSX.Element | null {
       const { resourceType, status } = event.resource;
 
       function handleSlot(): void {
-        setSelectedEvent(event);
         if (status === 'free') {
           createAppointmentHandlers.open();
-        } else {
-          slotDetailsHandlers.open();
         }
       }
 
@@ -199,7 +185,7 @@ export function SchedulePage(): JSX.Element | null {
         handleAppointment().catch((err) => showErrorNotification(err));
       }
     },
-    [slotDetailsHandlers, createAppointmentHandlers, navigate, medplum]
+    [createAppointmentHandlers, navigate, medplum]
   );
 
   if (!schedule) {
@@ -249,14 +235,6 @@ export function SchedulePage(): JSX.Element | null {
             { label: 'Day', value: 'day' },
           ]}
         />
-        <Button.Group>
-          <Button variant="default" size="xs" onClick={() => setAvailabilityHandlers.open()}>
-            Set Availability
-          </Button>
-          <Button variant="default" size="xs" onClick={() => blockAvailabilityHandlers.open()}>
-            Block Availability
-          </Button>
-        </Button.Group>
       </Group>
     );
   };
@@ -315,23 +293,6 @@ export function SchedulePage(): JSX.Element | null {
       />
 
       {/* Modals */}
-      <SetAvailability schedule={schedule} opened={setAvailabilityOpened} handlers={setAvailabilityHandlers} />
-      <BlockAvailability schedule={schedule} opened={blockAvailabilityOpened} handlers={blockAvailabilityHandlers} />
-      <CreateUpdateSlot
-        schedule={schedule}
-        event={selectedEvent}
-        opened={createUpdateSlotOpened}
-        handlers={createUpdateSlotHandlers}
-        onSlotsUpdated={() => refreshEvents('no-cache')}
-      />
-      <SlotDetails
-        schedule={schedule}
-        event={selectedEvent}
-        opened={slotDetailsOpened}
-        handlers={slotDetailsHandlers}
-        onSlotsUpdated={() => refreshEvents('no-cache')}
-      />
-
       <Drawer
         opened={createAppointmentOpened}
         onClose={createAppointmentHandlers.close}

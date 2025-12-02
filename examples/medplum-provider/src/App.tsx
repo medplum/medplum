@@ -28,7 +28,7 @@ import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
-import { SchedulePage } from './pages/SchedulePage';
+import { SchedulePage } from './pages/schedule/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
