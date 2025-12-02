@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AppShellHeaderConfiguration, AppShellNavbarConfiguration } from '@mantine/core';
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -53,22 +54,24 @@ export function AppShell(props: AppShellProps): JSX.Element {
     return <Loading />;
   }
 
-  let headerProp;
-  let navbarProp;
-  let headerComponent;
-  let navbarComponent;
+  let headerProp: AppShellHeaderConfiguration | undefined;
+  let navbarProp: AppShellNavbarConfiguration | undefined;
+  let headerComponent: ReactNode | undefined;
+  let navbarComponent: ReactNode | undefined;
 
   if (layoutVersion === 'v2') {
     // Layout version v2:
     // - No header
     // - Navbar is either open or closed based on state
     headerProp = undefined;
-    navbarProp = profile
-      ? {
-          width: navbarOpen ? OPEN_WIDTH : CLOSED_WIDTH,
-          breakpoint: 'sm',
-        }
-      : undefined;
+    navbarProp = {
+      width: navbarOpen ? OPEN_WIDTH : CLOSED_WIDTH,
+      breakpoint: 0,
+      collapsed: {
+        desktop: false,
+        mobile: false,
+      },
+    };
     headerComponent = undefined;
     navbarComponent = profile ? (
       <Navbar
