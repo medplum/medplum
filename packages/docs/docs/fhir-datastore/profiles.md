@@ -123,7 +123,7 @@ For a complete working example, see the [Medplum FSH Profiles repository](https:
 
 3. **Build Profiles**:
    ```bash
-   sushi .
+   sushi . --snapshot
    ```
 
 This generates FHIR JSON `StructureDefinition` resources in the `fsh-generated` directory.
