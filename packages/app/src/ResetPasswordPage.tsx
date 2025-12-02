@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Center, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Center, Stack, Text, TextInput, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -59,7 +59,7 @@ export function ResetPasswordPage(): JSX.Element {
       >
         <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <h2>Reset your password</h2>
+          <Title order={3} py="lg">Reset your password</Title>
         </Center>
         <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} mb="lg" />
         {!success && (
