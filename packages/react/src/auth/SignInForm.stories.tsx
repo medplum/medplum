@@ -5,6 +5,7 @@ import type { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
 import { getAppName } from '../utils/app';
 import { SignInForm } from './SignInForm';
+import { Title } from '@mantine/core';
 
 export default {
   title: 'Medplum/Auth/SignInForm',
@@ -16,7 +17,7 @@ export function Basic(): JSX.Element {
     <div style={{ minHeight: '100vh' }}>
       <SignInForm onSuccess={() => alert('Signed in!')}>
         <Logo size={32} />
-        <h2>Sign in to {getAppName()}</h2>
+        <Title order={3} py="lg">Sign in to {getAppName()}</Title>
       </SignInForm>
     </div>
   );
