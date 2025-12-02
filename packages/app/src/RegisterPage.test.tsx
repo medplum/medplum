@@ -45,7 +45,7 @@ describe('RegisterPage', () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
     await setup(medplum);
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create Account' })).toBeInTheDocument();
   });
 
   test('Redirect if signed in', async () => {

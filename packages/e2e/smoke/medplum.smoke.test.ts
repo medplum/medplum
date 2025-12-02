@@ -29,7 +29,7 @@ test.describe('Medplum App Smoke Tests', () => {
     await page.getByPlaceholder('name@domain.com').fill('test@gmail.com');
     await page.getByLabel('Password *').fill('TestTest123%');
     await page.getByLabel('Remember me').check();
-    await page.getByRole('button', { name: 'Create account' }).click();
+    await page.getByRole('button', { name: 'Create Account' }).click();
 
     await expect(page).toHaveURL('http://localhost:3000/register');
     await page.getByPlaceholder('My Project').fill('Test Project');

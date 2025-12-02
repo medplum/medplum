@@ -68,7 +68,7 @@ describe('OAuthPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    await user.click(screen.getByText('Forgot password'));
+    await user.click(screen.getByText('Reset Password'));
   });
 
   test('Register', async () => {
