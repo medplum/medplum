@@ -92,7 +92,7 @@ import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
@@ -1206,6 +1206,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
+    globalLogger.info('About to reindex resources...', { id: resources[0].id, count: resources.length });
+    await sleep(10_000);
     await this.batchWriteLookupTables(conn, resources, false);
     await this.batchWriteResources(conn, resources);
   }

@@ -260,6 +260,7 @@ export class ReindexJob {
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
           await systemRepo.reindexResources(conn, resources);
+          globalLogger.info('reindexResources result', { resourcesCount: resources.length, newCount });
           newCount += resources.length;
           nextTimestamp = bundle.entry.at(-1)?.resource?.meta?.lastUpdated ?? nextTimestamp;
         }
@@ -270,6 +271,7 @@ export class ReindexJob {
         }
       });
     } catch (err: any) {
+      globalLogger.info('Reindex iteration error', { error: normalizeErrorString(err), stack: err.stack, resourceType, searchRequest });
       return { count: newCount, cursor, nextTimestamp, err, errSearchRequest: searchRequest };
     }
 
@@ -287,7 +289,7 @@ export class ReindexJob {
       return { count: newCount, durationMs: elapsedTime };
     } else {
       const elapsedTime = Date.now() - jobData.startTime;
-      this.logger.info('Reindex completed', { resourceType, count, durationMs: elapsedTime });
+      this.logger.info('Reindex completed', { resourceType, count: newCount, durationMs: elapsedTime });
       return { count: newCount, durationMs: elapsedTime };
     }
   }
