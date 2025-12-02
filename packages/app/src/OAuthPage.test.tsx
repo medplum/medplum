@@ -47,7 +47,7 @@ describe('OAuthPage', () => {
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.type(screen.getByLabelText('Password *'), 'password');
 
@@ -66,7 +66,7 @@ describe('OAuthPage', () => {
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.click(screen.getByText('Forgot password'));
   });
@@ -74,7 +74,7 @@ describe('OAuthPage', () => {
   test('Register', async () => {
     const user = await setup('/oauth?client_id=123');
 
-    await user.click(screen.getByText('Register'));
+    await user.click(screen.getByText('Sign Up'));
   });
 
   test('Fetch and render client info', async () => {

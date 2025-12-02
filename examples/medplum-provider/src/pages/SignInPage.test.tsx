@@ -35,7 +35,7 @@ describe('SignInPage', () => {
 
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -57,7 +57,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {

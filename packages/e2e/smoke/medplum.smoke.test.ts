@@ -17,10 +17,10 @@ test.describe('Medplum App Smoke Tests', () => {
     // Make sure the sign in form is there
     await expect(page.locator('form')).toContainText('Email *');
     await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Register' })).toBeVisible();
+    await expect(page.getByText('Sign Up')).toBeVisible();
 
     // Navigate to sign up form
-    await page.getByRole('button', { name: 'Register' }).click();
+    await page.getByText('Sign Up').click();
     await expect(page).toHaveURL('http://localhost:3000/register');
 
     // Fill out sign up form
@@ -101,7 +101,7 @@ async function signIn(page: Page, email: string, password: string): Promise<void
   // Make sure the sign in form is there
   await expect(page.locator('form')).toContainText('Email *');
   await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Register' })).toBeVisible();
+  await expect(page.getByText('Sign Up')).toBeVisible();
 
   // Fill out sign in form
   await page.getByPlaceholder('name@domain.com').fill(email);

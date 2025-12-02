@@ -566,7 +566,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Register'));
+      fireEvent.click(screen.getByText('Sign Up'));
     });
 
     expect(props.onRegister).toHaveBeenCalled();

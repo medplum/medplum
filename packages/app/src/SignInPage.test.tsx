@@ -36,7 +36,7 @@ describe('SignInPage', () => {
 
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -53,7 +53,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -75,7 +75,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -88,7 +88,7 @@ describe('SignInPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Register'));
+      fireEvent.click(screen.getByText('Sign Up'));
     });
   });
 
@@ -97,7 +97,7 @@ describe('SignInPage', () => {
     setup();
 
     expectSigninPageRendered();
-    expect(screen.queryByText('Register')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sign Up')).not.toBeInTheDocument();
   });
 
   test('Redirect to next after login', async () => {
@@ -108,7 +108,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -130,7 +130,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
