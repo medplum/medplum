@@ -54,7 +54,9 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
     <Stack gap="0">
       <Flex justify="center" align="center" direction="column" wrap="nowrap">
         <Logo size={32} />
-        <Title order={3} py="lg">Choose a Project</Title>
+        <Title order={3} py="lg">
+          Choose a Project
+        </Title>
       </Flex>
       <OperationOutcomeAlert outcome={outcome} />
       <Combobox store={combobox} onOptionSubmit={handleValueSelect}>

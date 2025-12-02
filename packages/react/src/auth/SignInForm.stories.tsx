@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Title } from '@mantine/core';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
 import { getAppName } from '../utils/app';
 import { SignInForm } from './SignInForm';
-import { Title } from '@mantine/core';
 
 export default {
   title: 'Medplum/Auth/SignInForm',
@@ -17,7 +17,9 @@ export function Basic(): JSX.Element {
     <div style={{ minHeight: '100vh' }}>
       <SignInForm onSuccess={() => alert('Signed in!')}>
         <Logo size={32} />
-        <Title order={3} py="lg">Sign in to {getAppName()}</Title>
+        <Title order={3} py="lg">
+          Sign in to {getAppName()}
+        </Title>
       </SignInForm>
     </div>
   );
