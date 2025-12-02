@@ -79,7 +79,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Forgot password'));
+      fireEvent.click(screen.getByText('Reset Password'));
     });
   });
 
