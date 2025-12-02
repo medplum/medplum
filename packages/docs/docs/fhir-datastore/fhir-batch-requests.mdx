@@ -49,7 +49,7 @@ const transactionBundle = {
 :::caution Transaction Support
 Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
 
-The transaction feature is currently in beta. You may experience `429 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
+The transaction feature is currently in beta. You may experience `409 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
 :::
 
 ## How to Perform a Batch Request
