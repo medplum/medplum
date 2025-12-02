@@ -85,7 +85,8 @@ import type {
   ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import type { Pool, PoolClient } from 'pg';
+import { escapeIdentifier   } from 'pg';
+import type {Pool, PoolClient} from 'pg';
 import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
@@ -135,6 +136,7 @@ import { getSearchParameterImplementation, lookupTables } from './searchparamete
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
+  CopyFromQuery,
   DeleteQuery,
   Disjunction,
   InsertQuery,
@@ -1209,7 +1211,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     globalLogger.info('About to reindex resources...', { id: resources[0].id, count: resources.length });
     await sleep(10_000);
     await this.batchWriteLookupTables(conn, resources, false);
-    await this.batchWriteResources(conn, resources);
+    await this.bulkUpdateResources(conn, resources);
   }
 
   /**
@@ -1684,6 +1686,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     )
       .mergeOnConflict()
       .execute(client);
+  }
+
+  private async bulkUpdateResources(client: PoolClient, resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+
+    const tableName = resources[0].resourceType;
+    const tempTableName = tableName + '_temp_' + this.generateId().replace(/-/g, '_');
+
+    // Create temporary table
+    const createTempTableQuery = `CREATE TEMPORARY TABLE ${escapeIdentifier(tempTableName)} (LIKE ${escapeIdentifier(tableName)}) ON COMMIT DROP;`;
+    await client.query(createTempTableQuery);
+
+    // Copy from stdin into temporary table
+    const copyFrom = new CopyFromQuery(tempTableName, Object.keys(this.buildResourceRow(resources[0])));
+    const copyStream = copyFrom.getCopyStream(client);
+    for (const resource of resources) {
+      const row = this.buildResourceRow(resource);
+      copyStream.writeRow(row);
+    }
+    await copyFrom.completeCopy(client, copyStream);
+
+    // UPDATE from temporary table into main table
+    const updateColumns = Object.keys(this.buildResourceRow(resources[0])).filter(
+      (col) => col !== 'id' && col !== 'lastUpdated'
+    );
+    const setClause = updateColumns.map((col) => `"${col}" = temp."${col}"`).join(', ');
+    const updateQuery = `
+      UPDATE ${escapeIdentifier(tableName)} AS main
+      SET ${setClause}
+      FROM ${escapeIdentifier(tempTableName)} AS temp
+      WHERE main.id = temp.id;
+    `;
+    await client.query(updateQuery);
   }
 
   /**

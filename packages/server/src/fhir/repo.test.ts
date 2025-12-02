@@ -1510,6 +1510,21 @@ describe('FHIR Repo', () => {
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
 
       const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      // const mockOn = jest.fn((event, callback) => {
+      //   if (event === 'error') {
+      //     setTimeout(() => callback(testError), 0);
+      //   }
+      // });
+      // const mockEnd = jest.fn();
+      // const mockStream = {
+      //   write: jest.fn(),
+      //   end: mockEnd,
+      //   on: mockOn,
+      // };
+      // const client = {
+      //   copyFrom: jest.fn(() => mockStream),
+      // } as unknown as PoolClient;
+
       expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version

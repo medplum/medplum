@@ -5,6 +5,8 @@ import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
+import type Stream from 'node:stream';
+import { from as copyFrom } from 'pg-copy-streams';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
@@ -1274,5 +1276,92 @@ export function replaceNullWithUndefinedInRows(rows: any[]): void {
         (row as any)[k] = undefined;
       }
     }
+  }
+}
+
+export interface CopyStream {
+  writeRow(row: Record<string, any>): void;
+  stream: Stream.Writable;
+}
+
+export class CopyFromQuery {
+  private readonly tableName: string;
+  private readonly columnNames: string[];
+
+  constructor(tableName: string, columnNames: string[]) {
+    this.tableName = tableName;
+    this.columnNames = columnNames;
+  }
+
+  getCopyStream(client: Client | PoolClient): CopyStream {
+    const copyQuery = this.buildCopyQuery();
+    const stream = client.query(copyFrom(copyQuery));
+
+    const copyStream = {
+      writeRow: (row: Record<string, any>) => {
+        const values: string[] = [];
+        for (const columnName of this.columnNames) {
+          const value = row[columnName];
+          if (value === null || value === undefined) {
+            values.push('\\N');
+          } else if (typeof value === 'string') {
+            values.push(this.escapeValue(value));
+          } else if (Array.isArray(value)) {
+            values.push(this.arrayToPostgresFormat(value));
+          } else if (typeof value === 'object') {
+            values.push(this.escapeValue(JSON.stringify(value)));
+          } else {
+            values.push(this.escapeValue(String(value)));
+          }
+        }
+        stream.write(values.join('\t') + '\n');
+      },
+      stream,
+    };
+    return copyStream;
+  }
+
+  async completeCopy(_client: Client | PoolClient, stream: CopyStream): Promise<void> {
+    const writable = stream.stream;
+    return new Promise<void>((resolve, reject) => {
+      writable.on('finish', resolve);
+      writable.on('error', reject);
+      writable.end();
+    });
+  }
+
+  private buildCopyQuery(): string {
+    const columns = this.columnNames.map((col) => `"${col}"`).join(', ');
+    return `COPY "${this.tableName}" (${columns}) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N')`;
+  }
+
+  private escapeValue(value: string): string {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+  }
+
+  private arrayToPostgresFormat(arr: any[]): string {
+    // Convert array to PostgreSQL array literal format: {element1,element2,...}
+    // Elements need to be quoted and escaped according to PostgreSQL rules
+    const elements = arr.map((item) => {
+      if (item === null || item === undefined) {
+        return 'NULL';
+      }
+      // Convert to string and escape special characters for PostgreSQL array format
+      const str = String(item);
+      // In PostgreSQL array literals, we need to escape backslashes, quotes, commas, braces, and whitespace
+      const escaped = str
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      // Quote the element if it contains special characters or is empty
+      if (str === '' || /[,{}"\s\\]/.test(str)) {
+        return `"${escaped}"`;
+      }
+      return escaped;
+    });
+    return `{${elements.join(',')}}`;
   }
 }

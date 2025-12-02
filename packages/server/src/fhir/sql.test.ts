@@ -6,6 +6,7 @@ import {
   Column,
   Condition,
   Constant,
+  CopyFromQuery,
   InsertQuery,
   Negation,
   SelectQuery,
@@ -411,4 +412,191 @@ test('debug', async () => {
   expect(consoleLogSpy).not.toHaveBeenCalled();
 
   resetSqlDebug();
+});
+
+describe('CopyFromQuery', () => {
+  test('buildCopyQuery', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'name', 'age']);
+    const mockStream = {
+      write: jest.fn(),
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    expect(client.query).toHaveBeenCalled();
+    const callArg = (client.query as jest.Mock).mock.calls[0][0];
+    expect(callArg).toHaveProperty('text', `COPY "MyTable" ("id", "name", "age") FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N')`);
+    expect(stream).toBeDefined();
+    expect(stream.stream).toBe(mockStream);
+  });
+
+  test('writeRow with simple values', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'name', 'age']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({ id: '123', name: 'Alice', age: 30 });
+
+    expect(mockWrite).toHaveBeenCalledWith('123\tAlice\t30\n');
+  });
+
+  test('writeRow with null values', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'name', 'age']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({ id: '123', name: null, age: undefined });
+
+    expect(mockWrite).toHaveBeenCalledWith('123\t\\N\t\\N\n');
+  });
+
+  test('writeRow with special characters', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'content']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({ id: '123', content: 'Line1\nLine2\tTab\rReturn\\Backslash' });
+
+    expect(mockWrite).toHaveBeenCalledWith('123\tLine1\\nLine2\\tTab\\rReturn\\\\Backslash\n');
+  });
+
+  test('writeRow with arrays and objects', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'tags', 'metadata']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({ id: '123', tags: ['tag1', 'tag2'], metadata: { key: 'value' } });
+
+    expect(mockWrite).toHaveBeenCalledWith('123\t{tag1,tag2}\t{"key":"value"}\n');
+  });
+
+  test('completeCopy resolves on finish', async () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'name']);
+    const mockOn = jest.fn((event, callback) => {
+      if (event === 'finish') {
+        setTimeout(callback, 0);
+      }
+    });
+    const mockEnd = jest.fn();
+    const mockStream = {
+      write: jest.fn(),
+      end: mockEnd,
+      on: mockOn,
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    const promise = copyFrom.completeCopy(client, stream);
+
+    expect(mockEnd).toHaveBeenCalled();
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  test('completeCopy rejects on error', async () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'name']);
+    const testError = new Error('Copy failed');
+    const mockOn = jest.fn((event, callback) => {
+      if (event === 'error') {
+        setTimeout(() => callback(testError), 0);
+      }
+    });
+    const mockEnd = jest.fn();
+    const mockStream = {
+      write: jest.fn(),
+      end: mockEnd,
+      on: mockOn,
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    const promise = copyFrom.completeCopy(client, stream);
+
+    await expect(promise).rejects.toThrow('Copy failed');
+  });
+
+  test('writeRow with UUID arrays', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'compartments']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({
+      id: '123',
+      compartments: ['6f7da1e6-d5d2-43a6-aedc-5384dd2da6fd', '96f2b92a-1827-4be3-abe7-a931a4c9c49d'],
+    });
+
+    expect(mockWrite).toHaveBeenCalledWith(
+      '123\t{6f7da1e6-d5d2-43a6-aedc-5384dd2da6fd,96f2b92a-1827-4be3-abe7-a931a4c9c49d}\n'
+    );
+  });
+
+  test('writeRow with array elements containing special characters', () => {
+    const copyFrom = new CopyFromQuery('MyTable', ['id', 'values']);
+    const mockWrite = jest.fn();
+    const mockStream = {
+      write: mockWrite,
+      end: jest.fn(),
+      on: jest.fn(),
+    };
+    const client = {
+      query: jest.fn(() => mockStream),
+    } as unknown as PoolClient;
+
+    const stream = copyFrom.getCopyStream(client);
+    stream.writeRow({
+      id: '123',
+      values: ['value with space', 'value,with,comma', 'value"with"quote', 'value\\with\\backslash', ''],
+    });
+
+    expect(mockWrite).toHaveBeenCalledWith(
+      '123\t{"value with space","value,with,comma","value\\"with\\"quote","value\\\\with\\\\backslash",""}\n'
+    );
+  });
 });
