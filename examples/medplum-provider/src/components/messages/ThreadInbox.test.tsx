@@ -223,7 +223,7 @@ describe('ThreadInbox', () => {
         data: { CommunicationList: [] },
       });
 
-      setup({ showPatientSummary: true, threadId: 'comm-123' });
+      setup({ showPatientSummary: false, threadId: 'comm-123' });
 
       await waitFor(
         () => {
