@@ -77,14 +77,15 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
         }
       });
 
-      const threads: [Communication, Communication | undefined][] = searchResult
+      const threads: [Communication, Communication][] = searchResult
         .map((communication: Communication) => {
           const lastCommunication = map.get(createReference(communication).reference);
           if (lastCommunication) {
             return [communication, lastCommunication];
           }
-          return [communication, undefined];
+          return undefined;
         })
+        .filter((t): t is [Communication, Communication] => t !== undefined);
        
       setThreadMessages(threads);
     };
