@@ -74,6 +74,13 @@ function mockFetch(url: string, options: any): Promise<any> {
         login: '1',
         mfaRequired: true,
       };
+    } else if (email === 'mfa-enroll@medplum.com' && password === 'mfa-enroll') {
+      status = 200;
+      result = {
+        login: '1',
+        mfaEnrollRequired: true,
+        enrollQrCode: 'data:image/png;base64,123',
+      };
     } else {
       status = 400;
       result = {
@@ -124,6 +131,12 @@ function mockFetch(url: string, options: any): Promise<any> {
       code: '1',
     };
   } else if (options.method === 'POST' && url.endsWith('auth/mfa/verify')) {
+    status = 200;
+    result = {
+      login: '1',
+      code: '1',
+    };
+  } else if (options.method === 'POST' && url.endsWith('auth/mfa/login-enroll')) {
     status = 200;
     result = {
       login: '1',
@@ -767,6 +780,8 @@ describe('SignInForm', () => {
     });
 
     await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+    expect(screen.getByText('Enter MFA code')).toBeInTheDocument();
+    expect(screen.getByText('Enter the code from your authenticator app.')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText(/mfa code*/i), { target: { value: '1234567890' } });
@@ -774,6 +789,49 @@ describe('SignInForm', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /submit code/i }));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+    expect(success).toBe(true);
+  });
+
+  test('MFA -- Enroll', async () => {
+    let success = false;
+
+    await setup({
+      onSuccess: () => (success = true),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-enroll@medplum.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-enroll' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in'));
+    });
+
+    await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+    expect(screen.getByText('Enroll in MFA')).toBeInTheDocument();
+    expect(screen.getByText('Scan this QR code with your authenticator app.')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/mfa code*/i), { target: { value: '123456' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enroll' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());

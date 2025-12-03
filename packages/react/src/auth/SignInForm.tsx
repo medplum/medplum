@@ -140,11 +140,12 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           return (
             <MfaForm
               title="Enroll in MFA"
+              description="Scan this QR code with your authenticator app."
               buttonText="Enroll"
               qrCodeUrl={enrollQrCode}
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/login-enroll', {
-                  login: login,
+                  login: login as string,
                   token: fields.token,
                 });
                 handleAuthResponse(res);
@@ -155,10 +156,11 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           return (
             <MfaForm
               title="Enter MFA code"
-              buttonText="Submit code"
+              description="Enter the code from your authenticator app."
+              buttonText="Submit Code"
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/verify', {
-                  login: login,
+                  login: login as string,
                   token: fields.token,
                 });
                 handleAuthResponse(res);
