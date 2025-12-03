@@ -450,10 +450,8 @@ export class OperationOutcomeError extends Error {
 
   constructor(outcome: OperationOutcome, options?: ErrorOptions) {
     super(operationOutcomeToString(outcome), options);
-    Object.setPrototypeOf(this, OperationOutcomeError.prototype);
-    this.name = this.constructor.name;
+    this.name = 'OperationOutcomeError';
     this.outcome = outcome;
-    Error.captureStackTrace(this, this.constructor);
   }
 }
 
