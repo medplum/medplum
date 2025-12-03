@@ -67,10 +67,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
         }
       `);
 
-      console.log('allCommunications', allCommunications);
-
       const map = new Map<string, Communication>();
-      allCommunications.data.CommunicationList.forEach((communication: Communication) => {
+      allCommunications.data.CommunicationList?.forEach((communication: Communication) => {
         const partOfRef = communication.partOf?.[0]?.reference;
         if (partOfRef) {
           if (!map.has(partOfRef)) {
@@ -87,8 +85,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
           }
           return [communication, undefined];
         })
-        // .filter((t): t is [Communication, Communication] => t !== undefined);
-
+       
       setThreadMessages(threads);
     };
 

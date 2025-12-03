@@ -13,11 +13,11 @@ export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
   const navigate = useNavigate();
   const handleNewThread = (message: Communication): void => {
-    navigate(`/Message/${message.id}`)?.catch(console.error);
+    navigate(`/Communication/${message.id}`)?.catch(console.error);
   };
 
   const onSelectedItem = (topic: Communication): string => {
-    return `/Message/${topic.id}`;
+    return `/Communication/${topic.id}`;
   };
 
   return (
