@@ -351,12 +351,3 @@ Section Uninstall
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
 
 SectionEnd
-
-# Check if we should skip signing... this can be set via /D cli arg
-!ifndef SKIP_SIGNING
-    # Sign the installer and uninstaller
-    # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
-    # That will stop running both in parallel.
-    !finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-    !uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-!endif

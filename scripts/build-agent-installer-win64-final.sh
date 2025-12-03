@@ -20,13 +20,8 @@ export MEDPLUM_FULL_VERSION="$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH"
 # Move into packages/agent
 pushd packages/agent
 
-# Build the installer
-# If SKIP_SIGNING is not empty, then define SKIP_SIGNING symbol
-if [ -n "$SKIP_SIGNING" ]; then
-  makensis -DSKIP_SIGNING installer.nsi # globally defines the SKIP_SIGNING symbol
-else
-  makensis installer.nsi
-fi
+# Build the installer (unsigned, will be signed in the workflow)
+makensis installer.nsi
 
 # Generate the installer checksum
 sha256sum "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"

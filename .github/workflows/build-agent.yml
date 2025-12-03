@@ -133,6 +133,13 @@ jobs:
         env:
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
 
+      - name: Login to Azure
+        uses: azure/login@a07705a8618029a2b11287982d7e48571b437841 # v1.10.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Sign executables with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@v0
@@ -143,18 +150,38 @@ jobs:
           trusted-signing-account-name: GitHubActionSigner
           certificate-profile-name: GitHubCITest
           files-folder: ${{ github.workspace }}/packages/agent/dist
-          files-folder-filter: exe
+          files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
+
+      - name: Import GPG key
+        if: ${{ inputs.sign_output }}
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
 
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64-final.sh
         env:
-          # SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
+
+      - name: Sign installer with Azure Trusted Signing
+        if: ${{ inputs.sign_output }}
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: GitHubActionSigner
+          certificate-profile-name: GitHubCITest
+          files-folder: ${{ github.workspace }}/packages/agent
+          files-folder-filter: medplum-agent-installer-*.exe
+          files-folder-recurse: false
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
       - name: Set Medplum version
         shell: bash
@@ -214,11 +241,17 @@ jobs:
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
+      - name: Import GPG key
+        if: ${{ inputs.sign_output }}
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
-        # env:
-        #   SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
+        env:
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
 
       - name: Set Medplum version
         shell: bash
@@ -290,11 +323,17 @@ jobs:
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
+      - name: Import GPG key
+        if: ${{ inputs.sign_output }}
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
-        # env:
-        #   SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
+        env:
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
 
       - name: Set Medplum version
         shell: bash
@@ -366,11 +405,17 @@ jobs:
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
+      - name: Import GPG key
+        if: ${{ inputs.sign_output }}
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-macos.sh
-        # env:
-        #   SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
+        env:
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
 
       - name: Set Medplum version
         shell: bash
