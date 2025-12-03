@@ -36,7 +36,7 @@ export function linkPatientRecords(src: WithId<Patient>, target: WithId<Patient>
 /**
  * Unlinks two patients that have been merged.
  * Removes the merge links between source and target patients.
- * If the source record is no longer replaced, it will be made active again.
+ * Note: This function does not change the active status of patients, as we cannot infer user intent.
  *
  * @param src - The source patient record which is marked as replaced.
  * @param target - The target patient marked as the master record.
@@ -49,11 +49,6 @@ export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patien
   targetCopy.link = targetCopy.link?.filter((link) => resolveId(link.other) !== src.id);
   // Filter out links from the source to the target
   srcCopy.link = srcCopy.link?.filter((link) => resolveId(link.other) !== target.id);
-
-  // If the source record is no longer replaced, make it active again
-  if (!srcCopy.link?.filter((link) => link.type === 'replaced-by')?.length) {
-    srcCopy.active = true;
-  }
 
   return { src: srcCopy, target: targetCopy };
 }

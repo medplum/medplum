@@ -84,7 +84,8 @@ describe('Patient Merge Utils', () => {
 
     expect(result.src.link?.length).toBe(0);
     expect(result.target.link?.length).toBe(0);
-    expect(result.src.active).toBe(true);
+    // Active status should remain unchanged (we don't infer user intent)
+    expect(result.src.active).toBe(false);
   });
 
   test('should unlink patients with multiple replaced-by links', () => {
@@ -110,11 +111,11 @@ describe('Patient Merge Utils', () => {
     expect(result.src.link?.length).toBe(1);
     expect(result.src.link?.[0].other.reference).toBe('Patient/master');
     expect(result.target.link?.length).toBe(0);
-    // Should still be inactive since it's still replaced by master
+    // Active status should remain unchanged (we don't infer user intent)
     expect(result.src.active).toBe(false);
   });
 
-  test('should activate source when all replaced-by links removed', () => {
+  test('should not change active status when unlinking', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
@@ -130,7 +131,9 @@ describe('Patient Merge Utils', () => {
 
     const result = unlinkPatientRecords(srcPatient, targetPatient);
 
-    expect(result.src.active).toBe(true);
+    // Active status should remain unchanged (we don't infer user intent)
+    expect(result.src.active).toBe(false);
+    expect(result.src.link?.length).toBe(0);
   });
 
   test('should merge identifiers correctly', () => {
