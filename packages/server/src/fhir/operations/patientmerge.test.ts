@@ -307,7 +307,7 @@ describe('Patient Merge Operation', () => {
       expect(sourceAfterMerge.body.id).toBe(sourcePatient.id);
     });
 
-    test('Handles pagination with many clinical resources', async () => {
+    test('Processes first page of clinical resources (pagination will be added in PR 2)', async () => {
       const sourceRes = await request(app)
         .post('/fhir/R4/Patient')
         .set('Authorization', 'Bearer ' + accessToken)
@@ -320,8 +320,7 @@ describe('Patient Merge Operation', () => {
         .send({ resourceType: 'Patient', name: [{ given: ['Target'], family: 'Patient' }] } satisfies Patient);
       const targetPatient = targetRes.body as Patient;
 
-      // Create enough resources to trigger pagination (default page size is 1000)
-      // Create 5 observations to ensure we test pagination logic
+      // Create a few observations (all will be on the first page since default page size is 1000)
       const observations: Observation[] = [];
       for (let i = 0; i < 5; i++) {
         const obsRes = await request(app)
@@ -351,7 +350,7 @@ describe('Patient Merge Operation', () => {
 
       expect(mergeRes.status).toBe(200);
 
-      // Verify all observations were updated
+      // Verify all observations were updated (they're all on the first page)
       for (const observation of observations) {
         const updatedObsRes = await request(app)
           .get(`/fhir/R4/Observation/${observation.id}`)
