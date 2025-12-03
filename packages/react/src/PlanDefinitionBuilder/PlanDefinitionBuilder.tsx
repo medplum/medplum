@@ -14,7 +14,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import type { PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
@@ -278,7 +278,12 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   questionnaires list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder
+                resourceType="Questionnaire"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for questionnaire"
+              />
             </Stack>
           )}
 
@@ -294,7 +299,12 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   activity definitions list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder
+                resourceType="ActivityDefinition"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for activity definition"
+              />
             </Stack>
           )}
         </Stack>
@@ -305,7 +315,8 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
-  readonly resourceType: ResourceType;
+  readonly resourceType: 'Questionnaire' | 'ActivityDefinition';
+  readonly placeholder?: string;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
@@ -317,11 +328,16 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   return (
     <ResourceInput
       name={id as string}
+      placeholder={props.placeholder}
       resourceType={props.resourceType}
       defaultValue={reference}
       onChange={(newValue) => {
         if (newValue) {
-          props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+          props.onChange({
+            ...props.action,
+            definitionCanonical: 'url' in newValue ? newValue.url : undefined,
+            definitionUri: !('url' in newValue) ? getReferenceString(newValue) : undefined,
+          });
         } else {
           props.onChange({ ...props.action, definitionCanonical: undefined });
         }
