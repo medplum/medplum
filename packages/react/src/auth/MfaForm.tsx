@@ -13,7 +13,7 @@ export type MfaFormFields = 'token';
 export interface MfaFormProps {
   readonly title: string;
   readonly buttonText: string;
-  readonly description: string;
+  readonly description?: string;
   readonly qrCodeUrl?: string;
   readonly onSubmit: (formData: Record<MfaFormFields, string>) => void | Promise<void>;
 }
@@ -32,7 +32,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
         <Title order={3} py="lg">
           {props.title}
         </Title>
-        {!props.qrCodeUrl && (
+        {!props.qrCodeUrl && props.description && (
           <Text c="dimmed" mb="lg" mt="-lg">
             {props.description}
           </Text>
@@ -46,9 +46,11 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       {props.qrCodeUrl && (
         <Center>
           <Stack mb="xl">
-            <Text c="dimmed" mb="md" mt="-lg" ta="center">
-              {props.description}
-            </Text>
+            {props.description && (
+              <Text c="dimmed" mb="md" mt="-lg" ta="center">
+                {props.description}
+              </Text>
+            )}
             <Image
               src={props.qrCodeUrl}
               alt="Multi Factor Auth QR Code"
