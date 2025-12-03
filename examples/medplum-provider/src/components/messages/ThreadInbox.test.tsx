@@ -209,29 +209,29 @@ describe('ThreadInbox', () => {
     );
   });
 
-    test('does not show patient summary when showPatientSummary is false', async () => {
-      const medplumReact = await import('@medplum/react');
-      const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
-      await medplum.createResource(mockCommunication);
+  test('does not show patient summary when showPatientSummary is false', async () => {
+    const medplumReact = await import('@medplum/react');
+    const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
+    await medplum.createResource(mockCommunication);
 
-      medplum.search = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockCommunication }],
-      });
-      medplum.graphql = vi.fn().mockResolvedValue({
-        data: { CommunicationList: [] },
-      });
-
-      setup({ showPatientSummary: true, threadId: 'comm-123' });
-
-      await waitFor(
-        () => {
-          expect(patientSummarySpy).not.toHaveBeenCalled();
-        },
-        { timeout: 3000 }
-      );
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
     });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    setup({ showPatientSummary: false, threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        expect(patientSummarySpy).not.toHaveBeenCalled();
+      },
+      { timeout: 3000 }
+    );
+  });
 
   test('opens new topic dialog when plus button is clicked', async () => {
     const user = userEvent.setup();

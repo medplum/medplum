@@ -212,7 +212,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadtatusChange('in-progress');
+    await result.current.handleThreadStatusChange('in-progress');
 
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe('useThreadInbox', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    await result.current.handleThreadtatusChange('in-progress');
+    await result.current.handleThreadStatusChange('in-progress');
 
     expect(updateSpy).not.toHaveBeenCalled();
   });
@@ -274,7 +274,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadtatusChange('in-progress');
+    await result.current.handleThreadStatusChange('in-progress');
 
     await waitFor(() => {
       expect(result.current.error).toBe(error);

@@ -16,7 +16,7 @@ export interface UseThreadInboxReturn {
   threadMessages: [Communication, Communication | undefined][];
   selectedThread: Communication | undefined;
   addThreadMessage: (message: Communication) => void;
-  handleThreadtatusChange: (newStatus: Communication['status']) => Promise<void>;
+  handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
 }
 
 /*
@@ -125,7 +125,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     });
   }, [threadId, threadMessages, medplum]);
 
-  const handleThreadtatusChange = async (newStatus: Communication['status']): Promise<void> => {
+  const handleThreadStatusChange = async (newStatus: Communication['status']): Promise<void> => {
     if (!selectedThread) {
       return;
     }
@@ -150,6 +150,6 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     threadMessages,
     selectedThread,
     addThreadMessage,
-    handleThreadtatusChange,
+    handleThreadStatusChange,
   };
 }
