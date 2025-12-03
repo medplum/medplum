@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, getReferenceString, LOINC, UCUM } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type {
-  CodeableConcept,
-  Observation,
-  Patient,
-} from '@medplum/fhirtypes';
+import type { CodeableConcept, Observation, Patient } from '@medplum/fhirtypes';
 
 /**
  * BMI Calculation Bot
@@ -88,10 +84,7 @@ function getObservationValue(observation: Observation): number | undefined {
  * @param medplum - The Medplum client
  * @param event - The bot event containing the Patient resource
  */
-export async function handler(
-  medplum: MedplumClient,
-  event: BotEvent<Patient>
-): Promise<void> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<void> {
   const patient = event.input;
 
   // Get the latest height observation
@@ -182,8 +175,5 @@ export async function handler(
   // Create a new BMI observation (allows tracking BMI over time)
   await medplum.createResource(bmiObservation);
 
-  console.log(
-    `Created BMI observation: ${bmi.toFixed(2)} kg/m2 for patient ${getReferenceString(patient)}`
-  );
+  console.log(`Created BMI observation: ${bmi.toFixed(2)} kg/m2 for patient ${getReferenceString(patient)}`);
 }
-
