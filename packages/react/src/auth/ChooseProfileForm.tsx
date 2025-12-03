@@ -58,7 +58,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
           Choose a Project
         </Title>
       </Flex>
-      <OperationOutcomeAlert outcome={outcome} />
+      <OperationOutcomeAlert outcome={outcome} mb="lg" />
       <Combobox store={combobox} onOptionSubmit={handleValueSelect}>
         <Combobox.EventsTarget>
           <TextInput

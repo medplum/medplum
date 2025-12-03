@@ -188,7 +188,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   return (
     <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       <Stack gap="sm">
         <TextInput
           label="Email"

@@ -53,7 +53,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
 
   return (
     <Document width={400} px="xl" py="xl" bdrs="md">
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {!login && (
         <NewUserForm
           projectId={projectId as string}
