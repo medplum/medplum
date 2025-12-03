@@ -99,3 +99,7 @@ playwright/.cache/
 
 # Cursor
 .cursor/
+
+# FSH generated files
+packages/definitions/src/fsh/*/sushi-config.yaml
+**/fsh-generated/

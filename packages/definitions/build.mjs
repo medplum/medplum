@@ -4,6 +4,7 @@
 /* eslint no-console: "off" */
 /* eslint-disable no-undef */
 
+import { execSync } from 'child_process';
 import esbuild from 'esbuild';
 import { cpSync, writeFileSync } from 'fs';
 
@@ -26,7 +27,25 @@ function copyDataFiles() {
   cpSync(srcFhirDir, distEsmFhirDir, { recursive: true });
 }
 
-esbuild
+// Build FSH profiles and merge them into profiles-medplum.json
+function buildFshProfiles() {
+  console.log('Building FSH profiles...');
+  try {
+    execSync('npm run build:fsh', { stdio: 'inherit' });
+
+    // Merge FSH-generated profiles into profiles-medplum.json
+    execSync('tsx src/scripts/build-profiles.ts', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Error: FSH build failed:', error.message);
+    process.exit(1);
+  }
+}
+
+// Copy source FHIR files first so they're available for merging
+console.log('Copying source FHIR files...');
+copyDataFiles();
+
+const cjsBuild = esbuild
   .build({
     ...options,
     format: 'cjs',
@@ -37,14 +56,13 @@ esbuild
   })
   .then(() => {
     writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
-    copyDataFiles();
   })
   .catch((err) => {
     console.error(err);
     process.exit(1);
   });
 
-esbuild
+const esmBuild = esbuild
   .build({
     ...options,
     format: 'esm',
@@ -52,9 +70,13 @@ esbuild
   })
   .then(() => {
     writeFileSync('./dist/esm/package.json', '{"type": "module"}');
-    copyDataFiles();
   })
   .catch((err) => {
     console.error(err);
     process.exit(1);
   });
+
+// Wait for both builds to complete, then build FSH profiles once
+Promise.all([cjsBuild, esmBuild]).then(() => {
+  buildFshProfiles();
+});

@@ -8,6 +8,14 @@ tags:
 
 Use the following FHIR extensions to customize the Subscription behavior. The behavior is non-standard, and will not necessarily work in other FHIR systems.
 
+## Medplum Base Subscription Profile
+
+To simplify the usage of these extensions, Medplum provides a [StructureDefinition](/docs/api/fhir/resources/structuredefinition) called `MedplumBaseSubscription`. This profile includes definitions for all the common Medplum subscription extensions by default.
+
+You can select this profile when creating a new Subscription in the [Medplum App](https://app.medplum.com). You can find it in the "Profiles" tab of the Subscription resource page.
+
+For more information on working with profiles, see the [FHIR Profiles documentation](/docs/fhir-datastore/profiles).
+
 ## Adding Extensions
 
 Here is an example FHIR Subscription Object:
@@ -165,7 +173,7 @@ The response for a deleted resource will contain:
 
 When a consumer receives a webhook request, you may want to verify that the request came from the expected sender.
 
-Webhooks can optionally use a FHIR extension to enable an HMAC signature. To enable HMAC signatures, use the extension `https://www.medplum.com/fhir/StructureDefinition/subscription-secret` and `valueString` of a cryptographically secure secret.
+Webhooks can optionally use a FHIR extension to enable an HMAC signature. To enable HMAC signatures, use the extension `https://medplum.com/fhir/StructureDefinition/subscription-secret` and `valueString` of a cryptographically secure secret.
 
 ```json
 {
@@ -179,7 +187,7 @@ Webhooks can optionally use a FHIR extension to enable an HMAC signature. To ena
   },
   "extension": [
     {
-      "url": "https://www.medplum.com/fhir/StructureDefinition/subscription-secret",
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-secret",
       "valueString": "abc"
     }
   ]
