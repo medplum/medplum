@@ -185,6 +185,9 @@ describe('ThreadInbox', () => {
   });
 
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {
+    const medplumReact = await import('@medplum/react');
+    const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
+
     await medplum.createResource(mockCommunication);
 
     medplum.search = vi.fn().mockResolvedValue({
@@ -200,14 +203,15 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-        expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
+        expect(patientSummarySpy).toHaveBeenCalled();
       },
       { timeout: 3000 }
     );
   });
 
   test('does not show patient summary when showPatientSummary is false', async () => {
+    const medplumReact = await import('@medplum/react');
+    const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
     await medplum.createResource(mockCommunication);
 
     medplum.search = vi.fn().mockResolvedValue({
@@ -219,12 +223,11 @@ describe('ThreadInbox', () => {
       data: { CommunicationList: [] },
     });
 
-    setup({ showPatientSummary: true, threadId: 'comm-123' });
+    setup({ showPatientSummary: false, threadId: 'comm-123' });
 
     await waitFor(
       () => {
-        expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
-        expect(screen.queryByText('1956-05-12 (069Y)')).not.toBeInTheDocument();
+        expect(patientSummarySpy).not.toHaveBeenCalled();
       },
       { timeout: 3000 }
     );

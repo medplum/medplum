@@ -21,7 +21,7 @@ export function CommunicationTab(): JSX.Element {
     <div style={{ height: `calc(100vh - 98px)` }}>
       <ThreadInbox
         threadId={messageId}
-        query={`subject=${`Patient/${patientId}`},_sort=-_lastUpdated`}
+        query={`subject=${`Patient/${patientId}`}&_sort=-_lastUpdated`}
         subject={{ reference: `Patient/${patientId}` }}
         showPatientSummary={false}
         handleNewThread={handleNewThread}
