@@ -59,7 +59,9 @@ export function ResetPasswordPage(): JSX.Element {
       >
         <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Title order={3} py="lg">Reset your password</Title>
+          <Title order={3} py="lg">
+            Reset your password
+          </Title>
         </Center>
         <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} mb="lg" />
         {!success && (
