@@ -134,7 +134,8 @@ jobs:
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
 
       - name: Login to Azure
-        uses: azure/login@a07705a8618029a2b11287982d7e48571b437841 # v1.10.0
+        if: ${{ inputs.sign_output }}
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -142,7 +143,7 @@ jobs:
 
       - name: Sign executables with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
-        uses: azure/trusted-signing-action@v0
+        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -169,7 +170,7 @@ jobs:
 
       - name: Sign installer with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
-        uses: azure/trusted-signing-action@v0
+        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
