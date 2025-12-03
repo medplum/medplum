@@ -150,11 +150,12 @@ jobs:
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
           certificate-profile-name: GitHubCITest
-          files-folder: ${{ github.workspace }}/packages/agent/dist
+          files-folder: ${{ github.workspace }}\packages\agent\dist
           files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
+          append-signature: true
 
       - name: Import GPG key
         if: ${{ inputs.sign_output }}
@@ -177,12 +178,13 @@ jobs:
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
           certificate-profile-name: GitHubCITest
-          files-folder: ${{ github.workspace }}/packages/agent
+          files-folder: ${{ github.workspace }}\packages\agent
           files-folder-filter: medplum-agent-installer-*.exe
           files-folder-recurse: false
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
+          append-signature: true
 
       - name: Set Medplum version
         shell: bash
