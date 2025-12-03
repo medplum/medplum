@@ -149,7 +149,7 @@ jobs:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
-          certificate-profile-name: GitHubCITest
+          certificate-profile-name: GitHubCI
           files-folder: ${{ github.workspace }}\packages\agent\dist
           files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
           file-digest: SHA256
@@ -177,7 +177,7 @@ jobs:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
-          certificate-profile-name: GitHubCITest
+          certificate-profile-name: GitHubCI
           files-folder: ${{ github.workspace }}\packages\agent
           files-folder-filter: medplum-agent-installer-*.exe
           files-folder-recurse: false
