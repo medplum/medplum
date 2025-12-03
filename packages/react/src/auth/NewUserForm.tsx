@@ -134,9 +134,9 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           pt="md"
           pb="xs"
         />
-        <SubmitButton fullWidth>Create Account</SubmitButton>
+        <SubmitButton fullWidth>Register Account</SubmitButton>
         <Text c="dimmed" size="xs" pt="lg" ta="center">
-          By clicking "Create Account" you agree to the Medplum{' '}
+          By clicking "Register Account" you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.

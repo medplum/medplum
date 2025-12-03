@@ -19,7 +19,7 @@ export function Basic(): JSX.Element {
       <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <Title order={3} py="lg">
-          Create a new account
+          Register a new account
         </Title>
       </RegisterForm>
     </div>
@@ -32,7 +32,7 @@ export function WithFooter(): JSX.Element {
       <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <Title order={3} py="lg">
-          Create a new account
+          Register a new account
         </Title>
       </RegisterForm>
     </div>
@@ -50,7 +50,7 @@ export function WithGoogle(): JSX.Element {
       >
         <Logo size={32} />
         <Title order={3} py="lg">
-          Create a new account
+          Register a new account
         </Title>
       </RegisterForm>
     </div>

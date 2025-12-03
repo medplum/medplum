@@ -194,7 +194,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -244,7 +244,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -297,7 +297,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());

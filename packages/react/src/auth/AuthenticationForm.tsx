@@ -149,7 +149,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
             data-no-autofill="true"
             data-form-type="navigation"
           >
-            Don’t have an account? <Anchor onClick={onRegister}>Sign Up</Anchor>
+            Don’t have an account? <Anchor onClick={onRegister}>Register</Anchor>
           </Text>
         )}
       </Stack>
