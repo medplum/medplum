@@ -278,7 +278,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   questionnaires list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder 
+              resourceType="Questionnaire" 
+              action={action} 
+              onChange={props.onChange} 
+              placeholder="Search for questionnaire" />
             </Stack>
           )}
 
@@ -294,7 +298,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   activity definitions list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder 
+              resourceType="ActivityDefinition" 
+              action={action} 
+              onChange={props.onChange} 
+              placeholder="Search for activity definition" />
             </Stack>
           )}
         </Stack>
@@ -306,6 +314,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
   readonly resourceType: 'Questionnaire' | 'ActivityDefinition';
+  readonly placeholder?: string;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
@@ -317,6 +326,7 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   return (
     <ResourceInput
       name={id as string}
+      placeholder={props.placeholder}
       resourceType={props.resourceType}
       defaultValue={reference}
       onChange={(newValue) => {

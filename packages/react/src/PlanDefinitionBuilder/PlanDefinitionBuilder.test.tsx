@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 import { PlanDefinitionBuilder } from './PlanDefinitionBuilder';
+import type { ActivityDefinition } from '@medplum/fhirtypes';
 
 const medplum = new MockClient();
 
@@ -22,6 +23,19 @@ async function setup(args: PlanDefinitionBuilderProps): Promise<void> {
 }
 
 describe('PlanDefinitionBuilder', () => {
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
+
   test('Renders empty', async () => {
     await setup({
       value: {
@@ -155,7 +169,6 @@ describe('PlanDefinitionBuilder', () => {
 
   test('Add activity definition action', async () => {
     const onSubmit = jest.fn();
-
     await setup({
       value: {
         resourceType: 'PlanDefinition',
@@ -185,6 +198,16 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
+
+
+    const inputs = screen.getAllByRole('textbox') as HTMLInputElement[];
+    const input = inputs[inputs.length - 1];
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Simpson' } });
+    });
+
+    expect(input.value).toBe('Simpson');
+
 
     expect(screen.getByText('Save')).toBeDefined();
 
@@ -305,5 +328,68 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Check activity definition action', async () => {
+
+    const onSubmit = jest.fn();
+
+    await medplum.createResource<ActivityDefinition>({
+      resourceType: 'ActivityDefinition',
+      id: '01981529-94c2-7119-af3c-4af84ec3c74b',
+      name: 'Comprehensive Metabolic Panel',
+      status: 'active',
+    });
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+
+      },
+      onSubmit,
+    });
+
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'activitydefinition' },
+      });
+    });
+
+    expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText('Search for activity definition') as HTMLInputElement;
+
+   await act(async () => {
+      fireEvent.change(input, { target: { value: 'Comprehensive' }});
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Comprehensive Metabolic Panel'));
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining( 
+      {"action": 
+        [{"definitionCanonical": undefined, 
+          "definitionUri": "ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b", "id": "id-11"}], "resourceType": "PlanDefinition", "title": "Example Plan Definition"}));
   });
 });
