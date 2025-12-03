@@ -4,7 +4,14 @@ concurrency:
   group: ci-build-agent-${{ github.sha }}
   cancel-in-progress: true
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      sign_output:
+        description: 'Whether to sign the agent binaries or not.'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,6 +28,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write # Required for OIDC authentication with Azure Trusted Signing
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -119,12 +127,34 @@ jobs:
             const path = await getSigntoolLocation();
             return path.replace(' ', '\ ');
 
-      - name: Build Agent installer
+      - name: Build Agent executable and download dependencies
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
-          SKIP_SIGNING: 1
+
+      - name: Sign executables with Azure Trusted Signing
+        if: ${{ inputs.sign_output }}
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: GitHubActionSigner
+          certificate-profile-name: GitHubCITest
+          files-folder: ${{ github.workspace }}/packages/agent/dist
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Build Agent installer
+        shell: bash
+        run: ./scripts/build-agent-installer-win64-final.sh
+        env:
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
       - name: Set Medplum version
         shell: bash
@@ -188,7 +218,7 @@ jobs:
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
         env:
-          SKIP_SIGNING: 1
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
 
       - name: Set Medplum version
         shell: bash
@@ -264,7 +294,7 @@ jobs:
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
         env:
-          SKIP_SIGNING: 1
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
 
       - name: Set Medplum version
         shell: bash
@@ -340,7 +370,7 @@ jobs:
         shell: bash
         run: ./scripts/build-agent-macos.sh
         env:
-          SKIP_SIGNING: 1
+          SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '0' }}
 
       - name: Set Medplum version
         shell: bash

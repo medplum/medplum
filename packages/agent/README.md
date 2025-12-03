@@ -4,36 +4,31 @@ On-prem agent for device connectivity.
 
 ## Building
 
-Published releases are built using Github Actions. See the [installer build script](../../scripts/build-agent-installer.sh) for details.
+Published releases are built using Github Actions. See the [build-agent workflow](../../.github/workflows/build-agent.yml) for details.
 
 The following tools are used to build the agent:
 
 - [Node.js](https://nodejs.org/en/)
-- [Vercel pkg](https://github.com/vercel/pkg) to build the `.exe` file
+- [Node.js Single Executable Applications](https://nodejs.org/docs/latest/api/single-executable-applications.html) to build the `.exe` file
 - [NSIS](https://nsis.sourceforge.io/) to build the installer
 - [Shawl](https://github.com/mtkennerly/shawl) for the Microsoft Windows service wrapper
-- [JSign](https://ebourg.github.io/jsign/) to sign the executable files
+- [Azure Trusted Signing](https://azure.microsoft.com/en-us/products/trusted-signing) to sign the executable files
 
-The following environment variables are required:
+The following environment variables are required for signing:
 
-- `SM_HOST` - DigiCert Signing Manager host
-- `SM_API_KEY` - DigiCert Signing Manager API key
-- `SM_CLIENT_CERT_FILE_BASE64` - DigiCert Signing Manager client certificate file (base64 encoded)
-- `SM_CLIENT_CERT_PASSWORD` - DigiCert Signing Manager client certificate password
-- `SM_CERT_ALIAS` - DigiCert Signing Manager certificate alias
-
-The `SM_CLIENT_CERT_FILE_BASE64` environment variable can be generated from the certificate file:
-
-```bash
-base64 Certificate_pkcs12.p12
-```
+- `AZURE_TENANT_ID` - Azure Active Directory tenant ID
+- `AZURE_CLIENT_ID` - Azure application client ID
+- `AZURE_CLIENT_SECRET` - Azure application client secret (or use OIDC authentication)
+- `AZURE_CODE_SIGNING_ENDPOINT` - Azure Trusted Signing endpoint (e.g., https://eus.codesigning.azure.net/)
+- `AZURE_CODE_SIGNING_ACCOUNT_NAME` - Azure Trusted Signing account name
+- `AZURE_CODE_SIGNING_PROFILE_NAME` - Azure Trusted Signing certificate profile name
+- `GPG_PASSPHRASE` - GPG passphrase for signing the installer
+- `GPG_KEY_ID` - GPG key ID for signing the installer
 
 References:
 
-- [Sign with SMCTL](https://docs.digicert.com/en/software-trust-manager/sign-with-digicert-signing-tools/sign-with-smctl.html)
-- [GitHub Actions script integration with PKCS11](https://docs.digicert.com/en/software-trust-manager/ci-cd-integrations/script-integrations/github-actions-integration-with-pkcs11.html)
-- [Sign with jSign](https://docs.digicert.com/en/software-trust-manager/signing-tools/jsign.html)
-- [JSign](https://ebourg.github.io/jsign/)
+- [Azure Trusted Signing Action](https://github.com/Azure/trusted-signing-action)
+- [Azure Trusted Signing Documentation](https://learn.microsoft.com/azure/trusted-signing/)
 - [Shawl](https://github.com/mtkennerly/shawl)
 - [NSIS](https://nsis.sourceforge.io/)
 
