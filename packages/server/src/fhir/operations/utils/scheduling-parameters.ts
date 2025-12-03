@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ActivityDefinition, Coding, Duration, Schedule } from '@medplum/fhirtypes';
-import { isDefined } from '../../../util/types';
+import type { ActivityDefinition, Duration, Schedule } from '@medplum/fhirtypes';
 
 const SchedulingParametersURI = 'http://medplum.com/fhir/StructureDefinition/scheduling-parameters';
 
@@ -19,6 +18,13 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
+// The SchedulingParameters extension constrains codes:
+// - `system` and `code` must be present
+export type HardCoding = {
+  system: string;
+  code: string;
+};
+
 // The allowed nested extensions
 type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
@@ -26,7 +32,7 @@ type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
-  | { url: 'serviceType'; valueCoding: Coding }
+  | { url: 'serviceType'; valueCoding: HardCoding }
   | {
       url: 'availability';
       valueTiming: {
@@ -59,7 +65,7 @@ export type SchedulingParameters = {
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
   duration: number; // minutes
-  serviceTypes: string[]; // codes associated with this type
+  serviceTypes: HardCoding[]; // Codings associated with this availability
   wildcard: boolean; // true if this is describing "default" availability to use when no more specific service type matches
 };
 
@@ -121,10 +127,7 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
     alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
 
     // Optional field with "zero, one, or many" semantics
-    const serviceTypes = extension.extension
-      .filter((ext) => ext.url === 'serviceType')
-      .map((ext) => ext.valueCoding.code)
-      .filter(isDefined);
+    const serviceTypes = extension.extension.filter((ext) => ext.url === 'serviceType').map((ext) => ext.valueCoding);
 
     return {
       availability: availability,

@@ -34,6 +34,7 @@ Description: "Used to generate availability in $find operations"
 
 * extension[serviceType].value[x] only Coding
 * extension[serviceType].valueCoding.code 1..1
+* extension[serviceType].valueCoding.system 1..1
 
 * extension[bufferBefore].value[x] only Duration
 * extension[bufferBefore].valueDuration.value 1..1
