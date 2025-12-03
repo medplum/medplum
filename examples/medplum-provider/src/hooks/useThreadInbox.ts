@@ -39,14 +39,10 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
   useEffect(() => {
     const fetchAllCommunications = async (): Promise<void> => {
       const searchParams = new URLSearchParams(query);
-      searchParams.append('identifier:not', 'ai-message');
+      searchParams.append('identifier:not', 'ai-message-topic');
       searchParams.append('part-of:missing', 'true');
-      const searchResultBundle = await medplum.search('Communication', searchParams, { cache: 'no-cache' });
 
-      // Extract resources from the Bundle
-      const searchResult =
-        searchResultBundle?.entry?.map((entry) => entry.resource).filter((r) => r !== undefined) ?? [];
-
+      const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
       const partOfReferences = searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ');
 
       const allCommunications = await medplum.graphql(`
@@ -54,6 +50,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
           CommunicationList(
             _sort: "-sent"
             _filter: "part-of eq ${partOfReferences}"
+            _count: 100
           ) {
             id
             partOf {
@@ -70,6 +67,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
         }
       `);
 
+      console.log('allCommunications', allCommunications);
+
       const map = new Map<string, Communication>();
       allCommunications.data.CommunicationList.forEach((communication: Communication) => {
         const partOfRef = communication.partOf?.[0]?.reference;
@@ -80,15 +79,15 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
         }
       });
 
-      const threads: [Communication, Communication][] = searchResult
+      const threads: [Communication, Communication | undefined][] = searchResult
         .map((communication: Communication) => {
           const lastCommunication = map.get(createReference(communication).reference);
           if (lastCommunication) {
             return [communication, lastCommunication];
           }
-          return undefined;
+          return [communication, undefined];
         })
-        .filter((t): t is [Communication, Communication] => t !== undefined);
+        // .filter((t): t is [Communication, Communication] => t !== undefined);
 
       setThreadMessages(threads);
     };

@@ -30,6 +30,16 @@ import { useDisclosure } from '@mantine/hooks';
 import { showErrorNotification } from '../../utils/notifications';
 import cx from 'clsx';
 
+/**
+ * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
+ * @param query - The query to fetch all communications.
+ * @param threadId - The id of the thread to select.
+ * @param subject - The default subject when creating a new thread.
+ * @param showPatientSummary - Whether to show the patient summary.
+ * @param handleNewThread - A function to handle a new thread.
+ * @param onSelectedItem - A function to handle the selected item.
+ */
+
 interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
@@ -78,9 +88,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   return (
     <>
       <div className={classes.container}>
-        <Flex h="100%" w="100%">
+        <Flex direction="row" h="100%" w="100%">
           {/* Left sidebar - Messages list */}
-          <Flex direction="column" w="25%" h="100%" className={classes.rightBorder}>
+          <Flex direction="column" w={300} h="100%" className={classes.rightBorder}>
             <Paper h="100%">
               <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
@@ -142,7 +152,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           {selectedThread ? (
             <>
               {/* Main chat area */}
-              <Flex direction="column" w={showPatientSummary ? '50%' : '75%'} h="100%" className={classes.rightBorder}>
+              <Flex direction="column" style={{ flex: 1 }} h="100%" className={classes.rightBorder}>
                 <Paper h="100%">
                   <Stack h="100%" gap={0}>
                     <Flex h={64} align="center" justify="space-between" p="md">
@@ -180,7 +190,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       </Menu>
                     </Flex>
                     <Divider />
-                    <Flex direction="column" h="100%">
+                    <Flex direction="column" style={{ flex: 1 }} h="100%">
                       <ThreadChat
                         key={`${getReferenceString(selectedThread)}`}
                         title={'Messages'}
@@ -193,8 +203,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               </Flex>
 
               {/* Right sidebar - Patient summary */}
-              {selectedThread && showPatientSummary && (
-                <Flex direction="column" w="25%" h="100%">
+              {selectedThread.subject && showPatientSummary && (
+                <Flex direction="column" w={300} h="100%">
                   <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                     <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
                   </ScrollArea>
@@ -202,7 +212,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               )}
             </>
           ) : (
-            <Flex direction="column" w="75%" h="100%">
+            <Flex direction="column" style={{ flex: 1 }} h="100%">
               <NoMessages />
             </Flex>
           )}
