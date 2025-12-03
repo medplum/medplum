@@ -344,7 +344,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -384,7 +384,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -551,7 +551,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Forgot password'));
+      fireEvent.click(screen.getByText('Reset Password'));
     });
 
     expect(props.onForgotPassword).toHaveBeenCalled();
