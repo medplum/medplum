@@ -86,7 +86,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
           return undefined;
         })
         .filter((t): t is [Communication, Communication] => t !== undefined);
-       
+
       setThreadMessages(threads);
     };
 
