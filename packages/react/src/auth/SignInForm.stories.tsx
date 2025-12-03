@@ -34,7 +34,9 @@ export function WithLinks(): JSX.Element {
         onRegister={() => alert('Register')}
       >
         <Logo size={32} />
-        <h2>Sign in to {getAppName()}</h2>
+        <Title order={3} py="lg">
+        Sign in to {getAppName()}
+        </Title>
       </SignInForm>
     </div>
   );
@@ -49,7 +51,9 @@ export function WithFooter(): JSX.Element {
         onRegister={() => alert('Register')}
       >
         <Logo size={32} />
-        <h2>Sign in to {getAppName()}</h2>
+        <Title order={3} py="lg">
+        Sign in to {getAppName()}
+        </Title>
       </SignInForm>
     </div>
   );
@@ -65,7 +69,9 @@ export function WithGoogle(): JSX.Element {
         googleClientId="xyz"
       >
         <Logo size={32} />
-        <h2>Sign in to {getAppName()}</h2>
+        <Title order={3} py="lg">
+        Sign in to {getAppName()}
+        </Title>
       </SignInForm>
     </div>
   );
@@ -81,7 +87,9 @@ export function GoogleOnly(): JSX.Element {
         disableEmailAuth
       >
         <Logo size={32} />
-        <h2>Sign in to {getAppName()}</h2>
+        <Title order={3} py="lg">
+        Sign in to {getAppName()}
+        </Title>
       </SignInForm>
     </div>
   );
