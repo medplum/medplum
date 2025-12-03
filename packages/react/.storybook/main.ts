@@ -14,7 +14,8 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(inputConfig, { configType }) {
+    let config = inputConfig;
     if (configType === 'PRODUCTION') {
       config = mergeConfig(config, {
         // plugins: [turbosnap({ rootDir: config.root ?? process.cwd() })],
@@ -23,8 +24,8 @@ const config: StorybookConfig = {
       config = mergeConfig(config, {
         resolve: {
           alias: {
-            '@medplum/core': path.resolve(__dirname, '../../core/src'),
-            '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
+            '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
+            '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
           },
         },
       });
