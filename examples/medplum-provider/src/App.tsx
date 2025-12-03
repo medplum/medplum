@@ -12,11 +12,11 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import {
+  IconCalendarMonth,
   IconClipboardCheck,
   IconMail,
   IconPencil,
   IconPuzzle,
-  IconTimeDuration0,
   IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
@@ -90,7 +90,7 @@ export function App(): JSX.Element | null {
               },
               {
                 title: 'Scheduling',
-                links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
+                links: [{ icon: <IconCalendarMonth />, label: 'Schedule', href: '/schedule' }],
               },
               {
                 title: 'Communication',

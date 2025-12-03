@@ -63,13 +63,13 @@ export function AppShell(props: AppShellProps): JSX.Element {
     // Layout version v2:
     // - No header
     // - Navbar is either open or closed based on state
-    headerProp = undefined;
+    headerProp = { height: 0 };
     navbarProp = {
       width: navbarOpen ? OPEN_WIDTH : CLOSED_WIDTH,
       breakpoint: 0,
       collapsed: {
-        desktop: false,
-        mobile: false,
+        desktop: !profile,
+        mobile: !profile,
       },
     };
     headerComponent = undefined;

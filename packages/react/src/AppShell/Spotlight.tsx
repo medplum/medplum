@@ -96,45 +96,6 @@ function buildGraphQLQuery(input: string): string {
       }
     }`.replaceAll(/\s+/g, ' ');
   }
-  // return `{
-  //   Patients1: PatientList(name: ${escaped}, _count: 5) {
-  //     resourceType
-  //     id
-  //     identifier {
-  //       system
-  //       value
-  //     }
-  //     name {
-  //       given
-  //       family
-  //     }
-  //     birthDate
-  //   }
-  //   Patients2: PatientList(identifier: ${escaped}, _count: 5) {
-  //     resourceType
-  //     id
-  //     identifier {
-  //       system
-  //       value
-  //     }
-  //     name {
-  //       given
-  //       family
-  //     }
-  //     birthDate
-  //   }
-  //   ServiceRequestList(identifier: ${escaped}, _count: 5) {
-  //     resourceType
-  //     id
-  //     identifier {
-  //       system
-  //       value
-  //     }
-  //     subject {
-  //       display
-  //     }
-  //   }
-  // }`.replaceAll(/\s+/g, ' ');
   return `{
     Patients1: PatientList(name: ${escaped}, _count: 5) {
       resourceType
@@ -148,6 +109,30 @@ function buildGraphQLQuery(input: string): string {
         family
       }
       birthDate
+    }
+    Patients2: PatientList(identifier: ${escaped}, _count: 5) {
+      resourceType
+      id
+      identifier {
+        system
+        value
+      }
+      name {
+        given
+        family
+      }
+      birthDate
+    }
+    ServiceRequestList(identifier: ${escaped}, _count: 5) {
+      resourceType
+      id
+      identifier {
+        system
+        value
+      }
+      subject {
+        display
+      }
     }
   }`.replaceAll(/\s+/g, ' ');
 }
