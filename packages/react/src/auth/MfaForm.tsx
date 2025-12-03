@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
-
 export type MfaFormFields = 'token';
 
 export interface MfaFormProps {
@@ -57,7 +56,8 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
               mx="auto"
               radius="md"
               p="xs"
-              style={{ border: '1px solid var(--mantine-color-gray-2)' }}
+              bg="var(--mantine-color-white)"
+              style={{ border: '1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))' }}
             />
           </Stack>
         </Center>

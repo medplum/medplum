@@ -10,6 +10,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import classes from './ChooseProfileForm.module.css';
 
 export interface ChooseProfileFormProps {
   readonly login: string;
@@ -45,7 +46,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
     .filter(filterMembership)
     .slice(0, 10)
     .map((item) => (
-      <Combobox.Option value={item.id as string} key={item.id}>
+      <Combobox.Option value={item.id as string} key={item.id} className={classes.option}>
         <SelectOption {...item} />
       </Combobox.Option>
     ));
@@ -90,19 +91,9 @@ function getMembershipLabel(membership: ProjectMembership): string | undefined {
 function SelectOption(membership: ProjectMembership): JSX.Element {
   const label = getMembershipLabel(membership);
   return (
-    <Group gap="xs" align="center" py="4px">
-      <Box
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 32,
-          height: 32,
-          borderRadius: 'var(--mantine-radius-sm)',
-          backgroundColor: 'var(--mantine-color-gray-2)',
-        }}
-      >
-        <IconBriefcase size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+    <Group gap="xs" align="center">
+      <Box className={classes.iconBox}>
+        <IconBriefcase size={16} stroke={2} />
       </Box>
       <div>
         <Text size="sm" fw={500}>
