@@ -57,10 +57,12 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const queryWithStatus = useMemo(() => `${query}&status=${status}`, [query, status]);
 
-  const { loading, error, threadMessages, selectedThread, handleThreadStatusChange, addThreadMessage } = useThreadInbox({
-    query: queryWithStatus,
-    threadId,
-  });
+  const { loading, error, threadMessages, selectedThread, handleThreadStatusChange, addThreadMessage } = useThreadInbox(
+    {
+      query: queryWithStatus,
+      threadId,
+    }
+  );
 
   useEffect(() => {
     if (error) {
