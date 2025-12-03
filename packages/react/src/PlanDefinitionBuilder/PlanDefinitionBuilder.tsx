@@ -278,11 +278,12 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   questionnaires list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder 
-              resourceType="Questionnaire" 
-              action={action} 
-              onChange={props.onChange} 
-              placeholder="Search for questionnaire" />
+              <ActionResourceTypeBuilder
+                resourceType="Questionnaire"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for questionnaire"
+              />
             </Stack>
           )}
 
@@ -298,11 +299,12 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   activity definitions list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder 
-              resourceType="ActivityDefinition" 
-              action={action} 
-              onChange={props.onChange} 
-              placeholder="Search for activity definition" />
+              <ActionResourceTypeBuilder
+                resourceType="ActivityDefinition"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for activity definition"
+              />
             </Stack>
           )}
         </Stack>

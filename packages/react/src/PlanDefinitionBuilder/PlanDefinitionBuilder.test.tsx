@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ActivityDefinition } from '@medplum/fhirtypes';
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 import { PlanDefinitionBuilder } from './PlanDefinitionBuilder';
-import type { ActivityDefinition } from '@medplum/fhirtypes';
 
 const medplum = new MockClient();
 
@@ -23,7 +23,6 @@ async function setup(args: PlanDefinitionBuilderProps): Promise<void> {
 }
 
 describe('PlanDefinitionBuilder', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -34,7 +33,6 @@ describe('PlanDefinitionBuilder', () => {
     });
     jest.useRealTimers();
   });
-
 
   test('Renders empty', async () => {
     await setup({
@@ -321,7 +319,6 @@ describe('PlanDefinitionBuilder', () => {
   });
 
   test('Validate activity definition action', async () => {
-
     const onSubmit = jest.fn();
 
     await medplum.createResource<ActivityDefinition>({
@@ -336,7 +333,6 @@ describe('PlanDefinitionBuilder', () => {
       value: {
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
-
       },
       onSubmit,
     });
@@ -357,8 +353,8 @@ describe('PlanDefinitionBuilder', () => {
 
     const input = screen.getByPlaceholderText('Search for activity definition') as HTMLInputElement;
 
-   await act(async () => {
-      fireEvent.change(input, { target: { value: 'Comprehensive' }});
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Comprehensive' } });
     });
 
     // Wait for the drop down
@@ -378,7 +374,18 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining( 
-      {"action": [{"definitionCanonical": "https://example.com/ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b", "definitionUri": undefined, "id": "id-11"}], "resourceType": "PlanDefinition", "title": "Example Plan Definition"} ));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: [
+          {
+            definitionCanonical: 'https://example.com/ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b',
+            definitionUri: undefined,
+            id: 'id-11',
+          },
+        ],
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      })
+    );
   });
 });
