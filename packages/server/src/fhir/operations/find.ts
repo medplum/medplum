@@ -15,6 +15,7 @@ import type { Bundle, OperationDefinition, Resource, Schedule, Slot } from '@med
 import { getAuthenticatedContext } from '../../context';
 import { applyExistingSlots, findSlotTimes, resolveAvailability } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import type { HardCoding, SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
 const findOperation = {
@@ -30,6 +31,7 @@ const findOperation = {
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+    { use: 'in', name: 'service-type', type: 'string', min: 0, max: '*' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
 } as const satisfies OperationDefinition;
@@ -37,11 +39,39 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
+  'service-type'?: string;
 };
 
 const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
 function getTimeZone(resource: Resource): string | undefined {
   return getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
+}
+
+// Given scheduling parameter descriptions, and an array of input service types, return
+// [SchedulingParameters, serviceType] pairs.
+//
+// - Each schedulingParameters description is returned at most once
+// - If no specific matches are found, falls back to "wildcard" matches
+//   (scheduling parameters having no associated codes match any input codes)
+function filterByServiceTypes(
+  schedulingParameters: SchedulingParameters[],
+  serviceTypes: string[]
+): [SchedulingParameters, HardCoding | undefined][] {
+  if (serviceTypes.length) {
+    const results: [SchedulingParameters, HardCoding][] = [];
+    for (const params of schedulingParameters) {
+      const serviceType = params.serviceType.find((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`));
+      if (serviceType) {
+        results.push([params, serviceType]);
+      }
+    }
+    if (results.length) {
+      return results;
+    }
+  }
+
+  // We didn't find any parameters matching serviceType entries, use any wildcard results instead
+  return schedulingParameters.filter((params) => params.serviceType.length === 0).map((params) => [params, undefined]);
 }
 
 /**
@@ -57,6 +87,9 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<FindParameters>(findOperation, req);
   const { start, end } = params;
+
+  // service types are in `${system}|${code}` format, in a comma separated list
+  const serviceTypes = params['service-type']?.split(',') ?? [];
 
   // Future performance option: parameterize availability search with this
   // count so we can quit early once we have identified enough slots.
@@ -126,22 +159,22 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-  const schedulingParameters = allSchedulingParameters.find((p) => p.serviceType.length === 0);
 
-  if (!schedulingParameters) {
-    throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
+  let resultSlots: Slot[] = [];
+  for (const [schedulingParameters, serviceType] of filterByServiceTypes(allSchedulingParameters, serviceTypes)) {
+    const scheduleAvailability = resolveAvailability(schedulingParameters, range, timeZone);
+    const availability = applyExistingSlots(scheduleAvailability, slots, range);
+    resultSlots = resultSlots.concat(
+      findSlotTimes(schedulingParameters, availability).map(({ start, end }) => ({
+        resourceType: 'Slot',
+        start: start.toISOString(),
+        end: end.toISOString(),
+        schedule: createReference(schedule),
+        status: 'free',
+        ...(serviceType ? { serviceType: [{ coding: [serviceType] }] } : {}),
+      }))
+    );
   }
-
-  const scheduleAvailability = resolveAvailability(schedulingParameters, range, timeZone);
-  const availability = applyExistingSlots(scheduleAvailability, slots, range);
-
-  const resultSlots: Slot[] = findSlotTimes(schedulingParameters, availability).map(({ start, end }) => ({
-    resourceType: 'Slot',
-    start: start.toISOString(),
-    end: end.toISOString(),
-    schedule: createReference(schedule),
-    status: 'free',
-  }));
 
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',

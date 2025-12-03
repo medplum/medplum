@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ActivityDefinition, Coding, Duration, Schedule } from '@medplum/fhirtypes';
+import type { ActivityDefinition, Duration, Schedule } from '@medplum/fhirtypes';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -18,6 +18,13 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
+// The SchedulingParameters extension constrains codes:
+// - `system` and `code` must be present
+export type HardCoding = {
+  system: string;
+  code: string;
+};
+
 // The allowed nested extensions
 type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
@@ -25,7 +32,7 @@ type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
-  | { url: 'serviceType'; valueCoding: Coding }
+  | { url: 'serviceType'; valueCoding: HardCoding }
   | {
       url: 'availability';
       valueTiming: {
@@ -58,7 +65,7 @@ export type SchedulingParameters = {
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
   duration: number; // minutes
-  serviceType: Coding[]; // codes that may be booked into this availability
+  serviceType: HardCoding[]; // codes that may be booked into this availability
 };
 
 function durationToMinutes(duration: Duration): number {
