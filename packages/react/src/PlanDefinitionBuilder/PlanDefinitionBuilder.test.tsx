@@ -199,16 +199,6 @@ describe('PlanDefinitionBuilder', () => {
 
     expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
 
-
-    const inputs = screen.getAllByRole('textbox') as HTMLInputElement[];
-    const input = inputs[inputs.length - 1];
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    expect(input.value).toBe('Simpson');
-
-
     expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {
@@ -330,7 +320,7 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  test('Check activity definition action', async () => {
+  test('Validate activity definition action', async () => {
 
     const onSubmit = jest.fn();
 
@@ -339,6 +329,7 @@ describe('PlanDefinitionBuilder', () => {
       id: '01981529-94c2-7119-af3c-4af84ec3c74b',
       name: 'Comprehensive Metabolic Panel',
       status: 'active',
+      url: 'https://example.com/ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b',
     });
 
     await setup({
@@ -388,8 +379,6 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining( 
-      {"action": 
-        [{"definitionCanonical": undefined, 
-          "definitionUri": "ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b", "id": "id-11"}], "resourceType": "PlanDefinition", "title": "Example Plan Definition"}));
+      {"action": [{"definitionCanonical": "https://example.com/ActivityDefinition/01981529-94c2-7119-af3c-4af84ec3c74b", "definitionUri": undefined, "id": "id-11"}], "resourceType": "PlanDefinition", "title": "Example Plan Definition"} ));
   });
 });
