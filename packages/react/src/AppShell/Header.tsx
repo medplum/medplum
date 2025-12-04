@@ -5,7 +5,6 @@ import { formatHumanName } from '@medplum/core';
 import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -19,6 +18,7 @@ export interface HeaderProps {
   readonly headerSearchDisabled?: boolean;
   readonly logo: ReactNode;
   readonly version?: string;
+  readonly navbarOpen?: boolean;
   readonly navbarToggle: () => void;
   readonly notifications?: ReactNode;
 }
@@ -31,7 +31,12 @@ export function Header(props: HeaderProps): JSX.Element {
     <MantineAppShell.Header p={8} style={{ zIndex: 101 }}>
       <Group justify="space-between">
         <Group gap="xs">
-          <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
+          <UnstyledButton
+            className={classes.logoButton}
+            aria-expanded={props.navbarOpen}
+            aria-controls="navbar"
+            onClick={() => props.navbarToggle()}
+          >
             {props.logo}
           </UnstyledButton>
           {!props.headerSearchDisabled && (
@@ -50,7 +55,9 @@ export function Header(props: HeaderProps): JSX.Element {
           >
             <Menu.Target>
               <UnstyledButton
-                className={cx(classes.user, { [classes.userActive]: userMenuOpened })}
+                className={classes.user}
+                aria-label="User menu"
+                data-active={userMenuOpened || undefined}
                 onClick={() => setUserMenuOpened((o) => !o)}
               >
                 <Group gap={7}>

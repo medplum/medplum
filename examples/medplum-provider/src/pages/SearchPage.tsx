@@ -40,7 +40,7 @@ export function SearchPage(): JSX.Element {
   }
 
   return (
-    <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
+    <Paper shadow="xs" m="xs" p="xs" className={classes.paper}>
       <SearchControl
         checkboxesEnabled={true}
         search={search}

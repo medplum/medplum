@@ -1,9 +1,10 @@
 import { MantineProvider, createTheme, useMantineColorScheme } from '@mantine/core';
 import '@mantine/core/styles.css';
+import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { DARK_MODE_EVENT_NAME } from '@vueless/storybook-dark-mode';
-import { useEffect } from 'react';
+import { FC, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { addons } from 'storybook/preview-api';
 import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
@@ -63,19 +64,19 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export const decorators = [
-  (Story: any) => (
+  (Story: FC) => (
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
         <Story />
       </MedplumProvider>
     </BrowserRouter>
   ),
-  (Story: any) => (
+  (Story: FC) => (
     <ColorSchemeWrapper>
       <Story />
     </ColorSchemeWrapper>
   ),
-  (Story: any) => (
+  (Story: FC) => (
     <MantineProvider theme={medplumDefaultTheme}>
       <Story />
     </MantineProvider>

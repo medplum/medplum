@@ -106,5 +106,5 @@ function getIcon(to: string): JSX.Element | undefined {
   } catch (_err) {
     // Ignore
   }
-  return <Space w={30} />;
+  return <Space w={20} />;
 }
