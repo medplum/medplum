@@ -30,9 +30,7 @@ const config: StorybookConfig = {
       };
 
       // Only add aliases for paths that exist
-      const alias = Object.fromEntries(
-        Object.entries(aliasEntries).filter(([, aliasPath]) => existsSync(aliasPath))
-      );
+      const alias = Object.fromEntries(Object.entries(aliasEntries).filter(([, aliasPath]) => existsSync(aliasPath)));
 
       config = mergeConfig(config, {
         resolve: {
