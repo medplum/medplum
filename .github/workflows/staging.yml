@@ -22,10 +22,10 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -54,7 +54,7 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
