@@ -43,7 +43,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'tasks',
-    url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Task',
     label: 'Tasks',
   },
   {

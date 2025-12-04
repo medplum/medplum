@@ -212,5 +212,12 @@ describe('PatientPage.utils', () => {
         expect(tab.url).toContain('%patient.id');
       }
     });
+
+    test('tasks tab has correct URL', () => {
+      const tasksTab = PatientPageTabs.find((tab) => tab.id === 'tasks');
+      expect(tasksTab).toBeDefined();
+      expect(tasksTab?.url).toBe('Task');
+      expect(tasksTab?.label).toBe('Tasks');
+    });
   });
 });
