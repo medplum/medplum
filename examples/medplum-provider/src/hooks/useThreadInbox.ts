@@ -20,7 +20,16 @@ export interface UseThreadInboxReturn {
   handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
 }
 
+/*
+useThreadInbox is a hook that fetches all communications and returns the thread messages and selected thread.
+All comunications returned do not have a partOf field.
+It also provides a function to update the status of the selected thread.
 
+@param query - The query to fetch all communications.
+@param threadId - The id of the thread to select.
+@returns The thread messages and selected thread.
+@returns A function to update the status of the selected thread.
+*/
 export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseThreadInboxReturn {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
