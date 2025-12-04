@@ -75,6 +75,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --filter=@medplum/agent
 
+      - name: Install Turbo
+        run: bun install turbo
+
       - name: Set repo hash
         shell: bash
         # This forces git shorthash to match between @medplum/agent and @medplum/core
