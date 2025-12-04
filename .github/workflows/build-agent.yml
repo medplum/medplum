@@ -146,16 +146,16 @@ jobs:
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
-          # exclude-environment-credential: true
-          # exclude-workload-identity-credential: false
-          # exclude-managed-identity-credential: true
-          # exclude-shared-token-cache-credential: true
-          # exclude-visual-studio-credential: true
-          # exclude-visual-studio-code-credential: true
-          # exclude-azure-cli-credential: true
-          # exclude-azure-powershell-credential: true
-          # exclude-azure-developer-cli-credential: true
-          # exclude-interactive-browser-credential: true
+          exclude-azure-cli-credential: false
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
           certificate-profile-name: GitHubCI
@@ -182,16 +182,16 @@ jobs:
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
-          # exclude-environment-credential: true
-          # exclude-workload-identity-credential: false
-          # exclude-managed-identity-credential: true
-          # exclude-shared-token-cache-credential: true
-          # exclude-visual-studio-credential: true
-          # exclude-visual-studio-code-credential: true
-          # exclude-azure-cli-credential: true
-          # exclude-azure-powershell-credential: true
-          # exclude-azure-developer-cli-credential: true
-          # exclude-interactive-browser-credential: true
+          exclude-azure-cli-credential: false
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
           certificate-profile-name: GitHubCI
