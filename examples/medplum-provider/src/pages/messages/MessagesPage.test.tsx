@@ -20,7 +20,7 @@ describe('MessagesPage', () => {
   });
 
   const setup = (messageId?: string): void => {
-    const path = messageId ? `/Message/${messageId}` : '/Message';
+    const path = messageId ? `/Communication/${messageId}` : '/Communication';
     render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
@@ -65,25 +65,9 @@ describe('MessagesPage', () => {
     };
     await medplum.createResource(lastMessage);
 
-    // Mock search to return the communication
-    medplum.search = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication }],
-    });
-
-    // Mock graphql to return the last message
     medplum.graphql = vi.fn().mockResolvedValue({
       data: {
-        CommunicationList: [
-          {
-            id: lastMessage.id,
-            partOf: lastMessage.partOf,
-            sender: { display: 'Sender' },
-            payload: lastMessage.payload,
-            status: lastMessage.status,
-          },
-        ],
+        thread_comm123: [lastMessage],
       },
     });
 

@@ -9,6 +9,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
 
 const mockCommunication: Communication | undefined = {
@@ -90,6 +91,9 @@ describe('ThreadInbox', () => {
         status: 'in-progress',
         topic: { text: 'Topic Alpha' },
         subject: { reference: `Patient/${HomerSimpson.id}` },
+        meta: {
+          lastUpdated: '2024-01-01T10:00:00Z',
+        },
       },
       {
         resourceType: 'Communication',
@@ -97,6 +101,9 @@ describe('ThreadInbox', () => {
         status: 'in-progress',
         topic: { text: 'Topic Beta' },
         subject: { reference: `Patient/${HomerSimpson.id}` },
+        meta: {
+          lastUpdated: '2024-01-01T11:00:00Z',
+        },
       },
       {
         resourceType: 'Communication',
@@ -104,6 +111,9 @@ describe('ThreadInbox', () => {
         status: 'completed',
         topic: { text: 'Topic Gamma' },
         subject: { reference: `Patient/${HomerSimpson.id}` },
+        meta: {
+          lastUpdated: '2024-01-01T12:00:00Z',
+        },
       },
     ];
 
@@ -111,35 +121,41 @@ describe('ThreadInbox', () => {
       await medplum.createResource(comm);
     }
 
-    const lastMessages: Communication[] = communications.map((comm) => ({
+    const lastMessages: Communication[] = communications.map((comm, index) => ({
       resourceType: 'Communication',
       id: `last-${comm.id}`,
       status: 'in-progress',
       partOf: [{ reference: `Communication/${comm.id}` }],
-      sent: '2024-01-01T12:00:00Z',
+      sent: `2024-01-01T${12 + index}:00:00Z`, // Different sent times for sorting
       payload: [{ contentString: `Last message for ${comm.topic?.text}` }],
+      meta: {
+        lastUpdated: `2024-01-01T${12 + index}:00:00Z`,
+      },
+      sender: {
+        display: 'Test Sender',
+        reference: 'Practitioner/test',
+      },
     }));
 
     for (const msg of lastMessages) {
       await medplum.createResource(msg);
     }
 
-    medplum.search = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: communications.map((comm) => ({ resource: comm })),
-    });
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([
+      communications[0] as WithId<Communication>,
+      communications[1] as WithId<Communication>,
+      // comm-3 excluded because it has status 'completed'
+    ] as any);
 
-    medplum.graphql = vi.fn().mockResolvedValue({
-      data: {
-        CommunicationList: lastMessages.map((msg) => ({
-          id: msg.id,
-          partOf: msg.partOf,
-          sender: { display: 'Sender' },
-          payload: msg.payload,
-          status: msg.status,
-        })),
-      },
+    vi.spyOn(medplum, 'graphql').mockImplementation((_query: string) => {
+      // Return data matching the alias format
+      return Promise.resolve({
+        data: {
+          thread_comm1: [lastMessages[0]],
+          thread_comm2: [lastMessages[1]],
+          // thread_comm3 not included because comm-3 has status 'completed' and will be filtered out by the status=in-progress query
+        },
+      });
     });
 
     setup();
@@ -148,7 +164,7 @@ describe('ThreadInbox', () => {
       () => {
         expect(screen.getByText('Topic Alpha')).toBeInTheDocument();
         expect(screen.getByText('Topic Beta')).toBeInTheDocument();
-        expect(screen.getByText('Topic Gamma')).toBeInTheDocument();
+        // Topic Gamma won't appear because comm-3 has status 'completed'
       },
       { timeout: 3000 }
     );
@@ -162,15 +178,6 @@ describe('ThreadInbox', () => {
   });
 
   test('shows empty messages state when no messages are found', async () => {
-    medplum.search = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-    medplum.graphql = vi.fn().mockResolvedValue({
-      data: { CommunicationList: [] },
-    });
-
     setup();
 
     await waitFor(
