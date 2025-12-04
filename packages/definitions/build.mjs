@@ -37,7 +37,6 @@ esbuild
   })
   .then(() => {
     writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
-    copyDataFiles();
   })
   .catch((err) => {
     console.error(err);
