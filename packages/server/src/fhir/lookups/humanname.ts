@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { TypedValue, WithId } from '@medplum/core';
 import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
 import type {
   HumanName,
@@ -83,7 +83,11 @@ export class HumanNameTable extends LookupTable {
     return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
-  extractValues(result: HumanNameTableRow[], resource: WithId<Resource>): void {
+  extractValues(
+    _evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+    result: HumanNameTableRow[],
+    resource: WithId<Resource>
+  ): void {
     if (!HumanNameTable.hasHumanName(resource.resourceType)) {
       return;
     }
@@ -121,6 +125,7 @@ export class HumanNameTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
+    evaledExpressionCaches: Map<T, Map<string, TypedValue[]>> | undefined,
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean
@@ -129,7 +134,7 @@ export class HumanNameTable extends LookupTable {
       return;
     }
 
-    await super.batchIndexResources(client, resources, create);
+    await super.batchIndexResources(evaledExpressionCaches, client, resources, create);
   }
 
   /**

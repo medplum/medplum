@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, SortRule, WithId } from '@medplum/core';
+import type { Filter, SortRule, TypedValue, WithId } from '@medplum/core';
 import {
   Operator as FhirOperator,
   invalidSearchOperator,
@@ -72,7 +72,11 @@ export abstract class LookupTable {
    * @param result - The array that rows to be inserted should be added to.
    * @param resource - The resource to extract values from.
    */
-  protected abstract extractValues(result: LookupTableRow[], resource: WithId<Resource>): void;
+  protected abstract extractValues(
+    evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+    result: LookupTableRow[],
+    resource: WithId<Resource>
+  ): void;
 
   /**
    * Indexes the resource in the lookup table.
@@ -82,16 +86,18 @@ export abstract class LookupTable {
    * @returns Promise on completion.
    */
   indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
-    return this.batchIndexResources(client, [resource], create);
+    return this.batchIndexResources(undefined, client, [resource], create);
   }
 
   /**
    * Indexes the resource in the lookup table.
+   * @param evaledExpressionCaches - Map of resources to their evaluated expression caches.
    * @param client - The database client.
    * @param resources - The resources to index.
    * @param create - True if the resource should be created (vs updated).
    */
   async batchIndexResources<T extends Resource>(
+    evaledExpressionCaches: Map<T, Map<string, TypedValue[]>> | undefined,
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean
@@ -119,7 +125,12 @@ export abstract class LookupTable {
           );
         }
         try {
-          this.extractValues(newRows, resource);
+          let exprCache = evaledExpressionCaches?.get(resource);
+          if (evaledExpressionCaches && !exprCache) {
+            exprCache = new Map<string, TypedValue[]>();
+            evaledExpressionCaches.set(resource, exprCache);
+          }
+          this.extractValues(exprCache, newRows, resource);
         } catch (err) {
           getLogger().error('Error extracting values for resource', {
             resource: `${resourceType}/${resource.id}`,

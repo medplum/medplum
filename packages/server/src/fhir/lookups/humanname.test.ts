@@ -340,7 +340,7 @@ describe('HumanName Lookup Table', () => {
       name: undefined,
     };
     let result: any[] = [];
-    table.extractValues(result, r1);
+    table.extractValues(undefined, result, r1);
     expect(result).toStrictEqual([]);
 
     const r2: WithId<Patient> = {
@@ -350,7 +350,7 @@ describe('HumanName Lookup Table', () => {
     };
 
     result = [];
-    table.extractValues(result, r2);
+    table.extractValues(undefined, result, r2);
     expect(result).toStrictEqual([
       {
         resourceId: '2',
@@ -377,8 +377,8 @@ describe('HumanName Lookup Table', () => {
     };
 
     const result: HumanNameTableRow[] = [];
-    table.extractValues(result, r1);
-    table.extractValues(result, r2);
+    table.extractValues(undefined, result, r1);
+    table.extractValues(undefined, result, r2);
 
     expect(result).toStrictEqual([
       {

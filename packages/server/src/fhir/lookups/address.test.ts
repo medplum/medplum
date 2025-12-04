@@ -241,7 +241,7 @@ describe('Address Lookup Table', () => {
       address: undefined,
     };
     const result1: any[] = [];
-    table.extractValues(result1, r1);
+    table.extractValues(undefined, result1, r1);
     expect(result1).toStrictEqual([]);
 
     const r2: WithId<Patient> = {
@@ -266,7 +266,7 @@ describe('Address Lookup Table', () => {
     };
 
     const result2: any[] = [];
-    table.extractValues(result2, r2);
+    table.extractValues(undefined, result2, r2);
     expect(result2).toStrictEqual([
       {
         resourceId: '2',
@@ -325,7 +325,7 @@ describe('Address Lookup Table', () => {
     };
 
     const result3: any[] = [];
-    table.extractValues(result3, r3);
+    table.extractValues(undefined, result3, r3);
     expect(result3).toStrictEqual([
       {
         resourceId: '3',
@@ -383,8 +383,8 @@ describe('Address Lookup Table', () => {
     };
 
     const result: AddressTableRow[] = [];
-    table.extractValues(result, r1);
-    table.extractValues(result, r2);
+    table.extractValues(undefined, result, r1);
+    table.extractValues(undefined, result, r2);
 
     expect(result).toStrictEqual([
       {
@@ -432,7 +432,7 @@ describe('Address Lookup Table', () => {
     const logger = getLogger();
     const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
-    await expect(async () => table.batchIndexResources(db, [r1], false)).rejects.toThrow('test error');
+    await expect(async () => table.batchIndexResources(undefined, db, [r1], false)).rejects.toThrow('test error');
     expect(extractValuesSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith('Error extracting values for resource', {
       resource: 'Patient/1',

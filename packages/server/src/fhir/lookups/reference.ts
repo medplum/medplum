@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { TypedValue, WithId } from '@medplum/core';
 import {
   PropertyType,
   evalFhirPathTyped,
@@ -45,8 +45,12 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
-  extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
-    getSearchReferences(result, resource);
+  extractValues(
+    evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+    result: ReferenceTableRow[],
+    resource: WithId<Resource>
+  ): void {
+    getSearchReferences(evaledExpressionCache, result, resource);
   }
 
   /**
@@ -78,11 +82,15 @@ export class ReferenceTable extends LookupTable {
 /**
  * Returns a list of all references in the resource to be inserted into the database.
  * This includes all values for any SearchParameter of `reference` type
+ * @param evaledExpressionCache - The cache of evaluated FHIRPath expressions.
  * @param result - The array to which the references will be added.
  * @param resource - The resource being indexed.
  */
-function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
-  const typedResource = [toTypedValue(resource)];
+function getSearchReferences(
+  evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+  result: ReferenceTableRow[],
+  resource: WithId<Resource>
+): void {
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
     return;
@@ -99,7 +107,9 @@ function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resou
       throw new Error(`No implementation for search parameter ${resource.resourceType}|${searchParam.code}`);
     }
 
-    const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
+    const typedValues =
+      evaledExpressionCache?.get(searchParam.id ?? searchParam.code) ??
+      evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
     for (const value of typedValues) {
       if (value.type === PropertyType.Reference && value.value.reference) {
         const targetId = resolveId(value.value);

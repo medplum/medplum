@@ -1208,10 +1208,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    globalLogger.info('About to reindex resources...', { id: resources[0].id, count: resources.length });
-    await sleep(10_000);
-    await this.batchWriteLookupTables(conn, resources, false);
-    await this.bulkUpdateResources(conn, resources);
+    // globalLogger.info('About to reindex resources...', { id: resources[0].id, count: resources.length });
+    // await sleep(10_000);
+    const evaledExpressionCaches = undefined; // new Map<T, Map<string, TypedValue[]>>();
+    await this.batchWriteLookupTables(evaledExpressionCaches, conn, resources, false);
+    await this.batchWriteResources(evaledExpressionCaches, conn, resources);
   }
 
   /**
@@ -1297,7 +1298,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           }
 
           for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
+            this.buildColumn(undefined, { resourceType } as Resource, columns, searchParam);
           }
 
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
@@ -1624,7 +1625,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private buildResourceRow(resource: Resource): Record<string, any> {
+  private buildResourceRow(resource: Resource, evaledExpressionCache?: Map<string, TypedValue[]>): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1643,7 +1644,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const startTime = process.hrtime.bigint();
       try {
         for (const searchParam of searchParams) {
-          this.buildColumn(resource, row, searchParam);
+          this.buildColumn(evaledExpressionCache, resource, row, searchParam);
         }
       } catch (err) {
         getLogger().error('Error building row for resource', {
@@ -1675,14 +1676,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  private async batchWriteResources(
+    evaledExpressionCaches: Map<Resource, Map<string, TypedValue[]>> | undefined,
+    client: PoolClient,
+    resources: Resource[]
+  ): Promise<void> {
     if (!resources.length) {
       return;
     }
 
     await new InsertQuery(
       resources[0].resourceType,
-      resources.map((r) => this.buildResourceRow(r))
+      resources.map((r) => {
+        let cache = evaledExpressionCaches?.get(r);
+        if (evaledExpressionCaches && !cache) {
+          cache = new Map<string, TypedValue[]>();
+          evaledExpressionCaches.set(r, cache);
+        }
+        return this.buildResourceRow(r, cache);
+      })
     )
       .mergeOnConflict()
       .execute(client);
@@ -1797,11 +1809,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Builds the columns to write for a given resource and search parameter.
    * If nothing to write, then no columns will be added.
    * Some search parameters can result in multiple columns (for example, Reference objects).
+   * @param evaledExpressionCache - Cache of evaluated FHIRPath expressions.
    * @param resource - The resource to write.
    * @param columns - The output columns to write.
    * @param searchParam - The search parameter definition.
    */
-  private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
+  private buildColumn(
+    evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+    resource: Resource,
+    columns: Record<string, any>,
+    searchParam: SearchParameter
+  ): void {
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
@@ -1825,7 +1843,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
+    const typedValues =
+      evaledExpressionCache?.get(searchParam.id ?? searchParam.code) ??
+      evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
@@ -1944,12 +1964,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async batchWriteLookupTables<T extends Resource>(
+    evaledExpressionCaches: Map<T, Map<string, TypedValue[]>> | undefined,
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.batchIndexResources(client, resources, create);
+      await lookupTable.batchIndexResources(evaledExpressionCaches, client, resources, create);
     }
   }
 

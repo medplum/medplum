@@ -308,8 +308,8 @@ describe('Reference checks', () => {
     };
 
     const result: ReferenceTableRow[] = [];
-    table.extractValues(result, r1);
-    table.extractValues(result, r2);
+    table.extractValues(undefined, result, r1);
+    table.extractValues(undefined, result, r2);
 
     expect(result).toStrictEqual([
       {

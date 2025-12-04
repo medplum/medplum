@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { TypedValue, WithId } from '@medplum/core';
 import { append } from '@medplum/core';
 import type {
   CodeSystem,
@@ -43,6 +43,7 @@ export class CodingTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
+    _evaledExpressionCaches: Map<T, Map<string, TypedValue[]>> | undefined,
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean

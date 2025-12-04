@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { TypedValue, WithId } from '@medplum/core';
 import { formatAddress } from '@medplum/core';
 import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
@@ -106,7 +106,11 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  extractValues(result: AddressTableRow[], resource: WithId<Resource>): void {
+  extractValues(
+    _evaledExpressionCache: Map<string, TypedValue[]> | undefined,
+    result: AddressTableRow[],
+    resource: WithId<Resource>
+  ): void {
     const addresses = this.getIncomingAddresses(resource);
     if (!Array.isArray(addresses)) {
       return;
@@ -147,6 +151,7 @@ export class AddressTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
+    evaledExpressionCaches: Map<T, Map<string, TypedValue[]>> | undefined,
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean
@@ -155,7 +160,7 @@ export class AddressTable extends LookupTable {
       return;
     }
 
-    await super.batchIndexResources(client, resources, create);
+    await super.batchIndexResources(evaledExpressionCaches, client, resources, create);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
