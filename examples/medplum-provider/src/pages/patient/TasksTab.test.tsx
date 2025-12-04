@@ -62,8 +62,8 @@ describe('TasksTab', () => {
 
     const callArgs = searchSpy.mock.calls[0];
     expect(callArgs[0]).toBe('Task');
-    expect(callArgs[1].get('patient')).toBe('Patient/patient-123');
-    expect(callArgs[1].get('_sort')).toBe('-_lastUpdated');
+    expect((callArgs[1] as URLSearchParams).get('patient')).toBe('Patient/patient-123');
+    expect((callArgs[1] as URLSearchParams).get('_sort')).toBe('-_lastUpdated');
   });
 
   test('displays tasks for the patient', async () => {
@@ -121,7 +121,7 @@ describe('TasksTab', () => {
   });
 
   test('shows empty state when no tasks found', async () => {
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([]);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
 
     setup();
 
