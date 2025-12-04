@@ -7,9 +7,7 @@ import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
-export interface OperationOutcomeAlertProps extends Pick<
-  AlertProps,
-  'mb' | 'mt' | 'mx' | 'my' | 'ml' | 'mr' | 'pb' | 'pt' | 'px' | 'py' | 'pl' | 'pr'
+export interface OperationOutcomeAlertProps extends AlertProps {
 > {
   readonly outcome?: OperationOutcome;
   readonly issues?: OperationOutcomeIssue[];
