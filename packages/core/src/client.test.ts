@@ -3763,8 +3763,8 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(client.rateLimitStatus()).toStrictEqual(
       expect.arrayContaining([
-        { name: 'requests', remainingUnits: 15, secondsUntilReset: 59 },
-        { name: 'fhirInteractions', remainingUnits: 255, secondsUntilReset: 59 },
+        { name: 'requests', remainingUnits: 15, secondsUntilReset: 59, resetsAfter: expect.any(Number) },
+        { name: 'fhirInteractions', remainingUnits: 255, secondsUntilReset: 59, resetsAfter: expect.any(Number) },
       ])
     );
   });
@@ -3789,8 +3789,8 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(client.rateLimitStatus()).toStrictEqual(
       expect.arrayContaining([
-        { name: 'requests', remainingUnits: 59539, secondsUntilReset: 4 },
-        { name: 'fhirInteractions', remainingUnits: 0, secondsUntilReset: 3 },
+        { name: 'requests', remainingUnits: 59539, secondsUntilReset: 4, resetsAfter: expect.any(Number) },
+        { name: 'fhirInteractions', remainingUnits: 0, secondsUntilReset: 3, resetsAfter: expect.any(Number) },
       ])
     );
   });

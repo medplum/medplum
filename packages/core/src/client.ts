@@ -543,9 +543,14 @@ export interface InviteRequest {
 }
 
 export type RateLimitInfo = {
+  /** Name of the rate limiter. */
   name: string;
+  /** Remaining rate limit quota units. */
   remainingUnits: number;
+  /** Number of seconds until the rate limit resets to its full quota. */
   secondsUntilReset: number;
+  /** Timestamp (seconds from 1970-01-01T00:00:00Z) after which the rate limiter resets to its full quota. */
+  resetsAfter: number;
 };
 
 /**
@@ -3566,7 +3571,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
 
-      return { name, remainingUnits, secondsUntilReset };
+      return {
+        name,
+        remainingUnits,
+        secondsUntilReset,
+        resetsAfter: Math.ceil((Date.now() + 1000 * secondsUntilReset) / 1000),
+      };
     });
   }
 
