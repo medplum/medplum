@@ -483,7 +483,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
     });
 
     expect(success).toBe(true);
@@ -579,7 +579,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign Up'));
+      fireEvent.click(screen.getByText('Register'));
     });
 
     expect(props.onRegister).toHaveBeenCalled();
