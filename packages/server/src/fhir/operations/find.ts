@@ -111,7 +111,15 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
-  const timezone = getTimezone(schedule);
+  if (schedule.actor.length !== 1) {
+    throw new OperationOutcomeError(badRequest('$find only supported on schedules with exactly one actor'));
+  }
+
+  const [actor] = await ctx.repo.readReferences(schedule.actor);
+  if (actor instanceof Error) {
+    throw new OperationOutcomeError(badRequest('Loading actor for schedule failed'), { cause: actor });
+  }
+  const timezone = getTimezone(actor);
   const opts = timezone ? { in: tz(timezone) } : {};
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 

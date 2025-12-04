@@ -31,6 +31,7 @@ describe('Schedule/:id/$find', () => {
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
     });
   });
 
@@ -52,7 +53,6 @@ describe('Schedule/:id/$find', () => {
       meta: { project: project.project.id },
       actor: [createReference(practitioner)],
       extension: [
-        { url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' },
         {
           url: 'http://medplum.com/fhir/StructureDefinition/scheduling-parameters',
           extension: [
