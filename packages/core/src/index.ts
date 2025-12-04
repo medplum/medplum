@@ -6,6 +6,7 @@ export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';
 export * from './cache';
+export * from './cds';
 export * from './client';
 export * from './config';
 export * from './constants';

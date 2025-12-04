@@ -16,6 +16,7 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
+import type { CdsRequest } from './cds';
 import type {
   FetchLike,
   InviteRequest,
@@ -2741,6 +2742,28 @@ describe('Client', () => {
           /.+"destination":".+"body":"XYZ".+"contentType":"x-application\/hl7-v2\+er7".+"waitForResponse":true.+"waitTimeout":20000.+/
         ),
       })
+    );
+  });
+
+  test('Get CDS services', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.getCdsServices();
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/cds-services',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  test('Call CDS service', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.callCdsService('service-id', {} as CdsRequest);
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/cds-services/service-id',
+      expect.objectContaining({ method: 'POST' })
     );
   });
 
