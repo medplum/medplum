@@ -147,6 +147,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     />
                   )
                 )}
+                {threadMessages.length === 0 && <EmptyMessagesState />}
               </ScrollArea>
             </Paper>
           </Flex>
@@ -250,4 +251,17 @@ function getStatusColor(status: Communication['status']): string {
     return 'red';
   }
   return 'blue';
+}
+
+function EmptyMessagesState(): JSX.Element {
+  return (
+    <Flex direction="column" h="100%" justify="center" align="center">
+      <Stack align="center" gap="md" pt="xl">
+        <IconMessageCircle size={64} color="var(--mantine-color-gray-4)" />
+        <Text size="lg" c="dimmed" fw={500}>
+          No messages found
+        </Text>
+      </Stack>
+    </Flex>
+  );
 }

@@ -99,3 +99,6 @@ playwright/.cache/
 
 # Cursor
 .cursor/
+
+# 0x profiling data
+*.0x

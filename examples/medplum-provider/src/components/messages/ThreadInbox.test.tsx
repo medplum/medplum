@@ -161,6 +161,26 @@ describe('ThreadInbox', () => {
     });
   });
 
+  test('shows empty messages state when no messages are found', async () => {
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    setup();
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('No messages found')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });
+
   test('shows thread chat when thread is selected', async () => {
     await medplum.createResource(mockCommunication);
 
