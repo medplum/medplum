@@ -168,6 +168,13 @@ export class ReferenceTable extends LookupTable {
           });
           throw err;
         }
+
+        // Yield to event loop between batches
+        if (i + resourceBatchSize < resources.length) {
+          await new Promise<void>((resolve) => {
+            setImmediate(() => resolve());
+          });
+        }
       }
     }
   }
