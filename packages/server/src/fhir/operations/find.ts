@@ -6,11 +6,12 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  getExtensionValue,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, OperationDefinition, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { applyExistingSlots, findSlotTimes, resolveAvailability } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -39,8 +40,8 @@ type FindParameters = {
 };
 
 const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
-function getTimeZone(schedule: Schedule): string | undefined {
-  return (schedule.extension ?? []).find((extension) => extension.url === TimezoneExtensionURI)?.valueCode;
+function getTimeZone(resource: Resource): string | undefined {
+  return getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
 }
 
 /**
@@ -111,7 +112,15 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
-  const timeZone = getTimeZone(schedule);
+  if (schedule.actor.length !== 1) {
+    throw new OperationOutcomeError(badRequest('$find only supported on schedules with exactly one actor'));
+  }
+
+  const [actor] = await ctx.repo.readReferences(schedule.actor);
+  if (actor instanceof Error) {
+    throw new OperationOutcomeError(badRequest('Loading actor for schedule failed'), { cause: actor });
+  }
+  const timeZone = getTimeZone(actor);
   if (!timeZone) {
     throw new OperationOutcomeError(badRequest('No timezone specified'));
   }

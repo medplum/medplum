@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
-import type { Bundle, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, Location, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -15,6 +15,7 @@ const app = express();
 const request = supertest(app);
 
 describe('Schedule/:id/$find', () => {
+  let location: Location;
   let practitioner: Practitioner;
   let project: TestProjectResult<{ withAccessToken: true }>;
 
@@ -25,6 +26,12 @@ describe('Schedule/:id/$find', () => {
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+    location = await systemRepo.createResource<Location>({
+      resourceType: 'Location',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
     });
   });
 
@@ -39,14 +46,14 @@ describe('Schedule/:id/$find', () => {
       alignmentInterval?: number;
       alignmentOffset?: number;
       duration?: number;
+      actor?: Schedule['actor'];
     } = {}
   ): Promise<Schedule> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
-      actor: [createReference(practitioner)],
+      actor: opts.actor ?? [createReference(practitioner)],
       extension: [
-        { url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' },
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
@@ -398,5 +405,44 @@ describe('Schedule/:id/$find', () => {
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toBe(200);
     expect(response.body.entry).toHaveLength(20);
+  });
+
+  test("gets timezone data from the schedule's actor", async () => {
+    // `location` has timezone set to America/Phoenix, which is always at offset -07:00
+    const schedule = await makeSchedule({ actor: [createReference(location)] });
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-07:00').toISOString(),
+        end: new Date('2025-12-01T12:00:00.000-07:00').toISOString(),
+      });
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject<Bundle>({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T10:00:00.000-07:00').toISOString(),
+            end: new Date('2025-12-01T10:20:00.000-07:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T11:00:00.000-07:00').toISOString(),
+            end: new Date('2025-12-01T11:20:00.000-07:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+      ],
+    });
   });
 });
