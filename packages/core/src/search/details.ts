@@ -10,6 +10,7 @@ import {
   FunctionAtom,
   IndexerAtom,
   IsAtom,
+  SymbolAtom,
   UnionAtom,
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
@@ -80,7 +81,8 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
-  const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
+  const expression = searchParam.expression as string;
+  const expressions = getExpressionsForResourceType(resourceType, expression);
 
   const builder: SearchParameterDetailsBuilder = {
     elementDefinitions: [],
@@ -125,12 +127,26 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     }
   }
 
+  let parsedExpression: FhirPathAtom;
+  if (searchParam.code.endsWith(':identifier')) {
+    const match = expression.match(/^\((.+)\)\.identifier$/);
+    if (match) {
+      const innerExpression = match[1];
+      const parsedInnerExpression = getParsedExpressionForResourceType(resourceType, innerExpression);
+      parsedExpression = new FhirPathAtom(expression, new DotAtom(parsedInnerExpression, new SymbolAtom('identifier')));
+    } else {
+      throw new Error(`Unexpected expression for derived identifier search parameter: ${expression}`);
+    }
+  } else {
+    parsedExpression = getParsedExpressionForResourceType(resourceType, expression);
+  }
+
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions
       .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
       .filter((ed) => ed.type && ed.type.length > 0),
-    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
+    parsedExpression,
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);
