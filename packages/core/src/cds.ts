@@ -221,7 +221,7 @@ function evaluatePrefetch(
 const userProfileTokens = ['userPractitionerId', 'userPractitionerRoleId', 'userPatientId', 'userRelatedPersonId'];
 
 function replaceQueryVariables(user: CdsUserResource, context: Record<string, unknown>, query: string): string {
-  return query.replace(/\{\{(.*?)\}\}/g, (substring, varName) => {
+  return query.replace(/\{\{([^}]+)\}\}/g, (substring, varName) => {
     varName = varName.trim();
 
     if (userProfileTokens.includes(varName)) {
