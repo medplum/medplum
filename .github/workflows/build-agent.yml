@@ -144,9 +144,6 @@ jobs:
       - name: Sign executables with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         with:
           # exclude-environment-credential: true
           # exclude-workload-identity-credential: false
@@ -183,9 +180,6 @@ jobs:
       - name: Sign installer with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         with:
           # exclude-environment-credential: true
           # exclude-workload-identity-credential: false
