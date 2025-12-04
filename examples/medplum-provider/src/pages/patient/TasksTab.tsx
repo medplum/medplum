@@ -35,4 +35,3 @@ export function TasksTab(): JSX.Element {
     </div>
   );
 }
-
