@@ -67,16 +67,8 @@ jobs:
             ${{ runner.os }}-build-agent
             ${{ runner.os }}-
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: '1.3.2'
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile --filter=@medplum/agent
-
-      - name: Install Turbo
-        run: bun install turbo
+        run: npm ci
 
       - name: Set repo hash
         shell: bash
