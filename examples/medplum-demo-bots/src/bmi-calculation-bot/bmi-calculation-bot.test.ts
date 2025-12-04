@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle, LOINC } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import type { Bot, Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, describe, beforeAll, beforeEach, vi } from 'vitest';
 import { handler } from './bmi-calculation-bot';
