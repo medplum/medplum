@@ -3,6 +3,7 @@ import {
   badRequest,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  deriveIdentifierSearchParameter,
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
@@ -47,7 +48,6 @@ import {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
-import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
