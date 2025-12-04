@@ -35,7 +35,7 @@ export function WithLinks(): JSX.Element {
       >
         <Logo size={32} />
         <Title order={3} py="lg">
-        Sign in to {getAppName()}
+          Sign in to {getAppName()}
         </Title>
       </SignInForm>
     </div>
@@ -52,7 +52,7 @@ export function WithFooter(): JSX.Element {
       >
         <Logo size={32} />
         <Title order={3} py="lg">
-        Sign in to {getAppName()}
+          Sign in to {getAppName()}
         </Title>
       </SignInForm>
     </div>
@@ -70,7 +70,7 @@ export function WithGoogle(): JSX.Element {
       >
         <Logo size={32} />
         <Title order={3} py="lg">
-        Sign in to {getAppName()}
+          Sign in to {getAppName()}
         </Title>
       </SignInForm>
     </div>
@@ -88,7 +88,7 @@ export function GoogleOnly(): JSX.Element {
       >
         <Logo size={32} />
         <Title order={3} py="lg">
-        Sign in to {getAppName()}
+          Sign in to {getAppName()}
         </Title>
       </SignInForm>
     </div>
