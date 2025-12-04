@@ -247,25 +247,33 @@ describe('Patient Merge Utils', () => {
   });
 
   test('should replace references recursively', () => {
-    const clinicalResource = {
+    const clinicalResource: ServiceRequest = {
       resourceType: 'ServiceRequest',
       id: '123',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/src' },
       requester: { reference: 'Patient/src' },
       encounter: { reference: 'Encounter/1' },
-      nested: {
-        patient: { reference: 'Patient/src' },
-        other: 'should not change',
-      },
-    } as ServiceRequest;
+      note: [
+        {
+          text: 'Test note',
+          authorReference: { reference: 'Patient/src' },
+        },
+        {
+          text: 'Another note',
+          authorReference: { reference: 'Practitioner/1' }, // Should not change
+        },
+      ],
+    };
 
     replaceReferences(clinicalResource, 'Patient/src', 'Patient/target');
 
-    expect(clinicalResource.subject.reference).toBe('Patient/target');
-    expect(clinicalResource.requester.reference).toBe('Patient/target');
-    expect(clinicalResource.encounter.reference).toBe('Encounter/1'); // Should not change
-    expect(clinicalResource.nested.patient.reference).toBe('Patient/target');
-    expect(clinicalResource.nested.other).toBe('should not change');
+    expect(clinicalResource.subject?.reference).toBe('Patient/target');
+    expect(clinicalResource.requester?.reference).toBe('Patient/target');
+    expect(clinicalResource.encounter?.reference).toBe('Encounter/1'); // Should not change
+    expect(clinicalResource.note?.[0]?.authorReference?.reference).toBe('Patient/target');
+    expect(clinicalResource.note?.[1]?.authorReference?.reference).toBe('Practitioner/1'); // Should not change
   });
 
   test('should replace references in arrays', () => {
