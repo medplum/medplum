@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   PropertyType,
   evalFhirPathTyped,
+  getSearchParameterDetails,
   getSearchParameters,
   isResource,
   isUUID,
@@ -81,7 +82,6 @@ export class ReferenceTable extends LookupTable {
  * @param resource - The resource being indexed.
  */
 function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
-  const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
     return;
@@ -92,7 +92,8 @@ function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resou
       continue;
     }
 
-    const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
+    const details = getSearchParameterDetails(resource.resourceType, searchParam);
+    const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
     for (const value of typedValues) {
       if (value.type === PropertyType.Reference && value.value.reference) {
         const targetId = resolveId(value.value);
