@@ -148,14 +148,14 @@ jobs:
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          exclude-azure-cli-credential: false
+          exclude-azure-cli-credential: true
           exclude-environment-credential: true
           exclude-workload-identity-credential: true
           exclude-managed-identity-credential: true
           exclude-shared-token-cache-credential: true
           exclude-visual-studio-credential: true
           exclude-visual-studio-code-credential: true
-          exclude-azure-powershell-credential: true
+          exclude-azure-powershell-credential: false
           exclude-azure-developer-cli-credential: true
           exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
@@ -186,14 +186,14 @@ jobs:
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          exclude-azure-cli-credential: false
+          exclude-azure-cli-credential: true
           exclude-environment-credential: true
           exclude-workload-identity-credential: true
           exclude-managed-identity-credential: true
           exclude-shared-token-cache-credential: true
           exclude-visual-studio-credential: true
           exclude-visual-studio-code-credential: true
-          exclude-azure-powershell-credential: true
+          exclude-azure-powershell-credential: false
           exclude-azure-developer-cli-credential: true
           exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
