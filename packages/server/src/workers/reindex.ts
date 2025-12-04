@@ -12,6 +12,8 @@ import {
 import type { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
+import { escapeIdentifier } from 'pg';
 import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
@@ -217,6 +219,9 @@ export class ReindexJob {
     return 'finished';
   }
 
+  private lastResourceType: string | undefined;
+  private tempTableName: string | undefined;
+
   /**
    * Reindex one page of resources in the database, determined by the job data and search filter.
    * @param systemRepo - The system repository to use for database operations.
@@ -226,6 +231,21 @@ export class ReindexJob {
   async processIteration(systemRepo: Repository, jobData: ReindexJobData): Promise<ReindexResult> {
     const { resourceTypes, count, maxResourceVersion } = jobData;
     const resourceType = resourceTypes[0];
+
+    if (this.lastResourceType !== resourceType) {
+      this.lastResourceType = resourceType;
+      const conn = await systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      if (this.tempTableName) {
+        await conn.query(`DROP TABLE IF EXISTS ${escapeIdentifier(this.tempTableName)}`);
+      }
+
+      const tableName = resourceType;
+      const tempTableName = tableName + '_temp_' + randomUUID().replace(/-/g, '_');
+
+      const createTempTableQuery = `CREATE TEMPORARY TABLE ${escapeIdentifier(tempTableName)} (LIKE ${escapeIdentifier(tableName)}) ON COMMIT DELETE ROWS`;
+      await conn.query(createTempTableQuery);
+      this.tempTableName = tempTableName;
+    }
 
     const searchRequest = searchRequestForNextPage(jobData, this.batchSize);
     let newCount = count ?? 0;
@@ -271,7 +291,12 @@ export class ReindexJob {
         }
       });
     } catch (err: any) {
-      globalLogger.info('Reindex iteration error', { error: normalizeErrorString(err), stack: err.stack, resourceType, searchRequest });
+      globalLogger.info('Reindex iteration error', {
+        error: normalizeErrorString(err),
+        stack: err.stack,
+        resourceType,
+        searchRequest,
+      });
       return { count: newCount, cursor, nextTimestamp, err, errSearchRequest: searchRequest };
     }
 

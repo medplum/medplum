@@ -85,15 +85,15 @@ import type {
   ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { escapeIdentifier   } from 'pg';
-import type {Pool, PoolClient} from 'pg';
+import type { Pool, PoolClient } from 'pg';
+import { escapeIdentifier } from 'pg';
 import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger, globalLogger } from '../logger';
+import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
@@ -1700,31 +1700,40 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       .execute(client);
   }
 
-  private async bulkUpdateResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  private async bulkUpdateResources(
+    evaledExpressionCaches: Map<Resource, Map<string, TypedValue[]>> | undefined,
+    client: PoolClient,
+    tempTableName: string,
+    resources: Resource[]
+  ): Promise<void> {
     if (!resources.length) {
       return;
     }
 
     const tableName = resources[0].resourceType;
-    const tempTableName = tableName + '_temp_' + this.generateId().replace(/-/g, '_');
-
-    // Create temporary table
-    const createTempTableQuery = `CREATE TEMPORARY TABLE ${escapeIdentifier(tempTableName)} (LIKE ${escapeIdentifier(tableName)}) ON COMMIT DROP;`;
-    await client.query(createTempTableQuery);
-
     // Copy from stdin into temporary table
-    const copyFrom = new CopyFromQuery(tempTableName, Object.keys(this.buildResourceRow(resources[0])));
+    let firstRowCache = evaledExpressionCaches?.get(resources[0]);
+    if (evaledExpressionCaches && !firstRowCache) {
+      firstRowCache = new Map<string, TypedValue[]>();
+      evaledExpressionCaches.set(resources[0], firstRowCache);
+    }
+    const firstRow = this.buildResourceRow(resources[0], firstRowCache);
+
+    const copyFrom = new CopyFromQuery(tempTableName, Object.keys(firstRow));
     const copyStream = copyFrom.getCopyStream(client);
     for (const resource of resources) {
+      let cache = evaledExpressionCaches?.get(resources[0]);
+      if (evaledExpressionCaches && !cache) {
+        cache = new Map<string, TypedValue[]>();
+        evaledExpressionCaches.set(resources[0], cache);
+      }
       const row = this.buildResourceRow(resource);
       copyStream.writeRow(row);
     }
     await copyFrom.completeCopy(client, copyStream);
 
     // UPDATE from temporary table into main table
-    const updateColumns = Object.keys(this.buildResourceRow(resources[0])).filter(
-      (col) => col !== 'id' && col !== 'lastUpdated'
-    );
+    const updateColumns = Object.keys(firstRow).filter((col) => col !== 'id' && col !== 'lastUpdated');
     const setClause = updateColumns.map((col) => `"${col}" = temp."${col}"`).join(', ');
     const updateQuery = `
       UPDATE ${escapeIdentifier(tableName)} AS main
