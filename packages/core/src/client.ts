@@ -543,9 +543,14 @@ export interface InviteRequest {
 }
 
 export type RateLimitInfo = {
+  /** Name of the rate limiter. */
   name: string;
+  /** Remaining rate limit quota units. */
   remainingUnits: number;
+  /** Number of seconds until the rate limit resets to its full quota. */
   secondsUntilReset: number;
+  /** Timestamp (seconds from 1970-01-01T00:00:00Z) after which the rate limiter resets to its full quota. */
+  resetsAfter: number;
 };
 
 /**
@@ -3551,22 +3556,27 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return [];
     }
     const header = this.currentRateLimits;
-    return header.split(';').map((str) => {
-      const parts = str.split(',').map((s) => s.trim());
+    return header.split(',').map((str) => {
+      const parts = str.split(';').map((s) => s.trim());
       if (parts.length !== 3) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
 
       const name = parts[0].substring(1, parts[0].length - 1);
-      const remainingPart = parts.find((p) => p.startsWith('r='));
-      const remainingUnits = remainingPart ? Number.parseInt(remainingPart.substring(2), 10) : NaN;
-      const timePart = parts.find((p) => p.startsWith('t='));
-      const secondsUntilReset = timePart ? Number.parseInt(timePart.substring(2), 10) : NaN;
+      const remainingPart = parts.find((p) => p.startsWith('r='))?.substring(2);
+      const remainingUnits = remainingPart ? Number.parseInt(remainingPart, 10) : Number.NaN;
+      const timePart = parts.find((p) => p.startsWith('t='))?.substring(2);
+      const secondsUntilReset = timePart ? Number.parseInt(timePart, 10) : Number.NaN;
       if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
 
-      return { name, remainingUnits, secondsUntilReset };
+      return {
+        name,
+        remainingUnits,
+        secondsUntilReset,
+        resetsAfter: Math.ceil((Date.now() + 1000 * secondsUntilReset) / 1000),
+      };
     });
   }
 
