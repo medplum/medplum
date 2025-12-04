@@ -37,6 +37,7 @@ export * from './logger';
 export * from './outcomes';
 export * from './readablepromise';
 export * from './schema';
+export * from './search/derived';
 export * from './search/details';
 export * from './search/ir';
 export * from './search/match';
