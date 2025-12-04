@@ -155,12 +155,12 @@ jobs:
           exclude-shared-token-cache-credential: true
           exclude-visual-studio-credential: true
           exclude-visual-studio-code-credential: true
-          exclude-azure-powershell-credential: true
+          exclude-azure-powershell-credential: false
           exclude-azure-developer-cli-credential: true
           exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
-          certificate-profile-name: GitHubCI
+          certificate-profile-name: MedplumCI
           files-folder: ${{ github.workspace }}\packages\agent\dist
           files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
           file-digest: SHA256
@@ -193,12 +193,12 @@ jobs:
           exclude-shared-token-cache-credential: true
           exclude-visual-studio-credential: true
           exclude-visual-studio-code-credential: true
-          exclude-azure-powershell-credential: true
+          exclude-azure-powershell-credential: false
           exclude-azure-developer-cli-credential: true
           exclude-interactive-browser-credential: true
           endpoint: https://eus.codesigning.azure.net/
           trusted-signing-account-name: GitHubActionSigner
-          certificate-profile-name: GitHubCI
+          certificate-profile-name: MedplumCI
           files-folder: ${{ github.workspace }}\packages\agent
           files-folder-filter: medplum-agent-installer-*.exe
           files-folder-recurse: false
