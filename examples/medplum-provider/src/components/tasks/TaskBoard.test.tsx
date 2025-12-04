@@ -19,7 +19,7 @@ describe('TaskBoard', () => {
   });
 
   const setup = (props: Partial<React.ComponentProps<typeof TaskBoard>> = {}): ReturnType<typeof render> => {
-    const defaultOnSelectedItem = (task: Task) => `/Task/${task.id}`;
+    const defaultOnSelectedItem = (task: Task): string => `/Task/${task.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>

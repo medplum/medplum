@@ -17,7 +17,7 @@ describe('TaskListItem', () => {
   });
 
   const setup = (task: Task, selectedTask?: Task, onSelectedItem?: (task: Task) => string): ReturnType<typeof render> => {
-    const defaultOnSelectedItem = (t: Task) => `/Task/${t.id}`;
+    const defaultOnSelectedItem = (t: Task): string => `/Task/${t.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
