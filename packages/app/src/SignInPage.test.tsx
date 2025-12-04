@@ -88,7 +88,7 @@ describe('SignInPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign Up'));
+      fireEvent.click(screen.getByText('Register'));
     });
   });
 
@@ -97,7 +97,7 @@ describe('SignInPage', () => {
     setup();
 
     expectSigninPageRendered();
-    expect(screen.queryByText('Sign Up')).not.toBeInTheDocument();
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
   test('Redirect to next after login', async () => {

@@ -74,7 +74,7 @@ describe('OAuthPage', () => {
   test('Register', async () => {
     const user = await setup('/oauth?client_id=123');
 
-    await user.click(screen.getByText('Sign Up'));
+    await user.click(screen.getByText('Register'));
   });
 
   test('Fetch and render client info', async () => {
