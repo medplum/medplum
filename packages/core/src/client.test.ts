@@ -3728,7 +3728,7 @@ describe('Client', () => {
           { resourceType: 'Patient' },
           {
             'content-type': 'application/fhir+json',
-            ratelimit: `"requests",t=59,r=15; "fhirInteractions",r=255,t=59`,
+            ratelimit: `"requests";t=59;r=15, "fhirInteractions";r=255;t=59`,
           }
         )
       );
@@ -3742,6 +3742,32 @@ describe('Client', () => {
       expect.arrayContaining([
         { name: 'requests', remainingUnits: 15, secondsUntilReset: 59 },
         { name: 'fhirInteractions', remainingUnits: 255, secondsUntilReset: 59 },
+      ])
+    );
+  });
+
+  test('Track rate limit status with zero', async () => {
+    const fetch = jest.fn((_url: string, _options?: any) => {
+      return Promise.resolve(
+        mockFetchResponse(
+          200,
+          { resourceType: 'Patient' },
+          {
+            'content-type': 'application/fhir+json',
+            ratelimit: `"requests";r=59539;t=4, "fhirInteractions";r=0;t=3`,
+          }
+        )
+      );
+    });
+
+    const client = new MedplumClient({ fetch });
+    expect(client.rateLimitStatus()).toStrictEqual([]);
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(client.rateLimitStatus()).toStrictEqual(
+      expect.arrayContaining([
+        { name: 'requests', remainingUnits: 59539, secondsUntilReset: 4 },
+        { name: 'fhirInteractions', remainingUnits: 0, secondsUntilReset: 3 },
       ])
     );
   });
