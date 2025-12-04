@@ -146,6 +146,8 @@ jobs:
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           exclude-azure-cli-credential: false
           exclude-environment-credential: true
           exclude-workload-identity-credential: true
@@ -182,6 +184,8 @@ jobs:
         if: ${{ inputs.sign_output }}
         uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
         with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           exclude-azure-cli-credential: false
           exclude-environment-credential: true
           exclude-workload-identity-credential: true
