@@ -8,7 +8,6 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
 export interface OperationOutcomeAlertProps extends AlertProps {
-> {
   readonly outcome?: OperationOutcome;
   readonly issues?: OperationOutcomeIssue[];
 }
