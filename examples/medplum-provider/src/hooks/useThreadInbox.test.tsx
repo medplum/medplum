@@ -56,22 +56,25 @@ describe('useThreadInbox', () => {
     expect(result.current.error).toBeNull();
   });
 
-  test('fetches thread messages without partOf field', async () => {
+  test('fetches thread messages and returns only one message per topic', async () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
     await medplum.createResource(mockCommunication3);
 
-    // Mock search to return only communications without partOf
-    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
-    });
+    // Create additional messages for the same thread to test that only one is returned
+    const mockCommunication4: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-4',
+      status: 'completed',
+      sent: '2024-01-01T13:00:00Z',
+      payload: [{ contentString: 'Fourth message' }],
+      partOf: [{ reference: 'Communication/comm-1' }],
+    };
+    await medplum.createResource(mockCommunication4);
 
-    // Mock graphql to return communications with partOf
     const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [mockCommunication2, mockCommunication3],
+        thread_comm1: [mockCommunication4], // Only the most recent message, even though comm-2, comm-4 exist
       },
     } as any);
 
@@ -83,23 +86,75 @@ describe('useThreadInbox', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(searchSpy).toHaveBeenCalled();
     expect(graphqlSpy).toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(result.current.threadMessages).toHaveLength(1);
+      expect(result.current.threadMessages[0][0].id).toBe('comm-1');
+      expect(result.current.threadMessages[0][1]?.id).toBe('comm-4');
+    });
+  });
+
+  test('skips topics without messages', async () => {
+    const parentWithoutMessages: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-no-replies',
+      status: 'completed',
+      sent: '2024-01-01T10:00:00Z',
+      payload: [{ contentString: 'Parent with no replies' }],
+    };
+
+    const parentWithMessages: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-with-replies',
+      status: 'completed',
+      sent: '2024-01-01T11:00:00Z',
+      payload: [{ contentString: 'Parent with replies' }],
+    };
+
+    const replyMessage: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-reply',
+      status: 'completed',
+      sent: '2024-01-01T12:00:00Z',
+      payload: [{ contentString: 'Reply message' }],
+      partOf: [{ reference: 'Communication/comm-with-replies' }],
+    };
+
+    await medplum.createResource(parentWithoutMessages);
+    await medplum.createResource(parentWithMessages);
+    await medplum.createResource(replyMessage);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_commnoreplies: [],
+        thread_commwithreplies: [replyMessage],
+      },
+    } as any);
+
+    const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await waitFor(() => {
+      expect(result.current.threadMessages).toHaveLength(1);
+      expect(result.current.threadMessages[0][0].id).toBe('comm-with-replies');
+      expect(result.current.threadMessages[0][1]?.id).toBe('comm-reply');
+      expect(result.current.threadMessages.find((t) => t[0].id === 'comm-no-replies')).toBeUndefined();
+    });
   });
 
   test('selects thread by threadId', async () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
 
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
-    });
-
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [mockCommunication2],
+        thread_comm1: [mockCommunication2],
       },
     } as any);
 
@@ -117,19 +172,8 @@ describe('useThreadInbox', () => {
   });
 
   test('reads thread from API when threadId not found in messages', async () => {
-    await medplum.createResource(mockCommunication1);
-
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
-      data: {
-        CommunicationList: [],
-      },
-    } as any);
+    // Don't create the resource, so it won't be found in search
+    // This simulates a thread that exists but isn't in the current search results
 
     const readSpy = vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication1 as WithId<Communication>);
 
@@ -147,25 +191,23 @@ describe('useThreadInbox', () => {
     });
   });
 
-  test('does not select thread with partOf field when reading from API', async () => {
+  test('reads parent thread when reading child communication with partOf field', async () => {
+    const parentCommunication: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-0',
+      status: 'completed',
+      sent: '2024-01-01T09:00:00Z',
+      payload: [{ contentString: 'Parent message' }],
+    };
+
     const communicationWithPartOf: Communication = {
       ...mockCommunication1,
       partOf: [{ reference: 'Communication/comm-0' }],
     };
 
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
-      data: {
-        CommunicationList: [],
-      },
-    } as any);
-
     vi.spyOn(medplum, 'readResource').mockResolvedValue(communicationWithPartOf as WithId<Communication>);
+
+    const readReferenceSpy = vi.spyOn(medplum, 'readReference').mockResolvedValue(parentCommunication as any);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
       wrapper,
@@ -176,22 +218,18 @@ describe('useThreadInbox', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.selectedThread).toBeUndefined();
+      expect(readReferenceSpy).toHaveBeenCalledWith({ reference: 'Communication/comm-0' });
+      expect(result.current.selectedThread?.id).toBe('comm-0');
     });
   });
 
   test('handles thread status update', async () => {
     await medplum.createResource(mockCommunication1);
-
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
-    });
+    await medplum.createResource(mockCommunication2);
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [],
+        thread_comm1: [mockCommunication2],
       },
     } as any);
 
@@ -217,22 +255,12 @@ describe('useThreadInbox', () => {
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
       expect(result.current.selectedThread?.status).toBe('in-progress');
+      // Verify threadMessages is also updated
+      expect(result.current.threadMessages[0][0].status).toBe('in-progress');
     });
   });
 
   test('does not update status when no thread is selected', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
-      data: {
-        CommunicationList: [],
-      },
-    } as any);
-
     const updateSpy = vi.spyOn(medplum, 'updateResource');
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
@@ -250,16 +278,11 @@ describe('useThreadInbox', () => {
 
   test('handles update errors gracefully', async () => {
     await medplum.createResource(mockCommunication1);
-
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
-    });
+    await medplum.createResource(mockCommunication2);
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [],
+        thread_comm1: [mockCommunication2],
       },
     } as any);
 
@@ -290,18 +313,6 @@ describe('useThreadInbox', () => {
       payload: [{ contentString: 'New message' }],
     };
 
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    });
-
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
-      data: {
-        CommunicationList: [],
-      },
-    } as any);
-
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,
     });
@@ -323,7 +334,7 @@ describe('useThreadInbox', () => {
 
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
-    vi.spyOn(medplum, 'search').mockRejectedValue(error);
+    vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,
@@ -337,16 +348,11 @@ describe('useThreadInbox', () => {
 
   test('clears selected thread when threadId becomes undefined', async () => {
     await medplum.createResource(mockCommunication1);
-
-    vi.spyOn(medplum, 'search').mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
-    });
+    await medplum.createResource(mockCommunication2);
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        CommunicationList: [],
+        thread_comm1: [mockCommunication2],
       },
     } as any);
 

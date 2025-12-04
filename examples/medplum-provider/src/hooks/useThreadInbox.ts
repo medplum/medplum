@@ -34,7 +34,6 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       const searchParams = new URLSearchParams(query);
       searchParams.append('identifier:not', 'ai-message-topic');
       searchParams.append('part-of:missing', 'true');
-      searchParams.append('_sort', '-sent');
   
       const parents = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
   
@@ -80,9 +79,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
         }
       `;
   
-      console.log(fullQuery);
       const response = await medplum.graphql(fullQuery);
-  
+      
       const threadsWithReplies = parents.map((parent) => {
         const safeId = parent.id?.replace(/-/g, '') || '';
         const alias = `thread_${safeId}`;
