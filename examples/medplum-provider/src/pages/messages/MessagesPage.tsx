@@ -12,20 +12,19 @@ import classes from './MessagesPage.module.css';
 export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
   const navigate = useNavigate();
-
   const handleNewThread = (message: Communication): void => {
-    navigate(`/Message/${message.id}`)?.catch(console.error);
+    navigate(`/Communication/${message.id}`)?.catch(console.error);
   };
 
   const onSelectedItem = (topic: Communication): string => {
-    return `/Message/${topic.id}`;
+    return `/Communication/${topic.id}`;
   };
 
   return (
     <div className={classes.container}>
       <ThreadInbox
         threadId={messageId}
-        query="_sort=-_lastUpdated"
+        query={`_sort=-_lastUpdated`}
         showPatientSummary={true}
         handleNewThread={handleNewThread}
         onSelectedItem={onSelectedItem}

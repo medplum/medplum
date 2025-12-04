@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { PlanDefinition, Questionnaire, QuestionnaireResponse, RequestGroup, Task } from '@medplum/fhirtypes';
 import { DrAliceSmith } from './alice';
 import { HomerSimpson } from './simpsons';
@@ -9,6 +9,7 @@ import { HomerSimpson } from './simpsons';
 export const ExampleWorkflowQuestionnaire1: WithId<Questionnaire> = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-1',
+  url: 'http://example.com/Questionnaire/workflow-1',
   status: 'active',
   name: 'Patient Registration',
   title: 'Patient Registration',
@@ -25,6 +26,7 @@ export const ExampleWorkflowQuestionnaire1: WithId<Questionnaire> = {
 export const ExampleWorkflowQuestionnaire2: WithId<Questionnaire> = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-2',
+  url: 'http://example.com/Questionnaire/workflow-2',
   status: 'active',
   name: 'Surgery History',
   title: 'Surgery History',
@@ -41,6 +43,7 @@ export const ExampleWorkflowQuestionnaire2: WithId<Questionnaire> = {
 export const ExampleWorkflowQuestionnaire3: WithId<Questionnaire> = {
   resourceType: 'Questionnaire',
   id: 'workflow-questionnaire-3',
+  url: 'http://example.com/Questionnaire/workflow-3',
   status: 'active',
   name: 'Family Health History',
   title: 'Family Health History',
@@ -57,20 +60,21 @@ export const ExampleWorkflowQuestionnaire3: WithId<Questionnaire> = {
 export const ExampleWorkflowPlanDefinition: WithId<PlanDefinition> = {
   resourceType: 'PlanDefinition',
   id: 'workflow-plan-definition-1',
+  url: 'http://example.com/PlanDefinition/workflow',
   status: 'active',
   title: 'Example Plan Definition',
   action: [
     {
       title: ExampleWorkflowQuestionnaire1.title,
-      definitionCanonical: getReferenceString(ExampleWorkflowQuestionnaire1),
+      definitionCanonical: ExampleWorkflowQuestionnaire1.url,
     },
     {
       title: ExampleWorkflowQuestionnaire2.title,
-      definitionCanonical: getReferenceString(ExampleWorkflowQuestionnaire2),
+      definitionCanonical: ExampleWorkflowQuestionnaire2.url,
     },
     {
       title: ExampleWorkflowQuestionnaire3.title,
-      definitionCanonical: getReferenceString(ExampleWorkflowQuestionnaire3),
+      definitionCanonical: ExampleWorkflowQuestionnaire3.url,
     },
   ],
 };
@@ -79,7 +83,7 @@ export const ExampleWorkflowQuestionnaireResponse1: WithId<QuestionnaireResponse
   resourceType: 'QuestionnaireResponse',
   id: 'workflow-questionnaire-response-1',
   status: 'completed',
-  questionnaire: getReferenceString(ExampleWorkflowQuestionnaire1),
+  questionnaire: ExampleWorkflowQuestionnaire1.url,
   subject: createReference(HomerSimpson),
   source: createReference(HomerSimpson),
 };
@@ -139,7 +143,7 @@ export const ExampleWorkflowTask3: WithId<Task> = {
 export const ExampleWorkflowRequestGroup: WithId<RequestGroup> = {
   resourceType: 'RequestGroup',
   id: 'workflow-request-group-1',
-  instantiatesCanonical: [getReferenceString(ExampleWorkflowPlanDefinition)],
+  instantiatesCanonical: [ExampleWorkflowPlanDefinition.url as string],
   status: 'active',
   intent: 'order',
   action: [

@@ -348,7 +348,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                       <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
                     </div>
                     {message.resources && message.resources.length > 0 && (
-                      <Stack gap="xs" mt="sm" ml={message.role === 'assistant' ? 0 : 'auto'}>
+                      <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
                         {message.resources.map((resourceRef, idx) => (
                           <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
                         ))}
@@ -358,13 +358,15 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 ))}
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                    <Group align="center" gap="sm">
+                    <Group align="center" gap="sm" wrap="nowrap">
                       <Avatar radius="xl" size="sm" color="blue">
                         <IconRobot size={14} />
                       </Avatar>
-                      <Text size="sm" c="dimmed" fs="italic">
-                        {currentFhirRequest ? `Executing ${currentFhirRequest}...` : 'Thinking...'}
-                      </Text>
+                      <Box style={{ flex: 1, minWidth: 0 }}>
+                        <Text size="sm" c="dimmed" fs="italic" truncate>
+                          {currentFhirRequest ? `Executing ${currentFhirRequest}...` : 'Thinking...'}
+                        </Text>
+                      </Box>
                     </Group>
                   </div>
                 )}

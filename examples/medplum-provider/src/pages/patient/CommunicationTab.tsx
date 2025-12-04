@@ -10,18 +10,18 @@ export function CommunicationTab(): JSX.Element {
   const navigate = useNavigate();
 
   const onSelectedItem = (topic: Communication): string => {
-    return `/Patient/${patientId}/Message/${topic.id}`;
+    return `/Patient/${patientId}/Communication/${topic.id}`;
   };
 
   const handleNewThread = (message: Communication): void => {
-    navigate(`/Patient/${patientId}/Message/${message.id}`)?.catch(console.error);
+    navigate(`/Patient/${patientId}/Communication/${message.id}`)?.catch(console.error);
   };
 
   return (
     <div style={{ height: `calc(100vh - 98px)` }}>
       <ThreadInbox
         threadId={messageId}
-        query={`subject=${`Patient/${patientId}`},_sort=-_lastUpdated`}
+        query={`subject=${`Patient/${patientId}`}&_sort=-_lastUpdated`}
         subject={{ reference: `Patient/${patientId}` }}
         showPatientSummary={false}
         handleNewThread={handleNewThread}

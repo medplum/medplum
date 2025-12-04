@@ -16,6 +16,7 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
+import type { CdsRequest } from './cds';
 import type {
   FetchLike,
   InviteRequest,
@@ -2744,6 +2745,28 @@ describe('Client', () => {
     );
   });
 
+  test('Get CDS services', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.getCdsServices();
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/cds-services',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  test('Call CDS service', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.callCdsService('service-id', {} as CdsRequest);
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/cds-services/service-id',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
   test('Storage events', async () => {
     // Mock locationUtils.reload
     const mockReload = jest.fn();
@@ -3074,7 +3097,7 @@ describe('Client', () => {
     const fetch = jest.fn(async (): Promise<Partial<Response>> => {
       if (count === 0) {
         count++;
-        return { status: 429, headers: new Headers({ ratelimit: '"requests",r=0,t=1; "fhirInteractions",r=12,t=60' }) };
+        return { status: 429, headers: new Headers({ ratelimit: '"requests";r=0;t=1, "fhirInteractions";r=12;t=60' }) };
       }
       return {
         status: 200,
@@ -3106,7 +3129,7 @@ describe('Client', () => {
         count++;
         return {
           status: 429,
-          headers: new Headers({ ratelimit: '"requests",r=0,t=30; "fhirInteractions",r=12,t=30' }),
+          headers: new Headers({ ratelimit: '"requests";r=0;t=30, "fhirInteractions";r=12;t=30' }),
           text: jest.fn().mockReturnValue(tooManyRequests),
         };
       }
@@ -3780,7 +3803,7 @@ describe('Client', () => {
           { resourceType: 'Patient' },
           {
             'content-type': 'application/fhir+json',
-            ratelimit: `"requests",r=15`,
+            ratelimit: `"requests";r=15`,
           }
         )
       );
@@ -3798,7 +3821,7 @@ describe('Client', () => {
           { resourceType: 'Patient' },
           {
             'content-type': 'application/fhir+json',
-            ratelimit: `"",r=15,t=60`,
+            ratelimit: `"";r=15;t=60`,
           }
         )
       );

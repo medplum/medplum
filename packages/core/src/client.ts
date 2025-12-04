@@ -40,6 +40,7 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
+import type { CdsRequest, CdsResponse, CdsService } from './cds';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { isBrowserEnvironment, locationUtils } from './environment';
@@ -2887,6 +2888,26 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Reads the list of available CDS services.
+   * @param options - Optional fetch options.
+   * @returns The list of CDS services.
+   */
+  getCdsServices(options?: MedplumRequestOptions): Promise<CdsService[]> {
+    return this.get<CdsService[]>('/cds-services', options);
+  }
+
+  /**
+   * Calls a CDS service by ID.
+   * @param id - The CDS service ID.
+   * @param body - The CDS request body.
+   * @param options - Optional fetch options.
+   * @returns The CDS response.
+   */
+  callCdsService(id: string, body: CdsRequest, options?: MedplumRequestOptions): Promise<CdsResponse> {
+    return this.post(`/cds-services/${id}`, body, ContentType.JSON, options);
+  }
+
+  /**
    * @category Authentication
    * @returns The Login State
    */
@@ -3530,8 +3551,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return [];
     }
     const header = this.currentRateLimits;
-    return header.split(/\s*,\s*/g).map((str) => {
-      const parts = str.split(/\s*;\s*/g);
+    return header.split(',').map((str) => {
+      const parts = str.split(';').map((s) => s.trim());
       if (parts.length !== 3) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
