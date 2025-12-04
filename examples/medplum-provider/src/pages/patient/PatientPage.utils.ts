@@ -71,7 +71,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'message', url: 'Message', label: 'Messages' },
+  { id: 'message', url: 'Communication', label: 'Messages' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
 ];

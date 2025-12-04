@@ -89,7 +89,7 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Communication',
-          links: [{ icon: <IconMail />, label: 'Messages', href: '/Message' }],
+          links: [{ icon: <IconMail />, label: 'Messages', href: '/Communication' }],
         },
         {
           title: 'Tasks',
@@ -147,8 +147,8 @@ export function App(): JSX.Element | null {
                   <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />
-                <Route path="Message" element={<CommunicationTab />} />
-                <Route path="Message/:messageId" element={<CommunicationTab />} />
+                <Route path="Communication" element={<CommunicationTab />} />
+                <Route path="Communication/:messageId" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
@@ -163,7 +163,7 @@ export function App(): JSX.Element | null {
                 </Route>
                 <Route path="" element={<TimelineTab />} />
               </Route>
-              <Route path="/Message" element={<MessagesPage />}>
+              <Route path="/Communication" element={<MessagesPage />}>
                 <Route index element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
               </Route>

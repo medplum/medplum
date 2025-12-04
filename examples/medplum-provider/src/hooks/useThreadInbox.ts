@@ -68,7 +68,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       `);
 
       const map = new Map<string, Communication>();
-      allCommunications.data.CommunicationList.forEach((communication: Communication) => {
+      allCommunications.data.CommunicationList?.forEach((communication: Communication) => {
         const partOfRef = communication.partOf?.[0]?.reference;
         if (partOfRef) {
           if (!map.has(partOfRef)) {
