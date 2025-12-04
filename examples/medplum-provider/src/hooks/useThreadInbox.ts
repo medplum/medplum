@@ -39,23 +39,22 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
   useEffect(() => {
     const fetchAllCommunications = async (): Promise<void> => {
-
       const searchParams = new URLSearchParams(query);
       searchParams.append('identifier:not', 'ai-message-topic');
       searchParams.append('part-of:missing', 'true');
-  
+
       const parents = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
-  
+
       if (parents.length === 0) {
         setThreadMessages([]);
         return;
       }
-  
+
       const queryParts = parents.map((parent) => {
-        const safeId = parent.id?.replace(/-/g, '') || ''; 
+        const safeId = parent.id?.replace(/-/g, '') || '';
         const alias = `thread_${safeId}`;
         const ref = getReferenceString(parent);
-  
+
         return `
           ${alias}: CommunicationList(
             part_of: "${ref}"
@@ -81,24 +80,25 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
           }
         `;
       });
-  
+
       const fullQuery = `
         query {
           ${queryParts.join('\n')}
         }
       `;
-  
+
       const response = await medplum.graphql(fullQuery);
-      
-      const threadsWithReplies = parents.map((parent) => {
-        const safeId = parent.id?.replace(/-/g, '') || '';
-        const alias = `thread_${safeId}`;
-        const childList = response.data[alias] as Communication[] | undefined;
-        const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
-        return [parent, lastMessage];
-      })
-      .filter((thread): thread is [Communication, Communication] => thread[1] !== undefined);
-  
+
+      const threadsWithReplies = parents
+        .map((parent) => {
+          const safeId = parent.id?.replace(/-/g, '') || '';
+          const alias = `thread_${safeId}`;
+          const childList = response.data[alias] as Communication[] | undefined;
+          const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
+          return [parent, lastMessage];
+        })
+        .filter((thread): thread is [Communication, Communication] => thread[1] !== undefined);
+
       setThreadMessages(threadsWithReplies);
     };
 
@@ -116,7 +116,6 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
   useEffect(() => {
     const fetchThread = async (): Promise<void> => {
       if (threadId) {
-     
         const thread = threadMessages.find((t) => t[0].id === threadId);
         if (thread) {
           setSelectedThread(thread[0]);
@@ -129,8 +128,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
             } else {
               const parentRef = communication.partOf[0].reference;
               if (parentRef) {
-                 const parent = await medplum.readReference({ reference: parentRef } as any);
-                 setSelectedThread(parent as Communication);
+                const parent = await medplum.readReference({ reference: parentRef } as any);
+                setSelectedThread(parent as Communication);
               }
             }
           } catch (err) {
@@ -158,10 +157,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       });
 
       setSelectedThread(updatedThread);
-      setThreadMessages((prev) => 
-        prev.map(([parent, lastMsg]) => 
-          parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]
-        )
+      setThreadMessages((prev) =>
+        prev.map(([parent, lastMsg]) => (parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]))
       );
     } catch (err) {
       setError(err as Error);
