@@ -14,7 +14,9 @@ export function SignInPage(): JSX.Element {
       onSuccess={() => navigate('/')?.catch(console.error)}
     >
       <Logo size={32} />
-      <Title order={3} py="lg">Sign in to Provider</Title>
+      <Title order={3} py="lg">
+        Sign in to Provider
+      </Title>
     </SignInForm>
   );
 }
