@@ -203,7 +203,7 @@ function evaluatePrefetch(
     return Promise.resolve(null);
   }
 
-  const referenceMatch = query.match(/^(\w+)\/([0-9a-zA-Z-_]+)$/);
+  const referenceMatch = /^(\w+)\/([0-9a-zA-Z-_]+)$/.exec(query);
   if (referenceMatch) {
     // Read request
     const [resourceType, id] = referenceMatch.slice(1);
@@ -218,13 +218,18 @@ function evaluatePrefetch(
 /**
  * See {@link https://cds-hooks.hl7.org/#prefetch-tokens-identifying-the-user | CDS Hooks Prefetch Tokens} for full details.
  */
-const userProfileTokens = ['userPractitionerId', 'userPractitionerRoleId', 'userPatientId', 'userRelatedPersonId'];
+const userProfileTokens = new Set([
+  'userPractitionerId',
+  'userPractitionerRoleId',
+  'userPatientId',
+  'userRelatedPersonId',
+]);
 
 function replaceQueryVariables(user: CdsUserResource, context: Record<string, unknown>, query: string): string {
-  return query.replace(/\{\{([^}]+)\}\}/g, (substring, varName) => {
+  return query.replaceAll(/\{\{([^}]+)\}\}/g, (substring, varName) => {
     varName = varName.trim();
 
-    if (userProfileTokens.includes(varName)) {
+    if (userProfileTokens.has(varName)) {
       return user.id;
     }
 
