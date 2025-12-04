@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle, LOINC } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  LOINC,
+} from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -92,8 +99,12 @@ describe('BMI Calculation Bot', () => {
     expect(bmiObservation.valueQuantity?.value).toBeCloseTo(22.86, 2); // BMI = 70 / (1.75)^2 = 22.86
     expect(bmiObservation.valueQuantity?.unit).toBe('kg/m2');
     expect(bmiObservation.derivedFrom).toHaveLength(2);
-    expect(bmiObservation.derivedFrom?.some((ref) => ref.reference === getReferenceString(heightObservation))).toBe(true);
-    expect(bmiObservation.derivedFrom?.some((ref) => ref.reference === getReferenceString(weightObservation))).toBe(true);
+    expect(bmiObservation.derivedFrom?.some((ref) => ref.reference === getReferenceString(heightObservation))).toBe(
+      true
+    );
+    expect(bmiObservation.derivedFrom?.some((ref) => ref.reference === getReferenceString(weightObservation))).toBe(
+      true
+    );
   });
 
   test('Converts height from inches to meters', async () => {
@@ -287,7 +298,7 @@ describe('BMI Calculation Bot', () => {
         coding: [{ system: LOINC, code: '8302-2', display: 'Body height' }],
       },
       valueQuantity: {
-        value: 1.70,
+        value: 1.7,
         unit: 'm',
         system: 'http://unitsofmeasure.org',
         code: 'm',
@@ -373,9 +384,7 @@ describe('BMI Calculation Bot', () => {
     });
 
     expect(bmiObservations.length).toBe(0);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No height observation found')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No height observation found'));
 
     consoleSpy.mockRestore();
   });
@@ -408,9 +417,7 @@ describe('BMI Calculation Bot', () => {
     });
 
     expect(bmiObservations.length).toBe(0);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No weight observation found')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No weight observation found'));
 
     consoleSpy.mockRestore();
   });
@@ -453,9 +460,7 @@ describe('BMI Calculation Bot', () => {
     });
 
     expect(bmiObservations.length).toBe(0);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Missing values')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Missing values'));
 
     consoleSpy.mockRestore();
   });
@@ -538,7 +543,7 @@ describe('BMI Calculation Bot', () => {
         coding: [{ system: LOINC, code: '8302-2', display: 'Body height' }],
       },
       valueQuantity: {
-        value: 1.60,
+        value: 1.6,
         unit: 'm',
         system: 'http://unitsofmeasure.org',
         code: 'm',
@@ -583,7 +588,7 @@ describe('BMI Calculation Bot', () => {
         coding: [{ system: LOINC, code: '8302-2', display: 'Body height' }],
       },
       valueQuantity: {
-        value: 1.80,
+        value: 1.8,
         unit: 'm',
         system: 'http://unitsofmeasure.org',
         code: 'm',
@@ -619,4 +624,3 @@ describe('BMI Calculation Bot', () => {
     expect(bmiObservations[0].valueQuantity?.value).toBeCloseTo(15.43, 2);
   });
 });
-
