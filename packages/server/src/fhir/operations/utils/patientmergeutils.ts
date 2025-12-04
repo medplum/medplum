@@ -164,4 +164,3 @@ export function replaceReferences(obj: any, srcReference: string, targetReferenc
     }
   }
 }
-

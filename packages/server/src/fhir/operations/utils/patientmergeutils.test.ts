@@ -426,5 +426,3 @@ describe('Patient Merge Utils', () => {
     });
   });
 });
-
-

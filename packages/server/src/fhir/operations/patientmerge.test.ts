@@ -171,7 +171,9 @@ describe('Patient Merge Operation', () => {
           // Verify target patient has replaces link
           expect(mergedTarget.link).toBeDefined();
           expect(
-            mergedTarget.link?.some((l) => l.type === 'replaces' && l.other.reference === getReferenceString(sourcePatient))
+            mergedTarget.link?.some(
+              (l) => l.type === 'replaces' && l.other.reference === getReferenceString(sourcePatient)
+            )
           ).toBe(true);
 
           // Verify identifiers merged

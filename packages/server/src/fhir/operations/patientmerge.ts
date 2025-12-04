@@ -175,9 +175,7 @@ async function resolvePatientReference(
     });
 
     if (!bundle.entry || bundle.entry.length === 0) {
-      throw new OperationOutcomeError(
-        badRequest(`No patient found matching ${paramName} identifier(s)`)
-      );
+      throw new OperationOutcomeError(badRequest(`No patient found matching ${paramName} identifier(s)`));
     }
 
     if (bundle.entry.length > 1) {
@@ -190,9 +188,7 @@ async function resolvePatientReference(
     return { reference: `Patient/${patient.id}` };
   }
 
-  throw new OperationOutcomeError(
-    badRequest(`Either ${paramName} or ${paramName}-identifier must be provided`)
-  );
+  throw new OperationOutcomeError(badRequest(`Either ${paramName} or ${paramName}-identifier must be provided`));
 }
 
 /**
@@ -246,13 +242,7 @@ export async function patientMergeHandler(req: FhirRequest): Promise<FhirRespons
 
   // Execute merge (or preview)
   const isPreview = params.preview === true;
-  const result = await executeMerge(
-    ctx.repo,
-    sourcePatientRef,
-    targetPatientRef,
-    params['result-patient'],
-    isPreview
-  );
+  const result = await executeMerge(ctx.repo, sourcePatientRef, targetPatientRef, params['result-patient'], isPreview);
 
   // Echo back the original input Parameters resource (true echo of what was received)
   // If instance-level operation, we need to add the target-patient reference that was in the URL
@@ -268,10 +258,7 @@ export async function patientMergeHandler(req: FhirRequest): Promise<FhirRespons
       if (!hasTargetParam) {
         inputParams = {
           ...inputParams,
-          parameter: [
-            ...(inputParams.parameter || []),
-            { name: 'target-patient', valueReference: targetPatientRef },
-          ],
+          parameter: [...(inputParams.parameter || []), { name: 'target-patient', valueReference: targetPatientRef }],
         };
       }
     }
@@ -413,9 +400,7 @@ export async function executeMerge(
       (link) => link.type === 'replaces' && link.other.reference === getReferenceString(sourcePatient)
     );
     if (!hasReplacesLink) {
-      throw new OperationOutcomeError(
-        badRequest(`result-patient must include a 'replaces' link to source patient`)
-      );
+      throw new OperationOutcomeError(badRequest(`result-patient must include a 'replaces' link to source patient`));
     }
 
     // Use the provided result-patient as the merged target
