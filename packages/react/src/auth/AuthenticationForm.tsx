@@ -221,7 +221,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           pt="md"
           pb="xs"
         />
-        <SubmitButton>Sign in</SubmitButton>
+        <SubmitButton>Sign In</SubmitButton>
         {onForgotPassword && (
           <Text
             size="sm"

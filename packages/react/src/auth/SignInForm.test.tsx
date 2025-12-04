@@ -262,7 +262,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -294,7 +294,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     await waitFor(() => expect(code).toBeDefined());
@@ -322,7 +322,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -354,7 +354,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByText('Choose a Project')).toBeInTheDocument();
@@ -394,7 +394,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByText('Choose a Project')).toBeInTheDocument();
@@ -436,7 +436,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByText('Choose scope')).toBeInTheDocument();
@@ -473,7 +473,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -509,7 +509,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
@@ -538,7 +538,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
@@ -776,7 +776,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
@@ -819,7 +819,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Sign in'));
+      fireEvent.click(screen.getByText('Sign In'));
     });
 
     await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();

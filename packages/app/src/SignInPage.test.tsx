@@ -61,7 +61,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     expect(await screen.findByText('Batch Create')).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     // should redirect to the homepage

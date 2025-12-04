@@ -108,7 +108,7 @@ async function signIn(page: Page, email: string, password: string): Promise<void
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByLabel('Password *').fill(password);
   await page.getByLabel('Remember me').check();
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign In' }).click();
 
   // Make sure we ended up on the right page
   await expect(page).toHaveURL(/^http:\/\/localhost:3000\/Patient\?/);

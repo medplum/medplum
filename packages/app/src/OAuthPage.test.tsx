@@ -51,7 +51,7 @@ describe('OAuthPage', () => {
 
     await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(await screen.findByText('Choose scope')).toBeInTheDocument();
 
