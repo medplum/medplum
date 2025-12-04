@@ -10,13 +10,13 @@ import {
   FunctionAtom,
   IndexerAtom,
   IsAtom,
-  SymbolAtom,
   UnionAtom,
 } from '../fhirpath/atoms';
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
+import { getInnerDerivedIdentifierExpression, getParsedDerivedIdentifierExpression } from './derived';
 
 export const SearchParameterType = {
   BOOLEAN: 'BOOLEAN',
@@ -129,14 +129,15 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
   let parsedExpression: FhirPathAtom;
   if (searchParam.code.endsWith(':identifier')) {
-    const match = expression.match(/^\((.+)\)\.identifier$/);
-    if (match) {
-      const innerExpression = match[1];
-      const parsedInnerExpression = getParsedExpressionForResourceType(resourceType, innerExpression);
-      parsedExpression = new FhirPathAtom(expression, new DotAtom(parsedInnerExpression, new SymbolAtom('identifier')));
-    } else {
+    // Derived identifier search parameters define their expressions like "(Condition).identifier"
+    // This breaks the optimizations in `getExpressionsForResourceType` that filter out other unioned resource types,
+    // To keep the optimization, extract the inner expression and then manually add the ".identifier" wrapper.
+    const innerExpression = getInnerDerivedIdentifierExpression(expression);
+    if (innerExpression === undefined) {
       throw new Error(`Unexpected expression for derived identifier search parameter: ${expression}`);
     }
+    const parsedInnerExpression = getParsedExpressionForResourceType(resourceType, innerExpression);
+    parsedExpression = getParsedDerivedIdentifierExpression(expression, parsedInnerExpression);
   } else {
     parsedExpression = getParsedExpressionForResourceType(resourceType, expression);
   }
