@@ -10,7 +10,7 @@ import {
   patientsAlreadyMerged,
   replaceReferences,
   unlinkPatientRecords,
-} from './patientmergeutils';
+} from '@medplum/core';
 
 describe('Patient Merge Utils', () => {
   test('should link two patient records correctly', () => {

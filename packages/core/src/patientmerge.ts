@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-// Ported from examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts
-import type { WithId } from '@medplum/core';
-import { createReference, deepClone, getReferenceString, isReference, resolveId } from '@medplum/core';
-import type { Identifier, Patient } from '@medplum/fhirtypes';
+import type { WithId } from './utils';
+import { createReference, deepClone, getReferenceString, resolveId } from './utils';
+import { isReference } from './types';
+import type { Identifier, Patient, PatientLink } from '@medplum/fhirtypes';
 
 /**
  * Represents two patient records that have been merged or are being merged.
@@ -46,9 +46,9 @@ export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patien
   const targetCopy = deepClone(target);
   const srcCopy = deepClone(src);
   // Filter out links from the target to the source
-  targetCopy.link = targetCopy.link?.filter((link) => resolveId(link.other) !== src.id);
+  targetCopy.link = targetCopy.link?.filter((link: PatientLink) => resolveId(link.other) !== src.id);
   // Filter out links from the source to the target
-  srcCopy.link = srcCopy.link?.filter((link) => resolveId(link.other) !== target.id);
+  srcCopy.link = srcCopy.link?.filter((link: PatientLink) => resolveId(link.other) !== target.id);
 
   return { src: srcCopy, target: targetCopy };
 }
@@ -75,7 +75,7 @@ export function mergePatientRecords(
 
   // Check for conflicts between the source and target records' identifiers
   for (const srcIdentifier of srcIdentifiers) {
-    const targetIdentifier = mergedIdentifiers?.find((identifier) => identifier.system === srcIdentifier.system);
+    const targetIdentifier = mergedIdentifiers?.find((identifier: Identifier) => identifier.system === srcIdentifier.system);
     // If the targetRecord has an identifier with the same system, check if source and target agree on the identifier value
     if (targetIdentifier) {
       if (targetIdentifier.value !== srcIdentifier.value) {

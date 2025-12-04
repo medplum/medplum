@@ -23,7 +23,7 @@ import {
   mergePatientRecords,
   patientsAlreadyMerged,
   replaceReferences,
-} from './utils/patientmergeutils';
+} from '@medplum/core';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
