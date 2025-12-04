@@ -65,17 +65,83 @@ export class ReferenceTable extends LookupTable {
 
     const resourceType = resources[0].resourceType;
 
-    let existingRows: LookupTableRow[];
-    if (create) {
-      existingRows = [];
-    } else {
-      existingRows = await this.batchGetExistingValues(client, resources);
+    const existingRows = create ? undefined : await this.getExistingRows(client, resources);
+    if (existingRows === undefined || existingRows.length === 0) {
+      const newRows: ReferenceTableRow[] = [];
+      await this.extractAllValues(newRows, resources);
+
+      // nothing to delete since no existing rows
+
+      if (newRows.length > 0) {
+        await this.batchInsertRows(client, resourceType, newRows);
+      }
+      return;
     }
+
+    const existingHashesByResource = new Map<string, Set<string>>();
+    for (const row of existingRows) {
+      let hashes = existingHashesByResource.get(row.resourceId);
+      if (!hashes) {
+        hashes = new Set<string>();
+        existingHashesByResource.set(row.resourceId, hashes);
+      }
+      hashes.add(hashRow(row));
+    }
+
+    const newRowsByResource = new Map<string, ReferenceTableRow[]>();
+    await this.extractAllValues(newRowsByResource, resources);
+
+    const resourcesToDelete: Resource[] = [];
+    const rowsToInsert: LookupTableRow[] = [];
+    for (const resource of resources) {
+      const existingHashes = existingHashesByResource.get(resource.id) ?? new Set<string>();
+      const newRowsForResource = newRowsByResource.get(resource.id) ?? [];
+      const newHashes = new Set(newRowsForResource.map(hashRow));
+
+      const identical = existingHashes.size === newHashes.size && [...existingHashes].every((h) => newHashes.has(h));
+      if (!identical) {
+        resourcesToDelete.push(resource);
+        rowsToInsert.push(...newRowsForResource);
+      }
+    }
+
+    if (resourcesToDelete.length > 0) {
+      getLogger().info('Reference changes detected', {
+        resourceType,
+        unchangedCount: resources.length - resourcesToDelete.length,
+        changedCount: resourcesToDelete.length,
+        rowsToInsert: rowsToInsert.length,
+        sampleIds: resourcesToDelete.slice(0, 5),
+      });
+    }
+
+    if (resourcesToDelete.length > 0) {
+      await this.batchDeleteValuesForResources(client, resourcesToDelete);
+    }
+
+    if (rowsToInsert.length > 0) {
+      await this.batchInsertRows(client, resourceType, rowsToInsert);
+    }
+  }
+
+  /**
+   * Extracts values from all resources with batching to avoid blocking the event loop.
+   * @param result - The array to populate with extracted values.
+   * @param resources - The resources to extract values from.
+   */
+  private async extractAllValues<T extends Resource>(
+    result: ReferenceTableRow[] | Map<string, ReferenceTableRow[]>,
+    resources: WithId<T>[]
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
 
     // Batch at the resource level to avoid tying up the event loop for too long
     // with synchronous work without any async breaks between DB calls.
     const resourceBatchSize = 200;
-    const newRows: ReferenceTableRow[] = [];
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
       for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
         const resource = resources[j];
@@ -85,7 +151,16 @@ export class ReferenceTable extends LookupTable {
           );
         }
         try {
-          this.extractValues(newRows, resource);
+          if (result instanceof Map) {
+            let rowArray = result.get(resource.id);
+            if (!rowArray) {
+              rowArray = [];
+              result.set(resource.id, rowArray);
+            }
+            this.extractValues(rowArray, resource);
+          } else {
+            this.extractValues(result, resource);
+          }
         } catch (err) {
           getLogger().error('Error extracting values for resource', {
             resource: `${resourceType}/${resource.id}`,
@@ -95,72 +170,25 @@ export class ReferenceTable extends LookupTable {
         }
       }
     }
-
-    // Identify diff between existing rows and new rows
-    const resourcesToDelete: Resource[] = [];
-    const rowsToInsert: LookupTableRow[] = [];
-    for (const resource of resources) {
-      const existingForResource = existingRows.filter((r) => r.resourceId === resource.id);
-      const newForResource = newRows.filter((r) => r.resourceId === resource.id);
-
-      // Check if the sets are identical (ignoring order)
-      let areIdentical = existingForResource.length === newForResource.length;
-      if (areIdentical) {
-        // Sort and compare stringified rows with sorted keys
-        const sortedExisting = existingForResource.map((r) => JSON.stringify(r, Object.keys(r).sort())).sort();
-        const sortedNew = newForResource.map((r) => JSON.stringify(r, Object.keys(r).sort())).sort();
-        areIdentical = sortedExisting.every((val, idx) => val === sortedNew[idx]);
-      }
-
-      if (!areIdentical) {
-        console.log('Changes detected for resource', `${resourceType}/${resource.id}`);
-        console.log('Existing rows:\n', JSON.stringify(existingForResource, null, 2));
-        console.log('New rows:\n', JSON.stringify(newForResource, null, 2));
-        resourcesToDelete.push(resource);
-        rowsToInsert.push(...newForResource);
-      }
-    }
-
-    // getLogger().info('Batch indexing resources', {
-    //   resourceType,
-    //   unchangedResources: resources.length - resourcesToDelete.length,
-    //   resourcesToDelete: resourcesToDelete.length,
-    //   rowsToInsert: rowsToInsert.length,
-    // });
-
-    if (resourcesToDelete.length > 0) {
-      await this.batchDeleteValuesForResources(client, resourcesToDelete);
-    }
-
-    if (rowsToInsert.length > 0) {
-      await this.insertValuesForResource(client, resourceType, rowsToInsert);
-    }
   }
 
   extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
     getSearchReferences(result, resource);
   }
 
-  async batchGetExistingValues<T extends Resource>(
-    client: Pool | PoolClient,
-    resources: T[]
-  ): Promise<LookupTableRow[]> {
+  async getExistingRows<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<ReferenceTableRow[]> {
     if (resources.length === 0) {
       return [];
     }
-
-    const tableName = this.getTableName(resources[0].resourceType);
-    const resourceIds = resources.map((r) => r.id);
-
-    const selectQuery = new SelectQuery(tableName).where('resourceId', 'IN', resourceIds);
+    const selectQuery = new SelectQuery(this.getTableName(resources[0].resourceType)).where(
+      'resourceId',
+      'IN',
+      resources.map((r) => r.id)
+    );
     for (const columnName of this.allColumnNames) {
       selectQuery.column(columnName);
     }
-    // console.log('Executing select query for existing rows:');
-    const rows = await selectQuery.execute(client);
-    // console.log('Existing rows fetched:', rows.length);
-    // console.log(JSON.stringify(rows, null, 2));
-    return rows as LookupTableRow[];
+    return selectQuery.execute<ReferenceTableRow>(client);
   }
 
   /**
@@ -169,7 +197,7 @@ export class ReferenceTable extends LookupTable {
    * @param resourceType - The resource type.
    * @param values - The values to insert.
    */
-  async insertValuesForResource(
+  async batchInsertRows(
     client: Pool | PoolClient,
     resourceType: ResourceType,
     values: Record<string, any>[]
@@ -187,6 +215,15 @@ export class ReferenceTable extends LookupTable {
       await insert.execute(client);
     }
   }
+}
+
+/**
+ * Creates a hash string for a reference row for efficient comparison.
+ * @param row - The reference table row.
+ * @returns A hash string combining resourceId, targetId, and code.
+ */
+function hashRow(row: ReferenceTableRow): string {
+  return `${row.resourceId}|${row.targetId}|${row.code}`;
 }
 
 /**
