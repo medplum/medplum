@@ -12,6 +12,7 @@ import {
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
+import { getSearchParameterImplementation } from '../searchparameter';
 import { InsertQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -92,7 +93,13 @@ function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resou
       continue;
     }
 
-    const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    if (!impl) {
+      // TODO: Should this continue instead of throwing for backwards compat?
+      throw new Error(`No implementation for search parameter ${resource.resourceType}|${searchParam.code}`);
+    }
+
+    const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
     for (const value of typedValues) {
       if (value.type === PropertyType.Reference && value.value.reference) {
         const targetId = resolveId(value.value);
