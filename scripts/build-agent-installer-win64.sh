@@ -12,6 +12,12 @@ if ! command -v makensis >/dev/null 2>&1; then
     exit 1
 fi
 
+# Make sure environment variables are set
+if [ -z "$SHAWL_VERSION" ]; then
+    echo "SHAWL_VERSION is not set"
+    exit 1
+fi
+
 # Get the current version number
 export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Get full version, including the git shorthash, delimited by a '-'

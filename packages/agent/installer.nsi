@@ -11,7 +11,7 @@
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
-!define SHAWL_VERSION            "v1.5.0"
+!define SHAWL_VERSION            "$%SHAWL_VERSION%"
 !define SHAWL_EXE_NAME           "shawl-${SHAWL_VERSION}-$%MEDPLUM_GIT_SHORTHASH%-win64.exe"
 
 Name                             "${APP_NAME}"
