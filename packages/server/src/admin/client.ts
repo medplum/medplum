@@ -54,6 +54,7 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   const systemRepo = getSystemRepo();
   const client = await systemRepo.createResource<ClientApplication>({
     meta: {

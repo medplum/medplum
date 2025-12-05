@@ -89,6 +89,7 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
 }
 
 async function updateUser(userId: string, params: InputParams, project: Project): Promise<User> {
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   const systemRepo = getSystemRepo();
   return systemRepo.withTransaction(async () => {
     let user = await systemRepo.readResource<User>('User', userId);
