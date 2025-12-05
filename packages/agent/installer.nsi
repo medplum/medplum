@@ -357,6 +357,6 @@ SectionEnd
     # Sign the installer and uninstaller
     # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
     # That will stop running both in parallel.
-    !finalize 'signtool.exe sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
-    !uninstfinalize 'signtool.exe sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
+    !finalize '"$%SIGNTOOL_PATH%" sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
+    !uninstfinalize '"$%SIGNTOOL_PATH%" sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
 !endif
