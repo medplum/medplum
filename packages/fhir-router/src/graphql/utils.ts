@@ -152,17 +152,29 @@ export async function resolveBySearch(
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
 
   const maxBatchSize = ctx.config?.graphqlBatchedSearchSize ?? 0;
-  if (maxBatchSize === 0 || !referenceFilter) {
-    if (referenceFilter) {
-      addFilter(searchRequest, referenceFilter);
+  try {
+    if (maxBatchSize === 0 || !referenceFilter) {
+      if (referenceFilter) {
+        addFilter(searchRequest, referenceFilter);
+      }
+      const bundle = await ctx.repo.search(searchRequest);
+      return bundle.entry?.map((e) => e.resource as Resource);
     }
-    const bundle = await ctx.repo.search(searchRequest);
-    return bundle.entry?.map((e) => e.resource as Resource);
-  }
 
-  const hash = sortedStringify(searchRequest);
-  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest, maxBatchSize));
-  return dl.load(referenceFilter);
+    const hash = sortedStringify(searchRequest);
+    const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest, maxBatchSize));
+    return dl.load(referenceFilter);
+  } catch (err: any) {
+    // Check for connection pool exhaustion errors and mark them
+    const errorMessage = err?.message?.toLowerCase() || '';
+    if (errorMessage.includes('too many clients') || errorMessage.includes('too many connections')) {
+      // Mark the error so GraphQL handler can detect it
+      if (err.isConnectionExhaustion === undefined) {
+        err.isConnectionExhaustion = true;
+      }
+    }
+    throw err;
+  }
 }
 
 function buildResolveBySearchDataLoader(

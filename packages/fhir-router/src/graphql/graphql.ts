@@ -12,6 +12,7 @@ import {
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  serverError,
 } from '@medplum/core';
 import type { Bundle, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
@@ -145,13 +146,95 @@ export async function graphqlHandler(
       searchDataLoaders: Object.create(null),
     };
 
-    result = await execute({
-      schema,
-      document,
-      contextValue,
-      operationName,
-      variableValues: variables,
-    });
+    try {
+      result = await execute({
+        schema,
+        document,
+        contextValue,
+        operationName,
+        variableValues: variables,
+      });
+
+      // Check if any errors are connection pool exhaustion errors
+      // For resource exhaustion, fail the entire query rather than returning partial results
+      const hasConnectionExhaustion = result.errors?.some((err: any) => {
+        // Helper function to check if a message indicates connection exhaustion
+        const isConnectionExhaustionMessage = (msg: string | undefined): boolean => {
+          if (!msg) return false;
+          const lowerMsg = msg.toLowerCase();
+          return lowerMsg.includes('too many clients') || lowerMsg.includes('too many connections');
+        };
+
+        // Helper to recursively check an error object and its properties
+        const checkErrorForExhaustion = (error: any, depth = 0): boolean => {
+          if (!error || depth > 5) return false; // Prevent infinite loops
+
+          // Check if marked as connection exhaustion
+          if (error.isConnectionExhaustion === true) {
+            return true;
+          }
+
+          // Check message
+          if (isConnectionExhaustionMessage(error.message)) {
+            return true;
+          }
+
+          // Check all string properties
+          for (const key in error) {
+            if (key === 'message' || key === 'originalError' || key === 'cause' || key === 'extensions') {
+              continue; // Check these separately
+            }
+            if (typeof error[key] === 'string' && isConnectionExhaustionMessage(error[key])) {
+              return true;
+            }
+          }
+
+          // Recursively check nested properties
+          if (error.originalError) {
+            if (checkErrorForExhaustion(error.originalError, depth + 1)) return true;
+          }
+          if (error.cause) {
+            if (checkErrorForExhaustion(error.cause, depth + 1)) return true;
+          }
+          if (error.extensions?.originalError) {
+            if (checkErrorForExhaustion(error.extensions.originalError, depth + 1)) return true;
+          }
+
+          return false;
+        };
+
+        // Debug: Log first error structure for troubleshooting
+        if (result.errors && result.errors.length > 0 && err === result.errors[0]) {
+          router.log('debug', 'GraphQL error structure (first error)', {
+            message: err.message,
+            hasOriginalError: !!err.originalError,
+            originalErrorType: err.originalError?.constructor?.name,
+            originalErrorMessage: err.originalError?.message,
+            originalErrorIsConnectionExhaustion: err.originalError?.isConnectionExhaustion,
+            extensions: err.extensions,
+          });
+        }
+
+        return checkErrorForExhaustion(err);
+      });
+
+      if (hasConnectionExhaustion) {
+        router.log('warn', 'Connection pool exhausted - failing entire GraphQL query');
+        return [serverError(new Error('Database connection pool exhausted. Please retry the request.'))];
+      }
+    } catch (err: any) {
+      // Handle connection errors thrown during execution
+      const errorMessage = err?.message?.toLowerCase() || '';
+      if (
+        err?.isConnectionExhaustion ||
+        errorMessage.includes('too many clients') ||
+        errorMessage.includes('too many connections')
+      ) {
+        return [serverError(new Error('Database connection pool exhausted. Please retry the request.'))];
+      }
+      // Re-throw other errors to be handled by the error handler
+      throw err;
+    }
   }
 
   return [allOk, result, { contentType: ContentType.JSON }];
@@ -346,18 +429,30 @@ async function resolveByConnectionApi(
     searchRequest.count = 0;
   }
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
-  const bundle = await ctx.repo.search(searchRequest);
-  return {
-    count: bundle.total,
-    offset: searchRequest.offset ?? 0,
-    pageSize: searchRequest.count ?? DEFAULT_SEARCH_COUNT,
-    edges: bundle.entry?.map((e) => ({
-      mode: e.search?.mode,
-      score: e.search?.score,
-      resource: e.resource as Resource,
-    })),
-    next: getNextCursor(bundle),
-  };
+  try {
+    const bundle = await ctx.repo.search(searchRequest);
+    return {
+      count: bundle.total,
+      offset: searchRequest.offset ?? 0,
+      pageSize: searchRequest.count ?? DEFAULT_SEARCH_COUNT,
+      edges: bundle.entry?.map((e) => ({
+        mode: e.search?.mode,
+        score: e.search?.score,
+        resource: e.resource as Resource,
+      })),
+      next: getNextCursor(bundle),
+    };
+  } catch (err: any) {
+    // Check for connection pool exhaustion errors and mark them
+    const errorMessage = err?.message?.toLowerCase() || '';
+    if (errorMessage.includes('too many clients') || errorMessage.includes('too many connections')) {
+      // Mark the error so GraphQL handler can detect it
+      if (err.isConnectionExhaustion === undefined) {
+        err.isConnectionExhaustion = true;
+      }
+    }
+    throw err;
+  }
 }
 
 /**
