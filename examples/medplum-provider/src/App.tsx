@@ -40,6 +40,7 @@ import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
+import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
@@ -184,6 +185,8 @@ export function App(): JSX.Element | null {
                 <Route path="edit" element={<EditTab />} />
                 <Route path="Communication" element={<CommunicationTab />} />
                 <Route path="Communication/:messageId" element={<CommunicationTab />} />
+                <Route path="Task" element={<TasksTab />} />
+                <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />

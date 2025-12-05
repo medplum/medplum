@@ -19,11 +19,19 @@ describe('TaskBoard', () => {
   });
 
   const setup = (props: Partial<React.ComponentProps<typeof TaskBoard>> = {}): ReturnType<typeof render> => {
+    const defaultOnSelectedItem = (task: Task): string => `/Task/${task.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskBoard query="" selectedTaskId={undefined} onTaskChange={vi.fn()} onDeleteTask={vi.fn()} {...props} />
+            <TaskBoard
+              query=""
+              selectedTaskId={undefined}
+              onTaskChange={vi.fn()}
+              onDeleteTask={vi.fn()}
+              onSelectedItem={defaultOnSelectedItem}
+              {...props}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -187,5 +195,34 @@ describe('TaskBoard', () => {
     await waitFor(() => {
       expect(screen.getByText('No task selected')).toBeInTheDocument();
     });
+  });
+
+  test('passes onSelectedItem to TaskListItem when provided', async () => {
+    await medplum.createResource(mockTask);
+    const onSelectedItem = vi.fn((task: Task) => `/Custom/${task.id}`);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+
+    setup({ onSelectedItem });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Custom/task-123');
+  });
+
+  test('uses onSelectedItem URL', async () => {
+    await medplum.createResource(mockTask);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Task/task-123');
   });
 });

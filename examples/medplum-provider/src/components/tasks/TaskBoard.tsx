@@ -31,10 +31,11 @@ interface TaskBoardProps {
   selectedTaskId: string | undefined;
   onTaskChange: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
+  onSelectedItem: (task: Task) => string;
 }
 
 export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onTaskChange, onDeleteTask } = props;
+  const { query, selectedTaskId, onTaskChange, onDeleteTask, onSelectedItem } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
@@ -196,7 +197,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   tasks.length > 0 &&
                   tasks.map((task, index) => (
                     <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} />
+                      <TaskListItem task={task} selectedTask={selectedTask} onSelectedItem={onSelectedItem} />
                       {index < tasks.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}

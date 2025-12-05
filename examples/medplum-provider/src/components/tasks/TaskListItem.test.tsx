@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach } from 'vitest';
+import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { TaskListItem } from './TaskListItem';
 import type { Task, Patient, Practitioner } from '@medplum/fhirtypes';
 
@@ -16,12 +16,21 @@ describe('TaskListItem', () => {
     medplum = new MockClient();
   });
 
-  const setup = (task: Task, selectedTask?: Task): ReturnType<typeof render> => {
+  const setup = (
+    task: Task,
+    selectedTask?: Task,
+    onSelectedItem?: (task: Task) => string
+  ): ReturnType<typeof render> => {
+    const defaultOnSelectedItem = (t: Task): string => `/Task/${t.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem task={task} selectedTask={selectedTask} />
+            <TaskListItem
+              task={task}
+              selectedTask={selectedTask}
+              onSelectedItem={onSelectedItem ?? defaultOnSelectedItem}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -90,5 +99,45 @@ describe('TaskListItem', () => {
   test('highlights selected task', () => {
     setup(mockTask, mockTask);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
+  });
+
+  test('uses onSelectedItem URL', () => {
+    setup(mockTask);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Task/task-123');
+  });
+
+  test('uses custom URL from onSelectedItem when provided', () => {
+    const onSelectedItem = (task: Task): string => {
+      return `/Patient/patient-123/Task/${task.id}`;
+    };
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <TaskListItem task={mockTask} selectedTask={undefined} onSelectedItem={onSelectedItem} />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Patient/patient-123/Task/task-123');
+  });
+
+  test('calls onSelectedItem with correct task', () => {
+    const onSelectedItem = vi.fn((task: Task) => `/Custom/${task.id}`);
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <TaskListItem task={mockTask} selectedTask={undefined} onSelectedItem={onSelectedItem} />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    expect(onSelectedItem).toHaveBeenCalledWith(mockTask);
+    expect(onSelectedItem).toHaveBeenCalledTimes(1);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/Custom/task-123');
   });
 });
