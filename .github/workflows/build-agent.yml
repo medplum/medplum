@@ -129,7 +129,7 @@ jobs:
 
       - name: Build Agent executable and download dependencies
         shell: bash
-        run: ./scripts/build-agent-installer-win64.sh
+        run: ./scripts/build-agent-win64.sh
         env:
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
 
@@ -169,6 +169,7 @@ jobs:
           append-signature: true
 
       - name: Set Azure CodeSigning DLL path
+        if: ${{ inputs.sign_output }}
         shell: pwsh
         run: |
           $dll = Get-ChildItem -Path "$env:LOCALAPPDATA" -Filter "Azure.CodeSigning.Dlib.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -187,7 +188,7 @@ jobs:
 
       - name: Build Agent installer
         shell: bash
-        run: ./scripts/build-agent-installer-win64-final.sh
+        run: ./scripts/build-agent-installer-win64.sh
         env:
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
           SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}

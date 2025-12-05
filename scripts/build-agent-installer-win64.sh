@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-# Agent Installer - Step 1: Build executable and download dependencies
-# This script prepares the files that need to be signed
-# Signing is now handled by Azure Trusted Signing Action in the GitHub workflow
+# Agent Installer - Step 2: Build installer after signing
+# This script creates the final installer using makensis
 
 # Fail on error
 set -e
 
 # Pre-requisites
-if ! command -v wget >/dev/null 2>&1; then
-    echo "wget required"
+if ! command -v makensis >/dev/null 2>&1; then
+    echo "makensis required"
     exit 1
 fi
 
@@ -21,30 +20,38 @@ export MEDPLUM_FULL_VERSION="$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH"
 # Move into packages/agent
 pushd packages/agent
 
-pushd ../..
+# Build the installer (unsigned, will be signed in the workflow)
+makensis installer.nsi
 
-# Build the executable
-./scripts/build-agent-sea-win64.sh
+# Generate the installer checksum
+sha256sum "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
-popd
+# Check the installer checksum
+sha256sum --check "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
-# Download Shawl exe
-rm -f shawl-v1.5.0-win64.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-win64.zip
-unzip shawl-v1.5.0-win64.zip
-mv shawl.exe dist/shawl-v1.5.0-win64.exe
+if [ -z "$SKIP_SIGNING" ]; then
+  # Generate a GPG signature for the installer
+  # --batch = Use batch mode. Never ask, do not allow interactive commands.
+  # --yes = Assume "yes" on most questions. Should not be used in an option file.
+  # --pinentry-mode loopback = Allows the passphrase to be set via command line or fd.
+  # --passphrase-fd 0 = Read the passphrase from file descriptor 0 (stdin).
+  # --local-user = Specify the key to use for signing.
+  # --detach-sign --armor = Create a detached ASCII armored signature.
+  echo "$GPG_PASSPHRASE" | gpg \
+    --batch \
+    --yes \
+    --pinentry-mode loopback \
+    --passphrase-fd 0 \
+    --local-user "$GPG_KEY_ID" \
+    --detach-sign --armor \
+    "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe"
 
-# Download Shawl legal
-rm -f shawl-v1.5.0-legal.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-legal.zip
-unzip shawl-v1.5.0-legal.zip
-mv shawl-v1.5.0-legal.txt dist
+  # Check the signature
+  gpg --verify "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.asc"
+fi
 
 # Check the build output
-ls -la dist
-
-# Make sure binary runs
-dist/medplum-agent-$MEDPLUM_FULL_VERSION-win64.exe --help
+ls -la
 
 # Move back to root
 popd
