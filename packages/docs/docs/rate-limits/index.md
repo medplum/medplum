@@ -40,7 +40,7 @@ with the sum of each user's interactions in a given minute compared to the confi
 a limit on the total interactions for all users within a Project as a whole, which defaults to ten times the per-user
 limit.
 
-### How to view and configure rate limits
+### How to view and configure FHIR quota rate limits
 
 You can configure rate limits at the **Server**, **Project**, and **User** levels.
 
