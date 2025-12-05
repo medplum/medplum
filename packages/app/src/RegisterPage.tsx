@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert } from '@mantine/core';
+import { Alert, Title } from '@mantine/core';
 import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -42,7 +42,7 @@ export function RegisterPage(): JSX.Element | null {
       recaptchaSiteKey={config.recaptchaSiteKey}
     >
       <Logo size={32} />
-      <h2>Create a new Medplum account</h2>
+      <Title order={3} py="lg">Register a new account</Title>
     </RegisterForm>
   );
 }
