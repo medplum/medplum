@@ -12,7 +12,7 @@
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
 !define SHAWL_VERSION            "v1.5.0"
-!define SHAWL_EXE_NAME           "shawl-${SHAWL_VERSION}-$%MEDPLUM_VERSION%-win64.exe"
+!define SHAWL_EXE_NAME           "shawl-${SHAWL_VERSION}-$%MEDPLUM_GIT_SHORTHASH%-win64.exe"
 
 Name                             "${APP_NAME}"
 OutFile                          "${INSTALLER_FILE_NAME}"
