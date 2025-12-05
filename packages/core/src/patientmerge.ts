@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Identifier, Patient, PatientLink } from '@medplum/fhirtypes';
+import { isReference } from './types';
 import type { WithId } from './utils';
 import { createReference, deepClone, getReferenceString, resolveId } from './utils';
-import { isReference } from './types';
-import type { Identifier, Patient, PatientLink } from '@medplum/fhirtypes';
 
 /**
  * Represents two patient records that have been merged or are being merged.
@@ -21,6 +21,15 @@ export interface MergedPatients {
  * @param src - The source patient record which is being replaced.
  * @param target - The target patient record which will replace the source.
  * @returns Object containing updated source and target patient records with their links.
+ * @example
+ * ```ts
+ * const src = { resourceType: 'Patient', id: 'old' } as WithId<Patient>;
+ * const target = { resourceType: 'Patient', id: 'new' } as WithId<Patient>;
+ * const { src: updatedSrc, target: updatedTarget } = linkPatientRecords(src, target);
+ * // updatedSrc.active === false
+ * // updatedSrc.link[0].type === 'replaced-by'
+ * // updatedTarget.link[0].type === 'replaces'
+ * ```
  */
 export function linkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
@@ -41,6 +50,14 @@ export function linkPatientRecords(src: WithId<Patient>, target: WithId<Patient>
  * @param src - The source patient record which is marked as replaced.
  * @param target - The target patient marked as the master record.
  * @returns Object containing updated source and target patient records with their links removed.
+ * @example
+ * ```ts
+ * const src = { resourceType: 'Patient', id: 'old', link: [{ type: 'replaced-by', other: { reference: 'Patient/new' } }] } as WithId<Patient>;
+ * const target = { resourceType: 'Patient', id: 'new', link: [{ type: 'replaces', other: { reference: 'Patient/old' } }] } as WithId<Patient>;
+ * const { src: updatedSrc, target: updatedTarget } = unlinkPatientRecords(src, target);
+ * // updatedSrc.link is now []
+ * // updatedTarget.link is now []
+ * ```
  */
 export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
@@ -63,6 +80,16 @@ export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patien
  * @param fields - Optional additional fields to be merged into the target.
  * @returns Object containing the original source and the merged target patient records.
  * @throws Error if identifiers with the same system have conflicting values.
+ * @example
+ * ```ts
+ * const src = { resourceType: 'Patient', id: 'old', identifier: [{ system: 'http://old-system.org', value: '456', use: 'usual' }] } as WithId<Patient>;
+ * const target = { resourceType: 'Patient', id: 'new', identifier: [{ system: 'http://new-system.org', value: '789', use: 'official' }] } as WithId<Patient>;
+ * const result = mergePatientRecords(src, target, { address: [{ city: 'Springfield' }] });
+ * // result.target.identifier has 2 items:
+ * //   - original: { system: 'http://new-system.org', value: '789', use: 'official' }
+ * //   - merged: { system: 'http://old-system.org', value: '456', use: 'old' }
+ * // address copied from fields
+ * ```
  */
 export function mergePatientRecords(
   src: WithId<Patient>,
@@ -75,7 +102,9 @@ export function mergePatientRecords(
 
   // Check for conflicts between the source and target records' identifiers
   for (const srcIdentifier of srcIdentifiers) {
-    const targetIdentifier = mergedIdentifiers?.find((identifier: Identifier) => identifier.system === srcIdentifier.system);
+    const targetIdentifier = mergedIdentifiers?.find(
+      (identifier: Identifier) => identifier.system === srcIdentifier.system
+    );
     // If the targetRecord has an identifier with the same system, check if source and target agree on the identifier value
     if (targetIdentifier) {
       if (targetIdentifier.value !== srcIdentifier.value) {
@@ -104,6 +133,17 @@ export function mergePatientRecords(
  * @param target - The target patient record
  * @returns true if both the source and target patients are part of the same merged "cluster" of records.
  * @throws Error if the link structure is inconsistent (e.g., source replaced-by target but target doesn't have replaces link).
+ * @example
+ * ```ts
+ * const master = { resourceType: 'Patient', id: 'master', link: [] } as Patient;
+ * const src = { resourceType: 'Patient', id: 'old', link: [{ type: 'replaced-by', other: createReference(master) }] } as Patient;
+ * const target = { resourceType: 'Patient', id: 'new', link: [{ type: 'replaced-by', other: createReference(master) }] } as Patient;
+ * master.link = [
+ *   { type: 'replaces', other: createReference(src) },
+ *   { type: 'replaces', other: createReference(target) },
+ * ];
+ * patientsAlreadyMerged(src, target); // returns true
+ * ```
  */
 export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
   const srcMaster = src.link?.find((link) => link.type === 'replaced-by')?.other;
@@ -144,6 +184,17 @@ export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
  * @param obj - A FHIR resource or element (will be mutated)
  * @param srcReference - The reference string referring to the source resource (e.g., "Patient/123")
  * @param targetReference - The reference string referring to the target resource (e.g., "Patient/456")
+ * @example
+ * ```ts
+ * const observation = {
+ *   resourceType: 'Observation',
+ *   subject: { reference: 'Patient/old' },
+ *   performer: [{ reference: 'Patient/old' }, { reference: 'Practitioner/1' }],
+ * };
+ * replaceReferences(observation, 'Patient/old', 'Patient/new');
+ * // observation.subject.reference === 'Patient/new'
+ * // performer[0].reference === 'Patient/new'; performer[1] unchanged
+ * ```
  */
 export function replaceReferences(obj: any, srcReference: string, targetReference: string): void {
   for (const key in obj) {

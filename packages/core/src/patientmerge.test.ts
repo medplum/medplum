@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 // Ported from examples/medplum-demo-bots/src/deduplication/merge-matching-patients.test.ts
-import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
-import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Identifier, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import {
   linkPatientRecords,
   mergePatientRecords,
   patientsAlreadyMerged,
   replaceReferences,
   unlinkPatientRecords,
-} from '@medplum/core';
+} from './patientmerge';
+import type { WithId } from './utils';
+import { createReference, getIdentifier } from './utils';
 
 describe('Patient Merge Utils', () => {
   test('should link two patient records correctly', () => {
@@ -201,9 +201,12 @@ describe('Patient Merge Utils', () => {
     const result = mergePatientRecords(srcPatient, targetPatient);
 
     expect(result.target.identifier).toHaveLength(3);
-    expect(result.target.identifier?.find((id) => id.system === 'http://foo.org')?.use).toBe('old');
-    expect(result.target.identifier?.find((id) => id.system === 'http://bar.org')?.use).toBe('old');
-    expect(result.target.identifier?.find((id) => id.system === 'http://baz.org')?.use).toBe('official');
+    expect(getIdentifier(result.target, 'http://foo.org')).toBe('123');
+    expect(getIdentifier(result.target, 'http://bar.org')).toBe('456');
+    expect(getIdentifier(result.target, 'http://baz.org')).toBe('789');
+    expect(result.target.identifier?.find((id: Identifier) => id.system === 'http://foo.org')?.use).toBe('old');
+    expect(result.target.identifier?.find((id: Identifier) => id.system === 'http://bar.org')?.use).toBe('old');
+    expect(result.target.identifier?.find((id: Identifier) => id.system === 'http://baz.org')?.use).toBe('official');
   });
 
   test('should handle patients without identifiers in source', () => {

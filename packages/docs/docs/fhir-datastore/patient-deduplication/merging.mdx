@@ -1,6 +1,3 @@
-import ExampleCode from '!!raw-loader!@site/../../examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts';
-import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-
 # Merging {#merge-rules}
 
 The merge step of the deduplication pipeline typically contains the most complexity. The merge operation will depend on your clinical and business context, your downstream application, and how frequently you will _unmerge_ records.
@@ -16,7 +13,6 @@ The `Patient.active` element is used to indicate the master record for the patie
 The `Patient.link` element is used to connect duplicate patient records via reference.
 
 - For each [**source record**](/docs/fhir-datastore/patient-deduplication/architecture-overview#glossary)
-
   - `Patient.link.other` references the master record
   - `Patient.link.type` takes the value `"replaced-by"`
 
@@ -24,12 +20,7 @@ The `Patient.link` element is used to connect duplicate patient records via refe
   - `Patient.link.other` references each source record
   - `Patient.link.type` takes the value `"replaces"`
 
-<details>
-  <summary>Example: Linking patient records</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="linkPatientRecords">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+See the [`linkPatientRecords`](/docs/sdk/core.linkpatientrecords) function in the SDK documentation for implementation details.
 
 ## Master Record Structure
 
@@ -56,12 +47,7 @@ Use this approach if:
 - Unmerge is an important and frequent operation.
 - Duplicates are common.
 
-<details>
-  <summary>Example: Merge identifiers of two patient records</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="mergeIdentifiers">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+See the [`mergePatientRecords`](/docs/sdk/core.mergepatientrecords) function in the SDK documentation for implementation details.
 
 ### Record Promotion
 
@@ -108,14 +94,7 @@ The downstream applications and the frequency of unmerge operations will primari
 
 Rewriting all references to point to the master record simplifies queries for client applications, and most mature implementations for patient care should target this approach. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
 
-The most efficient way to retrieve all clinical data associated with a patient is to use the [`readPatientEverything`](/docs/sdk/core.medplumclient.readpatienteverything) operation. This operation returns all resources in the patient compartment in a single request (or paginated across multiple requests for large datasets). The operation supports pagination via the `_count` and `_offset` parameters, and the returned Bundle will include `next` links when additional pages are available. The example below demonstrates how to use `readPatientEverything` to rewrite all clinical data references, including handling pagination to process all resources.
-
-<details>
-  <summary>Example: Update References on Clinical Data</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="updateReferences">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+See the [`replaceReferences`](/docs/sdk/core.replacereferences) function in the SDK documentation for implementation details.
 
 However, this approach complicates the unmerge operation. Unmerging a single `Patient` might require rewriting references for a large number of clinical resources. Additionally, we will need to maintain information about the source patient for each clinical resource, which we can do by setting the `Resource.meta.source` element to a value corresponding to the source system.
 
@@ -127,9 +106,4 @@ Maintaining references to source records is preferable when absolute clarity abo
 
 In some cases, you may want to completely disable merging for two records. This could be because they are similar, but have been determined not to be duplicates by a human review. In this case you can add them to a Do Not Match List. For more details, see the docs on [Do Not Match Lists](/docs/fhir-datastore/patient-deduplication/matching#do-not-match-lists).
 
-<details>
-  <summary>Example: Add record to a Do Not Match List</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="doNotMatch">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+For a complete example implementation, see the [patient deduplication demo bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/merge-matching-patients.ts).
