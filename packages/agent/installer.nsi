@@ -246,8 +246,43 @@ Function UpgradeApp
     ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --remove-old-services" $1
     DetailPrint "Exit code $1"
 
+    # Clean up old shawl executables
+    DetailPrint "Cleaning up old shawl executables..."
+    Call CleanupOldShawlExecutables
+
     DetailPrint "Writing uninstaller for upgraded version..."
     WriteUninstaller "$INSTDIR\uninstall.exe"
+FunctionEnd
+
+# Clean up old shawl executables from previous installations
+# This function finds and deletes all shawl-*.exe files except the current version
+Function CleanupOldShawlExecutables
+    Push $0  # File handle
+    Push $1  # File name
+
+    ClearErrors
+    FindFirst $0 $1 "$INSTDIR\shawl-*.exe"
+
+    ${DoWhile} $1 != ""
+        # Skip if this is the current shawl executable
+        ${If} $1 != "${SHAWL_EXE_NAME}"
+            DetailPrint "Deleting old shawl executable: $1"
+            Delete "$INSTDIR\$1"
+            ${If} ${Errors}
+                DetailPrint "Warning: Could not delete $1 (may be in use)"
+                ClearErrors
+            ${EndIf}
+        ${Else}
+            DetailPrint "Keeping current shawl executable: $1"
+        ${EndIf}
+
+        FindNext $0 $1
+    ${Loop}
+
+    FindClose $0
+
+    Pop $1
+    Pop $0
 FunctionEnd
 
 # Do the actual installation.
