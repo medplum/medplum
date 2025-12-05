@@ -40,7 +40,7 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
-import type { CdsRequest, CdsResponse, CdsService } from './cds';
+import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { isBrowserEnvironment, locationUtils } from './environment';
@@ -2897,8 +2897,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The list of CDS services.
    */
-  getCdsServices(options?: MedplumRequestOptions): Promise<CdsService[]> {
-    return this.get<CdsService[]>('/cds-services', options);
+  getCdsServices(options?: MedplumRequestOptions): Promise<CdsDiscoveryResponse> {
+    return this.get<CdsDiscoveryResponse>('/cds-services', options);
   }
 
   /**
