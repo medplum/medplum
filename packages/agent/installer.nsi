@@ -357,6 +357,6 @@ SectionEnd
     # Sign the installer and uninstaller
     # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
     # That will stop running both in parallel.
-    !finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-    !uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+    !finalize '"$%SIGNTOOL_PATH%" sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
+    !uninstfinalize '"$%SIGNTOOL_PATH%" sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
 !endif

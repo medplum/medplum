@@ -116,6 +116,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write # Required for OIDC authentication with Azure Trusted Signing
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -129,15 +130,6 @@ jobs:
 
       - name: Install Wget
         run: choco install wget
-
-      - name: Import GPG key
-        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
-
-      - name: Setup Java
-        uses: actions/setup-java@17f84c3641ba7b8f6deff6309fc4c864478f5d62 # v3.14.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
 
       - name: Setup Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
@@ -223,18 +215,68 @@ jobs:
             const path = await getSigntoolLocation();
             return path.replace(' ', '\ ');
 
+      - name: Build Agent executable and download dependencies
+        shell: bash
+        run: ./scripts/build-agent-win64.sh
+        env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+
+      - name: Login to Azure
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Sign executables with Azure Trusted Signing
+        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          exclude-azure-cli-credential: true
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: false
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: GitHubActionSigner
+          certificate-profile-name: MedplumCI
+          files-folder: ${{ github.workspace }}\packages\agent\dist
+          files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          append-signature: true
+
+      - name: Set Azure CodeSigning DLL path
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Path "$env:LOCALAPPDATA" -Filter "Azure.CodeSigning.Dlib.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dll) {
+            $folder = Split-Path $dll.FullName -Parent
+            echo "AZURE_CODESIGNING_PATH=$folder" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Set AZURE_CODESIGNING_PATH=$folder"
+          } else {
+            Write-Error "Azure.CodeSigning.Dlib.dll not found"
+            exit 1
+          }
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
           GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
           GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
-          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
-          SM_HOST: ${{ secrets.SM_HOST }}
-          SM_API_KEY: ${{ secrets.SM_API_KEY }}
-          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
-          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
 
       - name: Upload Agent installer
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
