@@ -14,20 +14,37 @@ The following tools are used to build the agent:
 - [Shawl](https://github.com/mtkennerly/shawl) for the Microsoft Windows service wrapper
 - [Azure Trusted Signing](https://azure.microsoft.com/en-us/products/trusted-signing) to sign the executable files
 
-The following environment variables are required for signing:
+### Authentication and Signing
 
+The build process uses [OpenID Connect (OIDC)](https://www.microsoft.com/security/business/security-101/what-is-openid-connect-oidc) to authenticate with Azure Trusted Signing. This provides secure, secret-free authentication using federated credentials.
+
+#### Required GitHub Secrets
+
+**For Azure OIDC Authentication:**
 - `AZURE_TENANT_ID` - Azure Active Directory tenant ID
-- `AZURE_CLIENT_ID` - Azure application client ID
-- `AZURE_CLIENT_SECRET` - Azure application client secret (or use OIDC authentication)
-- `AZURE_CODE_SIGNING_ENDPOINT` - Azure Trusted Signing endpoint (e.g., https://eus.codesigning.azure.net/)
-- `AZURE_CODE_SIGNING_ACCOUNT_NAME` - Azure Trusted Signing account name
-- `AZURE_CODE_SIGNING_PROFILE_NAME` - Azure Trusted Signing certificate profile name
-- `GPG_PASSPHRASE` - GPG passphrase for signing the installer
-- `GPG_KEY_ID` - GPG key ID for signing the installer
+- `AZURE_CLIENT_ID` - Azure application client ID (from service principal with federated credentials)
+- `AZURE_SUBSCRIPTION_ID` - Azure subscription ID
 
-References:
+**For GPG Signing:**
+- `MEDPLUM_RELEASE_GPG_KEY` - The private GPG key (imported before signing)
+- `MEDPLUM_RELEASE_GPG_KEY_ID` - GPG key identifier
+- `MEDPLUM_RELEASE_GPG_PASSPHRASE` - GPG key passphrase
+
+#### Setup Instructions
+
+To configure OIDC authentication for Azure Trusted Signing:
+
+1. Create a Microsoft Entra application and service principal
+2. Add federated credentials for GitHub Actions
+3. Assign the **Trusted Signing Certificate Profile Signer** role to your service principal
+4. Configure the required GitHub secrets
+
+For detailed setup instructions, see [Authenticating with OpenID Connect](https://github.com/Azure/trusted-signing-action/blob/main/docs/OIDC.md).
+
+#### References
 
 - [Azure Trusted Signing Action](https://github.com/Azure/trusted-signing-action)
+- [Azure Trusted Signing with OIDC](https://github.com/Azure/trusted-signing-action/blob/main/docs/OIDC.md)
 - [Azure Trusted Signing Documentation](https://learn.microsoft.com/azure/trusted-signing/)
 - [Shawl](https://github.com/mtkennerly/shawl)
 - [NSIS](https://nsis.sourceforge.io/)
