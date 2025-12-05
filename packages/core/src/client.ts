@@ -1850,6 +1850,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<WithId<T>>;
   }
 
+  readCanonical<RT extends ResourceType>(
+    resourceType: RT,
+    url: string,
+    options?: MedplumRequestOptions
+  ): ReadablePromise<WithId<ExtractResource<RT>> | undefined> {
+    return this.searchOne(resourceType, 'url=' + url, options);
+  }
+
   /**
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
