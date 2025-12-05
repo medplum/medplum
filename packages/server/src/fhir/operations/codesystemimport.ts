@@ -35,6 +35,17 @@ const operation: OperationDefinition = {
         { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
       ],
     },
+    {
+      use: 'in',
+      name: 'designation',
+      min: 0,
+      max: '*',
+      part: [
+        { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+        { use: 'in', name: 'language', type: 'code', min: 0, max: '1' },
+        { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
+      ],
+    },
     { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
   ],
 };
@@ -45,10 +56,17 @@ export type ImportedProperty = {
   value: string;
 };
 
+export type Designation = {
+  code: string;
+  language?: string;
+  value: string;
+};
+
 export type CodeSystemImportParameters = {
   system?: string;
   concept?: Coding[];
   property?: ImportedProperty[];
+  designation?: Designation[];
 };
 
 /**
@@ -82,7 +100,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   try {
     await repo.withTransaction(async (db) => {
-      await importCodeSystem(db, codeSystem, params.concept, params.property);
+      await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
     });
   } catch (err) {
     return [normalizeOperationOutcome(err)];
@@ -94,7 +112,8 @@ export async function importCodeSystem(
   db: PoolClient,
   codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
-  properties?: ImportedProperty[]
+  properties?: ImportedProperty[],
+  designations?: Designation[]
 ): Promise<void> {
   if (concepts?.length) {
     const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
@@ -112,6 +131,15 @@ export async function importCodeSystem(
 
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
+  }
+
+  if (designations?.length) {
+    const lookupCodes = new Set<string>(designations.map((d) => d.code));
+    // Batch lookup all Codings with associated properties
+    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+    const rows: Record<string, any>[] = [];
+    for (const designation of designations) {
+    }
   }
 }
 
