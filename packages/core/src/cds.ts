@@ -29,6 +29,14 @@ export interface CdsService {
 }
 
 /**
+ * CDS Discovery Response definition.
+ * See {@link https://cds-hooks.hl7.org/#discovery | CDS Hooks Discovery} for full details.
+ */
+export interface CdsDiscoveryResponse {
+  readonly services: CdsService[];
+}
+
+/**
  * CDS Request definition.
  * See {@link https://cds-hooks.hl7.org/#http-request-1 | Calling a CDS Service} for full details.
  */
