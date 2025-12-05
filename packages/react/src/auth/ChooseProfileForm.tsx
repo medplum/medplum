@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Avatar, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
+import { Box, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconBriefcase, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import classes from './ChooseProfileForm.module.css';
 
 export interface ChooseProfileFormProps {
   readonly login: string;
@@ -44,23 +46,27 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
     .filter(filterMembership)
     .slice(0, 10)
     .map((item) => (
-      <Combobox.Option value={item.id as string} key={item.id}>
+      <Combobox.Option value={item.id as string} key={item.id} className={classes.option}>
         <SelectOption {...item} />
       </Combobox.Option>
     ));
 
   return (
-    <Stack>
-      <Flex gap="md" mb="md" justify="center" align="center" direction="column" wrap="nowrap">
+    <Stack gap="0">
+      <Flex justify="center" align="center" direction="column" wrap="nowrap">
         <Logo size={32} />
-        <Title order={3}>Choose profile</Title>
+        <Title order={3} py="lg">
+          Choose a Project
+        </Title>
       </Flex>
-      <OperationOutcomeAlert outcome={outcome} />
+      <OperationOutcomeAlert outcome={outcome} mb="lg" />
       <Combobox store={combobox} onOptionSubmit={handleValueSelect}>
         <Combobox.EventsTarget>
           <TextInput
             placeholder="Search"
             value={search}
+            mb="md"
+            leftSection={<IconSearch size={16} />}
             onChange={(event) => {
               setSearch(event.currentTarget.value);
               combobox.updateSelectedOptionIndex();
@@ -69,7 +75,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
         </Combobox.EventsTarget>
 
         <div>
-          <Combobox.Options>
+          <Combobox.Options style={{ marginLeft: '-10px', marginRight: '-10px', marginBottom: '-10px' }}>
             {options.length > 0 ? options : <Combobox.Empty>Nothing found...</Combobox.Empty>}
           </Combobox.Options>
         </div>
@@ -85,14 +91,16 @@ function getMembershipLabel(membership: ProjectMembership): string | undefined {
 function SelectOption(membership: ProjectMembership): JSX.Element {
   const label = getMembershipLabel(membership);
   return (
-    <Group>
-      <Avatar radius="xl" />
+    <Group gap="xs" align="center">
+      <Box className={classes.iconBox}>
+        <IconBriefcase size={16} stroke={2} />
+      </Box>
       <div>
-        <Text fz="sm" fw={500}>
-          {membership.profile?.display}
-        </Text>
-        <Text fz="xs" opacity={0.6}>
+        <Text size="sm" fw={500}>
           {membership.project?.display} {label ? ` - ${label}` : ''}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {membership.profile?.display}
         </Text>
       </div>
     </Group>

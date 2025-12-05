@@ -194,7 +194,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -244,7 +244,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -254,7 +254,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -297,7 +297,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());

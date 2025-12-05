@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
+import { Anchor, Center, Stack, Text, TextInput, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -12,19 +12,22 @@ import {
   initRecaptcha,
   Logo,
   OperationOutcomeAlert,
+  SubmitButton,
   useMedplum,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { getConfig } from './config';
+import { useNavigate, useSearchParams } from 'react-router';
+import { getConfig, isRegisterEnabled } from './config';
 
 export function ResetPasswordPage(): JSX.Element {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
   const recaptchaSiteKey = getConfig().recaptchaSiteKey;
+  const projectId = searchParams.get('project') || undefined;
 
   useEffect(() => {
     if (recaptchaSiteKey) {
@@ -33,52 +36,84 @@ export function ResetPasswordPage(): JSX.Element {
   }, [recaptchaSiteKey]);
 
   return (
-    <Document width={450}>
+    <Document width={400} px="xl" py="xl" bdrs="md">
       <Form
         onSubmit={async (formData: Record<string, string>) => {
-          let recaptchaToken = '';
-          if (recaptchaSiteKey) {
-            recaptchaToken = await getRecaptcha(recaptchaSiteKey);
-          }
+          setOutcome(undefined);
+          try {
+            let recaptchaToken = '';
+            if (recaptchaSiteKey) {
+              recaptchaToken = await getRecaptcha(recaptchaSiteKey);
+            }
 
-          medplum
-            .post('auth/resetpassword', { ...formData, recaptchaToken })
-            .then(() => setSuccess(true))
-            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+            await medplum.post('auth/resetpassword', {
+              ...formData,
+              projectId,
+              recaptchaToken,
+            });
+            setSuccess(true);
+          } catch (err) {
+            setOutcome(normalizeOperationOutcome(err));
+          }
         }}
       >
-        <Stack gap="lg" mb="xl" align="center">
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Title>Password Reset</Title>
-        </Stack>
-        <Stack gap="xl">
-          <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} />
-          {!success && (
-            <>
+          <Title order={3} py="lg">
+            Reset your password
+          </Title>
+        </Center>
+        <OperationOutcomeAlert issues={getIssuesForExpression(outcome, undefined)} mb="lg" />
+        {!success && (
+          <>
+            <Stack gap="sm" mb="md">
               <TextInput
                 name="email"
                 type="email"
                 label="Email"
+                placeholder="name@domain.com"
                 required={true}
                 autoFocus={true}
                 error={getErrorsForInput(outcome, 'email')}
               />
-              <Group justify="space-between" mt="xl" wrap="nowrap">
-                <Anchor
-                  component="button"
-                  type="button"
-                  color="dimmed"
-                  onClick={() => navigate('/register')?.catch(console.error)}
-                  size="xs"
+            </Stack>
+            <Stack gap="xs">
+              <SubmitButton fullWidth>Reset Password</SubmitButton>
+              <Text
+                size="sm"
+                mt="lg"
+                c="dimmed"
+                style={{ textAlign: 'center' }}
+                data-dashlane-ignore="true"
+                data-lp-ignore="true"
+                data-no-autofill="true"
+                data-form-type="navigation"
+              >
+                <Anchor onClick={() => navigate('/signin')?.catch(console.error)}>Back to Sign In</Anchor>
+              </Text>
+              {isRegisterEnabled() && (
+                <Text
+                  size="sm"
+                  mt="none"
+                  c="dimmed"
+                  style={{ textAlign: 'center' }}
+                  data-dashlane-ignore="true"
+                  data-lp-ignore="true"
+                  data-no-autofill="true"
+                  data-form-type="navigation"
                 >
-                  Register
-                </Anchor>
-                <Button type="submit">Reset password</Button>
-              </Group>
-            </>
-          )}
-          {success && <div>If the account exists on our system, a password reset email will be sent.</div>}
-        </Stack>
+                  Don't have an account?{' '}
+                  <Anchor onClick={() => navigate('/register')?.catch(console.error)}>Sign Up</Anchor>
+                </Text>
+              )}
+            </Stack>
+          </>
+        )}
+        {success && (
+          <Text c="dimmed" size="sm" ta="center" mt="md">
+            If the account exists on our system, a password reset email will be sent.
+          </Text>
+        )}
       </Form>
     </Document>
   );

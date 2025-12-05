@@ -36,8 +36,16 @@ export function SignInPage(): JSX.Element {
       projectId={searchParams.get('project') || undefined}
     >
       <Logo size={32} />
-      <Title>Sign in to {getAppName()}</Title>
-      {searchParams.get('project') === 'new' && <div>Sign in again to create a new project</div>}
+      {searchParams.get('project') !== 'new' && (
+        <Title order={3} py="lg">
+          Sign in to {getAppName()}
+        </Title>
+      )}
+      {searchParams.get('project') === 'new' && (
+        <Title order={3} py="lg">
+          Sign in again to create a new project
+        </Title>
+      )}
     </SignInForm>
   );
 }
