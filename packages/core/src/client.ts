@@ -1851,11 +1851,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   readCanonical<RT extends ResourceType>(
-    resourceType: RT,
+    resourceType: RT | RT[],
     url: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<WithId<ExtractResource<RT>> | undefined> {
-    return this.searchOne(resourceType, 'url=' + url, options);
+    if (Array.isArray(resourceType)) {
+      return this.searchOne('' as RT, { _type: resourceType.join(','), url }, options);
+    } else {
+      return this.searchOne(resourceType, 'url=' + url, options);
+    }
   }
 
   /**
