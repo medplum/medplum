@@ -11,6 +11,8 @@
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
+!define SHAWL_VERSION            "$%SHAWL_VERSION%"
+!define SHAWL_EXE_NAME           "shawl-${SHAWL_VERSION}-$%MEDPLUM_GIT_SHORTHASH%-win64.exe"
 
 Name                             "${APP_NAME}"
 OutFile                          "${INSTALLER_FILE_NAME}"
@@ -178,8 +180,8 @@ Function UpgradeApp
     # We temporarily set overwrite to "ifdiff" so that we don't try to overwrite files that may already exist from a previous installation
     # This should prevent us from trying to overwrite shawl which could still be running, but shouldn't be different if it's the same version
     SetOverwrite ifdiff
-    File dist\shawl-v1.5.0-legal.txt
-    File dist\shawl-v1.5.0-win64.exe
+    File dist\shawl-${SHAWL_VERSION}-legal.txt
+    File dist\${SHAWL_EXE_NAME}
     File dist\${SERVICE_FILE_NAME}
     File README.md
     # We set overwrite back to the default value, "on"
@@ -187,7 +189,7 @@ Function UpgradeApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "${SHAWL_EXE_NAME} add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -244,8 +246,43 @@ Function UpgradeApp
     ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --remove-old-services" $1
     DetailPrint "Exit code $1"
 
+    # Clean up old shawl executables
+    DetailPrint "Cleaning up old shawl executables..."
+    Call CleanupOldShawlExecutables
+
     DetailPrint "Writing uninstaller for upgraded version..."
     WriteUninstaller "$INSTDIR\uninstall.exe"
+FunctionEnd
+
+# Clean up old shawl executables from previous installations
+# This function finds and deletes all shawl-*.exe files except the current version
+Function CleanupOldShawlExecutables
+    Push $0  # File handle
+    Push $1  # File name
+
+    ClearErrors
+    FindFirst $0 $1 "$INSTDIR\shawl-*.exe"
+
+    ${DoWhile} $1 != ""
+        # Skip if this is the current shawl executable
+        ${If} $1 != "${SHAWL_EXE_NAME}"
+            DetailPrint "Deleting old shawl executable: $1"
+            Delete "$INSTDIR\$1"
+            ${If} ${Errors}
+                DetailPrint "Warning: Could not delete $1 (may be in use)"
+                ClearErrors
+            ${EndIf}
+        ${Else}
+            DetailPrint "Keeping current shawl executable: $1"
+        ${EndIf}
+
+        FindNext $0 $1
+    ${Loop}
+
+    FindClose $0
+
+    Pop $1
+    Pop $0
 FunctionEnd
 
 # Do the actual installation.
@@ -270,8 +307,8 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File dist\shawl-v1.5.0-legal.txt
-    File dist\shawl-v1.5.0-win64.exe
+    File dist\shawl-${SHAWL_VERSION}-legal.txt
+    File dist\${SHAWL_EXE_NAME}
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
@@ -285,7 +322,7 @@ Function InstallApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "${SHAWL_EXE_NAME} add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
