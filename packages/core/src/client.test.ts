@@ -1435,6 +1435,40 @@ describe('Client', () => {
     }
   });
 
+  test('Read canonical', async () => {
+    const url = 'http://example.com/CodeSystem/' + randomUUID();
+    const fetch = mockFetch(200, {
+      resourceType: 'Bundle',
+      entry: [{ resource: { resourceType: 'CodeSystem', id: '123', url } }],
+    });
+    const client = new MedplumClient({ fetch });
+    const result = await client.readCanonical('CodeSystem', url);
+    expect(result?.resourceType).toBe('CodeSystem');
+    expect(result?.url).toBe(url);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/fhir/R4/CodeSystem?_count=1&url=${encodeURIComponent(url)}`),
+      expect.anything()
+    );
+  });
+
+  test('Read canonical over multiple types', async () => {
+    const url = 'http://example.com/CodeSystem/' + randomUUID();
+    const fetch = mockFetch(200, {
+      resourceType: 'Bundle',
+      entry: [{ resource: { resourceType: 'CodeSystem', id: '123', url } }],
+    });
+    const client = new MedplumClient({ fetch });
+    const result = await client.readCanonical(['CodeSystem', 'ValueSet', 'ConceptMap'], url);
+    expect(result?.resourceType).toBe('CodeSystem');
+    expect(result?.url).toBe(url);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/fhir/R4/?_count=1&_type=CodeSystem%2CValueSet%2CConceptMap&url=${encodeURIComponent(url)}`
+      ),
+      expect.anything()
+    );
+  });
+
   test('Read cached resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
