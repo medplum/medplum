@@ -351,3 +351,12 @@ Section Uninstall
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
 
 SectionEnd
+
+# Check if we should skip signing... this can be set via /D cli arg
+!ifndef SKIP_SIGNING
+    # Sign the installer and uninstaller
+    # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
+    # That will stop running both in parallel.
+    !finalize 'signtool.exe sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
+    !uninstfinalize 'signtool.exe sign /v /debug /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib "$%AZURE_CODESIGNING_PATH%\Azure.CodeSigning.Dlib.dll" /dmdf "$%AZURE_CODESIGNING_PATH%\metadata.json" /as "%1"' = 0
+!endif

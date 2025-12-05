@@ -168,6 +168,19 @@ jobs:
           timestamp-digest: SHA256
           append-signature: true
 
+      - name: Set Azure CodeSigning DLL path
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Path "$env:LOCALAPPDATA" -Filter "Azure.CodeSigning.Dlib.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dll) {
+            $folder = Split-Path $dll.FullName -Parent
+            echo "AZURE_CODESIGNING_PATH=$folder" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Set AZURE_CODESIGNING_PATH=$folder"
+          } else {
+            Write-Error "Azure.CodeSigning.Dlib.dll not found"
+            exit 1
+          }
+
       - name: Import GPG key
         if: ${{ inputs.sign_output }}
         run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
@@ -179,33 +192,6 @@ jobs:
           SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
           GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
           GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
-
-      - name: Sign installer with Azure Trusted Signing
-        if: ${{ inputs.sign_output }}
-        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
-        with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          exclude-azure-cli-credential: true
-          exclude-environment-credential: true
-          exclude-workload-identity-credential: true
-          exclude-managed-identity-credential: true
-          exclude-shared-token-cache-credential: true
-          exclude-visual-studio-credential: true
-          exclude-visual-studio-code-credential: true
-          exclude-azure-powershell-credential: false
-          exclude-azure-developer-cli-credential: true
-          exclude-interactive-browser-credential: true
-          endpoint: https://eus.codesigning.azure.net/
-          trusted-signing-account-name: GitHubActionSigner
-          certificate-profile-name: MedplumCI
-          files-folder: ${{ github.workspace }}\packages\agent
-          files-folder-filter: medplum-agent-installer-*.exe
-          files-folder-recurse: false
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
-          append-signature: true
 
       - name: Set Medplum version
         shell: bash
