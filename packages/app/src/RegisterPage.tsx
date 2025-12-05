@@ -42,7 +42,9 @@ export function RegisterPage(): JSX.Element | null {
       recaptchaSiteKey={config.recaptchaSiteKey}
     >
       <Logo size={32} />
-      <Title order={3} py="lg">Register a new account</Title>
+      <Title order={3} py="lg">
+        Register a new account
+      </Title>
     </RegisterForm>
   );
 }
