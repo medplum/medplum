@@ -676,6 +676,7 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'display', type: 'TEXT' },
       { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
       { name: 'synonymOf', type: 'BIGINT' },
+      { name: 'language', type: 'TEXT' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },

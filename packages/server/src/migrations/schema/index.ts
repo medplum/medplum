@@ -17,6 +17,7 @@ export * as v9 from './v9';
 /* CAUTION: LOAD-BEARING COMMENT */
 /* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */
 export * as v10 from './v10';
+export * as v100 from './v100';
 export * as v11 from './v11';
 export * as v12 from './v12';
 export * as v13 from './v13';
