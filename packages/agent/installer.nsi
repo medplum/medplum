@@ -11,6 +11,8 @@
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
+!define SHAWL_VERSION            "v1.5.0"
+!define SHAWL_EXE_NAME           "shawl-${SHAWL_VERSION}-$%MEDPLUM_VERSION%-win64.exe"
 
 Name                             "${APP_NAME}"
 OutFile                          "${INSTALLER_FILE_NAME}"
@@ -178,8 +180,8 @@ Function UpgradeApp
     # We temporarily set overwrite to "ifdiff" so that we don't try to overwrite files that may already exist from a previous installation
     # This should prevent us from trying to overwrite shawl which could still be running, but shouldn't be different if it's the same version
     SetOverwrite ifdiff
-    File dist\shawl-v1.5.0-legal.txt
-    File dist\shawl-v1.5.0-win64.exe
+    File dist\shawl-${SHAWL_VERSION}-legal.txt
+    File dist\${SHAWL_EXE_NAME}
     File dist\${SERVICE_FILE_NAME}
     File README.md
     # We set overwrite back to the default value, "on"
@@ -187,7 +189,7 @@ Function UpgradeApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "${SHAWL_EXE_NAME} add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -270,8 +272,8 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File dist\shawl-v1.5.0-legal.txt
-    File dist\shawl-v1.5.0-win64.exe
+    File dist\shawl-${SHAWL_VERSION}-legal.txt
+    File dist\${SHAWL_EXE_NAME}
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
@@ -285,7 +287,7 @@ Function InstallApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "${SHAWL_EXE_NAME} add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name

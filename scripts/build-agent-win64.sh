@@ -32,7 +32,7 @@ popd
 rm -f shawl-v1.5.0-win64.zip
 wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-win64.zip
 unzip shawl-v1.5.0-win64.zip
-mv shawl.exe dist/shawl-v1.5.0-win64.exe
+mv shawl.exe dist/shawl-v1.5.0-$MEDPLUM_GIT_SHORTHASH-win64.exe
 
 # Download Shawl legal
 rm -f shawl-v1.5.0-legal.zip
