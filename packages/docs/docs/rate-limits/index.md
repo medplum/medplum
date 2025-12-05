@@ -54,16 +54,6 @@ To view or update the Project-level limits:
 2.  Edit the `Project` resource.
 3.  Update the `systemSettings` field:
 
-```json
-{
-  "resourceType": "Project",
-  "systemSettings": {
-    "userFhirQuota": 100000,
-    "totalFhirQuota": 500000
-  }
-}
-```
-
 - `userFhirQuota`: Overrides the per-user FHIR interaction limit.
 - `totalFhirQuota`: Sets a limit for the _sum_ of all users in the project.
 
