@@ -28,19 +28,13 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
 
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tab = locationUtils.getPathname().split('/').pop();
-    return tab && tabs.find((t) => t.value === tab) ? tab : tabs[0].value;
+    return tab && tabs.some((t) => t.value === tab) ? tab : tabs[0].value;
   });
 
   function onTabChange(newTabName: string | null): void {
     newTabName = newTabName || tabs[0].value;
     setCurrentTab(newTabName);
     navigate(`${baseUrl}/${newTabName}`);
-  }
-
-  function onLinkClick(e: MouseEvent): void {
-    if (!isAuxClick(e)) {
-      e.preventDefault();
-    }
   }
 
   return (
@@ -61,4 +55,10 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
 
 function normalizeTabDefinitions(tabs: string[] | TabDefinition[]): TabDefinition[] {
   return tabs.map((t) => (isString(t) ? { label: t, value: t.toLowerCase() } : t));
+}
+
+function onLinkClick(e: MouseEvent): void {
+  if (!isAuxClick(e)) {
+    e.preventDefault();
+  }
 }
