@@ -384,4 +384,69 @@ describe('PlanDefinitionBuilder', () => {
       })
     );
   });
+
+  test('Validate previously selected activity definition action', async () => {
+    const onSubmit = jest.fn();
+
+    await medplum.createResource<ActivityDefinition>({
+      resourceType: 'ActivityDefinition',
+      id: 'activity-definition-1',
+      name: 'Comprehensive Metabolic Panel',
+      status: 'active',
+      url: 'https://example.com/ActivityDefinition/activity-definition-1',
+    });
+
+    medplum.readCanonical = jest.fn().mockResolvedValue({
+      resourceType: 'ActivityDefinition',
+      id: 'activity-definition-1',
+      name: 'Comprehensive Metabolic Panel',
+      status: 'active',
+      url: 'https://example.com/ActivityDefinition/activity-definition-1',
+    });
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        action: [
+          {
+            id: 'id-11',
+            title: 'Panel Action',
+            definitionCanonical: 'https://example.com/ActivityDefinition/activity-definition-1',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByTestId('id-11')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('id-11'));
+    });
+
+    expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Comprehensive Metabolic Panel'));
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      action: [
+        {
+          definitionCanonical: 'https://example.com/ActivityDefinition/activity-definition-1',
+          id: 'id-11',
+          title: 'Panel Action',
+        },
+      ],
+      resourceType: 'PlanDefinition',
+      title: 'Example Plan Definition',
+    });
+  });
 });
