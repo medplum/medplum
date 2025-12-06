@@ -223,14 +223,17 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   });
 
   useEffect(() => {
-    if (action.definitionCanonical) {
+    const readResource = async (): Promise<void> => {
+      if (!action.definitionCanonical) {
+        return;
+      }
       setLoading(true);
-      medplum.readCanonical(['Questionnaire', 'ActivityDefinition'], action.definitionCanonical)
-      .then((resource) => {
-        setActionType(getInitialActionType(resource));
-        setResource(resource);
-      }).finally(() => setLoading(false));
+      const resource = await medplum.readCanonical(['Questionnaire', 'ActivityDefinition'], action.definitionCanonical);
+      setActionType(getInitialActionType(resource));
+      setResource(resource);
+      setLoading(false);
     }
+    readResource().catch(console.error);
   }, [action.definitionCanonical, medplum]);
 
   if (loading) {
