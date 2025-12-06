@@ -7,8 +7,8 @@ import {
   DefaultResourceTimeline,
   DiagnosticReportDisplay,
   Document,
+  LinkTabs,
   ResourceTable,
-  useMedplumNavigate,
   useResource,
 } from '@medplum/react';
 import type { JSX } from 'react';
@@ -22,7 +22,6 @@ import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
  */
 export function ResourcePage(): JSX.Element | null {
   const { resourceType, id } = useParams();
-  const navigate = useMedplumNavigate();
   const reference = { reference: resourceType + '/' + id };
   const resource = useResource(reference);
   let tabs = ['Details', 'Timeline', 'History'];
@@ -31,14 +30,6 @@ export function ResourcePage(): JSX.Element | null {
     tabs = ['Report', ...tabs];
   }
 
-  const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
-
-  // Update the tab and navigate to that tab's URL
-  const handleTabChange = (newTab: string | null): void => {
-    navigate(`/${resourceType}/${id}/${newTab}`);
-  };
-
   if (!resource) {
     return null;
   }
@@ -46,7 +37,7 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+      <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>
@@ -70,7 +61,7 @@ export function ResourcePage(): JSX.Element | null {
             <DiagnosticReportDisplay value={resource as DiagnosticReport} />
           </Document>
         </Tabs.Panel>
-      </Tabs>
+      </LinkTabs>
     </Document>
   );
 }
