@@ -70,9 +70,7 @@ describe('PlanDefinitionBuilder', () => {
 
     expect(screen.getByTestId('action1')).not.toHaveClass('hovering');
 
-    await act(async () => {
-      fireEvent.mouseOver(await screen.findByDisplayValue('Example Action'));
-    });
+    fireEvent.mouseOver(await screen.findByDisplayValue('Example Action'));
 
     expect(screen.getByTestId('action1')).toHaveClass('hovering');
 
@@ -146,9 +144,7 @@ describe('PlanDefinitionBuilder', () => {
 
     expect(await screen.findByDisplayValue('Example Action')).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(await screen.findByDisplayValue('Example Action'));
-    });
+    fireEvent.click(await screen.findByDisplayValue('Example Action'));
 
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('Example Action'), {
