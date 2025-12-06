@@ -15,7 +15,13 @@ import {
   TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { ActivityDefinition, PlanDefinition, PlanDefinitionAction, Questionnaire, Reference } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  PlanDefinition,
+  PlanDefinitionAction,
+  Questionnaire,
+  Reference,
+} from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
@@ -232,7 +238,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
       setActionType(getInitialActionType(resource));
       setResource(resource);
       setLoading(false);
-    }
+    };
     readResource().catch(console.error);
   }, [action.definitionCanonical, medplum]);
 

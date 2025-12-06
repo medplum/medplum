@@ -424,7 +424,7 @@ describe('PlanDefinitionBuilder', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('id-11'));
     });
-   
+
     expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
 
     await act(async () => {
@@ -437,8 +437,16 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      {"action": [{"definitionCanonical": "https://example.com/ActivityDefinition/activity-definition-1", "id": "id-11", "title": "Panel Action"}], "resourceType": "PlanDefinition", "title": "Example Plan Definition"}
-    );
+    expect(onSubmit).toHaveBeenCalledWith({
+      action: [
+        {
+          definitionCanonical: 'https://example.com/ActivityDefinition/activity-definition-1',
+          id: 'id-11',
+          title: 'Panel Action',
+        },
+      ],
+      resourceType: 'PlanDefinition',
+      title: 'Example Plan Definition',
+    });
   });
 });
