@@ -11,15 +11,15 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
-// import { getConfig } from './config';
+import { getConfig } from './config';
 import './index.css';
 
 export async function initApp(): Promise<void> {
-  // const config = getConfig();
+  const config = getConfig();
 
   const medplum = new MedplumClient({
-    // baseUrl: config.baseUrl,
-    // clientId: config.clientId,
+    baseUrl: config.baseUrl,
+    clientId: config.clientId,
     storagePrefix: '@medplum:',
     cacheTime: 60000,
     autoBatchTime: 100,

@@ -400,9 +400,6 @@ describe('PlanDefinitionBuilder', () => {
       url: 'https://example.com/ActivityDefinition/activity-definition-1',
     });
 
-    // medplum.readCanonical(['Questionnaire', 'ActivityDefinition'], action.definitionCanonical)
-    // .then((resource) => {
-    // mock medplum.readCanonical
     medplum.readCanonical = jest.fn().mockResolvedValue({
       resourceType: 'ActivityDefinition',
       id: 'activity-definition-1',
@@ -410,7 +407,6 @@ describe('PlanDefinitionBuilder', () => {
       status: 'active',
       url: 'https://example.com/ActivityDefinition/activity-definition-1',
     });
-
 
     await setup({
       value: {
@@ -427,26 +423,12 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    //data-testid="id-11"
     expect(screen.getByTestId('id-11')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('id-11'));
     });
-    
-    // expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
-
-    // const input = screen.getByPlaceholderText('Search for activity definition') as HTMLInputElement;
-
-    // await act(async () => {
-    //   fireEvent.change(input, { target: { value: 'Comprehensive' } });
-    // });
-
-    // // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
+   
     expect(screen.getByText('Comprehensive Metabolic Panel')).toBeInTheDocument();
 
     await act(async () => {
