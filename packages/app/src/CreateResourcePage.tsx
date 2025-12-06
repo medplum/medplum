@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, ScrollArea, Text } from '@mantine/core';
+import { LinkTabs } from '@medplum/react';
 import type { JSX } from 'react';
 import { Outlet, useParams } from 'react-router';
-import { LinkTabs } from '../../react/src/LinkTabs/LinkTabs';
 
 const tabs = ['Form', 'JSON', 'Profiles'];
 
