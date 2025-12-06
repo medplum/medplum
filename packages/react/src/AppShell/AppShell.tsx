@@ -86,6 +86,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         opened={navbarOpen}
         spotlightEnabled={true}
         userMenuEnabled={true}
+        version={props.version}
       />
     ) : undefined;
   } else {

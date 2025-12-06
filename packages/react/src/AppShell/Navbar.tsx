@@ -18,6 +18,7 @@ import { IconLayoutSidebar, IconPlus, IconSearch } from '@tabler/icons-react';
 import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { HeaderDropdown } from './HeaderDropdown';
@@ -93,6 +94,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && (
               <NavbarLink
+                to="#"
                 active={false}
                 onClick={spotlight.open}
                 icon={<IconSearch size="1.2rem" />}
@@ -118,6 +120,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 {menu.links?.map((link) => (
                   <NavbarLink
                     key={link.href}
+                    to={link.href}
                     active={link.href === activeLink?.href}
                     onClick={(e) => onLinkClick(e, link.href)}
                     icon={link.icon}
@@ -193,6 +196,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
 }
 
 interface NavbarLinkProps {
+  readonly to: string;
   readonly active: boolean;
   readonly onClick: MouseEventHandler;
   readonly icon?: JSX.Element;
@@ -201,24 +205,24 @@ interface NavbarLinkProps {
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
-  const { icon, label, onClick, active } = props;
+  const { to, icon, label, onClick, active } = props;
 
   // If the navbar is opened, show the labels, but no tooltips
   if (props.opened) {
     return (
-      <UnstyledButton onClick={onClick} className={classes.link} data-active={active || undefined}>
+      <MedplumLink to={to} onClick={onClick} className={classes.link} data-active={active || undefined}>
         {icon}
         <span>{label}</span>
-      </UnstyledButton>
+      </MedplumLink>
     );
   }
 
   // Otherwise, if the navbar is closed, show tooltips, but no labels
   return (
     <Tooltip label={label} position="right" transitionProps={{ duration: 0 }}>
-      <UnstyledButton onClick={onClick} className={classes.link} data-active={active || undefined}>
+      <MedplumLink to={to} onClick={onClick} className={classes.link} data-active={active || undefined}>
         {icon}
-      </UnstyledButton>
+      </MedplumLink>
     </Tooltip>
   );
 }
