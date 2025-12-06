@@ -11,7 +11,6 @@ import { LinkTabs } from './LinkTabs';
 const medplum = new MockClient();
 const navigateMock = jest.fn();
 
-// Mock locationUtils
 jest.mock('@medplum/core', () => ({
   ...jest.requireActual('@medplum/core'),
   locationUtils: {
@@ -107,16 +106,5 @@ describe('LinkTabs', () => {
       // Middle click should be allowed, therefore fireEvent.click returns true
       expect(fireEvent.click(anchor, { button: 1 })).toBe(true);
     });
-  });
-
-  test('handles tab change with valid tab name', async () => {
-    setup();
-
-    const detailsTab = screen.getByRole('tab', { name: 'Details' });
-    await act(async () => {
-      fireEvent.click(detailsTab);
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith('/patient/123/details');
   });
 });

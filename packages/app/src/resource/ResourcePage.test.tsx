@@ -321,7 +321,6 @@ describe('ResourcePage', () => {
     await setup('/Practitioner/123/details');
 
     await act(async () => {
-      // fireEvent.click(screen.getByText('History'));
       fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     });
 
