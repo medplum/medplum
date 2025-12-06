@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
+import { Button, Paper, ScrollArea, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
@@ -137,15 +137,7 @@ export function ResourcePage(): JSX.Element | null {
           {specimen && <SpecimenHeader specimen={specimen} />}
           {resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
           <ScrollArea>
-            <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs}>
-              <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-                {tabs.map((t) => (
-                  <Tabs.Tab key={t} value={t.toLowerCase()}>
-                    {t}
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
-            </LinkTabs>
+            <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs} />
           </ScrollArea>
         </Paper>
       )}

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
-import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
-import { Document, LinkTabs, ResourceTable, SearchControl } from '@medplum/react';
-import type { JSX } from 'react';
+import { Document, ResourceTable, SearchControl } from '@medplum/react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -16,6 +16,7 @@ interface PatientDetailsProps {
 export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const { patient } = props;
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Filters to be used in SearchControl search
 
@@ -54,11 +55,22 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ],
   });
 
-  const tabs = ['Details', 'Upcoming', 'Encounters'];
+  const tabs = [
+    ['details', 'Details'],
+    ['upcoming', 'Upcoming Appointments'],
+    ['encounters', 'Encounters'],
+  ];
+
+  // Get the current tab, default to 'details' if not found
+  const tab = location.pathname.split('/')[3] ?? 'details';
+
+  function handleTabChange(newTab: string | null): void {
+    navigate(`/Patient/${patient.id}/${newTab}`)?.catch(console.error);
+  }
 
   return (
     <Document>
-      <LinkTabs baseUrl={`/Patient/${patient.id}`} tabs={tabs}>
+      <Tabs value={tab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab[0]} key={tab[0]}>
@@ -87,7 +99,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
             hideToolbar
           />
         </Tabs.Panel>
-      </LinkTabs>
+      </Tabs>
     </Document>
   );
 }

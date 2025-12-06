@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Tabs } from '@mantine/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -42,13 +41,7 @@ describe('LinkTabs', () => {
     render(
       <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
         <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <LinkTabs {...defaultProps} {...props}>
-            <Tabs.List>
-              <Tabs.Tab value="overview">Overview</Tabs.Tab>
-              <Tabs.Tab value="timeline">Timeline</Tabs.Tab>
-              <Tabs.Tab value="details">Details</Tabs.Tab>
-            </Tabs.List>
-          </LinkTabs>
+          <LinkTabs {...defaultProps} {...props} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -65,7 +58,7 @@ describe('LinkTabs', () => {
   test('initializes with correct tab based on current URL', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/timeline');
     setup();
-    
+
     const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
     expect(timelineTab).toHaveAttribute('aria-selected', 'true');
   });
@@ -73,7 +66,7 @@ describe('LinkTabs', () => {
   test('initializes with first tab when current path does not match any tab', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/unknown');
     setup();
-    
+
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
   });
@@ -81,121 +74,49 @@ describe('LinkTabs', () => {
   test('initializes with first tab when path is empty', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123');
     setup();
-    
+
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
   });
 
   test('navigates when tab is clicked', async () => {
     setup();
-    
+
     const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
     await act(async () => {
       fireEvent.click(timelineTab);
     });
-    
+
     expect(navigateMock).toHaveBeenCalledWith('/patient/123/timeline');
   });
 
-  test('navigates to first tab when null value is passed to onChange', async () => {
-    setup();
-    
-    const tabsComponent = screen.getByRole('tablist');
-    await act(async () => {
-      fireEvent(tabsComponent, new CustomEvent('change', { detail: null }));
-    });
-    
-    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview');
-  });
+  test('allows middle click', async () => {
+    console.error = jest.fn(); // Suppress warning for "navigation not implemented" warning
 
-  test('opens new window on auxiliary click (middle click)', async () => {
-    const windowOpenSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
     setup();
-    
+
     const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
+    const anchor = timelineTab.querySelector('a') as HTMLAnchorElement;
+
     await act(async () => {
-      fireEvent.auxClick(timelineTab, { button: 1 });
+      // Left click should be prevented, therefore fireEvent.click returns false
+      expect(fireEvent.click(anchor, { button: 0 })).toBe(false);
     });
-    
-    expect(windowOpenSpy).toHaveBeenCalledWith('/patient/123/timeline', '_blank');
-  });
 
-  test('stops propagation on auxiliary click', async () => {
-    setup();
-    
-    const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
-    const mockStopPropagation = jest.fn();
-    
     await act(async () => {
-      fireEvent.auxClick(timelineTab, { 
-        stopPropagation: mockStopPropagation,
-        target: { innerText: 'Timeline' }
-      });
+      // Middle click should be allowed, therefore fireEvent.click returns true
+      expect(fireEvent.click(anchor, { button: 1 })).toBe(true);
     });
-    
-    expect(mockStopPropagation).toHaveBeenCalled();
-  });
-
-  test('handles case-insensitive tab matching', () => {
-    mockLocationUtils.getPathname.mockReturnValue('/patient/123/TIMELINE');
-    setup();
-    
-    const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
-    expect(timelineTab).toHaveAttribute('aria-selected', 'true');
-  });
-
-  test('passes through additional props to Mantine Tabs', () => {
-    setup({ 
-      orientation: 'vertical',
-      'data-testid': 'custom-tabs'
-    });
-    
-    const tabsComponent = screen.getByTestId('custom-tabs');
-    expect(tabsComponent).toBeInTheDocument();
   });
 
   test('handles tab change with valid tab name', async () => {
     setup();
-    
+
     const detailsTab = screen.getByRole('tab', { name: 'Details' });
     await act(async () => {
       fireEvent.click(detailsTab);
     });
-    
+
     expect(navigateMock).toHaveBeenCalledWith('/patient/123/details');
-  });
-
-  test('renders children correctly', () => {
-    setup();
-    
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
-  });
-
-  test('handles empty tabs array gracefully', () => {
-    const propsWithNoTabs = { ...defaultProps, tabs: [] };
-    setup(propsWithNoTabs);
-    
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
-  });
-
-  test('auxiliary click with complex target structure', async () => {
-    const windowOpenSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
-    setup();
-    
-    const timelineTab = screen.getByRole('tab', { name: 'Timeline' });
-    const mockEvent = {
-      stopPropagation: jest.fn(),
-      target: {
-        innerText: 'Timeline'
-      }
-    };
-    
-    await act(async () => {
-      fireEvent.auxClick(timelineTab, mockEvent);
-    });
-    
-    expect(mockEvent.stopPropagation).toHaveBeenCalled();
-    expect(windowOpenSpy).toHaveBeenCalledWith('/patient/123/timeline', '_blank');
   });
 });

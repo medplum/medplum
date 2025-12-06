@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Tabs } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, LinkTabs, useMedplum } from '@medplum/react';
@@ -36,15 +36,7 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Stack>
-        <LinkTabs variant="pills" baseUrl={`/${resourceType}/${id}`} tabs={tabs} classNames={classes}>
-          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-            {tabs.map((t) => (
-              <Tabs.Tab key={t} value={t.toLowerCase()} px="sm">
-                {t}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </LinkTabs>
+        <LinkTabs variant="pills" baseUrl={`/${resourceType}/${id}`} tabs={tabs} classNames={classes} />
         <Outlet />
       </Stack>
     </Document>

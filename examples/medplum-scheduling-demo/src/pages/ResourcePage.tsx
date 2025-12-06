@@ -4,10 +4,10 @@ import { Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, LinkTabs, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 /**
@@ -20,7 +20,14 @@ export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
+
   const tabs = ['Details', 'Edit', 'History'];
+  const tab = window.location.pathname.split('/').pop();
+  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
+
+  function handleTabChange(newTab: string | null): void {
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
+  }
 
   useEffect(() => {
     if (resourceType && id) {
@@ -62,7 +69,7 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs}>
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab.toLowerCase()} key={tab.toLowerCase()}>
@@ -79,7 +86,7 @@ export function ResourcePage(): JSX.Element | null {
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType={resourceType} id={id} />
         </Tabs.Panel>
-      </LinkTabs>
+      </Tabs>
     </Document>
   );
 }

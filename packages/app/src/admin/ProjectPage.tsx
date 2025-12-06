@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Paper, ScrollArea } from '@mantine/core';
 import { Document, InfoBar, LinkTabs, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
@@ -24,15 +24,7 @@ export function ProjectPage(): JSX.Element {
           </InfoBar.Entry>
         </InfoBar>
         <ScrollArea>
-          <LinkTabs baseUrl="/admin" tabs={tabs}>
-            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-              {tabs.map((t) => (
-                <Tabs.Tab key={t} value={t.toLowerCase()}>
-                  {t}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </LinkTabs>
+          <LinkTabs baseUrl="/admin" tabs={tabs} />
         </ScrollArea>
       </Paper>
       <Document>
