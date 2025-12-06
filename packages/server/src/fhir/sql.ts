@@ -222,7 +222,7 @@ abstract class Executable implements Expression {
     throw new Error('Method not implemented');
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute<T = any>(conn: Pool | PoolClient): Promise<T[]> {
     const sql = new SqlBuilder();
     sql.appendExpression(this);
     return (await sql.execute(conn)).rows;

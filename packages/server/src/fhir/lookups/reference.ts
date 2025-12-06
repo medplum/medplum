@@ -13,7 +13,8 @@ import {
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
-import { InsertQuery } from '../sql';
+import { getLogger } from '../../logger';
+import { InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
 
@@ -28,6 +29,8 @@ export interface ReferenceTableRow extends LookupTableRow {
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
 export class ReferenceTable extends LookupTable {
+  private allColumnNames: string[] = ['resourceId', 'targetId', 'code'];
+
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
   }
@@ -45,8 +48,154 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
+  /**
+   * Indexes the resource in the lookup table.
+   * @param client - The database client.
+   * @param resources - The resources to index.
+   * @param create - True if the resource should be created (vs updated).
+   */
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
+
+    const existingRows = create ? undefined : await this.getExistingRows(client, resources);
+    if (existingRows === undefined || existingRows.length === 0) {
+      const newRows: ReferenceTableRow[] = [];
+      await this.extractAllValues(newRows, resources);
+
+      // nothing to delete since no existing rows
+
+      if (newRows.length > 0) {
+        await this.batchInsertRows(client, resourceType, newRows);
+      }
+      return;
+    }
+
+    const existingHashesByResource = new Map<string, Set<string>>();
+    for (const row of existingRows) {
+      let hashes = existingHashesByResource.get(row.resourceId);
+      if (!hashes) {
+        hashes = new Set<string>();
+        existingHashesByResource.set(row.resourceId, hashes);
+      }
+      hashes.add(hashRow(row));
+    }
+
+    const newRowsByResource = new Map<string, ReferenceTableRow[]>();
+    await this.extractAllValues(newRowsByResource, resources);
+
+    const resourcesToDelete: Resource[] = [];
+    const rowsToInsert: LookupTableRow[] = [];
+    for (const resource of resources) {
+      const existingHashes = existingHashesByResource.get(resource.id) ?? new Set<string>();
+      const newRowsForResource = newRowsByResource.get(resource.id) ?? [];
+      const newHashes = new Set(newRowsForResource.map(hashRow));
+
+      const identical = existingHashes.size === newHashes.size && [...existingHashes].every((h) => newHashes.has(h));
+      if (!identical) {
+        resourcesToDelete.push(resource);
+        rowsToInsert.push(...newRowsForResource);
+      }
+    }
+
+    if (resourcesToDelete.length > 0) {
+      getLogger().info('Reference changes detected', {
+        resourceType,
+        unchangedCount: resources.length - resourcesToDelete.length,
+        changedCount: resourcesToDelete.length,
+        rowsToInsert: rowsToInsert.length,
+        sampleIds: resourcesToDelete.slice(0, 5),
+      });
+    }
+
+    if (resourcesToDelete.length > 0) {
+      await this.batchDeleteValuesForResources(client, resourcesToDelete);
+    }
+
+    if (rowsToInsert.length > 0) {
+      await this.batchInsertRows(client, resourceType, rowsToInsert);
+    }
+  }
+
+  /**
+   * Extracts values from all resources with batching to avoid blocking the event loop.
+   * @param result - The array to populate with extracted values.
+   * @param resources - The resources to extract values from.
+   */
+  private async extractAllValues<T extends Resource>(
+    result: ReferenceTableRow[] | Map<string, ReferenceTableRow[]>,
+    resources: WithId<T>[]
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
+
+    // Batch at the resource level to avoid tying up the event loop for too long
+    // with synchronous work without any async breaks between DB calls.
+    const resourceBatchSize = 200;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
+        const resource = resources[j];
+        if (resource.resourceType !== resourceType) {
+          throw new Error(
+            `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
+          );
+        }
+        try {
+          if (result instanceof Map) {
+            let rowArray = result.get(resource.id);
+            if (!rowArray) {
+              rowArray = [];
+              result.set(resource.id, rowArray);
+            }
+            this.extractValues(rowArray, resource);
+          } else {
+            this.extractValues(result, resource);
+          }
+        } catch (err) {
+          getLogger().error('Error extracting values for resource', {
+            resource: `${resourceType}/${resource.id}`,
+            err,
+          });
+          throw err;
+        }
+
+        // Yield to event loop between batches
+        if (i + resourceBatchSize < resources.length) {
+          await new Promise<void>((resolve) => {
+            setImmediate(() => resolve());
+          });
+        }
+      }
+    }
+  }
+
   extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
     getSearchReferences(result, resource);
+  }
+
+  async getExistingRows<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<ReferenceTableRow[]> {
+    if (resources.length === 0) {
+      return [];
+    }
+    const selectQuery = new SelectQuery(this.getTableName(resources[0].resourceType)).where(
+      'resourceId',
+      'IN',
+      resources.map((r) => r.id)
+    );
+    for (const columnName of this.allColumnNames) {
+      selectQuery.column(columnName);
+    }
+    return selectQuery.execute<ReferenceTableRow>(client);
   }
 
   /**
@@ -55,7 +204,7 @@ export class ReferenceTable extends LookupTable {
    * @param resourceType - The resource type.
    * @param values - The values to insert.
    */
-  async insertValuesForResource(
+  async batchInsertRows(
     client: Pool | PoolClient,
     resourceType: ResourceType,
     values: Record<string, any>[]
@@ -73,6 +222,15 @@ export class ReferenceTable extends LookupTable {
       await insert.execute(client);
     }
   }
+}
+
+/**
+ * Creates a hash string for a reference row for efficient comparison.
+ * @param row - The reference table row.
+ * @returns A hash string combining resourceId, targetId, and code.
+ */
+function hashRow(row: ReferenceTableRow): string {
+  return `${row.resourceId}|${row.targetId}|${row.code}`;
 }
 
 /**
