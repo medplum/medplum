@@ -190,7 +190,7 @@ describe('AppShell v2', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const searchButton = screen.getByRole('button', { name: 'Search' }) as HTMLInputElement;
+    const searchButton = screen.getByText('Search') as HTMLInputElement;
 
     await act(async () => {
       fireEvent.click(searchButton);
