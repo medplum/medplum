@@ -46,7 +46,7 @@ import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -1129,6 +1129,27 @@ describe('FHIR Repo', () => {
       const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
       await systemRepo.deleteResource(patient.resourceType, patient.id);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
+    }));
+
+  test('deleted rows include array padding', async () =>
+    withTestContext(async () => {
+      const config = getConfig();
+      const prevConfig = config.arrayColumnPadding;
+      config.arrayColumnPadding = {
+        identifier: {
+          // ensure a padding element is chosen
+          m: 1,
+          lambda: 300,
+          statisticsTarget: 1,
+        },
+      };
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await systemRepo.deleteResource(patient.resourceType, patient.id);
+
+      const db = getDatabasePool(DatabaseMode.READER);
+      const results = await db.query('SELECT "__identifier" FROM "Patient" WHERE "id" = $1', [patient.id]);
+      expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+      config.arrayColumnPadding = prevConfig;
     }));
 
   test('Conditional reference resolution', async () =>
