@@ -5,6 +5,7 @@
 // See: https://mantine.dev/guides/jest/
 
 import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import type { RenderResult } from '@testing-library/react';
@@ -45,6 +46,7 @@ export function renderAppRoutes(medplum: MedplumClient, initialUrl: string): Ren
   return render(
     <MedplumProvider medplum={medplum} navigate={router.navigate}>
       <RouterProvider router={router} />
+      <Notifications />
     </MedplumProvider>
   );
 }

@@ -2,33 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group, Paper, ScrollArea, Tabs, Text, useMantineTheme } from '@mantine/core';
 import type { JSX } from 'react';
-import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router';
+import { Outlet, useParams } from 'react-router';
+import { LinkTabs } from '../../react/src/LinkTabs/LinkTabs';
 
-const tabs = ['Form', 'JSON', 'Profiles'] as const;
+const tabs = ['Form', 'JSON', 'Profiles'];
 const BETA_TABS: (typeof tabs)[number][] = ['Profiles'];
-const defaultTab = tabs[0].toLowerCase();
 
 export function CreateResourcePage(): JSX.Element {
-  const navigate = useNavigate();
   const theme = useMantineTheme();
   const { resourceType } = useParams();
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : defaultTab;
-  });
-
-  /**
-   * Handles a tab change event.
-   * @param newTabName - The new tab name.
-   */
-  function onTabChange(newTabName: string | null): void {
-    if (!newTabName) {
-      newTabName = defaultTab;
-    }
-    setCurrentTab(newTabName);
-    navigate(`/${resourceType}/new/${newTabName}`)?.catch(console.error);
-  }
 
   return (
     <>
@@ -37,7 +19,7 @@ export function CreateResourcePage(): JSX.Element {
           New&nbsp;{resourceType}
         </Text>
         <ScrollArea>
-          <Tabs defaultValue={defaultTab} value={currentTab} onChange={onTabChange}>
+          <LinkTabs baseUrl={`/${resourceType}/new`} tabs={tabs}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
               {tabs.map((t) => (
                 <Tabs.Tab key={t} value={t.toLowerCase()} px="md">
@@ -54,7 +36,7 @@ export function CreateResourcePage(): JSX.Element {
                 </Tabs.Tab>
               ))}
             </Tabs.List>
-          </Tabs>
+          </LinkTabs>
         </ScrollArea>
       </Paper>
       <Outlet />

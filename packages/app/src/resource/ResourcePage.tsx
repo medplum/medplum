@@ -4,10 +4,10 @@ import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { Document, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
+import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router';
+import { Outlet, useParams } from 'react-router';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
@@ -63,14 +63,9 @@ export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
-  const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const value = useResource(reference, setOutcome);
   const tabs = getTabs(resourceType);
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
-  });
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -109,18 +104,6 @@ export function ResourcePage(): JSX.Element | null {
     return <OperationOutcomeAlert outcome={outcome} />;
   }
 
-  /**
-   * Handles a tab change event.
-   * @param newTabName - The new tab name.
-   */
-  function onTabChange(newTabName: string | null): void {
-    if (!newTabName) {
-      newTabName = tabs[0].toLowerCase();
-    }
-    setCurrentTab(newTabName);
-    navigate(`/${resourceType}/${id}/${newTabName}`)?.catch(console.error);
-  }
-
   function onStatusChange(status: string): void {
     const serviceRequest = value as ServiceRequest;
     const orderDetail = serviceRequest.orderDetail || [];
@@ -154,7 +137,7 @@ export function ResourcePage(): JSX.Element | null {
           {specimen && <SpecimenHeader specimen={specimen} />}
           {resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
           <ScrollArea>
-            <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
+            <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs}>
               <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t} value={t.toLowerCase()}>
@@ -162,7 +145,7 @@ export function ResourcePage(): JSX.Element | null {
                   </Tabs.Tab>
                 ))}
               </Tabs.List>
-            </Tabs>
+            </LinkTabs>
           </ScrollArea>
         </Paper>
       )}
