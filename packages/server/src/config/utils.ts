@@ -38,7 +38,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
   config.autoDownloadEnabled ??= true;
-
+  config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
   // That meant that the rate limit was per server instance, rather than per server cluster
@@ -93,6 +93,7 @@ type DefaultConfigKeys =
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
+  | 'base64BinaryMaxBytes'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
@@ -104,6 +105,7 @@ type DefaultConfigKeys =
 const integerKeys = new Set([
   'accurateCountThreshold',
   'bcryptHashSalt',
+  'base64BinaryMaxBytes',
   'defaultAuthRateLimit',
   'defaultFhirQuota',
   'defaultRateLimit',
