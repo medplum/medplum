@@ -1033,6 +1033,21 @@
               "min" : 0,
               "max" : "*"
             }
+          },
+          {
+            "id" : "ClientApplication.certificateTrustStore",
+            "path" : "ClientApplication.certificateTrustStore",
+            "definition" : "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.certificateTrustStore",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
