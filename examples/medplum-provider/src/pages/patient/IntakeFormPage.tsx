@@ -24,8 +24,6 @@ export function IntakeFormPage(): JSX.Element {
       }
 
       const allValueSets = extractValueSets(questionnaire.item);
-      
-      // Deduplicate by URL - keep the first occurrence of each unique URL
       const uniqueValueSets = new Map<string, ValueSetInfo>();
       for (const vs of allValueSets) {
         if (!uniqueValueSets.has(vs.url)) {
