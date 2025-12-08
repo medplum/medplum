@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, TypedValueWithPath, WithId } from '@medplum/core';
-import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
+import {
+  arrayify,
+  crawlTypedValue,
+  isGone,
+  normalizeOperationOutcome,
+  pathToJSONPointer,
+  toTypedValue,
+} from '@medplum/core';
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -125,7 +132,7 @@ export async function addDownloadJobs(
     // Given that this is a low frequency type of mutation, we prefer to pay
     // the (low) cost of a double-enqueued download job instead of trying to
     // detect path moves on every mutation.
-    const pointer = Pointer.fromJSON(`${pathToPointer(attachment.path)}/url`);
+    const pointer = Pointer.fromJSON(`${pathToJSONPointer(attachment.path)}/url`);
     if (pointer.get(resource) === pointer.get(previousVersion)) {
       continue;
     }
@@ -287,7 +294,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       .filter((attachment) => attachment.value.url === url)
       .map((value) => ({
         op: 'replace' as const,
-        path: `${pathToPointer(value.path)}/url`,
+        path: `${pathToJSONPointer(value.path)}/url`,
         value: `Binary/${binary.id}`,
       }));
 
@@ -312,11 +319,6 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     log.info('Download exception: ' + ex, ex);
     throw ex;
   }
-}
-
-// Translate basic FHIRPath into JSON Patch pointer
-export function pathToPointer(path: string): string {
-  return (path.startsWith('.') ? path : `.${path}`).replaceAll('.', '/').replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert `[0]` => `/0`
 }
 
 export function getAttachments(resource: Resource): TypedValueWithPath[] {

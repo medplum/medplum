@@ -295,3 +295,15 @@ function withPath(
 
   return { ...tv, path: `${parentPrefix}${key}` };
 }
+
+/**
+ * Translates a path emitted by this crawler into an RFC6902 JSON Patch pointer
+ *
+ * @param path - A path emitted from a Crawler
+ * @returns pointer -An RFC6902 pointer describing the path
+ */
+export function pathToJSONPointer(path: string): string {
+  return `.${path}` // Prepend a delimiter to match RFC6902
+    .replaceAll('.', '/') // convert dot delimiters to slash delimiters
+    .replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert array syntax: `arr[0]` => `arr/0`
+}
