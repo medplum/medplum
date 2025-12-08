@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, Loading, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
@@ -13,6 +14,51 @@ export function IntakeFormPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const [unavailableValueSets, setUnavailableValueSets] = useState<ValueSetInfo[]>([]);
+  const [checkingValueSets, setCheckingValueSets] = useState(true);
+
+  useEffect(() => {
+    async function checkValueSets(): Promise<void> {
+      if (!questionnaire) {
+        return;
+      }
+
+      const allValueSets = extractValueSets(questionnaire.item);
+      
+      // Deduplicate by URL - keep the first occurrence of each unique URL
+      const uniqueValueSets = new Map<string, ValueSetInfo>();
+      for (const vs of allValueSets) {
+        if (!uniqueValueSets.has(vs.url)) {
+          uniqueValueSets.set(vs.url, vs);
+        }
+      }
+      const valueSets = Array.from(uniqueValueSets.values());
+      
+      const unavailable: ValueSetInfo[] = [];
+
+      const availabilityChecks = await Promise.allSettled(
+        valueSets.map(async (vs) => {
+          const isAvailable = await checkValueSetAvailability(vs.url, medplum);
+          if (!isAvailable) {
+            unavailable.push(vs);
+          }
+        })
+      );
+
+      availabilityChecks.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          unavailable.push(valueSets[index]);
+        }
+      });
+
+      setUnavailableValueSets(unavailable);
+      setCheckingValueSets(false);
+    }
+
+    checkValueSets().catch(() => {
+      setCheckingValueSets(false);
+    });
+  }, [medplum]);
 
   const handleOnSubmit = useCallback(
     async (response: QuestionnaireResponse) => {
@@ -39,9 +85,77 @@ export function IntakeFormPage(): JSX.Element {
 
   return (
     <Document width={800}>
+      {checkingValueSets && <Loading />}
+      {!checkingValueSets && unavailableValueSets.length > 0 && (
+        <Alert color="red" title="Some valuesets are unavailable" mb="md">
+          <p>
+            The following questions may not display correctly because their valuesets are not available. Please contact
+            sales to enable these valuesets.
+          </p>
+          <ul>
+            {unavailableValueSets.map((vs) => (
+              <li key={vs.linkId}>{vs.url}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
       <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleOnSubmit} />
     </Document>
   );
+}
+
+interface ValueSetInfo {
+  url: string;
+  questionText: string;
+  linkId: string;
+}
+
+/**
+ * Recursively extracts all valueset URLs from questionnaire items
+ * @param items - The questionnaire items to extract valuesets from
+ * @param result - Accumulator array for valueset information
+ * @returns Array of valueset information including URL, question text, and linkId
+ */
+function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueSetInfo[] = []): ValueSetInfo[] {
+  if (!items) {
+    return result;
+  }
+
+  for (const item of items) {
+    if (item.answerValueSet) {
+      result.push({
+        url: `${item.answerValueSet}`,
+        questionText: item.text || item.linkId || 'Unknown question',
+        linkId: item.linkId || 'unknown',
+      });
+    }
+    if (item.item) {
+      extractValueSets(item.item, result);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Checks if a valueset is available by attempting to expand it
+ * @param valueSetUrl - The URL of the valueset to check
+ * @param medplum - The Medplum client instance
+ * @returns Promise that resolves to true if valueset is available, false otherwise
+ */
+async function checkValueSetAvailability(
+  valueSetUrl: string,
+  medplum: ReturnType<typeof useMedplum>
+): Promise<boolean> {
+  try {
+    await medplum.valueSetExpand({
+      url: valueSetUrl,
+      count: 1,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const questionnaire: Questionnaire = {
