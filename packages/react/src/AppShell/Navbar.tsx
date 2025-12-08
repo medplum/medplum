@@ -6,6 +6,7 @@ import {
   Menu,
   ScrollArea,
   Space,
+  Stack,
   Text,
   Tooltip,
   UnstyledButton,
@@ -79,7 +80,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineAppShell.Navbar id="navbar" className={classes.navbar}>
         {props.logo && (
-          <MantineAppShell.Section px="sm" py="xs">
+          <MantineAppShell.Section px="xs" pt="xs" pb="4px">
             <UnstyledButton
               className={classes.logoButton}
               onClick={props.navbarToggle}
@@ -90,7 +91,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </UnstyledButton>
           </MantineAppShell.Section>
         )}
-        <ScrollArea px="sm" py="xs" h="100%">
+        <ScrollArea px="xs" pb="xs" h="100%">
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && (
               <NavbarLink
@@ -104,7 +105,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             )}
             {props.spotlightEnabled && <Spotlight />}
             {!props.resourceTypeSearchDisabled && (
-              <MantineAppShell.Section mb="sm">
+              <MantineAppShell.Section mb="sm" mt="xs">
                 <ResourceTypeInput
                   key={window.location.pathname}
                   name="resourceType"
@@ -116,18 +117,20 @@ export function Navbar(props: NavbarProps): JSX.Element {
             )}
             {props.menus?.map((menu) => (
               <Fragment key={`menu-${menu.title}`}>
-                {opened ? <Text className={classes.menuTitle}>{menu.title}</Text> : <Space h={41} />}
-                {menu.links?.map((link) => (
-                  <NavbarLink
-                    key={link.href}
-                    to={link.href}
-                    active={link.href === activeLink?.href}
-                    onClick={(e) => onLinkClick(e, link.href)}
-                    icon={link.icon}
-                    label={link.label ?? ''}
-                    opened={opened}
-                  />
-                ))}
+                {opened ? <Text className={classes.menuTitle}>{menu.title}</Text> : <Space h={39} />}
+                <Stack gap="2">
+                  {menu.links?.map((link) => (
+                    <NavbarLink
+                      key={link.href}
+                      to={link.href}
+                      active={link.href === activeLink?.href}
+                      onClick={(e) => onLinkClick(e, link.href)}
+                      icon={link.icon}
+                      label={link.label ?? ''}
+                      opened={opened}
+                    />
+                  ))}
+                </Stack>
               </Fragment>
             ))}
             {props.displayAddBookmark && (

@@ -15,9 +15,9 @@
 }
 
 .menuTitle {
-  margin: 20px 0 4px 6px;
+  margin: 20px 0 8px 10px;
   font-size: var(--mantine-font-size-xs);
-  font-weight: 500;
+  line-height: 1;
   color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-6));
 }
 
@@ -28,25 +28,25 @@
 
 .link {
   width: 100%;
-  height: 38px;
-  border-radius: var(--mantine-radius-md);
+  height: 36px;
+  border-radius: var(--mantine-radius-sm);
+  font-weight: 450;
   display: flex;
   align-items: center;
   justify-content: start;
-  padding: 0 var(--mantine-spacing-sm);
-  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0));
+  padding: 0 var(--mantine-spacing-xs);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
   outline: none;
   overflow: hidden;
   text-overflow: ellipsis;
 
   &:hover {
-    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
-    text-decoration: none;
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
   }
 
   & svg:global(.tabler-icon) {
-    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
-    stroke-width: 1.5;
+    color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+    stroke-width: 2;
     width: 18px;
     height: 18px;
     min-width: 18px;
@@ -54,18 +54,18 @@
   }
 
   & > span {
-    margin-left: var(--mantine-spacing-sm);
+    margin-left: 10px;
     white-space: nowrap;
   }
 
   &[data-active] {
     &,
     &:hover {
-      background-color: var(--mantine-color-blue-light);
-      color: var(--mantine-color-blue-light-color);
+      background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+      color: light-dark(var(--mantine-primary-color-light-color), var(--mantine-primary-color-5));
 
       & svg:global(.tabler-icon) {
-        color: var(--mantine-color-blue-light-color);
+        color: light-dark(var(--mantine-primary-color-light-color), var(--mantine-primary-color-6));
       }
     }
   }
@@ -77,7 +77,7 @@
 
 .toggleButton {
   max-width: 45px;
-  height: 38px;
+  height: 36px;
   padding: 0 var(--mantine-spacing-sm);
   border-radius: var(--mantine-radius-sm);
   transition: background-color 100ms ease;
