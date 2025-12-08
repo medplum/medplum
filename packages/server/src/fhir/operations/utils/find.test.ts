@@ -235,6 +235,11 @@ describe('removeAvailability', () => {
     expect(removeAvailability(availability, [])).toEqual(availability);
   });
 
+  test('empty availability returns an empty result', () => {
+    const blocks = [{ start: new Date('2025-12-02T10:00:00Z'), end: new Date('2025-12-02T14:00:00Z') }];
+    expect(removeAvailability([], blocks)).toEqual([]);
+  });
+
   test('no blocks overlapping returns all the availability', () => {
     const availability = [
       { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
@@ -286,6 +291,31 @@ describe('removeAvailability', () => {
       { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
       { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
     ]);
+  });
+
+  test('block spanning multiple availability windows apply to all of them', () => {
+    const availability = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-03') },
+      { start: new Date('2025-12-04'), end: new Date('2025-12-05') },
+      { start: new Date('2025-12-06'), end: new Date('2025-12-08') },
+    ];
+    const blocks = [{ start: new Date('2025-12-02'), end: new Date('2025-12-07') }];
+    expect(removeAvailability(availability, blocks)).toEqual([
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') }, // first interval gets end cut off
+      // second interval blocked entirely
+      { start: new Date('2025-12-07'), end: new Date('2025-12-08') }, // third interval gets front cut
+    ]);
+  });
+
+  test('many small availability windows within one large block', () => {
+    const availability = [
+      { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T10:15:00Z') },
+      { start: new Date('2025-12-01T10:30:00Z'), end: new Date('2025-12-01T10:45:00Z') },
+      { start: new Date('2025-12-01T11:00:00Z'), end: new Date('2025-12-01T11:15:00Z') },
+      { start: new Date('2025-12-01T11:30:00Z'), end: new Date('2025-12-01T11:45:00Z') },
+    ];
+    const blocks = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    expect(removeAvailability(availability, blocks)).toEqual([]);
   });
 });
 

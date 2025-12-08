@@ -130,6 +130,44 @@ export function normalizeIntervals(intervals: Interval[]): Interval[] {
 }
 
 /**
+ * Linearly iterates over two normalized interval lists, returning each interval from listA
+ * paired with all overlapping intervals from listB. Each interval in listA is returned exactly
+ * once. Intervals in listB may be part of zero, one, or many result lists.
+ *
+ * @param listA - First normalized (sorted, non-overlapping) list of intervals
+ * @param listB - Second normalized (sorted, non-overlapping) list of intervals
+ * @returns An array of pairs, each containing an interval from listA and its overlapping intervals from listB
+ */
+function pairWithOverlaps(listA: Interval[], listB: Interval[]): [Interval, Interval[]][] {
+  const result: [Interval, Interval[]][] = [];
+  let indexB = 0;
+
+  for (const a of listA) {
+    // Skip intervals in listB that end before a starts
+    while (indexB < listB.length && listB[indexB].end <= a.start) {
+      indexB++;
+    }
+
+    // Collect all overlapping intervals from listB, tracking where to resume for the next `a`
+    const overlaps: Interval[] = [];
+    let nextStartIndex = indexB;
+    for (let i = indexB; i < listB.length && listB[i].start < a.end; i++) {
+      overlaps.push(listB[i]);
+      if (listB[i].end <= a.end) {
+        // This interval is fully consumed by `a`, so future iterations can skip it
+        nextStartIndex = i + 1;
+      }
+    }
+
+    indexB = nextStartIndex;
+
+    result.push([a, overlaps]);
+  }
+
+  return result;
+}
+
+/**
  * @param availableIntervals - normalized (sorted, non-overlapping) intervals of available time
  * @param blockedIntervals - normalized (sorted, non-overlapping) intervals of blocked time
  * @returns Intervals of remaining available time after blocks are excluded
@@ -140,40 +178,21 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
   }
 
   const result: Interval[] = [];
-  let blockedIndex = 0;
 
-  for (const available of availableIntervals) {
+  for (const [available, blocks] of pairWithOverlaps(availableIntervals, blockedIntervals)) {
     let currentStart = available.start;
-    const availableEnd = available.end;
 
-    // Skip blocked intervals that end before this available interval starts
-    while (blockedIndex < blockedIntervals.length && blockedIntervals[blockedIndex].end <= currentStart) {
-      blockedIndex++;
-    }
-
-    // Process all blocked intervals that overlap with the current available interval
-    while (blockedIndex < blockedIntervals.length && blockedIntervals[blockedIndex].start < availableEnd) {
-      const blocked = blockedIntervals[blockedIndex];
-
-      // If there's a gap before the block, add it to results
+    for (const blocked of blocks) {
       if (currentStart < blocked.start) {
         result.push({ start: currentStart, end: blocked.start });
       }
-
-      // Update currentStart to after the block
-      currentStart = blocked.end.valueOf() > currentStart.valueOf() ? blocked.end : currentStart;
-
-      // If the block extends beyond the available interval, we're done with this available interval
-      if (blocked.end >= availableEnd) {
-        break;
+      if (blocked.end.valueOf() > currentStart.valueOf()) {
+        currentStart = blocked.end;
       }
-
-      blockedIndex++;
     }
 
-    // If there's remaining time after processing all overlapping blocks
-    if (currentStart < availableEnd) {
-      result.push({ start: currentStart, end: availableEnd });
+    if (currentStart < available.end) {
+      result.push({ start: currentStart, end: available.end });
     }
   }
 
