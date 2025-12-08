@@ -253,7 +253,7 @@ function PostDeployMigrations(): JSX.Element {
                       <Button
                         leftSection={<IconMinus size={14} />}
                         variant="subtle"
-                        color="blue"
+                        color="primary"
                         size="xs"
                         radius="xs"
                         onClick={() =>
@@ -269,7 +269,7 @@ function PostDeployMigrations(): JSX.Element {
                       <Button
                         leftSection={<IconPlus size={14} />}
                         variant="subtle"
-                        color="blue"
+                        color="primary"
                         size="xs"
                         radius="xs"
                         onClick={() =>

@@ -32,7 +32,7 @@ export function ChatModal(props: ChatModalProps): JSX.Element | null {
         <div className={classes.iconContainer}>
           <ActionIcon
             className={classes.icon}
-            color="blue"
+            color="primary"
             size="lg"
             radius="xl"
             variant="outline"
@@ -46,7 +46,7 @@ export function ChatModal(props: ChatModalProps): JSX.Element | null {
         <div className={classes.iconContainer}>
           <ActionIcon
             className={classes.icon}
-            color="blue"
+            color="primary"
             size="lg"
             radius="xl"
             variant="outline"

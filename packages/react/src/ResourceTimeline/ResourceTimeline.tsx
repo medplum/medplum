@@ -262,7 +262,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 placeholder="Add comment"
                 style={{ width: '100%', maxWidth: 300 }}
               />
-              <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
+              <ActionIcon type="submit" radius="xl" variant="filled">
                 <IconMessage size={16} />
               </ActionIcon>
               <AttachmentButton
@@ -273,7 +273,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 onUploadError={onUploadError}
               >
                 {(props) => (
-                  <ActionIcon {...props} radius="xl" color="blue" variant="filled">
+                  <ActionIcon {...props} radius="xl" variant="filled">
                     <IconCloudUpload size={16} />
                   </ActionIcon>
                 )}

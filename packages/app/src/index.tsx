@@ -31,6 +31,8 @@ export async function initApp(): Promise<void> {
   });
 
   const theme = createTheme({
+    primaryColor: 'grape',
+    primaryShade: 8,
     headings: {
       sizes: {
         h1: {
