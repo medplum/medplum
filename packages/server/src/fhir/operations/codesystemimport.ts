@@ -137,9 +137,23 @@ export async function importCodeSystem(
     const lookupCodes = new Set<string>(designations.map((d) => d.code));
     // Batch lookup all Codings with associated properties
     const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
-    const rows: Record<string, any>[] = [];
+    const synonyms: Record<string, any>[] = [];
     for (const designation of designations) {
+      // Add synonym row
+      const sourceCodingId = codingIds.find((r) => r.code === designation.code)?.id;
+      if (!sourceCodingId) {
+        throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${designation.code}`));
+      }
+      synonyms.push({
+        system: codeSystem.id,
+        code: designation.code,
+        display: designation.value,
+        isSynonym: true,
+        synonymOf: sourceCodingId,
+      });
     }
+    const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
+    await query.execute(db);
   }
 }
 
@@ -168,7 +182,7 @@ async function processProperties(
   // Batch lookup all Codings with associated properties
   const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
   const rows: Record<string, any>[] = [];
-  const syonyms: Record<string, any>[] = [];
+  const synonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
@@ -185,7 +199,7 @@ async function processProperties(
     });
 
     if (property.uri === 'http://hl7.org/fhir/concept-properties#synonym') {
-      syonyms.push({
+      synonyms.push({
         system: codeSystem.id,
         code: imported.code,
         display: imported.value,
@@ -198,8 +212,8 @@ async function processProperties(
   const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
   await query.execute(db);
 
-  if (syonyms.length) {
-    const query = new InsertQuery('Coding', syonyms).ignoreOnConflict();
+  if (synonyms.length) {
+    const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
     await query.execute(db);
   }
 }

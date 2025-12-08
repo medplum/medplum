@@ -47,6 +47,8 @@ type ValueSetExpandParameters = {
   offset?: number;
   count?: number;
   excludeNotForUI?: boolean;
+  includeDesignations?: boolean;
+  displayLanguage?: boolean;
   valueSet?: ValueSet;
 };
 
@@ -284,6 +286,7 @@ export function expansionQuery(
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
@@ -347,6 +350,7 @@ export function addParentFilter(
       .column('code')
       .column('display')
       .column('synonymOf')
+      .column('language')
       .where(new Column('origin', 'system'), '=', codeSystem.id)
       .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
     const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
@@ -382,6 +386,14 @@ function addExpansionFilters(
         true
       );
   }
+
+  if (params.displayLanguage) {
+    query.where('language', '=', params.displayLanguage);
+  } else if (!params.includeDesignations) {
+    // Include translations of codes only by request
+    query.where('language', '=', null);
+  }
+
   if (params.excludeNotForUI) {
     query = addAbstractFilter(query, codeSystem);
   }

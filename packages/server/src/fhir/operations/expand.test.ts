@@ -786,9 +786,9 @@ describe('Expand', () => {
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(
-      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131')
-    ).toHaveLength(12);
+    const v2Codes = expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131');
+    console.log(v2Codes);
+    expect(v2Codes).toHaveLength(12);
     expect(
       expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
     ).toHaveLength(110);
@@ -1197,6 +1197,96 @@ describe('Expand', () => {
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'UTIC', display: 'Hives', system: codeSystem.url },
+    ]);
+  });
+
+  test('Searches translated designations', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'MSG_INVALID_ID',
+          display: 'ID not accepted',
+          designation: [
+            { language: 'fr', value: 'ID non accepté' },
+            { language: 'zh', value: 'ID不被接受' },
+          ],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=non`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'MSG_INVALID_ID', display: 'ID non accepté', system: codeSystem.url },
+    ]);
+  });
+
+  test('Only returns one (default) matching translation', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'MSG_INVALID_ID',
+          display: 'ID not accepted',
+          designation: [
+            { language: 'fr', value: 'ID non accepté' },
+            { language: 'zh', value: 'ID不被接受' },
+          ],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=ID`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
     ]);
   });
 });
