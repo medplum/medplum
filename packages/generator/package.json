@@ -13,7 +13,6 @@
   "type": "module",
   "scripts": {
     "baseschema": "tsx src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
-    "benchmark": "tsx src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "compare": "tsx src/compare.ts",
@@ -40,7 +39,6 @@
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.16.3",
-    "tinybench": "5.1.0",
     "unzipper": "0.12.3"
   },
   "engines": {
