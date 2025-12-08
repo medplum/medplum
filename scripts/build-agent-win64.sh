@@ -13,6 +13,12 @@ if ! command -v wget >/dev/null 2>&1; then
     exit 1
 fi
 
+# Make sure environment variables are set
+if [ -z "$SHAWL_VERSION" ]; then
+    echo "SHAWL_VERSION is not set"
+    exit 1
+fi
+
 # Get the current version number
 export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Get full version, including the git shorthash, delimited by a '-'
@@ -29,16 +35,16 @@ pushd ../..
 popd
 
 # Download Shawl exe
-rm -f shawl-v1.5.0-win64.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-win64.zip
-unzip shawl-v1.5.0-win64.zip
-mv shawl.exe dist/shawl-v1.5.0-win64.exe
+rm -f shawl-$SHAWL_VERSION-win64.zip
+wget https://github.com/mtkennerly/shawl/releases/download/$SHAWL_VERSION/shawl-$SHAWL_VERSION-win64.zip
+unzip shawl-$SHAWL_VERSION-win64.zip
+mv shawl.exe dist/shawl-$SHAWL_VERSION-$MEDPLUM_GIT_SHORTHASH-win64.exe
 
 # Download Shawl legal
-rm -f shawl-v1.5.0-legal.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-legal.zip
-unzip shawl-v1.5.0-legal.zip
-mv shawl-v1.5.0-legal.txt dist
+rm -f shawl-$SHAWL_VERSION-legal.zip
+wget https://github.com/mtkennerly/shawl/releases/download/$SHAWL_VERSION/shawl-$SHAWL_VERSION-legal.zip
+unzip shawl-$SHAWL_VERSION-legal.zip
+mv shawl-$SHAWL_VERSION-legal.txt dist
 
 # Check the build output
 ls -la dist

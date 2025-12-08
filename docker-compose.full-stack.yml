@@ -54,7 +54,7 @@ services:
       sh -c "
       if [ -n '${MEDPLUM_CONFIG_PATH}' ]; then
         echo 'Config file found, running with custom config'
-        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js file:$MEDPLUM_CONFIG_PATH
+        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js file:/usr/src/medplum/packages/server/medplum.config.json
       else
         echo 'No config file found, running with default env settings'
         node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env

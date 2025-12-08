@@ -1441,6 +1441,27 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle1, serviceRequest2)).toBeDefined();
     }));
 
+  test('Token not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+
+      const patient2 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const bundle1 = await repo.search(parseSearchRequest('Patient', { name: family, 'gender:not': 'male' }));
+      expect(bundle1.entry?.length).toStrictEqual(1);
+      expect(bundleContains(bundle1, patient1)).toBeUndefined();
+      expect(bundleContains(bundle1, patient2)).toBeDefined();
+    }));
+
   test('Token array not equals', () =>
     withTestContext(async () => {
       const category1 = randomUUID();

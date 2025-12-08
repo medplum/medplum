@@ -131,6 +131,7 @@ jobs:
         shell: bash
         run: ./scripts/build-agent-win64.sh
         env:
+          SHAWL_VERSION: 'v1.7.0'
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
 
       - name: Login to Azure
@@ -190,6 +191,7 @@ jobs:
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
+          SHAWL_VERSION: 'v1.7.0'
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
           SKIP_SIGNING: ${{ !inputs.sign_output && '1' || '' }}
           GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
