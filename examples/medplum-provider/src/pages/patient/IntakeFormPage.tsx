@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
+import { showErrorNotification } from '../../utils/notifications';
 
 export function IntakeFormPage(): JSX.Element {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export function IntakeFormPage(): JSX.Element {
       
       const unavailable: ValueSetInfo[] = [];
 
-      const availabilityChecks = await Promise.allSettled(
+      await Promise.allSettled(
         valueSets.map(async (vs) => {
           const isAvailable = await checkValueSetAvailability(vs.url, medplum);
           if (!isAvailable) {
@@ -43,19 +44,13 @@ export function IntakeFormPage(): JSX.Element {
         })
       );
 
-      availabilityChecks.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          unavailable.push(valueSets[index]);
-        }
-      });
-
+  
       setUnavailableValueSets(unavailable);
-      setCheckingValueSets(false);
     }
 
-    checkValueSets().catch(() => {
-      setCheckingValueSets(false);
-    });
+    checkValueSets()
+    .catch((error) => showErrorNotification(error))
+    .finally(() => setCheckingValueSets(false));
   }, [medplum]);
 
   const handleOnSubmit = useCallback(
@@ -122,7 +117,7 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
   for (const item of items) {
     if (item.answerValueSet) {
       result.push({
-        url: `${item.answerValueSet}`,
+        url: item.answerValueSet,
         questionText: item.text || item.linkId || 'Unknown question',
         linkId: item.linkId || 'unknown',
       });
