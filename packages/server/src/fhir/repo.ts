@@ -2204,7 +2204,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.removeField(input, field);
       }
     }
-    if (!this.context.extendedMode) {
+    if (!this.context.extendedMode && input.meta) {
       const meta = input.meta as Meta;
       meta.author = undefined;
       meta.project = undefined;
@@ -2611,7 +2611,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const issue = err.outcome.issue[0];
     return Boolean(
       issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
     );
   }
 
