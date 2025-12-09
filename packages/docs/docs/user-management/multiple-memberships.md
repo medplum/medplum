@@ -9,7 +9,59 @@ import TabItem from '@theme/TabItem';
 
 ## Introduction
 
-In Medplum, a single user can have multiple [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources within the same project, each with different [AccessPolicies](/docs/access/access-policies). This feature enables sophisticated access control scenarios where a user needs different levels of access to different subsets of data within a project.
+In Medplum, a single user can have multiple [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources within the same project, each with different [AccessPolicies](/docs/access/access-policies). This feature enables more sophisticated access control scenarios where a user need to access different tenants or tiers of data in your project at different times.
+
+The most common use case is **clinic specific access** for a practitioner working for multiple healthcare clinics within a Managed Service Organization (MSO). In this model, each ProjectMembership provides a login to access a different clinic's data. See our [MSO data model blog post](/blog/multi-tenant-mso) for more background on this pattern.
+
+### Do I need multiple memberships?
+
+Without multiple ProjectMemberships, using the standard [MSO Access model](/blog/multi-tenant-mso), a User can have multiple [ProjectMembership parameters](/docs/access/access-policies#parameterized-policies) to access multiple tenants in your project, but the User's API level access will cannot be limited to any subset of those tenants at any given time.
+
+<details>
+<summary>Access to Multiple Tenants at Once - Does not require multiple memberships</summary>
+```ts
+{
+ "resourceType": "ProjectMembership",
+ //...
+ "access": [
+   { //First tenant that the user has access to
+     "parameter": [
+       {
+         "name": "organization",
+         "valueReference": {
+           "reference": "Organization/0195b4a4-0ed7-71ed-80cf-c6fff1e31152",
+           "display": "Kings Landing Health Center"
+         }
+       }
+     ],
+     "policy": {
+       "reference": "AccessPolicy/0195b4a3-374e-75cf-a6f0-0bcee7c754c5"
+     }
+   },
+   { //Second tenant that the user has access to
+     "parameter": [
+       {
+         "name": "organization",
+         "valueReference": {
+           "reference": "Organization/0195b4a4-0ed7-71ed-80cf-c6fff1e31152",
+           "display": "Winterfell Pediatrics Center"
+         }
+       }
+     ],
+     "policy": {
+       "reference": "AccessPolicy/0195b4a3-374e-75cf-a6f0-0bcee7c754c5"
+     }
+   }
+ ]
+}
+```
+</details>
+
+If you need the ability for the user to **only access one tenant at a time**, you can also use the [_compartment](/docs/search/advanced-search-parameters#_compartment) search parameter for all queries to further segment the data beyond anything that the AccessPolicy is enforcing. 
+
+So, continuing the example above, that **User's API level access** would be limited to only the data for those two Organization tenants, and then **at the browser level**, you would use the [_compartment](/docs/search/advanced-search-parameters#_compartment) parameter to segment your queries to only the data for the selected tenant.
+
+**Finally, if you need users to access only one tenant at a time and you need this access to be enforced at the API level, then you will need to use multiple memberships.**
 
 :::warning Advanced Feature
 
