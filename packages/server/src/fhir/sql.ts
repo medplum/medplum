@@ -64,6 +64,7 @@ export const Operator = {
   '>': simpleBinaryOperator('>'),
   '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
+  IS_DISTINCT_FROM: simpleBinaryOperator('IS DISTINCT FROM'),
   /*
     Why do both of these exist? Mainly for consideration when negating the condition:
     Negating ARRAY_OVERLAPS_AND_IS_NOT_NULL includes records where the column is NULL.
