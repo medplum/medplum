@@ -19,7 +19,7 @@ for arg in "$@"; do
   fi
 done
 
-COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+COMMIT_MESSAGE=$(git log -1 --pretty=short)
 echo "$COMMIT_MESSAGE"
 
 FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
