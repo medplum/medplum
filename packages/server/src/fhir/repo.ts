@@ -1826,9 +1826,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchParam: SearchParameter,
     details: SearchParameterDetails,
     typedValues: TypedValue[]
-  ): (boolean | number | string | undefined)[] {
+  ): (boolean | number | string | undefined | null)[] {
     if (details.type === SearchParameterType.BOOLEAN) {
       const value = typedValues[0]?.value;
+      if (value === undefined || value === null) {
+        return [null];
+      }
       return [value === true || value === 'true'];
     }
 

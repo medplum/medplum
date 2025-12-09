@@ -1758,6 +1758,53 @@ describe('project-scoped Repository', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
+  test('Boolean not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      // Create patient with active=true
+      const activeTrue = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: true,
+      });
+
+      // Create patient with active=false
+      const activeFalse = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: false,
+      });
+
+      // Create patient without active field (undefined/null)
+      const activeUndefined = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      // Search for active:not=false should return activeTrue and activeUndefined
+      const searchResult = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: family,
+          },
+          {
+            code: 'active',
+            operator: Operator.NOT,
+            value: 'false',
+          },
+        ],
+      });
+
+      expect(searchResult.entry?.length).toStrictEqual(2);
+      expect(bundleContains(searchResult, activeTrue)).toBeDefined();
+      expect(bundleContains(searchResult, activeUndefined)).toBeDefined();
+      expect(bundleContains(searchResult, activeFalse)).toBeUndefined();
+    }));
+
   test('Not equals with comma separated values', () =>
     withTestContext(async () => {
       // Create 3 service requests
