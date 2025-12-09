@@ -1298,11 +1298,7 @@ function buildBooleanSearchFilter(
 
   const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
 
-  return new Condition(
-    new Column(table, impl.columnName),
-    negated ? 'IS_DISTINCT_FROM' : '=',
-    filter.value
-  );
+  return new Condition(new Column(table, impl.columnName), negated ? 'IS_DISTINCT_FROM' : '=', filter.value);
 }
 
 /**
