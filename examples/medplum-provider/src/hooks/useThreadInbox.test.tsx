@@ -334,6 +334,7 @@ describe('useThreadInbox', () => {
 
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
@@ -344,6 +345,8 @@ describe('useThreadInbox', () => {
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBe(error);
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   test('clears selected thread when threadId becomes undefined', async () => {

@@ -1,16 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor, userEvent } from '../../test-utils/render';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
+
+vi.mock('@medplum/react-hooks', async () => {
+  const actual = await vi.importActual('@medplum/react-hooks');
+  return {
+    ...actual,
+    useSubscription: vi.fn(),
+  };
+});
 
 const mockCommunication: Communication | undefined = {
   resourceType: 'Communication',
@@ -46,17 +52,15 @@ describe('ThreadInbox', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <ThreadInbox
-              query="_sort=-_lastUpdated"
-              threadId={props?.threadId}
-              showPatientSummary={props?.showPatientSummary ?? false}
-              subject={props?.subject}
-              handleNewThread={mockHandleNewThread}
-              onSelectedItem={mockOnSelectedItem}
-            />
-          </MantineProvider>
+          <Notifications />
+          <ThreadInbox
+            query="_sort=-_lastUpdated"
+            threadId={props?.threadId}
+            showPatientSummary={props?.showPatientSummary ?? false}
+            subject={props?.subject}
+            handleNewThread={mockHandleNewThread}
+            onSelectedItem={mockOnSelectedItem}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

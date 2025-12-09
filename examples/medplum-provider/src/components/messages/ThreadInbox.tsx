@@ -147,7 +147,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     />
                   )
                 )}
-                {threadMessages.length === 0 && <EmptyMessagesState />}
+                {threadMessages.length === 0 && !loading && <EmptyMessagesState />}
               </ScrollArea>
             </Paper>
           </Flex>
