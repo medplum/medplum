@@ -1758,7 +1758,7 @@ describe('project-scoped Repository', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('Boolean search with NOT includes null values', () =>
+  test('Boolean not equals matches missing value', () =>
     withTestContext(async () => {
       const family = randomUUID();
 
@@ -1799,11 +1799,10 @@ describe('project-scoped Repository', () => {
         ],
       });
 
-      expect(searchResult.entry).toHaveLength(2);
-      const ids = searchResult.entry?.map((e) => e.resource?.id);
-      expect(ids).toContain(activeTrue.id);
-      expect(ids).toContain(activeUndefined.id);
-      expect(ids).not.toContain(activeFalse.id);
+      expect(searchResult.entry?.length).toStrictEqual(2);
+      expect(bundleContains(searchResult, activeTrue)).toBeDefined();
+      expect(bundleContains(searchResult, activeUndefined)).toBeDefined();
+      expect(bundleContains(searchResult, activeFalse)).toBeUndefined();
     }));
 
   test('Not equals with comma separated values', () =>
