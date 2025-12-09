@@ -1296,11 +1296,9 @@ function buildBooleanSearchFilter(
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
-  return new Condition(
-    new Column(table, impl.columnName),
-    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
-    filter.value
-  );
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
+
+  return new Condition(new Column(table, impl.columnName), negated ? 'IS_DISTINCT_FROM' : '=', filter.value);
 }
 
 /**
