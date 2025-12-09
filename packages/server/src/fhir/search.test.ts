@@ -1763,26 +1763,26 @@ describe('project-scoped Repository', () => {
       const family = randomUUID();
 
       // Create patient with active=true
-      const patientTrue = await repo.createResource<Patient>({
+      const activeTrue = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
         active: true,
       });
 
       // Create patient with active=false
-      const patientFalse = await repo.createResource<Patient>({
+      const activeFalse = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
         active: false,
       });
 
       // Create patient without active field (undefined/null)
-      const patientUndefined = await repo.createResource<Patient>({
+      const activeUndefined = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
       });
 
-      // Search for active:not=false should return patientTrue and patientUndefined
+      // Search for active:not=false should return activeTrue and activeUndefined
       const searchResult = await repo.search({
         resourceType: 'Patient',
         filters: [
@@ -1801,9 +1801,9 @@ describe('project-scoped Repository', () => {
 
       expect(searchResult.entry).toHaveLength(2);
       const ids = searchResult.entry?.map((e) => e.resource?.id);
-      expect(ids).toContain(patientTrue.id);
-      expect(ids).toContain(patientUndefined.id);
-      expect(ids).not.toContain(patientFalse.id);
+      expect(ids).toContain(activeTrue.id);
+      expect(ids).toContain(activeUndefined.id);
+      expect(ids).not.toContain(activeFalse.id);
     }));
 
   test('Not equals with comma separated values', () =>
