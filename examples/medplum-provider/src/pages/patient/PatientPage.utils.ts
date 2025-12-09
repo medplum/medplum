@@ -25,8 +25,8 @@ export type PatientPageTabInfo = {
   label: string;
 };
 
-export function getPatientPageTabOrThrow(tabId: string, tabs: PatientPageTabInfo[] = PatientPageTabs): PatientPageTabInfo {
-  const result = tabs.find((tab) => tab.id === tabId);
+export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
+  const result = PatientPageTabs.find((tab) => tab.id === tabId);
 
   if (!result) {
     throw new Error(`Could not find patient page tab with id ${tabId}`);
