@@ -5,12 +5,12 @@ import type { JSX } from 'react';
 import type { PatientPageTabInfo } from './PatientPage.utils';
 
 interface PatientTabsNavigationProps {
+  tabs: PatientPageTabInfo[];
   currentTab: string;
   onTabChange: (value: string | null) => void;
-  tabs: PatientPageTabInfo[];
 }
 
-export function PatientTabsNavigation({ currentTab, onTabChange, tabs }: PatientTabsNavigationProps): JSX.Element {
+export function PatientTabsNavigation({ tabs, currentTab, onTabChange }: PatientTabsNavigationProps): JSX.Element {
   return (
     <Paper w="100%">
       <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>

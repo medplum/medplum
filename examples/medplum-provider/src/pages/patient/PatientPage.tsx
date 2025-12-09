@@ -103,7 +103,7 @@ export function PatientPage(): JSX.Element {
         </div>
 
         <div className={classes.content}>
-          <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} tabs={tabs} />
+          <PatientTabsNavigation tabs={tabs} currentTab={currentTab} onTabChange={onTabChange} />
           <Outlet />
         </div>
       </div>
