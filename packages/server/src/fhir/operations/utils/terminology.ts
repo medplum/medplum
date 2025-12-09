@@ -104,8 +104,7 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .column('synonymOf')
     .column('language')
     .where('system', '=', systemId)
-    .where('code', 'IN', code)
-    .where('synonymOf', '=', null);
+    .where('code', 'IN', code);
 }
 
 export function addPropertyFilter(

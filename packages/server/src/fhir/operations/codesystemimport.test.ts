@@ -332,6 +332,7 @@ async function assertCodeExists(system: string | undefined, code: string): Promi
   const db = getDatabasePool(DatabaseMode.READER);
   const coding = await selectCoding(system as string, code)
     .column('isSynonym')
+    .where('synonymOf', '=', null)
     .execute(db);
   expect(coding).toHaveLength(1);
   return coding[0];

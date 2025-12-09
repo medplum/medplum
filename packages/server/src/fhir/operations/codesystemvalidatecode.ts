@@ -95,7 +95,7 @@ export async function validateCodings(
 
   let result: any[] | undefined;
   if (codesToQuery.size > 0) {
-    const query = selectCoding(codeSystem.id, ...codesToQuery);
+    const query = selectCoding(codeSystem.id, ...codesToQuery).where('synonymOf', '=', null);
     const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }

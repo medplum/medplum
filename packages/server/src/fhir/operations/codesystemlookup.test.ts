@@ -461,4 +461,43 @@ describe('CodeSystem lookup', () => {
       ]),
     });
   });
+
+  test('Outputs translated designations', async () => {
+    const res = await request(app)
+      .get(
+        '/fhir/R4/CodeSystem/$lookup?system=http://terminology.hl7.org/CodeSystem/operation-outcome&code=MSG_INVALID_ID'
+      )
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send();
+    expect(res.status).toStrictEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining([
+        { name: 'name', valueString: 'Operation Outcome Codes' },
+        { name: 'display', valueString: 'Id not accepted' },
+        {
+          name: 'designation',
+          part: [
+            { name: 'language', valueCode: 'pl' },
+            { name: 'value', valueString: 'Identyfikator nie zaakceptowany' },
+          ],
+        },
+        {
+          name: 'designation',
+          part: [
+            { name: 'language', valueCode: 'fr' },
+            { name: 'value', valueString: 'Id non accepté' },
+          ],
+        },
+        {
+          name: 'designation',
+          part: [
+            { name: 'language', valueCode: 'zh' },
+            { name: 'value', valueString: 'Id不被接受' },
+          ],
+        },
+      ]),
+    });
+  });
 });
