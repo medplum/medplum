@@ -15,7 +15,7 @@ The most common use case is **clinic specific access** for a practitioner workin
 
 ### Do I need multiple memberships?
 
-Without multiple ProjectMemberships, using the standard [MSO Access model](/blog/multi-tenant-mso), a User can have multiple [ProjectMembership parameters](/docs/access/access-policies#parameterized-policies) to access multiple tenants in your project, but the User's API level access will cannot be limited to any subset of those tenants at any given time.
+Without multiple ProjectMemberships, using the standard [MSO Access model](/blog/multi-tenant-mso), a User can have multiple [ProjectMembership parameters](/docs/access/access-policies#parameterized-policies) to access multiple tenants in your project, but the User's API level access will not be limited to any subset of those tenants at any given time.
 
 <details>
 <summary>Access to Multiple Tenants at Once - Does not require multiple memberships</summary>
