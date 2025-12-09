@@ -2084,7 +2084,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can manually set the ID field.
    */
   private canSetId(): boolean {
-    return this.isSuperAdmin();
+    return this.isSuperAdmin() || this.isProjectAdmin();
   }
 
   /**
