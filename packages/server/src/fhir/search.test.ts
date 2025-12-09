@@ -1758,7 +1758,7 @@ describe('project-scoped Repository', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('Boolean search with NOT_EQUALS includes null values', () =>
+  test('Boolean search with NOT includes null values', () =>
     withTestContext(async () => {
       const family = randomUUID();
 
@@ -1793,7 +1793,7 @@ describe('project-scoped Repository', () => {
           },
           {
             code: 'active',
-            operator: Operator.NOT_EQUALS,
+            operator: Operator.NOT,
             value: 'false',
           },
         ],
