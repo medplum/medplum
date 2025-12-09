@@ -253,6 +253,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
       typ: 'JWT',
     })
     .setIssuedAt()
+    .setNotBefore(new Date())
     .setIssuer(issuer)
     .setAudience(claims.client_id as string)
     .setExpirationTime(exp)
