@@ -135,7 +135,7 @@ export async function searchPatientCompartment(
  * @param repo - The repository.
  * @param entries - The initial resources to process.
  */
-async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | undefined): Promise<void> {
+export async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | undefined): Promise<void> {
   const processedRefs = new Set<string>();
   let page = entries;
   while (page?.length) {
@@ -201,7 +201,7 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
  * @param entries - The bundle entries.
  * @returns The deduplicated bundle entries.
  */
-function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
+export function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
   if (!entries) {
     return undefined;
   }

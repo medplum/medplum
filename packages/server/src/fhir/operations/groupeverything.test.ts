@@ -270,4 +270,90 @@ describe('Group Everything Operation', () => {
     expect(resourceRefs).toContain(getReferenceString(group));
     expect(resourceRefs).toContain(getReferenceString(practitioner));
   });
+
+  test('Pagination with _count and _offset', async () => {
+    // Create patients
+    const patient1Res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Pagination'], family: 'Test1' }],
+      } satisfies Patient);
+    expect(patient1Res.status).toBe(201);
+    const patient1 = patient1Res.body as Patient;
+
+    const patient2Res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Pagination'], family: 'Test2' }],
+      } satisfies Patient);
+    expect(patient2Res.status).toBe(201);
+    const patient2 = patient2Res.body as Patient;
+
+    // Create observations for each patient
+    for (let i = 0; i < 3; i++) {
+      await request(app)
+        .post(`/fhir/R4/Observation`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ system: LOINC, code: `test-${i}` }] },
+          subject: createReference(patient1),
+        } satisfies Observation);
+    }
+
+    for (let i = 0; i < 3; i++) {
+      await request(app)
+        .post(`/fhir/R4/Observation`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ system: LOINC, code: `test-${i + 3}` }] },
+          subject: createReference(patient2),
+        } satisfies Observation);
+    }
+
+    // Create a group with both patients
+    const groupRes = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: createReference(patient1) }, { entity: createReference(patient2) }],
+      } satisfies Group);
+    expect(groupRes.status).toBe(201);
+    const group = groupRes.body as Group;
+
+    // Execute the operation with pagination
+    const everythingRes = await request(app)
+      .get(`/fhir/R4/Group/${group.id}/$everything?_count=3&_offset=1`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(everythingRes.status).toBe(200);
+
+    const result = everythingRes.body as Bundle;
+    expect(result.resourceType).toBe('Bundle');
+    expect(result.type).toBe('searchset');
+
+    // Should have pagination links
+    expect(result.link).toBeDefined();
+    expect(result.link?.some((link) => link.relation === 'self')).toBeTruthy();
+    expect(result.link?.some((link) => link.relation === 'first')).toBeTruthy();
+    expect(result.link?.some((link) => link.relation === 'next')).toBeTruthy();
+    expect(result.link?.some((link) => link.relation === 'previous')).toBeTruthy();
+
+    // Verify entry count respects _count
+    expect(result.entry?.length).toBeLessThanOrEqual(3);
+  });
 });
