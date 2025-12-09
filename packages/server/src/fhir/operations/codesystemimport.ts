@@ -150,6 +150,7 @@ export async function importCodeSystem(
         display: designation.value,
         isSynonym: true,
         synonymOf: sourceCodingId,
+        language: designation.language,
       });
     }
     const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();

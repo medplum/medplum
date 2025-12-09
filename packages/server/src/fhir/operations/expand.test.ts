@@ -1235,7 +1235,7 @@ describe('Expand', () => {
     expect(vsRes.status).toStrictEqual(201);
 
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=non`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=non&displayLanguage=fr`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
