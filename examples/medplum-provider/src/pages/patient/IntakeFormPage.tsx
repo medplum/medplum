@@ -32,7 +32,7 @@ export function IntakeFormPage(): JSX.Element {
         }
       }
       const valueSets = Array.from(uniqueValueSets.values());
-      
+
       const unavailable: ValueSetInfo[] = [];
 
       await Promise.allSettled(
