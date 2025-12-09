@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Project, Resource } from '@medplum/fhirtypes';
 import express from 'express';
 import util from 'node:util';
 import request from 'supertest';
@@ -8,6 +9,7 @@ import type { InspectOptionsStylized } from 'util';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
+import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import type { StrictTestProjectOptions } from './test.setup';
 import { createTestProject } from './test.setup';
@@ -101,10 +103,40 @@ export function prepareApp(configOverrides: Partial<MedplumServerConfig> = {}) {
 //   const patient = prepareResource<Patient>(() => {
 //     resourceType: 'Patient',
 //     meta: { project.project.id },
-//  });
+//     name: [{ given: ['Alice'], family: 'Smith' }]
+//   });
+//   const observation = prepareResource<Observation>(() => {
+//     resourceType: 'Observation
+//     meta: { project.project.id },
+//     subject: { reference: `Patient/${patient.id}` },
+//     ...
+//   });
 // ```
-export function prepareResource<T extends Resource>(resource: T | (() => T)) {
-  return prepare(() => systemRepo.createResource<T>(typeof resource === 'function' ? resource() : resource));
+//
+// As a convenience, you can pass in a prepared project as an argument without thunking:
+// ```
+//   const project = prepareProject();
+//   const patient = prepareResource<Patient>({
+//     resourceType: 'Patient',
+//     name: [{ given: ['Alice'], family: 'Smith' }]
+//   }, project);
+// ```
+export function prepareResource<T extends Resource>(
+  resource: T | (() => T),
+  testProject?: {
+    project: WithId<Project>;
+    repo?: Repository;
+  }
+) {
+  return prepare(() => {
+    const attrs = typeof resource === 'function' ? resource() : resource;
+    if (testProject) {
+      attrs.meta ??= {};
+      attrs.meta.project = testProject.project.id;
+    }
+    const repo = testProject?.repo ?? systemRepo;
+    return repo.createResource<T>(attrs);
+  });
 }
 
 // TODO: Figure out if there's a nicer way to wrap a function taking generics

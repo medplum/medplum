@@ -15,21 +15,12 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import request from 'supertest';
-import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
-import {
-  createTestProject,
-  initTestAuth,
-  setupPwnedPasswordMock,
-  setupRecaptchaMock,
-  withTestContext,
-} from '../../test.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { prepareApp, prepareProject, prepareResource } from '../../test.utils';
 import { getSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
@@ -37,58 +28,49 @@ jest.mock('node-fetch');
 jest.mock('hibp');
 
 describe('Project clone', () => {
-  const app = express();
+  const app = prepareApp();
+  const project = prepareProject({ withClient: true, withAccessToken: true, withRepo: true });
+  const superProject = prepareProject({ superAdmin: true, withAccessToken: true });
+  const patient = prepareResource<Patient>(
+    {
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    },
+    project
+  );
+
+  prepareResource<Observation>(
+    () => ({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: LOINC, code: '12345-6' }] },
+      subject: { reference: 'Patient/' + patient.id },
+    }),
+    project
+  );
+
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
-  afterAll(async () => {
-    await shutdownApp();
-  });
-
   test('Forbidden', async () => {
-    const accessToken = await initTestAuth();
-    const res = await request(app)
+    const res = await app.request
       .post(`/fhir/R4/Project/${randomUUID()}/$clone`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + project.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
     expect(res.status).toBe(403);
   });
 
   test('Success', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
-
-    const patient = await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      meta: { project: project.id },
-      name: [{ given: ['Alice'], family: 'Smith' }],
-    });
-    expect(patient).toBeDefined();
-
-    const obs = await systemRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      meta: { project: project.id },
-      status: 'final',
-      code: { coding: [{ system: LOINC, code: '12345-6' }] },
-      subject: { reference: 'Patient/' + patient.id },
-    });
-    expect(obs).toBeDefined();
-
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+    const res = await app.request
+      .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
@@ -97,7 +79,7 @@ describe('Project clone', () => {
     const newProjectId = res.body.id;
     expect(newProjectId).toBeDefined();
     expect(isUUID(newProjectId)).toBe(true);
-    expect(newProjectId).not.toStrictEqual(project.id);
+    expect(newProjectId).not.toStrictEqual(project.project.id);
 
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
     expect(newProject).toBeDefined();
@@ -121,16 +103,11 @@ describe('Project clone', () => {
   });
 
   test('Success with project name in body', async () => {
-    const { project } = await createTestProject({ withClient: true });
     const newProjectName = 'A New Name for cloned project';
-    expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+    const res = await app.request
+      .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
@@ -168,7 +145,7 @@ describe('Project clone', () => {
   });
 
   test('Success with project name in body and has project name + Default Client in ClientApplication.name', async () => {
-    const res1 = await request(app)
+    const res1 = await app.request
       .post('/auth/newuser')
       .type('json')
       .send({
@@ -188,12 +165,9 @@ describe('Project clone', () => {
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
+    const res = await app.request
       .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
@@ -214,16 +188,11 @@ describe('Project clone', () => {
   });
 
   test('Success with resource type in body', async () => {
-    const { project } = await createTestProject({ withClient: true });
     const resourceTypes = ['ProjectMembership'];
-    expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+    const res = await app.request
+      .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ resourceTypes });
@@ -250,16 +219,12 @@ describe('Project clone', () => {
   });
 
   test.skip('Success with includeIds in body', async () => {
-    const { project, membership } = await createTestProject({ withClient: true });
-    const includeIds = [membership.id];
+    const includeIds = [project.membership.id];
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+    const res = await app.request
+      .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ includeIds });
@@ -286,16 +251,11 @@ describe('Project clone', () => {
   });
 
   test('Success with excludeIds in body', async () => {
-    const { project, membership } = await createTestProject({ withClient: true });
-    const excludeIds = [membership.id];
-    expect(project).toBeDefined();
+    const excludeIds = [project.membership.id];
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+    const res = await app.request
+      .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ excludeIds });
@@ -322,11 +282,8 @@ describe('Project clone', () => {
   });
 
   test('Success with Bot attachments', async () => {
-    const { project, repo } = await createTestProject({ withRepo: true });
-    expect(project).toBeDefined();
-
     await withTestContext(async () => {
-      const sourceCodeBinary = await repo.createResource<Binary>({
+      const sourceCodeBinary = await project.repo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.JAVASCRIPT,
       });
@@ -338,7 +295,7 @@ describe('Project clone', () => {
         Readable.from('console.log("Hello world");')
       );
 
-      const bot = await repo.createResource<Bot>({
+      const bot = await project.repo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'Test Bot',
         sourceCode: {
@@ -346,12 +303,9 @@ describe('Project clone', () => {
         },
       });
 
-      const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-      expect(superAdminAccessToken).toBeDefined();
-
-      const res = await request(app)
-        .post(`/fhir/R4/Project/${project.id}/$clone`)
-        .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      const res = await app.request
+        .post(`/fhir/R4/Project/${project.project.id}/$clone`)
+        .set('Authorization', 'Bearer ' + superProject.accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .set('X-Medplum', 'extended')
         .send({});
@@ -360,7 +314,7 @@ describe('Project clone', () => {
       const newProjectId = res.body.id;
       expect(newProjectId).toBeDefined();
       expect(isUUID(newProjectId)).toBe(true);
-      expect(newProjectId).not.toStrictEqual(project.id);
+      expect(newProjectId).not.toStrictEqual(project.project.id);
 
       const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
       expect(newProject).toBeDefined();
