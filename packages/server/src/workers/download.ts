@@ -311,10 +311,12 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       return;
     }
 
-    await systemRepo.patchResource(resourceType, id, [
-      ...patches,
-      { op: 'replace', path: '/meta/author', value: { reference: 'system' } },
-    ]);
+    await systemRepo.patchResource(
+      resourceType,
+      id,
+      [...patches, { op: 'replace', path: '/meta/author', value: { reference: 'system' } }],
+      { ifMatch: resource.meta?.versionId }
+    );
   } catch (ex: any) {
     log.info('Download exception: ' + ex, ex);
     throw ex;
