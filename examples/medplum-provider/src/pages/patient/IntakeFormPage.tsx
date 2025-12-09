@@ -44,13 +44,12 @@ export function IntakeFormPage(): JSX.Element {
         })
       );
 
-  
       setUnavailableValueSets(unavailable);
     }
 
     checkValueSets()
-    .catch((error) => showErrorNotification(error))
-    .finally(() => setCheckingValueSets(false));
+      .catch((error) => showErrorNotification(error))
+      .finally(() => setCheckingValueSets(false));
   }, [medplum]);
 
   const handleOnSubmit = useCallback(
