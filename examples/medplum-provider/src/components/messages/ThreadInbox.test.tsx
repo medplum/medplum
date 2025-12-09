@@ -10,11 +10,18 @@ import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
 
-vi.mock('@medplum/react-hooks', async () => {
-  const actual = await vi.importActual('@medplum/react-hooks');
+vi.mock('@medplum/react', async () => {
+  const actual = await vi.importActual('@medplum/react');
   return {
     ...actual,
-    useSubscription: vi.fn(),
+    ThreadChat: vi.fn(({ title, thread }: { title?: string; thread?: Communication }) => {
+      return (
+        <div data-testid="thread-chat">
+          {title && <div data-testid="thread-chat-title">{title}</div>}
+          {thread && <div data-testid="thread-chat-thread">{thread.id}</div>}
+        </div>
+      );
+    }),
   };
 });
 
