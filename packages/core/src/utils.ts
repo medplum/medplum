@@ -1226,6 +1226,8 @@ export function findResourceByCode(
   );
 }
 
+export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (value === undefined) {
     return undefined;

@@ -4,9 +4,8 @@ import { readJson } from '@medplum/definitions';
 import type { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
 import { LOINC } from '../constants';
 import { toTypedValue } from '../fhirpath/utils';
-import type { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
-import { crawlTypedValue, crawlTypedValueAsync } from './crawler';
+import { crawlTypedValue, crawlTypedValueAsync, pathToJSONPointer } from './crawler';
 import { indexStructureDefinitionBundle } from './types';
 
 describe('ResourceCrawler', () => {
@@ -51,14 +50,14 @@ describe('ResourceCrawler', () => {
     };
 
     const attachments: Attachment[] = [];
+    const paths: string[] = [];
     crawlTypedValue(toTypedValue(patient), {
       visitProperty: (_parent, _key, _path, propertyValues) => {
         for (const propertyValue of propertyValues) {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Attachment') {
-                attachments.push(value.value as Attachment);
-              }
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Attachment') {
+              attachments.push(value.value as Attachment);
+              paths.push(value.path);
             }
           }
         }
@@ -66,6 +65,7 @@ describe('ResourceCrawler', () => {
     });
 
     expect(attachments).toHaveLength(2);
+    expect(paths).toEqual(['Patient.photo[0]', 'Patient.photo[1]']);
   });
 
   test('Async crawler over only existing properties', async () => {
@@ -128,11 +128,9 @@ describe('ResourceCrawler', () => {
       {
         visitProperty: (_parent, _key, _path, propertyValues) => {
           for (const propertyValue of propertyValues) {
-            if (propertyValue) {
-              for (const value of arrayify(propertyValue) as TypedValue[]) {
-                if (value.type === 'Coding') {
-                  resultCodes.push(value.value);
-                }
+            for (const value of arrayify(propertyValue)) {
+              if (value.type === 'Coding') {
+                resultCodes.push(value.value);
               }
             }
           }
@@ -177,12 +175,10 @@ describe('ResourceCrawler', () => {
       toTypedValue(obs),
       {
         visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Coding') {
-                await sleep(1); // Simulate validating the coding
-                resultCodes.push(value.value);
-              }
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Coding') {
+              await sleep(1); // Simulate validating the coding
+              resultCodes.push(value.value);
             }
           }
         },
@@ -195,6 +191,23 @@ describe('ResourceCrawler', () => {
         { system: LOINC, code: '8480-6' },
         { system: LOINC, code: '8462-4' },
       ])
+    );
+  });
+});
+
+describe('pathToJSONPointer', () => {
+  test('simple path', () => {
+    expect(pathToJSONPointer('Patient.name')).toEqual('/Patient/name');
+  });
+
+  test('array indexing', () => {
+    expect(pathToJSONPointer('Patient.identifier[0]')).toEqual('/Patient/identifier/0');
+    expect(pathToJSONPointer('Patient.identifier[1]')).toEqual('/Patient/identifier/1');
+  });
+
+  test('deep nesting', () => {
+    expect(pathToJSONPointer('Patient.contact[2].additionalName[0].given')).toEqual(
+      '/Patient/contact/2/additionalName/0/given'
     );
   });
 });
