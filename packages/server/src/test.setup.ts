@@ -43,7 +43,7 @@ export interface TestProjectOptions {
 }
 
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
-type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
+export type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
 
 export type TestProjectResult<T extends TestProjectOptions> = {
   project: WithId<Project>;

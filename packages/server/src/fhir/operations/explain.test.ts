@@ -2,30 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import express from 'express';
-import request from 'supertest';
-import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { prepareApp, prepareProject } from '../../test.utils';
 
 describe('$explain', () => {
-  const app = express();
+  const app = prepareApp();
+  const superProject = prepareProject({ superAdmin: true, withAccessToken: true });
 
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
-  });
-
-  afterAll(async () => {
-    await shutdownApp();
-  });
+  const linkedProject = prepareProject({ withClient: true });
+  const project = prepareProject(() => ({
+    withClient: true,
+    project: { link: [{ project: createReference(linkedProject.project) }] },
+  }));
 
   test.each(['json', 'text'])('Success with %s format', async (format) => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
-
-    const res1 = await request(app)
+    const res1 = await app.request
       .post('/fhir/R4/$explain')
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
@@ -49,17 +41,10 @@ describe('$explain', () => {
   });
 
   test('Respects On-Behalf-Of', async () => {
-    const { project: linkedProject } = await createTestProject({ withClient: true });
-    const { membership, project } = await createTestProject({
-      withClient: true,
-      project: { link: [{ project: createReference(linkedProject) }] },
-    });
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
-
-    const res1 = await request(app)
+    const res1 = await app.request
       .post('/fhir/R4/$explain')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
+      .set('Authorization', 'Bearer ' + superProject.accessToken)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(project.membership))
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
@@ -69,7 +54,7 @@ describe('$explain', () => {
 
     const output = res1.body.parameter as ParametersParameter[];
     const plan = output.find((p) => p.name === 'explain')?.valueString;
-    expect(plan).toContain(project.id);
-    expect(plan).toContain(linkedProject.id);
+    expect(plan).toContain(project.project.id);
+    expect(plan).toContain(linkedProject.project.id);
   });
 });
