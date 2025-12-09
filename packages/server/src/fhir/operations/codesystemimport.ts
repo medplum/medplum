@@ -3,12 +3,36 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import type {
+  CodeSystem,
+  CodeSystemProperty,
+  Coding,
+  OperationDefinition,
+  OperationDefinitionParameter,
+} from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
+
+// Helper function to satisfy code duplication rules
+function makeCodeAttributeParameter(
+  paramName: string,
+  attributeParam: Omit<OperationDefinitionParameter, 'part' | 'use'>
+): OperationDefinitionParameter {
+  return {
+    use: 'in',
+    name: paramName,
+    min: 0,
+    max: '*',
+    part: [
+      { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+      { use: 'in', ...attributeParam },
+      { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
+    ],
+  };
+}
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -24,28 +48,18 @@ const operation: OperationDefinition = {
   parameter: [
     { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
-    {
-      use: 'in',
+    makeCodeAttributeParameter('property', {
       name: 'property',
+      type: 'code',
+      min: 1,
+      max: '1',
+    }),
+    makeCodeAttributeParameter('designation', {
+      name: 'language',
+      type: 'code',
       min: 0,
-      max: '*',
-      part: [
-        { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-        { use: 'in', name: 'property', type: 'code', min: 1, max: '1' },
-        { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
-      ],
-    },
-    {
-      use: 'in',
-      name: 'designation',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-        { use: 'in', name: 'language', type: 'code', min: 0, max: '1' },
-        { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
-      ],
-    },
+      max: '1',
+    }),
     { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
   ],
 };
