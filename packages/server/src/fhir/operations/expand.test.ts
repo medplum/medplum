@@ -787,11 +787,9 @@ describe('Expand', () => {
     const expansion = res.body.expansion as ValueSetExpansion;
 
     const v2Codes = expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131');
-    console.log(v2Codes);
     expect(v2Codes).toHaveLength(12);
-    expect(
-      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
-    ).toHaveLength(110);
+    const v3Codes = expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode');
+    expect(v3Codes).toHaveLength(110);
     const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
     expect(abstractCode).toBeDefined();
   });
