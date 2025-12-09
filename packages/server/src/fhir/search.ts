@@ -1296,11 +1296,15 @@ function buildBooleanSearchFilter(
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
-  return new Condition(
-    new Column(table, impl.columnName),
-    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
-    filter.value
-  );
+  const column = new Column(table, impl.columnName);
+
+  // For NOT_EQUALS on boolean, we need to include NULL values
+  // E.g., active:not=false should match (active <> false OR active IS NULL)
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
+    return new Disjunction([new Condition(column, '!=', filter.value), new Condition(column, '=', null)]);
+  }
+
+  return new Condition(column, '=', filter.value);
 }
 
 /**
