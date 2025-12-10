@@ -104,5 +104,4 @@ playwright/.cache/
 *.0x
 
 # FSH generated files
-packages/definitions/src/fsh/*/sushi-config.yaml
 **/fsh-generated/
