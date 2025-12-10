@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Button,
+  Divider,
   AppShell as MantineAppShell,
   Menu,
   ScrollArea,
@@ -79,7 +80,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineAppShell.Navbar id="navbar" className={classes.navbar}>
         {props.logo && (
-          <MantineAppShell.Section px="sm" py="xs">
+          <MantineAppShell.Section px="sm" pt="xs">
             <UnstyledButton
               className={classes.logoButton}
               onClick={props.navbarToggle}
@@ -90,7 +91,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </UnstyledButton>
           </MantineAppShell.Section>
         )}
-        <ScrollArea px="sm" py="xs" h="100%">
+        <ScrollArea px="sm" pb="xs" h="100%">
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && (
               <NavbarLink
@@ -116,7 +117,8 @@ export function Navbar(props: NavbarProps): JSX.Element {
             )}
             {props.menus?.map((menu) => (
               <Fragment key={`menu-${menu.title}`}>
-                {opened ? <Text className={classes.menuTitle}>{menu.title}</Text> : <Space h={41} />}
+                {menu.title && opened && <Text className={classes.menuTitle}>{menu.title}</Text>}
+                {menu.title && !opened && <Space h={41} />}
                 {menu.links?.map((link) => (
                   <NavbarLink
                     key={link.href}
@@ -156,6 +158,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <IconLayoutSidebar />
               </UnstyledButton>
             </Tooltip>
+            <Divider my="xs" />
             <Menu
               width={260}
               shadow="xl"
@@ -170,6 +173,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   aria-label="User menu"
                   data-active={userMenuOpened || undefined}
                   onClick={() => setUserMenuOpened((o) => !o)}
+                  bd="1px 0 0 0 solid var(--mantine-color-gray-200)"
                 >
                   <ResourceAvatar value={profile} radius="xl" size={18} />
                   {opened && <span>{formatHumanName(profile?.name?.[0] as HumanName)}</span>}
