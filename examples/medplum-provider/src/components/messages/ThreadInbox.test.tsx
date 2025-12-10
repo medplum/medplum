@@ -9,6 +9,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
+import * as reactHooks from '@medplum/react-hooks';
 
 vi.mock('@medplum/react-hooks', async () => {
   const actual = await vi.importActual('@medplum/react-hooks');
@@ -35,6 +36,7 @@ describe('ThreadInbox', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    vi.mocked(reactHooks.useSubscription).mockClear();
     await medplum.createResource(HomerSimpson);
 
     // Mock search and graphql to return empty results by default
@@ -213,6 +215,9 @@ describe('ThreadInbox', () => {
       },
       { timeout: 3000 }
     );
+
+    // Verify useSubscription was called (ThreadChat uses BaseChat which uses useSubscription)
+    expect(vi.mocked(reactHooks.useSubscription)).toHaveBeenCalled();
   });
 
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {
