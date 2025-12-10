@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Button,
+  Divider,
   AppShell as MantineAppShell,
   Menu,
   ScrollArea,
@@ -157,6 +158,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <IconLayoutSidebar />
               </UnstyledButton>
             </Tooltip>
+            <Divider my="xs" />
             <Menu
               width={260}
               shadow="xl"
