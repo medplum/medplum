@@ -799,16 +799,15 @@ describe('buildTokenColumnsSearchFilter', () => {
 });
 describe('getPaddingElement', () => {
   test('Math.random is 0.99999999', () => {
-    const randomMock = jest.spyOn(Math, 'random').mockReturnValue(0.99999999);
-    expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 })).toStrictEqual(undefined);
+    const rng = jest.fn().mockReturnValue(0.99999999);
+    expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 }, rng)).toBeUndefined();
     // once to decide (not to) return a padding element
-    expect(randomMock).toHaveBeenCalledTimes(1);
-    randomMock.mockRestore();
+    expect(rng).toHaveBeenCalledTimes(1);
   });
 
   test('Math.random is 0', () => {
     let callCount = 0;
-    const randomMock = jest.spyOn(Math, 'random').mockImplementation(() => {
+    const rng = jest.fn().mockImplementation(() => {
       // first call returns 0 to guarantee padding is returned
       if (callCount++ === 0) {
         return 0;
@@ -816,11 +815,10 @@ describe('getPaddingElement', () => {
       // second call returns 0.99999999 to guarantee the largest padding element is chosen
       return 0.99999999;
     });
-    const paddingElement = getPaddingElement({ m: 20, lambda: 150, statisticsTarget: 1 });
+    const paddingElement = getPaddingElement({ m: 20, lambda: 150, statisticsTarget: 1 }, rng) as string;
     expect(paddingElement).toStrictEqual('00000000-0000-0000-0000-000000000019');
-    expect(isUUID(paddingElement as string)).toStrictEqual(true);
+    expect(isUUID(paddingElement)).toStrictEqual(true);
     // once to decide whether to return a padding element, once to decide which padding element
-    expect(randomMock).toHaveBeenCalledTimes(2);
-    randomMock.mockRestore();
+    expect(rng).toHaveBeenCalledTimes(2);
   });
 });
