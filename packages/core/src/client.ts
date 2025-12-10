@@ -98,6 +98,14 @@ import {
   sortStringArray,
 } from './utils';
 
+/**
+ * Log level for MedplumClient requests and responses.
+ * - 'none': No logging
+ * - 'basic': Log method, URL, and status code only (no sensitive headers)
+ * - 'verbose': Log all details including headers (may include sensitive data)
+ */
+export type LogLevel = 'none' | 'basic' | 'verbose';
+
 export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
@@ -332,8 +340,19 @@ export interface MedplumClientOptions {
 
   /**
    * When the verbose flag is set, the client will log all requests and responses to the console.
+   * @deprecated Use logLevel instead. Will be removed in a future version.
    */
   verbose?: boolean;
+
+  /**
+   * Log level for requests and responses.
+   * - 'none': No logging (default)
+   * - 'basic': Log method, URL, and status code only (no sensitive headers)
+   * - 'verbose': Log all details including headers (may include sensitive data like tokens)
+   *
+   * @default 'none'
+   */
+  logLevel?: LogLevel;
 
   /**
    * Optional flag to enable or disable Medplum extended mode.
@@ -918,6 +937,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private initPromise: Promise<void>;
   private initComplete = true;
   private keyValueClient?: MedplumKeyValueClient;
+  private logLevel: LogLevel;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -944,6 +964,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.defaultHeaders = options?.defaultHeaders ?? {};
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
+
+    // Initialize log level with backward compatibility
+    if (options?.logLevel) {
+      this.logLevel = options.logLevel;
+    } else if (options?.verbose !== undefined) {
+      // Backward compatibility: verbose boolean maps to log level
+      this.logLevel = options.verbose ? 'verbose' : 'none';
+    } else {
+      this.logLevel = 'none';
+    }
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -3491,11 +3521,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
       try {
-        if (this.options.verbose) {
+        if (this.logLevel !== 'none') {
           this.logRequest(url, options);
         }
         const response = (await this.fetch(url, options)) as Response;
-        if (this.options.verbose) {
+        if (this.logLevel !== 'none') {
           this.logResponse(response);
         }
 
@@ -3533,7 +3563,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private logRequest(url: string, options: MedplumRequestOptions): void {
     console.log(`> ${options.method} ${url}`);
-    if (options.headers) {
+    if (this.logLevel === 'verbose' && options.headers) {
       const headers = options.headers as Record<string, string>;
       for (const key of sortStringArray(Object.keys(headers))) {
         console.log(`> ${key}: ${headers[key]}`);
@@ -3543,7 +3573,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private logResponse(response: Response): void {
     console.log(`< ${response.status} ${response.statusText}`);
-    if (response.headers) {
+    if (this.logLevel === 'verbose' && response.headers) {
       response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
   }
@@ -3996,8 +4026,52 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Sets the log level for the client.
+   * - 'none': No logging
+   * - 'basic': Log method, URL, and status code only (no sensitive headers)
+   * - 'verbose': Log all details including headers (may include sensitive data)
+   *
+   * @example
+   * ```typescript
+   * // Basic logging for production
+   * medplum.setLogLevel('basic');
+   * await medplum.searchResources('Patient');
+   * // Output:
+   * // > GET https://api.medplum.com/fhir/R4/Patient
+   * // < 200 OK
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Verbose logging for debugging
+   * medplum.setLogLevel('verbose');
+   * await medplum.searchResources('Patient');
+   * // Output includes all headers
+   * ```
+   *
+   * @category HTTP
+   * @param level - The log level to set.
+   */
+  setLogLevel(level: LogLevel): void {
+    this.logLevel = level;
+    // Update deprecated verbose option for backward compatibility
+    this.options.verbose = level === 'verbose';
+  }
+
+  /**
+   * Gets the current log level.
+   * @category HTTP
+   * @returns The current log level.
+   */
+  getLogLevel(): LogLevel {
+    return this.logLevel;
+  }
+
+  /**
    * Sets the verbose mode for the client.
    * When verbose is enabled, the client will log all requests and responses to the console.
+   *
+   * @deprecated Use setLogLevel instead. This method will be removed in a future version.
    *
    * @example
    * ```typescript
@@ -4010,6 +4084,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param verbose - Whether to enable verbose logging.
    */
   setVerbose(verbose: boolean): void {
+    this.logLevel = verbose ? 'verbose' : 'none';
     this.options.verbose = verbose;
   }
 
