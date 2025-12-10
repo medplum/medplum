@@ -104,7 +104,7 @@ import {
  * - 'basic': Log method, URL, and status code only (no sensitive headers)
  * - 'verbose': Log all details including headers (may include sensitive data)
  */
-export type LogLevel = 'none' | 'basic' | 'verbose';
+export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
 export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
@@ -352,7 +352,7 @@ export interface MedplumClientOptions {
    *
    * @default 'none'
    */
-  logLevel?: LogLevel;
+  logLevel?: ClientLogLevel;
 
   /**
    * Optional flag to enable or disable Medplum extended mode.
@@ -937,7 +937,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private initPromise: Promise<void>;
   private initComplete = true;
   private keyValueClient?: MedplumKeyValueClient;
-  private logLevel: LogLevel;
+  private logLevel: ClientLogLevel;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -4052,7 +4052,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category HTTP
    * @param level - The log level to set.
    */
-  setLogLevel(level: LogLevel): void {
+  setLogLevel(level: ClientLogLevel): void {
     this.logLevel = level;
     // Update deprecated verbose option for backward compatibility
     this.options.verbose = level === 'verbose';
@@ -4063,7 +4063,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category HTTP
    * @returns The current log level.
    */
-  getLogLevel(): LogLevel {
+  getLogLevel(): ClientLogLevel {
     return this.logLevel;
   }
 
