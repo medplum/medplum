@@ -76,26 +76,14 @@ export function App(): JSX.Element | null {
         profile
           ? [
               {
-                title: 'Spaces',
-                links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
-              },
-              {
-                title: 'Charts',
                 links: [
+                  { icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' },
                   {
                     icon: <IconUser />,
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                ],
-              },
-              {
-                title: 'Scheduling',
-                links: [{ icon: <IconCalendarMonth />, label: 'Schedule', href: '/schedule' }],
-              },
-              {
-                title: 'Communication',
-                links: [
+                  { icon: <IconCalendarMonth />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
                       <NotificationIcon
@@ -108,11 +96,6 @@ export function App(): JSX.Element | null {
                     label: 'Messages',
                     href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
                   },
-                ],
-              },
-              {
-                title: 'Tasks',
-                links: [
                   {
                     icon: (
                       <NotificationIcon
@@ -128,12 +111,9 @@ export function App(): JSX.Element | null {
                 ],
               },
               {
-                title: 'Onboarding',
-                links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
-              },
-              {
-                title: 'Integrations',
+                title: 'Quick Links',
                 links: [
+                  { icon: <IconPencil />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
