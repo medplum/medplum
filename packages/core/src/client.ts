@@ -964,16 +964,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.defaultHeaders = options?.defaultHeaders ?? {};
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
-
-    // Initialize log level with backward compatibility
-    if (options?.logLevel) {
-      this.logLevel = options.logLevel;
-    } else if (options?.verbose !== undefined) {
-      // Backward compatibility: verbose boolean maps to log level
-      this.logLevel = options.verbose ? 'verbose' : 'none';
-    } else {
-      this.logLevel = 'none';
-    }
+    this.logLevel = this.initializeLogLevel(options);
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -1035,6 +1026,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   getInitPromise(): Promise<void> {
     return this.initPromise;
+  }
+
+  /**
+   * Initializes the log level with backward compatibility for the verbose option.
+   * @param options - The client options.
+   * @returns The initialized log level.
+   */
+  private initializeLogLevel(options?: MedplumClientOptions): ClientLogLevel {
+    if (options?.logLevel) {
+      return options.logLevel;
+    }
+    if (options?.verbose !== undefined) {
+      return options.verbose ? 'verbose' : 'none';
+    }
+    return 'none';
   }
 
   private async attemptResumeActiveLogin(): Promise<void> {
