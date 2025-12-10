@@ -662,9 +662,9 @@ function buildRestHookHeaders(
   }
 
   // Look for signature secret in Medplum extension
-  // Note that the first version of the extension used a different URL
-  // We still support the old URL for backwards compatibility
+  // We check the standard URL first, then fall back to old URLs for backwards compatibility
   const secret =
+    getExtensionValue(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-secret') ||
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret && isString(secret)) {

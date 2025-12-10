@@ -102,3 +102,6 @@ playwright/.cache/
 
 # 0x profiling data
 *.0x
+
+# FSH generated files
+**/fsh-generated/
