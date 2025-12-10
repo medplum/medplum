@@ -178,7 +178,8 @@ async function checkReferencesForDelete(resource: WithId<Resource>): Promise<voi
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
     .where('targetId', '=', resource.id)
-    .where('code', 'IN', criticalProjectMembershipReferences);
+    .where('code', 'IN', criticalProjectMembershipReferences)
+    .limit(1);
 
   const results = await checkForCriticalRefs.execute(db);
   if (results.length) {
