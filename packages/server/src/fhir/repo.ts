@@ -2576,7 +2576,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const issue = err.outcome.issue[0];
     return Boolean(
       issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
     );
   }
 
