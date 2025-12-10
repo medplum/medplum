@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      GITHUB_TOKEN: ${{ github.token }}
       NODE_VERSION: '20'
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -23,6 +24,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Check if latest version
+        id: check-latest
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          echo "Current Tag: ${CURRENT_TAG}"
+
+          LATEST_TAG=$(gh release list --order desc --limit 1 --json tagName -q '.[].tagName')
+          echo "Latest Tag: ${LATEST_TAG}"
+
+          HIGHEST_TAG=$(printf '%s\n%s' "${CURRENT_TAG}" "${LATEST_TAG}" | sort -V | tail -n1)
+          echo "Highest Tag: ${HIGHEST_TAG}"
+
+          if [ "${CURRENT_TAG}" = "${HIGHEST_TAG}" ]; then
+            echo "Current tag is the latest."
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "Current tag is not the latest."
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -67,6 +88,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Sync example repos
+        if: steps.check-latest.outputs.result == 'true'
         run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
 
       - name: Login to Docker Hub
@@ -79,12 +101,22 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build and push server Docker image
-        run: ./scripts/build-docker-server.sh --release
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-server.sh --release --latest
+          else
+            ./scripts/build-docker-server.sh --release
+          fi
         env:
           SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
 
       - name: Build and push app Docker image
-        run: ./scripts/build-docker-app.sh --release
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-app.sh --release --latest
+          else
+            ./scripts/build-docker-app.sh --release
+          fi
         env:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
@@ -96,6 +128,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
+        if: steps.check-latest.outputs.result == 'true' # only deploy latest versions
         run: ./scripts/deploy-bot-layer.sh
 
   build_agent_win64:

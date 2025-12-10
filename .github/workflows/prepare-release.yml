@@ -6,6 +6,10 @@ on:
       version:
         description: 'New version (leave blank for automatic)'
         type: string
+      is_latest:
+        description: 'Tag this release as the latest (default: true)'
+        type: boolean
+        default: true
 
 jobs:
   prepare-release:
@@ -29,3 +33,4 @@ jobs:
         run: ./scripts/prepare-release.sh ${{ inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
+          IS_LATEST: ${{ inputs.is_latest }}

@@ -12,6 +12,21 @@ CURR_VERSION=$(node -p "require('./package.json').version")
 # Convert version string to array using '.' as delimiter
 IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
 
+if [[ -z "${GITHUB_REF_NAME}" ]]; then
+  echo "GITHUB_REF_NAME is missing"
+  exit 1
+fi
+
+if [[ -z "${IS_LATEST}" ]]; then
+  echo "IS_LATEST is missing"
+  exit 1
+fi
+
+if [[ "${IS_LATEST}" != "true" && "${IS_LATEST}" != "false" ]]; then
+  echo "IS_LATEST must be 'true' or 'false'"
+  exit 1
+fi
+
 # Check if a new requiredBefore entry has been added to the data migration manifest
 DIFF_OUTPUT=$(git diff v$CURR_VERSION -- packages/server/src/migrations/data/data-version-manifest.json) || true
 ADDED_REQUIRED_BEFORE=$(echo "$DIFF_OUTPUT" | grep -e '^\+.*"requiredBefore"' || true)
@@ -73,7 +88,7 @@ git commit -m "Release Version $NEW_VERSION" -m "$RELEASE_NOTES"
 git push origin "$BRANCH_NAME"
 
 # Create pull request
-gh pr create --title "Release Version $NEW_VERSION" --body "$RELEASE_NOTES"
+gh pr create --title "Release Version $NEW_VERSION" --body "$RELEASE_NOTES" --base "$GITHUB_REF_NAME"
 
 # Create draft release
-gh release create "v$NEW_VERSION" --notes "$RELEASE_NOTES" --title "Version $NEW_VERSION" --draft
+gh release create "v$NEW_VERSION" --notes "$RELEASE_NOTES" --title "Version $NEW_VERSION" --draft --latest=$IS_LATEST
