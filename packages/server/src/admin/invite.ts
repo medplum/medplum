@@ -8,6 +8,7 @@ import {
   createReference,
   getReferenceString,
   isCreated,
+  isNotFound,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -312,11 +313,18 @@ async function validateAccessPolicyReference(
       );
     }
   } catch (err) {
-    // If it's already an OperationOutcomeError, rethrow it
+    // If it's a notFound error, convert it to badRequest with our custom message
     if (err instanceof OperationOutcomeError) {
+      // Check if it's a notFound error (404) - convert to badRequest (400) with specific message
+      if (isNotFound(err.outcome)) {
+        throw new OperationOutcomeError(
+          badRequest(`Access policy ${policyRefString} does not exist`)
+        );
+      }
+      // For other OperationOutcomeErrors, rethrow as-is
       throw err;
     }
-    // Otherwise, the access policy doesn't exist
+    // For non-OperationOutcomeError exceptions, wrap in badRequest
     throw new OperationOutcomeError(
       badRequest(`Access policy ${policyRefString} does not exist`)
     );
