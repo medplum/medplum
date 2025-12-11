@@ -312,7 +312,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  if (!authenticator.check(token, secret)) {
+  if (!authenticator.check(token, secret, { window: getConfig().mfaAuthenticatorWindow ?? 1 })) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
