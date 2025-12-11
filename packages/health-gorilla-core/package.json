@@ -33,7 +33,7 @@
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && node -e \"require('fs').copyFileSync('dist/types.d.ts', 'dist/cjs/index.d.ts'); require('fs').copyFileSync('dist/types.d.ts', 'dist/esm/index.d.ts')\"",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist/{cjs,esm,types,types.d.ts}",
     "lint": "eslint src/",
