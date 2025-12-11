@@ -33,7 +33,6 @@ export function PerformingLabInput({ patient, performingLab, error }: Practition
       loadOptions={searchAvailableLabs}
       toOption={resourceToOption}
       onChange={(item) => {
-        console.log('item', item);
         if (item.length > 0) {
           setPerformingLab(item[0]);
         } else {
