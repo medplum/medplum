@@ -139,7 +139,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
         message: 'The lab order has been successfully submitted.',
         color: 'green',
       });
-      onSubmitLabOrder(serviceRequest);
+      onSubmitLabOrder({...serviceRequest, status: 'active'});
     } catch (error) {
       setCreateError({ generic: error });
       showErrorNotification(error);

@@ -56,7 +56,6 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   const handleNewOrderCreated = async (serviceRequest?: ServiceRequest): Promise<void> => {
     setNewOrderModalOpened(false);
     setLabServiceRequest(serviceRequest);
-    console.log('serviceRequest', serviceRequest);
   };
 
   if (!serviceRequest) {
