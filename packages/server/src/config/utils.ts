@@ -111,6 +111,15 @@ export function isBooleanConfig(key: string): boolean {
   return booleanKeys.includes(key);
 }
 
+const objectKeys = new Set([
+  'tls',
+  'ssl',
+  'defaultProjectSystemSetting',
+  'defaultOAuthClients',
+  'smtp',
+  'arrayColumnPadding',
+]);
+
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
+  return objectKeys.has(key);
 }
