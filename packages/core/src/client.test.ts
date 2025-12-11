@@ -3764,6 +3764,196 @@ describe('Client', () => {
     expect(console.log).not.toHaveBeenCalled();
   });
 
+  describe('Log Levels', () => {
+    test('Default log level is none', () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      const client = new MedplumClient({ fetch });
+      expect(client.getLogLevel()).toBe('none');
+    });
+
+    test('Constructor with logLevel option', async () => {
+      const fetch = jest.fn(() => {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: {
+            get: () => ContentType.FHIR_JSON,
+            forEach: jest.fn(),
+          },
+          json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+        });
+      });
+      console.log = jest.fn();
+
+      const client = new MedplumClient({ fetch, logLevel: 'basic' });
+      expect(client.getLogLevel()).toBe('basic');
+
+      await client.readResource('Patient', '123');
+
+      // Should log method, URL, and status
+      expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
+      expect(console.log).toHaveBeenCalledWith('< 200 OK');
+
+      // Should NOT log headers in basic mode
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Authorization'));
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Accept'));
+    });
+
+    test('Backward compatibility: verbose true maps to verbose level', () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      const client = new MedplumClient({ fetch, verbose: true });
+      expect(client.getLogLevel()).toBe('verbose');
+    });
+
+    test('Backward compatibility: verbose false maps to none level', () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      const client = new MedplumClient({ fetch, verbose: false });
+      expect(client.getLogLevel()).toBe('none');
+    });
+
+    test('logLevel takes precedence over verbose', () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      const client = new MedplumClient({ fetch, verbose: true, logLevel: 'basic' });
+      expect(client.getLogLevel()).toBe('basic');
+    });
+
+    test('setLogLevel changes log level at runtime', async () => {
+      const fetch = jest.fn(() => {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: {
+            get: () => ContentType.FHIR_JSON,
+            forEach: jest.fn(),
+          },
+          json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+        });
+      });
+      console.log = jest.fn();
+
+      const client = new MedplumClient({ fetch });
+      expect(client.getLogLevel()).toBe('none');
+
+      // No logging initially
+      await client.readResource('Patient', '123');
+      expect(console.log).not.toHaveBeenCalled();
+
+      // Enable basic logging
+      client.setLogLevel('basic');
+      await client.readResource('Patient', '456');
+      expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/456');
+      expect(console.log).toHaveBeenCalledWith('< 200 OK');
+
+      // Should not log headers
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Accept'));
+
+      (console.log as jest.Mock).mockClear();
+
+      // Enable verbose logging
+      client.setLogLevel('verbose');
+      await client.readResource('Patient', '789');
+      expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/789');
+      expect(console.log).toHaveBeenCalledWith('< 200 OK');
+
+      // Should log headers in verbose mode
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Accept'));
+
+      (console.log as jest.Mock).mockClear();
+
+      // Disable logging
+      client.setLogLevel('none');
+      await client.readResource('Patient', '999');
+      expect(console.log).not.toHaveBeenCalled();
+    });
+
+    test('setVerbose updates logLevel for backward compatibility', () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      const client = new MedplumClient({ fetch });
+
+      client.setVerbose(true);
+      expect(client.getLogLevel()).toBe('verbose');
+
+      client.setVerbose(false);
+      expect(client.getLogLevel()).toBe('none');
+    });
+
+    test('Basic mode logs request and response without headers', async () => {
+      const fetch = jest.fn(() => {
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          statusText: 'Created',
+          headers: {
+            get: () => ContentType.FHIR_JSON,
+            forEach: (cb: (value: string, key: string) => void) => {
+              cb('application/fhir+json', 'content-type');
+              cb('Bearer secret-token', 'authorization');
+              cb('session-cookie', 'cookie');
+            },
+          },
+          json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+        });
+      });
+
+      console.log = jest.fn();
+      const client = new MedplumClient({ fetch, logLevel: 'basic' });
+
+      await client.createResource({ resourceType: 'Patient', name: [{ given: ['Test'] }] });
+
+      // Should log method, URL, and status
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('POST'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Patient'));
+      expect(console.log).toHaveBeenCalledWith('< 201 Created');
+
+      // Should NOT log any headers
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('authorization'));
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Bearer'));
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('cookie'));
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('content-type'));
+    });
+
+    test('Verbose mode logs all headers including sensitive ones', async () => {
+      const fetch = jest.fn(() => {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: {
+            get: () => ContentType.FHIR_JSON,
+            forEach: (cb: (value: string, key: string) => void) => {
+              cb('application/fhir+json', 'content-type');
+              cb('Bearer secret-token', 'authorization');
+            },
+          },
+          json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+        });
+      });
+
+      console.log = jest.fn();
+      const client = new MedplumClient({ fetch, logLevel: 'verbose' });
+
+      await client.readResource('Patient', '123');
+
+      // Should log everything including sensitive headers
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('authorization'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Bearer secret-token'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('content-type'));
+    });
+
+    test('None mode logs nothing', async () => {
+      const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+      console.log = jest.fn();
+
+      const client = new MedplumClient({ fetch, logLevel: 'none' });
+
+      await client.readResource('Patient', '123');
+
+      expect(console.log).not.toHaveBeenCalled();
+    });
+  });
+
   test('Disable extended mode', async () => {
     const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
 
