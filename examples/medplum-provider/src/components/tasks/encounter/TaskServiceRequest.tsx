@@ -92,7 +92,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
               <Button
                 component="a"
                 target="_blank"
-                href={`/patient/${task.for?.reference?.split('/')[1]}/labs/${labServiceRequest?.id}`}
+                href={`/${task.for?.reference}/labs/${labServiceRequest?.id}`}
               >
                 View in Labs
               </Button>
