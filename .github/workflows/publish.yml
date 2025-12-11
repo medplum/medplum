@@ -38,7 +38,7 @@ jobs:
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
           echo "Current Tag: ${CURRENT_TAG}"
 
-          LATEST_TAG=$(gh release list --order desc --limit 1 --json tagName -q '.[].tagName')
+          LATEST_TAG=$(gh release view --json tagName -q '.tagName')
           echo "Latest Tag: ${LATEST_TAG}"
 
           HIGHEST_TAG=$(printf '%s\n%s' "${CURRENT_TAG}" "${LATEST_TAG}" | sort -V | tail -n1)
