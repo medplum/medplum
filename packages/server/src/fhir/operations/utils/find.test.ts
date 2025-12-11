@@ -187,6 +187,104 @@ describe('resolveAvailability', () => {
       { start: new Date('2025-11-02T15:00:00.000Z'), end: new Date('2025-11-02T21:00:00.000Z') },
     ]);
   });
+
+  test('availability spanning a DST change', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['sun'],
+          timeOfDay: ['00:30:00'],
+          duration: 360,
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceType: [],
+    };
+
+    // NY has a DST "spring forward" on March 8 2026
+    const range = {
+      start: new Date('2026-03-08T00:00:00.000-05:00'), // Sun Mar 8, 12am EST
+      end: new Date('2026-03-08T08:00:00.000-04:00'), // Sun Mar 8, 8am EDT
+    };
+
+    // Availability duration is 6 hours, spanning 12:30am (pre time-change) to 7:30am (post time-change)
+    expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
+      { start: new Date('2026-03-08T05:30:00.000Z'), end: new Date('2026-03-08T11:30:00.000Z') },
+    ]);
+
+    // NY has a DST "fall back" on Nov 2 2025
+    const range2 = {
+      start: new Date('2025-11-02T00:00:00.000-04:00'), // Sun Nov 2, 12am EDT
+      end: new Date('2025-11-02T08:00:00.000-05:00'), // Sun Nov 2, 8am EST
+    };
+
+    // Availability duration is 6 hours, spanning 12:30am (pre time-change) to 7:30am (post time-change)
+    expect(resolveAvailability(schedulingParameters, range2, 'America/New_York')).toEqual([
+      { start: new Date('2025-11-02T04:30:00.000Z'), end: new Date('2025-11-02T10:30:00.000Z') },
+    ]);
+  });
+
+  test('availability on an ambiguous DST fall back time chooses the earlier option', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['sun'],
+          timeOfDay: ['01:30:00'],
+          duration: 360,
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceType: [],
+    };
+
+    // NY has a DST "fall back" on Nov 2 2025: 1:30am: happens twice
+    const range = {
+      start: new Date('2025-11-02T00:00:00.000-04:00'), // Sun Nov 2, 12am EDT
+      end: new Date('2025-11-02T10:00:00.000-05:00'), // Sun Nov 2, 10am EST
+    };
+
+    // Availability duration is 6 hours, spanning 1:30am (post time-change) to 7:30am (post time-change)
+    expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
+      { start: new Date('2025-11-02T05:30:00.000Z'), end: new Date('2025-11-02T11:30:00.000Z') },
+    ]);
+  });
+
+  test('availability on an ambiguous DST spring forward time starts late', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['sun'],
+          timeOfDay: ['02:30:00'],
+          duration: 360,
+        },
+      ],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceType: [],
+    };
+
+    // NY has a DST "spring forward" on March 8 2026; 2:30am never happens
+    const range = {
+      start: new Date('2026-03-08T00:00:00.000-05:00'), // Sun Mar 8, 12am EST
+      end: new Date('2026-03-08T10:00:00.000-04:00'), // Sun Mar 8, 10am EDT
+    };
+
+    // Availability duration is 6 hours, spanning 03:30 (post time-change) to 09:30am (post time-change)
+    expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
+      { start: new Date('2026-03-08T07:30:00.000Z'), end: new Date('2026-03-08T13:30:00.000Z') },
+    ]);
+  });
 });
 
 describe('normalizeIntervals', () => {
