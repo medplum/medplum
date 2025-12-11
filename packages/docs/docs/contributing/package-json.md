@@ -80,14 +80,18 @@ Adding dependencies in a monorepo is different from a regular npm project:
 
 ```bash
 cd ~/dev/medplum
-npm i --strict-peer-deps
+npm i --strict-peer-deps --prefer-dedupe
 ```
+
+This is the most surgical way update to `package-lock.json`
 
 Or use the reinstall script with the update flag:
 
 ```bash
 ./scripts/reinstall.sh --update
 ```
+
+This will completely delete your `package-lock.json` file and all `node_modules` directories, and rebuild `package-lock.json` from scratch.  Depending on the magnitude of your change, sometimes this can be the cleaner option.
 
 ## Package.json Best Practices
 
