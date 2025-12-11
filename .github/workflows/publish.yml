@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write  # Required for OIDC
+  id-token: write # Required for OIDC
   contents: read
 
 jobs:
@@ -15,8 +15,6 @@ jobs:
     name: publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      id-token: write
     env:
       GITHUB_TOKEN: ${{ github.token }}
       NODE_VERSION: '20'
@@ -28,6 +26,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write
       pull-requests: write
     steps:
       - name: Checkout repository
