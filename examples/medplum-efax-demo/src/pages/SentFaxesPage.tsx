@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Anchor, Badge, Card, Group, Loader, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, formatDateTime, normalizeErrorString } from '@medplum/core';
-import type { Communication, Practitioner } from '@medplum/fhirtypes';
+import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum/core';
+import type { Communication, Organization, Practitioner, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDownload } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -25,9 +25,9 @@ export function SentFaxesPage(): JSX.Element {
     try {
       const results = await medplum.searchResources('Communication', {
         medium: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode|FAXWRIT',
-        sender: createReference(profile).reference,
         _sort: '-sent',
         _count: '50',
+        category: 'http://medplum.com/fhir/CodeSystem/fax-direction|outbound',
       });
       setFaxes(results);
     } catch (err) {
@@ -87,9 +87,44 @@ interface SentFaxCardProps {
 }
 
 function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
+  const medplum = useMedplum();
   const efaxId = fax.identifier?.find((id) => id.system === 'https://efax.com')?.value;
   const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
-  const recipientName = fax.recipient?.[0]?.display || 'Unknown recipient';
+
+  const [recipient, setRecipient] = useState<Resource | undefined>();
+
+  // Load the recipient resource to get name and fax number
+  useEffect(() => {
+    const recipientRef = fax.recipient?.[0];
+    if (!recipientRef?.reference) {
+      return;
+    }
+
+    medplum.readReference(recipientRef).then(setRecipient).catch(console.error);
+  }, [medplum, fax.recipient]);
+
+  // Extract name and fax number from recipient
+  const getRecipientInfo = (): { name: string; faxNumber: string | undefined } => {
+    if (!recipient) {
+      return { name: fax.recipient?.[0]?.display || 'Unknown recipient', faxNumber: undefined };
+    }
+
+    if (recipient.resourceType === 'Organization') {
+      const org = recipient as Organization;
+      const faxNumber = org.contact?.[0]?.telecom?.find((t) => t.system === 'fax')?.value;
+      return { name: org.name || 'Unknown organization', faxNumber };
+    }
+
+    if (recipient.resourceType === 'Practitioner') {
+      const prac = recipient as Practitioner;
+      const faxNumber = prac.telecom?.find((t) => t.system === 'fax')?.value;
+      return { name: getDisplayString(prac), faxNumber };
+    }
+
+    return { name: getDisplayString(recipient), faxNumber: undefined };
+  };
+
+  const { name: recipientName, faxNumber: recipientFaxNumber } = getRecipientInfo();
 
   const getStatusColor = (status: string | undefined): string => {
     switch (status) {
@@ -125,6 +160,11 @@ function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
         <Text size="sm" c="dimmed">
           To: {recipientName}
         </Text>
+        {recipientFaxNumber && (
+          <Text size="sm" c="dimmed">
+            Fax: {recipientFaxNumber}
+          </Text>
+        )}
         {fax.sent && (
           <Text size="sm" c="dimmed">
             Sent: {formatDateTime(fax.sent)}

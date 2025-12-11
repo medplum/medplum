@@ -23,6 +23,7 @@ export function FaxInboxPage(): JSX.Element {
         medium: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode|FAXWRIT',
         _sort: '-sent',
         _count: '50',
+        category: 'http://medplum.com/fhir/CodeSystem/fax-direction|inbound',
       });
       setFaxes(results);
     } catch (err) {
@@ -112,6 +113,11 @@ function FaxCard({ fax }: FaxCardProps): JSX.Element {
   const efaxId = fax.identifier?.find((id) => id.system === 'https://efax.com')?.value;
   const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
 
+  // Get the originating fax number from the extension
+  const originatingFaxNumber = fax.extension?.find(
+    (ext) => ext.url === 'https://efax.com/originating-fax-number'
+  )?.valueString;
+
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Group justify="space-between" mb="xs">
@@ -127,14 +133,14 @@ function FaxCard({ fax }: FaxCardProps): JSX.Element {
       </Group>
 
       <Stack gap="xs">
+        {originatingFaxNumber && (
+          <Text size="sm" c="dimmed">
+            From: {originatingFaxNumber}
+          </Text>
+        )}
         {fax.sent && (
           <Text size="sm" c="dimmed">
             Received: {formatDateTime(fax.sent)}
-          </Text>
-        )}
-        {fax.sender?.display && (
-          <Text size="sm" c="dimmed">
-            From: {fax.sender.display}
           </Text>
         )}
         {attachment?.url && (

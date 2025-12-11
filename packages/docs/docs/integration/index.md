@@ -59,6 +59,7 @@ Medplum provides building blocks for custom integrations. Some examples are belo
 | Medications                                                                        | API           | Prescribe and check medications | [Medication related integration](https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb) |
 | [Acuity Scheduling](https://www.acuityscheduling.com/)                             | Bot Webhooks  | Enable third party scheduling   | [Consuming webhooks](/docs/bots/consuming-webhooks)                                                        |
 | [Cal.com](https://cal.com/)                                                        | Bot Webhooks  | Enable third party scheduling   | [Consuming webhooks](/docs/bots/consuming-webhooks)                                                        |
+| [eFax](https://www.efax.com/)                                          | Fax             | Send and receive faxes                                                     |
 
 ## Integration Building Blocks and Testing
 

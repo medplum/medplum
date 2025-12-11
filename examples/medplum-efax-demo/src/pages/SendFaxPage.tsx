@@ -3,7 +3,7 @@
 import { Button, FileInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import type { Binary, Bundle, BundleEntry, Communication, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, Organization, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -53,117 +53,47 @@ export function SendFaxPage(): JSX.Element {
 
     setSending(true);
     try {
-      // Read the file as base64 for the Binary resource
-      const fileBuffer = await formData.file.arrayBuffer();
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+      // Step 1: Upload the file as an attachment (creates Binary resource)
+      const attachment = await medplum.createAttachment({
+        data: formData.file,
+        contentType: formData.file.type,
+        filename: formData.file.name,
+      });
 
-      // Create UUIDs for the transaction bundle references
-      const binaryFullUrl = 'urn:uuid:binary-' + crypto.randomUUID();
-      const recipientFullUrl = 'urn:uuid:recipient-' + crypto.randomUUID();
-      const communicationFullUrl = 'urn:uuid:communication-' + crypto.randomUUID();
+      // Step 2: Create the recipient Organization
+      const recipient = await medplum.createResource<Organization>({
+        resourceType: 'Organization',
+        name: formData.recipientName,
+        contact: [{ telecom: [{ system: 'fax', value: formData.faxNumber }] }],
+      });
 
-      // Build the transaction bundle with all resources
-      // This ensures atomic creation - all succeed or none are created
-      const bundle: Bundle = {
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: [
-          // Entry 1: Binary (the document to fax)
+      // Step 3: Create the Communication with proper references
+      const communication = await medplum.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'in-progress',
+        category: [{ coding: [{ system: 'http://medplum.com/fhir/CodeSystem/fax-direction', code: 'outbound' }] }],
+        medium: [
           {
-            fullUrl: binaryFullUrl,
-            request: { method: 'POST', url: 'Binary' },
-            resource: {
-              resourceType: 'Binary',
-              contentType: formData.file.type,
-              data: base64Data,
-            } as Binary,
-          },
-          // Entry 2: Practitioner (the recipient with fax number)
-          {
-            fullUrl: recipientFullUrl,
-            request: { method: 'POST', url: 'Practitioner' },
-            resource: {
-              resourceType: 'Practitioner',
-              name: [{ text: formData.recipientName }],
-              telecom: [{ system: 'fax', value: formData.faxNumber }],
-            } as Practitioner,
-          },
-          // Entry 3: Communication (references Binary and Practitioner)
-          {
-            fullUrl: communicationFullUrl,
-            request: { method: 'POST', url: 'Communication' },
-            resource: {
-              resourceType: 'Communication',
-              status: 'preparation',
-              medium: [
-                {
-                  coding: [
-                    {
-                      system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
-                      code: 'FAXWRIT',
-                    },
-                  ],
-                },
-              ],
-              sender: createReference(profile),
-              recipient: [{ reference: recipientFullUrl }],
-              payload: [
-                {
-                  contentAttachment: {
-                    url: binaryFullUrl,
-                    contentType: formData.file.type,
-                    title: formData.file.name,
-                  },
-                },
-              ],
-            } as Communication,
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+                code: 'FAXWRIT',
+              },
+            ],
           },
         ],
-      };
+        sender: createReference(profile),
+        recipient: [createReference(recipient)],
+        payload: [{ contentAttachment: attachment }],
+      });
 
-      // Execute the transaction bundle
-      const result = await medplum.executeBatch(bundle);
-
-      // Extract the created Communication from the bundle response
-      const communicationEntry = result.entry?.find(
-        (entry: BundleEntry) => entry.resource?.resourceType === 'Communication'
-      );
-
-      if (!communicationEntry?.resource) {
-        throw new Error('Failed to create Communication resource');
-      }
-
-      const communication = communicationEntry.resource as Communication;
-
-      // Update the Communication with the actual Binary URL from the response
-      const binaryEntry = result.entry?.find((entry: BundleEntry) => entry.resource?.resourceType === 'Binary');
-      if (binaryEntry?.resource?.id) {
-        communication.payload = [
-          {
-            contentAttachment: {
-              url: `Binary/${binaryEntry.resource.id}`,
-              contentType: formData.file.type,
-              title: formData.file.name,
-            },
-          },
-        ];
-      }
-
-      // Update the Communication with the actual Practitioner reference
-      const recipientEntry = result.entry?.find(
-        (entry: BundleEntry) => entry.resource?.resourceType === 'Practitioner'
-      );
-      if (recipientEntry?.resource?.id) {
-        communication.recipient = [{ reference: `Practitioner/${recipientEntry.resource.id}` }];
-      }
-
-      // Call the $send-efax operation with the Communication
-      const sendResult = await medplum.post(medplum.fhirUrl('Communication', '$send-efax'), communication);
+      // Step 4: Call the $send-efax operation
+      await medplum.post(medplum.fhirUrl('Communication', '$send-efax'), communication);
 
       showNotification({
         color: 'green',
         title: 'Success',
-        message: `Fax queued successfully. ID: ${sendResult?.id}`,
+        message: `Fax sent successfully`,
       });
 
       navigate('/')?.catch(console.error);
@@ -183,8 +113,8 @@ export function SendFaxPage(): JSX.Element {
       <Title>Send Fax</Title>
       <Stack gap="lg" mt="lg">
         <TextInput
-          label="Recipient Name"
-          placeholder="Enter recipient name"
+          label="Organization Name"
+          placeholder="Enter organization name"
           value={formData.recipientName}
           onChange={(e) => setFormData((prev) => ({ ...prev, recipientName: e.target.value }))}
           required
