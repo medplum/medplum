@@ -934,7 +934,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCharCode(bytes[i]);
+    result[i] = String.fromCodePoint(bytes[i]);
   }
   return window.btoa(result.join(''));
 }

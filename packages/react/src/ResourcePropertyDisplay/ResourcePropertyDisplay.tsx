@@ -158,7 +158,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
@@ -170,7 +170,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     case PropertyType.Extension:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <ExtensionDisplay
@@ -183,10 +183,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     default:
       if (!property) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
