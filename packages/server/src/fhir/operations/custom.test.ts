@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { badRequest, ContentType, createReference } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -201,5 +201,155 @@ describe('Custom operation', () => {
       system: 'https://example.com/patient-id',
       value: '12345',
     });
+  });
+
+  test('Error value returned all the way to the client', async () => {
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Custom Operation Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          const { badRequest, OperationOutcomeError } = require('@medplum/core');
+          exports.handler = async function (medplum, event) {
+            throw new OperationOutcomeError(badRequest('test'));
+          };
+          `,
+      });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-error-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-error-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [
+          {
+            use: 'in',
+            name: 'foo',
+            type: 'string',
+            min: 1,
+            max: '1',
+          },
+          {
+            use: 'out',
+            name: 'return',
+            type: 'Patient',
+            min: 1,
+            max: '1',
+          },
+        ],
+      });
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .post('/fhir/R4/Patient/$my-error-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res4.status).toBe(400);
+    expect(res4.body).toMatchObject(badRequest('test'));
+  });
+
+  test('Helpful error if return type does not match', async () => {
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Custom Operation Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          const { badRequest, OperationOutcomeError } = require('@medplum/core');
+          exports.handler = async function (medplum, event) {
+            return 'test string';
+          };
+          `,
+      });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-return-type-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-return-type-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [
+          {
+            use: 'in',
+            name: 'foo',
+            type: 'string',
+            min: 1,
+            max: '1',
+          },
+          {
+            use: 'out',
+            name: 'return',
+            type: 'Patient',
+            min: 1,
+            max: '1',
+          },
+        ],
+      });
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .post('/fhir/R4/Patient/$my-return-type-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res4.status).toBe(400);
+    expect(res4.body).toMatchObject(badRequest('Expected Patient output, but got unexpected string'));
   });
 });
