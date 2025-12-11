@@ -1341,4 +1341,85 @@ describe('Admin Invite', () => {
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toBe('ProjectMembership');
   });
+
+  test('Invite with access array containing invalid policy', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Create a valid access policy
+    const accessPolicyRes = await request(app)
+      .post('/fhir/R4/AccessPolicy')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+    expect(accessPolicyRes.status).toBe(201);
+    const validAccessPolicy = accessPolicyRes.body;
+
+    // Try to invite with access array containing both valid and invalid policies
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const fakeAccessPolicyId = randomUUID();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        access: [
+          { policy: createReference(validAccessPolicy) },
+          { policy: { reference: 'AccessPolicy/' + fakeAccessPolicyId } },
+        ],
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(normalizeErrorString(res.body)).toContain('Access policy');
+    expect(normalizeErrorString(res.body)).toContain('does not exist');
+  });
+
+  test('Invite with membership.access array containing invalid policy', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Try to invite with membership.access array containing invalid policy
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const fakeAccessPolicyId = randomUUID();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        membership: {
+          access: [{ policy: { reference: 'AccessPolicy/' + fakeAccessPolicyId } }],
+        },
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(normalizeErrorString(res.body)).toContain('Access policy');
+    expect(normalizeErrorString(res.body)).toContain('does not exist');
+  });
 });
