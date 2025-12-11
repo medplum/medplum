@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
 import {
+  badRequest,
   createReference,
   getReferenceString,
   isResource,
   isString,
+  OperationOutcomeError,
   projectAdminResourceTypes,
   resolveId,
 } from '@medplum/core';
@@ -183,8 +185,17 @@ async function buildAccessPolicyResources(
 
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
-    original = await systemRepo.readReference(accessPolicyReference);
-    accessPolicyMap.set(policyReferenceString, original);
+    try {
+      original = await systemRepo.readReference(accessPolicyReference);
+      accessPolicyMap.set(policyReferenceString, original);
+    } catch (_err) {
+      // Provide a generic error message for security (don't expose access policy details during login)
+      throw new OperationOutcomeError(
+        badRequest(
+          'Cannot authenticate: Invalid access policy configuration. Please contact your administrator to update your project membership.'
+        )
+      );
+    }
   }
 
   const params = access.parameter || [];

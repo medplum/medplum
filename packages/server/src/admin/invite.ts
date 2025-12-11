@@ -13,7 +13,7 @@ import {
   Operator,
   resolveId,
 } from '@medplum/core';
-import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
@@ -253,6 +253,76 @@ async function upsertProfileResource(
   }
 }
 
+/**
+ * Validates that all access policy references exist and belong to the project.
+ * @param systemRepo - The system repository.
+ * @param request - The invite request containing access policy references.
+ * @param project - The project to validate against.
+ * @throws OperationOutcomeError if any access policy is invalid.
+ */
+async function validateAccessPolicies(
+  systemRepo: Repository,
+  request: ServerInviteRequest,
+  project: WithId<Project>
+): Promise<void> {
+  // Validate single accessPolicy if provided
+  if (request.accessPolicy) {
+    await validateAccessPolicyReference(systemRepo, request.accessPolicy, project);
+  }
+
+  // Validate access array if provided
+  if (request.access && Array.isArray(request.access)) {
+    for (const access of request.access) {
+      if (access.policy) {
+        await validateAccessPolicyReference(systemRepo, access.policy, project);
+      }
+    }
+  }
+
+  // Validate membership.access array if provided
+  if (request.membership?.access && Array.isArray(request.membership.access)) {
+    for (const access of request.membership.access) {
+      if (access.policy) {
+        await validateAccessPolicyReference(systemRepo, access.policy, project);
+      }
+    }
+  }
+}
+
+/**
+ * Validates a single access policy reference.
+ * @param systemRepo - The system repository.
+ * @param accessPolicyRef - The access policy reference to validate.
+ * @param project - The project to validate against.
+ * @throws OperationOutcomeError if the access policy is invalid.
+ */
+async function validateAccessPolicyReference(
+  systemRepo: Repository,
+  accessPolicyRef: Reference<AccessPolicy>,
+  project: WithId<Project>
+): Promise<void> {
+  const policyRefString = getReferenceString(accessPolicyRef);
+  try {
+    const accessPolicy = await systemRepo.readReference<AccessPolicy>(accessPolicyRef);
+
+    // Check if the access policy belongs to the project
+    if (accessPolicy.meta?.project && accessPolicy.meta.project !== project.id) {
+      throw new OperationOutcomeError(
+        badRequest(`Access policy ${policyRefString} does not belong to this project`)
+      );
+    }
+  } catch (err) {
+    // If it's already an OperationOutcomeError, rethrow it
+    if (err instanceof OperationOutcomeError) {
+      throw err;
+    }
+    // Otherwise, the access policy doesn't exist
+    throw new OperationOutcomeError(
+      badRequest(`Access policy ${policyRefString} does not exist`)
+    );
+  }
+}
+
 async function upsertProjectMembership(
   systemRepo: Repository,
   request: ServerInviteRequest,
@@ -260,6 +330,9 @@ async function upsertProjectMembership(
   user: WithId<User>,
   profile: WithId<ProfileResource>
 ): Promise<WithId<ProjectMembership>> {
+  // Validate access policies before creating/updating membership
+  await validateAccessPolicies(systemRepo, request, project);
+
   const partialMembership: Partial<ProjectMembership> = {
     externalId: request.externalId,
     accessPolicy: request.accessPolicy,

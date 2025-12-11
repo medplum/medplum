@@ -1183,4 +1183,162 @@ describe('Admin Invite', () => {
     expect(res6.status).toBe(400);
     expect(res6.body.issue[0].details.text).toBe('Already enrolled');
   });
+
+  test('Invite with valid access policy', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Create an access policy in the project
+    const accessPolicyRes = await request(app)
+      .post('/fhir/R4/AccessPolicy')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+    expect(accessPolicyRes.status).toBe(201);
+    const accessPolicy = accessPolicyRes.body;
+
+    // Invite Bob with the valid access policy
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        accessPolicy: createReference(accessPolicy),
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+    expect(res.body.accessPolicy?.reference).toBe(getReferenceString(accessPolicy));
+  });
+
+  test('Invite with invalid access policy (does not exist)', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Try to invite Bob with a non-existent access policy
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const fakeAccessPolicyId = randomUUID();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        accessPolicy: { reference: 'AccessPolicy/' + fakeAccessPolicyId },
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(normalizeErrorString(res.body)).toContain('Access policy');
+    expect(normalizeErrorString(res.body)).toContain('does not exist');
+  });
+
+  test('Invite with access policy from different project', async () => {
+    // Create first project with Alice
+    const aliceRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Create access policy in Alice's project
+    const accessPolicyRes = await request(app)
+      .post('/fhir/R4/AccessPolicy')
+      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+    expect(accessPolicyRes.status).toBe(201);
+    const accessPolicy = accessPolicyRes.body;
+
+    // Create second project with Bob
+    const bobRegistration = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: `bob${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Try to invite Carol to Bob's project using Alice's access policy
+    const carolEmail = `carol${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + bobRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Carol',
+        lastName: 'Brown',
+        email: carolEmail,
+        accessPolicy: createReference(accessPolicy),
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(normalizeErrorString(res.body)).toContain('Access policy');
+    expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
+  });
+
+  test('Invite without access policy (backwards compatibility)', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Invite Bob without specifying an access policy
+    // This should succeed for backwards compatibility
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+  });
 });
