@@ -8,6 +8,7 @@ node_modules/
 
 # Dotenv
 .env
+.env.local
 
 .failed
 prettier-fmt.err
