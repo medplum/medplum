@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  ActionIcon,
   Anchor,
-  Button,
+  Box,
   Center,
   Checkbox,
   Divider,
-  Flex,
-  Group,
   PasswordInput,
   Stack,
   Text,
@@ -22,6 +21,7 @@ import type {
 import { locationUtils, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconPencil } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
@@ -30,7 +30,6 @@ import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
-import styles from './AuthenticationForm.module.css';
 
 export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly disableEmailAuth?: boolean;
@@ -115,12 +114,12 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   return (
     <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
-          <Group justify="center" p="xl" style={{ height: 70 }}>
+          <Box style={{ minHeight: 40 }}>
             <GoogleButton googleClientId={googleClientId} handleGoogleCredential={handleGoogleCredential} />
-          </Group>
+          </Box>
           {!disableEmailAuth && <Divider label="or" labelPosition="center" my="lg" />}
         </>
       )}
@@ -129,6 +128,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           name="email"
           type="email"
           label="Email"
+          mb="md"
           placeholder="name@domain.com"
           required={true}
           autoFocus={true}
@@ -136,26 +136,23 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           data-testid="auth.email"
         />
       )}
-      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
-        <div>
-          {onRegister && (
-            <Anchor
-              component="button"
-              type="button"
-              c="dimmed"
-              onClick={onRegister}
-              size="xs"
-              data-dashlane-ignore="true"
-              data-lp-ignore="true"
-              data-no-autofill="true"
-              data-form-type="navigation"
-            >
-              Register
-            </Anchor>
-          )}
-        </div>
-        {!disableEmailAuth && <SubmitButton>Next</SubmitButton>}
-      </Group>
+      <Stack gap="xs">
+        {!disableEmailAuth && <SubmitButton fullWidth>Continue</SubmitButton>}
+        {onRegister && (
+          <Text
+            size="sm"
+            mt="lg"
+            c="dimmed"
+            style={{ textAlign: 'center' }}
+            data-dashlane-ignore="true"
+            data-lp-ignore="true"
+            data-no-autofill="true"
+            data-form-type="navigation"
+          >
+            Don’t have an account? <Anchor onClick={onRegister}>Register</Anchor>
+          </Text>
+        )}
+      </Stack>
     </Form>
   );
 }
@@ -183,7 +180,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           remember: formData.remember === 'on',
         })
         .then(handleAuthResponse)
-        .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+        .catch((err: unknown) => setOutcome(normalizeOperationOutcome(err)));
     },
     [medplum, baseLoginRequest, handleAuthResponse]
   );
@@ -191,8 +188,19 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   return (
     <Form onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       <Stack gap="sm">
+        <TextInput
+          label="Email"
+          value={props.email}
+          disabled
+          rightSectionWidth={36}
+          rightSection={
+            <ActionIcon variant="subtle" color="gray" onClick={props.resetEmail} aria-label="Change email">
+              <IconPencil size="1rem" stroke={1.5} />
+            </ActionIcon>
+          }
+        />
         <PasswordInput
           name="password"
           label="Password"
@@ -202,24 +210,33 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
           data-testid="auth.password"
         />
-        <Flex className={styles.userNotice} justify="space-between" align="center" px="xs" bdrs="sm">
-          <Text size="xs">
-            Logging in as <em>{props.email}</em>
-          </Text>
-          <Button variant="transparent" onClick={props.resetEmail} size="compact-xs">
-            Change
-          </Button>
-        </Flex>
       </Stack>
-      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
+      <Stack gap="xs">
+        <Checkbox
+          id="remember"
+          name="remember"
+          label="Remember me"
+          size="xs"
+          style={{ lineHeight: 1 }}
+          pt="md"
+          pb="xs"
+        />
+        <SubmitButton>Sign In</SubmitButton>
         {onForgotPassword && (
-          <Anchor component="button" type="button" c="dimmed" onClick={onForgotPassword} size="xs">
-            Forgot password
-          </Anchor>
+          <Text
+            size="sm"
+            mt="lg"
+            c="dimmed"
+            style={{ textAlign: 'center' }}
+            data-dashlane-ignore="true"
+            data-lp-ignore="true"
+            data-no-autofill="true"
+            data-form-type="navigation"
+          >
+            <Anchor onClick={onForgotPassword}>Reset Password</Anchor>
+          </Text>
         )}
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
-        <SubmitButton>Sign in</SubmitButton>
-      </Group>
+      </Stack>
     </Form>
   );
 }

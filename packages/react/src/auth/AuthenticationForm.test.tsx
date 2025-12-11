@@ -26,13 +26,13 @@ describe('AuthenticationForm', () => {
     const input = screen.getByTestId('auth.email');
     await act(async () => fireEvent.change(input, { target: { value: emailAddress } }));
 
-    const button = screen.getByRole('button', { name: 'Next' });
+    const button = screen.getByRole('button', { name: 'Continue' });
     await act(async () => fireEvent.click(button));
 
     expect(screen.getByTestId('auth.password')).toBeInTheDocument();
 
     // Ensure that we display the entered email address
-    expect(screen.getByText(emailAddress)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(emailAddress)).toBeInTheDocument();
   });
 
   test('You can navigate from the password screen back to the email screen', async () => {
@@ -48,12 +48,12 @@ describe('AuthenticationForm', () => {
     await act(async () => fireEvent.change(input, { target: { value: emailAddress } }));
 
     // advance the screen
-    const button = screen.getByRole('button', { name: 'Next' });
+    const button = screen.getByRole('button', { name: 'Continue' });
     await act(async () => fireEvent.click(button));
 
     expect(screen.getByTestId('auth.password')).toBeInTheDocument();
 
-    const returnButton = screen.getByRole('button', { name: 'Change' });
+    const returnButton = screen.getByRole('button', { name: 'Change email' });
     expect(returnButton).toBeInTheDocument();
 
     await act(async () => fireEvent.click(returnButton));
