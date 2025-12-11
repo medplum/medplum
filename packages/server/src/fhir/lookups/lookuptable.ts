@@ -130,7 +130,7 @@ export abstract class LookupTable {
       }
 
       if (newRows.length > 0) {
-        await this.insertValuesForResource(client, resourceType, newRows);
+        await this.batchInsertRows(client, resourceType, newRows);
       }
     }
   }
@@ -252,7 +252,7 @@ export abstract class LookupTable {
    * @param resourceType - The resource type.
    * @param values - The values to insert.
    */
-  protected async insertValuesForResource(
+  protected async batchInsertRows(
     client: Pool | PoolClient,
     resourceType: ResourceType,
     values: LookupTableRow[]
