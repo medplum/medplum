@@ -59,11 +59,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
   // If showing sign-in form for project registration
   if (showSignIn && type === 'project' && projectId === 'new' && !login) {
     return (
-      <SignInForm
-        projectId="new"
-        googleClientId={googleClientId}
-        onSuccess={onSuccess}
-      >
+      <SignInForm projectId="new" googleClientId={googleClientId} onSuccess={onSuccess}>
         <Logo size={32} />
         <Title>Sign in to {getAppName()}</Title>
         <div>Sign in to create a new project</div>
