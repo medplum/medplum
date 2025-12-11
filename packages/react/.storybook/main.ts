@@ -22,11 +22,11 @@ const config: StorybookConfig = {
       });
     } else if (configType === 'DEVELOPMENT') {
       const aliasEntries: Record<string, string> = {
-        '@medplum/core': path.resolve(__dirname, '../../core/src'),
-        '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
-        '@medplum/mock': path.resolve(__dirname, '../../mock/src'),
-        '@medplum/fhir-router': path.resolve(__dirname, '../../fhir-router/src'),
-        '@medplum/definitions': path.resolve(__dirname, '../../definitions/src'),
+        '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
+        '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
+        '@medplum/mock': path.resolve(import.meta.dirname, '../../mock/src'),
+        '@medplum/fhir-router': path.resolve(import.meta.dirname, '../../fhir-router/src'),
+        '@medplum/definitions': path.resolve(import.meta.dirname, '../../definitions/src'),
       };
 
       // Only add aliases for paths that exist
