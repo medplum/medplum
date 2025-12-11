@@ -308,26 +308,20 @@ async function validateAccessPolicyReference(
 
     // Check if the access policy belongs to the project
     if (accessPolicy.meta?.project && accessPolicy.meta.project !== project.id) {
-      throw new OperationOutcomeError(
-        badRequest(`Access policy ${policyRefString} does not belong to this project`)
-      );
+      throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
     }
   } catch (err) {
     // If it's a notFound error, convert it to badRequest with our custom message
     if (err instanceof OperationOutcomeError) {
       // Check if it's a notFound error (404) - convert to badRequest (400) with specific message
       if (isNotFound(err.outcome)) {
-        throw new OperationOutcomeError(
-          badRequest(`Access policy ${policyRefString} does not exist`)
-        );
+        throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
       }
       // For other OperationOutcomeErrors, rethrow as-is
       throw err;
     }
     // For non-OperationOutcomeError exceptions, wrap in badRequest
-    throw new OperationOutcomeError(
-      badRequest(`Access policy ${policyRefString} does not exist`)
-    );
+    throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
   }
 }
 

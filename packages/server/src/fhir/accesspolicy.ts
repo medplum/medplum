@@ -22,7 +22,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
