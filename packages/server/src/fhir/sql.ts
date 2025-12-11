@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
+import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverError, serverTimeout } from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
@@ -611,12 +611,41 @@ export const PostgresError = {
   SerializationFailure: '40001',
   QueryCanceled: '57014',
   InFailedSqlTransaction: '25P02',
+  TooManyConnections: '53300',
 } as const;
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
     // Pass through already-normalized errors
     return err;
+  }
+
+  // Check for connection pool exhaustion FIRST (before switch statement)
+  // This handles cases where the error code might be in different formats or the message is the primary indicator
+  const errorMessage = err?.message?.toLowerCase() || '';
+  const errorCode = err?.code;
+  
+  // Check both error code and message for connection exhaustion
+  const isConnectionExhaustion = 
+    errorCode === PostgresError.TooManyConnections ||
+    errorCode === '53300' ||
+    errorMessage.includes('too many clients') ||
+    errorMessage.includes('too many connections');
+
+  if (isConnectionExhaustion) {
+    getLogger().error('Database connection pool exhausted', {
+      error: err.message,
+      stack: err.stack,
+      code: err.code,
+      detectedBy: errorCode === PostgresError.TooManyConnections || errorCode === '53300' ? 'code' : 'message',
+    });
+    const connectionError = new OperationOutcomeError(
+      serverError(new Error('Database connection pool exhausted. Please retry the request.')),
+      err
+    );
+    // Mark this error so GraphQL can detect it and fail the entire query
+    (connectionError as any).isConnectionExhaustion = true;
+    return connectionError;
   }
 
   // Handle known Postgres error codes
@@ -636,6 +665,15 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    case PostgresError.TooManyConnections:
+      // This case should be handled above, but keeping for completeness
+      getLogger().error('Database connection pool exhausted (via switch)', { error: err.message, stack: err.stack, code: err.code });
+      const connectionError2 = new OperationOutcomeError(
+        serverError(new Error('Database connection pool exhausted. Please retry the request.')),
+        err
+      );
+      (connectionError2 as any).isConnectionExhaustion = true;
+      return connectionError2;
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
