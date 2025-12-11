@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, getExtension, isOperationOutcome, Operator } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  getExtension,
+  isOperationOutcome,
+  normalizeOperationOutcome,
+  Operator,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
@@ -80,6 +87,15 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     return [result];
   }
 
-  const outcome = result.success ? allOk : badRequest(result.logResult);
-  return [outcome, buildOutputParameters(operation, result.returnValue)];
+  if (!result.success) {
+    // On error, the return value is the OperationOutcome
+    return [badRequest(result.logResult), result.returnValue];
+  }
+
+  try {
+    // Note that buildOutputParameters will throw if the return value is invalid
+    return [allOk, buildOutputParameters(operation, result.returnValue)];
+  } catch (err) {
+    return [normalizeOperationOutcome(err)];
+  }
 }
