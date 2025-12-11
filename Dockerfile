@@ -18,10 +18,14 @@ ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
 
 # Add the application files
+# The archive is decompressed and extracted into the specified destination.
+# We do this to preserve the folder structure in a single layer.
+# See: https://docs.docker.com/reference/dockerfile/#adding-local-tar-archives
 ADD ./medplum-server.tar.gz ./
 
 # Install dependencies, create non-root user, and set permissions in one layer
 RUN npm ci && \
+  rm package-lock.json && \
   groupadd -r medplum && \
   useradd -r -g medplum medplum && \
   chown -R medplum:medplum /usr/src/medplum
