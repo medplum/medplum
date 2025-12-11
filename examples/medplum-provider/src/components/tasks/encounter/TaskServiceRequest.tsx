@@ -88,7 +88,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
         {labServiceRequest?.status !== 'draft' && (
           <>
             <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
-            <Group> 
+            <Group>
               <Button
                 component="a"
                 target="_blank"
