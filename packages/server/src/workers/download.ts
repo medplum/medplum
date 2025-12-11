@@ -4,6 +4,7 @@ import type { BackgroundJobContext, TypedValueWithPath, WithId } from '@medplum/
 import {
   arrayify,
   crawlTypedValue,
+  getReferenceString,
   isGone,
   normalizeOperationOutcome,
   pathToJSONPointer,
@@ -252,6 +253,8 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     }
   }
 
+  const reference = getReferenceString(resource);
+
   try {
     log.info('Requesting content at: ' + url);
     const response = await fetch(url, {
@@ -272,7 +275,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
         project: resource.meta?.project,
       },
       securityContext: {
-        reference: `${resource.resourceType}/${resource.id}`,
+        reference,
       },
     });
     if (response.body === null) {
@@ -317,9 +320,9 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       [...patches, { op: 'replace', path: '/meta/author', value: { reference: 'system' } }],
       { ifMatch: resource.meta?.versionId }
     );
-  } catch (ex: any) {
-    log.info('Download exception: ' + ex, ex);
-    throw ex;
+  } catch (err) {
+    log.info('Download error', { projectId, reference, url, err });
+    throw err;
   }
 }
 
