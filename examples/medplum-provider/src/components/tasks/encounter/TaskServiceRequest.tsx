@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
-import { StatusBadge, useMedplum } from '@medplum/react';
+import type { DiagnosticReport, Encounter, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { showErrorNotification } from '../../../utils/notifications';
 import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { IconPlus } from '@tabler/icons-react';
-import DiagnosticReportDialog from './DiagnosticReportDialog';
+import { OrderLabsPage } from '../../../pages/labs/OrderLabsPage';
+import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import { showErrorNotification } from '../../../utils/notifications';
 
 interface TaskServiceRequestProps {
   task: Task;
@@ -19,29 +20,44 @@ const SNOMED_SYSTEM = 'http://snomed.info/sct';
 const SNOMED_DIAGNOSTIC_REPORT_CODE = '108252007';
 
 export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element => {
-  const { task, saveDiagnosticReport } = props;
+  const { task } = props;
   const medplum = useMedplum();
-  const serviceRequestReference = task.input?.[0]?.valueReference as Reference<ServiceRequest>;
-  const [serviceRequest, setServiceRequest] = useState<ServiceRequest | undefined>(undefined);
-  const [diagnosticReport, setDiagnosticReport] = useState<DiagnosticReport | undefined>(undefined);
-  const [procedureModalOpen, setProcedureModalOpen] = useState(false);
+  const serviceRequest = useResource(task.focus as Reference<ServiceRequest>);
+  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
+  const [labServiceRequest, setLabServiceRequest] = useState<ServiceRequest | undefined>(undefined);
+  const performingLab: LabOrganization = {
+    resourceType: 'Organization',
+    id: '258a1dbb-ccec-4cb3-b9ff-4dc28f8f28a0',
+    name: 'HGDX LabCorp',
+    identifier: [
+      {
+        system: 'https://www.healthgorilla.com',
+        value: 'f-388554647b89801ea5e8320b',
+      },
+    ],
+  };
+
+  const tests: TestCoding[] | undefined = serviceRequest?.code?.coding
+    ?.filter((coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)
+    .map((coding) => ({
+      system: 'urn:uuid:f:388554647b89801ea5e8320b',
+      code: coding.code,
+      display: coding.display,
+    })) as TestCoding[];
 
   useEffect(() => {
     const fetchServiceRequest = async (): Promise<void> => {
-      if (serviceRequestReference) {
-        const serviceRequest = await medplum.readReference(serviceRequestReference);
-        setServiceRequest(serviceRequest);
-
-        if (task.output?.[0]?.valueReference) {
-          const diagnosticReport: DiagnosticReport = await medplum.readReference(
-            task.output[0].valueReference as Reference<DiagnosticReport>
-          );
-          setDiagnosticReport(diagnosticReport);
-        }
-      }
+      const serviceRequest = await medplum.readReference(task.focus as Reference<ServiceRequest>);
+      setLabServiceRequest(serviceRequest);
     };
     fetchServiceRequest().catch(showErrorNotification);
-  }, [medplum, serviceRequestReference, task.output]);
+  }, [medplum, task.focus]);
+
+  const handleNewOrderCreated = async (serviceRequest?: ServiceRequest): Promise<void> => {
+    setNewOrderModalOpened(false);
+    setLabServiceRequest(serviceRequest);
+    console.log('serviceRequest', serviceRequest);
+  };
 
   if (!serviceRequest) {
     return <div>Loading...</div>;
@@ -62,45 +78,43 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           {codeText && <Text>SNOMED: {codeText}</Text>}
         </Stack>
 
-        {diagnosticReport && (
-          <Stack>
-            <Stack key={diagnosticReport.id}>
-              <Group>
-                <StatusBadge status={diagnosticReport.status} size="sm" />
-                {diagnosticReport.issued && <Text>Issued: {diagnosticReport.issued}</Text>}
-              </Group>
-              <Text>{getDisplayString(diagnosticReport)}</Text>
-            </Stack>
-          </Stack>
+        {labServiceRequest?.status === 'draft' && (
+          <Group>
+            <Button onClick={() => setNewOrderModalOpened(true)} variant="outline" leftSection={<IconPlus size={16} />}>
+              Request Labs
+            </Button>
+          </Group>
         )}
 
-        {!diagnosticReport &&
-          serviceRequest.code?.coding?.some(
-            (coding) => coding.system === SNOMED_SYSTEM && coding.code === SNOMED_DIAGNOSTIC_REPORT_CODE
-          ) && (
-            <Group>
+        {labServiceRequest?.status !== 'draft' && (
+          <>
+            <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
+            <Group> 
               <Button
-                onClick={() => setProcedureModalOpen(true)}
-                variant="outline"
-                leftSection={<IconPlus size={16} />}
+                component="a"
+                target="_blank"
+                href={`/patient/${task.for?.reference?.split('/')[1]}/labs/${labServiceRequest?.id}`}
               >
-                Add Diagnostic Report
+                View in Labs
               </Button>
             </Group>
-          )}
+          </>
+        )}
       </Stack>
 
       <Modal
-        opened={procedureModalOpen}
-        onClose={() => setProcedureModalOpen(false)}
-        title="Create New Diagnostic Report"
-        size="lg"
+        opened={newOrderModalOpened}
+        onClose={() => setNewOrderModalOpened(false)}
+        size="xl"
+        centered
+        title="Order Labs"
       >
-        <DiagnosticReportDialog
-          onDiagnosticReportCreated={(diagnosticReport) => {
-            saveDiagnosticReport(diagnosticReport);
-            setProcedureModalOpen(false);
-          }}
+        <OrderLabsPage
+          encounter={task.encounter as Reference<Encounter>}
+          task={task as Reference<Task>}
+          tests={tests}
+          performingLab={performingLab}
+          onSubmitLabOrder={handleNewOrderCreated}
         />
       </Modal>
     </>
