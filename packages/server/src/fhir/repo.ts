@@ -1789,33 +1789,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-    let columnImpl: ColumnSearchParameterImplementation | undefined;
-    if (impl.searchStrategy === 'token-column') {
-      const paddingConfig = getArrayPaddingConfig(searchParam, resource.resourceType);
-      if (paddingConfig) {
-        buildTokenColumns(searchParam, impl, columns, resource, { paddingConfig });
-      } else {
-        buildTokenColumns(searchParam, impl, columns, resource);
-      }
-    } else {
-      impl satisfies ColumnSearchParameterImplementation;
-      columnImpl = impl;
-    }
-
-    if (columnImpl) {
-      const columnValues = this.buildColumnValues(searchParam, columnImpl, typedValues);
-      if (columnImpl.array) {
-        columns[columnImpl.columnName] = columnValues.length > 0 ? columnValues : undefined;
-      } else {
-        columns[columnImpl.columnName] = columnValues[0];
-      }
-    }
-
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
     // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
     if (searchParam.id === 'MeasureReport-period') {
       columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+    }
+
+    if (impl.searchStrategy === 'token-column') {
+      buildTokenColumns(searchParam, impl, columns, resource, {
+        paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
+      });
+      return;
+    }
+
+    impl satisfies ColumnSearchParameterImplementation;
+    const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
+    if (impl.array) {
+      columns[impl.columnName] = columnValues.length > 0 ? columnValues : undefined;
+    } else {
+      columns[impl.columnName] = columnValues[0];
     }
   }
 
@@ -2614,7 +2607,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const issue = err.outcome.issue[0];
     return Boolean(
       issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
     );
   }
 
