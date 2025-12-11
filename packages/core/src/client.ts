@@ -4271,6 +4271,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       headers,
       body: formBody.toString(),
       credentials: 'include',
+      cache: 'no-store', // Prevent caching in Next.js 14 App Router and other environments
     };
 
     let response: Response;
