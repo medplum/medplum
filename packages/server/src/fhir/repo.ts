@@ -89,6 +89,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
+import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -1788,28 +1789,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-    let columnImpl: ColumnSearchParameterImplementation | undefined;
-    if (impl.searchStrategy === 'token-column') {
-      buildTokenColumns(searchParam, impl, columns, resource);
-    } else {
-      impl satisfies ColumnSearchParameterImplementation;
-      columnImpl = impl;
-    }
-
-    if (columnImpl) {
-      const columnValues = this.buildColumnValues(searchParam, columnImpl, typedValues);
-      if (columnImpl.array) {
-        columns[columnImpl.columnName] = columnValues.length > 0 ? columnValues : undefined;
-      } else {
-        columns[columnImpl.columnName] = columnValues[0];
-      }
-    }
-
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
     // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
     if (searchParam.id === 'MeasureReport-period') {
       columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
+    }
+
+    if (impl.searchStrategy === 'token-column') {
+      buildTokenColumns(searchParam, impl, columns, resource, {
+        paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
+      });
+      return;
+    }
+
+    impl satisfies ColumnSearchParameterImplementation;
+    const columnValues = this.buildColumnValues(searchParam, impl, typedValues);
+    if (impl.array) {
+      columns[impl.columnName] = columnValues.length > 0 ? columnValues : undefined;
+    } else {
+      columns[impl.columnName] = columnValues[0];
     }
   }
 
@@ -2882,4 +2881,18 @@ function truncateTextColumn(value: string | undefined): string | undefined {
   }
 
   return Array.from(value).slice(0, 675).join('');
+}
+
+function getArrayPaddingConfig(
+  searchParam: SearchParameter,
+  resourceType: string
+): ArrayColumnPaddingConfig | undefined {
+  const paddingConfigEntry = getConfig().arrayColumnPadding?.[searchParam.code];
+  if (
+    paddingConfigEntry &&
+    (paddingConfigEntry.resourceType === undefined || paddingConfigEntry.resourceType.includes(resourceType))
+  ) {
+    return paddingConfigEntry.config;
+  }
+  return undefined;
 }
