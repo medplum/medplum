@@ -179,7 +179,7 @@ describe('SignatureInput', () => {
 
     // Create a mock that simulates binary PNG data
     const binaryData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]);
-    const base64Data = btoa(String.fromCharCode(...binaryData));
+    const base64Data = btoa(String.fromCodePoint(...binaryData));
     const dataURL = `data:image/png;base64,${base64Data}`;
 
     const signaturePadMock = jest.fn().mockImplementation(() => ({
@@ -213,9 +213,9 @@ describe('SignatureInput', () => {
     expect(decodedData.length).toBeGreaterThan(0);
 
     // Verify it contains binary data (PNG signature)
-    expect(decodedData.charCodeAt(0)).toBe(137); // PNG signature byte
-    expect(decodedData.charCodeAt(1)).toBe(80); // 'P'
-    expect(decodedData.charCodeAt(2)).toBe(78); // 'N'
-    expect(decodedData.charCodeAt(3)).toBe(71); // 'G'
+    expect(decodedData.codePointAt(0)).toBe(137); // PNG signature byte
+    expect(decodedData.codePointAt(1)).toBe(80); // 'P'
+    expect(decodedData.codePointAt(2)).toBe(78); // 'N'
+    expect(decodedData.codePointAt(3)).toBe(71); // 'G'
   });
 });

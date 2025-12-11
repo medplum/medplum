@@ -244,9 +244,9 @@ const userProfileTokens = new Set([
  *
  * Note that the spec says:
  *
- *   > Individual hooks specify which of their `context` fields can be used as prefetch tokens.
- *   > Only root-level fields with a primitive value within the `context` object are eligible to be used as prefetch tokens.
- *   > For example, `{{context.medication.id}}` is not a valid prefetch token because it attempts to access the `id` field of the `medication` field.
+ *   Individual hooks specify which of their `context` fields can be used as prefetch tokens.
+ *   Only root-level fields with a primitive value within the `context` object are eligible to be used as prefetch tokens.
+ *   For example, `{{context.medication.id}}` is not a valid prefetch token because it attempts to access the `id` field of the `medication` field.
  *
  * Unfortunately, many CDS Hooks services do not follow this rule. Therefore, this implementation allows access to nested fields.
  *
