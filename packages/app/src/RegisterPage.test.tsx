@@ -45,7 +45,7 @@ describe('RegisterPage', () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
     await setup(medplum);
-    expect(screen.getByRole('button', { name: 'Register Account' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
   });
 
   test('Redirect if signed in', async () => {
@@ -76,11 +76,11 @@ describe('RegisterPage', () => {
     await user.type(screen.getByLabelText('Email *'), 'george@example.com');
     await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Create project' }));
   });
 
   test('Register disabled', async () => {
