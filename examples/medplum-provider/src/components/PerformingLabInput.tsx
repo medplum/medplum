@@ -40,8 +40,6 @@ export function PerformingLabInput({ patient, performingLab, error }: Practition
           setPerformingLab(undefined);
         }
       }}
-
-      
     />
   );
 }

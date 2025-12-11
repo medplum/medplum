@@ -132,7 +132,6 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
         });
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
-     
 
       showNotification({
         title: 'Lab Order Submitted',
