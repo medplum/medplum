@@ -144,9 +144,7 @@ describe('AzureBlobStorage', () => {
 
       await storage.copyBinary(testBinary, destinationBinary);
 
-      expect(mockBeginCopyFromURL).toHaveBeenCalledWith(
-        'https://example.blob.core.windows.net/container/source-file'
-      );
+      expect(mockBeginCopyFromURL).toHaveBeenCalledWith('https://example.blob.core.windows.net/container/source-file');
     });
   });
 
@@ -154,10 +152,7 @@ describe('AzureBlobStorage', () => {
     test('should generate a presigned URL with user delegation key', async () => {
       const url = await storage.getPresignedUrl(testBinary);
 
-      expect(mockGetUserDelegationKey).toHaveBeenCalledWith(
-        expect.any(Date),
-        expect.any(Date)
-      );
+      expect(mockGetUserDelegationKey).toHaveBeenCalledWith(expect.any(Date), expect.any(Date));
       expect(mockGenerateUserDelegationSasUrl).toHaveBeenCalledWith(
         expect.objectContaining({
           expiresOn: expect.any(Date),
@@ -173,8 +168,6 @@ describe('AzureBlobStorage', () => {
       const before = new Date();
 
       await storage.getPresignedUrl(testBinary);
-
-      const after = new Date();
 
       // Get the actual call arguments
       const generateUrlCall = mockGenerateUserDelegationSasUrl.mock.calls[0];

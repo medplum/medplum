@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Readable } from 'stream';
 
 export const mockUpload = jest.fn().mockResolvedValue(undefined);
 export const mockUploadStream = jest.fn().mockResolvedValue(undefined);
 export const mockDownload = jest.fn();
 export const mockBeginCopyFromURL = jest.fn().mockResolvedValue({ pollUntilDone: jest.fn().mockResolvedValue({}) });
-export const mockGenerateUserDelegationSasUrl = jest.fn().mockReturnValue('https://example.blob.core.windows.net/container/file?sig=mockSasToken');
+export const mockGenerateUserDelegationSasUrl = jest
+  .fn()
+  .mockReturnValue('https://example.blob.core.windows.net/container/file?sig=mockSasToken');
 export const mockGetUserDelegationKey = jest.fn().mockResolvedValue({ value: 'mock-delegation-key' });
 
 /**
