@@ -128,6 +128,7 @@ mfaRouter.post(
 
 mfaRouter.post(
   '/disable',
+  authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
