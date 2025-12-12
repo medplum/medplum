@@ -307,9 +307,7 @@ async function validateAccessPolicies(
     if (result instanceof Error) {
       // Convert notFound errors to badRequest with specific message
       if (result instanceof OperationOutcomeError && isNotFound(result.outcome)) {
-        throw new OperationOutcomeError(
-          badRequest(`Access policy ${policyRefString} does not exist`)
-        );
+        throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
       }
       // For other errors, rethrow
       throw result;
@@ -317,9 +315,7 @@ async function validateAccessPolicies(
 
     // Check if the access policy belongs to the project
     if (result.meta?.project && result.meta.project !== project.id) {
-      throw new OperationOutcomeError(
-        badRequest(`Access policy ${policyRefString} does not belong to this project`)
-      );
+      throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
     }
   }
 }
