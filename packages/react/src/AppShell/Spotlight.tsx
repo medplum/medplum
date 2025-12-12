@@ -135,23 +135,25 @@ export function Spotlight(): JSX.Element {
       nothingFound={nothingFoundMessage}
       radius="md"
       highlightQuery
-      searchProps={{
-        leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
-        placeholder: 'Start typing to search…',
-        type: 'search',
-        autoComplete: 'off',
-        autoCorrect: 'off',
-        spellCheck: false,
-        name: 'spotlight-search',
-        inputProps: {
-          // Tell common password managers to ignore this field
-          'data-1p-ignore': 'true',
-          'data-lpignore': 'true',
-        },
-        leftSectionProps: {
-          style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
-        },
-      } as any}
+      searchProps={
+        {
+          leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
+          placeholder: 'Start typing to search…',
+          type: 'search',
+          autoComplete: 'off',
+          autoCorrect: 'off',
+          spellCheck: false,
+          name: 'spotlight-search',
+          inputProps: {
+            // Tell common password managers to ignore this field
+            'data-1p-ignore': 'true',
+            'data-lpignore': 'true',
+          },
+          leftSectionProps: {
+            style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
+          },
+        } as any
+      }
       classNames={{
         body: classes.body,
         content: classes.content,
@@ -261,7 +263,9 @@ function resourcesToActions(
   isRecentlyViewed = false
 ): SpotlightActionGroupData[] {
   const patientActions: SpotlightActionData[] = resources
-    .filter((resource): resource is Patient & { id: string } => resource.resourceType === 'Patient' && Boolean(resource.id))
+    .filter(
+      (resource): resource is Patient & { id: string } => resource.resourceType === 'Patient' && Boolean(resource.id)
+    )
     .map((resource) => ({
       id: resource.id,
       label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
@@ -437,10 +441,7 @@ async function buildPatientAction(
   }
 }
 
-function buildResourceTypeAction(
-  item: RecentlyViewedItem,
-  navigate: MedplumNavigateFunction
-): ActionWithTimestamp {
+function buildResourceTypeAction(item: RecentlyViewedItem, navigate: MedplumNavigateFunction): ActionWithTimestamp {
   return {
     action: {
       id: `resource-type-${item.resourceType}`,

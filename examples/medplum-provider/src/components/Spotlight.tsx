@@ -134,22 +134,24 @@ export function Spotlight(): JSX.Element {
       nothingFound={nothingFoundMessage}
       radius="md"
       highlightQuery
-      searchProps={{
-        leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
-        placeholder: 'Search patients…',
-        type: 'search',
-        autoComplete: 'off',
-        autoCorrect: 'off',
-        spellCheck: false,
-        name: 'provider-spotlight-search',
-        inputProps: {
-          'data-1p-ignore': 'true',
-          'data-lpignore': 'true',
-        },
-        leftSectionProps: {
-          style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
-        },
-      } as any}
+      searchProps={
+        {
+          leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
+          placeholder: 'Search patients…',
+          type: 'search',
+          autoComplete: 'off',
+          autoCorrect: 'off',
+          spellCheck: false,
+          name: 'provider-spotlight-search',
+          inputProps: {
+            'data-1p-ignore': 'true',
+            'data-lpignore': 'true',
+          },
+          leftSectionProps: {
+            style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
+          },
+        } as any
+      }
       classNames={{
         body: classes.body,
         content: classes.content,
