@@ -22,6 +22,7 @@ export interface NewUserFormProps {
   readonly recaptchaSiteKey?: string;
   readonly children?: ReactNode;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly onSignIn?: () => void;
 }
 
 export function NewUserForm(props: NewUserFormProps): JSX.Element {
@@ -147,6 +148,23 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           {' and '}
           <Anchor href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</Anchor> apply.
         </Text>
+        {props.onSignIn && (
+          <Text size="sm" c="dimmed" ta="center" pt="md">
+            Already have an account?{' '}
+            <Anchor
+              component="button"
+              type="button"
+              onClick={props.onSignIn}
+              size="sm"
+              data-dashlane-ignore="true"
+              data-lp-ignore="true"
+              data-no-autofill="true"
+              data-form-type="navigation"
+            >
+              Sign in to create a new project
+            </Anchor>
+          </Text>
+        )}
       </Stack>
     </Form>
   );

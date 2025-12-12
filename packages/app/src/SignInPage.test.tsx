@@ -36,7 +36,7 @@ describe('SignInPage', () => {
 
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -53,7 +53,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {
@@ -61,7 +61,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
@@ -75,11 +75,11 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Reset Password'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
   });
 
@@ -108,7 +108,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {
@@ -116,7 +116,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
     expect(await screen.findByText('Batch Create')).toBeInTheDocument();
@@ -130,7 +130,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {
@@ -138,7 +138,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
     // should redirect to the homepage
