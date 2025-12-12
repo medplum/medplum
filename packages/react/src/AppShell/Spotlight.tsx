@@ -100,11 +100,11 @@ export function Spotlight(): JSX.Element {
             filter: query,
             count: 5,
           }),
-          medplum.graphql<SearchGraphQLResponse>(graphqlQuery),
+          medplum.graphql(graphqlQuery),
         ]);
 
         const resourceTypes = valueSetResult.expansion?.contains ?? [];
-        const resources = getResourcesFromResponse(graphqlResponse);
+        const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
         setActions(resourcesToActions(resources, resourceTypes, navigate, false));
       } catch (error) {
         console.error('Search failed:', error);
@@ -143,13 +143,15 @@ export function Spotlight(): JSX.Element {
         autoCorrect: 'off',
         spellCheck: false,
         name: 'spotlight-search',
-        // Tell common password managers to ignore this field
-        'data-1p-ignore': true,
-        'data-lpignore': true,
+        inputProps: {
+          // Tell common password managers to ignore this field
+          'data-1p-ignore': 'true',
+          'data-lpignore': 'true',
+        },
         leftSectionProps: {
           style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
         },
-      }}
+      } as any}
       classNames={{
         body: classes.body,
         content: classes.content,
