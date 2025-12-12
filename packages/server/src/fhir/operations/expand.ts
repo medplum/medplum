@@ -281,7 +281,7 @@ export function expansionQuery(
   codeSystem: WithId<CodeSystem>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
-  let query = new SelectQuery('Coding')
+  let query: SelectQuery | undefined = new SelectQuery('Coding')
     .column('id')
     .column('code')
     .column('display')
@@ -290,46 +290,58 @@ export function expansionQuery(
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
-    for (const condition of include.filter) {
-      switch (condition.op) {
-        case 'is-a':
-        case 'descendent-of': {
-          const parentProperty = getParentProperty(codeSystem);
-          if (!parentProperty?.id) {
-            return undefined;
-          }
-          const newQuery = addParentFilter(
-            query,
-            codeSystem,
-            condition,
-            parentProperty as WithId<CodeSystemProperty>,
-            params
-          );
-          if (!newQuery) {
-            return undefined;
-          }
-          query = newQuery;
-          break;
+    query = applyValueSetFilters(query, include.filter, codeSystem, params);
+  }
+  if (params) {
+    query = applyExpansionFilters(query, codeSystem, params);
+  }
+  return query;
+}
+
+function applyValueSetFilters(
+  query: SelectQuery,
+  filters: ValueSetComposeIncludeFilter[],
+  codeSystem: WithId<CodeSystem>,
+  params?: ValueSetExpandParameters
+): SelectQuery | undefined {
+  for (const condition of filters) {
+    switch (condition.op) {
+      case 'is-a':
+      case 'descendent-of': {
+        const parentProperty = getParentProperty(codeSystem);
+        if (!parentProperty?.id) {
+          return undefined;
         }
-        case '=':
-        case 'in': {
-          const property = codeSystem.property?.find((p) => p.code === condition.property);
-          if (!property?.id) {
-            return undefined;
-          }
-          query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
-          break;
+        const newQuery = addParentFilter(
+          query,
+          codeSystem,
+          condition,
+          parentProperty as WithId<CodeSystemProperty>,
+          params
+        );
+        if (!newQuery) {
+          return undefined;
         }
-        default:
-          getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
-          return undefined; // Unknown filter type, don't make DB query with incorrect filters
+        query = newQuery;
+        break;
       }
+
+      case '=':
+      case 'in': {
+        const property = codeSystem.property?.find((p) => p.code === condition.property);
+        if (!property?.id) {
+          return undefined;
+        }
+        query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
+        break;
+      }
+
+      default:
+        getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
+        return undefined; // Unknown filter type, don't make DB query with incorrect filters
     }
   }
 
-  if (params) {
-    query = addExpansionFilters(query, codeSystem, params);
-  }
   return query;
 }
 
@@ -353,6 +365,7 @@ export function addParentFilter(
       .column('language')
       .where(new Column('origin', 'system'), '=', codeSystem.id)
       .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+
     const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
     query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
   } else {
@@ -364,11 +377,15 @@ export function addParentFilter(
   return query;
 }
 
-function addExpansionFilters(
-  query: SelectQuery,
+function applyExpansionFilters(
+  query: SelectQuery | undefined,
   codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
-): SelectQuery {
+): SelectQuery | undefined {
+  if (!query) {
+    return undefined;
+  }
+
   if (params.filter) {
     query
       .whereExpr(
