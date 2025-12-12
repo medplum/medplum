@@ -293,12 +293,46 @@ describe('CodeSystem $import', () => {
       });
     expect(res2.status).toStrictEqual(400);
   });
+
+  test('Imports concepts and synonym designations', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          { name: 'concept', valueCoding: { code: '37931006', display: 'Auscultation (procedure)' } },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '37931006' },
+              { name: 'value', valueString: 'Listening' },
+            ],
+          },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '37931006' },
+              { name: 'language', valueCode: 'fr' },
+              { name: 'value', valueString: 'auscultation (intervention)' },
+            ],
+          },
+        ],
+      });
+    expect(res.status).toStrictEqual(200);
+
+    const coding = await assertCodeExists(snomed.id, '37931006');
+    expect(coding.isSynonym).toBe(false);
+  });
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
   const db = getDatabasePool(DatabaseMode.READER);
   const coding = await selectCoding(system as string, code)
     .column('isSynonym')
+    .where('synonymOf', '=', null)
     .execute(db);
   expect(coding).toHaveLength(1);
   return coding[0];
