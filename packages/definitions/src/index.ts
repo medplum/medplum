@@ -17,15 +17,6 @@ export function getDataDir(): string {
     return cachedDataDir;
   }
 
-  const envDataDir = process.env.MEDPLUM_DATA_DIR;
-  if (envDataDir) {
-    const envFhirPath = resolve(envDataDir, 'fhir');
-    if (existsSync(envFhirPath)) {
-      cachedDataDir = envDataDir;
-      return envDataDir;
-    }
-  }
-
   const currentDir = getCurrentDir();
 
   // Need to handle the following cases:
