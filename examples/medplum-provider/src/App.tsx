@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import {
   AppShell,
@@ -8,22 +7,22 @@ import {
   Logo,
   NotificationIcon,
   useMedplum,
-  useMedplumNavigate,
   useMedplumProfile,
 } from '@medplum/react';
 import {
-  IconCalendarMonth,
+  IconApps,
+  IconBook2,
+  IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
-  IconPencil,
-  IconPuzzle,
-  IconTransformPoint,
-  IconUser,
+  IconUserPlus,
+  IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
+import { Spotlight } from './components/Spotlight';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -56,7 +55,6 @@ import { TasksPage } from './pages/tasks/TasksPage';
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const navigate = useMedplumNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -76,26 +74,14 @@ export function App(): JSX.Element | null {
         profile
           ? [
               {
-                title: 'Spaces',
-                links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
-              },
-              {
-                title: 'Charts',
                 links: [
+                  { icon: <IconBook2 />, label: 'Spaces', href: '/Spaces/Communication' },
                   {
-                    icon: <IconUser />,
+                    icon: <IconUsers />,
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                ],
-              },
-              {
-                title: 'Scheduling',
-                links: [{ icon: <IconCalendarMonth />, label: 'Schedule', href: '/schedule' }],
-              },
-              {
-                title: 'Communication',
-                links: [
+                  { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
                       <NotificationIcon
@@ -108,11 +94,6 @@ export function App(): JSX.Element | null {
                     label: 'Messages',
                     href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
                   },
-                ],
-              },
-              {
-                title: 'Tasks',
-                links: [
                   {
                     icon: (
                       <NotificationIcon
@@ -128,13 +109,10 @@ export function App(): JSX.Element | null {
                 ],
               },
               {
-                title: 'Onboarding',
-                links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
-              },
-              {
-                title: 'Integrations',
+                title: 'Quick Links',
                 links: [
-                  { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
+                  { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
+                  { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
                     : []),
@@ -144,26 +122,9 @@ export function App(): JSX.Element | null {
           : undefined
       }
       resourceTypeSearchDisabled={true}
-      notifications={
-        profile && (
-          <>
-            <NotificationIcon
-              label="Tasks"
-              resourceType="Task"
-              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconClipboardCheck />}
-              onClick={() =>
-                navigate(
-                  `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
-                )
-              }
-            />
-            {hasDoseSpot && <DoseSpotIcon />}
-          </>
-        )
-      }
+      customSpotlight={true}
     >
+      {profile && <Spotlight />}
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (
