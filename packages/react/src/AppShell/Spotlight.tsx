@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Kbd, Text } from '@mantine/core';
 import type { SpotlightActionData, SpotlightActionGroupData } from '@mantine/spotlight';
 import { Spotlight as MantineSpotlight } from '@mantine/spotlight';
 import { formatHumanName, isUUID } from '@medplum/core';
 import type { Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { MedplumNavigateFunction } from '@medplum/react-hooks';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
-import { Kbd, Text } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -44,8 +44,8 @@ export function Spotlight(): JSX.Element {
       setNothingFoundMessage(
         <Text size="sm" c="dimmed" py="lg">
           Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
-          <br /><br />
-          ( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
+          <br />
+          <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
         </Text>
       );
       setActions([]);

@@ -141,12 +141,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               </Fragment>
             ))}
             {props.displayAddBookmark && (
-              <Tooltip
-                label="Add Bookmark"
-                position="right"
-                transitionProps={{ duration: 0 }}
-                disabled={opened}
-              >
+              <Tooltip label="Add Bookmark" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
                 <UnstyledButton
                   className={`${classes.link} ${classes.addBookmarkLink}`}
                   onClick={() => setBookmarkDialogVisible(true)}
@@ -162,7 +157,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
         </ScrollArea>
         {props.userMenuEnabled && (
           <MantineAppShell.Section px="xs" py="xs">
-            <Tooltip label={opened ? 'Close Sidebar' : 'Open Sidebar'} position="right" transitionProps={{ duration: 0 }}>
+            <Tooltip
+              label={opened ? 'Close Sidebar' : 'Open Sidebar'}
+              position="right"
+              transitionProps={{ duration: 0 }}
+            >
               <UnstyledButton
                 className={classes.toggleButton}
                 aria-label={opened ? 'Close Sidebar' : 'Open Sidebar'}
