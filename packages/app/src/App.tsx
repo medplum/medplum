@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Space } from '@mantine/core';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
@@ -9,6 +8,7 @@ import {
   IconBrandAsana,
   IconBuilding,
   IconDatabase,
+  IconFolder,
   IconForms,
   IconId,
   IconLock,
@@ -91,6 +91,7 @@ const resourceTypeToIcon: Record<string, FunctionComponent> = {
   Subscription: IconWebhook,
   batch: IconPackages,
   Observation: IconMicroscope,
+  Project: IconFolder,
 };
 
 function getIcon(to: string): JSX.Element | undefined {
@@ -106,5 +107,5 @@ function getIcon(to: string): JSX.Element | undefined {
   } catch (_err) {
     // Ignore
   }
-  return <Space w={20} />;
+  return undefined;
 }
