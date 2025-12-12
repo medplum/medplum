@@ -11,13 +11,13 @@ import type { JSX } from 'react';
 
 export function SentFaxesPage(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile();
   const [faxes, setFaxes] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Load sent faxes where current user is the sender
   const loadFaxes = useCallback(async () => {
-    if (!profile?.id) {
+    if (!profile?.id || profile.resourceType !== 'Practitioner') {
       return;
     }
 
@@ -42,7 +42,13 @@ export function SentFaxesPage(): JSX.Element {
   }, [medplum, profile]);
 
   useEffect(() => {
-    loadFaxes().catch(console.error);
+    loadFaxes().catch((err) => {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
   }, [loadFaxes]);
 
   const renderContent = (): JSX.Element => {
@@ -100,7 +106,11 @@ function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
       return;
     }
 
-    medplum.readReference(recipientRef).then(setRecipient).catch(console.error);
+    medplum.readReference(recipientRef).then(setRecipient).catch((err) => {
+      console.error('Failed to load recipient:', err);
+      // Set undefined to use fallback display text
+      setRecipient(undefined);
+    });
   }, [medplum, fax.recipient]);
 
   // Extract name and fax number from recipient

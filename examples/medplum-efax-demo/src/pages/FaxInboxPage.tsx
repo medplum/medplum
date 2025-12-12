@@ -62,7 +62,13 @@ export function FaxInboxPage(): JSX.Element {
   }, [medplum, loadFaxes]);
 
   useEffect(() => {
-    loadFaxes().catch(console.error);
+    loadFaxes().catch((err) => {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
   }, [loadFaxes]);
 
   const renderContent = (): JSX.Element => {

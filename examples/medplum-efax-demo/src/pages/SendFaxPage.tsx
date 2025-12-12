@@ -3,7 +3,7 @@
 import { Button, FileInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import type { Communication, Organization, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -18,7 +18,7 @@ interface SendFaxForm {
 
 export function SendFaxPage(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<SendFaxForm>({
@@ -48,6 +48,11 @@ export function SendFaxPage(): JSX.Element {
 
     if (!formData.file) {
       showNotification({ title: 'Error', message: 'Please select a file to fax', color: 'red' });
+      return;
+    }
+
+    if (profile?.resourceType !== 'Practitioner') {
+      showNotification({ title: 'Error', message: 'Invalid practitioner profile', color: 'red' });
       return;
     }
 
