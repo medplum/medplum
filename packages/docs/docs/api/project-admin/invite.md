@@ -251,9 +251,18 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 When `mfaRequired: true` is set, the user will be required to enroll in Multi-Factor Authentication during their first login. See [MFA documentation](/docs/auth/mfa) for more details.
 
+#### Creating Multiple Memberships with Different Access Policies
+
+By default, inviting a user who already has a ProjectMembership in the project will result in an error. To create multiple ProjectMemberships for the same user (e.g., for multi-organization access), use `forceNewMembership: true`.
+
+This is useful when a user needs different access levels or scopes within the same project, such as in a Managed Service Organization (MSO) where a practitioner works for multiple organizations.
+
+Read more about [Multiple ProjectMemberships](/docs/user-management/multiple-memberships)
+
 ## See Also
 
 - [User Admin Guide](/docs/user-management)
+- [Multiple ProjectMemberships](/docs/user-management/multiple-memberships)
 - [Invite a new user](https://www.medplum.com/docs/app/invite)
 - [Custom Emails](https://www.medplum.com/docs/user-management/custom-emails)
 - [Multi-Factor Authentication (MFA)](/docs/auth/mfa) - For details on MFA enrollment and usage
