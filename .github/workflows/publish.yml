@@ -93,7 +93,12 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Publish to NPM
-        run: ./scripts/publish.sh
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/publish.sh
+          else
+            ./scripts/publish.sh backport
+          fi
 
       - name: Sync example repos
         if: steps.check-latest.outputs.result == 'true'
