@@ -48,7 +48,6 @@ const menus = [
       { icon: <IconInbox />, label: 'Inbox', href: '/' },
       { icon: <IconMailForward />, label: 'Sent', href: '/sent' },
       { icon: <IconSend />, label: 'Send Fax', href: '/send' },
-
     ],
   },
 ];
