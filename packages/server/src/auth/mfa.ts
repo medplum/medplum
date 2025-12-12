@@ -95,7 +95,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret as string;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret, { window: getConfig().mfaAuthenticatorWindow ?? 1 })) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -151,7 +152,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret as string;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret, { window: getConfig().mfaAuthenticatorWindow ?? 1 })) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }

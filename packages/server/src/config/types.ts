@@ -132,6 +132,22 @@ export interface MedplumServerConfig {
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
   mfaAuthenticatorWindow?: number;
+
+  /** Optional configuration for array column padding to mitigate statistics issues in Postgres. */
+  arrayColumnPadding?: { [searchParamCode: string]: { resourceType?: string[]; config: ArrayColumnPaddingConfig } };
+}
+
+export interface ArrayColumnPaddingConfig {
+  /** Count of distinct padding elements to choose from for padding elements  */
+  readonly m: number;
+  /**
+   * The lambda from the poisson distribution to achieve the desired padding
+   * element frequency with the desired confidence. See {@link https://github.com/medplum/medplum/issues/7539}
+   * or comments in `packages/server/src/fhir/token-column.ts` for in depth discussion.
+   */
+  readonly lambda: number;
+  /** The postgres statistics target for the array column */
+  readonly statisticsTarget: number;
 }
 
 export interface ArrayColumnPaddingConfig {
