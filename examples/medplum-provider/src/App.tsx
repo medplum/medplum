@@ -170,8 +170,8 @@ export function App(): JSX.Element | null {
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
-                <Route path="labs" element={<LabsPage />} />
-                <Route path="labs/:labId" element={<LabsPage />} />
+                <Route path="ServiceRequest" element={<LabsPage />} />
+                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
