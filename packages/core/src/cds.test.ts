@@ -3,7 +3,7 @@
 
 import type { Patient } from '@medplum/fhirtypes';
 import type { CdsService } from './cds';
-import { buildCdsRequest } from './cds';
+import { buildCdsRequest, replaceQueryVariables } from './cds';
 import type { MedplumClient } from './client';
 
 describe('buildCdsRequest', () => {
@@ -79,28 +79,6 @@ describe('buildCdsRequest', () => {
     });
   });
 
-  test('User variable', async () => {
-    const service: CdsService = {
-      id: 'example-service',
-      hook: 'patient-view',
-      prefetch: {
-        user: 'Patient/{{userPatientId}}',
-      },
-    };
-
-    const context = { patientId: '123' };
-
-    const result = await buildCdsRequest(medplum, user, service, context);
-    expect(result).toMatchObject({
-      hook: 'patient-view',
-      hookInstance: expect.any(String),
-      context,
-      prefetch: {
-        user: { resourceType: 'Patient', id: '123' },
-      },
-    });
-  });
-
   test('Ignore unsupported variable name', async () => {
     const service: CdsService = {
       id: 'example-service',
@@ -143,5 +121,63 @@ describe('buildCdsRequest', () => {
         test: null,
       },
     });
+  });
+});
+
+describe('replaceQueryVariables', () => {
+  const user = { resourceType: 'Patient', id: '456' } satisfies Patient;
+
+  test('User variable', async () => {
+    const context = { patientId: '123' };
+    const result = replaceQueryVariables(user, context, 'Patient/{{userPatientId}}');
+    expect(result).toStrictEqual('Patient/456');
+  });
+
+  test('Simple context string', async () => {
+    const context = { patientId: '123' };
+    const result = replaceQueryVariables(user, context, 'Patient/{{context.patientId}}');
+    expect(result).toStrictEqual('Patient/123');
+  });
+
+  test('Simple context number', async () => {
+    const context = { patientId: 123 };
+    const result = replaceQueryVariables(user, context, 'Patient/{{context.patientId}}');
+    expect(result).toStrictEqual('Patient/123');
+  });
+
+  test('Simple context boolean', async () => {
+    const context = { active: true };
+    const result = replaceQueryVariables(user, context, 'Patient?active={{context.active}}');
+    expect(result).toStrictEqual('Patient?active=true');
+  });
+
+  test('Ignore unsupported type', async () => {
+    const context = { n1: { n2: { n3: true } } };
+    const result = replaceQueryVariables(user, context, 'Patient/{{context.n1}}');
+    expect(result).toStrictEqual('Patient/{{context.n1}}');
+  });
+
+  test('Nested object', async () => {
+    const context = { medication: { id: '789' } };
+    const result = replaceQueryVariables(user, context, 'MedicationRequest?_id={{context.medication.id}}');
+    expect(result).toStrictEqual('MedicationRequest?_id=789');
+  });
+
+  test('Deeply nested object', async () => {
+    const context = { medications: { medication: { id: '789' } } };
+    const result = replaceQueryVariables(user, context, 'MedicationRequest?_id={{context.medications.medication.id}}');
+    expect(result).toStrictEqual('MedicationRequest?_id=789');
+  });
+
+  test('Deeply nested undefined', async () => {
+    const context = { medications: { medication: { id: '789' } } };
+    const result = replaceQueryVariables(user, context, 'MedicationRequest?_id={{context.medications.foo.id}}');
+    expect(result).toStrictEqual('MedicationRequest?_id={{context.medications.foo.id}}');
+  });
+
+  test('Unsupported prefix', async () => {
+    const context = { patientId: '123' };
+    const result = replaceQueryVariables(user, context, 'Patient/{{foo.patientId}}');
+    expect(result).toStrictEqual('Patient/{{foo.patientId}}');
   });
 });

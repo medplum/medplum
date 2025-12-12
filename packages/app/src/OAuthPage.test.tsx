@@ -47,11 +47,11 @@ describe('OAuthPage', () => {
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(await screen.findByText('Choose scope')).toBeInTheDocument();
 
@@ -66,9 +66,9 @@ describe('OAuthPage', () => {
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    await user.click(screen.getByText('Forgot password'));
+    await user.click(screen.getByText('Reset Password'));
   });
 
   test('Register', async () => {

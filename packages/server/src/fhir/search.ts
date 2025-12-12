@@ -1040,7 +1040,7 @@ function buildNormalSearchFilterExpression(
       if (impl.type === SearchParameterType.BOOLEAN) {
         return buildBooleanSearchFilter(table, impl, filter);
       } else {
-        return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
+        return buildTokenSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
       }
     case 'reference':
       return buildReferenceSearchFilter(table, impl, filter, splitSearchOnComma(filter.value));
@@ -1263,33 +1263,24 @@ function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplement
     }
   }
 
-  const condition = buildEqualityCondition(impl, values, new Column(table, impl.columnName));
-  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
-    return new Negation(condition);
-  }
-  return condition;
+  return buildCondition(impl, filter, values, new Column(table, impl.columnName));
 }
 
 /**
  * Adds a token search filter as "WHERE" clause to the query builder.
  * @param table - The resource table.
  * @param impl - The search parameter implementation info.
- * @param operator - The search operator.
+ * @param filter - The search filter.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildTokenSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
-  operator: Operator,
+  filter: Filter,
   values: string[]
 ): Expression {
-  const column = new Column(table, impl.columnName);
-  const condition = buildEqualityCondition(impl, values, column);
-  if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
-    return new Negation(condition);
-  }
-  return condition;
+  return buildCondition(impl, filter, values, new Column(table, impl.columnName));
 }
 
 const allowedBooleanValues = ['true', 'false'];
@@ -1305,11 +1296,9 @@ function buildBooleanSearchFilter(
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
-  return new Condition(
-    new Column(table, impl.columnName),
-    filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT ? '!=' : '=',
-    filter.value
-  );
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
+
+  return new Condition(new Column(table, impl.columnName), negated ? 'IS_DISTINCT_FROM' : '=', filter.value);
 }
 
 /**
@@ -1561,18 +1550,22 @@ function fhirOperatorToSqlOperator(fhirOperator: Operator): keyof typeof SQL {
   }
 }
 
-function buildEqualityCondition(
+function buildCondition(
   impl: ColumnSearchParameterImplementation,
+  filter: Filter,
   values: string[],
   column?: Column | string
-): Condition {
+): Condition | Negation {
   column = column ?? impl.columnName;
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
   if (impl.array) {
-    return new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, impl.type + '[]');
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, impl.type + '[]');
+    return negated ? new Negation(condition) : condition;
   } else if (values.length > 1) {
-    return new Condition(column, 'IN', values, impl.type);
+    const condition = new Condition(column, 'IN', values, impl.type);
+    return negated ? new Negation(condition) : condition;
   } else {
-    return new Condition(column, '=', values[0], impl.type);
+    return new Condition(column, negated ? 'IS_DISTINCT_FROM' : '=', values[0], impl.type);
   }
 }
 

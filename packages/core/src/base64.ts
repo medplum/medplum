@@ -14,7 +14,7 @@ import { getBuffer, isBrowserEnvironment } from './environment';
 export function decodeBase64(data: string): string {
   if (isBrowserEnvironment()) {
     const binaryString = window.atob(data);
-    const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+    const bytes = Uint8Array.from(binaryString, (c) => c.codePointAt(0) as number);
     return new window.TextDecoder().decode(bytes);
   }
   const BufferConstructor = getBuffer();
@@ -34,8 +34,8 @@ export function decodeBase64(data: string): string {
 export function encodeBase64(data: string): string {
   if (isBrowserEnvironment()) {
     const utf8Bytes = new window.TextEncoder().encode(data);
-    // utf8Bytes is a Uint8Array, but String.fromCharCode expects a sequence of numbers.
-    const binaryString = String.fromCharCode.apply(null, utf8Bytes as unknown as number[]);
+    // utf8Bytes is a Uint8Array, but String.fromCodePoint expects a sequence of numbers.
+    const binaryString = String.fromCodePoint.apply(null, utf8Bytes as unknown as number[]);
     return window.btoa(binaryString);
   }
   const BufferConstructor = getBuffer();

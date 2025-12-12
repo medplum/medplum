@@ -50,7 +50,7 @@ describe('ResetPasswordPage', () => {
 
   test('Renders', () => {
     setup();
-    expect(screen.getByRole('button', { name: 'Reset password' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset Password' })).toBeInTheDocument();
   });
 
   test('Submit success with recaptcha site key', async () => {
@@ -58,7 +58,7 @@ describe('ResetPasswordPage', () => {
     const user = setup();
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
-    await user.click(screen.getByRole('button', { name: 'Reset password' }));
+    await user.click(screen.getByRole('button', { name: 'Reset Password' }));
 
     expect(grecaptchaResolved).toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('ResetPasswordPage', () => {
     const user = setup();
 
     await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
-    await user.click(screen.getByRole('button', { name: 'Reset password' }));
+    await user.click(screen.getByRole('button', { name: 'Reset Password' }));
     expect(grecaptchaResolved).not.toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });

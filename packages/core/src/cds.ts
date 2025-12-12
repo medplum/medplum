@@ -13,7 +13,7 @@ import type {
 import type { MedplumClient } from './client';
 import { generateId } from './crypto';
 import type { WithId } from './utils';
-import { isString, splitN } from './utils';
+import { isObject, isString, splitN } from './utils';
 
 /**
  * CDS Service definition.
@@ -233,7 +233,29 @@ const userProfileTokens = new Set([
   'userRelatedPersonId',
 ]);
 
-function replaceQueryVariables(user: CdsUserResource, context: Record<string, unknown>, query: string): string {
+/**
+ * Replaces prefetch query variables with values from the context or user profile.
+ *
+ * A prefetch token is a placeholder in a prefetch template that is *replaced by information from the hook's context*
+ * to construct the FHIR URL used to request the prefetch data.
+ *
+ * Prefetch tokens MUST be delimited by `{{` and `}}`, and MUST contain only the qualified path to a hook context field
+ * or one of the following user identifiers: `userPractitionerId`, `userPractitionerRoleId`, `userPatientId`, or `userRelatedPersonId`.
+ *
+ * Note that the spec says:
+ *
+ *   Individual hooks specify which of their `context` fields can be used as prefetch tokens.
+ *   Only root-level fields with a primitive value within the `context` object are eligible to be used as prefetch tokens.
+ *   For example, `{{context.medication.id}}` is not a valid prefetch token because it attempts to access the `id` field of the `medication` field.
+ *
+ * Unfortunately, many CDS Hooks services do not follow this rule. Therefore, this implementation allows access to nested fields.
+ *
+ * @param user - The user resource.
+ * @param context - The CDS request context.
+ * @param query - The prefetch query template.
+ * @returns The prefetch query with variables replaced.
+ */
+export function replaceQueryVariables(user: CdsUserResource, context: Record<string, unknown>, query: string): string {
   return query.replaceAll(/\{\{([^}]+)\}\}/g, (substring, varName) => {
     varName = varName.trim();
 
@@ -242,14 +264,38 @@ function replaceQueryVariables(user: CdsUserResource, context: Record<string, un
     }
 
     if (varName.startsWith('context.')) {
-      const contextVarName = varName.substring('context.'.length);
-      const value = context[contextVarName];
+      const contextPath = varName.substring('context.'.length);
+      const value = getNestedValue(context, contextPath);
       if (isString(value)) {
         return value;
+      }
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
       }
     }
 
     // No match; return the original substring
     return substring;
   });
+}
+
+/**
+ * Safely gets a nested property value from an object using a dot-notated path.
+ * @param obj - The object to traverse
+ * @param path - Dot-notated path like "draftOrders.ServiceRequest.id"
+ * @returns The value at the path, or undefined if not found
+ */
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = obj;
+
+  for (const part of parts) {
+    if (current && isObject(current) && part in current) {
+      current = current[part];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
 }

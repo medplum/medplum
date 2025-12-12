@@ -92,7 +92,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
     <>
       {slices.map((slice, sliceIndex) => {
         if (!props.path) {
-          throw Error(`Displaying a resource property with slices of type ${props.propertyType} requires path`);
+          throw new Error(`Displaying a resource property with slices of type ${props.propertyType} requires path`);
         }
         let sliceDisplay = (
           <SliceDisplay

@@ -19,7 +19,7 @@ for arg in "$@"; do
   fi
 done
 
-COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+COMMIT_MESSAGE=$(git log -1 --pretty=short)
 echo "$COMMIT_MESSAGE"
 
 FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
@@ -138,7 +138,7 @@ if [[ "$DEPLOY_APP" = true ]]; then
     npm run build -- --force --filter=@medplum/app
   )
 
-  source ./scripts/build-docker-app.sh
+  source ./scripts/build-docker-app.sh --latest
   source ./scripts/deploy-app.sh
 fi
 
@@ -151,6 +151,6 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
-  source ./scripts/build-docker-server.sh
+  source ./scripts/build-docker-server.sh --latest
   source ./scripts/deploy-server.sh
 fi

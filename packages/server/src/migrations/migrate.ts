@@ -7,7 +7,6 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  isPopulated,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -55,10 +54,6 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
     const bundle = readJson(filename) as Bundle<SearchParameter>;
     indexSearchParameterBundle(bundle);
-
-    if (!isPopulated(bundle.entry)) {
-      throw new Error('Empty search parameter bundle: ' + filename);
-    }
   }
 }
 

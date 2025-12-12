@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { FileBuilder } from '@medplum/core';
 import { escapeIdentifier } from 'pg';
+import { loadTestConfig } from '../config/loader';
+import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import {
   buildCreateTables,
+  buildSchema,
   columnDefinitionsEqual,
+  generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
@@ -11,11 +16,40 @@ import {
 import type { ColumnDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
-  describe('buildCreateTables', () => {
-    beforeAll(() => {
-      indexStructureDefinitionsAndSearchParameters();
-    });
+  beforeAll(async () => {
+    indexStructureDefinitionsAndSearchParameters();
 
+    const config = await loadTestConfig();
+    await initDatabase(config);
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  describe('buildSchema', () => {
+    test('generates schema without errors', () => {
+      const schemaBuilder = new FileBuilder();
+      buildSchema(schemaBuilder);
+      expect(() => schemaBuilder.toString()).not.toThrow();
+    });
+  });
+
+  describe('generateMigrationActions', () => {
+    test('generates migration without errors', async () => {
+      await expect(() =>
+        generateMigrationActions({
+          dbClient: getDatabasePool(DatabaseMode.WRITER),
+          skipPostDeployActions: false,
+          allowPostDeployActions: true,
+          dropUnmatchedIndexes: false,
+          analyzeResourceTables: true,
+        })
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('buildCreateTables', () => {
     test('Patient', () => {
       const result: SchemaDefinition = { tables: [], functions: [] };
       buildCreateTables(result, 'Patient');

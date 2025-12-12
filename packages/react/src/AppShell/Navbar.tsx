@@ -189,6 +189,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   aria-label="User menu"
                   data-active={userMenuOpened || undefined}
                   onClick={() => setUserMenuOpened((o) => !o)}
+                  bd="1px 0 0 0 solid var(--mantine-color-gray-200)"
                 >
                   <ResourceAvatar value={profile} radius="xl" size={24} />
                   <span className={classes.linkLabel} data-opened={opened || undefined}>

@@ -93,12 +93,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
 }
 
 function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
-  if (a.version !== b.version) {
-    return false;
-  } else if (a.date !== b.date) {
-    return false;
-  }
-  return true;
+  return a.version === b.version && a.date === b.date;
 }
 
 export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
@@ -107,9 +102,9 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', systemId)
-    .where('code', 'IN', code)
-    .where('synonymOf', '=', null);
+    .where('code', 'IN', code);
 }
 
 export function addPropertyFilter(
@@ -220,6 +215,7 @@ export function addDescendants(
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', codeSystem.id)
     .where('code', '=', parentCode);
 

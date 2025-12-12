@@ -1538,6 +1538,51 @@ describe('AccessPolicy', () => {
       expect(readResource2.valueString).toBeDefined();
     }));
 
+  test('Hidden meta field', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['meta'],
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource).toMatchObject({
+        resourceType: 'Patient',
+        birthDate: '1970-01-01',
+      });
+      expect(readResource.meta).toBeUndefined();
+
+      const historyBundle = await repo2.readHistory<Patient>('Patient', patient.id);
+      expect(historyBundle).toMatchObject({
+        resourceType: 'Bundle',
+        type: 'history',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Patient',
+              birthDate: '1970-01-01',
+            },
+          },
+        ],
+      });
+      expect(historyBundle.entry?.[0]?.resource?.meta).toBeUndefined();
+    }));
+
   test('Identifier criteria', () =>
     withTestContext(async () => {
       const identifier = randomUUID();

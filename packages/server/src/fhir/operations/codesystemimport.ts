@@ -3,12 +3,36 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import type {
+  CodeSystem,
+  CodeSystemProperty,
+  Coding,
+  OperationDefinition,
+  OperationDefinitionParameter,
+} from '@medplum/fhirtypes';
 import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, parentProperty, selectCoding, uniqueOn } from './utils/terminology';
+
+// Helper function to satisfy code duplication rules
+function makeCodeAttributeParameter(
+  paramName: string,
+  attributeParam: Omit<OperationDefinitionParameter, 'part' | 'use'>
+): OperationDefinitionParameter {
+  return {
+    use: 'in',
+    name: paramName,
+    min: 0,
+    max: '*',
+    part: [
+      { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
+      { use: 'in', ...attributeParam },
+      { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
+    ],
+  };
+}
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -24,17 +48,18 @@ const operation: OperationDefinition = {
   parameter: [
     { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
-    {
-      use: 'in',
+    makeCodeAttributeParameter('property', {
       name: 'property',
+      type: 'code',
+      min: 1,
+      max: '1',
+    }),
+    makeCodeAttributeParameter('designation', {
+      name: 'language',
+      type: 'code',
       min: 0,
-      max: '*',
-      part: [
-        { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
-        { use: 'in', name: 'property', type: 'code', min: 1, max: '1' },
-        { use: 'in', name: 'value', type: 'string', min: 1, max: '1' },
-      ],
-    },
+      max: '1',
+    }),
     { use: 'out', name: 'return', type: 'CodeSystem', min: 1, max: '1' },
   ],
 };
@@ -45,10 +70,17 @@ export type ImportedProperty = {
   value: string;
 };
 
+export type Designation = {
+  code: string;
+  language?: string;
+  value: string;
+};
+
 export type CodeSystemImportParameters = {
   system?: string;
   concept?: Coding[];
   property?: ImportedProperty[];
+  designation?: Designation[];
 };
 
 /**
@@ -82,7 +114,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   try {
     await repo.withTransaction(async (db) => {
-      await importCodeSystem(db, codeSystem, params.concept, params.property);
+      await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
     });
   } catch (err) {
     return [normalizeOperationOutcome(err)];
@@ -94,7 +126,8 @@ export async function importCodeSystem(
   db: PoolClient,
   codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
-  properties?: ImportedProperty[]
+  properties?: ImportedProperty[],
+  designations?: Designation[]
 ): Promise<void> {
   if (concepts?.length) {
     const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
@@ -112,6 +145,30 @@ export async function importCodeSystem(
 
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
+  }
+
+  if (designations?.length) {
+    const lookupCodes = new Set<string>(designations.map((d) => d.code));
+    // Batch lookup all Codings with associated properties
+    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+    const synonyms: Record<string, any>[] = [];
+    for (const designation of designations) {
+      // Add synonym row
+      const sourceCodingId = codingIds.find((r) => r.code === designation.code)?.id;
+      if (!sourceCodingId) {
+        throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${designation.code}`));
+      }
+      synonyms.push({
+        system: codeSystem.id,
+        code: designation.code,
+        display: designation.value,
+        isSynonym: true,
+        synonymOf: sourceCodingId,
+        language: designation.language,
+      });
+    }
+    const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
+    await query.execute(db);
   }
 }
 
@@ -140,7 +197,7 @@ async function processProperties(
   // Batch lookup all Codings with associated properties
   const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
   const rows: Record<string, any>[] = [];
-  const syonyms: Record<string, any>[] = [];
+  const synonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
@@ -157,7 +214,7 @@ async function processProperties(
     });
 
     if (property.uri === 'http://hl7.org/fhir/concept-properties#synonym') {
-      syonyms.push({
+      synonyms.push({
         system: codeSystem.id,
         code: imported.code,
         display: imported.value,
@@ -170,8 +227,8 @@ async function processProperties(
   const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
   await query.execute(db);
 
-  if (syonyms.length) {
-    const query = new InsertQuery('Coding', syonyms).ignoreOnConflict();
+  if (synonyms.length) {
+    const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
     await query.execute(db);
   }
 }

@@ -21,7 +21,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText('Prod')).toBeInTheDocument();
     expect(screen.getByText('Staging')).toBeInTheDocument();
   });
@@ -87,7 +87,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getByText('Choose a Project')).toBeInTheDocument();
     expect(screen.getByText(/Prod.*Primary Care/)).toBeInTheDocument();
   });
 });

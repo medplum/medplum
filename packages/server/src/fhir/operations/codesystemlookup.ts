@@ -54,6 +54,7 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
 export type CodeSystemLookupOutput = {
   name: string;
   display: string;
+  designation?: { language?: string; value: string }[];
   property?: { code: string; description: string; value: TypedValue }[];
 };
 
@@ -96,17 +97,21 @@ export async function lookupCoding(
 
   const db = getDatabasePool(DatabaseMode.READER);
   const result = await lookup.execute(db);
-  const resolved = result?.[0];
-  if (!resolved) {
+  if (!result.length) {
     throw new OperationOutcomeError(notFound);
   }
 
   const output: CodeSystemLookupOutput = {
     name: codeSystem.title ?? codeSystem.name ?? (codeSystem.url as string),
-    display: resolved.display ?? '',
+    display: result.find((r) => !r.synonymOf).display ?? '',
   };
   for (const property of result) {
-    if (property.code && property.value) {
+    if (property.synonymOf) {
+      output.designation = append(output.designation, {
+        language: property.language,
+        value: property.display,
+      });
+    } else if (property.code && property.value) {
       output.property = append(output.property, {
         code: property.code,
         description: property.targetDisplay ?? property.description ?? undefined,

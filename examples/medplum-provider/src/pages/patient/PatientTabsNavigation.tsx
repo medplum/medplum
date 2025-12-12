@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, Tabs } from '@mantine/core';
 import type { JSX } from 'react';
-import { PatientPageTabs } from './PatientPage.utils';
+import type { PatientPageTabInfo } from './PatientPage.utils';
 
 interface PatientTabsNavigationProps {
+  tabs: PatientPageTabInfo[];
   currentTab: string;
   onTabChange: (value: string | null) => void;
 }
 
-export function PatientTabsNavigation({ currentTab, onTabChange }: PatientTabsNavigationProps): JSX.Element {
+export function PatientTabsNavigation({ tabs, currentTab, onTabChange }: PatientTabsNavigationProps): JSX.Element {
   return (
     <Paper w="100%">
       <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
@@ -22,7 +23,7 @@ export function PatientTabsNavigation({ currentTab, onTabChange }: PatientTabsNa
             flexWrap: 'nowrap',
           }}
         >
-          {PatientPageTabs.map((t) => (
+          {tabs.map((t) => (
             <Tabs.Tab key={t.id} value={t.id}>
               {t.label}
             </Tabs.Tab>
