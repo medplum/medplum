@@ -35,7 +35,7 @@ describe('SignInPage', () => {
 
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Provider')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -57,15 +57,21 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
+
+    // Wait for password field to appear
+    await screen.findByLabelText('Password *');
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
     });
 
+    // After entering password, the button might still be "Next" or "Sign In"
+    // Let's find the submit button
+    const submitButton = screen.getByRole('button', { name: /Next|Sign In/i });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+      fireEvent.click(submitButton);
     });
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();

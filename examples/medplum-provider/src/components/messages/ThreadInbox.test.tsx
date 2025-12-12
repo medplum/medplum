@@ -43,6 +43,7 @@ describe('ThreadInbox', () => {
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
+      total: 0,
       entry: [],
     });
     medplum.graphql = vi.fn().mockResolvedValue({
@@ -147,11 +148,16 @@ describe('ThreadInbox', () => {
       await medplum.createResource(msg);
     }
 
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([
-      communications[0] as WithId<Communication>,
-      communications[1] as WithId<Communication>,
-      // comm-3 excluded because it has status 'completed'
-    ] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [
+        { resource: communications[0] },
+        { resource: communications[1] },
+        // comm-3 excluded because it has status 'completed'
+      ],
+    } as any);
 
     vi.spyOn(medplum, 'graphql').mockImplementation((_query: string) => {
       // Return data matching the alias format
