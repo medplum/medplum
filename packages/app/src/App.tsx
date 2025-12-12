@@ -6,7 +6,6 @@ import type { NavbarMenu } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
 import {
   IconBrandAsana,
-  IconBriefcase,
   IconBuilding,
   IconDatabase,
   IconFolder,
@@ -87,13 +86,12 @@ const resourceTypeToIcon: Record<string, FunctionComponent> = {
   ServiceRequest: IconReceipt,
   DiagnosticReport: IconReportMedical,
   Questionnaire: IconForms,
-  Project: IconBriefcase,
+  Project: IconFolder,
   admin: IconBrandAsana,
   AccessPolicy: IconLockAccess,
   Subscription: IconWebhook,
   batch: IconPackages,
   Observation: IconMicroscope,
-  Project: IconFolder,
 };
 
 function getIcon(to: string): JSX.Element | undefined {
