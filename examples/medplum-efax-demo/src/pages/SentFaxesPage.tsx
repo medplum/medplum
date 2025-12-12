@@ -106,11 +106,14 @@ function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
       return;
     }
 
-    medplum.readReference(recipientRef).then(setRecipient).catch((err) => {
-      console.error('Failed to load recipient:', err);
-      // Set undefined to use fallback display text
-      setRecipient(undefined);
-    });
+    medplum
+      .readReference(recipientRef)
+      .then(setRecipient)
+      .catch((err) => {
+        console.error('Failed to load recipient:', err);
+        // Set undefined to use fallback display text
+        setRecipient(undefined);
+      });
   }, [medplum, fax.recipient]);
 
   // Extract name and fax number from recipient
@@ -189,4 +192,3 @@ function SentFaxCard({ fax }: SentFaxCardProps): JSX.Element {
     </Card>
   );
 }
-

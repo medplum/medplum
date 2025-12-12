@@ -42,7 +42,7 @@ export function FaxInboxPage(): JSX.Element {
     setRefreshing(true);
     try {
       // Call the custom $receive-efax operation on Practitioner
-      await medplum.post(medplum.fhirUrl('Communication','$receive-efax'), {});
+      await medplum.post(medplum.fhirUrl('Communication', '$receive-efax'), {});
       showNotification({
         color: 'green',
         title: 'Success',
