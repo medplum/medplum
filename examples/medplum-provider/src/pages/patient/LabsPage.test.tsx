@@ -273,7 +273,6 @@ describe('LabsPage', () => {
     });
   });
 
-
   test('displays order details when order is selected', async () => {
     const completedOrder: ServiceRequest = {
       resourceType: 'ServiceRequest',
@@ -325,9 +324,12 @@ describe('LabsPage', () => {
     });
 
     // Then wait for readResource to be called
-    await waitFor(() => {
-      expect(readResourceSpy).toHaveBeenCalledWith('ServiceRequest', completedOrder.id);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(readResourceSpy).toHaveBeenCalledWith('ServiceRequest', completedOrder.id);
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('shows empty state message for open tab when no open orders', async () => {
@@ -425,4 +427,3 @@ describe('LabsPage', () => {
     });
   });
 });
-
