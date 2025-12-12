@@ -347,7 +347,21 @@ describe('TaskBoard', () => {
 
     await waitFor(() => {
       // Should make another search call with offset=20
-      const callsWithOffset20 = searchSpy.mock.calls.filter((call) => call[1]?.includes('_offset=20'));
+      const callsWithOffset20 = searchSpy.mock.calls.filter((call) => {
+        const params = call[1];
+        if (typeof params === 'string') {
+          return params.includes('_offset=20');
+        } else if (params instanceof URLSearchParams) {
+          return params.get('_offset') === '20';
+        } else if (Array.isArray(params)) {
+          return params.some(
+            (kv) => Array.isArray(kv) && kv[0] === '_offset' && kv[1] === '20'
+          );
+        } else if (typeof params === 'object' && params !== null) {
+          return params['_offset'] === 20 || params['_offset'] === '20';
+        }
+        return false;
+      });
       expect(callsWithOffset20.length).toBeGreaterThan(0);
     });
   });
