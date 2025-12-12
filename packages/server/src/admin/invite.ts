@@ -256,6 +256,7 @@ async function upsertProfileResource(
 
 /**
  * Validates that all access policy references exist and belong to the project.
+ * Uses batch reading to validate all policies in a single database query.
  * @param systemRepo - The system repository.
  * @param request - The invite request containing access policy references.
  * @param project - The project to validate against.
@@ -266,62 +267,60 @@ async function validateAccessPolicies(
   request: ServerInviteRequest,
   project: WithId<Project>
 ): Promise<void> {
-  // Validate single accessPolicy if provided
+  // Collect all access policy references
+  const references: Reference<AccessPolicy>[] = [];
+
   if (request.accessPolicy) {
-    await validateAccessPolicyReference(systemRepo, request.accessPolicy, project);
+    references.push(request.accessPolicy);
   }
 
-  // Validate access array if provided
   if (request.access && Array.isArray(request.access)) {
     for (const access of request.access) {
       if (access.policy) {
-        await validateAccessPolicyReference(systemRepo, access.policy, project);
+        references.push(access.policy);
       }
     }
   }
 
-  // Validate membership.access array if provided
   if (request.membership?.access && Array.isArray(request.membership.access)) {
     for (const access of request.membership.access) {
       if (access.policy) {
-        await validateAccessPolicyReference(systemRepo, access.policy, project);
+        references.push(access.policy);
       }
     }
   }
-}
 
-/**
- * Validates a single access policy reference.
- * @param systemRepo - The system repository.
- * @param accessPolicyRef - The access policy reference to validate.
- * @param project - The project to validate against.
- * @throws OperationOutcomeError if the access policy is invalid.
- */
-async function validateAccessPolicyReference(
-  systemRepo: Repository,
-  accessPolicyRef: Reference<AccessPolicy>,
-  project: WithId<Project>
-): Promise<void> {
-  const policyRefString = getReferenceString(accessPolicyRef);
-  try {
-    const accessPolicy = await systemRepo.readReference<AccessPolicy>(accessPolicyRef);
+  // If no references to validate, return early
+  if (references.length === 0) {
+    return;
+  }
+
+  // Batch read all access policies at once
+  const results = await systemRepo.readReferences<AccessPolicy>(references);
+
+  // Validate each result
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const reference = references[i];
+    const policyRefString = getReferenceString(reference);
+
+    if (result instanceof Error) {
+      // Convert notFound errors to badRequest with specific message
+      if (result instanceof OperationOutcomeError && isNotFound(result.outcome)) {
+        throw new OperationOutcomeError(
+          badRequest(`Access policy ${policyRefString} does not exist`)
+        );
+      }
+      // For other errors, rethrow
+      throw result;
+    }
 
     // Check if the access policy belongs to the project
-    if (accessPolicy.meta?.project && accessPolicy.meta.project !== project.id) {
-      throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
+    if (result.meta?.project && result.meta.project !== project.id) {
+      throw new OperationOutcomeError(
+        badRequest(`Access policy ${policyRefString} does not belong to this project`)
+      );
     }
-  } catch (err) {
-    // If it's a notFound error, convert it to badRequest with our custom message
-    if (err instanceof OperationOutcomeError) {
-      // Check if it's a notFound error (404) - convert to badRequest (400) with specific message
-      if (isNotFound(err.outcome)) {
-        throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
-      }
-      // For other OperationOutcomeErrors, rethrow as-is
-      throw err;
-    }
-    // For non-OperationOutcomeError exceptions, wrap in badRequest
-    throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
   }
 }
 
