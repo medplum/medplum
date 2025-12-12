@@ -4799,6 +4799,51 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             repo.search(parseSearchRequest('ResearchStudy?_has:EvidenceVariable:derived-from:_id=foo'))
           ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
         }));
+
+      describe('discourage sequential scans', () => {
+        let querySpy: jest.SpyInstance;
+        beforeEach(() => {
+          querySpy = jest.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+        });
+
+        afterEach(() => {
+          querySpy.mockRestore();
+          config.fhirSearchDiscourageSeqScan = undefined;
+          config.fhirSearchMinLimit = undefined;
+        });
+
+        test('config.fhirSearchDiscourageSeqScan', async () => {
+          expect(config.fhirSearchDiscourageSeqScan).toBeUndefined();
+
+          await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+          expect(querySpy).toHaveBeenCalledTimes(1);
+          querySpy.mockClear();
+
+          config.fhirSearchDiscourageSeqScan = true;
+          await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+          expect(querySpy).toHaveBeenCalledTimes(3);
+          expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringContaining('SET enable_seqscan = off'));
+          expect(querySpy).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT'), expect.anything());
+          expect(querySpy).toHaveBeenNthCalledWith(3, expect.stringContaining('RESET enable_seqscan'));
+
+          querySpy.mockRestore();
+        });
+
+        test('config.fhirSearchMinLimit', async () => {
+          expect(config.fhirSearchMinLimit).toBeUndefined();
+
+          await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+          expect(querySpy).toHaveBeenCalledTimes(1);
+          expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
+          querySpy.mockClear();
+
+          config.fhirSearchMinLimit = 39;
+          await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+          expect(querySpy).toHaveBeenCalledTimes(1);
+          expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+          querySpy.mockClear();
+        });
+      });
     });
 
     describe('systemRepo', () => {
