@@ -31,6 +31,11 @@ interface SearchGraphQLResponse {
   };
 }
 
+interface ActionWithTimestamp {
+  action: SpotlightActionData;
+  timestamp: number;
+}
+
 export function Spotlight(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
@@ -55,68 +60,17 @@ export function Spotlight(): JSX.Element {
     setNothingFoundMessage('Loading recently viewed...');
 
     try {
-      interface ActionWithTimestamp {
-        action: SpotlightActionData;
-        timestamp: number;
-      }
+      const actionsWithTimestamps = await buildRecentlyViewedActions(recentlyViewed, medplum, navigate);
+      const sortedActions = sortRecentlyViewedActions(actionsWithTimestamps);
 
-      const actionsWithTimestamps: ActionWithTimestamp[] = [];
-
-      // Process all recently viewed items and fetch Patient resources
-      for (const item of recentlyViewed) {
-        if (item.resourceType === 'Patient' && item.id) {
-          // Fetch individual Patient resource
-          try {
-            const resource = await medplum.readResource('Patient', item.id);
-            if (resource) {
-              actionsWithTimestamps.push({
-                action: {
-                  id: `patient-${resource.id}`,
-                  label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
-                  description: resource.birthDate,
-                  leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
-                  onClick: () => {
-                    trackRecentlyViewed('Patient', resource.id as string);
-                    navigate(`/Patient/${resource.id}`);
-                  },
-                },
-                timestamp: item.timestamp,
-              });
-            }
-          } catch {
-            // Resource might have been deleted, skip it
-          }
-        } else if (!item.id || item.id === '') {
-          // Resource type page (no id means it's a list page)
-          actionsWithTimestamps.push({
-            action: {
-              id: `resource-type-${item.resourceType}`,
-              label: item.resourceType,
-              description: 'Resource Type',
-              onClick: () => {
-                trackRecentlyViewedResourceType(item.resourceType);
-                navigate(`/${item.resourceType}`);
-              },
-            },
-            timestamp: item.timestamp,
-          });
-        }
-      }
-
-      // Sort by timestamp (most recent first)
-      actionsWithTimestamps.sort((a, b) => b.timestamp - a.timestamp);
-
-      // Extract just the actions in sorted order
-      const actions = actionsWithTimestamps.map((item) => item.action);
-
-      if (actions.length > 0) {
-        setActions([{ group: 'Recent', actions }]);
-        setNothingFoundMessage('No results found');
-      } else {
-        // Hide the actions list entirely when no recently viewed items
+      if (sortedActions.length === 0) {
         setNothingFoundMessage(undefined);
         setActions([]);
+        return;
       }
+
+      setActions([{ group: 'Recent', actions: sortedActions }]);
+      setNothingFoundMessage('No results found');
     } catch (error) {
       console.error('Failed to load recently viewed:', error);
       // Hide the actions list entirely on error with no results
@@ -134,6 +88,33 @@ export function Spotlight(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const performSearch = useCallback(
+    async (query: string): Promise<void> => {
+      setNothingFoundMessage('Searching...');
+
+      try {
+        const graphqlQuery = buildGraphQLQuery(query);
+        const [valueSetResult, graphqlResponse] = await Promise.all([
+          medplum.valueSetExpand({
+            url: 'https://medplum.com/fhir/ValueSet/resource-types',
+            filter: query,
+            count: 5,
+          }),
+          medplum.graphql<SearchGraphQLResponse>(graphqlQuery),
+        ]);
+
+        const resourceTypes = valueSetResult.expansion?.contains ?? [];
+        const resources = getResourcesFromResponse(graphqlResponse);
+        setActions(resourcesToActions(resources, resourceTypes, navigate, false));
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setNothingFoundMessage('No results found');
+      }
+    },
+    [medplum, navigate]
+  );
+
   const handleQueryChange = (query: string): void => {
     if (!query) {
       // When query is cleared, show recently viewed
@@ -143,31 +124,9 @@ export function Spotlight(): JSX.Element {
       return;
     }
 
-    setNothingFoundMessage('Searching...');
-
-    const graphqlQuery = buildGraphQLQuery(query);
-
-    // Fetch both resource types and patient/service request results in parallel
-    Promise.all([
-      medplum.valueSetExpand({
-        url: 'https://medplum.com/fhir/ValueSet/resource-types',
-        filter: query,
-        count: 5,
-      }),
-      medplum.graphql(graphqlQuery),
-    ])
-      .then(([valueSetResult, graphqlResponse]) => {
-        const resourceTypes = valueSetResult.expansion?.contains ?? [];
-        const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
-        const newActions = resourcesToActions(resources, resourceTypes, navigate, false);
-        setActions(newActions);
-      })
-      .catch((error) => {
-        console.error('Search failed:', error);
-      })
-      .finally(() => {
-        setNothingFoundMessage('No results found');
-      });
+    performSearch(query).catch((error) => {
+      console.error('Search failed:', error);
+    });
   };
 
   return (
@@ -179,6 +138,14 @@ export function Spotlight(): JSX.Element {
       searchProps={{
         leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
         placeholder: 'Start typing to search…',
+        type: 'search',
+        autoComplete: 'off',
+        autoCorrect: 'off',
+        spellCheck: false,
+        name: 'spotlight-search',
+        // Tell common password managers to ignore this field
+        'data-1p-ignore': true,
+        'data-lpignore': true,
         leftSectionProps: {
           style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
         },
@@ -275,10 +242,11 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
   const result = [];
 
   for (const resource of resources) {
-    if (!ids.has(resource.id as string)) {
-      ids.add(resource.id as string);
-      result.push(resource);
+    if (!resource.id || ids.has(resource.id)) {
+      continue;
     }
+    ids.add(resource.id);
+    result.push(resource);
   }
 
   return result;
@@ -290,22 +258,18 @@ function resourcesToActions(
   navigate: MedplumNavigateFunction,
   isRecentlyViewed = false
 ): SpotlightActionGroupData[] {
-  const patientActions: SpotlightActionData[] = [];
-
-  for (const resource of resources) {
-    if (resource.resourceType === 'Patient') {
-      patientActions.push({
-        id: resource.id as string,
-        label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
-        description: resource.birthDate,
-        leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
-        onClick: () => {
-          trackRecentlyViewed(resource.resourceType, resource.id as string);
-          navigate(`/Patient/${resource.id}`);
-        },
-      });
-    }
-  }
+  const patientActions: SpotlightActionData[] = resources
+    .filter((resource): resource is Patient & { id: string } => resource.resourceType === 'Patient' && Boolean(resource.id))
+    .map((resource) => ({
+      id: resource.id,
+      label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
+      description: resource.birthDate,
+      leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
+      onClick: () => {
+        trackRecentlyViewed(resource.resourceType, resource.id);
+        navigate(`/Patient/${resource.id}`);
+      },
+    }));
 
   const resourceTypeActions: SpotlightActionData[] = resourceTypes.map((rt) => ({
     id: `resource-type-${rt.code}`,
@@ -317,17 +281,16 @@ function resourcesToActions(
     },
   }));
 
-  const result = [];
   if (isRecentlyViewed && patientActions.length > 0) {
-    // Group recently viewed items together
-    result.push({ group: 'Recent', actions: patientActions });
-  } else {
-    if (resourceTypeActions.length > 0) {
-      result.push({ group: 'Resource Types', actions: resourceTypeActions });
-    }
-    if (patientActions.length > 0) {
-      result.push({ group: 'Patients', actions: patientActions });
-    }
+    return [{ group: 'Recent', actions: patientActions }];
+  }
+
+  const result = [];
+  if (resourceTypeActions.length > 0) {
+    result.push({ group: 'Resource Types', actions: resourceTypeActions });
+  }
+  if (patientActions.length > 0) {
+    result.push({ group: 'Patients', actions: patientActions });
   }
   return result;
 }
@@ -407,4 +370,99 @@ function getRecentlyViewed(): RecentlyViewedItem[] {
     console.error('Failed to get recently viewed:', error);
     return [];
   }
+}
+
+async function buildRecentlyViewedActions(
+  items: RecentlyViewedItem[],
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp[]> {
+  const actions: ActionWithTimestamp[] = [];
+
+  for (const item of items) {
+    const action = await buildActionForItem(item, medplum, navigate);
+    if (action) {
+      actions.push(action);
+    }
+  }
+
+  return actions;
+}
+
+async function buildActionForItem(
+  item: RecentlyViewedItem,
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp | undefined> {
+  if (isPatientRecentlyViewed(item)) {
+    return buildPatientAction(item, medplum, navigate);
+  }
+
+  if (isResourceTypePage(item)) {
+    return buildResourceTypeAction(item, navigate);
+  }
+
+  return undefined;
+}
+
+async function buildPatientAction(
+  item: RecentlyViewedItem & { resourceType: 'Patient'; id: string },
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp | undefined> {
+  try {
+    const resource = await medplum.readResource('Patient', item.id);
+    if (!resource || !resource.id) {
+      return undefined;
+    }
+
+    return {
+      action: {
+        id: `patient-${resource.id}`,
+        label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
+        description: resource.birthDate,
+        leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
+        onClick: () => {
+          trackRecentlyViewed('Patient', resource.id);
+          navigate(`/Patient/${resource.id}`);
+        },
+      },
+      timestamp: item.timestamp,
+    };
+  } catch {
+    // Resource might have been deleted, skip it
+    return undefined;
+  }
+}
+
+function buildResourceTypeAction(
+  item: RecentlyViewedItem,
+  navigate: MedplumNavigateFunction
+): ActionWithTimestamp {
+  return {
+    action: {
+      id: `resource-type-${item.resourceType}`,
+      label: item.resourceType,
+      description: 'Resource Type',
+      onClick: () => {
+        trackRecentlyViewedResourceType(item.resourceType);
+        navigate(`/${item.resourceType}`);
+      },
+    },
+    timestamp: item.timestamp,
+  };
+}
+
+function sortRecentlyViewedActions(actions: ActionWithTimestamp[]): SpotlightActionData[] {
+  return [...actions].sort((a, b) => b.timestamp - a.timestamp).map((item) => item.action);
+}
+
+function isPatientRecentlyViewed(
+  item: RecentlyViewedItem
+): item is RecentlyViewedItem & { resourceType: 'Patient'; id: string } {
+  return item.resourceType === 'Patient' && Boolean(item.id);
+}
+
+function isResourceTypePage(item: RecentlyViewedItem): boolean {
+  return !item.id;
 }

@@ -29,6 +29,11 @@ interface SearchGraphQLResponse {
   };
 }
 
+interface ActionWithTimestamp {
+  action: SpotlightActionData;
+  timestamp: number;
+}
+
 export function Spotlight(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
@@ -53,44 +58,9 @@ export function Spotlight(): JSX.Element {
     setNothingFoundMessage('Loading recently viewed...');
 
     try {
-      interface ActionWithTimestamp {
-        action: SpotlightActionData;
-        timestamp: number;
-      }
+      const actionsWithTimestamps = await buildRecentlyViewedActions(recentlyViewed, medplum, navigate);
 
-      const actionsWithTimestamps: ActionWithTimestamp[] = [];
-
-      // Process all recently viewed patients
-      for (const item of recentlyViewed) {
-        if (item.resourceType === 'Patient' && item.id) {
-          try {
-            const resource = await medplum.readResource('Patient', item.id);
-            if (resource) {
-              actionsWithTimestamps.push({
-                action: {
-                  id: `patient-${resource.id}`,
-                  label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
-                  description: resource.birthDate,
-                  leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
-                  onClick: () => {
-                    trackRecentlyViewed('Patient', resource.id as string);
-                    navigate(`/Patient/${resource.id}`);
-                  },
-                },
-                timestamp: item.timestamp,
-              });
-            }
-          } catch {
-            // Resource might have been deleted, skip it
-          }
-        }
-      }
-
-      // Sort by timestamp (most recent first)
-      actionsWithTimestamps.sort((a, b) => b.timestamp - a.timestamp);
-
-      // Extract just the actions in sorted order
-      const actions = actionsWithTimestamps.map((item) => item.action);
+      const actions = sortRecentlyViewedActions(actionsWithTimestamps);
 
       if (actions.length > 0) {
         setActions([{ group: 'Recent Patients', actions }]);
@@ -167,10 +137,19 @@ export function Spotlight(): JSX.Element {
       searchProps={{
         leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
         placeholder: 'Search patients…',
+        type: 'search',
+        autoComplete: 'off',
+        autoCorrect: 'off',
+        spellCheck: false,
+        name: 'provider-spotlight-search',
+        inputProps: {
+          'data-1p-ignore': 'true',
+          'data-lpignore': 'true',
+        },
         leftSectionProps: {
           style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
         },
-      }}
+      } as any}
       classNames={{
         body: classes.body,
         content: classes.content,
@@ -263,35 +242,96 @@ function dedupeResources(resources: Patient[]): Patient[] {
   const result = [];
 
   for (const resource of resources) {
-    if (!ids.has(resource.id as string)) {
-      ids.add(resource.id as string);
-      result.push(resource);
+    if (!resource.id || ids.has(resource.id)) {
+      continue;
     }
+    ids.add(resource.id);
+    result.push(resource);
   }
 
   return result;
 }
 
 function resourcesToActions(resources: Patient[], navigate: MedplumNavigateFunction): SpotlightActionGroupData[] {
-  const patientActions: SpotlightActionData[] = [];
-
-  for (const resource of resources) {
-    patientActions.push({
-      id: resource.id as string,
+  const patientActions: SpotlightActionData[] = resources
+    .filter((resource): resource is Patient & { id: string } => Boolean(resource.id))
+    .map((resource) => ({
+      id: resource.id,
       label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
       description: resource.birthDate,
       leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
       onClick: () => {
-        trackRecentlyViewed(resource.resourceType, resource.id as string);
+        trackRecentlyViewed(resource.resourceType, resource.id);
         navigate(`/Patient/${resource.id}`);
       },
-    });
-  }
+    }));
 
   if (patientActions.length > 0) {
     return [{ group: 'Patients', actions: patientActions }];
   }
   return [];
+}
+
+async function buildRecentlyViewedActions(
+  items: RecentlyViewedItem[],
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp[]> {
+  const actions: ActionWithTimestamp[] = [];
+
+  for (const item of items) {
+    const action = await buildActionForItem(item, medplum, navigate);
+    if (action) {
+      actions.push(action);
+    }
+  }
+
+  return actions;
+}
+
+async function buildActionForItem(
+  item: RecentlyViewedItem,
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp | undefined> {
+  if (item.resourceType === 'Patient' && item.id) {
+    return buildPatientAction(item, medplum, navigate);
+  }
+  return undefined;
+}
+
+async function buildPatientAction(
+  item: RecentlyViewedItem,
+  medplum: ReturnType<typeof useMedplum>,
+  navigate: MedplumNavigateFunction
+): Promise<ActionWithTimestamp | undefined> {
+  try {
+    const resource = await medplum.readResource('Patient', item.id);
+    if (!resource || !resource.id) {
+      return undefined;
+    }
+
+    return {
+      action: {
+        id: `patient-${resource.id}`,
+        label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
+        description: resource.birthDate,
+        leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
+        onClick: () => {
+          trackRecentlyViewed('Patient', resource.id);
+          navigate(`/Patient/${resource.id}`);
+        },
+      },
+      timestamp: item.timestamp,
+    };
+  } catch {
+    // Resource might have been deleted, skip it
+    return undefined;
+  }
+}
+
+function sortRecentlyViewedActions(actions: ActionWithTimestamp[]): SpotlightActionData[] {
+  return [...actions].sort((a, b) => b.timestamp - a.timestamp).map((item) => item.action);
 }
 
 /**
