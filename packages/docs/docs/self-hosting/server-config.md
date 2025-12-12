@@ -286,6 +286,18 @@ Optional flag whether new user registration is enabled. See [Open Patient Regist
 
 **Default:** `true`
 
+### mfaAuthenticatorWindow
+
+Optional TOTP authenticator window for MFA token validation. This controls how many time steps (each 30 seconds) are accepted before and after the current time. A higher value is more lenient but less secure.
+
+| Value | Time Tolerance                     |
+| ----- | ---------------------------------- |
+| 0     | Only current 30-second window      |
+| 1     | ±30 seconds (~90 sec total)        |
+| 2     | ±60 seconds (~150 sec total)       |
+
+**Default:** `1`
+
 ### maxJsonSize
 
 Maximum JSON size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library. Default is `1mb`.

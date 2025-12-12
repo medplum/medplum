@@ -129,6 +129,9 @@ export interface MedplumServerConfig {
 
   /** Optional configuration for array column padding to mitigate statistics issues in Postgres. */
   arrayColumnPadding?: { [searchParamCode: string]: { resourceType?: string[]; config: ArrayColumnPaddingConfig } };
+
+  /** TOTP authenticator window for MFA token validation (default: 1) */
+  mfaAuthenticatorWindow?: number;
 }
 
 export interface ArrayColumnPaddingConfig {
