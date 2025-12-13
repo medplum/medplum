@@ -33,6 +33,7 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
+  cp ../../LICENSE.txt .
   npm publish --provenance --access public $TAG
   popd
 done
