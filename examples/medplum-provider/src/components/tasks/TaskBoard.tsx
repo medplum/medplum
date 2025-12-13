@@ -1,6 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Flex, Paper, Group, Button, Divider, ActionIcon, ScrollArea, Stack, Skeleton, Text, Box } from '@mantine/core';
+import {
+  Flex,
+  Paper,
+  Group,
+  Button,
+  Divider,
+  ActionIcon,
+  ScrollArea,
+  Stack,
+  Skeleton,
+  Text,
+  Box,
+  Pagination,
+  Center,
+} from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import cx from 'clsx';
@@ -45,12 +59,16 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [total, setTotal] = useState<number | undefined>(undefined);
 
   const [filters, setFilters] = useState<FilterState>({
     showMyTasks: true,
     status: undefined,
     performerType: undefined,
   });
+
+  const itemsPerPage = 20;
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     const searchParams = new URLSearchParams(query);
@@ -62,8 +80,23 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
       searchParams.append('status', filters.status);
     }
 
-    let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-    const performerTypes = results.flatMap((task) => task.performerType || []);
+    const offset = (currentPage - 1) * itemsPerPage;
+    searchParams.append('_offset', offset.toString());
+    searchParams.append('_count', itemsPerPage.toString());
+    searchParams.append('_total', 'accurate');
+
+    const bundle = await medplum.search('Task', searchParams.toString(), { cache: 'no-cache' });
+    let results: Task[] = [];
+
+    if (bundle.entry) {
+      results = bundle.entry.map((entry) => entry.resource as Task).filter((r): r is Task => r !== undefined);
+    }
+
+    if (bundle.total !== undefined) {
+      setTotal(bundle.total);
+    }
+
+    const allPerformerTypes = results.flatMap((task) => task.performerType || []);
 
     if (filters.performerType) {
       results = results.filter(
@@ -71,9 +104,9 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
       );
     }
 
-    setPerformerTypes(performerTypes);
+    setPerformerTypes(allPerformerTypes);
     setTasks(results);
-  }, [medplum, profileRef, filters, query]);
+  }, [medplum, profileRef, filters, query, currentPage, itemsPerPage]);
 
   useEffect(() => {
     setLoading(true);
@@ -119,6 +152,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
+    setCurrentPage(1);
     switch (filterType) {
       case TaskFilterType.STATUS:
         setFilters((prev) => ({
@@ -141,12 +175,15 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   };
 
   const handleShowMyTasksChange = (flag: boolean): void => {
+    setCurrentPage(1);
     setFilters({
       showMyTasks: flag,
       status: undefined,
       performerType: undefined,
     });
   };
+
+  const totalPages = total !== undefined ? Math.ceil(total / itemsPerPage) : 1;
 
   return (
     <Box w="100%" h="100%">
@@ -189,8 +226,8 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
             </Paper>
 
             <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="task-list-scrollarea">
+            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <ScrollArea style={{ flex: 1 }} id="task-list-scrollarea">
                 {loading && <TaskListSkeleton />}
                 {!loading && tasks.length === 0 && <EmptyTasksState />}
                 {!loading &&
@@ -202,6 +239,20 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                     </React.Fragment>
                   ))}
               </ScrollArea>
+              {!loading && total !== undefined && total > itemsPerPage && (
+                <Box p="md">
+                  <Center>
+                    <Pagination
+                      value={currentPage}
+                      total={totalPages}
+                      onChange={setCurrentPage}
+                      size="sm"
+                      siblings={1}
+                      boundaries={1}
+                    />
+                  </Center>
+                </Box>
+              )}
             </Paper>
           </Flex>
         </Box>

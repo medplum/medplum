@@ -58,7 +58,12 @@ describe('TaskBoard', () => {
 
   test('displays tasks in the list', async () => {
     await medplum.createResource(mockTask);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -139,7 +144,12 @@ describe('TaskBoard', () => {
       code: { text: 'Completed Task' },
     });
 
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -170,8 +180,12 @@ describe('TaskBoard', () => {
     await medplum.createResource(practitioner);
     await medplum.createResource(taskWithPerformer);
 
-    // Mock searchResources to return the task
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([taskWithPerformer] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: taskWithPerformer }],
+    } as any);
 
     setup();
 
@@ -200,7 +214,12 @@ describe('TaskBoard', () => {
   test('passes onSelectedItem to TaskListItem when provided', async () => {
     await medplum.createResource(mockTask);
     const onSelectedItem = vi.fn((task: Task) => `/Custom/${task.id}`);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup({ onSelectedItem });
 
@@ -214,7 +233,12 @@ describe('TaskBoard', () => {
 
   test('uses onSelectedItem URL', async () => {
     await medplum.createResource(mockTask);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -224,5 +248,146 @@ describe('TaskBoard', () => {
 
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/Task/task-123');
+  });
+
+  test('includes pagination parameters in search request', async () => {
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 50,
+      entry: [],
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(searchSpy).toHaveBeenCalled();
+    });
+
+    const searchCall = searchSpy.mock.calls[0];
+    expect(searchCall[1]).toContain('_offset=');
+    expect(searchCall[1]).toContain('_count=');
+    expect(searchCall[1]).toContain('_total=accurate');
+  });
+
+  test('displays pagination controls when total exceeds items per page', async () => {
+    const tasks = Array.from({ length: 25 }, (_, i) => ({
+      ...mockTask,
+      id: `task-${i}`,
+      code: { text: `Task ${i}` },
+    }));
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 25,
+      entry: tasks.slice(0, 20).map((task) => ({ resource: task })),
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      const pagination = document.querySelector('.mantine-Pagination-root');
+      expect(pagination).toBeInTheDocument();
+    });
+  });
+
+  test('does not display pagination when total is less than items per page', async () => {
+    await medplum.createResource(mockTask);
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 5,
+      entry: [{ resource: mockTask }],
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
+    });
+
+    const pagination = document.querySelector('.mantine-Pagination-root');
+    expect(pagination).not.toBeInTheDocument();
+  });
+
+  test('changes page when pagination is clicked', async () => {
+    const user = userEvent.setup();
+    const tasks = Array.from({ length: 25 }, (_, i) => ({
+      ...mockTask,
+      id: `task-${i}`,
+      code: { text: `Task ${i}` },
+    }));
+
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 25,
+      entry: tasks.slice(0, 20).map((task) => ({ resource: task })),
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(searchSpy).toHaveBeenCalled();
+    });
+
+    // Wait for pagination to render
+    await waitFor(() => {
+      const pagination = document.querySelector('.mantine-Pagination-root');
+      expect(pagination).toBeInTheDocument();
+    });
+
+    // Click next page button (page 2)
+    const page2Button = screen.getByRole('button', { name: /2/i });
+    if (page2Button) {
+      await user.click(page2Button);
+    }
+
+    await waitFor(() => {
+      // Should make another search call with offset=20
+      const callsWithOffset20 = searchSpy.mock.calls.filter((call) => {
+        const params = call[1];
+        if (typeof params === 'string') {
+          return params.includes('_offset=20');
+        } else if (params instanceof URLSearchParams) {
+          return params.get('_offset') === '20';
+        } else if (Array.isArray(params)) {
+          return params.some((kv) => Array.isArray(kv) && kv[0] === '_offset' && kv[1] === '20');
+        } else if (typeof params === 'object' && params !== null) {
+          return params['_offset'] === 20 || params['_offset'] === '20';
+        }
+        return false;
+      });
+      expect(callsWithOffset20.length).toBeGreaterThan(0);
+    });
+  });
+
+  test('resets to page 1 when filters change', async () => {
+    const user = userEvent.setup();
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 25,
+      entry: [],
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(searchSpy).toHaveBeenCalled();
+    });
+
+    // Clear previous calls
+    searchSpy.mockClear();
+
+    // Switch to All Tasks (this should reset pagination)
+    await user.click(screen.getByText('All Tasks'));
+
+    await waitFor(() => {
+      // Should make search call with offset=0 (first page)
+      expect(searchSpy).toHaveBeenCalledWith('Task', expect.stringContaining('_offset=0'), expect.any(Object));
+    });
   });
 });

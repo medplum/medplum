@@ -54,6 +54,7 @@ describe('useThreadInbox', () => {
     expect(result.current.threadMessages).toEqual([]);
     expect(result.current.selectedThread).toBeUndefined();
     expect(result.current.error).toBeNull();
+    expect(result.current.total).toBeUndefined();
   });
 
   test('fetches thread messages and returns only one message per topic', async () => {
@@ -335,7 +336,7 @@ describe('useThreadInbox', () => {
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
+    vi.spyOn(medplum, 'search').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,
@@ -347,6 +348,184 @@ describe('useThreadInbox', () => {
     });
 
     consoleErrorSpy.mockRestore();
+  });
+
+  test('includes pagination parameters in search request', async () => {
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 50,
+      entry: [],
+    } as any);
+
+    const { result } = renderHook(
+      () => useThreadInbox({ query: 'status=completed', threadId: undefined, offset: 20, count: 20 }),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(searchSpy).toHaveBeenCalledWith('Communication', expect.stringContaining('_offset=20'), expect.any(Object));
+    expect(searchSpy).toHaveBeenCalledWith('Communication', expect.stringContaining('_count=20'), expect.any(Object));
+    expect(searchSpy).toHaveBeenCalledWith(
+      'Communication',
+      expect.stringContaining('_total=accurate'),
+      expect.any(Object)
+    );
+  });
+
+  test('returns total count from bundle', async () => {
+    await medplum.createResource(mockCommunication1);
+    await medplum.createResource(mockCommunication2);
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 100,
+      entry: [{ resource: mockCommunication1 }, { resource: mockCommunication2 }],
+    } as any);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm1: [mockCommunication2],
+      },
+    } as any);
+
+    const { result } = renderHook(
+      () => useThreadInbox({ query: 'status=completed', threadId: undefined, offset: 0, count: 20 }),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await waitFor(() => {
+      expect(result.current.total).toBe(100);
+    });
+  });
+
+  test('handles pagination with offset and count', async () => {
+    const comm1: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-1',
+      status: 'completed',
+      sent: '2024-01-01T10:00:00Z',
+      payload: [{ contentString: 'Message 1' }],
+    };
+
+    const comm2: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-2',
+      status: 'completed',
+      sent: '2024-01-01T11:00:00Z',
+      payload: [{ contentString: 'Message 2' }],
+    };
+
+    const comm3: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-3',
+      status: 'completed',
+      sent: '2024-01-01T12:00:00Z',
+      payload: [{ contentString: 'Message 3' }],
+    };
+
+    await medplum.createResource(comm1);
+    await medplum.createResource(comm2);
+    await medplum.createResource(comm3);
+
+    // First page - offset 0, count 2
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 3,
+      entry: [{ resource: comm1 }, { resource: comm2 }],
+    } as any);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm1: [comm1],
+        thread_comm2: [comm2],
+      },
+    } as any);
+
+    const { result, rerender } = renderHook(
+      ({ offset, count }) => useThreadInbox({ query: 'status=completed', threadId: undefined, offset, count }),
+      {
+        wrapper,
+        initialProps: { offset: 0, count: 2 },
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.total).toBe(3);
+      expect(result.current.threadMessages).toHaveLength(2);
+    });
+
+    // Second page - offset 2, count 2
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 3,
+      entry: [{ resource: comm3 }],
+    } as any);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm3: [comm3],
+      },
+    } as any);
+
+    rerender({ offset: 2, count: 2 });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.threadMessages).toHaveLength(1);
+      expect(result.current.threadMessages[0][0].id).toBe('comm-3');
+    });
+  });
+
+  test('resets pagination when query changes', async () => {
+    await medplum.createResource(mockCommunication1);
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockCommunication1 }],
+    } as any);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm1: [mockCommunication1],
+      },
+    } as any);
+
+    const { result, rerender } = renderHook(
+      ({ query, offset, count }) => useThreadInbox({ query, threadId: undefined, offset, count }),
+      {
+        wrapper,
+        initialProps: { query: 'status=completed', offset: 20, count: 20 },
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Change query - should trigger new search
+    rerender({ query: 'status=in-progress', offset: 20, count: 20 });
+
+    await waitFor(() => {
+      expect(medplum.search).toHaveBeenCalledWith(
+        'Communication',
+        expect.stringContaining('status=in-progress'),
+        expect.any(Object)
+      );
+    });
   });
 
   test('clears selected thread when threadId becomes undefined', async () => {
