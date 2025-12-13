@@ -67,8 +67,6 @@ describe('SignInPage', () => {
       fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
     });
 
-    // After entering password, the button might still be "Next" or "Sign In"
-    // Let's find the submit button
     const submitButton = screen.getByRole('button', { name: /Continue|Sign In/i });
     await act(async () => {
       fireEvent.click(submitButton);

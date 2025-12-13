@@ -226,11 +226,18 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   ))}
               </ScrollArea>
               {!loading && total !== undefined && total > itemsPerPage && (
-                <Box p="md">
-                  <Center>
-                    <Pagination value={currentPage} total={totalPages} onChange={setCurrentPage} size="sm" />
-                  </Center>
-                </Box>
+                  <Box p="md">
+                    <Center>
+                      <Pagination
+                        value={currentPage}
+                        total={totalPages}
+                        onChange={setCurrentPage}
+                        size="sm"
+                        siblings={1}
+                        boundaries={1}
+                      />
+                    </Center>
+                  </Box>
               )}
             </Paper>
           </Flex>

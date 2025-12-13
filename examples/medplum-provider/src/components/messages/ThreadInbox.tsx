@@ -165,6 +165,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       total={Math.ceil(total / itemsPerPage)}
                       onChange={setCurrentPage}
                       size="sm"
+                      siblings={1}
+                      boundaries={1}
                     />
                   </Center>
                 </Box>
