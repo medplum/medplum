@@ -872,5 +872,4 @@ describe('LabOrderDetails', () => {
       });
     });
   });
-
 });
