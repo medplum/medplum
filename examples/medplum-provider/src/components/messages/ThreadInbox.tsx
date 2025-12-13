@@ -79,7 +79,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const handleStatusChange = (newStatus: Communication['status']): void => {
     setStatus(newStatus);
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {

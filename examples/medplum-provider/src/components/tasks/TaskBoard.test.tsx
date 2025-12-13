@@ -354,9 +354,7 @@ describe('TaskBoard', () => {
         } else if (params instanceof URLSearchParams) {
           return params.get('_offset') === '20';
         } else if (Array.isArray(params)) {
-          return params.some(
-            (kv) => Array.isArray(kv) && kv[0] === '_offset' && kv[1] === '20'
-          );
+          return params.some((kv) => Array.isArray(kv) && kv[0] === '_offset' && kv[1] === '20');
         } else if (typeof params === 'object' && params !== null) {
           return params['_offset'] === 20 || params['_offset'] === '20';
         }
@@ -389,11 +387,7 @@ describe('TaskBoard', () => {
 
     await waitFor(() => {
       // Should make search call with offset=0 (first page)
-      expect(searchSpy).toHaveBeenCalledWith(
-        'Task',
-        expect.stringContaining('_offset=0'),
-        expect.any(Object)
-      );
+      expect(searchSpy).toHaveBeenCalledWith('Task', expect.stringContaining('_offset=0'), expect.any(Object));
     });
   });
 });

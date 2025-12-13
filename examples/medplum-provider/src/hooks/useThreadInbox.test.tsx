@@ -367,16 +367,8 @@ describe('useThreadInbox', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(searchSpy).toHaveBeenCalledWith(
-      'Communication',
-      expect.stringContaining('_offset=20'),
-      expect.any(Object)
-    );
-    expect(searchSpy).toHaveBeenCalledWith(
-      'Communication',
-      expect.stringContaining('_count=20'),
-      expect.any(Object)
-    );
+    expect(searchSpy).toHaveBeenCalledWith('Communication', expect.stringContaining('_offset=20'), expect.any(Object));
+    expect(searchSpy).toHaveBeenCalledWith('Communication', expect.stringContaining('_count=20'), expect.any(Object));
     expect(searchSpy).toHaveBeenCalledWith(
       'Communication',
       expect.stringContaining('_total=accurate'),
@@ -392,10 +384,7 @@ describe('useThreadInbox', () => {
       resourceType: 'Bundle',
       type: 'searchset',
       total: 100,
-      entry: [
-        { resource: mockCommunication1 },
-        { resource: mockCommunication2 },
-      ],
+      entry: [{ resource: mockCommunication1 }, { resource: mockCommunication2 }],
     } as any);
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({

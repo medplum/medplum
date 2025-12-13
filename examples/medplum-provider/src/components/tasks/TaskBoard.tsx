@@ -1,6 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Flex, Paper, Group, Button, Divider, ActionIcon, ScrollArea, Stack, Skeleton, Text, Box, Pagination, Center } from '@mantine/core';
+import {
+  Flex,
+  Paper,
+  Group,
+  Button,
+  Divider,
+  ActionIcon,
+  ScrollArea,
+  Stack,
+  Skeleton,
+  Text,
+  Box,
+  Pagination,
+  Center,
+} from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import cx from 'clsx';
@@ -73,7 +87,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
     const bundle = await medplum.search('Task', searchParams.toString(), { cache: 'no-cache' });
     let results: Task[] = [];
-    
+
     if (bundle.entry) {
       results = bundle.entry.map((entry) => entry.resource as Task).filter((r): r is Task => r !== undefined);
     }
@@ -226,18 +240,18 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   ))}
               </ScrollArea>
               {!loading && total !== undefined && total > itemsPerPage && (
-                  <Box p="md">
-                    <Center>
-                      <Pagination
-                        value={currentPage}
-                        total={totalPages}
-                        onChange={setCurrentPage}
-                        size="sm"
-                        siblings={1}
-                        boundaries={1}
-                      />
-                    </Center>
-                  </Box>
+                <Box p="md">
+                  <Center>
+                    <Pagination
+                      value={currentPage}
+                      total={totalPages}
+                      onChange={setCurrentPage}
+                      size="sm"
+                      siblings={1}
+                      boundaries={1}
+                    />
+                  </Center>
+                </Box>
               )}
             </Paper>
           </Flex>
