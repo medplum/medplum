@@ -20,7 +20,6 @@ PACKAGES=(
   "definitions"
   "dosespot-react"
   "eslint-config"
-  "expo-polyfills"
   "fhir-router"
   "fhirtypes"
   "health-gorilla-core"
@@ -34,6 +33,7 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
-  npm publish --access public $TAG
+  cp ../../LICENSE.txt .
+  npm publish --provenance --access public $TAG
   popd
 done
