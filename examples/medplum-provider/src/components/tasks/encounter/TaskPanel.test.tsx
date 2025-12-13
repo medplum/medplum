@@ -8,7 +8,7 @@ import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskPanel } from './TaskPanel';
-import type { Task } from '@medplum/fhirtypes';
+import type { ServiceRequest, Task } from '@medplum/fhirtypes';
 
 describe('TaskPanel', () => {
   let medplum: MockClient;
@@ -61,15 +61,21 @@ describe('TaskPanel', () => {
       input: [{ type: { text: 'ServiceRequest' }, valueReference: { reference: 'ServiceRequest/123' } }],
     };
     const onUpdateTask = vi.fn();
-    medplum.readReference = vi.fn().mockResolvedValue({
+    const serviceRequest: ServiceRequest = {
       resourceType: 'ServiceRequest',
       id: '123',
+      status: 'active',
       code: { text: 'Test Service Request' },
-    });
+      intent: 'order',
+      subject: { reference: 'Patient/123' },
+    };
+    await medplum.createResource(serviceRequest);
+    medplum.readReference = vi.fn().mockResolvedValue(serviceRequest);
     setup(task, onUpdateTask);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Service Request')).toBeInTheDocument();
+      expect(screen.getByText('Test Task Code')).toBeInTheDocument();
+      expect(screen.getByText(/✅ Order Sent/)).toBeInTheDocument();
     });
   });
 

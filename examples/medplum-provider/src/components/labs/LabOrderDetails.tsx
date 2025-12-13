@@ -35,7 +35,6 @@ import { showErrorNotification } from '../../utils/notifications';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
-  onOrderChange?: (order: ServiceRequest) => void;
 }
 
 interface ProgressStep {
@@ -47,7 +46,8 @@ interface ProgressStep {
   timestamp?: string;
 }
 
-export function LabOrderDetails({ order, onOrderChange: _onOrderChange }: LabOrderDetailsProps): JSX.Element {
+export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
+  const { order } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);

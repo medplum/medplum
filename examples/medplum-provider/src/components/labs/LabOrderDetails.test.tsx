@@ -872,21 +872,4 @@ describe('LabOrderDetails', () => {
       });
     });
   });
-
-  describe('onOrderChange callback', () => {
-    test('accepts onOrderChange prop', async () => {
-      const onOrderChange = vi.fn();
-
-      await act(async () => {
-        setup({ onOrderChange });
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-      });
-
-      // The callback is accepted and can be used by the component
-      expect(onOrderChange).not.toHaveBeenCalled(); // Not called unless order changes
-    });
-  });
 });

@@ -14,16 +14,16 @@ interface LabListItemProps {
   item: ServiceRequest;
   selectedItem: ServiceRequest | undefined;
   activeTab: LabTab;
-  onItemChange: (item: ServiceRequest) => string;
+  onItemSelect: (item: ServiceRequest) => string;
 }
 
 export function LabListItem(props: LabListItemProps): JSX.Element {
-  const { item, selectedItem, activeTab, onItemChange } = props;
+  const { item, selectedItem, activeTab, onItemSelect } = props;
   const isSelected = selectedItem?.id === item.id;
   const requester = useResource(item.requester) as Practitioner | undefined;
 
   return (
-    <MedplumLink to={onItemChange(item)} c="dark">
+    <MedplumLink to={onItemSelect(item)} c="dark">
       <Group
         align="center"
         wrap="nowrap"
