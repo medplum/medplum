@@ -7,7 +7,6 @@ import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor, userEvent } from '../../test-utils/render';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
 import * as reactHooks from '@medplum/react-hooks';
 
