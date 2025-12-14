@@ -33,7 +33,7 @@ import classes from './LabsPage.module.css';
 type LabTab = 'open' | 'completed';
 
 export function LabsPage(): JSX.Element {
-  const { patientId, labId } = useParams();
+  const { patientId, serviceRequestId } = useParams();
   const navigate = useNavigate();
   const medplum = useMedplum();
 
@@ -87,22 +87,32 @@ export function LabsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-  const handleOrderChange = useCallback(
+  const handleOrderSelect = useCallback(
     (order: ServiceRequest): string => {
-      return `/Patient/${patientId}/labs/${order.id}`;
+      return `/Patient/${patientId}/ServiceRequest/${order.id}`;
     },
     [patientId]
   );
 
   useEffect(() => {
-    const currentItems = activeTab === 'open' ? openOrders : completedOrders;
-    const order = currentItems.find((order: ServiceRequest) => order.id === labId);
-    setCurrentOrder(order);
-  }, [activeTab, openOrders, completedOrders, labId]);
-
-  if (!patientId) {
-    return <div>Patient ID is required</div>;
-  }
+    const fetchOrder = async (): Promise<void> => {
+      if (serviceRequestId) {
+        const currentItems = activeTab === 'open' ? openOrders : completedOrders;
+        const order = currentItems.find((order: ServiceRequest) => order.id === serviceRequestId);
+        if (order) {
+          setCurrentOrder(order);
+        } else {
+          const order = await medplum.readResource('ServiceRequest', serviceRequestId);
+          if (order) {
+            setCurrentOrder(order);
+          }
+        }
+      } else {
+        setCurrentOrder(undefined);
+      }
+    };
+    fetchOrder().catch(showErrorNotification);
+  }, [activeTab, openOrders, completedOrders, serviceRequestId, medplum]);
 
   const handleTabChange = (value: string): void => {
     const newTab = value as LabTab;
@@ -115,7 +125,7 @@ export function LabsPage(): JSX.Element {
     fetchData()
       .then(() => {
         setActiveTab('open');
-        navigate(`/Patient/${patientId}/labs`)?.catch(console.error);
+        navigate(`/Patient/${patientId}/ServiceRequest`)?.catch(console.error);
       })
       .catch(showErrorNotification);
   };
@@ -169,7 +179,7 @@ export function LabsPage(): JSX.Element {
                           item={item}
                           selectedItem={currentOrder}
                           activeTab={activeTab}
-                          onItemChange={handleOrderChange}
+                          onItemSelect={handleOrderSelect}
                         />
                         {index < currentItems.length - 1 && (
                           <Box px="0.5rem">
@@ -194,7 +204,7 @@ export function LabsPage(): JSX.Element {
               className={classes.borderRight}
             >
               {currentOrder ? (
-                <LabOrderDetails key={currentOrder.id} order={currentOrder} onOrderChange={handleOrderChange} />
+                <LabOrderDetails key={currentOrder.id} order={currentOrder} />
               ) : (
                 <LabSelectEmpty activeTab={'open'} />
               )}
