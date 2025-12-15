@@ -118,10 +118,9 @@ describe('TasksPage', () => {
     await waitFor(() => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
     });
-    
+
     await waitFor(() => {
       expect(readResourceSpy).not.toHaveBeenCalled();
     });
   });
 });
-

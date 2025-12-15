@@ -128,6 +128,4 @@ describe('ResourceEditPage', () => {
       expect(screen.getByText(/resource not found/i)).toBeInTheDocument();
     });
   });
-  
 });
-
