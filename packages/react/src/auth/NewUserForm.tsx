@@ -161,7 +161,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
               data-no-autofill="true"
               data-form-type="navigation"
             >
-              Sign in to create a new project
+              Sign In to create a new project
             </Anchor>
           </Text>
         )}

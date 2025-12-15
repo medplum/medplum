@@ -61,8 +61,8 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
     return (
       <SignInForm projectId="new" googleClientId={googleClientId} onSuccess={onSuccess}>
         <Logo size={32} />
-        <Title>Sign in to {getAppName()}</Title>
-        <div>Sign in to create a new project</div>
+        <Title>Sign In to {getAppName()}</Title>
+        <div>Sign In to create a new project</div>
       </SignInForm>
     );
   }
