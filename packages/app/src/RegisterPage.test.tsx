@@ -76,11 +76,11 @@ describe('RegisterPage', () => {
     await user.type(screen.getByLabelText('Email *'), 'george@example.com');
     await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Register Account' }));
 
     await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Create Project' }));
   });
 
   test('Register disabled', async () => {
