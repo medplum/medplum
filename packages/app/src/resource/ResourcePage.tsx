@@ -46,6 +46,10 @@ function getTabs(resourceType: string): string[] {
     result.push('Ranges');
   }
 
+  if (resourceType === 'Observation') {
+    result.push('Chart');
+  }
+
   if (resourceType === 'Agent') {
     result.push('Tools');
   }

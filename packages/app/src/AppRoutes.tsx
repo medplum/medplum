@@ -40,6 +40,7 @@ import { BuilderPage } from './resource/BuilderPage';
 import { ChecklistPage } from './resource/ChecklistPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
+import { ObservationChartPage } from './resource/ObservationChartPage';
 import { EditPage } from './resource/EditPage';
 import { ExportPage } from './resource/ExportPage';
 import { FormCreatePage } from './resource/FormCreatePage';
@@ -114,6 +115,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="blame" element={<BlamePage />} />
           <Route path="bots" element={<QuestionnaireBotsPage />} />
           <Route path="builder" element={<BuilderPage />} />
+          <Route path="chart" element={<ObservationChartPage />} />
           <Route path="checklist" element={<ChecklistPage />} />
           <Route path="delete" element={<DeletePage />} />
           <Route path="details" element={<DetailsPage />} />
