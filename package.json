@@ -28,16 +28,11 @@
   },
   "overrides": {
     "@jest/types": "30.2.0",
-    "@swc/core": "1.13.5",
     "esbuild": "0.27.1",
     "jest-diff": "30.2.0",
     "jest-message-util": "30.2.0",
     "jest-util": "30.2.0",
     "jest-worker": "30.2.0",
-    "react": "19.2.1",
-    "react-compiler-runtime": "latest",
-    "react-dom": "19.2.1",
-    "rollup": "4.44.2",
     "typescript": "5.9.3",
     "vite": "7.2.7",
     "whatwg-url": "14.0.0"
