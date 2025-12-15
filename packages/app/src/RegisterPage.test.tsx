@@ -93,4 +93,48 @@ describe('RegisterPage', () => {
 
     expect(screen.getByText('New projects are disabled on this server.')).toBeInTheDocument();
   });
+
+  test('Sign-in link appears on register page', async () => {
+    const medplum = new MockClient();
+    medplum.getProfile = jest.fn(() => undefined) as any;
+    await setup(medplum);
+
+    expect(screen.getByRole('button', { name: 'Register Account' })).toBeInTheDocument();
+    expect(screen.getByText('Sign In to create a new project')).toBeInTheDocument();
+  });
+
+  test('Sign-in flow from register page', async () => {
+    const medplum = new MockClient();
+    medplum.getProfile = jest.fn(() => undefined) as any;
+    // Mock login to return login without code for projectId='new'
+    medplum.post = jest.fn((path: string, body: any) => {
+      if (path === 'auth/login' && body?.projectId === 'new') {
+        return Promise.resolve({ login: '1' });
+      }
+      if (path === 'auth/method') {
+        return Promise.resolve({});
+      }
+      if (path === 'auth/newproject') {
+        return Promise.resolve({ login: '1', code: '1' });
+      }
+      // Fallback to original post method for other paths
+      return (MockClient.prototype.post as any).call(medplum, path, body);
+    }) as any;
+    const user = await setup(medplum);
+
+    // Click sign-in link
+    await user.click(screen.getByText('Sign In to create a new project'));
+
+    // Fill in email
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    // Fill in password
+    await user.type(screen.getByLabelText('Password *'), 'password');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    // Should proceed to project creation
+    await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
+    await user.click(screen.getByRole('button', { name: 'Create Project' }));
+  });
 });

@@ -49,6 +49,29 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
+  } else if (options.method === 'POST' && url.endsWith('/auth/login')) {
+    const { email, password } = JSON.parse(options.body);
+    if (email === 'existing@example.com' && password === 'password') {
+      status = 200;
+      result = {
+        login: '1',
+      };
+    } else {
+      status = 400;
+      result = {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            details: {
+              text: 'Email or password is invalid',
+            },
+          },
+        ],
+      };
+    }
+  } else if (options.method === 'POST' && url.endsWith('/auth/method')) {
+    status = 200;
+    result = {};
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
     const body = JSON.parse(options.body);
     expect(body.codeChallenge).toBeDefined();
@@ -358,5 +381,123 @@ describe('RegisterForm', () => {
     });
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  test('Sign-in link appears for new project registration', async () => {
+    const onSuccess = jest.fn();
+    await setup({
+      type: 'project',
+      projectId: 'new',
+      recaptchaSiteKey,
+      onSuccess,
+    });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
+    expect(screen.getByText('Sign In to create a new project')).toBeInTheDocument();
+  });
+
+  test('Sign-in link does not appear for patient registration', async () => {
+    const projectId = randomUUID();
+    const onSuccess = jest.fn();
+
+    await setup({
+      type: 'patient',
+      projectId,
+      recaptchaSiteKey,
+      onSuccess,
+    });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
+    expect(screen.queryByText('Sign In to create a new project')).not.toBeInTheDocument();
+  });
+
+  test('Sign-in link does not appear for non-new project registration', async () => {
+    const projectId = randomUUID();
+    const onSuccess = jest.fn();
+
+    await setup({
+      type: 'project',
+      projectId,
+      recaptchaSiteKey,
+      onSuccess,
+    });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
+    expect(screen.queryByText('Sign In to create a new project')).not.toBeInTheDocument();
+  });
+
+  test('Clicking sign-in link shows SignInForm', async () => {
+    const onSuccess = jest.fn();
+    await setup({
+      type: 'project',
+      projectId: 'new',
+      recaptchaSiteKey,
+      onSuccess,
+    });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
+    expect(screen.getByText('Sign In to create a new project')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In to create a new project'));
+    });
+
+    // After clicking, should show SignInForm instead
+    expect(screen.queryByText('My Register Form')).not.toBeInTheDocument();
+    // Check for SignInForm title (which includes app name)
+    expect(screen.getByRole('heading', { name: /Sign In to/ })).toBeInTheDocument();
+    expect(screen.getByText('Sign In to create a new project')).toBeInTheDocument();
+  });
+
+  test('Sign-in flow proceeds to project creation', async () => {
+    const onSuccess = jest.fn();
+    await setup({
+      type: 'project',
+      projectId: 'new',
+      recaptchaSiteKey,
+      onSuccess,
+    });
+
+    // Click sign-in link
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In to create a new project'));
+    });
+
+    // Fill in sign-in form
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'existing@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Continue'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'password' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    // Should proceed to project creation form
+    expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), {
+        target: { value: 'My New Project' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+    expect(onSuccess).toHaveBeenCalled();
   });
 });
