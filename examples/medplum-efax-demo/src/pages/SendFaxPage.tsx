@@ -8,7 +8,6 @@ import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { JSX } from 'react';
-import { useNavigate } from 'react-router';
 
 interface SendFaxForm {
   recipientName: string;
@@ -19,7 +18,6 @@ interface SendFaxForm {
 export function SendFaxPage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const navigate = useNavigate();
 
   const [formData, setFormData] = useState<SendFaxForm>({
     recipientName: '',
@@ -101,7 +99,6 @@ export function SendFaxPage(): JSX.Element {
         message: `Fax sent successfully`,
       });
 
-      navigate('/')?.catch(console.error);
     } catch (err) {
       showNotification({
         color: 'red',
