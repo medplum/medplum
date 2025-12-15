@@ -9,6 +9,71 @@ import net from 'node:net';
 import type { App } from './app';
 import { BaseChannel } from './channel';
 
+/**
+ * Matches byte patterns in a streaming byte sequence and returns corresponding response buffers.
+ * Uses a sliding window approach to efficiently match patterns as bytes stream in.
+ */
+class ByteSequenceMatcher {
+  private readonly patterns: Array<{ pattern: Buffer; response: Buffer }> = [];
+  private readonly buffer: number[] = [];
+  private maxPatternLength = 0;
+
+  /**
+   * Register a pattern and its corresponding response.
+   * @param pattern - The byte sequence to match
+   * @param response - The byte sequence to return when pattern matches
+   */
+  addPattern(pattern: Buffer, response: Buffer): void {
+    this.patterns.push({ pattern, response });
+    this.maxPatternLength = Math.max(this.maxPatternLength, pattern.length);
+  }
+
+  /**
+   * Process an incoming byte and check for pattern matches.
+   * @param byte - The incoming byte (0-255)
+   * @returns Array of response buffers for any patterns that matched, empty array if none
+   */
+  processByte(byte: number): Buffer[] {
+    this.buffer.push(byte);
+
+    // Keep buffer size limited to max pattern length
+    if (this.buffer.length > this.maxPatternLength) {
+      this.buffer.shift();
+    }
+
+    const matches: Buffer[] = [];
+
+    // Check each pattern for a match ending at the current byte
+    for (const { pattern, response } of this.patterns) {
+      if (this.buffer.length < pattern.length) {
+        continue;
+      }
+
+      // Check if the last N bytes match the pattern
+      let match = true;
+      for (let i = 0; i < pattern.length; i++) {
+        if (this.buffer[this.buffer.length - pattern.length + i] !== pattern[i]) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match) {
+        matches.push(response);
+      }
+    }
+
+    return matches;
+  }
+
+  /**
+   * Clear the internal buffer (e.g., when a start character is detected).
+   */
+  reset(): void {
+    this.buffer.length = 0;
+  }
+}
+
 export class AgentByteStreamChannel extends BaseChannel {
   readonly app: App;
   readonly server: net.Server;
@@ -19,6 +84,7 @@ export class AgentByteStreamChannel extends BaseChannel {
 
   startChar = -1;
   endChar = -1;
+  sequenceMappings: ByteSequenceMatcher = new ByteSequenceMatcher();
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -115,6 +181,85 @@ export class AgentByteStreamChannel extends BaseChannel {
 
     // These should never eval to -1, but just in case we assert
     assert(this.startChar !== -1 && this.endChar !== -1);
+
+    // Parse byte sequence mappings from extensions
+    this.parseSequenceMappings();
+  }
+
+  /**
+   * Parse byte sequence mappings from Endpoint extensions.
+   * Looks for extensions with URL: https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings
+   * Each extension should have nested extensions for "pattern" and "response" with URL-encoded byte sequences.
+   */
+  private parseSequenceMappings(): void {
+    const endpoint = this.getEndpoint();
+    const extensionUrl = 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings';
+
+    // Reset matcher
+    this.sequenceMappings = new ByteSequenceMatcher();
+
+    if (!endpoint.extension) {
+      return;
+    }
+
+    // Find all extensions with the mapping URL
+    for (const ext of endpoint.extension) {
+      if (ext.url !== extensionUrl || !ext.extension) {
+        continue;
+      }
+
+      // Extract pattern and response from nested extensions
+      let patternStr: string | undefined;
+      let responseStr: string | undefined;
+
+      for (const nestedExt of ext.extension) {
+        if (nestedExt.url === 'pattern' && nestedExt.valueString) {
+          patternStr = nestedExt.valueString;
+        } else if (nestedExt.url === 'response' && nestedExt.valueString) {
+          responseStr = nestedExt.valueString;
+        }
+      }
+
+      if (patternStr && responseStr) {
+        try {
+          const pattern = this.parseUrlEncodedBytes(patternStr);
+          const response = this.parseUrlEncodedBytes(responseStr);
+          this.sequenceMappings.addPattern(pattern, response);
+          this.log.debug(`Registered byte sequence mapping: pattern=${patternStr}, response=${responseStr}`);
+        } catch (err) {
+          this.log.warn(`Failed to parse byte sequence mapping: ${normalizeErrorString(err)}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Parse URL percent-encoded byte sequence string into a Buffer.
+   * @param encoded - URL-encoded string (e.g., "%05%06")
+   * @returns Buffer containing the decoded bytes
+   */
+  private parseUrlEncodedBytes(encoded: string): Buffer {
+    const bytes: number[] = [];
+    let i = 0;
+
+    while (i < encoded.length) {
+      if (encoded[i] === '%' && i + 2 < encoded.length) {
+        // Parse %HH sequence
+        const hex = encoded.substring(i + 1, i + 3);
+        const byte = Number.parseInt(hex, 16);
+        if (Number.isNaN(byte)) {
+          throw new Error(`Invalid hex sequence in URL-encoded byte sequence: ${hex}`);
+        }
+        bytes.push(byte);
+        i += 3;
+      } else {
+        // Regular character - convert to byte
+        bytes.push(encoded.charCodeAt(i));
+        i += 1;
+      }
+    }
+
+    return Buffer.from(bytes);
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
@@ -156,10 +301,19 @@ export class ByteStreamChannelConnection {
       for (let i = 0; i < data.length; i++) {
         const char = data[i];
 
+        // Check for byte sequence matches and inject responses immediately
+        const matches = this.channel.sequenceMappings.processByte(char);
+        for (const response of matches) {
+          this.channel.channelLog.debug(`Pattern matched, injecting response: ${response.toString('hex')}`);
+          this.write(response);
+        }
+
         if (char === this.channel.startChar) {
           // Clear chunks when we hit a start character
           this.msgChunks.length = 0;
           this.msgTotalLength = 0;
+          // Reset matcher on start character
+          this.channel.sequenceMappings.reset();
         } else if (char === this.channel.endChar) {
           // If received end character but there's no start to the message, just continue
           if (this.msgTotalLength === -1) {
