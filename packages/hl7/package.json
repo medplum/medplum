@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@medplum/core": "5.0.9",
-    "iconv-lite": "0.7.0"
+    "iconv-lite": "0.7.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.0.9"
