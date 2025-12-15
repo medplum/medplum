@@ -5,11 +5,12 @@ import { forbidden } from '@medplum/core';
 import { Container, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { ColumnStatistics } from './db/ColumnStatistics';
 import { GINIndexes } from './db/GINIndexes';
 
 export function DatabaseToolsPage(): JSX.Element {
   const medplum = useMedplum();
-  const tabs = ['GIN Indexes'];
+  const tabs = ['GIN Indexes', 'Column Statistics'];
   const [currentTab, setCurrentTab] = useState(tabs[0]);
 
   function onTabChange(newTabName: string | null): void {
@@ -37,6 +38,9 @@ export function DatabaseToolsPage(): JSX.Element {
           </Tabs.List>
           <Tabs.Panel value="GIN Indexes" pt="md">
             <GINIndexes />
+          </Tabs.Panel>
+          <Tabs.Panel value="Column Statistics" pt="md">
+            <ColumnStatistics />
           </Tabs.Panel>
         </Tabs>
       </Panel>

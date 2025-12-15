@@ -13,6 +13,7 @@ import {
   UnionAllBuilder,
   UpdateQuery,
   ValuesQuery,
+  isValidColumnName,
   isValidTableName,
   periodToRangeString,
   resetSqlDebug,
@@ -381,6 +382,17 @@ test('isValidTableName', () => {
   expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
   expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
   expect(isValidTableName('Observation History')).toStrictEqual(false);
+});
+
+test('isValidColumnName', () => {
+  expect(isValidColumnName('id')).toStrictEqual(true);
+  expect(isValidColumnName('ID')).toStrictEqual(true);
+  expect(isValidColumnName('lastUpdated')).toStrictEqual(true);
+  expect(isValidColumnName('__version')).toStrictEqual(true);
+
+  expect(isValidColumnName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidColumnName('last-updated')).toStrictEqual(false);
+  expect(isValidColumnName('')).toStrictEqual(false);
 });
 
 test('debug', async () => {
