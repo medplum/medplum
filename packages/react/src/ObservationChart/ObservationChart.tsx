@@ -1,33 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatDate, formatObservationValue, getReferenceString } from '@medplum/core';
-import type { Observation, ObservationComponent, Patient, Reference } from '@medplum/fhirtypes';
+import { formatDate, getReferenceString } from '@medplum/core';
+import type { Observation, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import type { ChartData, ChartDataset } from 'chart.js';
-import { lazy, Suspense, useEffect, useState } from 'react';
-import type { JSX } from 'react';
-
-const lineChartOptions = {
-  responsive: true,
-  scales: {
-    y: {
-      beginAtZero: false,
-    },
-  },
-  plugins: {
-    legend: {
-      position: 'bottom' as const,
-    },
-  },
-};
-
-const AsyncLine = lazy(async () => {
-  const { CategoryScale, Chart, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } =
-    await import('chart.js');
-  Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-  const { Line } = await import('react-chartjs-2');
-  return { default: Line };
-});
+import { useEffect, useState } from 'react';
+import type { ComponentType, JSX } from 'react';
 
 export interface ObservationChartProps {
   /** The Observation resource to chart. The component will search for all Observations with the same code and patient. */
@@ -38,6 +15,11 @@ export interface ObservationChartProps {
   readonly title?: string;
   /** Optional height for the chart container. */
   readonly height?: number;
+}
+
+interface ChartDataPoint {
+  date: string;
+  [key: string]: string | number | undefined;
 }
 
 /**
@@ -53,9 +35,10 @@ export interface ObservationChartProps {
  * ```
  */
 export function ObservationChart(props: ObservationChartProps): JSX.Element | null {
-  const { observation, patient, title, height } = props;
+  const { observation, patient, title, height = 400 } = props;
   const medplum = useMedplum();
-  const [chartData, setChartData] = useState<ChartData<'line', number[]>>();
+  const [chartData, setChartData] = useState<ChartDataPoint[]>();
+  const [dataKeys, setDataKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -116,25 +99,24 @@ export function ObservationChart(props: ObservationChartProps): JSX.Element | nu
         }
 
         // Process observations into chart data
-        const labels: string[] = [];
-        const datasets: ChartDataset<'line', number[]>[] = [];
+        const dataMap = new Map<string, ChartDataPoint>();
+        const keys = new Set<string>();
 
         // Check if this is a multi-component observation (e.g., blood pressure)
         const hasComponents = observations.some((obs) => obs.component && obs.component.length > 0);
 
         if (hasComponents) {
           // Multi-component observation
-          // Group components by their code
-          const componentMap = new Map<string, { label: string; unit: string; data: number[] }>();
-
           for (const obs of observations) {
             if (!obs.effectiveDateTime) {
               continue;
             }
 
             const dateLabel = formatDate(obs.effectiveDateTime);
-            if (!labels.includes(dateLabel)) {
-              labels.push(dateLabel);
+            let dataPoint = dataMap.get(dateLabel);
+            if (!dataPoint) {
+              dataPoint = { date: dateLabel };
+              dataMap.set(dateLabel, dataPoint);
             }
 
             if (obs.component) {
@@ -146,73 +128,46 @@ export function ObservationChart(props: ObservationChartProps): JSX.Element | nu
 
                 const componentDisplay = component.code?.coding?.[0]?.display || component.code?.text || componentCode;
                 const componentUnit = component.valueQuantity?.unit || '';
-
-                if (!componentMap.has(componentCode)) {
-                  componentMap.set(componentCode, {
-                    label: componentDisplay,
-                    unit: componentUnit,
-                    data: [],
-                  });
-                }
-
-                const componentData = componentMap.get(componentCode)!;
-                // Fill in missing values with NaN for proper alignment
-                while (componentData.data.length < labels.length - 1) {
-                  componentData.data.push(NaN);
-                }
-                componentData.data.push(component.valueQuantity?.value ?? NaN);
+                const key = componentUnit ? `${componentDisplay} (${componentUnit})` : componentDisplay;
+                
+                keys.add(key);
+                dataPoint[key] = component.valueQuantity?.value ?? null;
               }
             }
-          }
-
-          // Create datasets from component map
-          let colorIndex = 0;
-          const colors = [
-            { backgroundColor: 'rgba(29, 112, 214, 0.7)', borderColor: 'rgba(29, 112, 214, 1)' },
-            { backgroundColor: 'rgba(255, 119, 0, 0.7)', borderColor: 'rgba(255, 119, 0, 1)' },
-            { backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)' },
-            { backgroundColor: 'rgba(231, 76, 60, 0.7)', borderColor: 'rgba(231, 76, 60, 1)' },
-            { backgroundColor: 'rgba(155, 89, 182, 0.7)', borderColor: 'rgba(155, 89, 182, 1)' },
-          ];
-
-          for (const [code, componentInfo] of componentMap.entries()) {
-            const color = colors[colorIndex % colors.length];
-            datasets.push({
-              label: componentInfo.unit ? `${componentInfo.label} (${componentInfo.unit})` : componentInfo.label,
-              data: componentInfo.data,
-              backgroundColor: color.backgroundColor,
-              borderColor: color.borderColor,
-            });
-            colorIndex++;
           }
         } else {
           // Simple observation with valueQuantity
           const unit = observations[0]?.valueQuantity?.unit || '';
           const display = observation.code?.coding?.[0]?.display || observation.code?.text || 'Value';
+          const key = unit ? `${display} (${unit})` : display;
+          
+          keys.add(key);
 
-          const data: number[] = [];
           for (const obs of observations) {
             if (!obs.effectiveDateTime) {
               continue;
             }
 
-            labels.push(formatDate(obs.effectiveDateTime));
-            data.push(obs.valueQuantity?.value ?? NaN);
+            const dateLabel = formatDate(obs.effectiveDateTime);
+            const dataPoint: ChartDataPoint = {
+              date: dateLabel,
+              [key]: obs.valueQuantity?.value ?? null,
+            };
+            dataMap.set(dateLabel, dataPoint);
           }
-
-          datasets.push({
-            label: unit ? `${display} (${unit})` : display,
-            data,
-            backgroundColor: 'rgba(29, 112, 214, 0.7)',
-            borderColor: 'rgba(29, 112, 214, 1)',
-          });
         }
 
         if (cancelled) {
           return;
         }
 
-        setChartData({ labels, datasets });
+        // Convert map to array and sort by date
+        const sortedData = Array.from(dataMap.values()).sort((a, b) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+
+        setChartData(sortedData);
+        setDataKeys(Array.from(keys));
         setLoading(false);
       } catch (err) {
         if (cancelled) {
@@ -240,15 +195,79 @@ export function ObservationChart(props: ObservationChartProps): JSX.Element | nu
     return <div>Error: {error}</div>;
   }
 
-  if (!chartData || chartData.labels.length === 0) {
+  if (!chartData || chartData.length === 0) {
     return <div>No data available to display</div>;
   }
 
+  // Dynamically import Mantine charts to avoid bundling if not used
+  const [ChartComponents, setChartComponents] = useState<{
+    LineChart: ComponentType<any>;
+    CartesianGrid: ComponentType<any>;
+    XAxis: ComponentType<any>;
+    YAxis: ComponentType<any>;
+    Tooltip: ComponentType<any>;
+    Legend: ComponentType<any>;
+    Line: ComponentType<any>;
+  } | null>(null);
+
+  useEffect(() => {
+    import('@mantine/charts').then((mod) => {
+      setChartComponents({
+        LineChart: mod.LineChart,
+        CartesianGrid: mod.CartesianGrid,
+        XAxis: mod.XAxis,
+        YAxis: mod.YAxis,
+        Tooltip: mod.Tooltip,
+        Legend: mod.Legend,
+        Line: mod.Line,
+      });
+    });
+  }, []);
+
+  if (!ChartComponents) {
+    return <div>Loading chart library...</div>;
+  }
+
+  const { LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } = ChartComponents;
+
+  // Color palette for multiple lines
+  const colors = [
+    '#1d70d6', // Blue
+    '#ff7700', // Orange
+    '#2ecc71', // Green
+    '#e74c3c', // Red
+    '#9b59b6', // Purple
+  ];
+
   return (
-    <div style={{ height: height ? `${height}px` : '400px', marginTop: '1rem' }}>
-      <Suspense fallback={<div>Loading chart...</div>}>
-        <AsyncLine options={lineChartOptions} data={chartData} />
-      </Suspense>
+    <div style={{ marginTop: '1rem' }}>
+      <LineChart
+        h={height}
+        data={chartData}
+        dataKey="date"
+        withLegend
+        withTooltip
+        withDots
+        withXAxis
+        withYAxis
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        {dataKeys.map((key, index) => (
+          <Line
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={colors[index % colors.length]}
+            strokeWidth={2}
+            dot={{ r: 4 }}
+            activeDot={{ r: 6 }}
+          />
+        ))}
+      </LineChart>
     </div>
   );
 }

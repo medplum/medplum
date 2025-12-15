@@ -107,6 +107,7 @@
     "typescript": "5.9.3"
   },
   "peerDependencies": {
+    "@mantine/charts": "^8.0.0",
     "@mantine/core": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
     "@mantine/notifications": "^8.0.0",
@@ -115,10 +116,14 @@
     "@medplum/react-hooks": "5.0.9",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
+    "recharts": "^2.0.0",
     "rfc6902": "^5.0.1",
     "signature_pad": "^5.0.10"
   },
   "peerDependenciesMeta": {
+    "@mantine/charts": {
+      "optional": true
+    },
     "@mantine/core": {
       "optional": true
     },
@@ -129,6 +134,9 @@
       "optional": true
     },
     "@mantine/spotlight": {
+      "optional": true
+    },
+    "recharts": {
       "optional": true
     },
     "rfc6902": {
