@@ -1,0 +1,77 @@
+import ExampleCode from '!!raw-loader!@site/..//examples/src/terminology/medplum-terminology-services.tsx';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Medplum Terminology Services
+
+Medplum provides a layer of functionality to make working with coded values simple. Some of the most common use cases
+are detailed below to show how these components can fit together.
+
+## Binding an input to a set of codes
+
+To restrict the set of values that can be used with an input, it can be bound to a `ValueSet` defining which codes are
+allowed. This enables a typeahead UI, where the user can select from a list of available codes, and type part of the
+desired concept to filter the list and aid in selection when the set of possible codes is large.
+
+### Defining the ValueSet
+
+First, the `ValueSet` resource must be uploaded to the Medplum FHIR server, and must contain a `url` by which
+to reference it.
+
+<MedplumCodeBlock language="json" selectBlocks="valueSet">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Additionally, the URL used to refer to the code system in `ValueSet.compose.include.system` must actually correspond to
+a valid `CodeSystem` resource on the server:
+
+<MedplumCodeBlock language="json" selectBlocks="codeSystem">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Binding to the Input
+
+The `CodeInput`, `CodingInput`, and `CodeableConceptInput` React components provide the ability to connect an input
+field with a `ValueSet` for typeahead, returning whichever data type is needed by the application.
+
+<MedplumCodeBlock language="tsx" selectBlocks="input">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Internationalizing Codings
+
+While coded values provide a consistent way to refer to clinical concepts across different systems and languages,
+these codes must still ultimately be translated into human-readable terms for users. Many healthcare practices serve
+people with a diverse set of primary languages, requiring the human-readable display strings to be translated. Building
+on the strong foundations in the FHIR standard, Medplum provides the ability to work with codes fluently across multiple
+languages.
+
+### Importing Translated Strings
+
+A `CodeSystem` resource can embed any number of known translations directly alongside the primary display text using
+the `designation` field. This field can be used both for synonyms in the primary language, as well as translations into
+additional languages.
+
+<MedplumCodeBlock language="json" selectBlocks="translatedCodeSystem">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Additionally, synonyms or translations can be added to existing code systems using Medplum's custom
+[`CodeSystem/$import` API][import].
+
+<MedplumCodeBlock language="ts" selectBlocks="importDesignation">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+[import]: /docs/api/fhir/operations/codesystem-import
+
+### Searching With Translations
+
+Using the [`ValueSet/$expand` API][expand], users can leverage these synonyms and translations when searching for a
+specific code. By default, languages other than the primary are excluded from `filter` search results; a different
+language can be selected by setting the `displayLanguage` parameter:
+
+<MedplumCodeBlock language="ts" selectBlocks="expandLanguage">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+[expand]: /docs/api/fhir/operations/valueset-expand

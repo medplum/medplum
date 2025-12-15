@@ -23,7 +23,8 @@
   "devDependencies": {
     "@medplum/core": "5.0.9",
     "@medplum/fhirtypes": "5.0.9",
-    "@medplum/mock": "5.0.9"
+    "@medplum/mock": "5.0.9",
+    "@medplum/react": "5.0.9"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
