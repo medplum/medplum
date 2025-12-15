@@ -112,6 +112,7 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
