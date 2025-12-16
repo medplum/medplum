@@ -10,6 +10,14 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { MessagesPage } from './MessagesPage';
 
+vi.mock('@medplum/react-hooks', async () => {
+  const actual = await vi.importActual('@medplum/react-hooks');
+  return {
+    ...actual,
+    useSubscription: vi.fn(),
+  };
+});
+
 describe('MessagesPage', () => {
   let medplum: MockClient;
 
