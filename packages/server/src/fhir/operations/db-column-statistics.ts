@@ -12,10 +12,10 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const LookupOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'db-column-statistics-lookup',
+  name: 'db-column-statistics',
   status: 'active',
   kind: 'operation',
-  code: 'lookup',
+  code: 'db-column-statistics',
   experimental: true,
   system: true,
   type: false,

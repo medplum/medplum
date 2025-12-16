@@ -10,10 +10,10 @@ import { parseInputParameters } from './utils/parameters';
 
 const UpdateOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'db-column-statistics-update',
+  name: 'db-configure-column-statistics',
   status: 'active',
   kind: 'operation',
-  code: 'update',
+  code: 'db-configure-column-statistics',
   experimental: true,
   system: true,
   type: false,
