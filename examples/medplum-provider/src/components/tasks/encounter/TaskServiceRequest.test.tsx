@@ -388,7 +388,7 @@ describe('TaskServiceRequest', () => {
 
     await waitFor(() => {
       const viewLink = screen.getByRole('link', { name: 'View in Labs' });
-      expect(viewLink).toHaveAttribute('href', `/Patient/${HomerSimpson.id}/labs/lab-order-456`);
+      expect(viewLink).toHaveAttribute('href', `/Patient/${HomerSimpson.id}/ServiceRequest/lab-order-456`);
       expect(viewLink).toHaveAttribute('target', '_blank');
     });
   });
