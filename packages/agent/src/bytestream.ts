@@ -334,7 +334,7 @@ export class ByteStreamChannelConnection {
             channel: this.channel.getDefinition().name,
             remote: this.remote,
             contentType: ContentType.OCTET_STREAM,
-            body: messageBuffer.toString('hex'),
+            body: messageBuffer.toString('ascii'),
             callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
           });
 
