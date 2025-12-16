@@ -55,6 +55,4 @@ describe('DoseSpotTab', () => {
       expect(iframe).toHaveAttribute('src', 'https://dosespot.example.com/iframe');
     });
   });
-
 });
-

@@ -170,6 +170,4 @@ describe('EditTab', () => {
       expect(screen.getByText(/patient not found/i)).toBeInTheDocument();
     });
   });
-
 });
-

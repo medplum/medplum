@@ -154,6 +154,4 @@ describe('DoseSpotAdvancedOptions', () => {
       expect(screen.getByText(/sync failed/i)).toBeInTheDocument();
     });
   });
-
 });
-
