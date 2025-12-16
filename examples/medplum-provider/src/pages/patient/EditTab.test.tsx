@@ -68,25 +68,6 @@ describe('EditTab', () => {
     );
   };
 
-  test('Renders edit form', async () => {
-    const patient = await medplum.createResource(HomerSimpson);
-    const readResourceSpy = vi.spyOn(medplum, 'readResource');
-    setup(`/Patient/${patient.id}/edit`);
-
-    await waitFor(() => {
-      expect(readResourceSpy).toHaveBeenCalledWith('Patient', patient.id);
-    });
-
-    await waitFor(
-      () => {
-        const buttons = screen.getAllByRole('button');
-        const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-        expect(updateButton).toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
-  });
-
   test('Loads patient data', async () => {
     const patient = await medplum.createResource(HomerSimpson);
     const readResourceSpy = vi.spyOn(medplum, 'readResource');
@@ -101,15 +82,6 @@ describe('EditTab', () => {
     const user = userEvent.setup();
     const patient = await medplum.createResource(HomerSimpson);
     setup(`/Patient/${patient.id}/edit`);
-
-    await waitFor(
-      () => {
-        const buttons = screen.getAllByRole('button');
-        const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-        expect(updateButton).toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
 
     const buttons = screen.getAllByRole('button');
     const updateButton = buttons.find((btn) => btn.textContent === 'Update');
@@ -133,18 +105,8 @@ describe('EditTab', () => {
     const patient = await medplum.createResource(HomerSimpson);
     setup(`/Patient/${patient.id}/edit`);
 
-    await waitFor(
-      () => {
-        const buttons = screen.getAllByRole('button');
-        const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-        expect(updateButton).toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
-
     const buttons = screen.getAllByRole('button');
     const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-    expect(updateButton).toBeInTheDocument();
     if (!updateButton) {
       throw new Error('Update button not found');
     }
