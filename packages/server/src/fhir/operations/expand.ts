@@ -48,7 +48,7 @@ type ValueSetExpandParameters = {
   count?: number;
   excludeNotForUI?: boolean;
   includeDesignations?: boolean;
-  displayLanguage?: boolean;
+  displayLanguage?: string;
   valueSet?: ValueSet;
 };
 
@@ -96,11 +96,7 @@ export function filterIncludedConcepts(
   system?: string
 ): ValueSetExpansionContains[] {
   const filter = params.filter?.trim().toLowerCase();
-  const codings: Coding[] = flattenConcepts(concepts, { filter, system });
-  if (!filter) {
-    return codings;
-  }
-  return codings.filter((c) => c.display?.toLowerCase().includes(filter));
+  return flattenConcepts(concepts, { filter, system, displayLanguage: params.displayLanguage });
 }
 
 function flattenConcepts(
@@ -108,8 +104,9 @@ function flattenConcepts(
   options?: {
     filter?: string;
     system?: string;
+    displayLanguage?: string;
   }
-): Coding[] {
+): ValueSetExpansionContains[] {
   const result: Coding[] = [];
   for (const concept of concepts) {
     const system = (concept as Coding).system ?? options?.system;
@@ -124,8 +121,9 @@ function flattenConcepts(
     }
 
     const filter = options?.filter;
-    if (!filter || concept.display?.toLowerCase().includes(filter)) {
-      result.push({ system, code: concept.code, display: concept.display });
+    const display = getDisplayText(concept, options?.displayLanguage);
+    if (!filter || matchesTextFilter(display, filter)) {
+      result.push({ system, code: concept.code, display });
     }
   }
 
@@ -212,7 +210,7 @@ async function computeExpansion(
 
     if (include.concept) {
       const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
-      const validCodings = await validateCodings(codeSystem, filteredCodings);
+      const validCodings = await validateCodings(codeSystem, filteredCodings, params);
       for (const c of validCodings) {
         if (c) {
           c.id = undefined;
@@ -440,4 +438,18 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
   query.where(new Column(propertyTable, 'value'), '=', null);
 
   return query;
+}
+
+function matchesTextFilter(text: string | undefined, filter: string): boolean {
+  return text ? text.toLowerCase().includes(filter) : false;
+}
+
+function getDisplayText(
+  concept: ValueSetComposeIncludeConcept | ValueSetExpansionContains | Coding,
+  language?: string
+): string | undefined {
+  if (language && 'designation' in concept) {
+    return concept.designation?.find((c) => c.language === language)?.value ?? concept.display;
+  }
+  return concept.display;
 }

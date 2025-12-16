@@ -17,6 +17,7 @@ type CodeSystemValidateCodeParameters = {
   version?: string;
   code?: string;
   coding?: Coding;
+  displayLanguage?: string;
 };
 
 /**
@@ -78,7 +79,8 @@ export async function validateCoding(
 
 export async function validateCodings(
   codeSystem: WithId<CodeSystem>,
-  codings: Coding[]
+  codings: Coding[],
+  options?: { displayLanguage?: string }
 ): Promise<(Coding | undefined)[]> {
   const eligible: boolean[] = new Array(codings.length);
   const codesToQuery = new Set<string>();
@@ -95,7 +97,12 @@ export async function validateCodings(
 
   let result: any[] | undefined;
   if (codesToQuery.size > 0) {
-    const query = selectCoding(codeSystem.id, ...codesToQuery).where('synonymOf', '=', null);
+    const query = selectCoding(codeSystem.id, ...codesToQuery);
+    if (options?.displayLanguage) {
+      query.where('language', '=', options.displayLanguage);
+    } else {
+      query.where('synonymOf', '=', null);
+    }
     const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }
