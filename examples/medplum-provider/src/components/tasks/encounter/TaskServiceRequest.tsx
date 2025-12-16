@@ -81,7 +81,11 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           <>
             <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
             <Group>
-              <Button component="a" target="_blank" href={`/${task.for?.reference}/ServiceRequest/${labServiceRequest?.id}`}>
+              <Button
+                component="a"
+                target="_blank"
+                href={`/${task.for?.reference}/ServiceRequest/${labServiceRequest?.id}`}
+              >
                 View in Labs
               </Button>
             </Group>
