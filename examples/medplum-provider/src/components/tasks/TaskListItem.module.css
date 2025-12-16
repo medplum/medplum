@@ -8,8 +8,16 @@
 .contentContainer {
   transition: background 0.2s;
   cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
+}
+
+.contentContainer:hover {
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
 }
 
 .contentContainer.selected {
-  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
 }

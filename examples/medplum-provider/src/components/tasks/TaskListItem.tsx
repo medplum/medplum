@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
+import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
 import type { HumanName, Task } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import classes from './TaskListItem.module.css';
 import cx from 'clsx';
-import { MedplumLink, useResource } from '@medplum/react';
 
 interface TaskListItemProps {
   task: Task;
@@ -23,19 +23,22 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
   const taskUrl = onSelectedItem(task);
 
   return (
-    <MedplumLink to={taskUrl} c="dark">
+    <MedplumLink to={taskUrl} underline="never">
       <Group
         p="xs"
-        align="center"
+        align="center" 
         wrap="nowrap"
         className={cx(classes.contentContainer, {
           [classes.selected]: isSelected,
         })}
       >
-        <Stack gap={0}>
-          <Text fw={700} className={classes.content}>
-            {task.code?.text ?? `Task ${taskFrom}`}
-          </Text>
+        <Stack gap={0} flex={1}>
+          <Group justify="space-between" align="flex-start" wrap="nowrap"  >
+            <Text fw={700} className={classes.content} style={{ flex: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {task.code?.text ?? `Task ${taskFrom}`}
+            </Text>
+            <StatusBadge status={task.status} />
+          </Group>
           {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
           {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
           {owner?.resourceType === 'Practitioner' && (
