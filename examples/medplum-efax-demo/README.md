@@ -2,6 +2,8 @@
 
 This example application demonstrates how to use Medplum's custom FHIR operations to send and receive faxes via eFax integration.
 
+**NOTE**: This demo uses Medplum's hosted eFax integration. The Medplum team must enable eFax for your project before you can use it. [Contact Medplum](mailto:hello@medplum.com) to enable eFax for your project.
+
 ## Features
 
 - **Fax Inbox**: View received faxes and refresh from eFax using the `$receive-efax` operation

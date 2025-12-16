@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, FileInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Communication, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
@@ -91,7 +91,22 @@ export function SendFaxPage(): JSX.Element {
       });
 
       // Step 4: Call the $send-efax operation
-      await medplum.post(medplum.fhirUrl('Communication', '$send-efax'), communication);
+      const sendEfaxUrl = medplum.fhirUrl('Communication', '$send-efax');
+      try {
+        await medplum.post(sendEfaxUrl, communication);
+      } catch (efaxErr) {
+        // Check if this is a 404 error for the efax operation
+        if (efaxErr instanceof OperationOutcomeError && isNotFound(efaxErr.outcome)) {
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: 'Efax integration not setup contact Medplum Support',
+          });
+          return;
+        }
+        // Re-throw if it's not a 404
+        throw efaxErr;
+      }
 
       showNotification({
         color: 'green',
