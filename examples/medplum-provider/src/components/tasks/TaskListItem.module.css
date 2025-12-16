@@ -8,10 +8,11 @@
 }
 
 .content {
-  white-space: normal;
   flex: 1;
   text-overflow: ellipsis;
   overflow: hidden;
+  word-break: ellipsis;
+white-space: nowrap;
 }
 .contentContainer:hover {
   background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));

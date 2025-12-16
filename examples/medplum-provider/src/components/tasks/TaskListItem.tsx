@@ -34,20 +34,18 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
       >
         <Stack gap={0} flex={1}>
           <Group justify="space-between" align="flex-start" wrap="nowrap">
-            <Text
-              fw={700}
-              className={classes.content}
-              style={{ flex: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
-            >
+            <Text fw={700} className={classes.content}>
               {task.code?.text ?? `Task ${taskFrom}`}
             </Text>
             <StatusBadge status={task.status} />
           </Group>
-          {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
-          {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
-          {owner?.resourceType === 'Practitioner' && (
-            <Text size="sm">Assigned to {formatHumanName(owner.name?.[0] as HumanName)}</Text>
-          )}
+          <Stack gap={0} c="dimmed">
+            {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
+            {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
+            {owner?.resourceType === 'Practitioner' && (
+              <Text size="sm">Assigned to {formatHumanName(owner.name?.[0] as HumanName)}</Text>
+            )}
+          </Stack>
         </Stack>
       </Group>
     </MedplumLink>
