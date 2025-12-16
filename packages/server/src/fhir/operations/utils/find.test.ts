@@ -635,6 +635,20 @@ describe('findAlignedSlotTimes', () => {
       { start: new Date('2025-12-01T01:40:00Z'), end: new Date('2025-12-01T01:50:00Z') },
     ]);
   });
+
+  test('maxCount option is respected', () => {
+    const slots = findAlignedSlotTimes(
+      { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
+      { alignment: 15, offsetMinutes: 0, durationMinutes: 10, maxCount: 5 }
+    );
+    expect(slots).toEqual([
+      { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
+      { start: new Date('2025-12-01T00:15:00Z'), end: new Date('2025-12-01T00:25:00Z') },
+      { start: new Date('2025-12-01T00:30:00Z'), end: new Date('2025-12-01T00:40:00Z') },
+      { start: new Date('2025-12-01T00:45:00Z'), end: new Date('2025-12-01T00:55:00Z') },
+      { start: new Date('2025-12-01T01:00:00Z'), end: new Date('2025-12-01T01:10:00Z') },
+    ]);
+  });
 });
 
 describe('findSlotTimes', () => {
@@ -693,6 +707,24 @@ describe('findSlotTimes', () => {
       { start: new Date('2025-12-01T13:15:00Z'), end: new Date('2025-12-01T13:35:00Z') },
       { start: new Date('2025-12-01T13:45:00Z'), end: new Date('2025-12-01T14:05:00Z') },
       // Slot from 14:15-14:35 not found because it doesn't have enough bufferAfter
+    ]);
+  });
+
+  test('respects the maxCount option', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [],
+      duration: 20,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 30,
+      alignmentOffset: 15,
+      serviceType: [],
+    };
+    const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
+    expect(findSlotTimes(schedulingParameters, availability, { maxCount: 3 })).toEqual([
+      { start: new Date('2025-12-01T12:15:00Z'), end: new Date('2025-12-01T12:35:00Z') },
+      { start: new Date('2025-12-01T12:45:00Z'), end: new Date('2025-12-01T13:05:00Z') },
+      { start: new Date('2025-12-01T13:15:00Z'), end: new Date('2025-12-01T13:35:00Z') },
     ]);
   });
 });

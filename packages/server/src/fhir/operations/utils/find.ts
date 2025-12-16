@@ -3,6 +3,7 @@
 
 import type { Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
+import { flatMapMax } from '../../../util/array';
 import type { Interval } from '../../../util/date';
 import { addMinutes, areIntervalsOverlapping, clamp } from '../../../util/date';
 import { isDefined } from '../../../util/types';
@@ -251,6 +252,7 @@ function mod(n: number, d: number): number {
  * @param options.alignment - An hour divisor to align to; should be in range [1, 60]
  * @param options.offsetMinutes - A number of minutes to offset the alignment by
  * @param options.durationMinutes - How long each slot should last
+ * @param options.maxCount - Maximum number of intervals to find
  * @returns An array of aligned slot intervals
  */
 export function findAlignedSlotTimes(
@@ -259,6 +261,7 @@ export function findAlignedSlotTimes(
     alignment: number;
     offsetMinutes: number;
     durationMinutes: number;
+    maxCount?: number;
   }
 ): Interval[] {
   const firstMinuteStart = advanceToMinuteMark(interval.start);
@@ -277,6 +280,9 @@ export function findAlignedSlotTimes(
     results.push({ start, end });
     start = addMinutes(start, options.alignment);
     end = addMinutes(start, options.durationMinutes);
+    if (options.maxCount && results.length >= options.maxCount) {
+      break;
+    }
   }
   return results;
 }
@@ -288,9 +294,15 @@ export function findAlignedSlotTimes(
  *
  * @param schedulingParameters - The SchedulingParameters definition to use
  * @param availability - An array of intervals to consider
+ * @param options - Optional parameters
+ * @param options.maxCount - A maximum count of slots to return
  * @returns An array of slot intervals
  */
-export function findSlotTimes(schedulingParameters: SchedulingParameters, availability: Interval[]): Interval[] {
+export function findSlotTimes(
+  schedulingParameters: SchedulingParameters,
+  availability: Interval[],
+  options?: { maxCount?: number }
+): Interval[] {
   const alignmentOptions = {
     // Search for slots that are large enough to include the duration with any
     // buffer before/after included.
@@ -302,10 +314,12 @@ export function findSlotTimes(schedulingParameters: SchedulingParameters, availa
     // to find slots starting at :20 (with the buffer included in the duration)
     offsetMinutes: schedulingParameters.alignmentOffset - schedulingParameters.bufferBefore,
   };
-  return availability
-    .flatMap((interval) => findAlignedSlotTimes(interval, alignmentOptions))
-    .map((interval) => ({
-      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
-      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
-    }));
+  return flatMapMax(
+    availability,
+    (interval, _idx, count) => findAlignedSlotTimes(interval, { ...alignmentOptions, maxCount: count }),
+    options?.maxCount ?? Infinity
+  ).map((interval) => ({
+    start: addMinutes(interval.start, schedulingParameters.bufferBefore),
+    end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+  }));
 }

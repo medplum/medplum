@@ -13,6 +13,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { flatMapMax } from '../../util/array';
 import { applyExistingSlots, findSlotTimes, resolveAvailability } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import type { HardCoding, SchedulingParameters } from './utils/scheduling-parameters';
@@ -160,21 +161,22 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
 
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
-  let resultSlots: Slot[] = [];
-  for (const [schedulingParameters, serviceType] of filterByServiceTypes(allSchedulingParameters, serviceTypes)) {
-    const scheduleAvailability = resolveAvailability(schedulingParameters, range, timeZone);
-    const availability = applyExistingSlots(scheduleAvailability, slots, range);
-    resultSlots = resultSlots.concat(
-      findSlotTimes(schedulingParameters, availability).map(({ start, end }) => ({
+  const resultSlots: Slot[] = flatMapMax(
+    filterByServiceTypes(allSchedulingParameters, serviceTypes),
+    ([schedulingParameters, serviceType], _idx, maxCount) => {
+      const scheduleAvailability = resolveAvailability(schedulingParameters, range, timeZone);
+      const availability = applyExistingSlots(scheduleAvailability, slots, range);
+      return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
         resourceType: 'Slot',
         start: start.toISOString(),
         end: end.toISOString(),
         schedule: createReference(schedule),
         status: 'free',
         ...(serviceType ? { serviceType: [{ coding: [serviceType] }] } : {}),
-      }))
-    );
-  }
+      }));
+    },
+    pageSize
+  );
 
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',
