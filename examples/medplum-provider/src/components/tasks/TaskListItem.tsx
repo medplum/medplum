@@ -26,15 +26,19 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
     <MedplumLink to={taskUrl} underline="never">
       <Group
         p="xs"
-        align="center" 
+        align="center"
         wrap="nowrap"
         className={cx(classes.contentContainer, {
           [classes.selected]: isSelected,
         })}
       >
         <Stack gap={0} flex={1}>
-          <Group justify="space-between" align="flex-start" wrap="nowrap"  >
-            <Text fw={700} className={classes.content} style={{ flex: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <Group justify="space-between" align="flex-start" wrap="nowrap">
+            <Text
+              fw={700}
+              className={classes.content}
+              style={{ flex: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+            >
               {task.code?.text ?? `Task ${taskFrom}`}
             </Text>
             <StatusBadge status={task.status} />
