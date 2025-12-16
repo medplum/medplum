@@ -68,6 +68,24 @@ describe('EditTab', () => {
     );
   };
 
+  const getUpdateButton = async (): Promise<HTMLElement> => {
+    await waitFor(
+      () => {
+        const buttons = screen.getAllByRole('button');
+        const updateButton = buttons.find((btn) => btn.textContent === 'Update');
+        expect(updateButton).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    const buttons = screen.getAllByRole('button');
+    const updateButton = buttons.find((btn) => btn.textContent === 'Update');
+    if (!updateButton) {
+      throw new Error('Update button not found');
+    }
+    return updateButton;
+  };
+
   test('Loads patient data', async () => {
     const patient = await medplum.createResource(HomerSimpson);
     const readResourceSpy = vi.spyOn(medplum, 'readResource');
@@ -83,12 +101,7 @@ describe('EditTab', () => {
     const patient = await medplum.createResource(HomerSimpson);
     setup(`/Patient/${patient.id}/edit`);
 
-    const buttons = screen.getAllByRole('button');
-    const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-    expect(updateButton).toBeInTheDocument();
-    if (!updateButton) {
-      throw new Error('Update button not found');
-    }
+    const updateButton = await getUpdateButton();
 
     vi.spyOn(medplum, 'updateResource').mockResolvedValue(patient as any);
     await user.click(updateButton);
@@ -105,11 +118,7 @@ describe('EditTab', () => {
     const patient = await medplum.createResource(HomerSimpson);
     setup(`/Patient/${patient.id}/edit`);
 
-    const buttons = screen.getAllByRole('button');
-    const updateButton = buttons.find((btn) => btn.textContent === 'Update');
-    if (!updateButton) {
-      throw new Error('Update button not found');
-    }
+    const updateButton = await getUpdateButton();
 
     const error = new Error('Failed to update patient');
     vi.spyOn(medplum, 'updateResource').mockRejectedValue(error);
