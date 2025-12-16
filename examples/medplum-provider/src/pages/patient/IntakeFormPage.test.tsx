@@ -10,7 +10,6 @@ import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { IntakeFormPage } from './IntakeFormPage';
-import * as intakeFormUtils from '../../utils/intake-form';
 
 describe('IntakeFormPage', () => {
   let medplum: MockClient;
@@ -21,7 +20,6 @@ describe('IntakeFormPage', () => {
     vi.clearAllMocks();
     navigateSpy = vi.fn();
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy as any);
-    vi.spyOn(intakeFormUtils, 'onboardPatient');
   });
 
   const setup = (): ReturnType<typeof render> => {
