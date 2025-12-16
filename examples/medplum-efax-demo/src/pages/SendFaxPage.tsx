@@ -98,7 +98,6 @@ export function SendFaxPage(): JSX.Element {
         title: 'Success',
         message: `Fax sent successfully`,
       });
-
     } catch (err) {
       showNotification({
         color: 'red',
