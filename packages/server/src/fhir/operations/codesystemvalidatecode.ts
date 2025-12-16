@@ -54,7 +54,7 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
     return [badRequest('No coding specified')];
   }
 
-  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding);
+  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding, params);
 
   const output: Record<string, any> = Object.create(null);
   if (result) {
@@ -68,13 +68,14 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
 
 export async function validateCoding(
   codeSystem: WithId<CodeSystem> | string,
-  coding: Coding
+  coding: Coding,
+  options?: { displayLanguage?: string }
 ): Promise<Coding | undefined> {
   if (typeof codeSystem === 'string') {
     // Fallback to validating system URL if full CodeSystem not available
     return coding.system === codeSystem ? coding : undefined;
   }
-  return (await validateCodings(codeSystem, [coding]))[0];
+  return (await validateCodings(codeSystem, [coding], options))[0];
 }
 
 export async function validateCodings(
