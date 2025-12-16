@@ -228,7 +228,7 @@ async function getTableColumns(db: Client | Pool, tableName: string): Promise<Co
       format_type(a.atttypid, a.atttypmod) as "type",
       COALESCE((SELECT indisprimary from pg_index where indrelid = a.attrelid AND attnum = any(indkey) and indisprimary = true), FALSE) as "primaryKey",
       pg_get_expr(d.adbin, d.adrelid) AS "defaultValue",
-      a.attstattarget AS "statisticsTarget",
+      COALESCE(a.attstattarget, -1) AS "statisticsTarget",
       s.null_frac AS "nullFraction",
       s.avg_width AS "avgWidth",
       s.n_distinct AS "nDistinct",
