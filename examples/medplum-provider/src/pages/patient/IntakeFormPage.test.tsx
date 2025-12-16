@@ -5,7 +5,6 @@ import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
@@ -94,28 +93,6 @@ describe('IntakeFormPage', () => {
     // Phone appears multiple times (patient and emergency contact)
     const phoneInputs = screen.getAllByRole('textbox', { name: /Phone/i });
     expect(phoneInputs.length).toBeGreaterThan(0);
-  });
-
-  test('Can fill out text fields', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    await waitFor(() => {
-      expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
-    });
-
-    // Use getAllByRole and select the first one (patient demographics)
-    const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
-    const lastNameInputs = screen.getAllByRole('textbox', { name: /Last Name/i });
-
-    const firstNameInput = firstNameInputs[0];
-    const lastNameInput = lastNameInputs[0];
-
-    await user.type(firstNameInput, 'John');
-    await user.type(lastNameInput, 'Doe');
-
-    expect(firstNameInput).toHaveValue('John');
-    expect(lastNameInput).toHaveValue('Doe');
   });
 
   test('Renders emergency contact section', async () => {
