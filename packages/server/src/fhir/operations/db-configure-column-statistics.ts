@@ -6,7 +6,7 @@ import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getSystemRepo } from '../repo';
 import { isValidColumnName, isValidTableName } from '../sql';
-import { parseInputParameters } from './utils/parameters';
+import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
 const UpdateOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -19,34 +19,10 @@ const UpdateOperation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'tableName',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'columnNames',
-      type: 'string',
-      min: 1,
-      max: '*',
-    },
-    {
-      use: 'in',
-      name: 'resetToDefault',
-      type: 'boolean',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'newStatisticsTarget',
-      type: 'integer',
-      min: 0,
-      max: '1',
-    },
+    param('in', 'tableName', 'string', 1, '1'),
+    param('in', 'columnNames', 'string', 1, '*'),
+    param('in', 'resetToDefault', 'boolean', 1, '1'),
+    param('in', 'newStatisticsTarget', 'integer', 0, '1'),
   ],
 };
 

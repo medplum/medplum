@@ -8,7 +8,11 @@ import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { isValidTableName } from '../sql';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
 const LookupOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -21,121 +25,30 @@ const LookupOperation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'tableName',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'defaultStatisticsTarget',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'table',
-      min: 0,
-      max: '1',
-      part: [
-        { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
-        {
-          use: 'out',
-          name: 'column',
-          min: 1,
-          max: '*',
-          part: [
-            {
-              use: 'out',
-              name: 'name',
-              type: 'string',
-              min: 1,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'statisticsTarget',
-              type: 'integer',
-              min: 1,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'nullFraction',
-              type: 'decimal',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'avgWidth',
-              type: 'integer',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'nDistinct',
-              type: 'decimal',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'mostCommonValues',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'mostCommonFreqs',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'histogramBounds',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'correlation',
-              type: 'decimal',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'mostCommonElems',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'mostCommonElemFreqs',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-            {
-              use: 'out',
-              name: 'elemCountHistogram',
-              type: 'string',
-              min: 0,
-              max: '1',
-            },
-          ],
-        },
-      ],
-    },
+    param('in', 'tableName', 'string', 0, '1'),
+    param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
+    param('out', 'table', undefined, 0, '1', [
+      param('out', 'tableName', 'string', 1, '1'),
+      param('out', 'column', undefined, 1, '*', [
+        param('out', 'name', 'string', 1, '1'),
+        param('out', 'statisticsTarget', 'integer', 1, '1'),
+        param('out', 'schemaName', 'string', 1, '1'),
+        param('out', 'tableName', 'string', 1, '1'),
+        param('out', 'type', 'string', 1, '1'),
+        param('out', 'notNull', 'boolean', 1, '1'),
+        param('out', 'defaultValue', 'string', 0, '1'),
+        param('out', 'nullFraction', 'decimal', 0, '1'),
+        param('out', 'avgWidth', 'integer', 0, '1'),
+        param('out', 'nDistinct', 'decimal', 0, '1'),
+        param('out', 'mostCommonValues', 'string', 0, '1'),
+        param('out', 'mostCommonFreqs', 'string', 0, '1'),
+        param('out', 'histogramBounds', 'string', 0, '1'),
+        param('out', 'correlation', 'decimal', 0, '1'),
+        param('out', 'mostCommonElems', 'string', 0, '1'),
+        param('out', 'mostCommonElemFreqs', 'string', 0, '1'),
+        param('out', 'elemCountHistogram', 'string', 0, '1'),
+      ]),
+    ]),
   ],
 };
 
