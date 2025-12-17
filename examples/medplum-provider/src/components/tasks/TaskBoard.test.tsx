@@ -18,7 +18,10 @@ describe('TaskBoard', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (query: string = '', props: Partial<React.ComponentProps<typeof TaskBoard>> = {}): ReturnType<typeof render> => {
+  const setup = (
+    query: string = '',
+    props: Partial<React.ComponentProps<typeof TaskBoard>> = {}
+  ): ReturnType<typeof render> => {
     const defaultOnSelectedItem = (task: Task): string => `/Task/${task.id}`;
     return render(
       <MemoryRouter>
@@ -391,13 +394,12 @@ describe('TaskBoard', () => {
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
-    
     const inProgressTask1: Task = {
       ...mockTask,
       id: 'task-in-progress-1',
       status: 'in-progress',
       code: { text: 'First In Progress Task' },
-      description: "Test task description"
+      description: 'Test task description',
     };
 
     const inProgressTask2: Task = {
@@ -458,9 +460,12 @@ describe('TaskBoard', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Test task description')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Test task description')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     const completedTask1: Task = {
       ...inProgressTask1,
@@ -473,17 +478,18 @@ describe('TaskBoard', () => {
       resourceType: 'Bundle',
       type: 'searchset',
       total: 1,
-      entry: [
-        { resource: { ...inProgressTask2, id: 'task-in-progress-2' } },
-      ],
+      entry: [{ resource: { ...inProgressTask2, id: 'task-in-progress-2' } }],
     } as Bundle<Task & { id: string }>);
 
     const completeButton = screen.getByLabelText('Mark as Completed');
     await user.click(completeButton);
 
-    await waitFor(() => {
-      expect(screen.queryByText('First In Progress Task')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.queryByText('First In Progress Task')).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     expect(screen.getByText('Second In Progress Task')).toBeInTheDocument();
   });

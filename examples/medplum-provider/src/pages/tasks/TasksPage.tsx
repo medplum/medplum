@@ -14,7 +14,7 @@ export function TasksPage(): JSX.Element {
   const onSelectedItem = (task: Task): string => {
     return `/Task/${task.id}`;
   };
-  
+
   const handleDeleteTask = (_: Task): void => {
     navigate(`/Task`)?.catch(console.error);
   };
