@@ -151,7 +151,7 @@ describe('TasksTab', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('No tasks found')).toBeInTheDocument();
+      expect(screen.getByText('No tasks available.')).toBeInTheDocument();
     });
   });
 });
