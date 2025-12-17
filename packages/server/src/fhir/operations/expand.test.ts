@@ -1350,7 +1350,7 @@ describe('Expand', () => {
       { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
     ]);
   });
-  
+
   test('Base resources are not shadowed for Super Admin', async () => {
     const url = 'https://medplum.com/fhir/ValueSet/resource-types';
     const csRes = await request(app)
