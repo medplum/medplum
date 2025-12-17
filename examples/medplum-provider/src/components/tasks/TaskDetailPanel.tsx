@@ -44,7 +44,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const handleTaskChange = async (updatedTask: Task): Promise<void> => {
     await medplum.updateResource(updatedTask);
     setTask(updatedTask);
-      onTaskChange?.(updatedTask);
+    onTaskChange?.(updatedTask);
   };
 
   const handleDeleteTask = async (deletedTask: Task): Promise<void> => {
