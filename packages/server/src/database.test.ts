@@ -17,6 +17,7 @@ import {
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
+import { globalLogger } from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } from './migrations/migration-versions';
 
@@ -122,6 +123,7 @@ describe('Database config', () => {
 
       return new MockPool();
     });
+    jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
   });
 
   afterAll(() => {

@@ -41,7 +41,9 @@ jest.mock('../migrations/data/index', () => {
 });
 
 describe('Super Admin routes', () => {
+  let processStdoutWriteSpy: jest.SpyInstance;
   beforeAll(async () => {
+    processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
     await initApp(app, config);
 
@@ -123,6 +125,7 @@ describe('Super Admin routes', () => {
 
   afterAll(async () => {
     await shutdownApp();
+    processStdoutWriteSpy.mockRestore();
   });
 
   test('Rebuild ValueSetElements require respond-async', async () => {

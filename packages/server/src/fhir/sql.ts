@@ -1268,6 +1268,10 @@ export function isValidTableName(tableName: string): boolean {
   return /^\w+$/.test(tableName);
 }
 
+export function isValidColumnName(columnName: string): boolean {
+  return /^\w+$/.test(columnName);
+}
+
 export function replaceNullWithUndefinedInRows(rows: any[]): void {
   for (const row of rows) {
     for (const k in row) {
