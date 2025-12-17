@@ -185,10 +185,7 @@ jobs:
             postgres:${{ matrix.pg-version }} \
             -c fsync=off \
             -c synchronous_commit=off \
-            -c full_page_writes=off \
-            -c wal_level=minimal \
-            -c max_wal_senders=0 \
-            -c checkpoint_timeout=1d
+            -c full_page_writes=off
       - name: Start Redis
         run: |
           docker run -d \
@@ -197,7 +194,17 @@ jobs:
             redis:${{ matrix.redis-version }}
       - name: Wait for PostgreSQL
         run: |
+          echo "Waiting for PostgreSQL container to initialize..."
+          sleep 5
           for i in {1..30}; do
+            # Check if container is still running
+            if ! docker ps | grep -q postgres-test; then
+              echo "PostgreSQL container stopped unexpectedly!"
+              docker ps -a
+              echo "Container logs:"
+              docker logs postgres-test
+              exit 1
+            fi
             if docker exec postgres-test pg_isready -U medplum; then
               echo "PostgreSQL is ready"
               exit 0
@@ -297,10 +304,7 @@ jobs:
             postgres:${{ matrix.pg-version }} \
             -c fsync=off \
             -c synchronous_commit=off \
-            -c full_page_writes=off \
-            -c wal_level=minimal \
-            -c max_wal_senders=0 \
-            -c checkpoint_timeout=1d
+            -c full_page_writes=off
       - name: Start Redis
         run: |
           docker run -d \
@@ -309,7 +313,17 @@ jobs:
             redis:${{ matrix.redis-version }}
       - name: Wait for PostgreSQL
         run: |
+          echo "Waiting for PostgreSQL container to initialize..."
+          sleep 5
           for i in {1..30}; do
+            # Check if container is still running
+            if ! docker ps | grep -q postgres-test; then
+              echo "PostgreSQL container stopped unexpectedly!"
+              docker ps -a
+              echo "Container logs:"
+              docker logs postgres-test
+              exit 1
+            fi
             if docker exec postgres-test pg_isready -U medplum; then
               echo "PostgreSQL is ready"
               exit 0
