@@ -176,7 +176,7 @@ jobs:
         run: |
           docker run -d \
             --name postgres-test \
-            --tmpfs /var/lib/postgresql/data:size=1G \
+            --tmpfs /var/lib/postgresql:size=1G \
             -e POSTGRES_USER=medplum \
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
@@ -295,7 +295,7 @@ jobs:
         run: |
           docker run -d \
             --name postgres-test \
-            --tmpfs /var/lib/postgresql/data:size=1G \
+            --tmpfs /var/lib/postgresql:size=1G \
             -e POSTGRES_USER=medplum \
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
