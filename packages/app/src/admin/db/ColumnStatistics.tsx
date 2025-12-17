@@ -9,7 +9,7 @@ import { Form, SubmitButton, useMedplum } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { SearchableSelect } from './SearchableSelect';
-import { getAvailableTables } from './utils';
+import { useAvailableTables } from './useAvailableTables';
 
 export function ColumnStatistics(): JSX.Element {
   const medplum = useMedplum();
@@ -30,20 +30,7 @@ export function ColumnStatistics(): JSX.Element {
   const [showMoreStats, setShowMoreStats] = useState(false);
   const [showNonDefaultOnly, setShowNonDefaultOnly] = useState(false);
 
-  useEffect(() => {
-    async function loadResourceTypes(): Promise<string[]> {
-      const valueSet = await medplum.valueSetExpand({
-        url: 'https://medplum.com/fhir/ValueSet/resource-types',
-        count: 200,
-      });
-      return valueSet.expansion?.contains?.map((c) => c.code).filter((c) => c !== undefined) ?? [];
-    }
-    loadResourceTypes()
-      .then((resourceTypes) => {
-        setAvailableTables(getAvailableTables(resourceTypes));
-      })
-      .catch(console.error);
-  }, [medplum]);
+  useAvailableTables({ medplum, onChange: setAvailableTables });
 
   useEffect(() => {
     setLoadingStats(true);
