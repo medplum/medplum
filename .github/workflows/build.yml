@@ -181,15 +181,32 @@ jobs:
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
             -p 5432:5432 \
-            -v ${{ github.workspace }}/postgres/postgres.test.conf:/etc/postgresql/postgresql.conf \
             postgres:${{ matrix.pg-version }} \
-            -c config_file=/etc/postgresql/postgresql.conf
+            -c fsync=off \
+            -c synchronous_commit=off \
+            -c full_page_writes=off \
+            -c wal_level=minimal \
+            -c max_wal_senders=0 \
+            -c checkpoint_timeout=1d
       - name: Start Redis
         run: |
           docker run -d \
             --name redis-test \
             -p 6379:6379 \
             redis:${{ matrix.redis-version }}
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... (attempt $i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL failed to start. Container logs:"
+          docker logs postgres-test
+          exit 1
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -218,12 +235,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Wait for PostgreSQL
-        run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
       - name: Run additional setup SQL
         run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
         env:
@@ -283,15 +294,32 @@ jobs:
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
             -p 5432:5432 \
-            -v ${{ github.workspace }}/postgres/postgres.test.conf:/etc/postgresql/postgresql.conf \
             postgres:${{ matrix.pg-version }} \
-            -c config_file=/etc/postgresql/postgresql.conf
+            -c fsync=off \
+            -c synchronous_commit=off \
+            -c full_page_writes=off \
+            -c wal_level=minimal \
+            -c max_wal_senders=0 \
+            -c checkpoint_timeout=1d
       - name: Start Redis
         run: |
           docker run -d \
             --name redis-test \
             -p 6379:6379 \
             redis:${{ matrix.redis-version }}
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... (attempt $i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL failed to start. Container logs:"
+          docker logs postgres-test
+          exit 1
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -320,12 +348,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Wait for PostgreSQL
-        run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
       - name: Run additional setup SQL
         run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
         env:
