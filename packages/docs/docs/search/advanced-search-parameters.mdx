@@ -197,6 +197,12 @@ Medplum allows you to easily search using compartments by providing the non-stan
 
 The `_total` parameter allows you to return the total count of matching resources in your search response. For more details see the [Paginated Search docs.](/docs/search/paginated-search#getting-the-total-number-of-results-with-_total)
 
+:::warning `_total=accurate` limitation
+
+The `_total=accurate` search parameter will only attempt to return the accurate count if the estimated total is under 1 million.
+
+:::
+
 <details>
   <summary>Example: Search for all patients in your organization and get an estimate of the total number</summary>
   <Tabs groupId="language">
