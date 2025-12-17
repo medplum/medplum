@@ -1,17 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Anchor,
-  Box,
-  Checkbox,
-  Divider,
-  Flex,
-  PasswordInput,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { ActionIcon, Anchor, Box, Checkbox, Divider, Flex, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import type {
   BaseLoginRequest,
   GoogleCredentialResponse,
@@ -113,7 +102,9 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Flex direction="column" align="center" justify="center">{children}</Flex>
+      <Flex direction="column" align="center" justify="center">
+        {children}
+      </Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
@@ -187,7 +178,9 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Flex direction="column" align="center" justify="center">{children}</Flex>
+      <Flex direction="column" align="center" justify="center">
+        {children}
+      </Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       <Stack gap="sm">
         <TextInput
