@@ -29,15 +29,22 @@ mkdir -p coverage/combined
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
 # This test must be run first, and cannot be run concurrently with other tests
-SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- --coverage
+# Use --force to prevent turbo from using cached results since this depends on database state
+time npx turbo run test:seed --filter=./packages/server --force -- --coverage
 cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
 # Test
 # Run them separately because code coverage is resource intensive
+# Server tests are run with --force to prevent turbo from using cached results
+# since they depend on database state
 
 for dir in `ls packages`; do
   if test -f "packages/$dir/package.json" && grep -q "\"test\":" "packages/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir -- --coverage
+    if [ "$dir" = "server" ]; then
+      npx turbo run test --filter=./packages/$dir --force -- --coverage
+    else
+      npx turbo run test --filter=./packages/$dir -- --coverage
+    fi
   fi
 done
 
