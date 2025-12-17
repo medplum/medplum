@@ -68,13 +68,13 @@ class ByteSequenceMatcher {
   }
 
   /**
-   * Check if a byte should be stripped from the message based on matched patterns.
+   * Check if a byte matches a pattern and return the strip value for that pattern.
    * Uses a separate buffer to avoid affecting the main matcher state.
    * @param byte - The byte to check
    * @param checkBuffer - A separate buffer to use for checking (to avoid affecting main state)
-   * @returns true if the byte should be stripped, false otherwise
+   * @returns The strip value if a pattern matches, undefined otherwise
    */
-  shouldStrip(byte: number, checkBuffer: number[]): boolean {
+  getStripValue(byte: number, checkBuffer: number[]): boolean | undefined {
     // Add byte to check buffer
     checkBuffer.push(byte);
 
@@ -85,7 +85,7 @@ class ByteSequenceMatcher {
 
     // Check each pattern for a match ending at the current byte
     for (const { pattern, strip } of this.patterns) {
-      if (!strip || checkBuffer.length < pattern.length) {
+      if (checkBuffer.length < pattern.length) {
         continue;
       }
 
@@ -101,11 +101,11 @@ class ByteSequenceMatcher {
       if (match) {
         // Remove the matched bytes from check buffer
         checkBuffer.splice(checkBuffer.length - pattern.length, pattern.length);
-        return true;
+        return strip;
       }
     }
 
-    return false;
+    return undefined;
   }
 
   /**
@@ -343,22 +343,40 @@ export class ByteStreamChannelConnection {
   }
 
   /**
-   * Filter out control characters (0x00-0x1F) from a buffer, keeping only printable ASCII (0x20-0x7E) and DEL (0x7F).
-   * Also strips bytes that match patterns with strip=true in the byte sequence mappings.
+   * Filter bytes from a buffer based on control character status and pattern mappings.
+   * Logic:
+   * 1. If byte matches a pattern with strip=true, strip it (regardless of control/non-control)
+   * 2. If byte matches a pattern with strip=false, keep it (regardless of control/non-control)
+   * 3. If byte is a control character (0x00-0x1F) and no pattern match, strip it
+   * 4. If byte is non-control (0x20-0x7F) and no pattern match, keep it
    * @param buffer - The buffer to filter
-   * @returns Filtered ASCII string with control characters and strip-matched bytes removed
+   * @returns Filtered ASCII string with bytes removed according to the rules above
    */
   private filterControlCharacters(buffer: Buffer): string {
     let filtered = '';
     const checkBuffer: number[] = []; // Separate buffer for checking strip patterns
 
     for (const byte of buffer) {
-      // Check if this byte should be stripped based on pattern mappings
-      if (this.channel.sequenceMappings.shouldStrip(byte, checkBuffer)) {
+      // Check if this byte matches any pattern and get its strip value
+      const stripValue = this.channel.sequenceMappings.getStripValue(byte, checkBuffer);
+
+      // Determine if this is a control character
+      const controlChar = byte < 0x20;
+
+      if (stripValue) {
+        // Pattern matched with strip=true - strip it (regardless of control/non-control)
+        this.channel.channelLog.debug(`Stripping byte(s) matching pattern with strip=true: 0x${byte.toString(16).padStart(2, '0')}`);
         continue;
-      }
-      // Keep printable ASCII (0x20-0x7E) and DEL (0x7F)
-      if (byte >= 0x20 || byte === 0x7f) {
+      } else if (stripValue === false) {
+        // Pattern matched with strip=false - keep it (regardless of control/non-control)
+        this.channel.channelLog.debug(`Keeping byte matching pattern with strip=false: 0x${byte.toString(16).padStart(2, '0')}`);
+        filtered += String.fromCharCode(byte);
+      } else if (controlChar) {
+        // Control character with no pattern match - strip it
+        this.channel.channelLog.debug(`Stripping unmatched control character: 0x${byte.toString(16).padStart(2, '0')}`);
+        continue;
+      } else {
+        // Non-control character (0x20-0x7F) with no pattern match - keep it
         filtered += String.fromCharCode(byte);
       }
     }
