@@ -915,7 +915,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
     }
   }
 }
-function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import type { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();

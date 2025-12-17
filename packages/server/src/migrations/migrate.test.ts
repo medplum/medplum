@@ -8,12 +8,15 @@ import {
   buildCreateTables,
   buildSchema,
   columnDefinitionsEqual,
+  executeMigrationActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
+  writeActionsToBuilder,
 } from './migrate';
-import type { ColumnDefinition, SchemaDefinition, TableDefinition } from './types';
+import * as fns from './migrate-functions';
+import type { ColumnDefinition, MigrationAction, MigrationActionResult, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
   let consoleLogSpy: jest.SpyInstance;
@@ -319,6 +322,191 @@ describe('Generator', () => {
       expect(indexName).toBe('account_token_code_idx');
     });
   });
+
+  describe('writeActionsToBuilder', () => {
+    test('generates boilerplate', () => {
+      const builder = new FileBuilder();
+      writeActionsToBuilder(builder, []);
+      const output = builder.toString();
+      expect(output).toContain("import type { PoolClient } from 'pg';");
+      expect(output).toContain("import * as fns from '../migrate-functions';");
+      expect(output).toContain('export async function run(client: PoolClient): Promise<void>');
+      expect(output).toContain('const results: { name: string; durationMs: number }[] = []');
+    });
+
+    test('ANALYZE_TABLE action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [{ type: 'ANALYZE_TABLE', tableName: 'Patient' }];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain("await fns.analyzeTable(client, results, 'Patient');");
+    });
+
+    test('CREATE_FUNCTION action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'CREATE_FUNCTION', name: 'my_func', createQuery: 'CREATE FUNCTION my_func() RETURNS void AS $$ $$ LANGUAGE sql' },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('await fns.query(client, results, `CREATE FUNCTION my_func() RETURNS void AS $$ $$ LANGUAGE sql`);');
+    });
+
+    test('CREATE_TABLE action', () => {
+      const builder = new FileBuilder();
+      const tableDef: TableDefinition = {
+        name: 'TestTable',
+        columns: [
+          { name: 'id', type: 'UUID', primaryKey: true, notNull: true },
+          { name: 'name', type: 'TEXT' },
+        ],
+        indexes: [{ columns: ['name'], indexType: 'btree' }],
+      };
+      const actions: MigrationAction[] = [{ type: 'CREATE_TABLE', definition: tableDef }];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('CREATE TABLE IF NOT EXISTS "TestTable"');
+      expect(output).toContain('"id" UUID PRIMARY KEY');
+      expect(output).toContain('"name" TEXT');
+      expect(output).toContain('CREATE INDEX IF NOT EXISTS "TestTable_name_idx"');
+    });
+
+    test('DROP_TABLE action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [{ type: 'DROP_TABLE', tableName: 'OldTable' }];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('DROP TABLE IF EXISTS "OldTable"');
+    });
+
+    test('ADD_COLUMN action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        {
+          type: 'ADD_COLUMN',
+          tableName: 'Patient',
+          columnDefinition: { name: 'newCol', type: 'TEXT', notNull: true, defaultValue: "'default'" },
+        },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "newCol" TEXT NOT NULL');
+      expect(output).toContain("DEFAULT 'default'");
+    });
+
+    test('DROP_COLUMN action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [{ type: 'DROP_COLUMN', tableName: 'Patient', columnName: 'oldCol' }];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" DROP COLUMN IF EXISTS "oldCol"');
+    });
+
+    test('ALTER_COLUMN_SET_DEFAULT action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ALTER_COLUMN_SET_DEFAULT', tableName: 'Patient', columnName: 'status', defaultValue: "'active'" },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "status" SET DEFAULT \'active\'');
+    });
+
+    test('ALTER_COLUMN_DROP_DEFAULT action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ALTER_COLUMN_DROP_DEFAULT', tableName: 'Patient', columnName: 'status' },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "status" DROP DEFAULT');
+    });
+
+    test('ALTER_COLUMN_UPDATE_NOT_NULL action with notNull true', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ALTER_COLUMN_UPDATE_NOT_NULL', tableName: 'Patient', columnName: 'name', notNull: true },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('await fns.nonBlockingAlterColumnNotNull(client, results, `Patient`, `name`);');
+    });
+
+    test('ALTER_COLUMN_UPDATE_NOT_NULL action with notNull false', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ALTER_COLUMN_UPDATE_NOT_NULL', tableName: 'Patient', columnName: 'name', notNull: false },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "name" DROP NOT NULL');
+    });
+
+    test('ALTER_COLUMN_TYPE action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ALTER_COLUMN_TYPE', tableName: 'Patient', columnName: 'age', columnType: 'INTEGER' },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "age" TYPE INTEGER');
+    });
+
+    test('CREATE_INDEX action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'Patient_name_idx',
+          createIndexSql: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Patient_name_idx" ON "Patient" ("name")',
+        },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain(
+        "await fns.idempotentCreateIndex(client, results, 'Patient_name_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS \"Patient_name_idx\" ON \"Patient\" (\"name\")`);"
+      );
+    });
+
+    test('DROP_INDEX action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [{ type: 'DROP_INDEX', indexName: 'old_index' }];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain('DROP INDEX CONCURRENTLY IF EXISTS "old_index"');
+    });
+
+    test('ADD_CONSTRAINT action', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        {
+          type: 'ADD_CONSTRAINT',
+          tableName: 'Project',
+          constraintName: 'check_id',
+          constraintExpression: "id <> '00000000-0000-0000-0000-000000000000'::uuid",
+        },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain(
+        "await fns.nonBlockingAddConstraint(client, results, 'Project', 'check_id', `id <> '00000000-0000-0000-0000-000000000000'::uuid`);"
+      );
+    });
+
+    test('multiple actions in sequence', () => {
+      const builder = new FileBuilder();
+      const actions: MigrationAction[] = [
+        { type: 'ANALYZE_TABLE', tableName: 'Patient' },
+        { type: 'DROP_INDEX', indexName: 'old_idx' },
+        { type: 'ADD_COLUMN', tableName: 'Patient', columnDefinition: { name: 'newCol', type: 'TEXT' } },
+      ];
+      writeActionsToBuilder(builder, actions);
+      const output = builder.toString();
+      expect(output).toContain("await fns.analyzeTable(client, results, 'Patient');");
+      expect(output).toContain('DROP INDEX CONCURRENTLY IF EXISTS "old_idx"');
+      expect(output).toContain('ADD COLUMN IF NOT EXISTS "newCol" TEXT');
+    });
+  });
 });
 
 function toSorted<T>(array: T[], sortFn: (a: T, b: T) => number): T[] {
@@ -326,3 +514,236 @@ function toSorted<T>(array: T[], sortFn: (a: T, b: T) => number): T[] {
   newArray.sort(sortFn);
   return newArray;
 }
+
+describe('executeMigrationActions', () => {
+  let mockClient: { query: jest.Mock };
+  let mockQuery: jest.SpyInstance;
+  let mockAnalyzeTable: jest.SpyInstance;
+  let mockIdempotentCreateIndex: jest.SpyInstance;
+  let mockNonBlockingAlterColumnNotNull: jest.SpyInstance;
+  let mockNonBlockingAddCheckConstraint: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockClient = { query: jest.fn() };
+    mockQuery = jest.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
+    mockAnalyzeTable = jest.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockIdempotentCreateIndex = jest.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
+    mockNonBlockingAlterColumnNotNull = jest.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
+    mockNonBlockingAddCheckConstraint = jest.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('ANALYZE_TABLE action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [{ type: 'ANALYZE_TABLE', tableName: 'Patient' }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockAnalyzeTable).toHaveBeenCalledWith(mockClient, results, 'Patient');
+  });
+
+  test('CREATE_FUNCTION action', async () => {
+    const results: MigrationActionResult[] = [];
+    const createQuery = 'CREATE FUNCTION my_func() RETURNS void AS $$ $$ LANGUAGE sql';
+    const actions: MigrationAction[] = [{ type: 'CREATE_FUNCTION', name: 'my_func', createQuery }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(mockClient, results, createQuery);
+  });
+
+  test('CREATE_TABLE action', async () => {
+    const results: MigrationActionResult[] = [];
+    const tableDef: TableDefinition = {
+      name: 'TestTable',
+      columns: [
+        { name: 'id', type: 'UUID', primaryKey: true, notNull: true },
+        { name: 'name', type: 'TEXT' },
+      ],
+      indexes: [{ columns: ['name'], indexType: 'btree' }],
+    };
+    const actions: MigrationAction[] = [{ type: 'CREATE_TABLE', definition: tableDef }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    // Should call query for create table and create index
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery.mock.calls[0][2]).toContain('CREATE TABLE IF NOT EXISTS "TestTable"');
+    expect(mockQuery.mock.calls[1][2]).toContain('CREATE INDEX IF NOT EXISTS "TestTable_name_idx"');
+  });
+
+  test('DROP_TABLE action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [{ type: 'DROP_TABLE', tableName: 'OldTable' }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(mockClient, results, 'DROP TABLE IF EXISTS "OldTable"');
+  });
+
+  test('ADD_COLUMN action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      {
+        type: 'ADD_COLUMN',
+        tableName: 'Patient',
+        columnDefinition: { name: 'newCol', type: 'TEXT', notNull: true, defaultValue: "'default'" },
+      },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      expect.stringContaining('ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "newCol" TEXT NOT NULL')
+    );
+  });
+
+  test('DROP_COLUMN action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [{ type: 'DROP_COLUMN', tableName: 'Patient', columnName: 'oldCol' }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'ALTER TABLE IF EXISTS "Patient" DROP COLUMN IF EXISTS "oldCol"'
+    );
+  });
+
+  test('ALTER_COLUMN_SET_DEFAULT action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ALTER_COLUMN_SET_DEFAULT', tableName: 'Patient', columnName: 'status', defaultValue: "'active'" },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "status" SET DEFAULT \'active\''
+    );
+  });
+
+  test('ALTER_COLUMN_DROP_DEFAULT action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ALTER_COLUMN_DROP_DEFAULT', tableName: 'Patient', columnName: 'status' },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "status" DROP DEFAULT'
+    );
+  });
+
+  test('ALTER_COLUMN_UPDATE_NOT_NULL action with notNull true', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ALTER_COLUMN_UPDATE_NOT_NULL', tableName: 'Patient', columnName: 'name', notNull: true },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockNonBlockingAlterColumnNotNull).toHaveBeenCalledWith(mockClient, results, 'Patient', 'name');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('ALTER_COLUMN_UPDATE_NOT_NULL action with notNull false', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ALTER_COLUMN_UPDATE_NOT_NULL', tableName: 'Patient', columnName: 'name', notNull: false },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "name" DROP NOT NULL'
+    );
+    expect(mockNonBlockingAlterColumnNotNull).not.toHaveBeenCalled();
+  });
+
+  test('ALTER_COLUMN_TYPE action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ALTER_COLUMN_TYPE', tableName: 'Patient', columnName: 'age', columnType: 'INTEGER' },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'ALTER TABLE IF EXISTS "Patient" ALTER COLUMN "age" TYPE INTEGER'
+    );
+  });
+
+  test('CREATE_INDEX action', async () => {
+    const results: MigrationActionResult[] = [];
+    const createIndexSql = 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Patient_name_idx" ON "Patient" ("name")';
+    const actions: MigrationAction[] = [
+      { type: 'CREATE_INDEX', indexName: 'Patient_name_idx', createIndexSql },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockIdempotentCreateIndex).toHaveBeenCalledWith(mockClient, results, 'Patient_name_idx', createIndexSql);
+  });
+
+  test('DROP_INDEX action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [{ type: 'DROP_INDEX', indexName: 'old_index' }];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockQuery).toHaveBeenCalledWith(mockClient, results, 'DROP INDEX CONCURRENTLY IF EXISTS "old_index"');
+  });
+
+  test('ADD_CONSTRAINT action', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      {
+        type: 'ADD_CONSTRAINT',
+        tableName: 'Project',
+        constraintName: 'check_id',
+        constraintExpression: "id <> '00000000-0000-0000-0000-000000000000'::uuid",
+      },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockNonBlockingAddCheckConstraint).toHaveBeenCalledWith(
+      mockClient,
+      results,
+      'Project',
+      'check_id',
+      "id <> '00000000-0000-0000-0000-000000000000'::uuid"
+    );
+  });
+
+  test('multiple actions in sequence', async () => {
+    const results: MigrationActionResult[] = [];
+    const actions: MigrationAction[] = [
+      { type: 'ANALYZE_TABLE', tableName: 'Patient' },
+      { type: 'DROP_TABLE', tableName: 'OldTable' },
+      { type: 'DROP_INDEX', indexName: 'old_idx' },
+    ];
+
+    await executeMigrationActions(mockClient as any, results, actions);
+
+    expect(mockAnalyzeTable).toHaveBeenCalledWith(mockClient, results, 'Patient');
+    expect(mockQuery).toHaveBeenCalledWith(mockClient, results, 'DROP TABLE IF EXISTS "OldTable"');
+    expect(mockQuery).toHaveBeenCalledWith(mockClient, results, 'DROP INDEX CONCURRENTLY IF EXISTS "old_idx"');
+  });
+});
