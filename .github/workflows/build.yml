@@ -181,6 +181,7 @@ jobs:
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
             -p 5432:5432 \
+            -v ${{ github.workspace }}/postgres:/docker-entrypoint-initdb.d \
             postgres:${{ matrix.pg-version }} \
             -c fsync=off \
             -c synchronous_commit=off \
@@ -197,7 +198,7 @@ jobs:
       - name: Wait for PostgreSQL
         run: |
           for i in {1..30}; do
-            if pg_isready -h localhost -p 5432; then
+            if docker exec postgres-test pg_isready -U medplum; then
               echo "PostgreSQL is ready"
               exit 0
             fi
@@ -207,6 +208,8 @@ jobs:
           echo "PostgreSQL failed to start. Container logs:"
           docker logs postgres-test
           exit 1
+      - name: Run additional setup SQL
+        run: docker exec postgres-test psql -U medplum -d medplum -f /docker-entrypoint-initdb.d/init_test.sql
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -235,10 +238,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Run additional setup SQL
-        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
-        env:
-          PGPASSWORD: medplum
       - name: Test
         run: ./scripts/test.sh
         env:
@@ -294,6 +293,7 @@ jobs:
             -e POSTGRES_PASSWORD=medplum \
             -e POSTGRES_DB=medplum \
             -p 5432:5432 \
+            -v ${{ github.workspace }}/postgres:/docker-entrypoint-initdb.d \
             postgres:${{ matrix.pg-version }} \
             -c fsync=off \
             -c synchronous_commit=off \
@@ -310,7 +310,7 @@ jobs:
       - name: Wait for PostgreSQL
         run: |
           for i in {1..30}; do
-            if pg_isready -h localhost -p 5432; then
+            if docker exec postgres-test pg_isready -U medplum; then
               echo "PostgreSQL is ready"
               exit 0
             fi
@@ -320,6 +320,8 @@ jobs:
           echo "PostgreSQL failed to start. Container logs:"
           docker logs postgres-test
           exit 1
+      - name: Run additional setup SQL
+        run: docker exec postgres-test psql -U medplum -d medplum -f /docker-entrypoint-initdb.d/init_test.sql
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -348,10 +350,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Run additional setup SQL
-        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
-        env:
-          PGPASSWORD: medplum
       - name: Install playwright
         run: npx playwright install --with-deps chromium
       - name: Build Medplum
