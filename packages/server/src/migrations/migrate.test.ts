@@ -16,14 +16,17 @@ import {
 import type { ColumnDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
+  let consoleLogSpy: jest.SpyInstance;
   beforeAll(async () => {
     indexStructureDefinitionsAndSearchParameters();
 
     const config = await loadTestConfig();
     await initDatabase(config);
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterAll(async () => {
+    consoleLogSpy.mockRestore();
     await closeDatabase();
   });
 
@@ -44,6 +47,15 @@ describe('Generator', () => {
           allowPostDeployActions: true,
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
+        })
+      ).resolves.not.toThrow();
+    });
+
+    test('with skipPostDeployActions', async () => {
+      await expect(() =>
+        generateMigrationActions({
+          dbClient: getDatabasePool(DatabaseMode.WRITER),
+          skipPostDeployActions: true,
         })
       ).resolves.not.toThrow();
     });
