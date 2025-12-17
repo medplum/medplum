@@ -764,7 +764,8 @@ describe('ColumnStatistics', () => {
                       { name: 'correlation', valueDecimal: 0.5 },
                       {
                         name: 'mostCommonValues',
-                        valueString: 'this_is_a_very_long_string_that_exceeds_thirty_characters_and_should_be_truncated',
+                        valueString:
+                          'this_is_a_very_long_string_that_exceeds_thirty_characters_and_should_be_truncated',
                       },
                     ],
                   },
