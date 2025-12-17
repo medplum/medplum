@@ -14,17 +14,18 @@ import { BaseChannel } from './channel';
  * Uses a sliding window approach to efficiently match patterns as bytes stream in.
  */
 class ByteSequenceMatcher {
-  private readonly patterns: Array<{ pattern: Buffer; response: Buffer }> = [];
+  private readonly patterns: { pattern: Buffer; response?: Buffer; strip: boolean }[] = [];
   private readonly buffer: number[] = [];
   private maxPatternLength = 0;
 
   /**
    * Register a pattern and its corresponding response.
    * @param pattern - The byte sequence to match
-   * @param response - The byte sequence to return when pattern matches
+   * @param response - The byte sequence to return when pattern matches (optional)
+   * @param strip - Whether to strip bytes matching this pattern from the message
    */
-  addPattern(pattern: Buffer, response: Buffer): void {
-    this.patterns.push({ pattern, response });
+  addPattern(pattern: Buffer, response?: Buffer, strip: boolean = false): void {
+    this.patterns.push({ pattern, response, strip });
     this.maxPatternLength = Math.max(this.maxPatternLength, pattern.length);
   }
 
@@ -58,12 +59,53 @@ class ByteSequenceMatcher {
         }
       }
 
-      if (match) {
+      if (match && response) {
         matches.push(response);
       }
     }
 
     return matches;
+  }
+
+  /**
+   * Check if a byte should be stripped from the message based on matched patterns.
+   * Uses a separate buffer to avoid affecting the main matcher state.
+   * @param byte - The byte to check
+   * @param checkBuffer - A separate buffer to use for checking (to avoid affecting main state)
+   * @returns true if the byte should be stripped, false otherwise
+   */
+  shouldStrip(byte: number, checkBuffer: number[]): boolean {
+    // Add byte to check buffer
+    checkBuffer.push(byte);
+
+    // Keep buffer size limited to max pattern length
+    if (checkBuffer.length > this.maxPatternLength) {
+      checkBuffer.shift();
+    }
+
+    // Check each pattern for a match ending at the current byte
+    for (const { pattern, strip } of this.patterns) {
+      if (!strip || checkBuffer.length < pattern.length) {
+        continue;
+      }
+
+      // Check if the last N bytes match the pattern
+      let match = true;
+      for (let i = 0; i < pattern.length; i++) {
+        if (checkBuffer[checkBuffer.length - pattern.length + i] !== pattern[i]) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match) {
+        // Remove the matched bytes from check buffer
+        checkBuffer.splice(checkBuffer.length - pattern.length, pattern.length);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -208,24 +250,32 @@ export class AgentByteStreamChannel extends BaseChannel {
         continue;
       }
 
-      // Extract pattern and response from nested extensions
+      // Extract pattern, response, and strip from nested extensions
       let patternStr: string | undefined;
       let responseStr: string | undefined;
+      let strip = true; // Default to true
 
       for (const nestedExt of ext.extension) {
         if (nestedExt.url === 'pattern' && nestedExt.valueString) {
           patternStr = nestedExt.valueString;
         } else if (nestedExt.url === 'response' && nestedExt.valueString) {
           responseStr = nestedExt.valueString;
+        } else if (nestedExt.url === 'strip' && nestedExt.valueBoolean !== undefined) {
+          strip = nestedExt.valueBoolean;
         }
       }
 
-      if (patternStr && responseStr) {
+      if (patternStr) {
         try {
           const pattern = this.parseUrlEncodedBytes(patternStr);
-          const response = this.parseUrlEncodedBytes(responseStr);
-          this.sequenceMappings.addPattern(pattern, response);
-          this.log.debug(`Registered byte sequence mapping: pattern=${patternStr}, response=${responseStr}`);
+          let response: Buffer | undefined = undefined;
+          if (responseStr) {
+            response = this.parseUrlEncodedBytes(responseStr);
+          }
+          this.sequenceMappings.addPattern(pattern, response, strip);
+          this.log.debug(
+            `Registered byte sequence mapping: pattern=${patternStr}, response=${responseStr}, strip=${strip}`
+          );
         } catch (err) {
           this.log.warn(`Failed to parse byte sequence mapping: ${normalizeErrorString(err)}`);
         }
@@ -265,7 +315,7 @@ export class AgentByteStreamChannel extends BaseChannel {
   sendToRemote(msg: AgentTransmitResponse): void {
     const connection = this.connections.get(msg.remote);
     if (connection) {
-      connection.write(Buffer.from(msg.body, 'hex'));
+      connection.write(Buffer.from(msg.body, 'ascii'));
     }
   }
 
@@ -292,9 +342,32 @@ export class ByteStreamChannelConnection {
     this.socket.on('data', (data: Buffer) => this.handler(data));
   }
 
+  /**
+   * Filter out control characters (0x00-0x1F) from a buffer, keeping only printable ASCII (0x20-0x7E) and DEL (0x7F).
+   * Also strips bytes that match patterns with strip=true in the byte sequence mappings.
+   * @param buffer - The buffer to filter
+   * @returns Filtered ASCII string with control characters and strip-matched bytes removed
+   */
+  private filterControlCharacters(buffer: Buffer): string {
+    let filtered = '';
+    const checkBuffer: number[] = []; // Separate buffer for checking strip patterns
+
+    for (const byte of buffer) {
+      // Check if this byte should be stripped based on pattern mappings
+      if (this.channel.sequenceMappings.shouldStrip(byte, checkBuffer)) {
+        continue;
+      }
+      // Keep printable ASCII (0x20-0x7E) and DEL (0x7F)
+      if (byte >= 0x20 || byte === 0x7f) {
+        filtered += String.fromCharCode(byte);
+      }
+    }
+    return filtered;
+  }
+
   private async handler(data: Buffer): Promise<void> {
     try {
-      this.channel.channelLog.info(`Received: ${data.toString('hex').replaceAll('\r', '\n')}`);
+      this.channel.channelLog.info(`Received: ${data.toString('ascii').replaceAll('\r', '\n')}`);
 
       let lastEndIndex = -1;
 
@@ -304,7 +377,7 @@ export class ByteStreamChannelConnection {
         // Check for byte sequence matches and inject responses immediately
         const matches = this.channel.sequenceMappings.processByte(char);
         for (const response of matches) {
-          this.channel.channelLog.debug(`Pattern matched, injecting response: ${response.toString('hex')}`);
+          this.channel.channelLog.debug(`Pattern matched, injecting response: ${response.toString('ascii')}`);
           this.write(response);
         }
 
@@ -326,15 +399,16 @@ export class ByteStreamChannelConnection {
           this.msgChunks.push(slice);
           this.msgTotalLength += slice.length;
 
-          // Create final buffer and transmit
+          // Create final buffer, filter control characters, and transmit
           const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
+          const filteredBody = this.filterControlCharacters(messageBuffer);
           this.channel.app.addToWebSocketQueue({
             type: 'agent:transmit:request',
             accessToken: 'placeholder',
             channel: this.channel.getDefinition().name,
             remote: this.remote,
             contentType: ContentType.OCTET_STREAM,
-            body: messageBuffer.toString('ascii'),
+            body: filteredBody,
             callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
           });
 
