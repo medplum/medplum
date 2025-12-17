@@ -1,20 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
+import { Box, Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import type { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
+
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ArrayAddButton } from '../buttons/ArrayAddButton';
+import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 
 const daysOfWeek: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
 type PeriodUnit = 'a' | 's' | 'min' | 'h' | 'd' | 'wk' | 'mo';
+
+// Internal state wrapper for `repeat.timeOfDay` array entries; used to provide
+// a stable ID to each raw string.
+type TimeOfDayItem = { id: number; value: string };
 
 export interface TimingInputProps extends ComplexTypeInputProps<Timing> {
   readonly defaultModalOpen?: boolean;
@@ -27,7 +34,7 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
   return (
     <>
       <Group gap="xs" grow wrap="nowrap">
-        <span>{formatTiming(value) || 'No repeat'}</span>
+        <span data-testid="timinginput-display">{formatTiming(value) || 'No repeat'}</span>
         <Button disabled={props.disabled} onClick={() => setOpen(true)}>
           Edit
         </Button>
@@ -68,10 +75,21 @@ const defaultValue: Timing = {
 
 function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   const [value, setValue] = useState<Timing>(props.defaultValue || defaultValue);
+  const [timeOfDayItems, setTimeOfDayItems] = useState<TimeOfDayItem[]>(() =>
+    (props.defaultValue?.repeat?.timeOfDay ?? []).map((v, i) => ({ id: i, value: v }))
+  );
+  const nextTimeOfDayId = useRef(timeOfDayItems.length);
   const { getExtendedProps } = useContext(ElementsContext);
-  const [eventProps, repeatProps, repeatPeriodProps, repeatPeriodUnitProps, repeatDayOfWeekProps] = useMemo(
+  const [
+    eventProps,
+    repeatProps,
+    repeatPeriodProps,
+    repeatPeriodUnitProps,
+    repeatDayOfWeekProps,
+    repeatTimeOfDayProps,
+  ] = useMemo(
     () =>
-      ['event', 'repeat', 'repeat.period', 'repeat.periodUnit', 'repeat.dayOfWeek'].map((field) =>
+      ['event', 'repeat', 'repeat.period', 'repeat.periodUnit', 'repeat.dayOfWeek', 'repeat.timeOfDay'].map((field) =>
         getExtendedProps(props.path + '.' + field)
       ),
     [getExtendedProps, props.path]
@@ -97,6 +115,21 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     setValue((value) => ({ ...value, repeat: { ...value.repeat, dayOfWeek } }));
   }
 
+  function setTimeOfDay(updater: (items: TimeOfDayItem[]) => TimeOfDayItem[]): void {
+    setTimeOfDayItems((items) => {
+      const newItems = updater(items);
+      const timeOfDay = newItems.map((item) => item.value);
+      setValue((value) => ({
+        ...value,
+        repeat: {
+          ...value.repeat,
+          timeOfDay,
+        },
+      }));
+      return newItems;
+    });
+  }
+
   return (
     <Modal
       title="Timing"
@@ -104,7 +137,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
       opened={props.visible}
       onClose={() => props.onCancel()}
     >
-      <Stack>
+      <Stack gap="md">
         <FormSection title="Starts on" htmlFor="timing-dialog-start">
           <DateTimeInput
             disabled={eventProps?.readonly}
@@ -155,9 +188,16 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   onChange={setDaysOfWeek as (v: string[] | undefined) => void}
                   value={value.repeat?.dayOfWeek}
                 >
-                  <Group justify="space-between" mt="md" gap="xs">
+                  <Group justify="space-between" mt="xs" gap="xs">
                     {daysOfWeek.map((day) => (
-                      <Chip key={day} value={day} size="xs" radius="xl" disabled={repeatDayOfWeekProps?.readonly}>
+                      <Chip
+                        key={day}
+                        value={day}
+                        size="xs"
+                        radius="xl"
+                        disabled={repeatDayOfWeekProps?.readonly}
+                        checked={(value.repeat?.dayOfWeek ?? []).includes(day)}
+                      >
                         {day.charAt(0).toUpperCase()}
                       </Chip>
                     ))}
@@ -165,6 +205,42 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                 </Chip.Group>
               </FormSection>
             )}
+            <FormSection title="At times">
+              <Stack mt="xs">
+                {timeOfDayItems.map((item, idx) => (
+                  <Group key={item.id}>
+                    <TextInput
+                      disabled={repeatTimeOfDayProps?.readonly}
+                      type="time"
+                      id={`timing-dialog-repeat-timeOfDay[${idx}]`}
+                      name={`timing-dialog-repeat-timeOfDay[${idx}]`}
+                      data-testid={`timing-repeat-timeOfDay-input-${idx}`}
+                      defaultValue={item.value.slice(0, 5) /* truncate to HH:mm */}
+                      onChange={(e) => {
+                        const newValue = `${e.currentTarget.value}:00`;
+                        setTimeOfDay((items) => items.with(idx, { ...item, value: newValue }));
+                      }}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <ArrayRemoveButton
+                      testId={`timing-repeat-timeOfDay-remove-${idx}`}
+                      onClick={() => setTimeOfDay((items) => items.toSpliced(idx, 1))}
+                    />
+                  </Group>
+                ))}
+                <Box>
+                  <ArrayAddButton
+                    propertyDisplayName="Time of Day"
+                    onClick={() =>
+                      setTimeOfDay((items) => {
+                        const id = nextTimeOfDayId.current++;
+                        return items.concat({ id, value: '00:00:00' });
+                      })
+                    }
+                  />
+                </Box>
+              </Stack>
+            </FormSection>
           </>
         )}
         <Group justify="flex-end">
