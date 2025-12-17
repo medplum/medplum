@@ -1,0 +1,30 @@
+# Docker Compose configuration optimized for running tests
+# Uses tmpfs for PostgreSQL data to eliminate disk I/O and speed up tests
+#
+# Usage: docker-compose -f docker-compose.test.yml up -d
+#
+# WARNING: All data is stored in memory and will be lost when the container stops.
+# This is intentional for test environments.
+#
+# Note: Services are suffixed with "-test" to avoid conflicts with docker-compose.yml
+services:
+  postgres-test:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_USER=medplum
+      - POSTGRES_PASSWORD=medplum
+    tmpfs:
+      - /var/lib/postgresql/data:size=1G
+    volumes:
+      - ./postgres/postgres.test.conf:/usr/local/etc/postgres/postgres.conf
+      - ./postgres/:/docker-entrypoint-initdb.d/
+    command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
+    ports:
+      - '5432:5432'
+  redis-test:
+    image: redis:7
+    restart: always
+    command: redis-server --requirepass medplum
+    ports:
+      - '6379:6379'

@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+# Run the full test suite with code coverage
+#
+# Prerequisites:
+#   PostgreSQL and Redis must be running. For fastest performance, use the
+#   memory-optimized test configuration:
+#
+#     ./scripts/start-test-services.sh
+#
+#   This runs PostgreSQL on tmpfs (RAM) with durability disabled for speed.
+#   See docker-compose.test.yml and postgres/postgres.test.conf for details.
+
 # Fail on error
 set -e
 
