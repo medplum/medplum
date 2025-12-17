@@ -16,7 +16,13 @@ import {
   writeActionsToBuilder,
 } from './migrate';
 import * as fns from './migrate-functions';
-import type { ColumnDefinition, MigrationAction, MigrationActionResult, SchemaDefinition, TableDefinition } from './types';
+import type {
+  ColumnDefinition,
+  MigrationAction,
+  MigrationActionResult,
+  SchemaDefinition,
+  TableDefinition,
+} from './types';
 
 describe('Generator', () => {
   let consoleLogSpy: jest.SpyInstance;
@@ -322,7 +328,6 @@ describe('Generator', () => {
       expect(indexName).toBe('account_token_code_idx');
     });
   });
-
 });
 
 function toSorted<T>(array: T[], sortFn: (a: T, b: T) => number): T[] {
