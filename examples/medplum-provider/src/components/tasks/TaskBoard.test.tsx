@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
-import type { Task, Practitioner } from '@medplum/fhirtypes';
+import type { Task, Practitioner, Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
@@ -18,16 +18,15 @@ describe('TaskBoard', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (props: Partial<React.ComponentProps<typeof TaskBoard>> = {}): ReturnType<typeof render> => {
+  const setup = (query: string = '', props: Partial<React.ComponentProps<typeof TaskBoard>> = {}): ReturnType<typeof render> => {
     const defaultOnSelectedItem = (task: Task): string => `/Task/${task.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <TaskBoard
-              query=""
+              query={query}
               selectedTaskId={undefined}
-              onTaskChange={vi.fn()}
               onDeleteTask={vi.fn()}
               onSelectedItem={defaultOnSelectedItem}
               {...props}
@@ -79,7 +78,7 @@ describe('TaskBoard', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('No tasks found')).toBeInTheDocument();
+      expect(screen.getByText('No tasks available.')).toBeInTheDocument();
     });
   });
 
@@ -119,7 +118,7 @@ describe('TaskBoard', () => {
 
   test('displays selected task in detail panel', async () => {
     await medplum.createResource(mockTask);
-    setup({ selectedTaskId: 'task-123' });
+    setup('', { selectedTaskId: 'task-123' });
 
     await waitFor(() => {
       expect(screen.getByText('Properties')).toBeInTheDocument();
@@ -196,7 +195,7 @@ describe('TaskBoard', () => {
 
   test('handles task selection from URL parameter', async () => {
     await medplum.createResource(mockTask);
-    setup({ selectedTaskId: 'task-123' });
+    setup('', { selectedTaskId: 'task-123' });
 
     await waitFor(() => {
       expect(screen.getByText('Properties')).toBeInTheDocument();
@@ -204,7 +203,7 @@ describe('TaskBoard', () => {
   });
 
   test('handles task not found scenario', async () => {
-    setup({ selectedTaskId: 'non-existent-task' });
+    setup('', { selectedTaskId: 'non-existent-task' });
 
     await waitFor(() => {
       expect(screen.getByText('No task selected')).toBeInTheDocument();
@@ -221,7 +220,7 @@ describe('TaskBoard', () => {
       entry: [{ resource: mockTask }],
     } as any);
 
-    setup({ onSelectedItem });
+    setup('', { onSelectedItem });
 
     await waitFor(() => {
       expect(screen.getByText('Test Task')).toBeInTheDocument();
@@ -389,5 +388,103 @@ describe('TaskBoard', () => {
       // Should make search call with offset=0 (first page)
       expect(searchSpy).toHaveBeenCalledWith('Task', expect.stringContaining('_offset=0'), expect.any(Object));
     });
+  });
+
+  test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
+    
+    const inProgressTask1: Task = {
+      ...mockTask,
+      id: 'task-in-progress-1',
+      status: 'in-progress',
+      code: { text: 'First In Progress Task' },
+      description: "Test task description"
+    };
+
+    const inProgressTask2: Task = {
+      ...mockTask,
+      id: 'task-in-progress-2',
+      status: 'in-progress',
+      code: { text: 'Second In Progress Task' },
+    };
+
+    const completedTask: Task = {
+      ...mockTask,
+      id: 'task-completed',
+      status: 'completed',
+      code: { text: 'Completed Task' },
+    };
+
+    await medplum.createResource(inProgressTask1);
+    await medplum.createResource(inProgressTask2);
+    await medplum.createResource(completedTask);
+
+    // Mock search to return only in-progress tasks (with all required IDs)
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [
+        { resource: { ...inProgressTask1, id: 'task-in-progress-1' } },
+        { resource: { ...inProgressTask2, id: 'task-in-progress-2' } },
+      ],
+    } as Bundle<Task & { id: string }>);
+
+    vi.spyOn(medplum, 'readResource').mockResolvedValue({ ...inProgressTask1, id: 'task-in-progress-1' });
+
+    const { rerender } = setup('status=in-progress');
+    await waitFor(() => {
+      expect(screen.getByText('First In Progress Task')).toBeInTheDocument();
+      expect(screen.getByText('Second In Progress Task')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Completed Task')).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    const firstTaskLink = screen.getByRole('link', { name: /First In Progress Task/ });
+    await user.click(firstTaskLink);
+
+    rerender(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <TaskBoard
+              query="status=in-progress"
+              selectedTaskId="task-in-progress-1"
+              onDeleteTask={vi.fn()}
+              onSelectedItem={(task: Task) => `/Task/${task.id}`}
+            />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test task description')).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    const completedTask1: Task = {
+      ...inProgressTask1,
+      id: 'task-in-progress-1',
+      status: 'completed',
+    };
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue(completedTask1 as Task & { id: string });
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        { resource: { ...inProgressTask2, id: 'task-in-progress-2' } },
+      ],
+    } as Bundle<Task & { id: string }>);
+
+    const completeButton = screen.getByLabelText('Mark as Completed');
+    await user.click(completeButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText('First In Progress Task')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    expect(screen.getByText('Second In Progress Task')).toBeInTheDocument();
   });
 });

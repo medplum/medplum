@@ -28,7 +28,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 import { TaskFilterMenu } from './TaskFilterMenu';
-import { IconClipboardList, IconPlus } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
 import { NewTaskModal } from './NewTaskModal';
@@ -43,13 +43,12 @@ interface FilterState {
 interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
-  onTaskChange: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
   onSelectedItem: (task: Task) => string;
 }
 
 export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onTaskChange, onDeleteTask, onSelectedItem } = props;
+  const { query, selectedTaskId, onDeleteTask, onSelectedItem } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
@@ -140,14 +139,12 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     handleTaskChange(task).catch(showErrorNotification);
   };
 
-  const handleTaskChange = async (task: Task): Promise<void> => {
-    setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
-    onTaskChange(task);
-    setSelectedTask(task);
+  const handleTaskChange = async (_task: Task): Promise<void> => {
+    await fetchTasks().catch(showErrorNotification);
   };
 
   const handleDeleteTask = async (task: Task): Promise<void> => {
-    setTasks(tasks.filter((t) => t.id !== task.id));
+    await fetchTasks().catch(showErrorNotification);
     onDeleteTask(task);
   };
 
@@ -279,9 +276,8 @@ function EmptyTasksState(): JSX.Element {
   return (
     <Flex direction="column" h="100%" justify="center" align="center">
       <Stack align="center" gap="md" pt="xl">
-        <IconClipboardList size={64} color="var(--mantine-color-gray-4)" />
-        <Text size="lg" c="dimmed" fw={500}>
-          No tasks found
+        <Text c="dimmed" fw={500}>
+          No tasks available.
         </Text>
       </Stack>
     </Flex>

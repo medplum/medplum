@@ -14,11 +14,7 @@ export function TasksPage(): JSX.Element {
   const onSelectedItem = (task: Task): string => {
     return `/Task/${task.id}`;
   };
-
-  const handleTaskChange = (task: Task): void => {
-    navigate(onSelectedItem(task))?.catch(console.error);
-  };
-
+  
   const handleDeleteTask = (_: Task): void => {
     navigate(`/Task`)?.catch(console.error);
   };
@@ -28,7 +24,6 @@ export function TasksPage(): JSX.Element {
       <TaskBoard
         query="_sort=-_lastUpdated"
         selectedTaskId={taskId}
-        onTaskChange={handleTaskChange}
         onDeleteTask={handleDeleteTask}
         onSelectedItem={onSelectedItem}
       />
