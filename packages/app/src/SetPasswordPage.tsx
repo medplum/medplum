@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
+import { Button, Flex, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -45,12 +45,12 @@ export function SetPasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Center style={{ flexDirection: 'column' }}>
+        <Flex direction="column" align="center" justify="center">
           <Logo size={32} />
           <Title>Set password</Title>
-        </Center>
+        </Flex>
         {!success && (
-          <Stack>
+          <Stack> 
             <PasswordInput
               name="password"
               label="New password"

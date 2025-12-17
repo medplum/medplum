@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Center, Checkbox, Group, Stack, Title } from '@mantine/core';
+import { Checkbox, Flex, Group, Stack, Title } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -43,10 +43,10 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
       }}
     >
       <Stack>
-        <Center style={{ flexDirection: 'column' }}>
+        <Flex direction="column" align="center" justify="center">
           <Logo size={32} />
           <Title>Choose scope</Title>
-        </Center>
+        </Flex>
         <Stack>
           {(props.scope ?? 'openid').split(' ').map((scopeName: string) => {
             let additionalScopes: string[] | undefined;

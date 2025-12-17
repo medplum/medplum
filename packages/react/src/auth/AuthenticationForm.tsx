@@ -4,9 +4,9 @@ import {
   ActionIcon,
   Anchor,
   Box,
-  Center,
   Checkbox,
   Divider,
+  Flex,
   PasswordInput,
   Stack,
   Text,
@@ -113,7 +113,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <Flex direction="column" align="center" justify="center">{children}</Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
@@ -187,7 +187,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <Flex direction="column" align="center" justify="center">{children}</Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       <Stack gap="sm">
         <TextInput
