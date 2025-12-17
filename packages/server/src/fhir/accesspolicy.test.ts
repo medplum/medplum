@@ -2908,4 +2908,20 @@ describe('AccessPolicy', () => {
       await expect(repo.updateResource({ ...condition, onsetString: 'yesterday' })).rejects.toThrow('Forbidden');
       await expect(repo.deleteResource('Condition', condition.id)).rejects.toThrow('Forbidden');
     }));
+
+  test('Build access policy with invalid access policy reference', async () =>
+    withTestContext(async () => {
+      const fakeAccessPolicyId = randomUUID();
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile: { reference: 'Practitioner/123' },
+        accessPolicy: { reference: 'AccessPolicy/' + fakeAccessPolicyId },
+      };
+
+      await expect(buildAccessPolicy(membership)).rejects.toThrow();
+      await expect(buildAccessPolicy(membership)).rejects.toThrow(/Invalid access policy configuration/);
+      await expect(buildAccessPolicy(membership)).rejects.toThrow(/contact your administrator/);
+    }));
 });

@@ -7,7 +7,6 @@ import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor, userEvent } from '../../test-utils/render';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { WithId } from '@medplum/core';
 import { ThreadInbox } from './ThreadInbox';
 import * as reactHooks from '@medplum/react-hooks';
 
@@ -43,6 +42,7 @@ describe('ThreadInbox', () => {
     medplum.search = vi.fn().mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
+      total: 0,
       entry: [],
     });
     medplum.graphql = vi.fn().mockResolvedValue({
@@ -147,11 +147,16 @@ describe('ThreadInbox', () => {
       await medplum.createResource(msg);
     }
 
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([
-      communications[0] as WithId<Communication>,
-      communications[1] as WithId<Communication>,
-      // comm-3 excluded because it has status 'completed'
-    ] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [
+        { resource: communications[0] },
+        { resource: communications[1] },
+        // comm-3 excluded because it has status 'completed'
+      ],
+    } as any);
 
     vi.spyOn(medplum, 'graphql').mockImplementation((_query: string) => {
       // Return data matching the alias format

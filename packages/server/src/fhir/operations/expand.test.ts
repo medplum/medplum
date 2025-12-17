@@ -1350,4 +1350,25 @@ describe('Expand', () => {
       { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
     ]);
   });
+  
+  test('Base resources are not shadowed for Super Admin', async () => {
+    const url = 'https://medplum.com/fhir/ValueSet/resource-types';
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url,
+        content: 'not-present',
+      } satisfies CodeSystem);
+    expect(csRes.status).toStrictEqual(201);
+
+    const superAdminToken = await initTestAuth({ superAdmin: true });
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${url}&filter=clien`)
+      .set('Authorization', 'Bearer ' + superAdminToken);
+    expect(res.status).toBe(200);
+    expect(res.body.expansion.contains[0].display).toStrictEqual('ClientApplication');
+  });
 });

@@ -62,22 +62,14 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
     return <div>Loading...</div>;
   }
 
-  const snomedCodes = serviceRequest.code?.coding?.filter(
-    (coding) => coding.system === SNOMED_SYSTEM && coding.code !== SNOMED_DIAGNOSTIC_REPORT_CODE
-  );
-
-  const displayText = snomedCodes?.map((code) => code.display).join(', ');
-  const codeText = snomedCodes?.map((code) => code.code).join(', ');
-
   return (
     <>
       <Stack p={0}>
         <Stack gap={0}>
-          <Title>{displayText ? displayText : getDisplayString(serviceRequest)}</Title>
-          {codeText && <Text>SNOMED: {codeText}</Text>}
+          <Title>{getDisplayString(task)}</Title>
         </Stack>
 
-        {labServiceRequest?.status === 'draft' && (
+        {(labServiceRequest?.status === 'draft' || labServiceRequest?.status === 'on-hold') && (
           <Group>
             <Button onClick={() => setNewOrderModalOpened(true)} variant="outline" leftSection={<IconPlus size={16} />}>
               Request Labs
@@ -85,11 +77,15 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           </Group>
         )}
 
-        {labServiceRequest?.status !== 'draft' && (
+        {labServiceRequest?.status !== 'draft' && labServiceRequest?.status !== 'on-hold' && (
           <>
             <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
             <Group>
-              <Button component="a" target="_blank" href={`/${task.for?.reference}/labs/${labServiceRequest?.id}`}>
+              <Button
+                component="a"
+                target="_blank"
+                href={`/${task.for?.reference}/ServiceRequest/${labServiceRequest?.id}`}
+              >
                 View in Labs
               </Button>
             </Group>

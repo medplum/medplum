@@ -11,6 +11,7 @@ import type {
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
+import { r4ProjectId } from '../../../constants';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
 import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
@@ -87,6 +88,12 @@ export async function findTerminologyResource<T extends TerminologyResource>(
           return linkedResource;
         }
       }
+    }
+    const baseResource = resources.find((r) => r instanceof Error || r.meta?.project === r4ProjectId);
+    if (baseResource instanceof Error) {
+      throw baseResource;
+    } else if (baseResource) {
+      return baseResource;
     }
   }
   throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));

@@ -52,7 +52,12 @@ describe('TasksTab', () => {
 
   test('filters tasks by patient ID', async () => {
     await medplum.createResource(mockTask);
-    const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -62,13 +67,18 @@ describe('TasksTab', () => {
 
     const callArgs = searchSpy.mock.calls[0];
     expect(callArgs[0]).toBe('Task');
-    expect((callArgs[1] as URLSearchParams).get('patient')).toBe('Patient/patient-123');
-    expect((callArgs[1] as URLSearchParams).get('_sort')).toBe('-_lastUpdated');
+    expect(callArgs[1]).toContain('patient=Patient%2Fpatient-123');
+    expect(callArgs[1]).toContain('_sort=-_lastUpdated');
   });
 
   test('displays tasks for the patient', async () => {
     await medplum.createResource(mockTask);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -82,7 +92,12 @@ describe('TasksTab', () => {
 
   test('uses patient-specific URL for task navigation', async () => {
     await medplum.createResource(mockTask);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockTask] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
 
     setup();
 
@@ -110,7 +125,12 @@ describe('TasksTab', () => {
       for: { reference: 'Patient/patient-456' },
     };
     await medplum.createResource(taskForDifferentPatient);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([taskForDifferentPatient] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: taskForDifferentPatient }],
+    } as any);
 
     setup('/Patient/patient-456/Task');
 
@@ -121,7 +141,12 @@ describe('TasksTab', () => {
   });
 
   test('shows empty state when no tasks found', async () => {
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
 
     setup();
 

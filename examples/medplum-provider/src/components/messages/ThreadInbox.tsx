@@ -15,6 +15,7 @@ import {
   Menu,
   Skeleton,
   Box,
+  Pagination,
 } from '@mantine/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
@@ -54,15 +55,21 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const itemsPerPage = 20;
 
   const queryWithStatus = useMemo(() => `${query}&status=${status}`, [query, status]);
 
-  const { loading, error, threadMessages, selectedThread, handleThreadStatusChange, addThreadMessage } = useThreadInbox(
-    {
+  const offset = (currentPage - 1) * itemsPerPage;
+
+  const { loading, error, threadMessages, selectedThread, total, handleThreadStatusChange, addThreadMessage } =
+    useThreadInbox({
       query: queryWithStatus,
       threadId,
-    }
-  );
+      offset,
+      count: itemsPerPage,
+    });
 
   useEffect(() => {
     if (error) {
@@ -72,6 +79,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const handleStatusChange = (newStatus: Communication['status']): void => {
     setStatus(newStatus);
+    setCurrentPage(1);
   };
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
@@ -93,8 +101,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
         <Flex direction="row" h="100%" w="100%">
           {/* Left sidebar - Messages list */}
           <Flex direction="column" w={300} h="100%" className={classes.rightBorder}>
-            <Paper h="100%">
-              <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
+            <Paper h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
+              <ScrollArea style={{ flex: 1 }} scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
                   <Text fz="h4" fw={800} truncate>
                     Messages
@@ -149,6 +157,20 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                 )}
                 {threadMessages.length === 0 && !loading && <EmptyMessagesState />}
               </ScrollArea>
+              {!loading && total !== undefined && total > itemsPerPage && (
+                <Box p="md">
+                  <Center>
+                    <Pagination
+                      value={currentPage}
+                      total={Math.ceil(total / itemsPerPage)}
+                      onChange={setCurrentPage}
+                      size="sm"
+                      siblings={1}
+                      boundaries={1}
+                    />
+                  </Center>
+                </Box>
+              )}
             </Paper>
           </Flex>
 

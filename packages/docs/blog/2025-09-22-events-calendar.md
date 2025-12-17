@@ -20,18 +20,19 @@ tags: [community]
   </thead>
   <tbody>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Dec 4, 2025, 10:00 AM PT</td>
-      <td>**Visualizing Patient Flow: A Blueprint Reference App for Healthcare IT**</td>
-      <td>[Zoom](https://luma.com/a3ye1r18)</td>
+      <td style={{ whiteSpace: 'nowrap' }}>Jan 12, 2026, 4:00 PM - 7:00 PM PT</td>
+      <td>**New Year, New Regs - In Depth on HTI-4 and HTI-5 with Brendan Keeler and Medplum**</td>
+      <td>[Medplum, SF](https://luma.com/mfpcuryu)</td>
       <td align="center">
+        <img src="https://github.com/healthbjk.png" alt="Brendan Keeler" width="50" height="50" style={{borderRadius: '50%'}} />
         <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-         <img src="https://github.com/vintasoftware.png" alt="Vinta" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Brendan Keeler](https://github.com/healthbjk), [Medplum Team](https://github.com/medplum)
       </td>
     </tr>
     <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Jan 15, 2025, 9:00 AM - 2:00 PM PT</td>
       <td>**Interactive Workshop FHIR+AI for Life Sciences**</td>
-      <td>San Francisco</td>
+      <td>[Medplum, SF](https://luma.com/a8odmqrk)</td>
       <td align="center">
         <img src="https://github.com/kerbearasaurus.png" alt="Kerry Weinberg" width="50" height="50" style={{borderRadius: '50%'}} />
         <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} />
@@ -55,6 +56,15 @@ tags: [community]
     </tr>
   </thead>
   <tbody>
+  <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Dec 4, 2025, 10:00 AM PT</td>
+      <td>**Visualizing Patient Flow: A Blueprint Reference App for Healthcare IT**</td>
+      <td>[Zoom](https://luma.com/a3ye1r18)</td>
+      <td align="center">
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+         <img src="https://github.com/vintasoftware.png" alt="Vinta" width="50" height="50" style={{borderRadius: '50%'}} />
+      </td>
+    </tr>
   <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Nov 18, 2025, 8:00 AM PT</td>
       <td>**FHIR Made Fast: Delivering Production-Ready Healthcare Apps in 12 Weeks with Medplum**</td>

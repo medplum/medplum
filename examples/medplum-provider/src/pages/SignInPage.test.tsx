@@ -60,12 +60,16 @@ describe('SignInPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
+    // Wait for password field to appear
+    await screen.findByLabelText('Password *');
+
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'password' } });
     });
 
+    const submitButton = screen.getByRole('button', { name: /Continue|Sign In/i });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+      fireEvent.click(submitButton);
     });
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
