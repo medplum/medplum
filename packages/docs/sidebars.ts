@@ -328,7 +328,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
-      id: 'integration/efax',
+      id: 'integration/efax/index',
     },
     {
       type: 'doc',
