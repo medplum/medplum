@@ -15,10 +15,6 @@ export function TasksTab(): JSX.Element {
     return `/Patient/${patientId}/Task/${task.id}`;
   };
 
-  const handleTaskChange = (task: Task): void => {
-    navigate(onSelectedItem(task))?.catch(console.error);
-  };
-
   const handleDeleteTask = (_: Task): void => {
     navigate(`/Patient/${patientId}/Task`)?.catch(console.error);
   };
@@ -28,7 +24,6 @@ export function TasksTab(): JSX.Element {
       <TaskBoard
         query={`patient=Patient/${patientId}&_sort=-_lastUpdated`}
         selectedTaskId={taskId}
-        onTaskChange={handleTaskChange}
         onDeleteTask={handleDeleteTask}
         onSelectedItem={onSelectedItem}
       />
