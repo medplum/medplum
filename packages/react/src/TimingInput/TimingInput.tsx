@@ -10,7 +10,7 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const daysOfWeek: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
@@ -150,7 +150,11 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             </FormSection>
             {value.repeat.periodUnit === 'wk' && (
               <FormSection title="Repeat on">
-                <Chip.Group multiple onChange={setDaysOfWeek as (v: string[] | undefined) => void}>
+                <Chip.Group
+                  multiple
+                  onChange={setDaysOfWeek as (v: string[] | undefined) => void}
+                  value={value.repeat?.dayOfWeek}
+                >
                   <Group justify="space-between" mt="md" gap="xs">
                     {daysOfWeek.map((day) => (
                       <Chip key={day} value={day} size="xs" radius="xl" disabled={repeatDayOfWeekProps?.readonly}>

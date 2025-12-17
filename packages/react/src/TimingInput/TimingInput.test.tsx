@@ -180,5 +180,12 @@ describe('TimingInput', () => {
     });
 
     expect(onChange).toHaveBeenCalledWith({ repeat: { period: 1, periodUnit: 'wk', dayOfWeek: ['wed'] } });
+
+    // re-opening the modal should display the selected dayOfWeek
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+    const node = await screen.getByLabelText('W');
+    expect(node).toHaveProperty('checked', true);
   });
 });
