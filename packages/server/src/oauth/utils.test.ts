@@ -6,8 +6,8 @@ import type { ClientApplication, Login, Patient, Project, ProjectMembership, Use
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
 import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
