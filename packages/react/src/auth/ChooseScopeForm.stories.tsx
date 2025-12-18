@@ -17,7 +17,7 @@ const medplum = new MockClient();
 export function Basic(): JSX.Element {
   return (
     <div style={{ minHeight: '100vh' }}>
-      <Document width={500} px="xl" py="xl" bdrs="md">
+      <Document width={400} px="xl" py="xl" bdrs="md">
         <MedplumProvider medplum={medplum}>
           <ChooseScopeForm login="test@example.com" scope={undefined} handleAuthResponse={console.log} />
         </MedplumProvider>

@@ -45,7 +45,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
       <Stack>
         <Flex direction="column" align="center" justify="center">
           <Logo size={32} />
-          <Title>Choose scope</Title>
+          <Title order={3} py="lg">Choose scope</Title>
         </Flex>
         <Stack>
           {(props.scope ?? 'openid').split(' ').map((scopeName: string) => {
@@ -77,7 +77,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
           })}
         </Stack>
         <Group justify="flex-end" mt="xl">
-          <SubmitButton>Set scope</SubmitButton>
+          <SubmitButton fullWidth>Set Scope</SubmitButton>
         </Group>
       </Stack>
     </Form>
