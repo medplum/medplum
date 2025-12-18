@@ -48,7 +48,10 @@ export const initBatchWorker: WorkerInitializer = (config) => {
 
   const queue = new Queue<BatchJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
+    defaultJobOptions: {
+      attempts: config.bullmq?.defaultAttempts ?? 1,
+      backoff: config.bullmq?.defaultBackoff,
+    },
   });
 
   const worker = new Worker<BatchJobData>(

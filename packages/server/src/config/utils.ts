@@ -29,7 +29,14 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.awsRegion ||= DEFAULT_AWS_REGION;
   config.botLambdaLayerName ||= 'medplum-bot-layer';
   config.bcryptHashSalt ||= 10;
-  config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.bullmq = {
+    concurrency: 20,
+    removeOnComplete: { count: 1 },
+    removeOnFail: { count: 1 },
+    defaultAttempts: 3,
+    defaultBackoff: { type: 'exponential', delay: 1000 },
+    ...config.bullmq,
+  };
   config.shutdownTimeoutMilliseconds ??= 30_000;
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
@@ -132,6 +139,7 @@ const integerKeys = new Set([
   'smtp.port',
 
   'bullmq.concurrency',
+  'bullmq.defaultAttempts',
 
   'fission.routerPort',
 ]);
@@ -175,6 +183,7 @@ const objectKeys = new Set([
   'defaultOAuthClients',
   'smtp',
   'arrayColumnPadding',
+  'bullmq.defaultBackoff',
 ]);
 
 export function isObjectConfig(key: string): boolean {
