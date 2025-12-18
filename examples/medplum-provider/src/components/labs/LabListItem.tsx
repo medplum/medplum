@@ -23,7 +23,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
   const requester = useResource(item.requester) as Practitioner | undefined;
 
   return (
-    <MedplumLink to={onItemSelect(item)} c="dark">
+    <MedplumLink to={onItemSelect(item)} underline="never">
       <Group
         align="center"
         wrap="nowrap"
@@ -31,9 +31,9 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
           [classes.selected]: isSelected,
         })}
       >
-        <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-          <Group justify="space-between" align="flex-start" style={{ minWidth: 0 }}>
-            <Text fw={700} className={classes.title} style={{ flex: 1, minWidth: 0 }}>
+        <Stack gap={0} flex={1}>
+          <Group justify="space-between" align="flex-start">
+            <Text fw={700} className={classes.title} flex={1}>
               {getDisplayText(item)}
             </Text>
             {activeTab !== 'completed' && (
@@ -43,7 +43,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
             )}
           </Group>
           {getAdditionalInfo(item, activeTab).map((info, index) => (
-            <Text key={index} size="sm" c="#2E2E2E">
+            <Text key={index} size="sm">
               {info}
             </Text>
           ))}

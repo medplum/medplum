@@ -51,6 +51,20 @@ describe('TaskListItem', () => {
     expect(screen.getByText('Test Task')).toBeInTheDocument();
   });
 
+  test('renders status badge with correct status', () => {
+    setup(mockTask);
+    expect(screen.getByText('in progress')).toBeInTheDocument();
+  });
+
+  test('renders different status values correctly', () => {
+    const completedTask: Task = {
+      ...mockTask,
+      status: 'completed',
+    };
+    setup(completedTask);
+    expect(screen.getByText('completed')).toBeInTheDocument();
+  });
+
   test('renders due date if present', () => {
     const taskWithDueDate: Task = {
       ...mockTask,

@@ -58,6 +58,7 @@ describe('TaskPanel', () => {
     const task: Task = {
       ...mockTask,
       focus: { reference: 'ServiceRequest/123' },
+      for: { reference: 'Patient/123' },
       input: [{ type: { text: 'ServiceRequest' }, valueReference: { reference: 'ServiceRequest/123' } }],
     };
     const onUpdateTask = vi.fn();
@@ -68,6 +69,7 @@ describe('TaskPanel', () => {
       code: { text: 'Test Service Request' },
       intent: 'order',
       subject: { reference: 'Patient/123' },
+      requisition: { value: 'REQ-123' },
     };
     await medplum.createResource(serviceRequest);
     medplum.readReference = vi.fn().mockResolvedValue(serviceRequest);

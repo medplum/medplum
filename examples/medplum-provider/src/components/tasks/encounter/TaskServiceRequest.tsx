@@ -77,20 +77,23 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           </Group>
         )}
 
-        {labServiceRequest?.status !== 'draft' && labServiceRequest?.status !== 'on-hold' && (
-          <>
-            <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
-            <Group>
-              <Button
-                component="a"
-                target="_blank"
-                href={`/${task.for?.reference}/ServiceRequest/${labServiceRequest?.id}`}
-              >
-                View in Labs
-              </Button>
-            </Group>
-          </>
-        )}
+        {task.for &&
+          labServiceRequest?.status !== 'draft' &&
+          labServiceRequest?.status !== 'on-hold' &&
+          labServiceRequest?.id && (
+            <>
+              <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
+              <Group>
+                <Button
+                  component="a"
+                  target="_blank"
+                  href={`/${task.for.reference}/ServiceRequest/${labServiceRequest.id}`}
+                >
+                  View in Labs
+                </Button>
+              </Group>
+            </>
+          )}
       </Stack>
 
       <Modal
