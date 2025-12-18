@@ -29,7 +29,7 @@ export interface ReferenceTableRow extends LookupTableRow {
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
 export class ReferenceTable extends LookupTable {
-  static allColumnNames = ['resourceId', 'targetId', 'code'] as const;
+  static readonly allColumnNames = ['resourceId', 'targetId', 'code'] as const;
 
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
@@ -48,16 +48,11 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
-  /**
-   * Indexes the resource in the lookup table.
-   * @param client - The database client.
-   * @param resources - The resources to index.
-   * @param create - True if the resource should be created (vs updated).
-   */
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PoolClient | Pool,
     resources: WithId<T>[],
-    create: boolean
+    create: boolean,
+    resourceBatchSize: number = 200
   ): Promise<void> {
     if (resources.length === 0) {
       return;
@@ -68,7 +63,7 @@ export class ReferenceTable extends LookupTable {
     const existingRows = create ? undefined : await this.getExistingRows(client, resources);
     if (existingRows === undefined || existingRows.length === 0) {
       const newRows: ReferenceTableRow[] = [];
-      await this.extractAllValues(newRows, resources);
+      await this.extractAllValues(newRows, resources, resourceBatchSize);
 
       // nothing to delete since no existing rows
 
@@ -89,7 +84,7 @@ export class ReferenceTable extends LookupTable {
     }
 
     const newRowsByResource = new Map<string, ReferenceTableRow[]>();
-    await this.extractAllValues(newRowsByResource, resources);
+    await this.extractAllValues(newRowsByResource, resources, resourceBatchSize);
 
     const resourcesWithChangedReferences: Resource[] = [];
     const rowsToInsert: LookupTableRow[] = [];
@@ -133,20 +128,17 @@ export class ReferenceTable extends LookupTable {
    * Extracts values from all resources with batching to avoid blocking the event loop.
    * @param result - The array to populate with extracted values.
    * @param resources - The resources to extract values from.
+   * @param resourceBatchSize - (optional) The resource batch size to yield to the event loop between. Default is 200.
    */
   private async extractAllValues<T extends Resource>(
     result: ReferenceTableRow[] | Map<string, ReferenceTableRow[]>,
-    resources: WithId<T>[]
+    resources: WithId<T>[],
+    resourceBatchSize: number
   ): Promise<void> {
-    if (resources.length === 0) {
-      return;
-    }
-
     const resourceType = resources[0].resourceType;
 
     // Batch at the resource level to avoid tying up the event loop for too long
     // with synchronous work without any async breaks between DB calls.
-    const resourceBatchSize = 200;
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
       for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
         const resource = resources[j];
@@ -246,31 +238,30 @@ function hashRow(row: ReferenceTableRow): string {
  */
 function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
   const searchParams = getSearchParameters(resource.resourceType);
-  if (!searchParams) {
-    return;
-  }
-  const resultMap = new Map<string, ReferenceTableRow>();
-  for (const searchParam of Object.values(searchParams)) {
-    if (!isIndexed(searchParam)) {
-      continue;
-    }
+  if (searchParams) {
+    const resultMap = new Map<string, ReferenceTableRow>();
+    for (const searchParam of Object.values(searchParams)) {
+      if (!isIndexed(searchParam)) {
+        continue;
+      }
 
-    const details = getSearchParameterDetails(resource.resourceType, searchParam);
-    const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
-    for (const value of typedValues) {
-      if (value.type === PropertyType.Reference && value.value.reference) {
-        const targetId = resolveId(value.value);
-        if (targetId && isUUID(targetId)) {
-          addSearchReferenceResult(resultMap, resource, searchParam, targetId);
+      const details = getSearchParameterDetails(resource.resourceType, searchParam);
+      const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
+      for (const value of typedValues) {
+        if (value.type === PropertyType.Reference && value.value.reference) {
+          const targetId = resolveId(value.value);
+          if (targetId && isUUID(targetId)) {
+            addSearchReferenceResult(resultMap, resource, searchParam, targetId);
+          }
+        }
+
+        if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+          addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
         }
       }
-
-      if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
-        addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
-      }
     }
+    result.push(...resultMap.values());
   }
-  result.push(...resultMap.values());
 }
 
 /**

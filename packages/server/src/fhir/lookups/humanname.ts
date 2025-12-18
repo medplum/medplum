@@ -123,13 +123,14 @@ export class HumanNameTable extends LookupTable {
   async batchIndexResources<T extends Resource>(
     client: PoolClient,
     resources: WithId<T>[],
-    create: boolean
+    create: boolean,
+    resourceBatchSize?: number
   ): Promise<void> {
     if (!resources[0] || !HumanNameTable.hasHumanName(resources[0].resourceType)) {
       return;
     }
 
-    await super.batchIndexResources(client, resources, create);
+    await super.batchIndexResources(client, resources, create, resourceBatchSize);
   }
 
   /**

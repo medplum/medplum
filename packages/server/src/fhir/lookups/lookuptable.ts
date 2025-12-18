@@ -90,11 +90,13 @@ export abstract class LookupTable {
    * @param client - The database client.
    * @param resources - The resources to index.
    * @param create - True if the resource should be created (vs updated).
+   * @param resourceBatchSize - (optional) The resource batch size to yield to the event loop between. Default is 200.
    */
   async batchIndexResources<T extends Resource>(
     client: PoolClient,
     resources: WithId<T>[],
-    create: boolean
+    create: boolean,
+    resourceBatchSize: number = 200
   ): Promise<void> {
     if (resources.length === 0) {
       return;
@@ -108,7 +110,6 @@ export abstract class LookupTable {
 
     // Batch at the resource level to avoid tying up the event loop for too long
     // with synchronous work without any async breaks between DB calls.
-    const resourceBatchSize = 200;
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
       const newRows: LookupTableRow[] = [];
       for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
