@@ -3,6 +3,7 @@
 import { allOk, badRequest } from '@medplum/core';
 import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
+import * as bullmq from 'bullmq';
 import { loadTestConfig } from '../config/loader';
 import { execBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
 import { queueRegistry } from './utils';
@@ -92,8 +93,22 @@ describe('Batch Worker', () => {
   });
 
   describe('initBatchWorker', () => {
-    test('creates queue with default config', async () => {
+    let queueSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // Spy on the Queue constructor to capture the options passed to it
+      queueSpy = jest.spyOn(bullmq, 'Queue');
+    });
+
+    afterEach(() => {
+      queueSpy.mockRestore();
+    });
+
+    test('creates queue with undefined bullmq config - uses defaults', async () => {
+      // Covers lines 52-54: fallback path when bullmq config is undefined
+      // This tests the ?? 1 fallback for attempts and undefined for backoff
       const config = await loadTestConfig();
+      config.bullmq = undefined; // Force the fallback path
 
       const result = initBatchWorker(config);
       expect(result).toBeDefined();
@@ -101,21 +116,33 @@ describe('Batch Worker', () => {
       expect(result.worker).toBeDefined();
       expect(result.name).toBe('BatchQueue');
 
+      // Validate the actual values passed to Queue constructor
+      expect(queueSpy).toHaveBeenCalledWith(
+        'BatchQueue',
+        expect.objectContaining({
+          defaultJobOptions: {
+            attempts: 1, // ?? 1 fallback when defaultAttempts is undefined
+            backoff: undefined, // undefined when bullmq.defaultBackoff is not set
+          },
+        })
+      );
+
       // Clean up
       await result.worker.close();
       await result.queue.close();
     });
 
-    test('creates queue with custom bullmq config including backoff', async () => {
-      // Covers line 52: backoff: config.bullmq?.defaultBackoff
+    test('creates queue with custom bullmq config - validates attempts and backoff', async () => {
+      // Covers lines 52-54: custom config path with explicit values
+      // This tests when defaultAttempts and defaultBackoff are provided
       const config = await loadTestConfig();
 
       config.bullmq = {
         concurrency: 20,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
-        defaultAttempts: 5,
-        defaultBackoff: { type: 'exponential', delay: 2000 },
+        defaultAttempts: 7,
+        defaultBackoff: { type: 'fixed', delay: 5000 },
       };
 
       const result = initBatchWorker(config);
@@ -123,6 +150,17 @@ describe('Batch Worker', () => {
       expect(result.queue).toBeDefined();
       expect(result.worker).toBeDefined();
       expect(result.name).toBe('BatchQueue');
+
+      // Validate the actual values passed to Queue constructor
+      expect(queueSpy).toHaveBeenCalledWith(
+        'BatchQueue',
+        expect.objectContaining({
+          defaultJobOptions: {
+            attempts: 7,
+            backoff: { type: 'fixed', delay: 5000 },
+          },
+        })
+      );
 
       // Clean up
       await result.worker.close();
