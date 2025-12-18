@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Practitioner } from '@medplum/fhirtypes';
+import type { Location, Practitioner, PractitionerRole } from '@medplum/fhirtypes';
 
 const joeSmith: Practitioner =
   // start-block practitioner-head
@@ -35,25 +35,6 @@ const joeSmith: Practitioner =
         issuer: {
           display: 'State of New York',
         },
-        // Extension: Medical License Valid in NY
-        extension: [
-          {
-            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
-            extension: [
-              {
-                url: 'whereValid',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'https://www.usps.com/',
-                      code: 'NY',
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
       },
       //...
       // end-block license
@@ -73,28 +54,6 @@ const joeSmith: Practitioner =
         issuer: {
           display: 'American Board of Internal Medicine',
         },
-        extension: [
-          {
-            extension: [
-              {
-                url: 'status',
-                valueCode: 'active',
-              },
-              {
-                url: 'whereValid',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'https://www.usps.com/',
-                      code: 'NY',
-                    },
-                  ],
-                },
-              },
-            ],
-            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
-          },
-        ],
       },
       // Cardiology Certification
       {
@@ -111,28 +70,6 @@ const joeSmith: Practitioner =
         issuer: {
           display: 'American Board of Internal Medicine',
         },
-        extension: [
-          {
-            extension: [
-              {
-                url: 'status',
-                valueCode: 'active',
-              },
-              {
-                url: 'whereValid',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'https://www.usps.com/',
-                      code: 'NY',
-                    },
-                  ],
-                },
-              },
-            ],
-            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
-          },
-        ],
       },
       // end-block specialty
       // start-block qualifications-tail
@@ -147,5 +84,51 @@ const joeSmith: Practitioner =
     // start-block practitioner-tail
   };
 // end-block practitioner-tail
+
+
+// start-block state-location
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const nyLocation: Location = {
+  resourceType: 'Location',
+  id: 'location-ny',
+  name: 'New York',
+  address: {
+    state: 'NY',
+    country: 'US',
+  },
+  identifier: [
+    {
+      system: 'http://terminology.hl7.org/CodeSystem/v2-0347',
+      value: 'NY',
+    },
+  ],
+};
+// end-block state-location
+
+// start-block practitioner-role-state
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const drSmithNyRole: PractitionerRole = {
+  resourceType: 'PractitionerRole',
+  practitioner: { reference: 'Practitioner/dr-smith' }, // Assuming 'dr-smith' is an existing Practitioner
+  location: [{ reference: 'Location/location-ny' }],
+  period: {
+    start: '2024-01-01',
+    end: '2026-01-01', // License expiration
+  },
+  active: true,
+};
+// end-block practitioner-role-state
+
+// start-block query-by-state
+// Find all active practitioners licensed in NY
+// Note: In a real application, you would initialize medplum client first
+// const medplum = new MedplumClient({ baseUrl: 'https://api.medplum.com/' });
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const nyLicensedPractitioners = await medplum.searchResources('PractitionerRole', {
+  location: 'Location/location-ny',
+  active: 'true',
+  _revinclude: 'Practitioner:practitioner',
+});
+// end-block query-by-state
 
 console.log(joeSmith);
