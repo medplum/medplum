@@ -5,6 +5,7 @@ import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, setValue
 describe('utils', () => {
   test('isObjectConfig', () => {
     expect(isObjectConfig('smtp')).toBe(true);
+    expect(isObjectConfig('bullmq.defaultBackoff')).toBe(true);
   });
 
   test('isBooleanConfig', () => {
@@ -15,6 +16,7 @@ describe('utils', () => {
   test('isIntegerConfig', () => {
     expect(isIntegerConfig('baseUrl')).toBe(false);
     expect(isIntegerConfig('port')).toBe(true);
+    expect(isIntegerConfig('bullmq.defaultAttempts')).toBe(true);
   });
 
   test('addDefaults sets maxSearchOffset default', () => {
@@ -30,6 +32,23 @@ describe('utils', () => {
       maxSearchOffset: 5000,
     } as any);
     expect(config.maxSearchOffset).toBe(5000);
+  });
+
+  test('addDefaults sets bullmq defaults', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+    } as any);
+    expect(config.bullmq?.defaultAttempts).toBe(3);
+    expect(config.bullmq?.defaultBackoff).toEqual({ type: 'exponential', delay: 1000 });
+  });
+
+  test('addDefaults preserves existing bullmq config', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+      bullmq: { defaultAttempts: 5, defaultBackoff: { type: 'fixed', delay: 500 } },
+    } as any);
+    expect(config.bullmq?.defaultAttempts).toBe(5);
+    expect(config.bullmq?.defaultBackoff).toEqual({ type: 'fixed', delay: 500 });
   });
 
   test('setValue parses integers', () => {
@@ -64,6 +83,16 @@ describe('utils', () => {
         port: 587,
         username: 'username',
         password: 'p@ssw0rd',
+      },
+    });
+  });
+
+  test('setValue parses bullmq.defaultBackoff', () => {
+    const config = {};
+    setValue(config, 'bullmq.defaultBackoff', '{"type":"exponential","delay":2000}');
+    expect(config).toEqual({
+      bullmq: {
+        defaultBackoff: { type: 'exponential', delay: 2000 },
       },
     });
   });
