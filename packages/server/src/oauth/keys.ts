@@ -53,7 +53,6 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
   /**
    * User email address.
    * Included when the 'email' scope is requested and the user is a User resource.
-   * This is used for integrations with external systems like Onyx.
    */
   email?: string;
 }
