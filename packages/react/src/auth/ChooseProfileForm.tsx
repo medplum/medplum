@@ -66,6 +66,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
             placeholder="Search"
             value={search}
             mb="md"
+            autoFocus
             leftSection={<IconSearch size={16} />}
             onChange={(event) => {
               setSearch(event.currentTarget.value);
