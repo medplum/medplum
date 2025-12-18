@@ -33,6 +33,51 @@ A formally or informally recognized grouping of people or organizations formed f
   </TabItem>
   <TabItem value="usage" label="Usage">
 <div> <a name="scope"></a> <p> This resource may be used in a shared registry of contact and other information for various organizations or it can be used merely as a support for other resources that need to reference organizations, perhaps as a <a href="https://www.hl7.org/fhir/documents.html">document</a>, <a href="https://www.hl7.org/fhir/messaging.html">message</a> or  as a <a href="https://www.hl7.org/fhir/references.html#contained">contained</a> resource.  If using a registry approach, it's entirely possible for multiple registries to exist, each dealing with different types or levels of organization. </p> </div>
+
+## Managing Multiple Addresses
+
+Organizations often have multiple addresses for different purposes, such as a physical facility address and a separate billing or payor address.
+
+The recommended pattern is:
+* Use `Organization.address` for the primary address.
+* Use `Organization.contact` with a specific `purpose` (e.g., `PAYOR` or `BILL`) to differentiate other addresses.
+* Use `Location` resources to represent physical facilities, especially if they have distinct hours of operation or services.
+
+For example, to distinguish a facility address from a payor address:
+
+```json
+{
+  "resourceType": "Organization",
+  "name": "Seen Health",
+  "address": [
+    {
+      "use": "work",
+      "line": ["1839 W Valley Blvd"],
+      "city": "Alhambra",
+      "state": "CA",
+      "postalCode": "91803"
+    }
+  ],
+  "contact": [
+    {
+      "purpose": {
+        "coding": [{
+          "system": "http://terminology.hl7.org/CodeSystem/contactentity-type",
+          "code": "PAYOR",
+          "display": "Payor"
+        }]
+      },
+      "address": {
+        "line": ["1600 CORPORATE CENTER DR"],
+        "city": "MONTEREY PARK",
+        "state": "CA",
+        "postalCode": "91754"
+      }
+    }
+  ]
+}
+```
+
   </TabItem>
   <TabItem value="relationships" label="Relationships">
 <div> <a name="bnr"></a> <p> The <Link to="/docs/api/fhir/resources/organization">Organization</Link> resource is used for collections of people that have come together to achieve an objective.   The <a href="/docs/api/fhir/resources/group">Group</a> resource is used to identify a collection of people (or animals, devices, etc.)  that are gathered for the purpose of analysis or acting upon, but are not expected to act themselves. </p> <p> The <Link to="/docs/api/fhir/resources/organization">Organization</Link> resource often exists as a hierarchy of organization resources, using the <i>part-of</i> property to provide the association of the child to its parent organization.<br/> This organizational hierarchy helps communicate the conceptual structure, whereas the <Link to="/docs/api/fhir/resources/location">Location</Link> resource provides the physical representation of the hierarchy.<br/> The linkage between <Link to="/docs/api/fhir/resources/organization">Organization</Link> and <Link to="/docs/api/fhir/resources/location">Location</Link> is from each point in the location hierarchy to the appropriate level in the  <Link to="/docs/api/fhir/resources/organization">Organization</Link> hierarchy. These links don't all have to be to the top level <Link to="/docs/api/fhir/resources/organization">Organization</Link>.<br/> When populating the organization and location hierarchies there is often not a clear distinction between these 2, however to assist in making the decision, <Link to="/docs/api/fhir/resources/location">Locations</Link> are always used for recording where a service occurs, and hence where encounters and observations are associated. The <Link to="/docs/api/fhir/resources/organization">Organization</Link> property on these resources might not be the location where the service took place. </p> </div>
