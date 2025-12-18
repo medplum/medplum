@@ -103,7 +103,7 @@
     "rfc6902": "5.1.2",
     "signature_pad": "5.1.3",
     "sinon": "21.0.0",
-    "storybook": "10.1.7",
+    "storybook": "10.1.10",
     "typescript": "5.9.3"
   },
   "peerDependencies": {
