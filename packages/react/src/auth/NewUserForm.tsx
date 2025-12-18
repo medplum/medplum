@@ -64,7 +64,9 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         }
       }}
     >
-      <Flex direction="column" align="center" justify="center">{props.children}</Flex>
+      <Flex direction="column" align="center" justify="center">
+        {props.children}
+      </Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>

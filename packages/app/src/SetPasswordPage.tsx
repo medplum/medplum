@@ -50,7 +50,7 @@ export function SetPasswordPage(): JSX.Element {
           <Title>Set password</Title>
         </Flex>
         {!success && (
-          <Stack> 
+          <Stack>
             <PasswordInput
               name="password"
               label="New password"
