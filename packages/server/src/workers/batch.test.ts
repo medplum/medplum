@@ -211,7 +211,10 @@ describe('Batch Worker', () => {
           {
             response: {
               status: '201',
-              outcome: { resourceType: 'OperationOutcome', issue: [{ severity: 'information', code: 'informational' }] },
+              outcome: {
+                resourceType: 'OperationOutcome',
+                issue: [{ severity: 'information', code: 'informational' }],
+              },
             },
           },
         ],
@@ -226,7 +229,10 @@ describe('Batch Worker', () => {
             {
               response: {
                 status: '201',
-                outcome: { resourceType: 'OperationOutcome', issue: [{ severity: 'information', code: 'informational' }] },
+                outcome: {
+                  resourceType: 'OperationOutcome',
+                  issue: [{ severity: 'information', code: 'informational' }],
+                },
               },
             },
           ],
