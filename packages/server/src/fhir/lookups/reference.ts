@@ -19,9 +19,9 @@ import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
 
 export interface ReferenceTableRow extends LookupTableRow {
-  resourceId: string;
-  targetId: string;
-  code: string;
+  readonly resourceId: string;
+  readonly targetId: string;
+  readonly code: string;
 }
 
 /**
@@ -29,7 +29,7 @@ export interface ReferenceTableRow extends LookupTableRow {
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
 export class ReferenceTable extends LookupTable {
-  private allColumnNames: string[] = ['resourceId', 'targetId', 'code'];
+  static allColumnNames = ['resourceId', 'targetId', 'code'] as const;
 
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
@@ -91,32 +91,37 @@ export class ReferenceTable extends LookupTable {
     const newRowsByResource = new Map<string, ReferenceTableRow[]>();
     await this.extractAllValues(newRowsByResource, resources);
 
-    const resourcesToDelete: Resource[] = [];
+    const resourcesWithChangedReferences: Resource[] = [];
     const rowsToInsert: LookupTableRow[] = [];
     for (const resource of resources) {
-      const existingHashes = existingHashesByResource.get(resource.id) ?? new Set<string>();
-      const newRowsForResource = newRowsByResource.get(resource.id) ?? [];
-      const newHashes = new Set(newRowsForResource.map(hashRow));
+      const existingHashes = existingHashesByResource.get(resource.id);
+      const newRowsForResource = newRowsByResource.get(resource.id);
+      const newHashes = newRowsForResource && new Set(newRowsForResource.map(hashRow));
 
-      const identical = existingHashes.size === newHashes.size && [...existingHashes].every((h) => newHashes.has(h));
+      const identical =
+        (existingHashes?.size ?? 0) === (newHashes?.size ?? 0) &&
+        (!existingHashes || !newHashes || existingHashes.values().every((h) => newHashes.has(h)));
+
       if (!identical) {
-        resourcesToDelete.push(resource);
-        rowsToInsert.push(...newRowsForResource);
+        resourcesWithChangedReferences.push(resource);
+        if (newRowsForResource) {
+          rowsToInsert.push(...newRowsForResource);
+        }
       }
     }
 
-    if (resourcesToDelete.length > 0) {
+    if (resourcesWithChangedReferences.length > 0) {
       getLogger().info('Reference changes detected', {
         resourceType,
-        unchangedCount: resources.length - resourcesToDelete.length,
-        changedCount: resourcesToDelete.length,
+        unchangedCount: resources.length - resourcesWithChangedReferences.length,
+        changedCount: resourcesWithChangedReferences.length,
         rowsToInsert: rowsToInsert.length,
-        sampleIds: resourcesToDelete.slice(0, 5),
+        sampleIds: resourcesWithChangedReferences.slice(0, 5),
       });
     }
 
-    if (resourcesToDelete.length > 0) {
-      await this.batchDeleteValuesForResources(client, resourcesToDelete);
+    if (resourcesWithChangedReferences.length > 0) {
+      await this.batchDeleteValuesForResources(client, resourcesWithChangedReferences);
     }
 
     if (rowsToInsert.length > 0) {
@@ -168,13 +173,13 @@ export class ReferenceTable extends LookupTable {
           });
           throw err;
         }
+      }
 
-        // Yield to event loop between batches
-        if (i + resourceBatchSize < resources.length) {
-          await new Promise<void>((resolve) => {
-            setImmediate(() => resolve());
-          });
-        }
+      // Yield to event loop between batches
+      if (i + resourceBatchSize < resources.length) {
+        await new Promise<void>((resolve) => {
+          setImmediate(() => resolve());
+        });
       }
     }
   }
@@ -192,7 +197,7 @@ export class ReferenceTable extends LookupTable {
       'IN',
       resources.map((r) => r.id)
     );
-    for (const columnName of this.allColumnNames) {
+    for (const columnName of ReferenceTable.allColumnNames) {
       selectQuery.column(columnName);
     }
     return selectQuery.execute<ReferenceTableRow>(client);
@@ -230,7 +235,7 @@ export class ReferenceTable extends LookupTable {
  * @returns A hash string combining resourceId, targetId, and code.
  */
 function hashRow(row: ReferenceTableRow): string {
-  return `${row.resourceId}|${row.targetId}|${row.code}`;
+  return ReferenceTable.allColumnNames.map((c) => row[c]).join('|');
 }
 
 /**
