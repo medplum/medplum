@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, setValue } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, setValue } from './utils';
 
 describe('utils', () => {
   test('isObjectConfig', () => {
@@ -95,5 +95,40 @@ describe('utils', () => {
         defaultBackoff: { type: 'exponential', delay: 2000 },
       },
     });
+  });
+
+  test('setValue parses bullmq.defaultAttempts', () => {
+    const config = {};
+    setValue(config, 'bullmq.defaultAttempts', '5');
+    expect(config).toEqual({
+      bullmq: {
+        defaultAttempts: 5,
+      },
+    });
+  });
+
+  test('addDefaults preserves partial bullmq config with defaultAttempts only', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+      bullmq: { defaultAttempts: 10 },
+    } as any);
+    expect(config.bullmq?.defaultAttempts).toBe(10);
+    // defaultBackoff should use the default value
+    expect(config.bullmq?.defaultBackoff).toEqual({ type: 'exponential', delay: 1000 });
+  });
+
+  test('addDefaults preserves partial bullmq config with defaultBackoff only', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+      bullmq: { defaultBackoff: { type: 'fixed', delay: 3000 } },
+    } as any);
+    // defaultAttempts should use the default value
+    expect(config.bullmq?.defaultAttempts).toBe(3);
+    expect(config.bullmq?.defaultBackoff).toEqual({ type: 'fixed', delay: 3000 });
+  });
+
+  test('isFloatConfig', () => {
+    expect(isFloatConfig('baseUrl')).toBe(false);
+    expect(isFloatConfig('anything')).toBe(false);
   });
 });
