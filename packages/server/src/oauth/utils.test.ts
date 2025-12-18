@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeError, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { ClientApplication, Login, Patient, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -434,10 +435,20 @@ describe('OAuth utils', () => {
   });
 
   describe('getAuthTokens with email scope', () => {
+    let project: WithId<Project>;
+    let repo: Repository;
+
+    beforeAll(async () => {
+      await withTestContext(async () => {
+        const result = await createTestProject({ withRepo: true });
+        project = result.project;
+        repo = result.repo as Repository;
+      });
+    });
+
     test('Access token includes email when email scope is requested for User', async () => {
       await withTestContext(async () => {
         const systemRepo = getSystemRepo();
-        const { project } = await createTestProject();
 
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
@@ -449,9 +460,8 @@ describe('OAuth utils', () => {
         });
 
         // Create a Patient profile
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: { project: project.id },
         });
 
         // Create a ProjectMembership for the user
@@ -491,7 +501,6 @@ describe('OAuth utils', () => {
     test('Access token does not include email when email scope is not requested', async () => {
       await withTestContext(async () => {
         const systemRepo = getSystemRepo();
-        const { project } = await createTestProject();
 
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
@@ -503,9 +512,8 @@ describe('OAuth utils', () => {
         });
 
         // Create a Patient profile
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: { project: project.id },
         });
 
         // Create a ProjectMembership for the user
@@ -545,20 +553,17 @@ describe('OAuth utils', () => {
     test('Access token does not include email for ClientApplication even with email scope', async () => {
       await withTestContext(async () => {
         const systemRepo = getSystemRepo();
-        const { project } = await createTestProject();
 
         // Create a ClientApplication
-        const client = await systemRepo.createResource<ClientApplication>({
+        const client = await repo.createResource<ClientApplication>({
           resourceType: 'ClientApplication',
           name: 'Test Client',
           secret: randomUUID(),
-          meta: { project: project.id },
         });
 
         // Create a Patient profile
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: { project: project.id },
         });
 
         // Create a ProjectMembership for the client
@@ -599,7 +604,6 @@ describe('OAuth utils', () => {
     test('Access token does not include email when user has no email address', async () => {
       await withTestContext(async () => {
         const systemRepo = getSystemRepo();
-        const { project } = await createTestProject();
 
         // Create a User without email
         const user = await systemRepo.createResource<User>({
@@ -610,9 +614,8 @@ describe('OAuth utils', () => {
         });
 
         // Create a Patient profile
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: { project: project.id },
         });
 
         // Create a ProjectMembership for the user
