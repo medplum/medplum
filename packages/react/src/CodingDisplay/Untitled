@@ -1,1 +1,0 @@
-await user.click(screen.getByRole('button', { name: 'Set scope' }));
