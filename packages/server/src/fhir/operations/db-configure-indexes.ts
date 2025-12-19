@@ -12,7 +12,11 @@ import { withLongRunningDatabaseClient } from '../../migrations/migration-utils'
 import { getSystemRepo } from '../repo';
 import { isValidTableName } from '../sql';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -25,51 +29,15 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'tableName',
-      type: 'string',
-      min: 1,
-      max: '*',
-    },
-    {
-      use: 'in',
-      name: 'fastUpdateAction',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'fastUpdateValue',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'ginPendingListLimitAction',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'ginPendingListLimitValue',
-      type: 'integer',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'action',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'out', name: 'sql', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'durationMs', type: 'integer', min: 0, max: '1' },
-      ],
-    },
+    param('in', 'tableName', 'string', 1, '*'),
+    param('in', 'fastUpdateAction', 'string', 0, '1'),
+    param('in', 'fastUpdateValue', 'boolean', 0, '1'),
+    param('in', 'ginPendingListLimitAction', 'string', 0, '1'),
+    param('in', 'ginPendingListLimitValue', 'integer', 0, '1'),
+    param('out', 'action', undefined, 0, '*', [
+      param('out', 'sql', 'string', 1, '1'),
+      param('out', 'durationMs', 'integer', 0, '1'),
+    ]),
   ],
 };
 

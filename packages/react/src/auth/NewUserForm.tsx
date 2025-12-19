@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Box, Center, Checkbox, Divider, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Box, Checkbox, Divider, Flex, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import type { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -64,7 +64,9 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         }
       }}
     >
-      <Center style={{ flexDirection: 'column' }}>{props.children}</Center>
+      <Flex direction="column" align="center" justify="center">
+        {props.children}
+      </Flex>
       <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>

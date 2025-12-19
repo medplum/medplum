@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
 import type {
   CodeSystem,
   CodeSystemProperty,
@@ -12,7 +12,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../../../constants';
-import { getAuthenticatedContext } from '../../../context';
+import type { Repository } from '../../repo';
 import { getSystemRepo } from '../../repo';
 import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
@@ -23,6 +23,7 @@ export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelec
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(
+  repo: Repository,
   resourceType: T['resourceType'],
   url: string,
   options?: {
@@ -33,7 +34,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   if (!url) {
     throw new OperationOutcomeError(badRequest(`${resourceType} not specified`));
   }
-  const { repo, project } = getAuthenticatedContext();
+  const project = repo.currentProject();
 
   const versionDelim = url.lastIndexOf('|');
   if (versionDelim > 0) {
@@ -73,13 +74,13 @@ export async function findTerminologyResource<T extends TerminologyResource>(
       resourceReferences.push(createReference(resource));
     }
     const resources = await getSystemRepo().readReferences(resourceReferences);
-    const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
+    const projectResource = resources.find((r) => r instanceof Error || (project && r.meta?.project === project.id));
     if (projectResource instanceof Error) {
       throw projectResource;
     } else if (projectResource) {
       return projectResource;
     }
-    if (!options?.ownProjectOnly && project.link) {
+    if (!options?.ownProjectOnly && project?.link) {
       for (const linkedProject of project.link) {
         const linkedResource = resources.find(
           (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)

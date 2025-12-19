@@ -55,7 +55,7 @@ describe('OAuthPage', () => {
 
     expect(await screen.findByText('Choose scope')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Set scope' }));
+    await user.click(screen.getByRole('button', { name: 'Set Scope' }));
 
     await waitFor(() => expect(locationUtils.assign).toHaveBeenCalled());
     expect(locationUtils.assign).toHaveBeenCalled();

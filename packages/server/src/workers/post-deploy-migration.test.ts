@@ -105,27 +105,52 @@ describe('Post-Deploy Migration Worker', () => {
       } as unknown as Job<PostDeployJobData>;
     });
 
+    const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 123,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+
+    // inside of withTestContext, requestId and traceId are set
     await withTestContext(async () => {
-      const asyncJob = await getSystemRepo().createResource<AsyncJob>({
-        resourceType: 'AsyncJob',
-        status: 'accepted',
-        dataVersion: 123,
-        requestTime: new Date().toISOString(),
-        request: '/admin/super/migrate',
+      const data1 = prepareCustomMigrationJobData(asyncJob);
+      expect(data1).toEqual({
+        type: 'custom',
+        asyncJobId: asyncJob.id,
+        requestId: expect.any(String),
+        traceId: expect.any(String),
       });
 
-      const jobData = prepareCustomMigrationJobData(asyncJob);
-
-      const result = await addPostDeployMigrationJobData(jobData);
-
-      expect(result).toEqual(
+      const result1 = await addPostDeployMigrationJobData(data1);
+      expect(result1).toEqual(
         expect.objectContaining({
-          data: jobData,
+          data: data1,
         })
       );
-      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', jobData, {
+      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, {
         deduplication: { id: expect.any(String) },
       });
+    });
+
+    // outside of withTestContext, requestId and traceId are undefined
+    const data2 = prepareCustomMigrationJobData(asyncJob);
+    expect(data2).toEqual({
+      type: 'custom',
+      asyncJobId: asyncJob.id,
+      requestId: undefined,
+      traceId: undefined,
+    });
+
+    const result2 = await addPostDeployMigrationJobData(data2);
+    expect(result2).toEqual(
+      expect.objectContaining({
+        data: data2,
+      })
+    );
+    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, {
+      deduplication: { id: expect.any(String) },
     });
   });
 

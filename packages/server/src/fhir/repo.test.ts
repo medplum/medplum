@@ -37,9 +37,11 @@ import type {
   StructureDefinition,
   User,
   UserConfiguration,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
+import assert from 'node:assert';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
@@ -1013,48 +1015,108 @@ describe('FHIR Repo', () => {
       );
     }));
 
-  test('Terminology validation', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: { validateTerminology: true } });
-      const patient: Patient = {
-        resourceType: 'Patient',
-        identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
-        active: true,
-        name: [
-          { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
-          { use: 'usual', given: ['Jim'] },
-          { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
-        ],
-        telecom: [
-          { use: 'home', system: 'url', value: 'http://example.com' },
-          { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
-          { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
-          { system: 'phone', value: '(03) 5555 8834', use: 'old' },
-        ],
-        gender: 'male',
-        birthDate: '1974-12-25',
-        address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
-        contact: [
-          {
-            name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
-            telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
-            address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
-            gender: 'female',
-          },
-        ],
-      };
+  describe('Update resource with terminology validation', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+      active: true,
+      name: [
+        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+        { use: 'usual', given: ['Jim'] },
+        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+      ],
+      telecom: [
+        { use: 'home', system: 'url', value: 'http://example.com' },
+        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+      ],
+      gender: 'male',
+      birthDate: '1974-12-25',
+      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+      contact: [
+        {
+          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+          gender: 'female',
+        },
+      ],
+      communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'en' }] } }],
+    };
 
-      const profile = await repo.createResource<StructureDefinition>({
-        ...usCorePatientProfile,
+    let repo: Repository;
+    let profile: StructureDefinition;
+    beforeAll(async () => {
+      const result = await createTestProject({ withRepo: { validateTerminology: true } });
+      repo = result.repo;
+
+      // Create modified US Core Patient profile to have 'required' binding for communication.language
+      const modifiedPatientProfile = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+
+      const commLang = modifiedPatientProfile.snapshot?.element.find((e) => e.id === 'Patient.communication.language');
+      assert(commLang?.binding?.valueSet === 'http://hl7.org/fhir/us/core/ValueSet/simple-language');
+      assert(commLang.binding.strength === 'extensible');
+      commLang.binding.strength = 'required';
+
+      profile = await repo.createResource<StructureDefinition>({
+        ...modifiedPatientProfile,
         url: 'urn:uuid:' + randomUUID(),
       });
 
-      await expect(repo.createResource(patient)).resolves.toBeDefined();
-      await expect(repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })).rejects.toThrow(
-        `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
-      );
-      await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
-    }));
+      // Create a ValueSet for the US Core Patient profile that includes only 'en' as a valid language
+      await repo.createResource<ValueSet>({
+        resourceType: 'ValueSet',
+        url: 'http://hl7.org/fhir/us/core/ValueSet/simple-language',
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [
+            {
+              system: 'urn:ietf:bcp:47',
+              code: 'en',
+            },
+          ],
+        },
+        status: 'active',
+      });
+    });
+    test('Valid patient without any profiles', async () =>
+      withTestContext(async () => {
+        await expect(repo.createResource(patient)).resolves.toBeDefined();
+      }));
+
+    test('Invalid gender', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })
+        ).rejects.toThrow(
+          `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
+        );
+      }));
+
+    test('Valid patient with US Core Patient profile', async () =>
+      withTestContext(async () => {
+        await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
+      }));
+
+    test.failing(
+      '[FAILING] Invalid patient with US Core Patient profile (communication.language not in ValueSet)',
+      async () =>
+        withTestContext(async () => {
+          await expect(
+            repo.createResource({
+              ...patient,
+              meta: { profile: [profile.url] },
+              communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
+            })
+          ).rejects.toThrow(
+            `Value "fr" did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language`
+          );
+        })
+    );
+  });
 
   test('Conditional update', () =>
     withTestContext(async () => {

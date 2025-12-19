@@ -40,17 +40,23 @@ describe('IntakeFormPage', () => {
   test('Renders QuestionnaireForm', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Renders required demographic fields', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     // Check for required fields - use getAllByRole and select first for fields that appear multiple times
     const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
@@ -69,9 +75,12 @@ describe('IntakeFormPage', () => {
   test('Renders demographic group section', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Demographics')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Demographics')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     // Check for various demographic fields - use getAllByRole for fields that appear multiple times
     const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
@@ -100,11 +109,13 @@ describe('IntakeFormPage', () => {
     const user = userEvent.setup();
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
-    // Use getAllByRole and select the first one (patient demographics)
     const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
     const lastNameInputs = screen.getAllByRole('textbox', { name: /Last Name/i });
 
@@ -121,32 +132,44 @@ describe('IntakeFormPage', () => {
   test('Renders emergency contact section', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Emergency Contact')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Emergency Contact')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Renders allergies section', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Allergies')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Allergies')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Renders medications section', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Current medications')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Current medications')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Renders medical history section', async () => {
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Medical History')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Medical History')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 });

@@ -19,6 +19,7 @@ import {
   formatReferenceString,
   formatTime,
   formatTiming,
+  formatWallTime,
   typedValueToString,
 } from './format';
 
@@ -286,6 +287,16 @@ test('Format time', () => {
   expect(formatTime('12:00:00')).not.toStrictEqual('');
 });
 
+test('Format wall time', () => {
+  expect(formatWallTime(undefined)).toStrictEqual('');
+  expect(formatWallTime('')).toStrictEqual('');
+  expect(formatWallTime('xyz')).toStrictEqual('');
+  expect(formatWallTime('12:00')).toStrictEqual('12:00 PM');
+  expect(formatWallTime('12:00:00')).toStrictEqual('12:00 PM');
+  expect(formatWallTime('14:30:11')).toStrictEqual('2:30:11 PM');
+  expect(formatWallTime('08:15')).toStrictEqual('8:15 AM');
+});
+
 test('Format date/time', () => {
   expect(formatDateTime(undefined)).toStrictEqual('');
   expect(formatDateTime('')).toStrictEqual('');
@@ -315,7 +326,7 @@ test('Format timing', () => {
         timeOfDay: ['09:00:00', '12:00:00', '03:00:00'],
       },
     })
-  ).toMatch(/Weekly on Mon, Wed, Fri at/);
+  ).toEqual('Weekly on Mon, Wed, Fri at 9:00 AM, 12:00 PM, 3:00 AM');
   expect(
     formatTiming({
       repeat: {

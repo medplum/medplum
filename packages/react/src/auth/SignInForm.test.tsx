@@ -444,7 +444,7 @@ describe('SignInForm', () => {
     expect(screen.getByText('profile')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Set scope'));
+      fireEvent.click(screen.getByText('Set Scope'));
     });
 
     expect(successFn).toHaveBeenCalled();
