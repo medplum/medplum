@@ -455,6 +455,28 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText(value.endpoint as string)).toBeInTheDocument();
   });
 
+  test('Renders date', async () => {
+    await setup(
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, type: [{ code: 'date' }] }}
+        propertyType={PropertyType.date}
+        value={'2026-01-15'}
+      />
+    );
+    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
+  });
+
+  test('Renders time', async () => {
+    await setup(
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, type: [{ code: 'time' }] }}
+        propertyType={PropertyType.time}
+        value={'14:45:00'}
+      />
+    );
+    expect(screen.getByText('2:45 PM')).toBeInTheDocument();
+  });
+
   test('Handles unknown property', async () => {
     await expect(
       setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
