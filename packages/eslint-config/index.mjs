@@ -101,7 +101,6 @@ export const coreConfig = {
       'error',
       {
         definedTags: ['category', 'experimental', 'ts-ignore'],
-        tagNamePreference: { defaultValue: 'default' },
       },
     ],
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
@@ -119,6 +118,13 @@ export const coreConfig = {
         ' SPDX-License-Identifier: Apache-2.0',
       ],
     ],
+  },
+  settings: {
+    jsdoc: {
+      tagNamePreference: {
+        default: 'defaultValue',
+      },
+    },
   },
 };
 
