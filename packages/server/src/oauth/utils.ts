@@ -617,6 +617,7 @@ export async function getAuthTokens(
       username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
     { lifetime: options?.accessLifetime }
   );
