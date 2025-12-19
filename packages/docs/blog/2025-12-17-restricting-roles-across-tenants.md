@@ -479,7 +479,7 @@ When a Practitioner user belongs to multiple tenants, their `ProjectMembership` 
 | Approach | API-Level Isolation (Enrolled Tenants) | API-Level Isolation (Per Tenant) | Application-Level Isolation | Use Case |
 |----------|-------------------|-------------------|-------------------|----------|
 | **[Option 1: All Tenants](#option-1-allow-access-to-all-enrolled-tenants)** | Yes | No | No | Cross-tenant visibility acceptable |
-| **[Option 2: `_compartment` Parameter](#option-2-frontend-level-restriction-with-_compartment)** | Yes | Yes | Yes | Need UI-level restriction, API access to all tenants |
+| **[Option 2: `_compartment` Parameter](#option-2-frontend-level-restriction-with-_compartment)** | Yes | No | Yes | Need UI-level tenant restriction acceptable, API level access to all enrolled tenants |
 | **[Option 3: Multiple Memberships](#option-3-multiple-projectmemberships)** | Yes | Yes | Yes | Need strict API-level tenant isolation |
 
 **Column Descriptions:**
