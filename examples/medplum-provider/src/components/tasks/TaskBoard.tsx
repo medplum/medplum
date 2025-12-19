@@ -44,11 +44,12 @@ interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
   onDeleteTask: (task: Task) => void;
+  onTaskChange: (task: Task) => void;
   onSelectedItem: (task: Task) => string;
 }
 
 export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onDeleteTask, onSelectedItem } = props;
+  const { query, selectedTaskId, onDeleteTask, onTaskChange, onSelectedItem } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
@@ -136,7 +137,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks().catch(showErrorNotification);
-    handleTaskChange(task).catch(showErrorNotification);
+    onTaskChange(task);
   };
 
   const handleTaskChange = async (_task: Task): Promise<void> => {
@@ -274,12 +275,10 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
 function EmptyTasksState(): JSX.Element {
   return (
-    <Flex direction="column" h="100%" justify="center" align="center">
-      <Stack align="center" gap="md" pt="xl">
-        <Text c="dimmed" fw={500}>
-          No tasks available.
-        </Text>
-      </Stack>
+    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
+      <Text c="dimmed" fw={500}>
+        No tasks available.
+      </Text>
     </Flex>
   );
 }

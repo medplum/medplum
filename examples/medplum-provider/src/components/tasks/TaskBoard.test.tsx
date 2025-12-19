@@ -31,6 +31,7 @@ describe('TaskBoard', () => {
               query={query}
               selectedTaskId={undefined}
               onDeleteTask={vi.fn()}
+              onTaskChange={vi.fn()}
               onSelectedItem={defaultOnSelectedItem}
               {...props}
             />
@@ -453,6 +454,7 @@ describe('TaskBoard', () => {
               query="status=in-progress"
               selectedTaskId="task-in-progress-1"
               onDeleteTask={vi.fn()}
+              onTaskChange={vi.fn()}
               onSelectedItem={(task: Task) => `/Task/${task.id}`}
             />
           </MantineProvider>
@@ -492,5 +494,65 @@ describe('TaskBoard', () => {
     );
 
     expect(screen.getByText('Second In Progress Task')).toBeInTheDocument();
+  });
+
+  test('creates new task and it should be visible on screen by title', async () => {
+    const user = userEvent.setup();
+    const newTaskTitle = 'New Test Task';
+    const newTask: Task = {
+      resourceType: 'Task',
+      id: 'new-task-123',
+      status: 'draft',
+      intent: 'order',
+      code: { text: newTaskTitle },
+      authoredOn: '2023-01-01T12:00:00Z',
+    };
+
+    // Mock search to return empty initially, then include the new task after creation
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    // Open the new task modal
+    const plusButtons = screen.getAllByRole('button');
+    const plusButton = plusButtons.find((btn) => btn.querySelector('svg.tabler-icon-plus'));
+    expect(plusButton).toBeDefined();
+
+    await user.click(plusButton as Element);
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+
+    const titleInput = screen.getByPlaceholderText('Enter task title');
+    await user.type(titleInput, newTaskTitle);
+
+    vi.spyOn(medplum, 'createResource').mockResolvedValue(newTask as Task & { id: string });
+
+    searchSpy.mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: newTask }],
+    } as any);
+
+    const createButton = screen.getByRole('button', { name: 'Create Task' });
+    await user.click(createButton);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText(newTaskTitle)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 });
