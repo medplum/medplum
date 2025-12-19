@@ -101,6 +101,7 @@ export const coreConfig = {
       'error',
       {
         definedTags: ['category', 'experimental', 'ts-ignore'],
+        tagNamePreference: { defaultValue: 'default' },
       },
     ],
     'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
