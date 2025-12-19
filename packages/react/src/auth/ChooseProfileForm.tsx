@@ -86,7 +86,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
           component="button"
           type="button"
           onClick={() => {
-            window.location.href = '/signin?project=new';
+            window.location.href = `/signin?project=new&login=${props.login}`;
           }}
         >
           Create a new project
