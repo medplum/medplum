@@ -167,34 +167,56 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    services:
-      postgres:
-        image: postgres:${{ matrix.pg-version }}
-        env:
-          POSTGRES_DB: medplum
-          POSTGRES_USER: medplum
-          POSTGRES_PASSWORD: medplum
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:${{ matrix.redis-version }}
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+      - name: Start PostgreSQL with tmpfs
+        run: |
+          docker run -d \
+            --name postgres-test \
+            --tmpfs /var/lib/postgresql:size=1G \
+            -e POSTGRES_USER=medplum \
+            -e POSTGRES_PASSWORD=medplum \
+            -e POSTGRES_DB=medplum \
+            -p 5432:5432 \
+            -v ${{ github.workspace }}/postgres:/docker-entrypoint-initdb.d \
+            postgres:${{ matrix.pg-version }} \
+            -c fsync=off \
+            -c synchronous_commit=off \
+            -c full_page_writes=off
+      - name: Start Redis
+        run: |
+          docker run -d \
+            --name redis-test \
+            -p 6379:6379 \
+            redis:${{ matrix.redis-version }}
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL container to initialize..."
+          sleep 5
+          for i in {1..30}; do
+            # Check if container is still running
+            if ! docker ps | grep -q postgres-test; then
+              echo "PostgreSQL container stopped unexpectedly!"
+              docker ps -a
+              echo "Container logs:"
+              docker logs postgres-test
+              exit 1
+            fi
+            if docker exec postgres-test pg_isready -U medplum; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... (attempt $i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL failed to start. Container logs:"
+          docker logs postgres-test
+          exit 1
+      - name: Run additional setup SQL
+        run: docker exec postgres-test psql -U medplum -d medplum -f /docker-entrypoint-initdb.d/init_test.sql
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -223,16 +245,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Wait for PostgreSQL
-        run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
-      - name: Run additional setup SQL
-        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
-        env:
-          PGPASSWORD: medplum
       - name: Test
         run: ./scripts/test.sh
         env:
@@ -252,6 +264,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Stop test containers
+        if: always()
+        run: |
+          docker stop postgres-test redis-test || true
+          docker rm postgres-test redis-test || true
 
   e2e:
     name: Run e2e tests
@@ -269,34 +286,56 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    services:
-      postgres:
-        image: postgres:${{ matrix.pg-version }}
-        env:
-          POSTGRES_DB: medplum
-          POSTGRES_USER: medplum
-          POSTGRES_PASSWORD: medplum
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:${{ matrix.redis-version }}
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+      - name: Start PostgreSQL with tmpfs
+        run: |
+          docker run -d \
+            --name postgres-test \
+            --tmpfs /var/lib/postgresql:size=1G \
+            -e POSTGRES_USER=medplum \
+            -e POSTGRES_PASSWORD=medplum \
+            -e POSTGRES_DB=medplum \
+            -p 5432:5432 \
+            -v ${{ github.workspace }}/postgres:/docker-entrypoint-initdb.d \
+            postgres:${{ matrix.pg-version }} \
+            -c fsync=off \
+            -c synchronous_commit=off \
+            -c full_page_writes=off
+      - name: Start Redis
+        run: |
+          docker run -d \
+            --name redis-test \
+            -p 6379:6379 \
+            redis:${{ matrix.redis-version }}
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL container to initialize..."
+          sleep 5
+          for i in {1..30}; do
+            # Check if container is still running
+            if ! docker ps | grep -q postgres-test; then
+              echo "PostgreSQL container stopped unexpectedly!"
+              docker ps -a
+              echo "Container logs:"
+              docker logs postgres-test
+              exit 1
+            fi
+            if docker exec postgres-test pg_isready -U medplum; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... (attempt $i/30)"
+            sleep 2
+          done
+          echo "PostgreSQL failed to start. Container logs:"
+          docker logs postgres-test
+          exit 1
+      - name: Run additional setup SQL
+        run: docker exec postgres-test psql -U medplum -d medplum -f /docker-entrypoint-initdb.d/init_test.sql
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -325,16 +364,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Wait for PostgreSQL
-        run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
-      - name: Run additional setup SQL
-        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
-        env:
-          PGPASSWORD: medplum
       - name: Install playwright
         run: npx playwright install --with-deps chromium
       - name: Build Medplum
@@ -361,7 +390,7 @@ jobs:
               cat packages/server/server.log
               exit 1
             fi
-            
+
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
             sleep 30
@@ -381,6 +410,11 @@ jobs:
             packages/e2e/playwright-report/
             packages/e2e/test-results/
           retention-days: 30
+      - name: Stop test containers
+        if: always()
+        run: |
+          docker stop postgres-test redis-test || true
+          docker rm postgres-test redis-test || true
 
   build-docs:
     name: Build the docs
