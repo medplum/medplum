@@ -155,7 +155,7 @@ medplum post admin/projects/:projectId/invite \
   "firstName": "George",
   "lastName": "Washington",
   "email": "patient.gw@example.gov",
-  "password: "lib3rty0rDe4th!"
+  "password": "Xk9mP2qL7nR4v"
 }'
 ```
 
@@ -171,7 +171,7 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
   "firstName": "George",
   "lastName": "Washington",
   "email": "patient.gw@example.gov",
-  "password: "lib3rty0rDe4th!"
+  "password": "Xk9mP2qL7nR4v"
 }'
 ```
 
