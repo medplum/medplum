@@ -92,6 +92,7 @@
     "rate-limiter-flexible": "9.0.0",
     "rfc6902": "5.1.2",
     "semver": "7.7.3",
+    "temporal-polyfill": "0.3.0",
     "uuid": "11.1.0",
     "validator": "13.15.23",
     "ws": "8.18.3",
