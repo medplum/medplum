@@ -328,6 +328,10 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'doc',
+      id: 'integration/efax/index',
+    },
+    {
+      type: 'doc',
       id: 'integration/log-streaming',
     },
     {
