@@ -6,11 +6,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import type { JSX } from 'react';
 import { vi } from 'vitest';
-import {
-  DOSESPOT_ADD_PATIENT_PHARMACY_BOT,
-  DOSESPOT_PHARMACY_ID_SYSTEM,
-  DOSESPOT_SEARCH_PHARMACY_BOT,
-} from './common';
+import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_PHARMACY_ID_SYSTEM, DOSESPOT_SEARCH_PHARMACY_BOT } from './common';
 import { useDoseSpotPatientPharmacy } from './useDoseSpotPatientPharmacy';
 
 function TestComponent(): JSX.Element {
