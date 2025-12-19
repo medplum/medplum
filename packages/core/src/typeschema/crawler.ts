@@ -134,6 +134,12 @@ class Crawler {
   private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
+      // What is this the correct way to consider schema.innerTypes? e.g. for profiles
+      // See https://github.com/medplum/medplum/issues/8102
+      // Two ways that work in some cases but need further vetting after adding schema: InternalTypeSchema as a parameter to crawlPropertyValue:
+      // 1. const type = getDataType(value.type, schema.url). May require adding call to `loadDataType(profile);` in Repository.validateProfiles()
+      // 2. const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
+      // Similar changes should be made to AsyncCrawler.crawlPropertyValue
       const type = getDataType(value.type);
       this.crawlObject(value, type, path);
     }

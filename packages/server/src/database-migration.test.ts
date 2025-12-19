@@ -10,7 +10,6 @@ import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
-import { AuthenticatedRequestContext } from './context';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
@@ -26,7 +25,6 @@ import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
@@ -565,7 +563,6 @@ describe('Database migrations', () => {
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob(getSystemRepo());
 
-      requestContextStore.enterWith(AuthenticatedRequestContext.system());
       ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
       const systemRepo = getSystemRepo();

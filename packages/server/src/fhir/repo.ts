@@ -1010,7 +1010,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     issues: OperationOutcomeIssue[]
   ): Promise<void> {
     for (const [url, values] of Object.entries(tokens)) {
-      const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+      const valueSet = await findTerminologyResource<ValueSet>(this, 'ValueSet', url);
 
       const resultCache: Record<string, boolean | undefined> = Object.create(null);
       for (const value of values) {
@@ -1043,7 +1043,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           continue;
         }
 
-        const matchedCoding = await validateCodingInValueSet(valueSet, codings);
+        const matchedCoding = await validateCodingInValueSet(this, valueSet, codings);
         resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
         if (!matchedCoding) {
           issues.push({
