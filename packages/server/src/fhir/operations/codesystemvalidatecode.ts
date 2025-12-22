@@ -17,6 +17,7 @@ type CodeSystemValidateCodeParameters = {
   version?: string;
   code?: string;
   coding?: Coding;
+  displayLanguage?: string;
 };
 
 /**
@@ -54,7 +55,7 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
     return [badRequest('No coding specified')];
   }
 
-  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding);
+  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding, params);
 
   const output: Record<string, any> = Object.create(null);
   if (result) {
@@ -68,18 +69,20 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
 
 export async function validateCoding(
   codeSystem: WithId<CodeSystem> | string,
-  coding: Coding
+  coding: Coding,
+  options?: { displayLanguage?: string }
 ): Promise<Coding | undefined> {
   if (typeof codeSystem === 'string') {
     // Fallback to validating system URL if full CodeSystem not available
     return coding.system === codeSystem ? coding : undefined;
   }
-  return (await validateCodings(codeSystem, [coding]))[0];
+  return (await validateCodings(codeSystem, [coding], options))[0];
 }
 
 export async function validateCodings(
   codeSystem: WithId<CodeSystem>,
-  codings: Coding[]
+  codings: Coding[],
+  options?: { displayLanguage?: string }
 ): Promise<(Coding | undefined)[]> {
   const eligible: boolean[] = new Array(codings.length);
   const codesToQuery = new Set<string>();
@@ -96,7 +99,12 @@ export async function validateCodings(
 
   let result: any[] | undefined;
   if (codesToQuery.size > 0) {
-    const query = selectCoding(codeSystem.id, ...codesToQuery).where('synonymOf', '=', null);
+    const query = selectCoding(codeSystem.id, ...codesToQuery);
+    if (options?.displayLanguage) {
+      query.where('language', '=', options.displayLanguage);
+    } else {
+      query.where('synonymOf', '=', null);
+    }
     const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }

@@ -50,7 +50,21 @@ describe('CodeSystem validate-code', () => {
         resourceType: 'Parameters',
         parameter: [
           { name: 'system', valueUri: codeSystem.url },
-          { name: 'concept', valueCoding: { code: '1', display: 'Biopsy of brain' } },
+          {
+            name: 'concept',
+            valueCoding: {
+              code: '1',
+              display: 'Biopsy of brain',
+            },
+          },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '1' },
+              { name: 'language', valueCode: 'fr' },
+              { name: 'value', valueString: 'biopsie du tissu encéphalique' },
+            ],
+          },
           { name: 'concept', valueCoding: { code: '2', display: 'Biopsy of head' } },
         ],
       } as Parameters);
@@ -300,6 +314,28 @@ describe('CodeSystem validate-code', () => {
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],
+    });
+  });
+
+  test('Returns specified displayLanguage', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } },
+          { name: 'displayLanguage', valueCode: 'fr' },
+        ],
+      } as Parameters);
+    expect(res.status).toStrictEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'biopsie du tissu encéphalique' },
+      ],
     });
   });
 
