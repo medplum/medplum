@@ -229,7 +229,6 @@ export function TaskBoard({ query, selectedTaskId, onDelete, onNew, onChange, ge
     }
   };
 
-
   return (
     <Box w="100%" h="100%">
       <Flex h="100%">

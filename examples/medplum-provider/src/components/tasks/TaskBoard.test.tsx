@@ -372,7 +372,6 @@ describe('TaskBoard', () => {
   });
 
   test('resets to page 1 when filters change', async () => {
-
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
