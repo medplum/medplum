@@ -25,7 +25,6 @@ tar \
   LICENSE.txt \
   NOTICE \
   package.json \
-  package-lock.json \
   packages/bot-layer/package.json \
   packages/ccda/package.json \
   packages/ccda/dist \

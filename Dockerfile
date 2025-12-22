@@ -35,8 +35,6 @@ COPY --from=build-stage /usr/src/medplum ./
 # See: https://docs.docker.com/reference/dockerfile/#adding-local-tar-archives
 ADD ./medplum-server.tar.gz ./
 
-RUN rm package-lock.json
-
 EXPOSE 5000 8103
 
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]
