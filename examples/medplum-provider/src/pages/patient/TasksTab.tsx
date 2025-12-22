@@ -6,9 +6,10 @@ import type { JSX } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import classes from '../tasks/TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
-import { formatSearchQuery, getReferenceString, parseSearchRequest, Operator } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import type { ProfileResource, SearchRequest } from '@medplum/core';
 import { Loading, useMedplumProfile } from '@medplum/react';
+import { normalizeTaskSearch } from '../../utils/task-search';
 
 export function TasksTab(): JSX.Element {
   const { patientId, taskId } = useParams();
@@ -19,32 +20,20 @@ export function TasksTab(): JSX.Element {
   const patientRef = `Patient/${patientId}`;
 
   useEffect(() => {
-    const parsedSearch = parseSearchRequest(location.pathname + location.search);
-    const lastUpdatedSortRule = parsedSearch.sortRules?.find((rule) => rule.code === '_lastUpdated');
-    const otherFilters = parsedSearch.filters?.filter((f) => f.code !== 'patient') || [];
-    const updatedFilters = [
-      ...otherFilters,
-      {
-        code: 'patient',
-        operator: Operator.EQUALS,
-        value: patientRef,
-      },
-    ];
+    const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search, {
+      additionalFilters: [
+        {
+          code: 'patient',
+          operator: Operator.EQUALS,
+          value: patientRef,
+        },
+      ],
+    });
 
-    const searchWithPatient: SearchRequest = {
-      ...parsedSearch,
-      filters: updatedFilters,
-      sortRules: lastUpdatedSortRule
-        ? parsedSearch.sortRules
-        : [{ code: '_lastUpdated', descending: true }],
-      count: parsedSearch.count || 20,
-      total: parsedSearch.total || 'accurate',
-    };
-
-    if (!lastUpdatedSortRule || !parsedSearch.count || !parsedSearch.total) {
-      navigate(`/Patient/${patientId}/Task${formatSearchQuery(searchWithPatient)}`)?.catch(console.error);
+    if (needsNavigation) {
+      navigate(`/Patient/${patientId}/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
     } else {
-      setParsedSearch(searchWithPatient);
+      setParsedSearch(normalizedSearch);
     }
   }, [location, navigate, patientId, patientRef]);
 

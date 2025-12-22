@@ -118,7 +118,6 @@ export function TaskBoard({ query, selectedTaskId, onDelete, onNew, onChange, ge
         return;
       }
 
-      console.log('bundle', bundle);
       let results: Task[] = [];
 
       if (bundle.entry) {

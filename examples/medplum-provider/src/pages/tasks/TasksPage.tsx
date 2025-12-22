@@ -6,9 +6,10 @@ import type { JSX } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import classes from './TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
-import { formatSearchQuery, getReferenceString, parseSearchRequest, Operator } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import type { ProfileResource, SearchRequest } from '@medplum/core';
 import { Loading, useMedplumProfile } from '@medplum/react';
+import { normalizeTaskSearch } from '../../utils/task-search';
 
 export function TasksPage(): JSX.Element {
   const { taskId } = useParams();
@@ -18,19 +19,11 @@ export function TasksPage(): JSX.Element {
   const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
 
   useEffect(() => {
-    const parsedSearch = parseSearchRequest(location.pathname + location.search);
-    const lastUpdatedSortRule = parsedSearch.sortRules?.find((rule) => rule.code === '_lastUpdated');
-    if (!parsedSearch.count || !parsedSearch.total || !lastUpdatedSortRule) {
-      navigate(
-        `/Task${formatSearchQuery({
-          ...parsedSearch,
-          sortRules: [{ code: '_lastUpdated', descending: true }],
-          count: 20,
-          total: 'accurate',
-        })}`
-      )?.catch(console.error);
+    const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
+    if (needsNavigation) {
+      navigate(`/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
     } else {
-      setParsedSearch(parsedSearch);
+      setParsedSearch(normalizedSearch);
     }
   }, [location, navigate]);
 
