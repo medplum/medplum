@@ -1,10 +1,7 @@
-FROM nginxinc/nginx-unprivileged:alpine
-
-# Start off as user root so we have permissions to run APK and chown
-USER root
+FROM dhi.io/nginx:1
 
 # Copy nginx configuration
-COPY <<EOF /etc/nginx/conf.d/default.conf
+COPY <<EOF /etc/nginx/nginx.conf
 server {
     listen 3000;
     server_name localhost;
@@ -33,14 +30,6 @@ ADD ./medplum-app.tar.gz /usr/share/nginx/html
 # Copy the entrypoint script
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
 
-# Grant ownership of the html dir and the entrypoint to the nginx default user/group
-RUN chown -R 101:101 /usr/share/nginx/html && \
-    chown 101:101 /docker-entrypoint.sh && \
-    chmod +x  /docker-entrypoint.sh
-
 EXPOSE 3000
-
-# Switch back to the 101 UID (non-root user)
-USER 101
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
