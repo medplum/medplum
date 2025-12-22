@@ -141,7 +141,7 @@ describe('IntakeFormPage', () => {
     // Verify the values were set correctly
     expect(firstNameInput).toHaveValue('John');
     expect(lastNameInput).toHaveValue('Doe');
-  }, 15000);
+  }, 3000);
 
   test('Renders emergency contact section', async () => {
     setup();
