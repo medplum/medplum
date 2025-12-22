@@ -109,6 +109,7 @@ describe('IntakeFormPage', () => {
     const user = userEvent.setup();
     setup();
 
+    // Wait for the questionnaire title to appear
     await waitFor(
       () => {
         expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
@@ -116,18 +117,33 @@ describe('IntakeFormPage', () => {
       { timeout: 3000 }
     );
 
-    const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
-    const lastNameInputs = screen.getAllByRole('textbox', { name: /Last Name/i });
+    // Wait for form inputs to be available and interactive (ensures value set checking is complete)
+    const { firstNameInput, lastNameInput } = await waitFor(
+      () => {
+        const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
+        const lastNameInputs = screen.getAllByRole('textbox', { name: /Last Name/i });
+        expect(firstNameInputs.length).toBeGreaterThan(0);
+        expect(lastNameInputs.length).toBeGreaterThan(0);
+        const firstName = firstNameInputs[0];
+        const lastName = lastNameInputs[0];
+        // Ensure inputs are interactive and visible
+        expect(firstName).not.toBeDisabled();
+        expect(lastName).not.toBeDisabled();
+        expect(firstName).toBeVisible();
+        expect(lastName).toBeVisible();
+        return { firstNameInput: firstName, lastNameInput: lastName };
+      },
+      { timeout: 3000 }
+    );
 
-    const firstNameInput = firstNameInputs[0];
-    const lastNameInput = lastNameInputs[0];
-
+    // Type into the inputs
     await user.type(firstNameInput, 'John');
     await user.type(lastNameInput, 'Doe');
 
+    // Verify the values were set correctly
     expect(firstNameInput).toHaveValue('John');
     expect(lastNameInput).toHaveValue('Doe');
-  });
+  }, 15000);
 
   test('Renders emergency contact section', async () => {
     setup();
