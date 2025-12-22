@@ -49,7 +49,7 @@ interface FilterState {
  * @property myTasksUri - The URI for the my tasks search request.
  * @property allTasksUri - The URI for the all tasks search request.
  * @returns The TaskBoard component.
- */ 
+ */
 interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
@@ -61,7 +61,16 @@ interface TaskBoardProps {
   allTasksUri: string;
 }
 
-export function TaskBoard({ query, selectedTaskId, onDelete, onNew, onChange, getTaskUri, myTasksUri, allTasksUri }: TaskBoardProps): JSX.Element {
+export function TaskBoard({
+  query,
+  selectedTaskId,
+  onDelete,
+  onNew,
+  onChange,
+  getTaskUri,
+  myTasksUri,
+  allTasksUri,
+}: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -104,7 +113,6 @@ export function TaskBoard({ query, selectedTaskId, onDelete, onNew, onChange, ge
   }, [currentSearch]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
- 
     if (fetchingRef.current) {
       return;
     }
@@ -113,7 +121,7 @@ export function TaskBoard({ query, selectedTaskId, onDelete, onNew, onChange, ge
 
     try {
       const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
-      
+
       if (currentRequestId !== requestIdRef.current) {
         return;
       }
