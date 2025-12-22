@@ -22,7 +22,6 @@ describe('TaskBoard', () => {
     query: string = '',
     props: Partial<React.ComponentProps<typeof TaskBoard>> = {}
   ): ReturnType<typeof render> => {
-    const defaultOnSelectedItem = (task: Task): string => `/Task/${task.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -30,9 +29,12 @@ describe('TaskBoard', () => {
             <TaskBoard
               query={query}
               selectedTaskId={undefined}
-              onDeleteTask={vi.fn()}
-              onTaskChange={vi.fn()}
-              onSelectedItem={defaultOnSelectedItem}
+              onDelete={vi.fn()}
+              onNew={vi.fn()}
+              onChange={vi.fn()}
+              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
+              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
+              allTasksUri="/Task?_sort=-_lastUpdated"
               {...props}
             />
           </MantineProvider>
@@ -79,6 +81,13 @@ describe('TaskBoard', () => {
   });
 
   test('shows empty state when no tasks are found', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
     setup();
 
     await waitFor(() => {
@@ -214,9 +223,9 @@ describe('TaskBoard', () => {
     });
   });
 
-  test('passes onSelectedItem to TaskListItem when provided', async () => {
+  test('passes getTaskUri to TaskListItem when provided', async () => {
     await medplum.createResource(mockTask);
-    const onSelectedItem = vi.fn((task: Task) => `/Custom/${task.id}`);
+    const getTaskUri = vi.fn((task: Task) => `/Custom/${task.id}`);
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -224,17 +233,19 @@ describe('TaskBoard', () => {
       entry: [{ resource: mockTask }],
     } as any);
 
-    setup('', { onSelectedItem });
+    setup('', { getTaskUri });
 
     await waitFor(() => {
       expect(screen.getByText('Test Task')).toBeInTheDocument();
     });
 
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '/Custom/task-123');
+    const links = screen.getAllByRole('link');
+    const taskLink = links.find((link) => link.getAttribute('href')?.includes('/Custom/task-123'));
+    expect(taskLink).toBeDefined();
+    expect(taskLink).toHaveAttribute('href', '/Custom/task-123');
   });
 
-  test('uses onSelectedItem URL', async () => {
+  test('uses getTaskUri URL', async () => {
     await medplum.createResource(mockTask);
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
@@ -249,8 +260,10 @@ describe('TaskBoard', () => {
       expect(screen.getByText('Test Task')).toBeInTheDocument();
     });
 
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '/Task/task-123');
+    const links = screen.getAllByRole('link');
+    const taskLink = links.find((link) => link.getAttribute('href')?.includes('/Task/task-123'));
+    expect(taskLink).toBeDefined();
+    expect(taskLink).toHaveAttribute('href', '/Task/task-123');
   });
 
   test('includes pagination parameters in search request', async () => {
@@ -261,7 +274,7 @@ describe('TaskBoard', () => {
       entry: [],
     } as any);
 
-    setup();
+    setup('_offset=0&_count=20&_total=accurate');
 
     await waitFor(() => {
       expect(searchSpy).toHaveBeenCalled();
@@ -330,7 +343,9 @@ describe('TaskBoard', () => {
       entry: tasks.slice(0, 20).map((task) => ({ resource: task })),
     } as any);
 
-    setup();
+    const onChange = vi.fn();
+
+    setup('_offset=0&_count=20&_sort=-_lastUpdated', { onChange });
 
     await waitFor(() => {
       expect(searchSpy).toHaveBeenCalled();
@@ -349,26 +364,15 @@ describe('TaskBoard', () => {
     }
 
     await waitFor(() => {
-      // Should make another search call with offset=20
-      const callsWithOffset20 = searchSpy.mock.calls.filter((call) => {
-        const params = call[1];
-        if (typeof params === 'string') {
-          return params.includes('_offset=20');
-        } else if (params instanceof URLSearchParams) {
-          return params.get('_offset') === '20';
-        } else if (Array.isArray(params)) {
-          return params.some((kv) => Array.isArray(kv) && kv[0] === '_offset' && kv[1] === '20');
-        } else if (typeof params === 'object' && params !== null) {
-          return params['_offset'] === 20 || params['_offset'] === '20';
-        }
-        return false;
-      });
-      expect(callsWithOffset20.length).toBeGreaterThan(0);
+      // Should call onChange with SearchRequest containing offset=20
+      expect(onChange).toHaveBeenCalled();
+      const call = onChange.mock.calls[0];
+      expect(call[0]).toHaveProperty('offset', 20);
     });
   });
 
   test('resets to page 1 when filters change', async () => {
-    const user = userEvent.setup();
+
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -382,16 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Clear previous calls
-    searchSpy.mockClear();
-
-    // Switch to All Tasks (this should reset pagination)
-    await user.click(screen.getByText('All Tasks'));
-
-    await waitFor(() => {
-      // Should make search call with offset=0 (first page)
-      expect(searchSpy).toHaveBeenCalledWith('Task', expect.stringContaining('_offset=0'), expect.any(Object));
-    });
+    // Switch to All Tasks (this should navigate to reset pagination)
+    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
+    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
@@ -453,9 +450,12 @@ describe('TaskBoard', () => {
             <TaskBoard
               query="status=in-progress"
               selectedTaskId="task-in-progress-1"
-              onDeleteTask={vi.fn()}
-              onTaskChange={vi.fn()}
-              onSelectedItem={(task: Task) => `/Task/${task.id}`}
+              onDelete={vi.fn()}
+              onNew={vi.fn()}
+              onChange={vi.fn()}
+              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
+              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
+              allTasksUri="/Task?_sort=-_lastUpdated"
             />
           </MantineProvider>
         </MedplumProvider>

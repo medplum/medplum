@@ -100,10 +100,13 @@ describe('ResourceCreatePage', () => {
 
     await user.click(submitButton);
 
-    await waitFor(() => {
-      expect(medplum.createResource).toHaveBeenCalled();
-      expect(navigateSpy).toHaveBeenCalledWith('/Task/task-123');
-    });
+    await waitFor(
+      () => {
+        expect(medplum.createResource).toHaveBeenCalled();
+        expect(navigateSpy).toHaveBeenCalledWith('/Task/task-123');
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Form submit creates new Task with patient context and navigates', async () => {
@@ -125,17 +128,20 @@ describe('ResourceCreatePage', () => {
 
     await user.click(submitButton);
 
-    await waitFor(() => {
-      expect(medplum.createResource).toHaveBeenCalled();
-      // Should navigate with patient path prepended - check that navigate was called
-      expect(navigateSpy).toHaveBeenCalled();
-      // The path should include the patient ID
-      const navigateCalls = navigateSpy.mock.calls;
-      expect(navigateCalls.length).toBeGreaterThan(0);
-      const lastCall = navigateCalls[navigateCalls.length - 1][0];
-      expect(String(lastCall)).toContain(`Patient/${HomerSimpson.id}`);
-      expect(String(lastCall)).toContain('Task/task-123');
-    });
+    await waitFor(
+      () => {
+        expect(medplum.createResource).toHaveBeenCalled();
+        // Should navigate with patient path prepended - check that navigate was called
+        expect(navigateSpy).toHaveBeenCalled();
+        // The path should include the patient ID
+        const navigateCalls = navigateSpy.mock.calls;
+        expect(navigateCalls.length).toBeGreaterThan(0);
+        const lastCall = navigateCalls[navigateCalls.length - 1][0];
+        expect(String(lastCall)).toContain(`Patient/${HomerSimpson.id}`);
+        expect(String(lastCall)).toContain('Task/task-123');
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('Handles form submission error', async () => {

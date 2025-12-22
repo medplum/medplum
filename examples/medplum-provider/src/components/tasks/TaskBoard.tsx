@@ -20,9 +20,9 @@ import type { JSX } from 'react';
 import cx from 'clsx';
 import classes from './TaskBoard.module.css';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { createReference, getReferenceString } from '@medplum/core';
-import type { ProfileResource } from '@medplum/core';
-import { useNavigate } from 'react-router';
+import { createReference, Operator, parseSearchRequest } from '@medplum/core';
+import type { ProfileResource, SearchRequest } from '@medplum/core';
+import { Link, useNavigate } from 'react-router';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskFilterType } from './TaskFilterMenu.utils';
@@ -35,21 +35,22 @@ import { NewTaskModal } from './NewTaskModal';
 import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
-  showMyTasks: boolean;
-  status: Task['status'] | undefined;
   performerType: CodeableConcept | undefined;
 }
 
 interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
-  onDeleteTask: (task: Task) => void;
-  onTaskChange: (task: Task) => void;
-  onSelectedItem: (task: Task) => string;
+  onDelete: (task: Task) => void;
+  onNew: (task: Task) => void;
+  onChange: (search: SearchRequest) => void;
+  getTaskUri: (task: Task) => string;
+  myTasksUri: string;
+  allTasksUri: string;
 }
 
 export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onDeleteTask, onTaskChange, onSelectedItem } = props;
+  const { query, selectedTaskId, onDelete, onNew, onChange, getTaskUri, myTasksUri, allTasksUri } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
@@ -59,33 +60,41 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [total, setTotal] = useState<number | undefined>(undefined);
 
   const [filters, setFilters] = useState<FilterState>({
-    showMyTasks: true,
-    status: undefined,
     performerType: undefined,
   });
 
-  const itemsPerPage = 20;
+  // Parse pagination and status filters from query
+  const searchParams = useMemo(() => new URLSearchParams(query), [query]);
+  const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
+  const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
+  const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
+  const isMyTasks = searchParams.has('owner');
+
+  // Parse current search from query string
+  const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
+
+  // Parse status filters from query string
+  const selectedStatuses = useMemo(() => {
+    const statusFilters = currentSearch.filters?.filter((f) => f.code === 'status') || [];
+    const statuses: Task['status'][] = [];
+    statusFilters.forEach((filter) => {
+      // Handle comma-separated values (e.g., "in-progress,completed")
+      const values = filter.value.split(',');
+      values.forEach((value) => {
+        const trimmedValue = value.trim();
+        if (trimmedValue && !statuses.includes(trimmedValue as Task['status'])) {
+          statuses.push(trimmedValue as Task['status']);
+        }
+      });
+    });
+    return statuses;
+  }, [currentSearch]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const searchParams = new URLSearchParams(query);
-
-    if (profileRef && filters.showMyTasks) {
-      searchParams.append('owner', getReferenceString(profileRef));
-    }
-    if (filters.status) {
-      searchParams.append('status', filters.status);
-    }
-
-    const offset = (currentPage - 1) * itemsPerPage;
-    searchParams.append('_offset', offset.toString());
-    searchParams.append('_count', itemsPerPage.toString());
-    searchParams.append('_total', 'accurate');
-
-    const bundle = await medplum.search('Task', searchParams.toString(), { cache: 'no-cache' });
+    const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
     let results: Task[] = [];
 
     if (bundle.entry) {
@@ -106,14 +115,14 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
     setPerformerTypes(allPerformerTypes);
     setTasks(results);
-  }, [medplum, profileRef, filters, query, currentPage, itemsPerPage]);
+  }, [medplum, filters.performerType, query]);
 
   useEffect(() => {
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, filters, query, fetchTasks]);
+  }, [medplum, profileRef, filters.performerType, query, fetchTasks]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -137,7 +146,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks().catch(showErrorNotification);
-    onTaskChange(task);
+    onNew(task);
   };
 
   const handleTaskChange = async (_task: Task): Promise<void> => {
@@ -146,18 +155,36 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleDeleteTask = async (task: Task): Promise<void> => {
     await fetchTasks().catch(showErrorNotification);
-    onDeleteTask(task);
+    onDelete(task);
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
-    setCurrentPage(1);
     switch (filterType) {
-      case TaskFilterType.STATUS:
-        setFilters((prev) => ({
-          ...prev,
-          status: prev.status !== value ? (value as Task['status']) : undefined,
-        }));
+      case TaskFilterType.STATUS: {
+        const statusValue = value as Task['status'];
+        const newStatuses = selectedStatuses.includes(statusValue)
+          ? selectedStatuses.filter((s) => s !== statusValue)
+          : [...selectedStatuses, statusValue];
+
+        // Build new search with updated status filters
+        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status') || [];
+        const newFilters = [...otherFilters];
+
+        if (newStatuses.length > 0) {
+          newFilters.push({
+            code: 'status',
+            operator: Operator.EQUALS,
+            value: newStatuses.join(','),
+          });
+        }
+
+        onChange({
+          ...currentSearch,
+          filters: newFilters,
+          offset: 0, // Reset to first page when filters change
+        });
         break;
+      }
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
@@ -172,16 +199,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     }
   };
 
-  const handleShowMyTasksChange = (flag: boolean): void => {
-    setCurrentPage(1);
-    setFilters({
-      showMyTasks: flag,
-      status: undefined,
-      performerType: undefined,
-    });
-  };
-
-  const totalPages = total !== undefined ? Math.ceil(total / itemsPerPage) : 1;
 
   return (
     <Box w="100%" h="100%">
@@ -192,25 +209,27 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
                   <Button
-                    className={cx(classes.button, { [classes.selected]: filters.showMyTasks })}
+                    component={Link}
+                    to={myTasksUri}
+                    className={cx(classes.button, { [classes.selected]: isMyTasks })}
                     h={32}
                     radius="xl"
-                    onClick={() => handleShowMyTasksChange(true)}
                   >
                     My Tasks
                   </Button>
 
                   <Button
-                    className={cx(classes.button, { [classes.selected]: !filters.showMyTasks })}
+                    component={Link}
+                    to={allTasksUri}
+                    className={cx(classes.button, { [classes.selected]: !isMyTasks })}
                     h={32}
                     radius="xl"
-                    onClick={() => handleShowMyTasksChange(false)}
                   >
                     All Tasks
                   </Button>
 
                   <TaskFilterMenu
-                    status={filters.status}
+                    statuses={selectedStatuses}
                     performerType={filters.performerType}
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
@@ -232,7 +251,7 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   tasks.length > 0 &&
                   tasks.map((task, index) => (
                     <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} onSelectedItem={onSelectedItem} />
+                      <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
                       {index < tasks.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
@@ -242,8 +261,14 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
                   <Center>
                     <Pagination
                       value={currentPage}
-                      total={totalPages}
-                      onChange={setCurrentPage}
+                      total={Math.ceil(total / itemsPerPage)}
+                      onChange={(page) => {
+                        const offset = (page - 1) * itemsPerPage;
+                        onChange({
+                          ...currentSearch,
+                          offset,
+                        });
+                      }}
                       size="sm"
                       siblings={1}
                       boundaries={1}
