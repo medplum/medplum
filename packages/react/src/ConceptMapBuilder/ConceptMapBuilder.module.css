@@ -1,0 +1,14 @@
+.section {
+  position: relative;
+  padding: 6px 0 16px 0;
+  transition: all 0.1;
+}
+
+.hovering {
+  border: 1.5px solid var(--mantine-color-blue-5);
+}
+
+.editing {
+  border: 1.5px solid var(--mantine-color-gray-1);
+  border-left: 4px solid var(--mantine-color-blue-5);
+}
