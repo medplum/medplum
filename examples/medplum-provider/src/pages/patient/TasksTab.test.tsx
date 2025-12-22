@@ -122,15 +122,23 @@ describe('TasksTab', () => {
     } as any);
     vi.spyOn(medplum, 'readResource').mockResolvedValue(mockTask as any);
 
-    setup('/Patient/patient-123/Task/task-123?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123');
+    setup(
+      '/Patient/patient-123/Task/task-123?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123'
+    );
 
-    await waitFor(() => {
-      expect(medplum.readResource).toHaveBeenCalledWith('Task', 'task-123');
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(medplum.readResource).toHaveBeenCalledWith('Task', 'task-123');
+      },
+      { timeout: 3000 }
+    );
 
-    await waitFor(() => {
-      expect(screen.getByText('Properties')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Properties')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('handles different patient IDs', async () => {

@@ -199,7 +199,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     }
   };
 
-
   return (
     <Box w="100%" h="100%">
       <Flex h="100%">

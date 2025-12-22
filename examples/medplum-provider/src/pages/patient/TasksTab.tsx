@@ -21,7 +21,7 @@ export function TasksTab(): JSX.Element {
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     const lastUpdatedSortRule = parsedSearch.sortRules?.find((rule) => rule.code === '_lastUpdated');
-    
+
     const otherFilters = parsedSearch.filters?.filter((f) => f.code !== 'patient') || [];
 
     const updatedFilters = [
@@ -36,9 +36,7 @@ export function TasksTab(): JSX.Element {
     const searchWithPatient: SearchRequest = {
       ...parsedSearch,
       filters: updatedFilters,
-      sortRules: lastUpdatedSortRule
-        ? parsedSearch.sortRules
-        : [{ code: '_lastUpdated', descending: true }],
+      sortRules: lastUpdatedSortRule ? parsedSearch.sortRules : [{ code: '_lastUpdated', descending: true }],
       count: parsedSearch.count || 20,
       total: parsedSearch.total || 'accurate',
     };
@@ -116,8 +114,12 @@ export function TasksTab(): JSX.Element {
         onNew={onNew}
         onChange={onChange}
         getTaskUri={getTaskUri}
-        myTasksUri={myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`}
-        allTasksUri={allTasksQuery ? `/Patient/${patientId}/Task?${allTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`}
+        myTasksUri={
+          myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
+        allTasksUri={
+          allTasksQuery ? `/Patient/${patientId}/Task?${allTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
       />
     </div>
   );

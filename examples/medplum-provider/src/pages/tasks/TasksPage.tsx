@@ -68,14 +68,14 @@ export function TasksPage(): JSX.Element {
   const myTasksSearch: SearchRequest = {
     ...parsedSearch,
     filters: myTasksFilters,
-    offset: 0, 
+    offset: 0,
   };
 
   const allTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner') || [];
   const allTasksSearch: SearchRequest = {
     ...parsedSearch,
     filters: allTasksFilters,
-    offset: 0, 
+    offset: 0,
   };
 
   const myTasksQuery = formatSearchQuery(myTasksSearch);

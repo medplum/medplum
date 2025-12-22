@@ -16,21 +16,13 @@ describe('TaskListItem', () => {
     medplum = new MockClient();
   });
 
-  const setup = (
-    task: Task,
-    selectedTask?: Task,
-    getTaskUri?: (task: Task) => string
-  ): ReturnType<typeof render> => {
+  const setup = (task: Task, selectedTask?: Task, getTaskUri?: (task: Task) => string): ReturnType<typeof render> => {
     const defaultGetTaskUri = (t: Task): string => `/Task/${t.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem
-              task={task}
-              selectedTask={selectedTask}
-              getTaskUri={getTaskUri ?? defaultGetTaskUri}
-            />
+            <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
