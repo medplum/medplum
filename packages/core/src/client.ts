@@ -350,7 +350,7 @@ export interface MedplumClientOptions {
    * - 'basic': Log method, URL, and status code only (no sensitive headers)
    * - 'verbose': Log all details including headers (may include sensitive data like tokens)
    *
-   * @default 'none'
+   * @defaultValue 'none'
    */
   logLevel?: ClientLogLevel;
 

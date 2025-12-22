@@ -1101,21 +1101,18 @@ describe('FHIR Repo', () => {
         await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
       }));
 
-    test.failing(
-      '[FAILING] Invalid patient with US Core Patient profile (communication.language not in ValueSet)',
-      async () =>
-        withTestContext(async () => {
-          await expect(
-            repo.createResource({
-              ...patient,
-              meta: { profile: [profile.url] },
-              communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
-            })
-          ).rejects.toThrow(
-            `Value "fr" did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language`
-          );
-        })
-    );
+    test('Invalid patient with US Core Patient profile (communication.language not in ValueSet)', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.createResource({
+            ...patient,
+            meta: { profile: [profile.url] },
+            communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
+          })
+        ).rejects.toThrow(
+          `Value {"coding":[{"system":"urn:ietf:bcp:47","code":"fr"}]} did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language (Patient.communication[0].language)`
+        );
+      }));
   });
 
   test('Conditional update', () =>
