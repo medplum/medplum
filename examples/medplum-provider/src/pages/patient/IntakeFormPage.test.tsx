@@ -109,7 +109,6 @@ describe('IntakeFormPage', () => {
     const user = userEvent.setup();
     setup();
 
-    // Wait for the questionnaire title to appear
     await waitFor(
       () => {
         expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
@@ -117,7 +116,6 @@ describe('IntakeFormPage', () => {
       { timeout: 3000 }
     );
 
-    // Wait for form inputs to be available and interactive (ensures value set checking is complete)
     const { firstNameInput, lastNameInput } = await waitFor(
       () => {
         const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
