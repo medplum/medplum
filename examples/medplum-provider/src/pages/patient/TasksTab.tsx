@@ -21,9 +21,7 @@ export function TasksTab(): JSX.Element {
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     const lastUpdatedSortRule = parsedSearch.sortRules?.find((rule) => rule.code === '_lastUpdated');
-    
     const otherFilters = parsedSearch.filters?.filter((f) => f.code !== 'patient') || [];
-
     const updatedFilters = [
       ...otherFilters,
       {
