@@ -103,8 +103,12 @@ export function TasksTab(): JSX.Element {
         onNew={onNew}
         onChange={onChange}
         getTaskUri={getTaskUri}
-        myTasksUri={myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`}
-        allTasksUri={allTasksQuery ? `/Patient/${patientId}/Task?${allTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`}
+        myTasksUri={
+          myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
+        allTasksUri={
+          allTasksQuery ? `/Patient/${patientId}/Task?${allTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
       />
     </div>
   );
