@@ -1,7 +1,12 @@
 # This is the main production Dockerfile.
-# It depends on medplum-server.tar.gz which is created by scripts/build-docker-server.sh.
+# It depends on files created by scripts/build-docker-server.sh:
+#  1. `medplum-server-metadata.tar.gz` - contains package.json and package-lock.json files
+#  2. `medplum-server-runtime.tar.gz` - contains the compiled JavaScript files and other runtime assets
 # This is a production ready image.
 # It does not include any development dependencies.
+
+# Uses Docker "Hardened Images":
+# https://hub.docker.com/hardened-images/catalog/dhi/node/guides
 
 # Builds multiarch docker images
 # https://docs.docker.com/build/building/multi-platform/
@@ -16,19 +21,14 @@ FROM dhi.io/node:24-dev AS build-stage
 ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
 ADD ./medplum-server-metadata.tar.gz ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && \
+  rm package-lock.json
 
-# Stage 2: Clean up unnecessary files
-FROM dhi.io/node:24-dev AS clean-stage
-WORKDIR /usr/src/medplum
-COPY --from=build-stage /usr/src/medplum ./
-RUN rm package-lock.json
-
-# Stage 3: Create the runtime image
+# Stage 2: Create the runtime image
 FROM dhi.io/node:24 AS runtime-stage
 ENV NODE_ENV=production
 WORKDIR /usr/src/medplum
-COPY --from=clean-stage /usr/src/medplum ./
+COPY --from=build-stage /usr/src/medplum/ ./
 
 # Add the application files
 # The archive is decompressed and extracted into the specified destination.
