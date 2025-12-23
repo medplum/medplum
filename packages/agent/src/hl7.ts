@@ -3,8 +3,8 @@
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
-import { Hl7Server, type EnhancedMode } from '@medplum/hl7';
+import type { EnhancedMode, Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
@@ -43,7 +43,7 @@ export class AgentHl7Channel extends BaseChannel {
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
-    this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
+    this.server = new Hl7Server((connection: Hl7Connection) => this.handleNewConnection(connection));
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
@@ -225,8 +225,8 @@ export class AgentHl7ChannelConnection {
     this.remote = `${hl7Connection.socket.remoteAddress}:${hl7Connection.socket.remotePort}`;
 
     // Add listener immediately to handle incoming messages
-    this.hl7Connection.addEventListener('message', (event) => this.handleMessage(event));
-    this.hl7Connection.addEventListener('error', (event) => this.handleError(event));
+    this.hl7Connection.addEventListener('message', (event: Hl7MessageEvent) => this.handleMessage(event));
+    this.hl7Connection.addEventListener('error', (event: Hl7ErrorEvent) => this.handleError(event));
   }
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {

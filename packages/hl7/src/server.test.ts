@@ -638,7 +638,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      await server.start(1247, undefined, true, { messagesPerMin });
+      await server.start(1247, undefined, 'standard', { messagesPerMin });
 
       const client = new Hl7Client({
         host: 'localhost',
@@ -699,7 +699,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode but no rate limiting
-      await server.start(1248, undefined, true);
+      await server.start(1248, undefined, 'standard');
 
       const client = new Hl7Client({
         host: 'localhost',
