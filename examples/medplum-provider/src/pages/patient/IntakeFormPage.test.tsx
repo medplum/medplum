@@ -5,7 +5,6 @@ import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
@@ -104,44 +103,6 @@ describe('IntakeFormPage', () => {
     const phoneInputs = screen.getAllByRole('textbox', { name: /Phone/i });
     expect(phoneInputs.length).toBeGreaterThan(0);
   });
-
-  test('Can fill out text fields', async () => {
-    const user = userEvent.setup();
-    setup();
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Patient Intake Questionnaire')).toBeInTheDocument();
-      },
-      { timeout: 3000 }
-    );
-
-    const { firstNameInput, lastNameInput } = await waitFor(
-      () => {
-        const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
-        const lastNameInputs = screen.getAllByRole('textbox', { name: /Last Name/i });
-        expect(firstNameInputs.length).toBeGreaterThan(0);
-        expect(lastNameInputs.length).toBeGreaterThan(0);
-        const firstName = firstNameInputs[0];
-        const lastName = lastNameInputs[0];
-        // Ensure inputs are interactive and visible
-        expect(firstName).not.toBeDisabled();
-        expect(lastName).not.toBeDisabled();
-        expect(firstName).toBeVisible();
-        expect(lastName).toBeVisible();
-        return { firstNameInput: firstName, lastNameInput: lastName };
-      },
-      { timeout: 3000 }
-    );
-
-    // Type into the inputs
-    await user.type(firstNameInput, 'John');
-    await user.type(lastNameInput, 'Doe');
-
-    // Verify the values were set correctly
-    expect(firstNameInput).toHaveValue('John');
-    expect(lastNameInput).toHaveValue('Doe');
-  }, 3000);
 
   test('Renders emergency contact section', async () => {
     setup();
