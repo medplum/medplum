@@ -8,7 +8,7 @@ import { TaskFilterType, TASK_STATUSES } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 
 interface TaskFilterMenuProps {
-  status?: Task['status'];
+  statuses?: Task['status'][];
   owner?: Task['owner'];
   performerType?: CodeableConcept;
   priority?: Task['priority'];
@@ -18,7 +18,7 @@ interface TaskFilterMenuProps {
 }
 
 export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
-  const { status, performerType, performerTypes, onFilterChange } = props;
+  const { statuses = [], performerType, performerTypes, onFilterChange } = props;
 
   const uniquePerformerTypes =
     performerTypes?.filter((performerType, index, self) => {
@@ -56,7 +56,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
                 <Menu.Item
                   key={taskStatus}
                   onClick={() => onFilterChange?.(TaskFilterType.STATUS, taskStatus)}
-                  rightSection={status === taskStatus ? <IconCheck size={16} /> : null}
+                  rightSection={statuses.includes(taskStatus) ? <IconCheck size={16} /> : null}
                 >
                   <Text size="sm">{taskStatus}</Text>
                 </Menu.Item>

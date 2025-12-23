@@ -11,16 +11,16 @@ import cx from 'clsx';
 interface TaskListItemProps {
   task: Task;
   selectedTask: Task | undefined;
-  onSelectedItem: (task: Task) => string;
+  getTaskUri: (task: Task) => string;
 }
 
 export function TaskListItem(props: TaskListItemProps): JSX.Element {
-  const { task, selectedTask, onSelectedItem } = props;
+  const { task, selectedTask, getTaskUri } = props;
   const isSelected = selectedTask?.id === task.id;
   const patient = useResource(task.for);
   const owner = useResource(task.owner);
   const taskFrom = task?.authoredOn ? `from ${formatDate(task?.authoredOn)}` : '';
-  const taskUrl = onSelectedItem(task);
+  const taskUrl = getTaskUri(task);
 
   return (
     <MedplumLink to={taskUrl} underline="never">
