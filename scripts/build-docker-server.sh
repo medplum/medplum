@@ -16,25 +16,31 @@ set -e
 # Echo commands
 set -x
 
-# Build server tarball
+# Build server "metadata" tarball
+tar \
+  --no-xattrs \
+  -czf medplum-server-metadata.tar.gz \
+  package.json \
+  package-lock.json \
+  packages/bot-layer/package.json \
+  packages/ccda/package.json \
+  packages/core/package.json \
+  packages/definitions/package.json \
+  packages/fhir-router/package.json \
+  packages/server/package.json
+
+# Build server "runtime" tarball
 tar \
   --no-xattrs \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
-  -czf medplum-server.tar.gz \
+  -czf medplum-server-runtime.tar.gz \
   LICENSE.txt \
   NOTICE \
-  package.json \
-  packages/bot-layer/package.json \
-  packages/ccda/package.json \
   packages/ccda/dist \
-  packages/core/package.json \
   packages/core/dist \
-  packages/definitions/package.json \
   packages/definitions/dist \
-  packages/fhir-router/package.json \
   packages/fhir-router/dist \
-  packages/server/package.json \
   packages/server/dist
 
 # Supply chain attestations
