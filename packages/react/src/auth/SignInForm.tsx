@@ -167,10 +167,10 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               }}
             />
           );
-        } else if (memberships) {
-          return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.projectId === 'new') {
           return <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />;
+        } else if (memberships) {
+          return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.chooseScopes) {
           return <ChooseScopeForm login={login} scope={props.scope} handleAuthResponse={handleScopeResponse} />;
         } else {
