@@ -204,6 +204,16 @@ export interface MedplumBullmqConfig {
   concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
+  /**
+   * Default number of retry attempts for background jobs.
+   * @see {@link https://docs.bullmq.io/guide/retrying-failing-jobs}
+   */
+  defaultAttempts?: number;
+  /**
+   * Configuration for backoff between job retry attempts.
+   * @see {@link https://docs.bullmq.io/guide/retrying-failing-jobs#built-in-backoff-strategies}
+   */
+  defaultBackoff?: { type: 'exponential' | 'fixed'; delay: number };
 }
 
 export interface MedplumExternalAuthConfig {

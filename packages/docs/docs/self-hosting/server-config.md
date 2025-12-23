@@ -347,6 +347,20 @@ See [BullMQ Job Removal](https://docs.bullmq.io/guide/jobs/auto-removal).
 
 **Default:** `false`
 
+#### bullmq.defaultAttempts
+
+Default number of retry attempts for background jobs.
+See [BullMQ Job Retries](https://docs.bullmq.io/guide/retrying-failing-jobs).
+
+**Default:** `3`
+
+#### bullmq.defaultBackoff
+
+Configuration for backoff between job retry attempts.
+See [BullMQ Backoff Strategies](https://docs.bullmq.io/guide/retrying-failing-jobs#built-in-backoff-strategies).
+
+**Default:** `{ "type": "exponential", "delay": 1000 }`
+
 ### awsRegion
 
 The AWS Region identifier.
