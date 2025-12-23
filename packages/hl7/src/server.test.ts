@@ -292,19 +292,23 @@ describe('HL7 Server', () => {
       const server = new Hl7Server((_conn) => undefined);
 
       // Test initial state
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
 
-      // Test setting enhanced mode to true
-      server.setEnhancedMode(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      // Test setting enhanced mode to 'standard'
+      server.setEnhancedMode('standard');
+      expect(server.getEnhancedMode()).toBe('standard');
 
-      // Test setting enhanced mode to false
-      server.setEnhancedMode(false);
-      expect(server.getEnhancedMode()).toBe(false);
+      // Test setting enhanced mode to 'aaMode'
+      server.setEnhancedMode('aaMode');
+      expect(server.getEnhancedMode()).toBe('aaMode');
 
-      // Test setting enhanced mode to true again
-      server.setEnhancedMode(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      // Test setting enhanced mode to undefined
+      server.setEnhancedMode(undefined);
+      expect(server.getEnhancedMode()).toBeUndefined();
+
+      // Test setting enhanced mode to 'standard' again
+      server.setEnhancedMode('standard');
+      expect(server.getEnhancedMode()).toBe('standard');
     });
 
     test('setMessagesPerMin and getMessagesPerMin work correctly', () => {
@@ -347,7 +351,7 @@ describe('HL7 Server', () => {
 
       // Test that default values are used
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -368,7 +372,7 @@ describe('HL7 Server', () => {
 
       // Test that encoding was set
       expect(server.getEncoding()).toBe('utf-8');
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -381,7 +385,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1238, undefined, true);
+      await server.start(1238, undefined, 'standard');
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -389,7 +393,7 @@ describe('HL7 Server', () => {
 
       // Test that enhancedMode was set
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -410,7 +414,7 @@ describe('HL7 Server', () => {
 
       // Test that messagesPerMin was set
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBe(150);
 
       await server.stop();
@@ -423,7 +427,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      await server.start(1240, 'windows-1252', true, { messagesPerMin: 200 });
+      await server.start(1240, 'windows-1252', 'standard', { messagesPerMin: 200 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -431,7 +435,7 @@ describe('HL7 Server', () => {
 
       // Test that all parameters were set
       expect(server.getEncoding()).toBe('windows-1252');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(200);
 
       await server.stop();
@@ -454,7 +458,7 @@ describe('HL7 Server', () => {
 
       // Test that encoding was preserved
       expect(server.getEncoding()).toBe('iso-8859-1');
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -468,7 +472,7 @@ describe('HL7 Server', () => {
       });
 
       // Set enhancedMode via setter before starting
-      server.setEnhancedMode(true);
+      server.setEnhancedMode('standard');
       await server.start(1242);
 
       // Verify server is running
@@ -477,7 +481,7 @@ describe('HL7 Server', () => {
 
       // Test that enhancedMode was preserved
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -500,7 +504,7 @@ describe('HL7 Server', () => {
 
       // Test that messagesPerMin was preserved
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBe(300);
 
       await server.stop();
@@ -515,7 +519,7 @@ describe('HL7 Server', () => {
 
       // Set all properties via setters before starting
       server.setEncoding('utf-8');
-      server.setEnhancedMode(true);
+      server.setEnhancedMode('standard');
       server.setMessagesPerMin(250);
       await server.start(1244);
 
@@ -525,7 +529,7 @@ describe('HL7 Server', () => {
 
       // Test that all properties were preserved
       expect(server.getEncoding()).toBe('utf-8');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(250);
 
       await server.stop();
@@ -540,11 +544,11 @@ describe('HL7 Server', () => {
 
       // Set properties via setters
       server.setEncoding('utf-8');
-      server.setEnhancedMode(false);
+      server.setEnhancedMode(undefined);
       server.setMessagesPerMin(100);
 
       // Start with different parameters that should override setters
-      await server.start(1245, 'windows-1252', true, { messagesPerMin: 500 });
+      await server.start(1245, 'windows-1252', 'standard', { messagesPerMin: 500 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -552,7 +556,7 @@ describe('HL7 Server', () => {
 
       // Test that start parameters override setters
       expect(server.getEncoding()).toBe('windows-1252');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(500);
 
       await server.stop();
@@ -570,12 +574,12 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      await server.start(1246, undefined, true, { messagesPerMin });
+      await server.start(1246, undefined, 'standard', { messagesPerMin });
 
       // Verify server is running with correct settings
       expect(server.server).toBeDefined();
       expect(server.server?.listening).toBe(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(messagesPerMin);
 
       const client = new Hl7Client({

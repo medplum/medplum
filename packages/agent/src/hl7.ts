@@ -4,7 +4,7 @@ import type { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
-import { Hl7Server } from '@medplum/hl7';
+import { Hl7Server, type EnhancedMode } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
@@ -25,7 +25,7 @@ export type AppLevelAckCode = (typeof APP_LEVEL_ACK_CODES)[number];
 export interface ShouldSendAppLevelAckOptions {
   mode: AppLevelAckMode;
   ackCode: AppLevelAckCode;
-  enhancedMode: boolean;
+  enhancedMode: EnhancedMode;
 }
 
 export class AgentHl7Channel extends BaseChannel {
@@ -170,7 +170,7 @@ export class AgentHl7Channel extends BaseChannel {
   private configureHl7ServerAndConnections(): void {
     const address = new URL(this.getEndpoint().address as string);
     const encoding = address.searchParams.get('encoding') ?? undefined;
-    const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const enhancedMode = parseEnhancedMode(address.searchParams.get('enhanced'), this.log);
     const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
     const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
@@ -274,6 +274,34 @@ export class AgentHl7ChannelConnection {
 }
 
 /**
+ * Parses and normalizes the enhanced mode parameter from the endpoint URL.
+ *
+ * @param rawValue - The raw query parameter value retrieved from the endpoint URL (e.g., 'true', 'aa', or undefined).
+ * @param logger - The Logger instance to use for logging.
+ * @returns The parsed enhanced mode enum value.
+ */
+export function parseEnhancedMode(rawValue: string | null | undefined, logger: ILogger): EnhancedMode {
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const normalizedValue = rawValue.toLowerCase();
+
+  if (normalizedValue === 'true') {
+    return 'standard';
+  }
+
+  if (normalizedValue === 'aa') {
+    return 'aaMode';
+  }
+
+  logger.warn(
+    `Invalid enhanced value '${rawValue}'; expected 'true' or 'aa'. Using standard mode (enhanced mode disabled).`
+  );
+  return undefined;
+}
+
+/**
  * Normalizes and validates the configured application-level ACK behavior.
  *
  * In the case that the passed-in `rawValue` is not a valid application-level ACK mode in alignment with valid values for `MSH-16`,
@@ -319,14 +347,22 @@ export function isAppLevelAckMode(candidate: string): candidate is AppLevelAckMo
 
 /**
  * Determines whether an application-level ACK should be forwarded to the remote system.
- * @param options - The configuration describing the ACK mode, current ACK code, and whether enhanced mode is enabled.
+ * @param options - The configuration describing the ACK mode, current ACK code, and enhanced mode setting.
  * @returns True if the ACK should be forwarded to the remote system; otherwise, false.
  */
 export function shouldSendAppLevelAck(options: ShouldSendAppLevelAckOptions): boolean {
   const { mode, ackCode, enhancedMode } = options;
+  // If enhanced mode is not enabled (undefined), always send the ACK
   if (!enhancedMode) {
     return true;
   }
+  
+  // For 'aaMode', never forward application-level ACKs (we already sent AA immediately)
+  if (enhancedMode === 'aaMode') {
+    return false;
+  }
+  
+  // For 'standard' enhanced mode, follow the app-level ACK mode rules
   switch (mode) {
     case 'AL':
       return true;

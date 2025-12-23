@@ -3,7 +3,7 @@
 import { sleep } from '@medplum/core';
 import net from 'node:net';
 import type { Hl7ConnectionOptions } from './connection';
-import { Hl7Connection } from './connection';
+import { Hl7Connection, type EnhancedMode } from './connection';
 
 /**
  * Options for configuring the `Hl7Server#stop` method.
@@ -25,7 +25,7 @@ export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
   private encoding: string | undefined = undefined;
-  private enhancedMode = false;
+  private enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
   private readonly connections = new Set<Hl7Connection>();
 
@@ -33,7 +33,7 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  async start(port: number, encoding?: string, enhancedMode?: boolean, options?: Hl7ConnectionOptions): Promise<void> {
+  async start(port: number, encoding?: string, enhancedMode?: EnhancedMode, options?: Hl7ConnectionOptions): Promise<void> {
     if (encoding) {
       this.setEncoding(encoding);
     }
@@ -125,11 +125,11 @@ export class Hl7Server {
     });
   }
 
-  setEnhancedMode(enhancedMode: boolean): void {
+  setEnhancedMode(enhancedMode: EnhancedMode): void {
     this.enhancedMode = enhancedMode;
   }
 
-  getEnhancedMode(): boolean {
+  getEnhancedMode(): EnhancedMode {
     return this.enhancedMode;
   }
 

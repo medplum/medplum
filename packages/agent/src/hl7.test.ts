@@ -22,6 +22,7 @@ import {
   APP_LEVEL_ACK_CODES,
   APP_LEVEL_ACK_MODES,
   parseAppLevelAckMode,
+  parseEnhancedMode,
   shouldSendAppLevelAck,
 } from './hl7';
 import { createMockLogger } from './test-utils';
@@ -2836,6 +2837,30 @@ describe('AgentHl7Channel application-level ACK gating', () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
   });
 
+  test('aaMode drops all application ACKs (AA)', () => {
+    const channel = createTestChannel('mllp://localhost:57104?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AA'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('aaMode drops all application ACKs (AE)', () => {
+    const channel = createTestChannel('mllp://localhost:57105?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AE'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('aaMode drops all application ACKs (AR)', () => {
+    const channel = createTestChannel('mllp://localhost:57106?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AR'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   test('ER with enhanced mode drops AA acknowledgements', () => {
     const channel = createTestChannel('mllp://localhost:57102?enhanced=true&appLevelAck=ER');
     const sendMock = attachMockConnection(channel);
@@ -2881,13 +2906,53 @@ describe('parseAppLevelAckMode', () => {
   });
 });
 
+describe('parseEnhancedMode', () => {
+  test('parses "true" to "standard"', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('true', logger)).toBe('standard');
+  });
+
+  test('parses "TRUE" to "standard" (case insensitive)', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('TRUE', logger)).toBe('standard');
+  });
+
+  test('parses "aa" to "aaMode"', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('aa', logger)).toBe('aaMode');
+  });
+
+  test('parses "AA" to "aaMode" (case insensitive)', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('AA', logger)).toBe('aaMode');
+  });
+
+  test('returns undefined when null is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode(null, logger)).toBeUndefined();
+  });
+
+  test('returns undefined when undefined is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode(undefined, logger)).toBeUndefined();
+  });
+
+  test('returns undefined and logs warning when invalid value is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('invalid', logger)).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid enhanced value 'invalid'; expected 'true' or 'aa'. Using standard mode (enhanced mode disabled)."
+    );
+  });
+});
+
 describe('shouldSendAppLevelAck', () => {
   test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'NE',
         ackCode,
-        enhancedMode: false,
+        enhancedMode: undefined,
       })
     ).toBe(true);
   });
@@ -2897,7 +2962,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'AL',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(true);
   });
@@ -2907,7 +2972,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'NE',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(false);
   });
@@ -2921,7 +2986,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'ER',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(result);
   });
@@ -2935,7 +3000,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'SU',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(result);
   });
@@ -2946,8 +3011,18 @@ describe('shouldSendAppLevelAck', () => {
         // This is an invalid mode
         mode: 'CA' as AppLevelAckMode,
         ackCode: 'AA',
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toThrow('Invalid app-level ACK mode provided');
+  });
+
+  test.each(APP_LEVEL_ACK_CODES)('aaMode never forwards application-level ACKs', (ackCode) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'AL',
+        ackCode,
+        enhancedMode: 'aaMode',
+      })
+    ).toBe(false);
   });
 });
