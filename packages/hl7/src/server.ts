@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import net from 'node:net';
-import type { Hl7ConnectionOptions } from './connection';
-import { Hl7Connection, type EnhancedMode } from './connection';
+import type { EnhancedMode, Hl7ConnectionOptions } from './connection';
+import { Hl7Connection } from './connection';
 
 /**
  * Options for configuring the `Hl7Server#stop` method.
@@ -33,7 +33,12 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  async start(port: number, encoding?: string, enhancedMode?: EnhancedMode, options?: Hl7ConnectionOptions): Promise<void> {
+  async start(
+    port: number,
+    encoding?: string,
+    enhancedMode?: EnhancedMode,
+    options?: Hl7ConnectionOptions
+  ): Promise<void> {
     if (encoding) {
       this.setEncoding(encoding);
     }
