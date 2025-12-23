@@ -356,12 +356,12 @@ export function shouldSendAppLevelAck(options: ShouldSendAppLevelAckOptions): bo
   if (!enhancedMode) {
     return true;
   }
-  
+
   // For 'aaMode', never forward application-level ACKs (we already sent AA immediately)
   if (enhancedMode === 'aaMode') {
     return false;
   }
-  
+
   // For 'standard' enhanced mode, follow the app-level ACK mode rules
   switch (mode) {
     case 'AL':
