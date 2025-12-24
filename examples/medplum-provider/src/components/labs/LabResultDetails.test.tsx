@@ -411,4 +411,3 @@ describe('LabResultDetails', () => {
     expect(screen.getByText('TEST RESULTS')).toBeInTheDocument();
   });
 });
-

@@ -97,21 +97,19 @@ describe('TestMetadataCardInput', () => {
     vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
   });
 
-  function setup(props: {
-    test?: TestCoding;
-    metadata?: TestMetadata | undefined;
-    error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
-  } = {}): ReturnType<typeof render> {
+  function setup(
+    props: {
+      test?: TestCoding;
+      metadata?: TestMetadata | undefined;
+      error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
+    } = {}
+  ): ReturnType<typeof render> {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <TestMetadataCardInput
-                test={props.test || mockTest}
-                metadata={props.metadata}
-                error={props.error}
-              />
+              <TestMetadataCardInput test={props.test || mockTest} metadata={props.metadata} error={props.error} />
             </HealthGorillaLabOrderProvider>
           </MantineProvider>
         </MedplumProvider>
@@ -318,4 +316,3 @@ describe('TestMetadataCardInput', () => {
     expect(screen.getByText('Lipid Panel')).toBeInTheDocument();
   });
 });
-

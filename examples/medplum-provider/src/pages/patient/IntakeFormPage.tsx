@@ -16,7 +16,10 @@ export interface IntakeFormPageProps {
   questionnaire?: Questionnaire;
 }
 
-export function IntakeFormPage({ skipValueSetCheck = false, questionnaire: propQuestionnaire }: IntakeFormPageProps = {}): JSX.Element {
+export function IntakeFormPage({
+  skipValueSetCheck = false,
+  questionnaire: propQuestionnaire,
+}: IntakeFormPageProps = {}): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();

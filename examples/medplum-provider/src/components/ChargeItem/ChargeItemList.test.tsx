@@ -264,7 +264,8 @@ describe('ChargeItemList', () => {
       () => {
         // Check if the code appears in selected items or if the input value changed
         const selectedItems = document.querySelector('[data-testid="selected-items"]');
-        const hasCode = selectedItems?.textContent?.includes('99214') || selectedItems?.textContent?.includes('Office Visit Level 4');
+        const hasCode =
+          selectedItems?.textContent?.includes('99214') || selectedItems?.textContent?.includes('Office Visit Level 4');
         return hasCode === true;
       },
       { timeout: 3000 }

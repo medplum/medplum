@@ -429,4 +429,3 @@ describe('CoverageInput', () => {
     expect(lastCall[0].patientCoverage[0].id).toBe('coverage-2');
   });
 });
-
