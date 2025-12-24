@@ -135,12 +135,14 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       const savedEncounter = await medplum.updateResource(updatedEncounter);
       setEncounter(savedEncounter);
 
+      let currentPractitioner = practitioner;
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
-        setPractitioner(practitionerResult as Practitioner);
+        currentPractitioner = practitionerResult as Practitioner;
+        setPractitioner(currentPractitioner);
       }
 
-      if (!patient?.id || !encounter?.id || !practitioner?.id || !chargeItems?.length) {
+      if (!patient?.id || !savedEncounter?.id || !currentPractitioner?.id || !chargeItems?.length) {
         return;
       }
 
@@ -148,19 +150,19 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         const newClaim = await createClaimFromEncounter(
           medplum,
           patient.id,
-          encounter.id,
-          practitioner.id,
+          savedEncounter.id,
+          currentPractitioner.id,
           chargeItems
         );
         if (newClaim) {
           setClaim(newClaim);
         }
       } else {
-        const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
+        const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(currentPractitioner);
         if (providerRefNeedsUpdate) {
           const updatedClaim: Claim = await medplum.updateResource({
             ...claim,
-            provider: { reference: getReferenceString(practitioner) },
+            provider: { reference: getReferenceString(currentPractitioner) },
           });
           setClaim(updatedClaim);
         }
