@@ -85,4 +85,3 @@ describe('EncounterChartPage', () => {
     expect(screen.getByTestId('outlet')).toBeInTheDocument();
   });
 });
-

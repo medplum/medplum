@@ -240,5 +240,4 @@ describe('IntakeFormPage', () => {
     const genderIdentityLabels = screen.getAllByText(/Gender Identity/i);
     expect(genderIdentityLabels.length).toBeGreaterThan(0);
   });
-
 });

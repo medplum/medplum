@@ -82,9 +82,7 @@ describe('PerformingLabInput', () => {
     vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
   });
 
-  function setup(
-    props: Partial<Parameters<typeof PerformingLabInput>[0]> = {}
-  ): ReturnType<typeof render> {
+  function setup(props: Partial<Parameters<typeof PerformingLabInput>[0]> = {}): ReturnType<typeof render> {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -236,7 +234,6 @@ describe('PerformingLabInput', () => {
     // This is acceptable as the main functionality is tested
   });
 
-
   test('displays default value when performingLab is provided', async () => {
     const mockLab = createMockLab('lab-1', 'Test Lab');
 
@@ -300,4 +297,3 @@ describe('PerformingLabInput', () => {
     expect(label).toBeInTheDocument();
   });
 });
-

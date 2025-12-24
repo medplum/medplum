@@ -96,10 +96,6 @@ describe('EncounterModal', () => {
     setup();
 
     expect(screen.getByText('Apply care template')).toBeInTheDocument();
-    expect(
-      screen.getByText(/You can select template for new encounter/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/You can select template for new encounter/i)).toBeInTheDocument();
   });
-
 });
-

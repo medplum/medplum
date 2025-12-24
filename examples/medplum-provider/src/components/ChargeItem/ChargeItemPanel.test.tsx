@@ -43,85 +43,87 @@ describe('ChargeItemPanel', () => {
     vi.clearAllMocks();
     vi.spyOn(chargeItemsUtils, 'applyChargeItemDefinition').mockImplementation(async (_, item) => item);
 
-    medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-      if (params.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers') {
-        const allModifiers = [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: '25',
-            display: 'Significant, separately identifiable evaluation and management service',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: '26',
-            display: 'Professional Component',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'a',
-            display: 'Repair of prior service or installation',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'b',
-            display: 'Temporary service or installation',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'c',
-            display: 'TMJ treatment',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'e',
-            display: 'Implant or associated with an implant',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'rooh',
-            display: 'Rush or Outside of office hours',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/modifiers',
-            code: 'x',
-            display: 'None',
-          },
-        ];
+    medplum.valueSetExpand = vi
+      .fn()
+      .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
+        if (params.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers') {
+          const allModifiers = [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: '25',
+              display: 'Significant, separately identifiable evaluation and management service',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: '26',
+              display: 'Professional Component',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'a',
+              display: 'Repair of prior service or installation',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'b',
+              display: 'Temporary service or installation',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'c',
+              display: 'TMJ treatment',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'e',
+              display: 'Implant or associated with an implant',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'rooh',
+              display: 'Rush or Outside of office hours',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/modifiers',
+              code: 'x',
+              display: 'None',
+            },
+          ];
 
-        // Filter modifiers if filter parameter is provided
-        const filterLower = params.filter?.toLowerCase() ?? '';
-        const filtered = params.filter
-          ? allModifiers.filter(
-              (m) => m.code.toLowerCase().includes(filterLower) || m.display.toLowerCase().includes(filterLower)
-            )
-          : allModifiers;
+          // Filter modifiers if filter parameter is provided
+          const filterLower = params.filter?.toLowerCase() ?? '';
+          const filtered = params.filter
+            ? allModifiers.filter(
+                (m) => m.code.toLowerCase().includes(filterLower) || m.display.toLowerCase().includes(filterLower)
+              )
+            : allModifiers;
 
-        // Limit results based on count parameter
-        const limited = params.count ? filtered.slice(0, params.count) : filtered;
+          // Limit results based on count parameter
+          const limited = params.count ? filtered.slice(0, params.count) : filtered;
 
+          return {
+            resourceType: 'ValueSet',
+            id: '9a6769a5-e60e-415b-ac35-8ed865336521',
+            url: 'http://hl7.org/fhir/ValueSet/claim-modifiers',
+            version: '4.0.1',
+            name: 'ModifierTypeCodes',
+            title: 'Modifier type Codes',
+            status: 'draft',
+            expansion: {
+              total: allModifiers.length,
+              timestamp: '2025-12-23T20:45:54.336Z',
+              contains: limited,
+            },
+          };
+        }
+        // Default response for other ValueSets
         return {
           resourceType: 'ValueSet',
-          id: '9a6769a5-e60e-415b-ac35-8ed865336521',
-          url: 'http://hl7.org/fhir/ValueSet/claim-modifiers',
-          version: '4.0.1',
-          name: 'ModifierTypeCodes',
-          title: 'Modifier type Codes',
-          status: 'draft',
           expansion: {
-            total: allModifiers.length,
-            timestamp: '2025-12-23T20:45:54.336Z',
-            contains: limited,
+            contains: [],
           },
         };
-      }
-      // Default response for other ValueSets
-      return {
-        resourceType: 'ValueSet',
-        expansion: {
-          contains: [],
-        },
-      };
-    });
+      });
   });
 
   const setup = (props: Partial<Parameters<typeof ChargeItemPanel>[0]> = {}): ReturnType<typeof render> => {
@@ -246,7 +248,7 @@ describe('ChargeItemPanel', () => {
     // which is complex to test. We verify the component structure.
     expect(screen.getByText('Modifiers')).toBeInTheDocument();
   });
-  
+
   test('handles charge item with existing modifier extension', () => {
     const itemWithExistingModifier: ChargeItem = {
       ...mockChargeItem,
@@ -372,7 +374,9 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find((call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers');
+          const claimModifiersCall = calls.find(
+            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+          );
           expect(claimModifiersCall).toBeDefined();
         },
         { timeout: 5000 }
@@ -567,7 +571,9 @@ describe('ChargeItemPanel', () => {
         () => {
           expect(medplum.valueSetExpand).toHaveBeenCalled();
           const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const claimModifiersCall = calls.find((call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers');
+          const claimModifiersCall = calls.find(
+            (call) => call[0]?.url === 'http://hl7.org/fhir/ValueSet/claim-modifiers'
+          );
           expect(claimModifiersCall).toBeDefined();
         },
         { timeout: 5000 }

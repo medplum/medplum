@@ -98,4 +98,3 @@ describe('DoseSpotIcon', () => {
     expect(screen.getByText('10')).toBeInTheDocument();
   });
 });
-
