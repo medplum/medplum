@@ -32,16 +32,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     setCptCodes({ coding: cptCodes });
   }, [chargeItem]);
 
-  const updateCptCodes = (value: CodeableConcept | undefined): void => {
-    const updatedChargeItem = { ...chargeItem };
-    const existingNonCptCodes = chargeItem.code?.coding?.filter((coding) => coding.system !== CPT_CODE_SYSTEM) ?? [];
-    updatedChargeItem.code = {
-      ...(value ?? {}),
-      coding: [...(value?.coding ?? []), ...existingNonCptCodes],
-    };
-    onChange(updatedChargeItem);
-  };
-
   const updateModifiers = async (value: CodeableConcept | undefined): Promise<void> => {
     if (!value) {
       const updatedChargeItem = { ...chargeItem };
@@ -98,7 +88,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
               name="cptCode"
               path="cptCode"
               defaultValue={cptCodes}
-              onChange={updateCptCodes}
               readOnly
               disabled={true}
             />
