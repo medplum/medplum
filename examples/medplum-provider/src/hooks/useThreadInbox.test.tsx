@@ -251,7 +251,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadStatusChange('in-progress');
+    await act(async () => result.current.handleThreadStatusChange('in-progress'));
 
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
@@ -298,7 +298,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadStatusChange('in-progress');
+    await act(async () => result.current.handleThreadStatusChange('in-progress'));
 
     await waitFor(() => {
       expect(result.current.error).toBe(error);
