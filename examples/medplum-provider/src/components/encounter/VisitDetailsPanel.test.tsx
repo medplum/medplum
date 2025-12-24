@@ -74,7 +74,7 @@ describe('VisitDetailsPanel', () => {
 
   test('calls onEncounterChange when practitioner is changed', async () => {
     const onEncounterChange = vi.fn();
-    
+
     const mockPractitioner1: Practitioner = {
       resourceType: 'Practitioner',
       id: 'practitioner-1',
@@ -101,10 +101,13 @@ describe('VisitDetailsPanel', () => {
     });
 
     // Find the ResourceInput searchbox (ResourceInput uses AsyncAutocomplete which renders a searchbox)
-    await waitFor(() => {
-      const searchbox = screen.queryByRole('searchbox');
-      expect(searchbox).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const searchbox = screen.queryByRole('searchbox');
+        expect(searchbox).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     const practitionerInput = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -127,10 +130,13 @@ describe('VisitDetailsPanel', () => {
 
     // Wait for the dropdown option to appear and click it (like PlanDefinitionBuilder)
     // The display string for Practitioner is typically "Dr. Smith" or just "Smith"
-    await waitFor(() => {
-      const smithOption = screen.queryByText(/Smith/i);
-      expect(smithOption).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       const smithOption = screen.getByText(/Smith/i);
@@ -138,13 +144,16 @@ describe('VisitDetailsPanel', () => {
     });
 
     // Verify onEncounterChange was called with updated encounter
-    await waitFor(() => {
-      expect(onEncounterChange).toHaveBeenCalled();
-      const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
-      const updatedEncounter = call[0] as Encounter;
-      expect(updatedEncounter.participant).toBeDefined();
-      expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(onEncounterChange).toHaveBeenCalled();
+        const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
+        const updatedEncounter = call[0] as Encounter;
+        expect(updatedEncounter.participant).toBeDefined();
+        expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onEncounterChange when check in time is changed', async () => {

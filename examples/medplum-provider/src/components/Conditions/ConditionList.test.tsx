@@ -239,74 +239,76 @@ describe('ConditionList', () => {
     };
 
     // Mock valueSetExpand for ICD-10 codes (cholera)
-    medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-      if (params.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs') {
-        const choleraCodes = [
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10-cm',
-            code: 'A00.0',
-            display: 'Cholera due to Vibrio cholerae 01, biovar cholerae',
-          },
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10-cm',
-            code: 'A00.9',
-            display: 'Cholera, unspecified',
-          },
-        ];
-        const filtered = params.filter
-          ? choleraCodes.filter(
-              (c) =>
-                c.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
-                c.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
-            )
-          : choleraCodes;
-        const paginated = params.count ? filtered.slice(0, params.count) : filtered;
-        return {
-          resourceType: 'ValueSet',
-          expansion: {
-            total: filtered.length,
-            timestamp: new Date().toISOString(),
-            contains: paginated,
-          },
-        };
-      }
-      if (params.url === HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical') {
-        const statuses = [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            code: 'active',
-            display: 'Active',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            code: 'inactive',
-            display: 'Inactive',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            code: 'resolved',
-            display: 'Resolved',
-          },
-        ];
-        const filtered = params.filter
-          ? statuses.filter(
-              (s) =>
-                s.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
-                s.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
-            )
-          : statuses;
-        const paginated = params.count ? filtered.slice(0, params.count) : filtered;
-        return {
-          resourceType: 'ValueSet',
-          expansion: {
-            total: filtered.length,
-            timestamp: new Date().toISOString(),
-            contains: paginated,
-          },
-        };
-      }
-      return { resourceType: 'ValueSet', expansion: { contains: [] } };
-    });
+    medplum.valueSetExpand = vi
+      .fn()
+      .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
+        if (params.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs') {
+          const choleraCodes = [
+            {
+              system: 'http://hl7.org/fhir/sid/icd-10-cm',
+              code: 'A00.0',
+              display: 'Cholera due to Vibrio cholerae 01, biovar cholerae',
+            },
+            {
+              system: 'http://hl7.org/fhir/sid/icd-10-cm',
+              code: 'A00.9',
+              display: 'Cholera, unspecified',
+            },
+          ];
+          const filtered = params.filter
+            ? choleraCodes.filter(
+                (c) =>
+                  c.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
+                  c.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
+              )
+            : choleraCodes;
+          const paginated = params.count ? filtered.slice(0, params.count) : filtered;
+          return {
+            resourceType: 'ValueSet',
+            expansion: {
+              total: filtered.length,
+              timestamp: new Date().toISOString(),
+              contains: paginated,
+            },
+          };
+        }
+        if (params.url === HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical') {
+          const statuses = [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+              code: 'active',
+              display: 'Active',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+              code: 'inactive',
+              display: 'Inactive',
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+              code: 'resolved',
+              display: 'Resolved',
+            },
+          ];
+          const filtered = params.filter
+            ? statuses.filter(
+                (s) =>
+                  s.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
+                  s.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
+              )
+            : statuses;
+          const paginated = params.count ? filtered.slice(0, params.count) : filtered;
+          return {
+            resourceType: 'ValueSet',
+            expansion: {
+              total: filtered.length,
+              timestamp: new Date().toISOString(),
+              contains: paginated,
+            },
+          };
+        }
+        return { resourceType: 'ValueSet', expansion: { contains: [] } };
+      });
 
     vi.spyOn(medplum, 'createResource').mockResolvedValue(newCondition);
 
