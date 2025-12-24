@@ -100,13 +100,13 @@ export function App(): JSX.Element | null {
                     icon: (
                       <NotificationIcon
                         resourceType="Task"
-                        countCriteria={`owner=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}`}
+                        countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
+                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
                         iconComponent={<IconClipboardCheck />}
                       />
                     ),
                     label: 'Tasks',
-                    href: `/Task?owner=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                    href: `/Task?owner=${getReferenceString(profile)}&_sort=-_lastUpdated&status=requested,ready,received,accepted,in-progress,draft`,
                   },
                 ],
               },

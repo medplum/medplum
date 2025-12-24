@@ -46,7 +46,14 @@ describe('TasksPage', () => {
   };
 
   test('renders TaskBoard component', async () => {
-    setup();
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Task?_sort=-_lastUpdated&_count=20&_total=accurate');
 
     await waitFor(() => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
@@ -64,7 +71,7 @@ describe('TasksPage', () => {
     } as any);
     vi.spyOn(medplum, 'readResource').mockResolvedValue(mockTask);
 
-    setup('/Task/task-123');
+    setup('/Task/task-123?_sort=-_lastUpdated&_count=20&_total=accurate');
 
     await waitFor(() => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
@@ -87,7 +94,7 @@ describe('TasksPage', () => {
       entry: [],
     } as any);
 
-    setup();
+    setup('/Task?_sort=-_lastUpdated&_count=20&_total=accurate');
 
     await waitFor(() => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
@@ -113,7 +120,7 @@ describe('TasksPage', () => {
     } as any);
     const readResourceSpy = vi.spyOn(medplum, 'readResource');
 
-    setup('/Task');
+    setup('/Task?_sort=-_lastUpdated&_count=20&_total=accurate');
 
     await waitFor(() => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
