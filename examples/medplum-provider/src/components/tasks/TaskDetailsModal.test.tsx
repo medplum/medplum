@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { Task, Patient } from '@medplum/fhirtypes';
@@ -122,9 +122,7 @@ describe('TaskDetailsModal', () => {
     await user.type(noteInput, 'Updated note');
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -141,9 +139,7 @@ describe('TaskDetailsModal', () => {
     });
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -163,9 +159,7 @@ describe('TaskDetailsModal', () => {
     });
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -221,9 +215,7 @@ describe('TaskDetailsModal', () => {
     await user.type(noteInput, 'Comprehensive update');
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
@@ -249,9 +241,7 @@ describe('TaskDetailsModal', () => {
     await user.clear(noteInput);
 
     const saveButton = screen.getByText('Save Changes');
-    await act(async () => {
-      await user.click(saveButton);
-    });
+    await user.click(saveButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();

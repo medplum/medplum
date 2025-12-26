@@ -187,9 +187,7 @@ describe('TaskDetailPanel', () => {
     const user = userEvent.setup();
     const deleteButton = screen.getByLabelText('Delete Task');
 
-    await act(async () => {
-      await user.click(deleteButton);
-    });
+    await user.click(deleteButton);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -198,9 +196,7 @@ describe('TaskDetailPanel', () => {
     const dialog = screen.getByRole('dialog');
     const confirmButton = within(dialog).getByRole('button', { name: 'Delete' });
 
-    await act(async () => {
-      await user.click(confirmButton);
-    });
+    await user.click(confirmButton);
 
     await waitFor(() => {
       expect(medplum.deleteResource).toHaveBeenCalledTimes(1);
@@ -227,9 +223,7 @@ describe('TaskDetailPanel', () => {
     const user = userEvent.setup();
     const deleteButton = screen.getByLabelText('Delete Task');
 
-    await act(async () => {
-      await user.click(deleteButton);
-    });
+    await user.click(deleteButton);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -238,9 +232,7 @@ describe('TaskDetailPanel', () => {
     const dialog = screen.getByRole('dialog');
     const confirmButton = within(dialog).getByRole('button', { name: 'Delete' });
 
-    await act(async () => {
-      await user.click(confirmButton);
-    });
+    await user.click(confirmButton);
 
     await waitFor(() => {
       expect(medplum.deleteResource).toHaveBeenCalledTimes(1);

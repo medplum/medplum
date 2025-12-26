@@ -4,7 +4,7 @@ import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor, userEvent } from '../../test-utils/render';
+import { act, render, screen, waitFor, userEvent } from '../../test-utils/render';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ThreadInbox } from './ThreadInbox';
@@ -50,38 +50,44 @@ describe('ThreadInbox', () => {
     });
   });
 
-  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: typeof HomerSimpson }): void => {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <Notifications />
-          <ThreadInbox
-            query="_sort=-_lastUpdated"
-            threadId={props?.threadId}
-            showPatientSummary={props?.showPatientSummary ?? false}
-            subject={props?.subject}
-            handleNewThread={mockHandleNewThread}
-            onSelectedItem={mockOnSelectedItem}
-          />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  const setup = (props?: {
+    threadId?: string;
+    showPatientSummary?: boolean;
+    subject?: typeof HomerSimpson;
+  }): Promise<void> => {
+    return act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <Notifications />
+            <ThreadInbox
+              query="_sort=-_lastUpdated"
+              threadId={props?.threadId}
+              showPatientSummary={props?.showPatientSummary ?? false}
+              subject={props?.subject}
+              handleNewThread={mockHandleNewThread}
+              onSelectedItem={mockOnSelectedItem}
+            />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   };
 
-  test('renders messages header', () => {
-    setup();
+  test('renders messages header', async () => {
+    await setup();
     expect(screen.getByText('Messages')).toBeInTheDocument();
   });
 
-  test('renders status filter buttons', () => {
-    setup();
+  test('renders status filter buttons', async () => {
+    await setup();
     expect(screen.getByText('In progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
   test('shows loading skeletons when loading', async () => {
     medplum.search = vi.fn().mockImplementation(() => new Promise(() => {}));
-    setup();
+    await setup();
 
     await waitFor(() => {
       const skeletons = document.querySelectorAll('.mantine-Skeleton-root');
@@ -169,7 +175,7 @@ describe('ThreadInbox', () => {
       });
     });
 
-    setup();
+    await setup();
 
     await waitFor(
       () => {
@@ -182,14 +188,14 @@ describe('ThreadInbox', () => {
   });
 
   test('shows no messages state when no thread is selected', async () => {
-    setup();
+    await setup();
     await waitFor(() => {
       expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
     });
   });
 
   test('shows empty messages state when no messages are found', async () => {
-    setup();
+    await setup();
 
     await waitFor(
       () => {
@@ -211,7 +217,7 @@ describe('ThreadInbox', () => {
       data: { CommunicationList: [] },
     });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -240,7 +246,7 @@ describe('ThreadInbox', () => {
       data: { CommunicationList: [] },
     });
 
-    setup({ showPatientSummary: true, threadId: 'comm-123' });
+    await setup({ showPatientSummary: true, threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -264,7 +270,7 @@ describe('ThreadInbox', () => {
       data: { CommunicationList: [] },
     });
 
-    setup({ showPatientSummary: false, threadId: 'comm-123' });
+    await setup({ showPatientSummary: false, threadId: 'comm-123' });
 
     await waitFor(
       () => {
@@ -276,7 +282,7 @@ describe('ThreadInbox', () => {
 
   test('opens new topic dialog when plus button is clicked', async () => {
     const user = userEvent.setup();
-    setup();
+    await setup();
 
     const plusButton = screen.getByRole('button', { name: '' }); // Icon button
     await user.click(plusButton);
@@ -288,7 +294,7 @@ describe('ThreadInbox', () => {
 
   test('closes new topic dialog when close is clicked', async () => {
     const user = userEvent.setup();
-    setup();
+    await setup();
 
     // Open dialog first
     const plusButton = screen.getByRole('button', { name: '' });
@@ -325,7 +331,7 @@ describe('ThreadInbox', () => {
       data: { CommunicationList: [] },
     });
 
-    setup({ threadId: 'comm-123' });
+    await setup({ threadId: 'comm-123' });
 
     await waitFor(
       () => {
