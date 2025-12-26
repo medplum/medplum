@@ -76,8 +76,8 @@ tags: [community]
     </tr>
   <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Oct 30, 2025, 10:00 AM PT</td>
-      <td>**Scheduling Agents for Healthcare Operations**</td>
-      <td>[Zoom](https://luma.com/npl7y6cm)</td>
+      <td>**[Scheduling Agents for Healthcare Operations](/blog/scheduling-agents-unity-ai)**</td>
+      <td>[Blog Post](/blog/scheduling-agents-unity-ai)</td>
       <td align="center">
         <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
         Cody Hall from Unity AI, [Medplum Team](https://github.com/reshmakh)
