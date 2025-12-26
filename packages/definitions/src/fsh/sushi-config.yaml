@@ -1,0 +1,6 @@
+canonical: http://example.org
+fhirVersion: 4.0.1
+FSHOnly: true
+applyExtensionMetadataToRoot: false
+id: example
+name: Example
