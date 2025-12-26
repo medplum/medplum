@@ -139,9 +139,7 @@ describe('BillingTab', () => {
         </MemoryRouter>
       );
     });
-  }
-    
-  
+  };
 
   test('renders visit details panel', async () => {
     await setup();
@@ -432,7 +430,8 @@ describe('BillingTab', () => {
     await waitFor(
       () => {
         const selectedItems = document.querySelector('[data-testid="selected-items"]');
-        const hasCode = selectedItems?.textContent?.includes('99214') || selectedItems?.textContent?.includes('Office Visit Level 4');
+        const hasCode =
+          selectedItems?.textContent?.includes('99214') || selectedItems?.textContent?.includes('Office Visit Level 4');
         return hasCode === true;
       },
       { timeout: 3000 }
@@ -509,27 +508,29 @@ describe('BillingTab', () => {
       });
 
       // Verify claim was updated
-      await waitFor(() => {
-        expect(claimsUtils.getCptChargeItems).toHaveBeenCalledWith(
-          [appliedChargeItem],
-          { reference: 'Encounter/encounter-123' }
-        );
-        expect(chargeItemsUtils.calculateTotalPrice).toHaveBeenCalledWith([appliedChargeItem]);
-        expect(setClaim).toHaveBeenCalledWith(
-          expect.objectContaining({
-            ...mockClaim,
-            item: mockClaimItems,
-            total: { value: 200 },
-          })
-        );
-        expect(debouncedUpdateResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            ...mockClaim,
-            item: mockClaimItems,
-            total: { value: 200 },
-          })
-        );
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(claimsUtils.getCptChargeItems).toHaveBeenCalledWith([appliedChargeItem], {
+            reference: 'Encounter/encounter-123',
+          });
+          expect(chargeItemsUtils.calculateTotalPrice).toHaveBeenCalledWith([appliedChargeItem]);
+          expect(setClaim).toHaveBeenCalledWith(
+            expect.objectContaining({
+              ...mockClaim,
+              item: mockClaimItems,
+              total: { value: 200 },
+            })
+          );
+          expect(debouncedUpdateResource).toHaveBeenCalledWith(
+            expect.objectContaining({
+              ...mockClaim,
+              item: mockClaimItems,
+              total: { value: 200 },
+            })
+          );
+        },
+        { timeout: 5000 }
+      );
     }
   });
 
@@ -615,7 +616,7 @@ describe('BillingTab', () => {
         id: 'encounter-123',
         status: 'finished',
         class: { code: 'AMB', system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode' },
-        subject: { reference: `Patient/${HomerSimpson.id}` }
+        subject: { reference: `Patient/${HomerSimpson.id}` },
       },
       practitioner: undefined,
     });
@@ -631,10 +632,13 @@ describe('BillingTab', () => {
       fireEvent.change(practitionerInput, { target: { value: 'Smith' } });
     });
 
-    await waitFor(() => {
-      const smithOption = screen.queryByText(/Smith/i);
-      expect(smithOption).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       const smithOption = screen.getByText(/Smith/i);
@@ -648,20 +652,26 @@ describe('BillingTab', () => {
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
 
-    await waitFor(() => {
-      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
+      },
+      { timeout: 1000 }
+    );
 
-    await waitFor(() => {
-      expect(claimsUtils.createClaimFromEncounter).toHaveBeenCalledWith(
-        medplum,
-        mockPatient.id,
-        mockEncounter.id,
-        mockPractitioner2.id,
-        [appliedChargeItem]
-      );
-      expect(setClaim).toHaveBeenCalledWith(newClaim);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(claimsUtils.createClaimFromEncounter).toHaveBeenCalledWith(
+          medplum,
+          mockPatient.id,
+          mockEncounter.id,
+          mockPractitioner2.id,
+          [appliedChargeItem]
+        );
+        expect(setClaim).toHaveBeenCalledWith(newClaim);
+      },
+      { timeout: 5000 }
+    );
   }, 15000);
 
   test('updates claim when practitioner is changed and claim already exists', async () => {
@@ -747,8 +757,8 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
     await setup({
-      claim: existingClaim, 
-      chargeItems: [appliedChargeItem], 
+      claim: existingClaim,
+      chargeItems: [appliedChargeItem],
       setChargeItems: vi.fn(),
       setClaim,
       setEncounter,
@@ -774,17 +784,21 @@ describe('BillingTab', () => {
 
     const practitionerText = screen.getByText(/Dr\. Test/i);
     const practitionerContainer = practitionerText.closest('[data-testid]') || practitionerText.closest('div');
-    const clickableElement = practitionerContainer?.querySelector('button') || practitionerText.closest('button') || practitionerText;
+    const clickableElement =
+      practitionerContainer?.querySelector('button') || practitionerText.closest('button') || practitionerText;
 
     // Click to open the dropdown
     await act(async () => {
       fireEvent.click(clickableElement);
     });
 
-    await waitFor(() => {
-      const practitionerInput = screen.queryByPlaceholderText('Search for practitioner') as HTMLInputElement;
-      expect(practitionerInput).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const practitionerInput = screen.queryByPlaceholderText('Search for practitioner') as HTMLInputElement;
+        expect(practitionerInput).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     const practitionerInput = screen.getByPlaceholderText('Search for practitioner') as HTMLInputElement;
 
@@ -792,10 +806,13 @@ describe('BillingTab', () => {
       fireEvent.change(practitionerInput, { target: { value: 'Smith' } });
     });
 
-    await waitFor(() => {
-      const smithOption = screen.queryByText(/Smith/i);
-      expect(smithOption).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       const smithOption = screen.getByText(/Smith/i);
@@ -809,18 +826,24 @@ describe('BillingTab', () => {
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
 
-    await waitFor(() => {
-      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
-    }, { timeout: 1000 });
+    await waitFor(
+      () => {
+        expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
+      },
+      { timeout: 1000 }
+    );
 
-    await waitFor(() => {
-      const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
-      const claimUpdateCall = updateCalls.find((call) => {
-        const resource = call[0] as Claim;
-        return resource.resourceType === 'Claim' && resource.provider?.reference === 'Practitioner/practitioner-2';
-      });
-      expect(claimUpdateCall).toBeDefined();
-      expect(setClaim).toHaveBeenCalledWith(updatedClaim);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+        const claimUpdateCall = updateCalls.find((call) => {
+          const resource = call[0] as Claim;
+          return resource.resourceType === 'Claim' && resource.provider?.reference === 'Practitioner/practitioner-2';
+        });
+        expect(claimUpdateCall).toBeDefined();
+        expect(setClaim).toHaveBeenCalledWith(updatedClaim);
+      },
+      { timeout: 5000 }
+    );
   }, 15000);
 });

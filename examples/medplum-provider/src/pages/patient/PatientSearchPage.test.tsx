@@ -132,7 +132,6 @@ describe('PatientSearchPage', () => {
     expect(searchControl).toBeInTheDocument();
   });
 
-
   test('Search control has checkboxes enabled', async () => {
     await setup(`/Patient/${HomerSimpson.id}/Patient`);
     const searchControl = await screen.findByTestId('search-control');
@@ -150,4 +149,3 @@ describe('PatientSearchPage', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 });
-
