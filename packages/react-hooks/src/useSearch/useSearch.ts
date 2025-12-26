@@ -92,17 +92,26 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   const [debouncedSearchValue] = useDebouncedValue(searchValue, debounceMs, { leading: true });
 
   useEffect(() => {
+    let active = true;
     medplum[searchFn](debouncedSearchValue.resourceType, debouncedSearchValue.query)
       .then((res) => {
-        setLoading(false);
-        setResult(res as SearchReturnType);
-        setOutcome(allOk);
+        if (active) {
+          setLoading(false);
+          setResult(res as SearchReturnType);
+          setOutcome(allOk);
+        }
       })
       .catch((err) => {
-        setLoading(false);
-        setResult(undefined);
-        setOutcome(normalizeOperationOutcome(err));
+        if (active) {
+          setLoading(false);
+          setResult(undefined);
+          setOutcome(normalizeOperationOutcome(err));
+        }
       });
+
+    return () => {
+      active = false;
+    };
   }, [medplum, searchFn, debouncedSearchValue]);
 
   return [result, loading, outcome];
