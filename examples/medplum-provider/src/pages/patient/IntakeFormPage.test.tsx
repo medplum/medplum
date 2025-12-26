@@ -5,7 +5,7 @@ import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type { Questionnaire } from '@medplum/fhirtypes';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
@@ -96,27 +96,28 @@ describe('IntakeFormPage', () => {
     vi.restoreAllMocks();
   });
 
-  const setup = (skipValueSetCheck = true, questionnaire?: Questionnaire): ReturnType<typeof render> => {
-    renderResult = render(
-      <MemoryRouter initialEntries={['/onboarding']}>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route
-                path="/onboarding"
-                element={<IntakeFormPage skipValueSetCheck={skipValueSetCheck} questionnaire={questionnaire} />}
-              />
-            </Routes>
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-    return renderResult;
+  const setup = async (skipValueSetCheck = true, questionnaire?: Questionnaire): Promise<void> => {
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/onboarding']}>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route
+                  path="/onboarding"
+                  element={<IntakeFormPage skipValueSetCheck={skipValueSetCheck} questionnaire={questionnaire} />}
+                />
+              </Routes>
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   };
 
   test('Renders questionnaire form with all sections', async () => {
-    setup(true, simpleQuestionnaire);
+    await setup(true, simpleQuestionnaire);
 
     await waitFor(
       () => {
@@ -145,7 +146,7 @@ describe('IntakeFormPage', () => {
       };
     });
 
-    setup(false, simpleQuestionnaire);
+    await setup(false, simpleQuestionnaire);
 
     await waitFor(
       () => {
@@ -154,7 +155,6 @@ describe('IntakeFormPage', () => {
       { timeout: 10000 }
     );
 
-    // Wait for value set checking to complete
     await waitFor(
       () => {
         const alert = screen.queryByText(/Some valuesets are unavailable/i);
@@ -167,7 +167,7 @@ describe('IntakeFormPage', () => {
   });
 
   test('Renders required demographic fields', async () => {
-    setup(true, simpleQuestionnaire);
+    await setup(true, simpleQuestionnaire);
 
     await waitFor(
       () => {
@@ -183,7 +183,6 @@ describe('IntakeFormPage', () => {
       { timeout: 10000 }
     );
 
-    // Check for required fields
     await waitFor(
       () => {
         const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
@@ -205,7 +204,7 @@ describe('IntakeFormPage', () => {
   });
 
   test('Renders demographic group section', async () => {
-    setup(true, simpleQuestionnaire);
+    await setup(true, simpleQuestionnaire);
 
     await waitFor(
       () => {
@@ -221,7 +220,6 @@ describe('IntakeFormPage', () => {
       { timeout: 10000 }
     );
 
-    // Check for demographic fields
     await waitFor(
       () => {
         const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });

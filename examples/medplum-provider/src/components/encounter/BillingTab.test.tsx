@@ -115,33 +115,36 @@ describe('BillingTab', () => {
     );
   });
 
-  const setup = (props: Partial<Parameters<typeof BillingTab>[0]> = {}): ReturnType<typeof render> => {
-    return render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <BillingTab
-              patient={mockPatient}
-              encounter={mockEncounter}
-              setEncounter={vi.fn()}
-              practitioner={mockPractitioner}
-              setPractitioner={vi.fn()}
-              chargeItems={[]}
-              setChargeItems={vi.fn()}
-              claim={undefined}
-              setClaim={vi.fn()}
-              {...props}
-            />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  };
+  const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
+    return act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <BillingTab
+                patient={mockPatient}
+                encounter={mockEncounter}
+                setEncounter={vi.fn()}
+                practitioner={mockPractitioner}
+                setPractitioner={vi.fn()}
+                chargeItems={[]}
+                setChargeItems={vi.fn()}
+                claim={undefined}
+                setClaim={vi.fn()}
+                {...props}
+              />
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
+  }
+    
+  
 
-  test('renders visit details panel', () => {
-    setup();
-
+  test('renders visit details panel', async () => {
+    await setup();
     expect(screen.getByText('Visit Details')).toBeInTheDocument();
     expect(screen.getByText(/Dr\. Test/i)).toBeInTheDocument();
   });
@@ -158,7 +161,7 @@ describe('BillingTab', () => {
 
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
 
-    setup({
+    await setup({
       encounter: {
         ...mockEncounter,
         diagnosis: [
@@ -177,8 +180,8 @@ describe('BillingTab', () => {
     });
   });
 
-  test('renders condition list when there are NO conditions', () => {
-    setup({
+  test('renders condition list when there are NO conditions', async () => {
+    await setup({
       encounter: {
         ...mockEncounter,
         diagnosis: [],
@@ -190,28 +193,28 @@ describe('BillingTab', () => {
     expect(screen.queryByText('Headache')).not.toBeInTheDocument();
   });
 
-  test('renders charge item list when charge items are provided', () => {
-    setup({ chargeItems: [mockChargeItem] });
+  test('renders charge item list when charge items are provided', async () => {
+    await setup({ chargeItems: [mockChargeItem] });
 
     expect(screen.getByText('Charge Items')).toBeInTheDocument();
     expect(screen.getByText('Add Charge Item')).toBeInTheDocument();
   });
 
-  test('does not render export claim button when no claim', () => {
-    setup({ claim: undefined });
+  test('does not render export claim button when no claim', async () => {
+    await setup({ claim: undefined });
 
     expect(screen.queryByText('Export Claim')).not.toBeInTheDocument();
   });
 
-  test('renders export claim button when claim exists', () => {
-    setup({ claim: mockClaim });
+  test('renders export claim button when claim exists', async () => {
+    await setup({ claim: mockClaim });
 
     expect(screen.getByText('Export Claim')).toBeInTheDocument();
   });
 
   test('shows export menu options when export button is clicked', async () => {
     const user = userEvent.setup();
-    setup({ claim: mockClaim });
+    await setup({ claim: mockClaim });
 
     const exportButton = screen.getByText('Export Claim');
     await user.click(exportButton);
@@ -234,7 +237,7 @@ describe('BillingTab', () => {
 
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
-    setup({ claim: mockClaim });
+    await setup({ claim: mockClaim });
 
     const exportButton = screen.getByText('Export Claim');
     await user.click(exportButton);
@@ -253,15 +256,15 @@ describe('BillingTab', () => {
     windowOpenSpy.mockRestore();
   });
 
-  test('renders request billing service button', () => {
-    setup({ claim: mockClaim });
+  test('renders request billing service button', async () => {
+    await setup({ claim: mockClaim });
     expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
   });
 
   test('fetches coverage on mount', async () => {
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
     await act(async () => {
-      setup();
+      await setup();
     });
 
     await waitFor(() => {
@@ -274,7 +277,7 @@ describe('BillingTab', () => {
 
   test('shows notification when EDI X12 menu item is clicked', async () => {
     const user = userEvent.setup();
-    setup({ claim: mockClaim });
+    await setup({ claim: mockClaim });
 
     const exportButton = screen.getByText('Export Claim');
     await user.click(exportButton);
@@ -296,7 +299,7 @@ describe('BillingTab', () => {
 
   test('shows notification when NUCC Crosswalk CSV menu item is clicked', async () => {
     const user = userEvent.setup();
-    setup({ claim: mockClaim });
+    await setup({ claim: mockClaim });
 
     const exportButton = screen.getByText('Export Claim');
     await user.click(exportButton);
@@ -382,7 +385,7 @@ describe('BillingTab', () => {
     vi.spyOn(claimsUtils, 'getCptChargeItems').mockReturnValue(mockClaimItems);
     vi.spyOn(chargeItemsUtils, 'calculateTotalPrice').mockReturnValue(200);
 
-    setup({
+    await setup({
       claim: mockClaim,
       chargeItems: [],
       setChargeItems,
@@ -601,7 +604,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
     // Setup with charge items but no claim initially
-    setup({
+    await setup({
       claim: undefined, // No claim initially
       chargeItems: [appliedChargeItem], // Charge items already present
       setChargeItems: vi.fn(),
@@ -743,7 +746,7 @@ describe('BillingTab', () => {
     });
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
-    setup({
+    await setup({
       claim: existingClaim, 
       chargeItems: [appliedChargeItem], 
       setChargeItems: vi.fn(),
