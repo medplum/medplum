@@ -3,7 +3,7 @@
 import type { QueryTypes, ResourceArray } from '@medplum/core';
 import { allOk, normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, ExtractResource, OperationOutcome, ResourceType } from '@medplum/fhirtypes';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';
 
@@ -73,32 +73,37 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   options?: SearchOptions
 ): [SearchReturnType | undefined, boolean, OperationOutcome | undefined] {
   const medplum = useMedplum();
-  const [lastSearchKey, setLastSearchKey] = useState<string>();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<SearchReturnType>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
   const searchKey = medplum.fhirSearchUrl(resourceType, query).toString();
-  const [debouncedSearchKey] = useDebouncedValue(searchKey, options?.debounceMs ?? DEFAULT_DEBOUNCE_MS, {
-    leading: true,
-  });
+  const searchValue = useMemo(
+    () => ({
+      resourceType,
+      query,
+    }),
+    // This is safe because the missing dependencies are encoded into `searchKey`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchKey]
+  );
+
+  const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
+  const [debouncedSearchValue] = useDebouncedValue(searchValue, debounceMs, { leading: true });
 
   useEffect(() => {
-    if (debouncedSearchKey !== lastSearchKey) {
-      setLastSearchKey(debouncedSearchKey);
-      medplum[searchFn](resourceType, query)
-        .then((res) => {
-          setLoading(false);
-          setResult(res as SearchReturnType);
-          setOutcome(allOk);
-        })
-        .catch((err) => {
-          setLoading(false);
-          setResult(undefined);
-          setOutcome(normalizeOperationOutcome(err));
-        });
-    }
-  }, [medplum, searchFn, resourceType, query, lastSearchKey, debouncedSearchKey]);
+    medplum[searchFn](debouncedSearchValue.resourceType, debouncedSearchValue.query)
+      .then((res) => {
+        setLoading(false);
+        setResult(res as SearchReturnType);
+        setOutcome(allOk);
+      })
+      .catch((err) => {
+        setLoading(false);
+        setResult(undefined);
+        setOutcome(normalizeOperationOutcome(err));
+      });
+  }, [medplum, searchFn, debouncedSearchValue]);
 
   return [result, loading, outcome];
 }
