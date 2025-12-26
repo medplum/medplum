@@ -4,13 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
-import type {
-  ClinicalImpression,
-  Encounter,
-  Practitioner,
-  Provenance,
-  Task,
-} from '@medplum/fhirtypes';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Task } from '@medplum/fhirtypes';
 import { HomerSimpson, DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';

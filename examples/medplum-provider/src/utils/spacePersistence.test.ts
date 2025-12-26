@@ -3,12 +3,7 @@
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
-import {
-  createConversationTopic,
-  saveMessage,
-  loadConversationMessages,
-  loadRecentTopics,
-} from './spacePersistence';
+import { createConversationTopic, saveMessage, loadConversationMessages, loadRecentTopics } from './spacePersistence';
 import type { Message } from '../types/spaces';
 
 describe('spacePersistence', () => {
@@ -453,4 +448,3 @@ describe('spacePersistence', () => {
     });
   });
 });
-

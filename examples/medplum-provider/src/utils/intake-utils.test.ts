@@ -581,7 +581,15 @@ describe('intake utils', () => {
     test('addConsent includes policyRule when provided', async () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       const policyRule = { coding: [{ code: 'hipaa-npp' }] };
-      await addConsent(medplum as any, patient, true, observationCategoryMapping.socialHistory, observationCategoryMapping.sdoh, policyRule, '2020-01-01');
+      await addConsent(
+        medplum as any,
+        patient,
+        true,
+        observationCategoryMapping.socialHistory,
+        observationCategoryMapping.sdoh,
+        policyRule,
+        '2020-01-01'
+      );
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           policyRule: policyRule,
@@ -892,7 +900,13 @@ describe('intake utils', () => {
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           resourceType: 'RelatedPerson',
-          relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
+          relationship: [
+            {
+              coding: [
+                { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' },
+              ],
+            },
+          ],
         })
       );
       expect(upsertSpy).toHaveBeenCalled();
@@ -916,7 +930,11 @@ describe('intake utils', () => {
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           resourceType: 'RelatedPerson',
-          relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' }] }],
+          relationship: [
+            {
+              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' }],
+            },
+          ],
         })
       );
       expect(upsertSpy).toHaveBeenCalled();
@@ -940,7 +958,11 @@ describe('intake utils', () => {
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           resourceType: 'RelatedPerson',
-          relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' }] }],
+          relationship: [
+            {
+              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' }],
+            },
+          ],
         })
       );
       expect(upsertSpy).toHaveBeenCalled();

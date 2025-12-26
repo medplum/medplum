@@ -274,10 +274,13 @@ describe('TaskProperties', () => {
     );
 
     // Wait for the dropdown option to appear and click it
-    await waitFor(() => {
-      const smithOption = screen.queryByText(/Smith/i);
-      expect(smithOption).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       const smithOption = screen.getByText(/Smith/i);
@@ -285,12 +288,15 @@ describe('TaskProperties', () => {
     });
 
     // Verify onTaskChange was called with updated task
-    await waitFor(() => {
-      expect(onTaskChange).toHaveBeenCalled();
-      const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-      const updatedTask = call[0] as Task;
-      expect(updatedTask.for?.reference).toBe('Patient/patient-2');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.for?.reference).toBe('Patient/patient-2');
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onTaskChange when patient is changed from existing patient', async () => {
@@ -336,10 +342,13 @@ describe('TaskProperties', () => {
     });
 
     // Wait for the search input to appear - find by placeholder
-    await waitFor(() => {
-      const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
-      expect(patientInput).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
+        expect(patientInput).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     const patientInput = screen.getByPlaceholderText('Search for patient') as HTMLInputElement;
 
@@ -349,10 +358,13 @@ describe('TaskProperties', () => {
     });
 
     // Wait for the dropdown option to appear and click it
-    await waitFor(() => {
-      const smithOption = screen.queryByText(/Smith/i);
-      expect(smithOption).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       const smithOption = screen.getByText(/Smith/i);
@@ -360,12 +372,15 @@ describe('TaskProperties', () => {
     });
 
     // Verify onTaskChange was called with updated task
-    await waitFor(() => {
-      expect(onTaskChange).toHaveBeenCalled();
-      const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-      const updatedTask = call[0] as Task;
-      expect(updatedTask.for?.reference).toBe('Patient/patient-2');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.for?.reference).toBe('Patient/patient-2');
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onTaskChange when due date is changed', async () => {
@@ -385,12 +400,15 @@ describe('TaskProperties', () => {
     await user.type(dueDateInput, '2024-12-31T23:59');
 
     // Verify onTaskChange was called with updated task
-    await waitFor(() => {
-      expect(onTaskChange).toHaveBeenCalled();
-      const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-      const updatedTask = call[0] as Task;
-      expect(updatedTask.restriction?.period?.end).toBeDefined();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.restriction?.period?.end).toBeDefined();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('calls onTaskChange when status is changed', async () => {
@@ -444,27 +462,36 @@ describe('TaskProperties', () => {
     });
 
     // Wait for the dropdown option to appear and select it using keyboard
-    await waitFor(() => {
-      const completedOption = screen.queryByText(/completed/i);
-      return completedOption !== null;
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const completedOption = screen.queryByText(/completed/i);
+        return completedOption !== null;
+      },
+      { timeout: 3000 }
+    );
 
     // Use keyboard navigation to select
     await act(async () => {
       fireEvent.keyDown(statusInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      await waitFor(() => {
-        expect(screen.getByText(/completed/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/completed/i)).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
       fireEvent.keyDown(statusInput, { key: 'Enter', code: 'Enter' });
     });
 
     // Verify onTaskChange was called with updated task
-    await waitFor(() => {
-      expect(onTaskChange).toHaveBeenCalled();
-      const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-      const updatedTask = call[0] as Task;
-      expect(updatedTask.status).toBe('completed');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.status).toBe('completed');
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onTaskChange when priority is changed', async () => {
@@ -518,10 +545,13 @@ describe('TaskProperties', () => {
     });
 
     // Wait for the dropdown option to appear and select it using keyboard
-    await waitFor(() => {
-      const urgentOption = screen.queryByText(/urgent/i);
-      return urgentOption !== null;
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const urgentOption = screen.queryByText(/urgent/i);
+        return urgentOption !== null;
+      },
+      { timeout: 3000 }
+    );
 
     await act(async () => {
       fireEvent.keyDown(priorityInput, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -532,11 +562,14 @@ describe('TaskProperties', () => {
     await act(async () => {
       fireEvent.keyDown(priorityInput, { key: 'Enter', code: 'Enter' });
     });
-    await waitFor(() => {
-      expect(onTaskChange).toHaveBeenCalled();
-      const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-      const updatedTask = call[0] as Task;
-      expect(updatedTask.priority).toBe('urgent');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.priority).toBe('urgent');
+      },
+      { timeout: 5000 }
+    );
   });
 });
