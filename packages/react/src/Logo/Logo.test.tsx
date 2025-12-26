@@ -11,10 +11,10 @@ describe('Logo', () => {
 
   test('Renders with overrideUrl', async () => {
     (import.meta.env as any).MEDPLUM_LOGO_URL = 'https://example.com/custom-logo.png';
-    
+
     jest.resetModules();
     const { Logo: LogoWithOverride } = await import('./Logo');
-    
+
     render(<LogoWithOverride size={100} />);
     const img = screen.getByAltText('Logo');
     expect(img).toBeDefined();

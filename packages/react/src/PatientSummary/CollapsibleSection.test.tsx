@@ -26,13 +26,13 @@ describe('CollapsibleSection', () => {
     expect(content).toBeInTheDocument();
 
     const chevronButton = screen.getByLabelText('Hide test section');
-    
+
     await act(async () => {
       fireEvent.click(chevronButton);
     });
 
     expect(screen.getByLabelText('Show test section')).toBeInTheDocument();
-    
+
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Show test section'));
     });
@@ -51,13 +51,13 @@ describe('CollapsibleSection', () => {
     expect(content).toBeInTheDocument();
 
     const title = screen.getByText('Test Section');
-    
+
     await act(async () => {
       fireEvent.click(title);
     });
 
     expect(screen.getByLabelText('Show test section')).toBeInTheDocument();
-    
+
     await act(async () => {
       fireEvent.click(title);
     });
@@ -95,7 +95,7 @@ describe('CollapsibleSection', () => {
     );
 
     const addButton = screen.getByLabelText('Add item');
-    
+
     await act(async () => {
       fireEvent.click(addButton);
     });
@@ -103,4 +103,3 @@ describe('CollapsibleSection', () => {
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 });
-
