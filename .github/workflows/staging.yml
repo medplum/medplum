@@ -17,7 +17,6 @@ jobs:
     permissions:
       id-token: write
     env:
-      NODE_VERSION: '22'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -61,6 +60,12 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
+          username: ${{ secrets.STAGING_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.STAGING_DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub Hardened Images
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        with:
+          registry: dhi.io
           username: ${{ secrets.STAGING_DOCKERHUB_USERNAME }}
           password: ${{ secrets.STAGING_DOCKERHUB_TOKEN }}
       - name: Setup Docker Buildx
