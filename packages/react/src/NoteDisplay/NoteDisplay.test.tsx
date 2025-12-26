@@ -48,4 +48,18 @@ describe('NoteDisplay', () => {
 
     expect(screen.getByText('Medplum Bots')).toBeDefined();
   });
+
+  test('Returns null if value is undefined', async () => {
+    await act(async () => {
+      const { container } = render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <NoteDisplay value={undefined} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+
+      expect(container.firstElementChild).toBeNull();
+    });
+  });
 });
