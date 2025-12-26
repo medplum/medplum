@@ -75,6 +75,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
             resourceType="Practitioner"
             name="practitioner"
             label="Practitioner"
+            placeholder="Search for practitioner"
             defaultValue={practitioner}
             onChange={handlePractitionerChange}
           />

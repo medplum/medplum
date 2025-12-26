@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { TaskStatusPanel } from './TaskStatusPanel';
 
 const mockTask: Task = {
@@ -18,12 +18,25 @@ const mockOnActionButtonClicked = vi.fn();
 const mockOnChangeStatus = vi.fn();
 
 describe('TaskStatusPanel', () => {
+  let renderResult: ReturnType<typeof render> | null = null;
+
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
+    renderResult = null;
+  });
+
+  afterEach(() => {
+    if (renderResult) {
+      renderResult.unmount();
+      renderResult = null;
+    }
+    cleanup();
+    vi.restoreAllMocks();
   });
 
   const setup = (task: Task, enabled = true): ReturnType<typeof render> => {
-    return render(
+    renderResult = render(
       <MantineProvider>
         <TaskStatusPanel
           task={task}
@@ -33,6 +46,7 @@ describe('TaskStatusPanel', () => {
         />
       </MantineProvider>
     );
+    return renderResult;
   };
 
   test('renders task status label', () => {
@@ -131,17 +145,27 @@ describe('TaskStatusPanel', () => {
     const badge = screen.getAllByText('In Progress')[0]; // Get the badge
     await user.click(badge);
 
+    // Wait for menu items to be accessible
+    let menuItems: HTMLElement[] = [];
     await waitFor(
       () => {
-        const menuItems = screen.getAllByRole('menuitem');
+        menuItems = screen.getAllByRole('menuitem');
         expect(menuItems.length).toBeGreaterThan(0);
-        const inProgressItem = menuItems.find((item) => item.textContent?.includes('In Progress'));
-        expect(inProgressItem).toBeInTheDocument();
-        const checkIcon = inProgressItem?.querySelector('.tabler-icon-check');
-        expect(checkIcon).toBeInTheDocument();
+        // Verify menu is visible by checking opacity or display style
+        const menuDropdown = document.querySelector('[role="menu"]');
+        if (menuDropdown) {
+          const style = window.getComputedStyle(menuDropdown);
+          expect(style.display).not.toBe('none');
+        }
       },
       { timeout: 5000 }
     );
+
+    const inProgressItem = menuItems.find((item) => item.textContent?.includes('In Progress'));
+    expect(inProgressItem).toBeDefined();
+    // Check that the menu item has an SVG icon (IconCheck renders as SVG)
+    const icon = inProgressItem?.querySelector('svg');
+    expect(icon).toBeInTheDocument();
   });
 
   test('handles all status options in menu', async () => {

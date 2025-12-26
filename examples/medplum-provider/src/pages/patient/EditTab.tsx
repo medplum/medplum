@@ -12,12 +12,12 @@ import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWi
 import { RESOURCE_PROFILE_URLS } from '../resource/utils';
 
 const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
-  <p>
+  <>
     Could not find the{' '}
     <Anchor href={RESOURCE_PROFILE_URLS.Patient} target="_blank">
       US Core Patient Profile
     </Anchor>
-  </p>
+  </>
 ) : undefined;
 
 export function EditTab(): JSX.Element | null {
