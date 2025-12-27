@@ -155,7 +155,7 @@ medplum post admin/projects/:projectId/invite \
   "firstName": "George",
   "lastName": "Washington",
   "email": "patient.gw@example.gov",
-  "password: "lib3rty0rDe4th!"
+  "password": "Xk9mP2qL7nR4v"
 }'
 ```
 
@@ -171,7 +171,7 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
   "firstName": "George",
   "lastName": "Washington",
   "email": "patient.gw@example.gov",
-  "password: "lib3rty0rDe4th!"
+  "password": "Xk9mP2qL7nR4v"
 }'
 ```
 
@@ -251,9 +251,16 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 When `mfaRequired: true` is set, the user will be required to enroll in Multi-Factor Authentication during their first login. See [MFA documentation](/docs/auth/mfa) for more details.
 
+#### Creating Multiple Memberships with Different Access Policies
+
+By default, inviting a user who already has a ProjectMembership in the project will result in an error. To create multiple ProjectMemberships for the same user (e.g., for multi-organization access), use `forceNewMembership: true`.
+
+Read more about [Multiple ProjectMemberships](/blog/tenant-isolation-approaches-in-medplum#option-3-multiple-projectmemberships)
+
 ## See Also
 
 - [User Admin Guide](/docs/user-management)
+- [Multiple ProjectMemberships](/blog/tenant-isolation-approaches-in-medplum#option-3-multiple-projectmemberships)
 - [Invite a new user](https://www.medplum.com/docs/app/invite)
 - [Custom Emails](https://www.medplum.com/docs/user-management/custom-emails)
 - [Multi-Factor Authentication (MFA)](/docs/auth/mfa) - For details on MFA enrollment and usage
