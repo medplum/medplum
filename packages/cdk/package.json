@@ -26,7 +26,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/types": "3.953.0",
+    "@aws-sdk/types": "3.957.0",
     "@medplum/core": "5.0.10",
     "aws-cdk-lib": "2.233.0",
     "cdk": "2.1100.1",
